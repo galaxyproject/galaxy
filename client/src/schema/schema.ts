@@ -4610,6 +4610,8 @@ export interface components {
              * @description Activation grace period (in hours).  Activation is not forced (login is not
              * disabled) until grace period has passed.  Users under grace period can't run
              * jobs. Enter 0 to disable grace period.
+             *
+             * @default 3
              */
             activation_grace_period?: number;
             /**
@@ -4617,6 +4619,8 @@ export interface components {
              * @description Set path to the additional tool preferences from Galaxy admins.
              * It has two blocks. One for listing deprecated tools which will be removed from the recommendations and
              * another is for adding additional tools to be recommended along side those from the deep learning model.
+             *
+             * @default tool_recommendations_overwrite.yml
              */
             admin_tool_recommendations_path?: string;
             /**
@@ -4627,7 +4631,7 @@ export interface components {
              * libraries, and more.  For more information, see:
              *   https://galaxyproject.org/admin/
              */
-            admin_users?: string;
+            admin_users: string;
             /**
              * Allow Path Paste
              * @description Allow admins to paste filesystem paths during upload. For libraries this
@@ -4637,12 +4641,16 @@ export interface components {
              * (i.e. prefixed with file://). Set to true to enable.  Please note the security
              * implication that this will give Galaxy Admins access to anything your Galaxy
              * user has access to.
+             *
+             * @default false
              */
             allow_path_paste?: boolean;
             /**
              * Allow User Creation
              * @description Allow unregistered users to create new accounts (otherwise, they will have to
              * be created by an admin).
+             *
+             * @default true
              */
             allow_user_creation?: boolean;
             /**
@@ -4650,16 +4658,22 @@ export interface components {
              * @description Allow users to remove their datasets from disk immediately (otherwise,
              * datasets will be removed after a time period specified by an administrator in
              * the cleanup scripts run via cron)
+             *
+             * @default true
              */
             allow_user_dataset_purge?: boolean;
             /**
              * Allow User Deletion
              * @description Allow administrators to delete accounts.
+             *
+             * @default false
              */
             allow_user_deletion?: boolean;
             /**
              * Allow User Impersonation
              * @description Allow administrators to log in as other users (useful for debugging).
+             *
+             * @default false
              */
             allow_user_impersonation?: boolean;
             /**
@@ -4671,7 +4685,7 @@ export interface components {
              * E.g. mysite.com,google.com,usegalaxy.org,/^[\w\.]*example\.com/
              * See: https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
              */
-            allowed_origin_hostnames?: string;
+            allowed_origin_hostnames: string;
             /**
              * Amqp Internal Connection
              * @description Galaxy uses AMQP internally for communicating between processes.  For
@@ -4684,6 +4698,8 @@ export interface components {
              * specified database_connection above.  If that's not specified either, Galaxy
              * will automatically create and use a separate sqlite database located in your
              * <galaxy>/database folder (indicated in the commented out line below).
+             *
+             * @default sqlalchemy+sqlite:///./database/control.sqlite?isolation_level=IMMEDIATE
              */
             amqp_internal_connection?: string;
             /**
@@ -4693,6 +4709,8 @@ export interface components {
              *
              * Apache can handle file downloads (Galaxy-to-user) via mod_xsendfile.  Set
              * this to true to inform Galaxy that mod_xsendfile is enabled upstream.
+             *
+             * @default false
              */
             apache_xsendfile?: boolean;
             /**
@@ -4700,18 +4718,22 @@ export interface components {
              * @description Optional list of email addresses of API users who can make calls on behalf of
              * other users.
              */
-            api_allow_run_as?: string;
+            api_allow_run_as: string;
             /**
              * Auth Config File
              * @description XML config file that allows the use of different authentication providers
              * (e.g. LDAP) instead or in addition to local authentication (.sample is used
              * if default does not exist).
+             *
+             * @default auth_conf.xml
              */
             auth_config_file?: string;
             /**
              * Auto Configure Logging
              * @description If true, Galaxy will attempt to configure a simple root logger if a
              * "loggers" section does not appear in this configuration file.
+             *
+             * @default true
              */
             auto_configure_logging?: boolean;
             /**
@@ -4719,6 +4741,8 @@ export interface components {
              * @description This flag enables an AWS cost estimate for every job based on their runtime matrices.
              * CPU, RAM and runtime usage is mapped against AWS pricing table.
              * Please note, that those numbers are only estimates.
+             *
+             * @default false
              */
             aws_estimate?: boolean;
             /**
@@ -4726,17 +4750,21 @@ export interface components {
              * @description Point Galaxy at a repository consisting of a copy of the bio.tools database (e.g.
              * https://github.com/bio-tools/content/) to resolve bio.tools data for tool metadata.
              */
-            biotools_content_directory?: string;
+            biotools_content_directory: string;
             /**
              * Biotools Service Cache Data Dir
              * @description bio.tools web service request related caching. The data directory to point
              * beaker cache at.
+             *
+             * @default biotools/data
              */
             biotools_service_cache_data_dir?: string;
             /**
              * Biotools Service Cache Lock Dir
              * @description bio.tools web service request related caching. The lock directory to point
              * beaker cache at.
+             *
+             * @default biotools/locks
              */
             biotools_service_cache_lock_dir?: string;
             /**
@@ -4745,17 +4773,21 @@ export interface components {
              * the database table name used by beaker for
              * bio.tools web service request related caching.
              */
-            biotools_service_cache_schema_name?: string;
+            biotools_service_cache_schema_name: string;
             /**
              * Biotools Service Cache Table Name
              * @description When biotools_service_cache_type = ext:database, this is
              * the database table name used by beaker for
              * bio.tools web service request related caching.
+             *
+             * @default beaker_cache
              */
             biotools_service_cache_table_name?: string;
             /**
              * Biotools Service Cache Type
              * @description bio.tools web service request related caching. The type of beaker cache used.
+             *
+             * @default file
              */
             biotools_service_cache_type?: string;
             /**
@@ -4766,11 +4798,13 @@ export interface components {
              * The application config code will set it to the
              * value of database_connection if this is not set.
              */
-            biotools_service_cache_url?: string;
+            biotools_service_cache_url: string;
             /**
              * Biotools Use Api
              * @description Set this to true to attempt to resolve bio.tools metadata for tools for tool not
              * resovled via biotools_content_directory.
+             *
+             * @default false
              */
             biotools_use_api?: boolean;
             /**
@@ -4781,16 +4815,18 @@ export interface components {
              * a real admin user account via API.
              * You should probably not set this on a production server.
              */
-            bootstrap_admin_api_key?: string;
+            bootstrap_admin_api_key: string;
             /**
              * Brand
              * @description Append "{brand}" text to the masthead.
              */
-            brand?: string;
+            brand: string;
             /**
              * Build Sites Config File
              * @description File that defines the builds (dbkeys) available at sites used by display applications
              * and the URL to those sites.
+             *
+             * @default build_sites.yml
              */
             build_sites_config_file?: string;
             /**
@@ -4798,12 +4834,16 @@ export interface components {
              * @description File containing old-style genome builds.
              *
              * The value of this option will be resolved with respect to <tool_data_path>.
+             *
+             * @default shared/ucsc/builds.txt
              */
             builds_file_path?: string;
             /**
              * Cache Dir
              * @description Top level cache directory. Any other cache directories (tool_cache_data_dir,
              * template_cache_path, etc.) should be subdirectories.
+             *
+             * @default cache
              */
             cache_dir?: string;
             /**
@@ -4816,6 +4856,8 @@ export interface components {
              * Although better for performance due to reduced queries, the trade-off is a
              * greater possibility that jobs will be dispatched past the configured limits
              * if running many handlers.
+             *
+             * @default false
              */
             cache_user_job_count?: boolean;
             /**
@@ -4826,6 +4868,8 @@ export interface components {
              * the United States Environmental Protection Agency (EPA).
              * Visit https://www.green-algorithms.org/ and https://www.epa.gov/energy/greenhouse-gas-equivalencies-calculator.
              * for more detals.
+             *
+             * @default true
              */
             carbon_emission_estimates?: boolean;
             /**
@@ -4842,28 +4886,43 @@ export interface components {
              * (Other tasks cannot be disabled on a per-task basis at this time.)
              *
              * For details, see Celery documentation at https://docs.celeryq.dev/en/stable/userguide/configuration.html.
+             *
+             * @default {
+             *   "task_routes": {
+             *     "galaxy.fetch_data": "galaxy.external",
+             *     "galaxy.set_job_metadata": "galaxy.external"
+             *   }
+             * }
              */
             celery_conf?: Record<string, never>;
             /**
              * Celery User Rate Limit
              * @description If set to a non-0 value, upper limit on number of
              * tasks that can be executed per user per second.
+             *
+             * @default 0
              */
             celery_user_rate_limit?: number;
             /**
              * Check Job Script Integrity
              * @description Set to false to disable various checks Galaxy will do to ensure it
              * can run job scripts before attempting to execute or submit them.
+             *
+             * @default true
              */
             check_job_script_integrity?: boolean;
             /**
              * Check Job Script Integrity Count
              * @description Number of checks to execute if check_job_script_integrity is enabled.
+             *
+             * @default 35
              */
             check_job_script_integrity_count?: number;
             /**
              * Check Job Script Integrity Sleep
              * @description Time to sleep between checks if check_job_script_integrity is enabled (in seconds).
+             *
+             * @default 0.25
              */
             check_job_script_integrity_sleep?: number;
             /**
@@ -4871,6 +4930,8 @@ export interface components {
              * @description Galaxy can upload user files in chunks without using nginx. Enable the chunk
              * uploader by specifying a chunk size larger than 0. The chunk size is specified
              * in bytes (default: 10MB).
+             *
+             * @default 10485760
              */
             chunk_upload_size?: number;
             /**
@@ -4878,6 +4939,8 @@ export interface components {
              * @description Citation related caching.  Tool citations information maybe fetched from
              * external sources such as https://doi.org/ by Galaxy - the following
              * parameters can be used to control the caching used to store this information.
+             *
+             * @default citations/data
              */
             citation_cache_data_dir?: string;
             /**
@@ -4885,6 +4948,8 @@ export interface components {
              * @description Citation related caching.  Tool citations information maybe fetched from
              * external sources such as https://doi.org/ by Galaxy - the following
              * parameters can be used to control the caching used to store this information.
+             *
+             * @default citations/locks
              */
             citation_cache_lock_dir?: string;
             /**
@@ -4893,12 +4958,14 @@ export interface components {
              * the database schema name of the table used by beaker for
              * citation related caching.
              */
-            citation_cache_schema_name?: string;
+            citation_cache_schema_name: string;
             /**
              * Citation Cache Table Name
              * @description When citation_cache_type = ext:database, this is
              * the database table name used by beaker for
              * citation related caching.
+             *
+             * @default beaker_cache
              */
             citation_cache_table_name?: string;
             /**
@@ -4906,6 +4973,8 @@ export interface components {
              * @description Citation related caching.  Tool citations information maybe fetched from
              * external sources such as https://doi.org/ by Galaxy - the following
              * parameters can be used to control the caching used to store this information.
+             *
+             * @default file
              */
             citation_cache_type?: string;
             /**
@@ -4915,15 +4984,19 @@ export interface components {
              * caching. The application config code will set it to the
              * value of database_connection if this is not set.
              */
-            citation_cache_url?: string;
+            citation_cache_url: string;
             /**
              * Citation Url
              * @description The URL linked by the "How to Cite Galaxy" link in the "Help" menu.
+             *
+             * @default https://galaxyproject.org/citing-galaxy
              */
             citation_url?: string;
             /**
              * Citations Export Message Html
              * @description Message to display on the export citations tool page
+             *
+             * @default When writing up your analysis, remember to include all references that should be cited in order to completely describe your work. Also, please remember to <a href="https://galaxyproject.org/citing-galaxy">cite Galaxy</a>.
              */
             citations_export_message_html?: string;
             /**
@@ -4932,18 +5005,24 @@ export interface components {
              * bits include the job working directory, external metadata temporary files,
              * and DRM stdout and stderr files (if using a DRM).  Possible values are:
              * always, onsuccess, never
+             *
+             * @default always
              */
             cleanup_job?: string;
             /**
              * Conda Auto Init
              * @description Set to true to instruct Galaxy to install Conda from the web automatically
              * if it cannot find a local copy and conda_exec is not configured.
+             *
+             * @default true
              */
             conda_auto_init?: boolean;
             /**
              * Conda Auto Install
              * @description Set to true to instruct Galaxy to look for and install missing tool
              * dependencies before each job runs.
+             *
+             * @default false
              */
             conda_auto_install?: boolean;
             /**
@@ -4953,17 +5032,23 @@ export interface components {
              * Conda will copy packages content instead of creating hardlinks or symlinks.
              * This will prevent problems with some specific packages (perl, R), at the cost
              * of extra disk space usage and extra time spent copying packages.
+             *
+             * @default false
              */
             conda_copy_dependencies?: boolean;
             /**
              * Conda Debug
              * @description Pass debug flag to conda commands.
+             *
+             * @default false
              */
             conda_debug?: boolean;
             /**
              * Conda Ensure Channels
              * @description conda channels to enable by default
              * (https://conda.io/docs/user-guide/tasks/manage-channels.html)
+             *
+             * @default conda-forge,bioconda,defaults
              */
             conda_ensure_channels?: string;
             /**
@@ -4971,7 +5056,7 @@ export interface components {
              * @description Override the Conda executable to use, it will default to the one on the
              * PATH (if available) and then to <conda_prefix>/bin/conda
              */
-            conda_exec?: string;
+            conda_exec: string;
             /**
              * Conda Prefix
              * @description conda_prefix is the location on the filesystem where Conda packages and environments are
@@ -4979,10 +5064,12 @@ export interface components {
              *
              * Sample default '<tool_dependency_dir>/_conda'
              */
-            conda_prefix?: string;
+            conda_prefix: string;
             /**
              * Conda Use Local
              * @description Use locally-built conda packages.
+             *
+             * @default false
              */
             conda_use_local?: boolean;
             /**
@@ -4991,7 +5078,7 @@ export interface components {
              * other Galaxy config files (e.g. datatypes_config_file). Defaults to the
              * directory in which galaxy.yml is located.
              */
-            config_dir?: string;
+            config_dir: string;
             /**
              * Container Resolvers
              * @description Rather than specifying a container_resolvers_config_file, the definition of the
@@ -4999,7 +5086,7 @@ export interface components {
              * This has no effect if a container_resolvers_config_file is used.
              * Takes the same options that can be set in container_resolvers_config_file.
              */
-            container_resolvers?: Record<string, never>[];
+            container_resolvers: Record<string, never>[];
             /**
              * Container Resolvers Config File
              * @description Container resolvers configuration. Set up a file describing
@@ -5008,7 +5095,7 @@ export interface components {
              * determined by enable_mulled_containers.
              * For available options see https://docs.galaxyproject.org/en/master/admin/container_resolvers.html
              */
-            container_resolvers_config_file?: string;
+            container_resolvers_config_file: string;
             /**
              * Cookie Domain
              * @description Tell Galaxy that multiple domains sharing the same root are associated
@@ -5018,13 +5105,13 @@ export interface components {
              * This root domain will be written in the unique session cookie shared
              * by all subdomains.
              */
-            cookie_domain?: string;
+            cookie_domain: string;
             /**
              * Custom Activation Email Message
              * @description This text will be inserted at the end of the activation email's message, before
              * the 'Your Galaxy Team' signature.
              */
-            custom_activation_email_message?: string;
+            custom_activation_email_message: string;
             /**
              * Data Dir
              * @description The directory that will be prepended to relative paths in options specifying
@@ -5032,11 +5119,13 @@ export interface components {
              * file_path, etc.). Defaults to `database/` if running Galaxy from source or
              * `<config_dir>/data` otherwise.
              */
-            data_dir?: string;
+            data_dir: string;
             /**
              * Data Manager Config File
              * @description File where Data Managers are configured (.sample used if default does not
              * exist).
+             *
+             * @default data_manager_conf.xml
              */
             data_manager_config_file?: string;
             /**
@@ -5044,6 +5133,8 @@ export interface components {
              * @description Setting the following option to true will cause Galaxy to automatically
              * migrate the database forward after updates. This is not recommended for production
              * use.
+             *
+             * @default false
              */
             database_auto_migrate?: boolean;
             /**
@@ -5064,15 +5155,19 @@ export interface components {
              * For more options, please check SQLAlchemy's documentation at
              * https://docs.sqlalchemy.org/en/14/core/engines.html?highlight=create_engine#sqlalchemy.create_engine
              */
-            database_connection?: string;
+            database_connection: string;
             /**
              * Database Engine Option Echo
              * @description Print database operations to the server log (warning, quite verbose!).
+             *
+             * @default false
              */
             database_engine_option_echo?: boolean;
             /**
              * Database Engine Option Echo Pool
              * @description Print database pool operations to the server log (warning, quite verbose!).
+             *
+             * @default false
              */
             database_engine_option_echo_pool?: boolean;
             /**
@@ -5080,12 +5175,16 @@ export interface components {
              * @description If the server logs errors about not having enough database pool connections,
              * you will want to increase these values, or consider running more Galaxy
              * processes.
+             *
+             * @default 10
              */
             database_engine_option_max_overflow?: number;
             /**
              * Database Engine Option Pool Recycle
              * @description If using MySQL and the server logs the error "MySQL server has gone away",
              * you will want to set this to some positive value (7200 should work).
+             *
+             * @default -1
              */
             database_engine_option_pool_recycle?: number;
             /**
@@ -5093,6 +5192,8 @@ export interface components {
              * @description If the server logs errors about not having enough database pool connections,
              * you will want to increase these values, or consider running more Galaxy
              * processes.
+             *
+             * @default 5
              */
             database_engine_option_pool_size?: number;
             /**
@@ -5100,6 +5201,8 @@ export interface components {
              * @description If large database query results are causing memory or response time issues in
              * the Galaxy process, leave the result on the server instead.  This option is
              * only available for PostgreSQL and is highly recommended.
+             *
+             * @default false
              */
             database_engine_option_server_side_cursors?: boolean;
             /**
@@ -5110,6 +5213,8 @@ export interface components {
              * running this in production. This is useful information for optimizing database interaction
              * performance. Similar information can be obtained on a per-request basis by enabling the
              * sql_debug middleware and adding sql_debug=1 to a request string.
+             *
+             * @default false
              */
             database_log_query_counts?: boolean;
             /**
@@ -5117,6 +5222,8 @@ export interface components {
              * @description Log all database transactions, can be useful for debugging and performance
              * profiling.  Logging is done via Python's 'logging' module under the qualname
              * 'galaxy.model.orm.logging_connection_proxy'
+             *
+             * @default false
              */
             database_query_profiling_proxy?: boolean;
             /**
@@ -5125,20 +5232,26 @@ export interface components {
              * template database. This will set that. This is probably only useful for testing but
              * documentation is included here for completeness.
              */
-            database_template?: string;
+            database_template: string;
             /**
              * Database Wait
              * @description Wait for database to become available instead of failing immediately.
+             *
+             * @default false
              */
             database_wait?: boolean;
             /**
              * Database Wait Attempts
              * @description Number of attempts before failing if database_wait is enabled.
+             *
+             * @default 60
              */
             database_wait_attempts?: number;
             /**
              * Database Wait Sleep
              * @description Time to sleep between attempts if database_wait is enabled (in seconds).
+             *
+             * @default 1
              */
             database_wait_sleep?: number;
             /**
@@ -5147,11 +5260,15 @@ export interface components {
              * Galaxy (.sample is used if default does not exist).  If a datatype appears in
              * multiple files, the last definition is used (though the first sniffer is used
              * so limit sniffer definitions to one file).
+             *
+             * @default datatypes_conf.xml
              */
             datatypes_config_file?: string;
             /**
              * Datatypes Disable Auto
              * @description Disable the 'Auto-detect' option for file uploads
+             *
+             * @default false
              */
             datatypes_disable_auto?: boolean;
             /**
@@ -5160,6 +5277,8 @@ export interface components {
              * and debugging: use_lint, use_profile, and use_printdebug.  It also
              * causes the files used by PBS/SGE (submission script, output, and error)
              * to remain on disk after the job is complete.
+             *
+             * @default false
              */
             debug?: boolean;
             /**
@@ -5177,7 +5296,7 @@ export interface components {
              * commented out default below results in no default job resubmission condition,
              * failing jobs are just failed outright.
              */
-            default_job_resubmission_condition?: string;
+            default_job_resubmission_condition: string;
             /**
              * Default Job Shell
              * @description Set the default shell used by non-containerized jobs Galaxy-wide. This
@@ -5186,6 +5305,8 @@ export interface components {
              * so if this is switched to /bin/sh for instance - conda resolution
              * should be disabled. Containerized jobs always use /bin/sh - so more maximum
              * portability tool authors should assume generated commands run in sh.
+             *
+             * @default /bin/bash
              */
             default_job_shell?: string;
             /**
@@ -5196,6 +5317,8 @@ export interface components {
              * the user's navigator language.
              * Users can override this settings in their user preferences if the localization
              * settings are enabled in user_preferences_extra_conf.yml
+             *
+             * @default auto
              */
             default_locale?: string;
             /**
@@ -5204,12 +5327,16 @@ export interface components {
              * a panel view defined using the panel_views or panel_views_dir configuration options or an
              * EDAM panel view. The default panel view is simply called `default` and refers to the tool
              * panel state defined by the integrated tool panel.
+             *
+             * @default default
              */
             default_panel_view?: string;
             /**
              * Default Workflow Export Format
              * @description Default format for the export of workflows. Possible values are 'ga'
              * or 'format2'.
+             *
+             * @default ga
              */
             default_workflow_export_format?: string;
             /**
@@ -5217,6 +5344,8 @@ export interface components {
              * @description Set this to true to delay parsing of tool inputs and outputs until they are needed.
              * This results in faster startup times but uses more memory when using forked Galaxy
              * processes.
+             *
+             * @default false
              */
             delay_tool_initialization?: boolean;
             /**
@@ -5226,7 +5355,7 @@ export interface components {
              * configuration of dependency resolution from one application that uses a DependencyManager
              * to another.
              */
-            dependency_resolution?: Record<string, never>;
+            dependency_resolution: Record<string, never>;
             /**
              * Dependency Resolvers
              * @description Rather than specifying a dependency_resolvers_config_file, the definition of the
@@ -5238,12 +5367,14 @@ export interface components {
              *
              * https://docs.galaxyproject.org/en/master/admin/dependency_resolvers.html
              */
-            dependency_resolvers?: Record<string, never>[];
+            dependency_resolvers: Record<string, never>[];
             /**
              * Dependency Resolvers Config File
              * @description Specifies the path to the standalone dependency resolvers configuration file. This
              * configuration can now be specified directly in the Galaxy configuration, see the
              * description of the 'dependency_resolvers' option for details.
+             *
+             * @default dependency_resolvers_conf.xml
              */
             dependency_resolvers_config_file?: string;
             /**
@@ -5254,21 +5385,26 @@ export interface components {
              * Specific formats can be disabled with this option, separate more than one
              * format with commas.  Available formats are currently 'zip', 'gz', and 'bz2'.
              */
-            disable_library_comptypes?: string;
+            disable_library_comptypes: string;
             /**
              * Display Builtin Converters
              * @description Display built-in converters in the tool panel.
+             * @default true
              */
             display_builtin_converters?: boolean;
             /**
              * Display Chunk Size
              * @description Incremental Display Options
+             *
+             * @default 65536
              */
             display_chunk_size?: number;
             /**
              * Display Galaxy Brand
              * @description This option has been deprecated, use the `logo_src` instead to change the
              * default logo including the galaxy brand title.
+             *
+             * @default true
              */
             display_galaxy_brand?: boolean;
             /**
@@ -5289,6 +5425,8 @@ export interface components {
              * Archaea browsers, but the default if left commented is to not allow any
              * display sites to bypass security (you must uncomment the line below to allow
              * them).
+             *
+             * @default hgw1.cse.ucsc.edu,hgw2.cse.ucsc.edu,hgw3.cse.ucsc.edu,hgw4.cse.ucsc.edu,hgw5.cse.ucsc.edu,hgw6.cse.ucsc.edu,hgw7.cse.ucsc.edu,hgw8.cse.ucsc.edu,lowepub.cse.ucsc.edu
              */
             display_servers?: string;
             /**
@@ -5300,7 +5438,7 @@ export interface components {
              *
              * Example value 'sudo -E scripts/drmaa_external_killer.py'
              */
-            drmaa_external_killjob_script?: string;
+            drmaa_external_killjob_script: string;
             /**
              * Drmaa External Runjob Script
              * @description When running DRMAA jobs as the Galaxy user
@@ -5309,35 +5447,45 @@ export interface components {
              *
              * Example value 'sudo -E scripts/drmaa_external_runner.py --assign_all_groups'
              */
-            drmaa_external_runjob_script?: string;
+            drmaa_external_runjob_script: string;
             /**
              * Dynamic Proxy
              * @description As of 16.04 Galaxy supports multiple proxy types. The original NodeJS
              * implementation, alongside a new Golang single-binary-no-dependencies
              * version. Valid values are (node, golang)
+             *
+             * @default node
              */
             dynamic_proxy?: string;
             /**
              * Dynamic Proxy Bind Ip
              * @description Set the port and IP for the dynamic proxy to bind to, this must match
              * the external configuration if dynamic_proxy_manage is set to false.
+             *
+             * @default 0.0.0.0
              */
             dynamic_proxy_bind_ip?: string;
             /**
              * Dynamic Proxy Bind Port
              * @description Set the port and IP for the dynamic proxy to bind to, this must match
              * the external configuration if dynamic_proxy_manage is set to false.
+             *
+             * @default 8800
              */
             dynamic_proxy_bind_port?: number;
             /**
              * Dynamic Proxy Debug
              * @description Enable verbose debugging of Galaxy-managed dynamic proxy.
+             *
+             * @default false
              */
             dynamic_proxy_debug?: boolean;
             /**
              * Dynamic Proxy External Proxy
              * @description The dynamic proxy is proxied by an external proxy (e.g. apache frontend to
              * nodejs to wrap connections in SSL).
+             *
+             * @default false
              */
             dynamic_proxy_external_proxy?: boolean;
             /**
@@ -5347,18 +5495,22 @@ export interface components {
              * be set randomly for you. You should set this if you are managing the proxy
              * manually.
              */
-            dynamic_proxy_golang_api_key?: string;
+            dynamic_proxy_golang_api_key: string;
             /**
              * Dynamic Proxy Golang Clean Interval
              * @description In order to kill containers, the golang proxy has to check at some interval
              * for possibly dead containers. This is exposed as a configurable parameter,
              * but the default value is probably fine.
+             *
+             * @default 10
              */
             dynamic_proxy_golang_clean_interval?: number;
             /**
              * Dynamic Proxy Golang Docker Address
              * @description The golang proxy needs to know how to talk to your docker daemon. Currently
              * TLS is not supported, that will come in an update.
+             *
+             * @default unix:///var/run/docker.sock
              */
             dynamic_proxy_golang_docker_address?: string;
             /**
@@ -5366,6 +5518,8 @@ export interface components {
              * @description This attribute governs the minimum length of time between consecutive HTTP/WS
              * requests through the proxy, before the proxy considers a container as being
              * inactive and kills it.
+             *
+             * @default 60
              */
             dynamic_proxy_golang_noaccess?: number;
             /**
@@ -5376,6 +5530,8 @@ export interface components {
              * `lib/galaxy/web/proxy/js`.  It is generally more robust to configure this
              * externally, managing it in the same way Galaxy itself is managed.  If true, Galaxy will only
              * launch the proxy if it is actually going to be used (e.g. for Jupyter).
+             *
+             * @default true
              */
             dynamic_proxy_manage?: boolean;
             /**
@@ -5384,12 +5540,16 @@ export interface components {
              * want to specify a prefixed URL so both Galaxy and the proxy reside under the
              * same path that your cookies are under. This will result in a url like
              * https://FQDN/galaxy-prefix/gie_proxy for proxying
+             *
+             * @default gie_proxy
              */
             dynamic_proxy_prefix?: string;
             /**
              * Dynamic Proxy Session Map
              * @description The NodeJS dynamic proxy can use an SQLite database or a JSON file for IPC,
              * set that here.
+             *
+             * @default session_map.sqlite
              */
             dynamic_proxy_session_map?: string;
             /**
@@ -5397,11 +5557,15 @@ export interface components {
              * @description Comma-separated list of the EDAM panel views to load - choose from merged, operations, topics.
              * Set to empty string to disable EDAM all together. Set default_panel_view to 'ontology:edam_topics'
              * to override default tool panel to use an EDAM view.
+             *
+             * @default operations,topics
              */
             edam_panel_views?: string;
             /**
              * Edam Toolbox Ontology Path
              * @description Sets the path to EDAM ontology file - if the path doesn't exist PyPI package data will be loaded.
+             *
+             * @default EDAM.tsv
              */
             edam_toolbox_ontology_path?: string;
             /**
@@ -5419,7 +5583,7 @@ export interface components {
              *
              * The value of this option will be resolved with respect to <config_dir>.
              */
-            email_domain_allowlist_file?: string;
+            email_domain_allowlist_file: string;
             /**
              * Email Domain Blocklist File
              * @description E-mail domains blocklist is used for filtering out users that are using
@@ -5431,7 +5595,7 @@ export interface components {
              *
              * The value of this option will be resolved with respect to <config_dir>.
              */
-            email_domain_blocklist_file?: string;
+            email_domain_blocklist_file: string;
             /**
              * Email From
              * @description Email address to use in the 'From' field when sending emails for
@@ -5440,16 +5604,20 @@ export interface components {
              * Galaxy Project <galaxy-no-reply@example.com>.
              * If not configured, '<galaxy-no-reply@HOSTNAME>' will be used.
              */
-            email_from?: string;
+            email_from: string;
             /**
              * Enable Account Interface
              * @description Allow users to manage their account data, change passwords or delete their
              * accounts.
+             *
+             * @default true
              */
             enable_account_interface?: boolean;
             /**
              * Enable Beacon Integration
              * @description Enables user preferences and api endpoint for the beacon integration.
+             *
+             * @default false
              */
             enable_beacon_integration?: boolean;
             /**
@@ -5468,6 +5636,8 @@ export interface components {
              *
              * Please read the GDPR section under the special topics area of the
              * admin documentation.
+             *
+             * @default false
              */
             enable_beta_gdpr?: boolean;
             /**
@@ -5475,6 +5645,8 @@ export interface components {
              * @description Enable export of Galaxy Markdown documents (pages and workflow reports)
              * to PDF. Requires manual installation and setup of weasyprint (latest version
              * available for Python 2.7 is 0.42).
+             *
+             * @default false
              */
             enable_beta_markdown_export?: boolean;
             /**
@@ -5482,6 +5654,8 @@ export interface components {
              * @description Enable beta workflow modules that should not yet be considered part of Galaxy's
              * stable API. (The module state definitions may change and workflows built using
              * these modules may not function in the future.)
+             *
+             * @default false
              */
             enable_beta_workflow_modules?: boolean;
             /**
@@ -5489,16 +5663,22 @@ export interface components {
              * @description Offload long-running tasks to a Celery task queue.
              * Activate this only if you have setup a Celery worker for Galaxy.
              * For details, see https://docs.galaxyproject.org/en/master/admin/production.html
+             *
+             * @default false
              */
             enable_celery_tasks?: boolean;
             /**
              * Enable Data Manager User View
              * @description Allow non-admin users to view available Data Manager options.
+             *
+             * @default false
              */
             enable_data_manager_user_view?: boolean;
             /**
              * Enable Legacy Sample Tracking Api
              * @description Enable the API for sample tracking
+             *
+             * @default false
              */
             enable_legacy_sample_tracking_api?: boolean;
             /**
@@ -5508,6 +5688,8 @@ export interface components {
              * available) have been generated using mulled - https://github.com/mulled.
              * Container availability will vary by tool, this option will only be used
              * for job destinations with Docker or Singularity enabled.
+             *
+             * @default true
              */
             enable_mulled_containers?: boolean;
             /**
@@ -5519,11 +5701,15 @@ export interface components {
              * The system allows notification scheduling and expiration, and users can opt-out of specific notification categories or channels.
              *
              * Admins can schedule and broadcast notifications that will be visible to all users, including special server-wide announcements such as scheduled maintenance, high load warnings, and event announcements, to name a few examples.
+             *
+             * @default false
              */
             enable_notification_system?: boolean;
             /**
              * Enable Oidc
              * @description Enables and disables OpenID Connect (OIDC) support.
+             *
+             * @default false
              */
             enable_oidc?: boolean;
             /**
@@ -5537,6 +5723,8 @@ export interface components {
              * where a malicious party could provide a link that appears to reference the
              * Galaxy server, but contains a redirect to a third-party server, tricking a
              * Galaxy user to access said site.
+             *
+             * @default true
              */
             enable_old_display_applications?: boolean;
             /**
@@ -5545,11 +5733,15 @@ export interface components {
              * append ?sql_debug=1 to web request URLs to enable detailed logging on
              * the backend of SQL queries generated during that request. This is
              * useful for debugging slow endpoints during development.
+             *
+             * @default false
              */
             enable_per_request_sql_debugging?: boolean;
             /**
              * Enable Quotas
              * @description Enable enforcement of quotas.  Quotas can be set from the Admin interface.
+             *
+             * @default false
              */
             enable_quotas?: boolean;
             /**
@@ -5559,12 +5751,16 @@ export interface components {
              * times. The tool cache is backed by a SQLite database, which cannot
              * be stored on certain network disks. The cache location is configurable
              * using the ``tool_cache_data_dir`` setting, but can be disabled completely here.
+             *
+             * @default false
              */
             enable_tool_document_cache?: boolean;
             /**
              * Enable Tool Recommendations
              * @description Allow the display of tool recommendations in workflow editor and after tool execution.
              * If it is enabled and set to true, please enable 'tool_recommendation_model_path' as well
+             *
+             * @default false
              */
             enable_tool_recommendations?: boolean;
             /**
@@ -5573,6 +5769,8 @@ export interface components {
              * are available for installed repositories.  Ideally only one Galaxy
              * server process should be able to check for repository updates.  The
              * setting for hours_between_check should be an integer between 1 and 24.
+             *
+             * @default false
              */
             enable_tool_shed_check?: boolean;
             /**
@@ -5582,6 +5780,8 @@ export interface components {
              * wrappers installed on this Galaxy server. If you have only installed tool
              * wrappers from  public tool sheds and tools shipped with Galaxy there you
              * can enable this option.
+             *
+             * @default false
              */
             enable_tool_source_display?: boolean;
             /**
@@ -5589,6 +5789,8 @@ export interface components {
              * @description Enable tool tags (associating tools with tags).  This has its own option
              * since its implementation has a few performance implications on startup for
              * large servers.
+             *
+             * @default false
              */
             enable_tool_tags?: boolean;
             /**
@@ -5599,6 +5801,8 @@ export interface components {
              * compatible datasets in the history.
              * When false, the most recently added compatible item in the history will
              * be used for each "Set at Runtime" input, independent of others in the workflow.
+             *
+             * @default false
              */
             enable_unique_workflow_defaults?: boolean;
             /**
@@ -5613,7 +5817,7 @@ export interface components {
              * the actual user, to remove the need to configure each user's environment
              * individually.
              */
-            environment_setup_file?: string;
+            environment_setup_file: string;
             /**
              * Error Email To
              * @description Datasets in an error state include a link to report the error.  Those reports
@@ -5621,15 +5825,19 @@ export interface components {
              * set.  Also this email is shown as a contact to user in case of Galaxy
              * misconfiguration and other events user may encounter.
              */
-            error_email_to?: string;
+            error_email_to: string;
             /**
              * Error Report File
              * @description Path to error reports configuration file.
+             *
+             * @default error_report.yml
              */
             error_report_file?: string;
             /**
              * Expired Notifications Cleanup Interval
              * @description The interval in seconds between attempts to delete all expired notifications from the database (every 24 hours by default). Runs in a Celery task.
+             *
+             * @default 86400
              */
             expired_notifications_cleanup_interval?: number;
             /**
@@ -5637,12 +5845,16 @@ export interface components {
              * @description This option allows users to see the full path of datasets via the "View
              * Details" option in the history. This option also exposes the command line to
              * non-administrative users. Administrators can always see dataset paths.
+             *
+             * @default false
              */
             expose_dataset_path?: boolean;
             /**
              * Expose Potentially Sensitive Job Metrics
              * @description This option allows users to see the job metrics (except for environment
              * variables).
+             *
+             * @default false
              */
             expose_potentially_sensitive_job_metrics?: boolean;
             /**
@@ -5656,6 +5868,8 @@ export interface components {
              *
              * If enable_beta_gdpr is set to true, then this option will be
              * overridden and set to false.
+             *
+             * @default false
              */
             expose_user_email?: boolean;
             /**
@@ -5669,6 +5883,8 @@ export interface components {
              *
              * If enable_beta_gdpr is set to true, then this option will be
              * overridden and set to false.
+             *
+             * @default false
              */
             expose_user_name?: boolean;
             /**
@@ -5680,7 +5896,7 @@ export interface components {
              *
              * Example value 'sudo -E scripts/external_chown_script.py'
              */
-            external_chown_script?: string;
+            external_chown_script: string;
             /**
              * Fetch Url Allowlist
              * @description List of allowed local network addresses for "Upload from URL" dialog.
@@ -5691,41 +5907,51 @@ export interface components {
              * It should be a comma-separated list of IP addresses or IP address/mask, e.g.
              * 10.10.10.10,10.0.1.0/24,fd00::/8
              */
-            fetch_url_allowlist?: string;
+            fetch_url_allowlist: string;
             /**
              * File Path
              * @description Where dataset files are stored. It must be accessible at the same path on any cluster
              * nodes that will run Galaxy jobs, unless using Pulsar. The default value has been changed
              * from 'files' to 'objects' as of 20.05; however, Galaxy will first check if the 'files'
              * directory exists before using 'objects' as the default.
+             *
+             * @default objects
              */
             file_path?: string;
             /**
              * File Sources
              * @description FileSource plugins described embedded into Galaxy's config.
              */
-            file_sources?: Record<string, never>[];
+            file_sources: Record<string, never>[];
             /**
              * File Sources Config File
              * @description Configured FileSource plugins.
+             *
+             * @default file_sources_conf.yml
              */
             file_sources_config_file?: string;
             /**
              * Fluent Host
              * @description Fluentd configuration.  Various events can be logged to the fluentd instance
              * configured below by enabling fluent_log.
+             *
+             * @default localhost
              */
             fluent_host?: string;
             /**
              * Fluent Log
              * @description Fluentd configuration.  Various events can be logged to the fluentd instance
              * configured below by enabling fluent_log.
+             *
+             * @default false
              */
             fluent_log?: boolean;
             /**
              * Fluent Port
              * @description Fluentd configuration.  Various events can be logged to the fluentd instance
              * configured below by enabling fluent_log.
+             *
+             * @default 24224
              */
             fluent_port?: number;
             /**
@@ -5734,6 +5960,8 @@ export interface components {
              * This affects tools that create many output datasets.
              * Higher values will lead to fewer database flushes and faster execution, but require
              * more memory. Set to -1 to disable creating datasets in batches.
+             *
+             * @default 1000
              */
             flush_per_n_datasets?: number;
             /**
@@ -5741,13 +5969,15 @@ export interface components {
              * @description This should point to a directory containing subdirectories matching users'
              * identifier (defaults to e-mail), where Galaxy will look for files.
              */
-            ftp_upload_dir?: string;
+            ftp_upload_dir: string;
             /**
              * Ftp Upload Dir Identifier
              * @description User attribute to use as subdirectory in calculating default ftp_upload_dir
              * pattern. By default this will be email so a user's FTP upload directory will be
              * ${ftp_upload_dir}/${user.email}. Can set this to other attributes such as id or
              * username though.
+             *
+             * @default email
              */
             ftp_upload_dir_identifier?: string;
             /**
@@ -5757,11 +5987,13 @@ export interface components {
              *
              * Defaults to '${ftp_upload_dir}/${ftp_upload_dir_identifier}'.
              */
-            ftp_upload_dir_template?: string;
+            ftp_upload_dir_template: string;
             /**
              * Ftp Upload Purge
              * @description Set to false to prevent Galaxy from deleting uploaded FTP files
              * as it imports them.
+             *
+             * @default true
              */
             ftp_upload_purge?: boolean;
             /**
@@ -5772,7 +6004,7 @@ export interface components {
              * This will be provided to users in the help text as 'log in to the FTP
              * server at '. Thus, it should be the hostname of your FTP server.
              */
-            ftp_upload_site?: string;
+            ftp_upload_site: string;
             /**
              * Ga4Gh Service Environment
              * @description Service environment (exposed via the service-info endpoint for the Galaxy DRS API) for
@@ -5784,7 +6016,7 @@ export interface components {
              * https://github.com/ga4gh-discovery/ga4gh-service-registry
              * and https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-discovery/ga4gh-service-registry/develop/service-registry.yaml
              */
-            ga4gh_service_environment?: string;
+            ga4gh_service_environment: string;
             /**
              * Ga4Gh Service Id
              * @description Service ID for GA4GH services (exposed via the service-info endpoint for the Galaxy DRS API).
@@ -5800,7 +6032,7 @@ export interface components {
              * service "id" (available via the DRS API) for the above configuration value would be
              * org.usegalaxy.drs.
              */
-            ga4gh_service_id?: string;
+            ga4gh_service_id: string;
             /**
              * Ga4Gh Service Organization Name
              * @description Service name for host organization (exposed via the service-info endpoint for the Galaxy DRS API).
@@ -5810,7 +6042,7 @@ export interface components {
              * https://github.com/ga4gh-discovery/ga4gh-service-registry
              * and https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-discovery/ga4gh-service-registry/develop/service-registry.yaml
              */
-            ga4gh_service_organization_name?: string;
+            ga4gh_service_organization_name: string;
             /**
              * Ga4Gh Service Organization Url
              * @description Organization URL for host organization (exposed via the service-info endpoint for the Galaxy DRS API).
@@ -5820,19 +6052,19 @@ export interface components {
              * https://github.com/ga4gh-discovery/ga4gh-service-registry
              * and https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-discovery/ga4gh-service-registry/develop/service-registry.yaml
              */
-            ga4gh_service_organization_url?: string;
+            ga4gh_service_organization_url: string;
             /**
              * Ga Code
              * @description You can enter tracking code here to track visitor's behavior
              * through your Google Analytics account.  Example: UA-XXXXXXXX-Y
              */
-            ga_code?: string;
+            ga_code: string;
             /**
              * Galaxy Data Manager Data Path
              * @description Directory to store Data Manager based tool-data. Defaults to the value of the
              * <tool_data_path> option.
              */
-            galaxy_data_manager_data_path?: string;
+            galaxy_data_manager_data_path: string;
             /**
              * Galaxy Infrastructure Url
              * @description URL (with schema http/https) of the Galaxy instance as accessible
@@ -5842,6 +6074,8 @@ export interface components {
              *
              * If you plan to run Interactive Tools make sure the docker container
              * can reach this URL.
+             *
+             * @default http://localhost:8080
              */
             galaxy_infrastructure_url?: string;
             /**
@@ -5853,12 +6087,16 @@ export interface components {
              * Python processes directly and this should be set to 80 or 443, etc... If
              * unset this file will be read for a server block defining a port corresponding
              * to the webapp.
+             *
+             * @default 8080
              */
             galaxy_infrastructure_web_port?: number;
             /**
              * Galaxy Url Prefix
              * @description URL prefix for Galaxy application. If Galaxy should be served under a prefix set this to
              * the desired prefix value.
+             *
+             * @default /
              */
             galaxy_url_prefix?: string;
             /**
@@ -5868,6 +6106,8 @@ export interface components {
              * carbon intensity values used in the estimate calculation. This defaults to "GLOBAL" if not set or the
              * `geographical_server_location_code` value is invalid or unsupported. To see a full list of supported locations,
              * visit https://galaxyproject.org/admin/carbon_emissions
+             *
+             * @default GLOBAL
              */
             geographical_server_location_code?: string;
             /**
@@ -5875,11 +6115,15 @@ export interface components {
              * @description Control the period (in seconds) between dumps. Use -1 to disable. Regardless
              * of this setting, if use_heartbeat is enabled, you can send a Galaxy process
              * SIGUSR1 (`kill -USR1`) to force a dump.
+             *
+             * @default 20
              */
             heartbeat_interval?: number;
             /**
              * Heartbeat Log
              * @description Heartbeat log filename. Can accept the template variables {server_name} and {pid}
+             *
+             * @default heartbeat_{server_name}.log
              */
             heartbeat_log?: string;
             /**
@@ -5893,11 +6137,15 @@ export interface components {
              * History Audit Table Prune Interval
              * @description Time (in seconds) between attempts to remove old rows from the history_audit database table.
              * Set to 0 to disable pruning.
+             *
+             * @default 3600
              */
             history_audit_table_prune_interval?: number;
             /**
              * History Local Serial Workflow Scheduling
              * @description Force serial scheduling of workflows within the context of a particular history
+             *
+             * @default false
              */
             history_local_serial_workflow_scheduling?: boolean;
             /**
@@ -5906,6 +6154,8 @@ export interface components {
              * are available for installed repositories.  Ideally only one Galaxy
              * server process should be able to check for repository updates.  The
              * setting for hours_between_check should be an integer between 1 and 24.
+             *
+             * @default 12
              */
             hours_between_check?: number;
             /**
@@ -5916,12 +6166,16 @@ export interface components {
              * string with a length between 5 and 56 bytes.
              * One simple way to generate a value for this is with the shell command:
              *   python -c 'from __future__ import print_function; import time; print(time.time())' | md5sum | cut -f 1 -d ' '
+             *
+             * @default USING THE DEFAULT IS NOT SECURE!
              */
             id_secret?: string;
             /**
              * Inactivity Box Content
              * @description Shown in warning box to users that were not activated yet.
              * In use only if activation_grace_period is set.
+             *
+             * @default Your account has not been activated yet.  Feel free to browse around and see what's available, but you won't be able to upload data or run jobs until you have verified your email address.
              */
             inactivity_box_content?: string;
             /**
@@ -5935,7 +6189,7 @@ export interface components {
              *
              * Defaults to the value of the 'database_connection' option.
              */
-            install_database_connection?: string;
+            install_database_connection: string;
             /**
              * Instance Resource Url
              * @description URL of the support resource for the galaxy instance.  Used in activation
@@ -5943,7 +6197,7 @@ export interface components {
              *
              * Example value 'https://galaxyproject.org/'
              */
-            instance_resource_url?: string;
+            instance_resource_url: string;
             /**
              * Integrated Tool Panel Config
              * @description File that contains the XML section and tool tags from all tool panel config
@@ -5952,26 +6206,36 @@ export interface components {
              * tool panel.  If not present, Galaxy will create it.
              *
              * The value of this option will be resolved with respect to <managed_config_dir>.
+             *
+             * @default integrated_tool_panel.xml
              */
             integrated_tool_panel_config?: string;
             /**
              * Interactivetools Base Path
              * @description Base path for interactive tools running at a subpath without a subdomain. Defaults to "/".
+             *
+             * @default /
              */
             interactivetools_base_path?: string;
             /**
              * Interactivetools Enable
              * @description Enable InteractiveTools.
+             *
+             * @default false
              */
             interactivetools_enable?: boolean;
             /**
              * Interactivetools Map
              * @description Map for interactivetool proxy.
+             *
+             * @default interactivetools_map.sqlite
              */
             interactivetools_map?: string;
             /**
              * Interactivetools Prefix
              * @description Prefix to use in the formation of the subdomain or path for interactive tools
+             *
+             * @default interactivetool
              */
             interactivetools_prefix?: string;
             /**
@@ -5979,23 +6243,28 @@ export interface components {
              * @description Hostname and port of Interactive tools proxy. It is assumed to be hosted on the same hostname and port as
              * Galaxy by default.
              */
-            interactivetools_proxy_host?: string;
+            interactivetools_proxy_host: string;
             /**
              * Interactivetools Shorten Url
              * @description Shorten the uuid portion of the subdomain or path for interactive tools.
              * Especially useful for avoiding the need for wildcard certificates by keeping
              * subdomain under 63 chars
+             *
+             * @default false
              */
             interactivetools_shorten_url?: boolean;
             /**
              * Interactivetools Upstream Proxy
              * @description Set this to false to redirect users of Interactive tools directly to the Interactive tools proxy. `interactivetools_upstream_proxy` should only be set to false in development.
+             * @default true
              */
             interactivetools_upstream_proxy?: boolean;
             /**
              * Involucro Auto Init
              * @description Install involucro as needed to build Docker or Singularity containers for tools. Ignored if
              * relevant container resolver is not used.
+             *
+             * @default true
              */
             involucro_auto_init?: boolean;
             /**
@@ -6005,13 +6274,15 @@ export interface components {
              * the location of involucro on the Galaxy host. This is ignored if the relevant
              * container resolver isn't enabled, and will install on demand unless
              * involucro_auto_init is set to false.
+             *
+             * @default involucro
              */
             involucro_path?: string;
             /**
              * Job Config
              * @description Description of job running configuration, can be embedded into Galaxy configuration or loaded from an additional file with the job_config_file option.
              */
-            job_config?: Record<string, never>;
+            job_config: Record<string, never>;
             /**
              * Job Config File
              * @description To increase performance of job execution and the web interface, you can
@@ -6024,6 +6295,8 @@ export interface components {
              * notifies itself of new jobs via in-memory queues.  Jobs are run locally on
              * the system on which Galaxy is started.  Advanced job running capabilities can
              * be configured through the job configuration file or the <job_config> option.
+             *
+             * @default job_conf.yml
              */
             job_config_file?: string;
             /**
@@ -6033,11 +6306,15 @@ export interface components {
              * number of seconds at the end of each iteration. This can be decreased if extremely high
              * job throughput is necessary, but doing so can increase CPU usage of handler processes.
              * Float values are allowed.
+             *
+             * @default 1
              */
             job_handler_monitor_sleep?: number;
             /**
              * Job Metrics Config File
              * @description XML config file that contains the job metric collection configuration.
+             *
+             * @default job_metrics_conf.xml
              */
             job_metrics_config_file?: string;
             /**
@@ -6046,6 +6323,8 @@ export interface components {
              * These fields will be presented to users in the tool forms and allow them to
              * overwrite default job resources such as number of processors, memory and
              * walltime.
+             *
+             * @default job_resource_params_conf.xml
              */
             job_resource_params_file?: string;
             /**
@@ -6055,6 +6334,8 @@ export interface components {
              * sleeps for the given number of seconds at the end of each iteration. This can be
              * decreased if extremely high job throughput is necessary, but doing so can increase CPU
              * usage of handler processes. Float values are allowed.
+             *
+             * @default 1
              */
             job_runner_monitor_sleep?: number;
             /**
@@ -6064,6 +6345,8 @@ export interface components {
              * created.
              *
              * The value of this option will be resolved with respect to <data_dir>.
+             *
+             * @default jobs_directory
              */
             job_working_directory?: string;
             /**
@@ -6071,6 +6354,8 @@ export interface components {
              * @description Directory where chrom len files are kept, currently mainly used by trackster.
              *
              * The value of this option will be resolved with respect to <tool_data_path>.
+             *
+             * @default shared/ucsc/chrom
              */
             len_file_path?: string;
             /**
@@ -6078,11 +6363,13 @@ export interface components {
              * @description Add an option to the library upload form which allows administrators to
              * upload a directory of files.
              */
-            library_import_dir?: string;
+            library_import_dir: string;
             /**
              * Local Conda Mapping File
              * @description Path to a file that provides a mapping from abstract packages to concrete conda packages.
              * See `config/local_conda_mapping.yml.sample` for examples.
+             *
+             * @default local_conda_mapping.yml
              */
             local_conda_mapping_file?: string;
             /**
@@ -6090,6 +6377,8 @@ export interface components {
              * @description This enables splitting of jobs into tasks, if specified by the particular tool
              * config.
              * This is a new feature and not recommended for production servers yet.
+             *
+             * @default 2
              */
             local_task_queue_workers?: number;
             /**
@@ -6097,6 +6386,8 @@ export interface components {
              * @description Turn on logging of user actions to the database.  Actions currently logged
              * are grid views, tool searches, and use of "recently" used tools menu.  The
              * log_events and log_actions functionality will eventually be merged.
+             *
+             * @default false
              */
             log_actions?: boolean;
             /**
@@ -6104,11 +6395,15 @@ export interface components {
              * @description Log destination, defaults to special value "stdout" that logs to standard output. If set to anything else,
              * then it will be interpreted as a path that will be used as the log file, and logging to stdout will be
              * disabled.
+             *
+             * @default stdout
              */
             log_destination?: string;
             /**
              * Log Events
              * @description Turn on logging of application events and some user events to the database.
+             *
+             * @default false
              */
             log_events?: boolean;
             /**
@@ -6116,6 +6411,8 @@ export interface components {
              * @description Verbosity of console log messages. Acceptable values can be found here:
              * https://docs.python.org/library/logging.html#logging-levels
              * A custom debug level of "TRACE" is available for even more verbosity.
+             *
+             * @default DEBUG
              */
             log_level?: string;
             /**
@@ -6124,6 +6421,8 @@ export interface components {
              * https://docs.python.org/library/logging.handlers.html#logging.handlers.RotatingFileHandler
              * Any additional rotated log files will automatically be pruned. If log_rotate_size is not also set, no log
              * rotation will be performed. A value of 0 (the default) means no rotation.
+             *
+             * @default 0
              */
             log_rotate_count?: number;
             /**
@@ -6132,6 +6431,8 @@ export interface components {
              * https://docs.python.org/library/logging.handlers.html#logging.handlers.RotatingFileHandler
              * If log_rotate_count is not also set, no log rotation will be performed. A value of 0 (the default) means no
              * rotation. Size can be a number of bytes or a human-friendly representation like "100 MB" or "1G".
+             *
+             * @default 0
              */
             log_rotate_size?: string;
             /**
@@ -6140,20 +6441,24 @@ export interface components {
              * options. Configuration is described in the documentation at:
              * https://docs.galaxyproject.org/en/master/admin/config_logging.html
              */
-            logging?: Record<string, never>;
+            logging: Record<string, never>;
             /**
              * Logo Src
              * @description The brand image source.
+             *
+             * @default /static/favicon.svg
              */
             logo_src?: string;
             /**
              * Logo Src Secondary
              * @description The custom brand image source.
              */
-            logo_src_secondary?: string;
+            logo_src_secondary: string;
             /**
              * Logo Url
              * @description The URL linked by the "Galaxy/brand" text.
+             *
+             * @default /
              */
             logo_url?: string;
             /**
@@ -6164,17 +6469,21 @@ export interface components {
              *
              * Example value 'galaxy-announce-join@lists.galaxyproject.org'
              */
-            mailing_join_addr?: string;
+            mailing_join_addr: string;
             /**
              * Mailing Join Body
              * @description The body of the email sent to the mailing list join address. See the
              * `mailing_join_addr` option for more information.
+             *
+             * @default Join Mailing List
              */
             mailing_join_body?: string;
             /**
              * Mailing Join Subject
              * @description The subject of the email sent to the mailing list join address. See the
              * `mailing_join_addr` option for more information.
+             *
+             * @default Join Mailing List
              */
             mailing_join_subject?: string;
             /**
@@ -6184,11 +6493,13 @@ export interface components {
              * writable by the user running Galaxy.  Defaults to `<config_dir>/` if running
              * Galaxy from source or `<data_dir>/config` otherwise.
              */
-            managed_config_dir?: string;
+            managed_config_dir: string;
             /**
              * Markdown Export Css
              * @description CSS file to apply to all Markdown exports to PDF - currently used by
              * WeasyPrint during rendering an HTML export of the document to PDF.
+             *
+             * @default markdown_export.css
              */
             markdown_export_css?: string;
             /**
@@ -6196,6 +6507,8 @@ export interface components {
              * @description CSS file to apply to invocation report exports to PDF. Generally prefer
              * markdown_export_css, but this is here for deployments that
              * would like to tailor different kinds of exports.
+             *
+             * @default markdown_export_invocation_reports.css
              */
             markdown_export_css_invocation_reports?: string;
             /**
@@ -6203,40 +6516,54 @@ export interface components {
              * @description CSS file to apply to "Galaxy Page" exports to PDF. Generally prefer
              * markdown_export_css, but this is here for deployments that
              * would like to tailor different kinds of exports.
+             *
+             * @default markdown_export_pages.css
              */
             markdown_export_css_pages?: string;
             /**
              * Markdown Export Epilogue
              * @description Prologue Markdown/HTML to apply to markdown exports to PDF. Allowing
              * branded footers.
+             *
+             * @default
              */
             markdown_export_epilogue?: string;
             /**
              * Markdown Export Epilogue Invocation Reports
              * @description Alternative to markdown_export_epilogue that applies just to invocation report
              * exports.
+             *
+             * @default
              */
             markdown_export_epilogue_invocation_reports?: string;
             /**
              * Markdown Export Epilogue Pages
              * @description Alternative to markdown_export_epilogue that applies just to page exports.
+             *
+             * @default
              */
             markdown_export_epilogue_pages?: string;
             /**
              * Markdown Export Prologue
              * @description Prologue Markdown/HTML to apply to markdown exports to PDF. Allowing
              * branded headers.
+             *
+             * @default
              */
             markdown_export_prologue?: string;
             /**
              * Markdown Export Prologue Invocation Reports
              * @description Alternative to markdown_export_prologue that applies just to invocation report
              * exports.
+             *
+             * @default
              */
             markdown_export_prologue_invocation_reports?: string;
             /**
              * Markdown Export Prologue Pages
              * @description Alternative to markdown_export_prologue that applies just to page exports.
+             *
+             * @default
              */
             markdown_export_prologue_pages?: string;
             /**
@@ -6244,19 +6571,21 @@ export interface components {
              * @description Please enter the URL for the Matomo server (including https) so this can be used for tracking
              * with Matomo (https://matomo.org/).
              */
-            matomo_server?: string;
+            matomo_server: string;
             /**
              * Matomo Site Id
              * @description Please enter the site ID for the Matomo server so this can be used for tracking
              * with Matomo (https://matomo.org/).
              */
-            matomo_site_id?: string;
+            matomo_site_id: string;
             /**
              * Max Discovered Files
              * @description Set this to a positive integer value to limit the number of datasets that can be discovered by
              * a single job. This prevents accidentally creating large numbers of datasets when running tools
              * that create a potentially unlimited number of output datasets, such as tools that split a file
              * into a collection of datasets for each line in an input dataset.
+             *
+             * @default 10000
              */
             max_discovered_files?: number;
             /**
@@ -6266,12 +6595,16 @@ export interface components {
              * result database value size) Galaxy will attempt to save with a dataset.  Use
              * 0 to disable this feature.  The default is 5MB, but as low as 1MB seems to be
              * a reasonable size.
+             *
+             * @default 5242880
              */
             max_metadata_value_size?: number;
             /**
              * Maximum Upload File Size
              * @description Maximum size of uploadable files, specified in bytes (default: 100GB).
              * This value is ignored if an external upload server is configured.
+             *
+             * @default 107374182400
              */
             maximum_upload_file_size?: number;
             /**
@@ -6279,6 +6612,8 @@ export interface components {
              * @description This is the maximum amount of time a workflow invocation may stay in an active
              * scheduling state in seconds. Set to -1 to disable this maximum and allow any workflow
              * invocation to schedule indefinitely. The default corresponds to 1 month.
+             *
+             * @default 2678400
              */
             maximum_workflow_invocation_duration?: number;
             /**
@@ -6289,22 +6624,28 @@ export interface components {
              * scheduling workflows at the expense of increased total DB traffic because model objects
              * are expunged from the SQL alchemy session between workflow invocation scheduling iterations.
              * Set to -1 to disable any such maximum.
+             *
+             * @default 1000
              */
             maximum_workflow_jobs_per_scheduling_iteration?: number;
             /**
              * Message Box Class
              * @description Class of the message box under the masthead. Possible values are:
              * 'info' (the default), 'warning', 'error', 'done'.
+             *
+             * @default info
              */
             message_box_class?: string;
             /**
              * Message Box Content
              * @description Show a message box under the masthead.
              */
-            message_box_content?: string;
+            message_box_content: string;
             /**
              * Message Box Visible
              * @description Show a message box under the masthead.
+             *
+             * @default false
              */
             message_box_visible?: boolean;
             /**
@@ -6317,6 +6658,8 @@ export interface components {
              * output discovery (e.g. discovered datasets <discover_datasets>, unpopulated collections,
              * etc) happens as part of the job. In `directory_celery` and `extended_celery` metadata
              * will be set within a celery task.
+             *
+             * @default directory
              */
             metadata_strategy?: string;
             /**
@@ -6325,12 +6668,16 @@ export interface components {
              * In previous releases this file was maintained by tool migration scripts that are no
              * longer part of the code base. The option remains as a placeholder for deployments where
              * these scripts were previously run and such a file exists.
+             *
+             * @default migrated_tools_conf.xml
              */
             migrated_tools_config?: string;
             /**
              * Modules Mapping Files
              * @description Path to a file that provides a mapping from abstract packages to locally installed modules.
              * See `config/environment_modules_mapping.yml.sample` for examples.
+             *
+             * @default environment_modules_mapping.yml
              */
             modules_mapping_files?: string;
             /**
@@ -6342,26 +6689,36 @@ export interface components {
              * jobs, and which can cause job errors if not shut down cleanly. If using
              * supervisord, consider also increasing the value of `stopwaitsecs`. See the
              * Galaxy Admin Documentation for more.
+             *
+             * @default 30
              */
             monitor_thread_join_timeout?: number;
             /**
              * Mulled Channels
              * @description Conda channels to use when building Docker or Singularity containers using involucro.
+             *
+             * @default conda-forge,bioconda
              */
             mulled_channels?: string;
             /**
              * Mulled Resolution Cache Data Dir
              * @description Data directory used by beaker for caching mulled resolution requests.
+             *
+             * @default mulled/data
              */
             mulled_resolution_cache_data_dir?: string;
             /**
              * Mulled Resolution Cache Expire
              * @description Seconds until the beaker cache is considered old and a new value is created.
+             *
+             * @default 3600
              */
             mulled_resolution_cache_expire?: number;
             /**
              * Mulled Resolution Cache Lock Dir
              * @description Lock directory used by beaker for caching mulled resolution requests.
+             *
+             * @default mulled/locks
              */
             mulled_resolution_cache_lock_dir?: string;
             /**
@@ -6370,18 +6727,22 @@ export interface components {
              * the database schema name of the table used by beaker for
              * caching mulled resolution requests.
              */
-            mulled_resolution_cache_schema_name?: string;
+            mulled_resolution_cache_schema_name: string;
             /**
              * Mulled Resolution Cache Table Name
              * @description When mulled_resolution_cache_type = ext:database, this is
              * the database table name used by beaker for
              * caching mulled resolution requests.
+             *
+             * @default beaker_cache
              */
             mulled_resolution_cache_table_name?: string;
             /**
              * Mulled Resolution Cache Type
              * @description Mulled resolution caching. Mulled resolution uses external APIs of quay.io, these
              * requests are caching using this and the following parameters
+             *
+             * @default file
              */
             mulled_resolution_cache_type?: string;
             /**
@@ -6391,11 +6752,13 @@ export interface components {
              * requests. The application config code will set it to the
              * value of database_connection if this is not set.
              */
-            mulled_resolution_cache_url?: string;
+            mulled_resolution_cache_url: string;
             /**
              * New File Path
              * @description Where temporary files are stored. It must be accessible at the same path on any cluster
              * nodes that will run Galaxy jobs, unless using Pulsar.
+             *
+             * @default tmp
              */
             new_file_path?: string;
             /**
@@ -6404,6 +6767,8 @@ export interface components {
              * it to be private.  Does not affect existing users and data, only ones created
              * after this option is set.  Users may still change their default back to
              * public.
+             *
+             * @default false
              */
             new_user_dataset_access_role_default_private?: boolean;
             /**
@@ -6413,7 +6778,7 @@ export interface components {
              * operations on the remote end.  See the Galaxy nginx documentation for the
              * corresponding nginx configuration.
              */
-            nginx_upload_job_files_path?: string;
+            nginx_upload_job_files_path: string;
             /**
              * Nginx Upload Job Files Store
              * @description Galaxy can also use nginx_upload_module to receive files staged out upon job
@@ -6421,14 +6786,14 @@ export interface components {
              * operations on the remote end.  See the Galaxy nginx documentation for the
              * corresponding nginx configuration.
              */
-            nginx_upload_job_files_store?: string;
+            nginx_upload_job_files_store: string;
             /**
              * Nginx Upload Path
              * @description This value overrides the action set on the file upload form, e.g. the web
              * path where the nginx_upload_module has been configured to intercept upload
              * requests.
              */
-            nginx_upload_path?: string;
+            nginx_upload_path: string;
             /**
              * Nginx Upload Store
              * @description nginx can also handle file uploads (user-to-Galaxy) via nginx_upload_module.
@@ -6436,19 +6801,21 @@ export interface components {
              * documentation linked above.  The upload store is a temporary directory in
              * which files uploaded by the upload module will be placed.
              */
-            nginx_upload_store?: string;
+            nginx_upload_store: string;
             /**
              * Nginx X Accel Redirect Base
              * @description The same download handling can be done by nginx using X-Accel-Redirect.  This
              * should be set to the path defined in the nginx config as an internal redirect
              * with access to Galaxy's data files (see documentation linked above).
              */
-            nginx_x_accel_redirect_base?: string;
+            nginx_x_accel_redirect_base: string;
             /**
              * Normalize Remote User Email
              * @description If your proxy and/or authentication source does not normalize e-mail
              * addresses or user names being passed to Galaxy - set this option
              * to true to force these to lower case.
+             *
+             * @default false
              */
             normalize_remote_user_email?: boolean;
             /**
@@ -6464,6 +6831,8 @@ export interface components {
              * This option serves as the default for all object stores and can be overridden
              * on a per object store basis (but don't - just setup tmpwatch for all relevant
              * cache paths).
+             *
+             * @default auto
              */
             object_store_cache_monitor_driver?: string;
             /**
@@ -6473,24 +6842,32 @@ export interface components {
              * recommend you do not use) and by the celery task if it is configured (by setting
              * enable_celery_tasks to true and not setting object_store_cache_monitor_driver to
              * external).
+             *
+             * @default 600
              */
             object_store_cache_monitor_interval?: number;
             /**
              * Object Store Cache Path
              * @description Default cache path for caching object stores if cache not configured for
              * that object store entry.
+             *
+             * @default object_store_cache
              */
             object_store_cache_path?: string;
             /**
              * Object Store Cache Size
              * @description Default cache size for caching object stores if cache not configured for
              * that object store entry.
+             *
+             * @default -1
              */
             object_store_cache_size?: number;
             /**
              * Object Store Config File
              * @description Configuration file for the object store
              * If this is set and exists, it overrides any other objectstore settings.
+             *
+             * @default object_store_conf.xml
              */
             object_store_config_file?: string;
             /**
@@ -6502,15 +6879,19 @@ export interface components {
              * if the name of the directory set in <file_path> is `objects`, the default will be set
              * to 'uuid', otherwise it will be 'id'.
              */
-            object_store_store_by?: string;
+            object_store_store_by: string;
             /**
              * Oidc Backends Config File
              * @description Sets the path to OIDC backends configuration file.
+             *
+             * @default oidc_backends_config.xml
              */
             oidc_backends_config_file?: string;
             /**
              * Oidc Config File
              * @description Sets the path to OIDC configuration file.
+             *
+             * @default oidc_config.xml
              */
             oidc_config_file?: string;
             /**
@@ -6522,6 +6903,8 @@ export interface components {
              * on a cluster and datasets can not be created by the user running the jobs (e.g.
              * if the filesystem is mounted read-only or the jobs are run by a different
              * user than the galaxy user).
+             *
+             * @default false
              */
             outputs_to_working_directory?: boolean;
             /**
@@ -6529,6 +6912,8 @@ export interface components {
              * @description Overwrite or append to the tool recommendations by the deep learning model. When set to true, all the recommendations by the deep learning model
              * are overwritten by the recommendations set by an admin in a config file 'tool_recommendations_overwrite.yml'. When set to false, the recommended tools
              * by admins and predicted by the deep learning model are shown.
+             *
+             * @default false
              */
             overwrite_model_recommendations?: boolean;
             /**
@@ -6536,12 +6921,14 @@ export interface components {
              * @description Definitions of static toolbox panel views embedded directly in the config instead of reading
              * YAML from directory with panel_views_dir.
              */
-            panel_views?: Record<string, never>[];
+            panel_views: Record<string, never>[];
             /**
              * Panel Views Dir
              * @description Directory to check out for toolbox tool panel views. The path is relative to the
              * Galaxy root dir.  To use an absolute path begin the path with '/'.  This is a
              * comma-separated list.
+             *
+             * @default config/plugins/activities
              */
             panel_views_dir?: string;
             /**
@@ -6549,6 +6936,8 @@ export interface components {
              * @description If multiple job handlers are enabled, allow Galaxy to schedule workflow invocations
              * in multiple handlers simultaneously. This is discouraged because it results in a
              * less predictable order of workflow datasets within in histories.
+             *
+             * @default false
              */
             parallelize_workflow_scheduling_within_histories?: boolean;
             /**
@@ -6557,6 +6946,8 @@ export interface components {
              * password every x days. Users will be redirected to the change password
              * screen when they log in after their password expires. Enter 0 to disable
              * password expiration.
+             *
+             * @default 0
              */
             password_expiration_period?: number;
             /**
@@ -6564,16 +6955,18 @@ export interface components {
              * @description Please enter the URL for the Galaxy server so this can be used for tracking
              * with Plausible (https://plausible.io/).
              */
-            plausible_domain?: string;
+            plausible_domain: string;
             /**
              * Plausible Server
              * @description Please enter the URL for the Plausible server (including https) so this can be used for tracking
              * with Plausible (https://plausible.io/).
              */
-            plausible_server?: string;
+            plausible_server: string;
             /**
              * Post User Logout Href
              * @description This is the default url to which users are redirected after they log out.
+             *
+             * @default /root/login?is_logout_redirect=true
              */
             post_user_logout_href?: string;
             /**
@@ -6582,6 +6975,8 @@ export interface components {
              * instance is running on. This can make carbon emissions estimates more accurate.
              * For more information on how to calculate a PUE value, visit
              * https://en.wikipedia.org/wiki/Power_usage_effectiveness
+             *
+             * @default 1.67
              */
             power_usage_effectiveness?: number;
             /**
@@ -6589,11 +6984,15 @@ export interface components {
              * @description By default, when using a cached dependency manager, the dependencies are cached
              * when installing new tools and when using tools for the first time.
              * Set this to false if you prefer dependencies to be cached only when installing new tools.
+             *
+             * @default true
              */
             precache_dependencies?: boolean;
             /**
              * Prefer Custos Login
              * @description Controls the order of the login page to prefer Custos-based login and registration.
+             *
+             * @default false
              */
             prefer_custos_login?: boolean;
             /**
@@ -6608,6 +7007,8 @@ export interface components {
              * tools). Set this to legacy_and_local to preserve the environment for legacy
              * tools and locally managed tools (this might be useful for instance if you are
              * installing software into Galaxy's virtualenv for tool development).
+             *
+             * @default legacy_only
              */
             preserve_python_environment?: string;
             /**
@@ -6619,11 +7020,15 @@ export interface components {
              * - $locale (complete format string for the server locale),
              * - $iso8601 (complete format string as specified by ISO 8601 international
              *   standard).
+             *
+             * @default $locale (UTC)
              */
             pretty_datetime_format?: string;
             /**
              * Quota Url
              * @description The URL linked for quota information in the UI.
+             *
+             * @default https://galaxyproject.org/support/account-quotas/
              */
             quota_url?: string;
             /**
@@ -6638,23 +7043,29 @@ export interface components {
              * who can run every job being submitted. This user should not be the same user
              * running the galaxy system.
              * Possible values are user_email (default), username or <common_system_user>
+             *
+             * @default user_email
              */
             real_system_username?: string;
             /**
              * Refgenie Config File
              * @description File containing refgenie configuration, e.g. /path/to/genome_config.yaml. Can be used by refgenie backed tool data tables.
              */
-            refgenie_config_file?: string;
+            refgenie_config_file: string;
             /**
              * Registration Warning Message
              * @description Registration warning message is used to discourage people from registering
              * multiple accounts.  Applies mostly for the main Galaxy instance.
              * If no message specified the warning box will not be shown.
+             *
+             * @default Please register only one account - we provide this service free of charge and have limited computational resources. Multi-accounts are tracked and will be subjected to account termination and data deletion.
              */
             registration_warning_message?: string;
             /**
              * Release Doc Base Url
              * @description The URL linked by the "Galaxy Version" link in the "Help" menu.
+             *
+             * @default https://docs.galaxyproject.org/en/release_
              */
             release_doc_base_url?: string;
             /**
@@ -6664,6 +7075,8 @@ export interface components {
              * by WSGI).  This option allows you to change the header.  Note, you still need
              * to prepend ``HTTP_`` to the header in this option, but your proxy server should
              * *not* include ``HTTP_`` at the beginning of the header name.
+             *
+             * @default HTTP_REMOTE_USER
              */
             remote_user_header?: string;
             /**
@@ -6671,14 +7084,14 @@ export interface components {
              * @description If use_remote_user is enabled, you can set this to a URL that will log your
              * users out.
              */
-            remote_user_logout_href?: string;
+            remote_user_logout_href: string;
             /**
              * Remote User Maildomain
              * @description If use_remote_user is enabled and your external authentication
              * method just returns bare usernames, set a default mail domain to be appended
              * to usernames, to become your Galaxy usernames (email addresses).
              */
-            remote_user_maildomain?: string;
+            remote_user_maildomain: string;
             /**
              * Remote User Secret
              * @description If use_remote_user is enabled, anyone who can log in to the Galaxy host may
@@ -6687,11 +7100,15 @@ export interface components {
              * If anyone other than the Galaxy user is using the server, then apache/nginx
              * should pass a value in the header 'GX_SECRET' that is identical to the one
              * below.
+             *
+             * @default USING THE DEFAULT IS NOT SECURE!
              */
             remote_user_secret?: string;
             /**
              * Require Login
              * @description Force everyone to log in (disable anonymous access).
+             *
+             * @default false
              */
             require_login?: boolean;
             /**
@@ -6701,6 +7118,8 @@ export interface components {
              * steps. In such a case it may be desirable to set metadata on job outputs
              * internally (in the Galaxy job handler process). The default is is the value of
              * `retry_metadata_internally`, which defaults to `true`.
+             *
+             * @default true
              */
             retry_interactivetool_metadata_internally?: boolean;
             /**
@@ -6710,6 +7129,8 @@ export interface components {
              * these files.  The job runner will retry the number of times specified below,
              * waiting 1 second between tries.  For NFS, you may want to try the -noac mount
              * option (Linux) or -actimeo=0 (Solaris).
+             *
+             * @default 0
              */
             retry_job_output_collection?: number;
             /**
@@ -6719,6 +7140,8 @@ export interface components {
              * a failed state (since retrying internally may cause the Galaxy process to be
              * unresponsive).  If this option is set to false, the user will be given the
              * option to retry externally, or set metadata manually (when possible).
+             *
+             * @default true
              */
             retry_metadata_internally?: boolean;
             /**
@@ -6727,6 +7150,8 @@ export interface components {
              * 'text/html' will be sanitized thoroughly.  This can be disabled if you have
              * special tools that require unaltered output.  WARNING: disabling this does
              * make the Galaxy instance susceptible to XSS attacks initiated by your users.
+             *
+             * @default true
              */
             sanitize_all_html?: boolean;
             /**
@@ -6736,11 +7161,15 @@ export interface components {
              * through the Admin control panel -- see "Manage Allowlist"
              *
              * The value of this option will be resolved with respect to <managed_config_dir>.
+             *
+             * @default sanitize_allowlist.txt
              */
             sanitize_allowlist_file?: string;
             /**
              * Screencasts Url
              * @description The URL linked by the "Videos" link in the "Help" menu.
+             *
+             * @default https://www.youtube.com/c/galaxyproject
              */
             screencasts_url?: string;
             /**
@@ -6750,6 +7179,8 @@ export interface components {
              * use 0 in order to always use select2 fields,
              * use -1 (default) in order to always use the regular select fields,
              * use any other positive number as threshold (above threshold: regular select fields will be used)
+             *
+             * @default -1
              */
             select_type_workflow_threshold?: number;
             /**
@@ -6757,7 +7188,7 @@ export interface components {
              * @description Use this option to provide the path to location of the CA (Certificate Authority)
              * certificate file if the sentry server uses a self-signed certificate.
              */
-            sentry_ca_certs?: string;
+            sentry_ca_certs: string;
             /**
              * Sentry Dsn
              * @description Log to Sentry
@@ -6766,11 +7197,13 @@ export interface components {
              * indicated sentry instance.  This connection string is available in your
              * sentry instance under <project_name> -> Settings -> API Keys.
              */
-            sentry_dsn?: string;
+            sentry_dsn: string;
             /**
              * Sentry Event Level
              * @description Determines the minimum log level that will be sent as an event to Sentry.
              * Possible values are DEBUG, INFO, WARNING, ERROR or CRITICAL.
+             *
+             * @default ERROR
              */
             sentry_event_level?: string;
             /**
@@ -6778,6 +7211,8 @@ export interface components {
              * @description Set to a number between 0 and 1. With this option set, every transaction created
              * will have that percentage chance of being sent to Sentry. A value higher than 0
              * is required to analyze performance.
+             *
+             * @default 0
              */
             sentry_traces_sample_rate?: number;
             /**
@@ -6786,6 +7221,8 @@ export interface components {
              * contain browser executable JavaScript content as plain text.  This will for
              * instance cause SVG datasets to not render properly and so may be disabled
              * by setting this option to true.
+             *
+             * @default false
              */
             serve_xss_vulnerable_mimetypes?: boolean;
             /**
@@ -6793,12 +7230,16 @@ export interface components {
              * @description Galaxy Session Timeout
              * This provides a timeout (in minutes) after which a user will have to log back in.
              * A duration of 0 disables this feature.
+             *
+             * @default 0
              */
             session_duration?: number;
             /**
              * Shed Data Manager Config File
              * @description File where Tool Shed based Data Managers are configured. This file will be created
              * automatically upon data manager installation.
+             *
+             * @default shed_data_manager_conf.xml
              */
             shed_data_manager_config_file?: string;
             /**
@@ -6812,6 +7253,8 @@ export interface components {
              * preferable. This file will be created automatically upon tool
              * installation, whereas Galaxy will fail to start if any files in
              * tool_config_file cannot be read.
+             *
+             * @default shed_tool_conf.xml
              */
             shed_tool_config_file?: string;
             /**
@@ -6819,7 +7262,7 @@ export interface components {
              * @description Directory where Tool Data Table related files will be placed when installed from a
              * ToolShed. Defaults to the value of the 'tool_data_path' option.
              */
-            shed_tool_data_path?: string;
+            shed_tool_data_path: string;
             /**
              * Shed Tool Data Table Config
              * @description XML config file that contains additional data table entries for the
@@ -6828,18 +7271,24 @@ export interface components {
              * tool_data_table_conf.xml.sample files.  At the time of installation, these
              * entries are automatically added to the following file, which is parsed and
              * applied to the ToolDataTableManager at server start up.
+             *
+             * @default shed_tool_data_table_conf.xml
              */
             shed_tool_data_table_config?: string;
             /**
              * Short Term Storage Cleanup Interval
              * @description How many seconds between instances of short term storage being cleaned up in default
              * Celery task configuration.
+             *
+             * @default 3600
              */
             short_term_storage_cleanup_interval?: number;
             /**
              * Short Term Storage Default Duration
              * @description Default duration before short term web storage files will be cleaned up by Galaxy
              * tasks (in seconds). The default duration is 1 day.
+             *
+             * @default 86400
              */
             short_term_storage_default_duration?: number;
             /**
@@ -6850,24 +7299,32 @@ export interface components {
              * and that directory should be monitored by a tool such as tmpwatch in production
              * environments. short_term_storage_dir on the other hand is monitored by Galaxy's task
              * framework and should not require such external tooling.
+             *
+             * @default short_term_web_storage
              */
             short_term_storage_dir?: string;
             /**
              * Short Term Storage Maximum Duration
              * @description The maximum duration short term storage files can hosted before they will be marked for
              * clean up.  The default setting of 0 indicates no limit here.
+             *
+             * @default 0
              */
             short_term_storage_maximum_duration?: number;
             /**
              * Show User Prepopulate Form
              * @description When using LDAP for authentication, allow administrators to pre-populate users
              * using an additional form on 'Create new user'
+             *
+             * @default false
              */
             show_user_prepopulate_form?: boolean;
             /**
              * Show Welcome With Login
              * @description Show the site's welcome page (see welcome_url) alongside the login page
              * (even if require_login is true).
+             *
+             * @default false
              */
             show_welcome_with_login?: boolean;
             /**
@@ -6879,12 +7336,16 @@ export interface components {
              * runtime inputs and not replacement parameters within tool steps). In the
              * future 'force' may be added an option for Galaskio-style servers that should
              * only render simplified workflows.
+             *
+             * @default prefer
              */
             simplified_workflow_run_ui?: string;
             /**
              * Simplified Workflow Run Ui Job Cache
              * @description When the simplified workflow run form is rendered, should the invocation use job
              * caching. This isn't a boolean so an option for 'show-selection' can be added later.
+             *
+             * @default off
              */
             simplified_workflow_run_ui_job_cache?: string;
             /**
@@ -6895,6 +7356,8 @@ export interface components {
              * a runtime setting with the corresponding default. The default is to provide the
              * user this option and default it to the current history (the traditional behavior
              * of Galaxy for years) - this corresponds to the setting 'prefer_current'.
+             *
+             * @default prefer_current
              */
             simplified_workflow_run_ui_target_history?: string;
             /**
@@ -6905,12 +7368,14 @@ export interface components {
              * login or external proxy required. Such applications should not be exposed to
              * the world.
              */
-            single_user?: string;
+            single_user: string;
             /**
              * Slow Query Log Threshold
              * @description Slow query logging.  Queries slower than the threshold indicated below will
              * be logged to debug.  A value of '0' is disabled.  For example, you would set
              * this to .005 to log all queries taking longer than 5 milliseconds.
+             *
+             * @default 0
              */
             slow_query_log_threshold?: number;
             /**
@@ -6919,7 +7384,7 @@ export interface components {
              * here (password in cleartext here, but if your server supports STARTTLS it
              * will be sent over the network encrypted).
              */
-            smtp_password?: string;
+            smtp_password: string;
             /**
              * Smtp Server
              * @description Galaxy sends mail for various things: subscribing users to the mailing list
@@ -6928,10 +7393,12 @@ export interface components {
              * which you may define here (host:port).
              * Galaxy will automatically try STARTTLS but will continue upon failure.
              */
-            smtp_server?: string;
+            smtp_server: string;
             /**
              * Smtp Ssl
              * @description If your SMTP server requires SSL from the beginning of the connection
+             *
+             * @default false
              */
             smtp_ssl?: boolean;
             /**
@@ -6940,13 +7407,15 @@ export interface components {
              * here (password in cleartext here, but if your server supports STARTTLS it
              * will be sent over the network encrypted).
              */
-            smtp_username?: string;
+            smtp_username: string;
             /**
              * Sniff Compressed Dynamic Datatypes Default
              * @description Enable sniffing of compressed datatypes. This can be configured/overridden
              * on a per-datatype basis in the datatypes_conf.xml file.
              * With this option set to false the compressed datatypes will be unpacked
              * before sniffing.
+             *
+             * @default true
              */
             sniff_compressed_dynamic_datatypes_default?: boolean;
             /**
@@ -6955,6 +7424,8 @@ export interface components {
              * proxy server.  These options should be self explanatory and so are not
              * documented individually.  You can use these paths (or ones in the proxy
              * server) to point to your own styles.
+             *
+             * @default 360
              */
             static_cache_time?: number;
             /**
@@ -6963,6 +7434,8 @@ export interface components {
              * proxy server.  These options should be self explanatory and so are not
              * documented individually.  You can use these paths (or ones in the proxy
              * server) to point to your own styles.
+             *
+             * @default static/
              */
             static_dir?: string;
             /**
@@ -6971,6 +7444,8 @@ export interface components {
              * proxy server.  These options should be self explanatory and so are not
              * documented individually.  You can use these paths (or ones in the proxy
              * server) to point to your own styles.
+             *
+             * @default true
              */
             static_enabled?: boolean;
             /**
@@ -6979,6 +7454,8 @@ export interface components {
              * proxy server.  These options should be self explanatory and so are not
              * documented individually.  You can use these paths (or ones in the proxy
              * server) to point to your own styles.
+             *
+             * @default static/favicon.ico
              */
             static_favicon_dir?: string;
             /**
@@ -6987,6 +7464,8 @@ export interface components {
              * proxy server.  These options should be self explanatory and so are not
              * documented individually.  You can use these paths (or ones in the proxy
              * server) to point to your own styles.
+             *
+             * @default static/images
              */
             static_images_dir?: string;
             /**
@@ -6995,6 +7474,8 @@ export interface components {
              * proxy server.  These options should be self explanatory and so are not
              * documented individually.  You can use these paths (or ones in the proxy
              * server) to point to your own styles.
+             *
+             * @default static/robots.txt
              */
             static_robots_txt?: string;
             /**
@@ -7003,6 +7484,8 @@ export interface components {
              * proxy server.  These options should be self explanatory and so are not
              * documented individually.  You can use these paths (or ones in the proxy
              * server) to point to your own styles.
+             *
+             * @default static/scripts/
              */
             static_scripts_dir?: string;
             /**
@@ -7011,6 +7494,8 @@ export interface components {
              * proxy server.  These options should be self explanatory and so are not
              * documented individually.  You can use these paths (or ones in the proxy
              * server) to point to your own styles.
+             *
+             * @default static/style
              */
             static_style_dir?: string;
             /**
@@ -7022,19 +7507,23 @@ export interface components {
              * useful if you are running multiple Galaxy instances and want to segment
              * statistics between them within the same aggregator.
              */
-            statsd_host?: string;
+            statsd_host: string;
             /**
              * Statsd Influxdb
              * @description If you are using telegraf to collect these metrics and then sending
              * them to InfluxDB, Galaxy can provide more nicely tagged metrics.
              * Instead of sending prefix + dot-separated-path, Galaxy will send
              * prefix with a tag path set to the page url
+             *
+             * @default false
              */
             statsd_influxdb?: boolean;
             /**
              * Statsd Mock Calls
              * @description Mock out statsd client calls - only used by testing infrastructure really.
              * Do not set this in production environments.
+             *
+             * @default false
              */
             statsd_mock_calls?: boolean;
             /**
@@ -7045,6 +7534,8 @@ export interface components {
              * other statistics to the configured statsd instance.  The statsd_prefix is
              * useful if you are running multiple Galaxy instances and want to segment
              * statistics between them within the same aggregator.
+             *
+             * @default 8125
              */
             statsd_port?: number;
             /**
@@ -7055,22 +7546,30 @@ export interface components {
              * other statistics to the configured statsd instance.  The statsd_prefix is
              * useful if you are running multiple Galaxy instances and want to segment
              * statistics between them within the same aggregator.
+             *
+             * @default galaxy
              */
             statsd_prefix?: string;
             /**
              * Support Url
              * @description The URL linked by the "Support" link in the "Help" menu.
+             *
+             * @default https://galaxyproject.org/support/
              */
             support_url?: string;
             /**
              * Template Cache Path
              * @description Mako templates are compiled as needed and cached for reuse, this directory is
              * used for the cache
+             *
+             * @default compiled_templates
              */
             template_cache_path?: string;
             /**
              * Templates Dir
              * @description The directory containing custom templates for Galaxy, such as HTML/text email templates. Defaults to 'templates'. Default templates can be found in the Galaxy root under config/templates. These can be copied to <templates_dir> if you wish to customize them.
+             *
+             * @default templates
              */
             templates_dir?: string;
             /**
@@ -7078,11 +7577,13 @@ export interface components {
              * @description The URL linked by the "Terms and Conditions" link in the "Help" menu, as well
              * as on the user registration and login forms and in the activation emails.
              */
-            terms_url?: string;
+            terms_url: string;
             /**
              * Themes Config File
              * @description Optional file containing one or more themes for galaxy. If several themes
              * are defined, users can choose their preferred theme in the client.
+             *
+             * @default themes_conf.yml
              */
             themes_config_file?: string;
             /**
@@ -7090,6 +7591,8 @@ export interface components {
              * @description Tool related caching. Fully expanded tools and metadata will be stored at this path.
              * Per tool_conf cache locations can be configured in (``shed_``)tool_conf.xml files using
              * the tool_cache_data_dir attribute.
+             *
+             * @default tool_cache
              */
             tool_cache_data_dir?: string;
             /**
@@ -7099,6 +7602,8 @@ export interface components {
              * (config/tool_conf.xml.sample will be used if left unset and
              * config/tool_conf.xml does not exist). Can be a single file, a list of
              * files, or (for backwards compatibility) a comma-separated list of files.
+             *
+             * @default tool_conf.xml
              */
             tool_config_file?: Record<string, never>;
             /**
@@ -7106,6 +7611,8 @@ export interface components {
              * @description Directory where data used by tools is located.  See the samples in that
              * directory and the Galaxy Community Hub for help:
              * https://galaxyproject.org/admin/data-integration
+             *
+             * @default tool-data
              */
             tool_data_path?: string;
             /**
@@ -7113,6 +7620,8 @@ export interface components {
              * @description XML config file that contains data table entries for the
              * ToolDataTableManager.  This file is manually # maintained by the Galaxy
              * administrator (.sample used if default does not exist).
+             *
+             * @default tool_data_table_conf.xml
              */
             tool_data_table_config_path?: string;
             /**
@@ -7122,7 +7631,7 @@ export interface components {
              *
              * Sample default '<tool_dependency_dir>/_cache'
              */
-            tool_dependency_cache_dir?: string;
+            tool_dependency_cache_dir: string;
             /**
              * Tool Dependency Dir
              * @description Various dependency resolver configuration parameters will have defaults set relative
@@ -7132,17 +7641,23 @@ export interface components {
              * Set the string to null to explicitly disable tool dependency handling.
              * If this option is set to none or an invalid path, installing tools with dependencies
              * from the Tool Shed or in Conda will fail.
+             *
+             * @default dependencies
              */
             tool_dependency_dir?: string;
             /**
              * Tool Description Boost
              * @description In tool search, a query match against a tool's description text will
              * receive this score multiplier.
+             *
+             * @default 8
              */
             tool_description_boost?: number;
             /**
              * Tool Destinations Config File
              * @description Path to dynamic tool destinations configuration file.
+             *
+             * @default tool_destinations.yml
              */
             tool_destinations_config_file?: string;
             /**
@@ -7152,6 +7667,8 @@ export interface components {
              * search results tolerant for spelling mistakes in the query, and will
              * also match query substrings e.g. "genome" will match "genomics" or
              * "metagenome".
+             *
+             * @default true
              */
             tool_enable_ngram_search?: boolean;
             /**
@@ -7162,6 +7679,8 @@ export interface components {
              * submitted job. Note that ``remote`` is a beta setting that will be useful for materializing
              * deferred datasets as part of the submitted job. Note also that you have to set ``metadata_strategy``
              * to ``extended`` if you set this option to ``remote``.
+             *
+             * @default local
              */
             tool_evaluation_strategy?: string;
             /**
@@ -7169,7 +7688,7 @@ export interface components {
              * @description Define toolbox filters (https://galaxyproject.org/user-defined-toolbox-filters/)
              * that admins may use to restrict the tools to display.
              */
-            tool_filters?: string;
+            tool_filters: string;
             /**
              * Tool Help Bm25F K1
              * @description The lower this parameter, the greater the diminishing reward for
@@ -7177,12 +7696,16 @@ export interface components {
              * of reward for additional occurences of a term. The default value will
              * provide a slight increase in score for the first, second and third
              * occurrence and little reward thereafter.
+             *
+             * @default 0.5
              */
             tool_help_bm25f_k1?: number;
             /**
              * Tool Help Boost
              * @description In tool search, a query match against a tool's help text will receive
              * this score multiplier.
+             *
+             * @default 1
              */
             tool_help_boost?: number;
             /**
@@ -7190,12 +7713,16 @@ export interface components {
              * @description In tool search, a query match against a tool's ID text will receive
              * this score multiplier. The query must be an exact match against ID
              * in order to be counted as a match.
+             *
+             * @default 20
              */
             tool_id_boost?: number;
             /**
              * Tool Label Boost
              * @description In tool search, a query match against a tool's label text will
              * receive this score multiplier.
+             *
+             * @default 1
              */
             tool_label_boost?: number;
             /**
@@ -7203,33 +7730,43 @@ export interface components {
              * @description Define toolbox filters (https://galaxyproject.org/user-defined-toolbox-filters/)
              * that admins may use to restrict the tool labels to display.
              */
-            tool_label_filters?: string;
+            tool_label_filters: string;
             /**
              * Tool Name Boost
              * @description In tool search, a query match against a tool's name text will receive
              * this score multiplier.
+             *
+             * @default 20
              */
             tool_name_boost?: number;
             /**
              * Tool Name Exact Multiplier
              * @description If a search query matches a tool name exactly, the score will be
              * multiplied by this factor.
+             *
+             * @default 10
              */
             tool_name_exact_multiplier?: number;
             /**
              * Tool Ngram Factor
              * @description Ngram matched scores will be multiplied by this factor. Should always
              * be below 1, because an ngram match is a partial match of a search term.
+             *
+             * @default 0.2
              */
             tool_ngram_factor?: number;
             /**
              * Tool Ngram Maxsize
              * @description Set maximum character length of ngrams
+             *
+             * @default 4
              */
             tool_ngram_maxsize?: number;
             /**
              * Tool Ngram Minsize
              * @description Set minimum character length of ngrams
+             *
+             * @default 3
              */
             tool_ngram_minsize?: number;
             /**
@@ -7237,28 +7774,37 @@ export interface components {
              * @description Default path to the directory containing the tools defined in tool_conf.xml.
              * Other tool config files must include the tool_path as an attribute in the
              * <toolbox> tag.
+             *
+             * @default tools
              */
             tool_path?: string;
             /**
              * Tool Recommendation Model Path
              * @description Set remote path of the trained model (HDF5 file) for tool recommendation.
+             *
+             * @default https://github.com/galaxyproject/galaxy-test-data/raw/master/tool_recommendation_model_v_0.2.hdf5
              */
             tool_recommendation_model_path?: string;
             /**
              * Tool Search Index Dir
              * @description Directory in which the toolbox search index is stored.
+             * @default tool_search_index
              */
             tool_search_index_dir?: string;
             /**
              * Tool Search Limit
              * @description Limits the number of results in toolbox search. Use to set the
              * maximum number of tool search results to display.
+             *
+             * @default 20
              */
             tool_search_limit?: number;
             /**
              * Tool Section Boost
              * @description In tool search, a query match against a tool's section text will
              * receive this score multiplier.
+             *
+             * @default 3
              */
             tool_section_boost?: number;
             /**
@@ -7266,11 +7812,13 @@ export interface components {
              * @description Define toolbox filters (https://galaxyproject.org/user-defined-toolbox-filters/)
              * that admins may use to restrict the tool sections to display.
              */
-            tool_section_filters?: string;
+            tool_section_filters: string;
             /**
              * Tool Sheds Config File
              * @description File containing the Galaxy Tool Sheds that should be made available to
              * install from in the admin interface (.sample used if default does not exist).
+             *
+             * @default tool_sheds_conf.xml
              */
             tool_sheds_config_file?: string;
             /**
@@ -7278,6 +7826,8 @@ export interface components {
              * @description A stub is parsed from the GUID as "owner/repo/tool_id".
              * In tool search, a query match against a tool's stub text will receive
              * this score multiplier.
+             *
+             * @default 2
              */
             tool_stub_boost?: number;
             /**
@@ -7288,6 +7838,8 @@ export interface components {
              * distributed with Galaxy but this is likely not appropriate for production systems.
              * Instead one can simply clone that repository directly and specify a path here
              * instead of a Git HTTP repository.
+             *
+             * @default test-data
              */
             tool_test_data_directories?: string;
             /**
@@ -7296,12 +7848,16 @@ export interface components {
              * When activated the following options also need to be set:
              *   tool_training_recommendations_link,
              *   tool_training_recommendations_api_url
+             *
+             * @default true
              */
             tool_training_recommendations?: boolean;
             /**
              * Tool Training Recommendations Api Url
              * @description URL to API describing tutorials containing specific tools.
              * When CORS is used, make sure to add this host.
+             *
+             * @default https://training.galaxyproject.org/training-material/api/top-tools.json
              */
             tool_training_recommendations_api_url?: string;
             /**
@@ -7313,6 +7869,8 @@ export interface components {
              *   {tool_id}
              *   {training_tool_identifier}
              *   {version}
+             *
+             * @default https://training.galaxyproject.org/training-material/by-tool/{training_tool_identifier}.html
              */
             tool_training_recommendations_link?: string;
             /**
@@ -7321,17 +7879,23 @@ export interface components {
              * This is useful for ensuring that tools are always displayed in the same
              * order in the UI.  If false, the order of tools in the toolbox will be
              * preserved as they are loaded from the tool config files.
+             *
+             * @default true
              */
             toolbox_auto_sort?: boolean;
             /**
              * Toolbox Filter Base Modules
              * @description The base module(s) that are searched for modules for toolbox filtering
              * (https://galaxyproject.org/user-defined-toolbox-filters/) functions.
+             *
+             * @default galaxy.tools.filters,galaxy.tools.toolbox.filters,galaxy.tool_util.toolbox.filters
              */
             toolbox_filter_base_modules?: string;
             /**
              * Topk Recommendations
              * @description Set the number of predictions/recommendations to be made by the model
+             *
+             * @default 20
              */
             topk_recommendations?: number;
             /**
@@ -7341,12 +7905,16 @@ export interface components {
              * directory with custom tours can be specified here. The path is relative to the
              * Galaxy root dir.  To use an absolute path begin the path with '/'.  This is a
              * comma-separated list.
+             *
+             * @default config/plugins/tours
              */
             tour_config_dir?: string;
             /**
              * Track Jobs In Database
              * @description This option is deprecated, use the `mem-self` handler assignment option in the
              * job configuration instead.
+             *
+             * @default true
              */
             track_jobs_in_database?: boolean;
             /**
@@ -7358,6 +7926,8 @@ export interface components {
              *
              * If this is null (the default), a simple configuration containing
              * just Dockstore will be used.
+             *
+             * @default trs_servers_conf.yml
              */
             trs_servers_config_file?: string;
             /**
@@ -7367,6 +7937,8 @@ export interface components {
              * arbitrary code or serve arbitrary HTML.  If enabled, Jupyter must be
              * available and on Galaxy's PATH, to do this run
              * `pip install jinja2 pygments jupyter` in Galaxy's virtualenv.
+             *
+             * @default false
              */
             trust_jupyter_notebook_conversion?: boolean;
             /**
@@ -7375,7 +7947,7 @@ export interface components {
              * tus middleware or server will be placed.
              * Defaults to new_file_path if not set.
              */
-            tus_upload_store?: string;
+            tus_upload_store: string;
             /**
              * Upload From Form Button
              * @description If 'always-on', add another button to tool form data inputs that allow uploading
@@ -7384,6 +7956,8 @@ export interface components {
              *
              * Avoiding making this a boolean because we may add options such as 'in-single-form-view'
              * or 'in-simplified-workflow-views'. https://github.com/galaxyproject/galaxy/pull/9809/files#r461889109
+             *
+             * @default always-off
              */
             upload_from_form_button?: string;
             /**
@@ -7392,6 +7966,8 @@ export interface components {
              * gzipping of dataset collection and library archives, since the upstream server
              * will do it faster on the fly. To enable compression add ``application/zip``
              * to the proxy's compressable mimetypes.
+             *
+             * @default false
              */
             upstream_gzip?: boolean;
             /**
@@ -7402,6 +7978,8 @@ export interface components {
              * Requires setting up internal nginx locations to all paths that can be archived.
              * See https://docs.galaxyproject.org/en/master/admin/nginx.html#creating-archives-with-mod-zip
              * for details.
+             *
+             * @default false
              */
             upstream_mod_zip?: boolean;
             /**
@@ -7416,6 +7994,8 @@ export interface components {
              * This only affects tools where some requirements can be resolved but not others,
              * most modern best practice tools can use prebuilt environments in the Conda
              * directory.
+             *
+             * @default false
              */
             use_cached_dependency_manager?: boolean;
             /**
@@ -7423,11 +8003,15 @@ export interface components {
              * @description Write thread status periodically to 'heartbeat.log',  (careful, uses disk
              * space rapidly!).  Useful to determine why your processes may be consuming a
              * lot of CPU.
+             *
+             * @default false
              */
             use_heartbeat?: boolean;
             /**
              * Use Lint
              * @description Check for WSGI compliance.
+             *
+             * @default false
              */
             use_lint?: boolean;
             /**
@@ -7435,16 +8019,22 @@ export interface components {
              * @description Allow disabling pbkdf2 hashing of passwords for legacy situations.
              * This should normally be left enabled unless there is a specific
              * reason to disable it.
+             *
+             * @default true
              */
             use_pbkdf2?: boolean;
             /**
              * Use Printdebug
              * @description Intercept print statements and show them on the returned page.
+             *
+             * @default true
              */
             use_printdebug?: boolean;
             /**
              * Use Profile
              * @description Run the Python profiler on each request.
+             *
+             * @default false
              */
             use_profile?: boolean;
             /**
@@ -7453,6 +8043,8 @@ export interface components {
              * Apache).  The upstream proxy should set a REMOTE_USER header in the request.
              * Enabling remote user disables regular logins.  For more information, see:
              * https://docs.galaxyproject.org/en/master/admin/special_topics/apache.html
+             *
+             * @default false
              */
             use_remote_user?: boolean;
             /**
@@ -7460,6 +8052,8 @@ export interface components {
              * @description This enables splitting of jobs into tasks, if specified by the particular tool
              * config.
              * This is a new feature and not recommended for production servers yet.
+             *
+             * @default false
              */
             use_tasked_jobs?: boolean;
             /**
@@ -7468,6 +8062,8 @@ export interface components {
              * the Account activation configuration is ignored and user activation is
              * disabled (i.e. accounts are active since registration).
              * The activation is also not working in case the SMTP server is not defined.
+             *
+             * @default false
              */
             user_activation_on?: boolean;
             /**
@@ -7475,6 +8071,8 @@ export interface components {
              * @description In conjunction or alternatively, Galaxy can restrict user library imports to
              * those files that the user can read (by checking basic unix permissions).
              * For this to work, the username has to match the username on the filesystem.
+             *
+             * @default false
              */
             user_library_import_check_permissions?: boolean;
             /**
@@ -7485,11 +8083,13 @@ export interface components {
              * login ( email ).  The non-admin user is restricted to uploading files or
              * sub-directories of files contained in their directory.
              */
-            user_library_import_dir?: string;
+            user_library_import_dir: string;
             /**
              * User Library Import Dir Auto Creation
              * @description If user_library_import_dir is set, this option will auto create a library
              * import directory for every user (based on their email) upon login.
+             *
+             * @default false
              */
             user_library_import_dir_auto_creation?: boolean;
             /**
@@ -7501,33 +8101,43 @@ export interface components {
              * can import from anywhere in these directories (assuming they are able to
              * create symlinks to them).
              */
-            user_library_import_symlink_allowlist?: string;
+            user_library_import_symlink_allowlist: string;
             /**
              * User Preferences Extra Conf Path
              * @description Location of the configuration file containing extra user preferences.
+             *
+             * @default user_preferences_extra_conf.yml
              */
             user_preferences_extra_conf_path?: string;
             /**
              * User Tool Filters
              * @description Define toolbox filters (https://galaxyproject.org/user-defined-toolbox-filters/)
              * that users may use to restrict the tools to display.
+             *
+             * @default examples:restrict_upload_to_admins, examples:restrict_encode
              */
             user_tool_filters?: string;
             /**
              * User Tool Label Filters
              * @description Define toolbox filters (https://galaxyproject.org/user-defined-toolbox-filters/)
              * that users may use to restrict the tool labels to display.
+             *
+             * @default examples:restrict_upload_to_admins, examples:restrict_encode
              */
             user_tool_label_filters?: string;
             /**
              * User Tool Section Filters
              * @description Define toolbox filters (https://galaxyproject.org/user-defined-toolbox-filters/)
              * that users may use to restrict the tool sections to display.
+             *
+             * @default examples:restrict_text
              */
             user_tool_section_filters?: string;
             /**
              * Vault Config File
              * @description Vault config file.
+             *
+             * @default vault_conf.yml
              */
             vault_config_file?: string;
             /**
@@ -7535,11 +8145,15 @@ export interface components {
              * @description Visualizations config directory: where to look for individual visualization
              * plugins.  The path is relative to the Galaxy root dir.  To use an absolute
              * path begin the path with '/'.  This is a comma-separated list.
+             *
+             * @default config/plugins/visualizations
              */
             visualization_plugins_directory?: string;
             /**
              * Visualizations Visible
              * @description Show visualization tab and list in masthead.
+             *
+             * @default true
              */
             visualizations_visible?: boolean;
             /**
@@ -7547,12 +8161,16 @@ export interface components {
              * @description Monitor a subset of options in the core configuration file (See RELOADABLE_CONFIG_OPTIONS
              * in lib/galaxy/config/__init__.py).  If changes are found, modified options are
              * automatically reloaded. Takes the same values as the 'watch_tools' option.
+             *
+             * @default false
              */
             watch_core_config?: string;
             /**
              * Watch Job Rules
              * @description Monitor dynamic job rules. If changes are found, rules are automatically reloaded. Takes
              * the same values as the 'watch_tools' option.
+             *
+             * @default false
              */
             watch_job_rules?: string;
             /**
@@ -7564,6 +8182,8 @@ export interface components {
              * library if it is available but won't fail to load Galaxy if it is not and 'polling' which
              * will use a less efficient monitoring scheme that may work in wider range of scenarios than
              * the watchdog default.
+             *
+             * @default false
              */
             watch_tool_data_dir?: string;
             /**
@@ -7575,6 +8195,8 @@ export interface components {
              * watchdog library is available but won't fail to load Galaxy if it is not and 'polling'
              * which will use a less efficient monitoring scheme that may work in wider range of
              * scenarios than the watchdog default.
+             *
+             * @default false
              */
             watch_tools?: string;
             /**
@@ -7582,6 +8204,8 @@ export interface components {
              * @description Monitor the interactive tours directory specified in the 'tour_config_dir' option. If
              * changes are found, modified tours are automatically reloaded. Takes the same values as the
              * 'watch_tools' option.
+             *
+             * @default false
              */
             watch_tours?: string;
             /**
@@ -7591,6 +8215,8 @@ export interface components {
              * demo webhooks.  To use an absolute path begin the path with '/'.  This is a
              * comma-separated list. Add test/functional/webhooks to this list to include the demo
              * webhooks used to test the webhook framework.
+             *
+             * @default config/plugins/webhooks
              */
             webhooks_dir?: string;
             /**
@@ -7598,17 +8224,23 @@ export interface components {
              * @description Location of New User Welcome data, a single directory containing the
              * images and JSON of Topics/Subtopics/Slides as export. This location
              * is relative to galaxy/static
+             *
+             * @default plugins/welcome_page/new_user/static/topics/
              */
             welcome_directory?: string;
             /**
              * Welcome Url
              * @description The URL of the page to display in Galaxy's middle pane when loaded.  This can
              * be an absolute or relative URL.
+             *
+             * @default /static/welcome.html
              */
             welcome_url?: string;
             /**
              * Wiki Url
              * @description The URL linked by the "Community Hub" link in the "Help" menu.
+             *
+             * @default https://galaxyproject.org/
              */
             wiki_url?: string;
             /**
@@ -7618,6 +8250,8 @@ export interface components {
              * sleeps for the given number of seconds at the end of each iteration. This can be
              * decreased if extremely high job throughput is necessary, but doing so can increase CPU
              * usage of handler processes. Float values are allowed.
+             *
+             * @default 1
              */
             workflow_monitor_sleep?: number;
             /**
@@ -7626,6 +8260,8 @@ export interface components {
              * influence scheduling of jobs within the workflow. This requires both a description
              * of the fields available (which defaults to the definitions in
              * job_resource_params_file if not set).
+             *
+             * @default workflow_resource_params_conf.xml
              */
             workflow_resource_params_file?: string;
             /**
@@ -7640,11 +8276,13 @@ export interface components {
              *
              * Sample default path 'config/workflow_resource_mapper_conf.yml.sample'
              */
-            workflow_resource_params_mapper?: string;
+            workflow_resource_params_mapper: string;
             /**
              * Workflow Schedulers Config File
              * @description Optional configuration file similar to `job_config_file` to specify
              * which Galaxy processes should schedule workflows.
+             *
+             * @default workflow_schedulers_conf.xml
              */
             workflow_schedulers_config_file?: string;
             /**
@@ -7657,6 +8295,8 @@ export interface components {
              * proxy in front of Galaxy - please ensure this header remains intact
              * to protect your users.  Uncomment and leave empty to not set the
              * `X-Frame-Options` header.
+             *
+             * @default SAMEORIGIN
              */
             x_frame_options?: string;
         };
