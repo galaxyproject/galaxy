@@ -16,10 +16,7 @@ from galaxy.managers.folders import FolderManager
 from galaxy.managers.libraries import LibraryManager
 from galaxy.managers.roles import RoleManager
 from galaxy.model import Role
-from galaxy.schema.fields import (
-    DecodedDatabaseIdField,
-    Security,
-)
+from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     BasicRoleModel,
     CreateLibrariesFromStore,
@@ -175,14 +172,13 @@ class LibrariesService(ServiceBase, ConsumesModelStores):
 
             return_roles = []
             for role in roles:
-                role_id = Security.security.encode_id(role.id)
-                return_roles.append(BasicRoleModel(id=role_id, name=role.name, type=role.type))
+                return_roles.append(BasicRoleModel(id=role.id, name=role.name, type=role.type))
             return LibraryAvailablePermissions.model_construct(
                 roles=return_roles, page=page, page_limit=page_limit, total=total_roles
             )
         else:
             raise exceptions.RequestParameterInvalidException(
-                "The value of 'scope' parameter is invalid. Alllowed values: current, available"
+                "The value of 'scope' parameter is invalid. Allowed values: current, available"
             )
 
     def set_permissions(
