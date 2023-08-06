@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import Union
 
 from pydantic import ValidationInfo
 from pydantic.functional_validators import AfterValidator
@@ -19,3 +20,7 @@ def strip_tzinfo(v: datetime, info: ValidationInfo) -> datetime:
 
 
 OffsetNaiveDatetime = Annotated[datetime, AfterValidator(strip_tzinfo)]
+
+CoercedStringType = Annotated[
+    Union[str, int, float, bool], AfterValidator(lambda val: val if isinstance(val, str) else str(val))
+]
