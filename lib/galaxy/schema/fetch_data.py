@@ -22,6 +22,7 @@ from galaxy.schema.schema import (
     HistoryIdField,
     Model,
 )
+from galaxy.schema.types import CoercedStringType
 
 
 class FetchBaseModel(Model):
@@ -104,7 +105,7 @@ class ExtraFiles(FetchBaseModel):
 
 
 class BaseDataElement(FetchBaseModel):
-    name: Optional[str] = None
+    name: Optional[CoercedStringType] = None
     dbkey: str = Field("?")
     info: Optional[str] = None
     ext: str = Field("auto")
@@ -128,7 +129,7 @@ class FileDataElement(BaseDataElement):
 
 class PastedDataElement(BaseDataElement):
     src: Literal["pasted"]
-    paste_content: str = Field(..., description="Content to upload")
+    paste_content: CoercedStringType = Field(..., description="Content to upload")
 
 
 class UrlDataElement(BaseDataElement):
