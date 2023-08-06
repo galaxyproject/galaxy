@@ -3033,7 +3033,7 @@ class LibraryFolderMetadata(Model):
     total_rows: int
     can_modify_folder: bool
     can_add_library_item: bool
-    full_path: List[List[str]]
+    full_path: List[Tuple[EncodedLibraryFolderDatabaseIdField, str]]
 
 
 class LibraryFolderContentsIndexResult(Model):

@@ -38,7 +38,6 @@ from galaxy.exceptions import (
 )
 from galaxy.model.base import transaction
 from galaxy.model.scoped_session import galaxy_scoped_session
-from galaxy.schema.fields import LibraryFolderDatabaseIdField
 from galaxy.schema.schema import LibraryFolderContentsIndexQueryPayload
 from galaxy.security import RBACAgent
 
@@ -547,9 +546,9 @@ class FolderManager:
         The path items are tuples with the name and id of each folder for breadcrumb building purposes.
         """
         current_folder = folder
-        path_to_root = [(LibraryFolderDatabaseIdField.encode(current_folder.id), current_folder.name)]
+        path_to_root = [(current_folder.id, current_folder.name)]
         while current_folder.parent_id is not None:
             parent_folder = sa_session.query(model.LibraryFolder).get(current_folder.parent_id)
             current_folder = parent_folder
-            path_to_root.insert(0, (LibraryFolderDatabaseIdField.encode(current_folder.id), current_folder.name))
+            path_to_root.insert(0, (current_folder.id, current_folder.name))
         return path_to_root
