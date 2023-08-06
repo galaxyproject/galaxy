@@ -774,7 +774,7 @@ class WorkflowsAPIController(
             as_dict = workflow_invocation.to_dict()
             as_dict = self.encode_all_ids(trans, as_dict, recursive=True)
             as_dict["messages"] = [
-                InvocationMessageResponseModel.parse_obj(message).__root__.dict() for message in invocation.messages
+                InvocationMessageResponseModel.model_validate(message).model_dump() for message in invocation.messages
             ]
             encoded_invocations.append(as_dict)
 

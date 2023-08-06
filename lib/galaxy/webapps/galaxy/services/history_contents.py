@@ -386,7 +386,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
             user=trans.async_request_user,
             content_type=contents_type,
             content_id=content_id,
-            **payload.dict(),
+            **payload.model_dump(),
         )
         result = prepare_history_content_download.delay(request=request, task_user_id=getattr(trans.user, "id", None))
         return AsyncFile(storage_request_id=short_term_storage_target.request_id, task=async_task_summary(result))
@@ -408,7 +408,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         else:
             raise exceptions.UnknownContentsType(f"Unknown contents type: {contents_type}")
         request = WriteHistoryContentTo(
-            user=trans.async_request_user, content_id=content_id, contents_type=contents_type, **payload.dict()
+            user=trans.async_request_user, content_id=content_id, contents_type=contents_type, **payload.model_dump()
         )
         result = write_history_content_to.delay(request=request, task_user_id=getattr(trans.user, "id", None))
         return async_task_summary(result)
@@ -547,12 +547,12 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         for hda in object_tracker.hdas_by_key.values():
             if hda.visible:
                 hda_dict = self.hda_serializer.serialize_to_view(
-                    hda, user=trans.user, trans=trans, **serialization_params.dict()
+                    hda, user=trans.user, trans=trans, **serialization_params.model_dump()
                 )
                 rval.append(hda_dict)
         for hdca in object_tracker.hdcas_by_key.values():
             hdca_dict = self.hdca_serializer.serialize_to_view(
-                hdca, user=trans.user, trans=trans, **serialization_params.dict()
+                hdca, user=trans.user, trans=trans, **serialization_params.model_dump()
             )
             rval.append(hdca_dict)
         return rval
@@ -669,7 +669,9 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
             self.__deserialize_dataset(trans, hda, payload_dict)
             serialization_params.default_view = "summary"
             rval.append(
-                self.hda_serializer.serialize_to_view(hda, user=trans.user, trans=trans, **serialization_params.dict())
+                self.hda_serializer.serialize_to_view(
+                    hda, user=trans.user, trans=trans, **serialization_params.model_dump()
+                )
             )
         for hdca_id in hdca_ids:
             self.__update_dataset_collection(trans, hdca_id, payload.model_dump(exclude_defaults=True))
@@ -868,7 +870,9 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         else:
             self.hda_manager.delete(hda, stop_job=stop_job)
         serialization_params.default_view = "detailed"
-        rval = self.hda_serializer.serialize_to_view(hda, user=trans.user, trans=trans, **serialization_params.dict())
+        rval = self.hda_serializer.serialize_to_view(
+            hda, user=trans.user, trans=trans, **serialization_params.model_dump()
+        )
         rval["async_result"] = async_result is not None
         return rval
 
@@ -890,7 +894,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
             self.__deserialize_dataset(trans, hda, payload)
             serialization_params.default_view = "detailed"
             return self.hda_serializer.serialize_to_view(
-                hda, user=trans.user, trans=trans, **serialization_params.dict()
+                hda, user=trans.user, trans=trans, **serialization_params.model_dump()
             )
         return {}
 
@@ -1042,7 +1046,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         Returns a dictionary with the appropriate values depending on the
         serialization parameters provided.
         """
-        serialization_params_dict = serialization_params.dict()
+        serialization_params_dict = serialization_params.model_dump()
         view = serialization_params_dict.pop("view", default_view) or default_view
 
         serializer: Optional[ModelSerializer] = None
@@ -1096,7 +1100,9 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
     ):
         serialization_params.default_view = "detailed"
         hda = self.hda_manager.get_accessible(id, trans.user)
-        return self.hda_serializer.serialize_to_view(hda, user=trans.user, trans=trans, **serialization_params.dict())
+        return self.hda_serializer.serialize_to_view(
+            hda, user=trans.user, trans=trans, **serialization_params.model_dump()
+        )
 
     def __show_dataset_collection(
         self,
@@ -1160,7 +1166,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
                     history, add_to_history=True
                 )
                 hda_dict = self.hda_serializer.serialize_to_view(
-                    hda, user=trans.user, trans=trans, **serialization_params.dict()
+                    hda, user=trans.user, trans=trans, **serialization_params.model_dump()
                 )
                 rval.append(hda_dict)
         else:
@@ -1196,7 +1202,9 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
 
         with transaction(trans.sa_session):
             trans.sa_session.commit()
-        return self.hda_serializer.serialize_to_view(hda, user=trans.user, trans=trans, **serialization_params.dict())
+        return self.hda_serializer.serialize_to_view(
+            hda, user=trans.user, trans=trans, **serialization_params.model_dump()
+        )
 
     def __create_hda_from_ldda(self, trans, history: History, ldda_id: int):
         decoded_ldda_id = ldda_id
@@ -1259,7 +1267,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
 
         dataset_collection_manager = self.dataset_collection_manager
         if source == HistoryContentSource.new_collection:
-            create_params = api_payload_to_create_params(payload.dict())
+            create_params = api_payload_to_create_params(payload.model_dump())
             dataset_collection_instance = dataset_collection_manager.create(
                 trans, parent=history, history=history, **create_params
             )
@@ -1292,7 +1300,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         # if the consumer specified keys or view, use the secondary serializer
         if serialization_params.view or serialization_params.keys:
             return self.hdca_serializer.serialize_to_view(
-                dataset_collection_instance, user=trans.user, trans=trans, **serialization_params.dict()
+                dataset_collection_instance, user=trans.user, trans=trans, **serialization_params.model_dump()
             )
 
         return self.__collection_dict(trans, dataset_collection_instance, view="element")

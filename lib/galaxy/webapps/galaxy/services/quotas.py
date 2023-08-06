@@ -66,7 +66,7 @@ class QuotasService(ServiceBase):
 
     def create(self, trans: ProvidesUserContext, params: CreateQuotaParams) -> CreateQuotaResult:
         """Creates a new quota."""
-        payload = params.dict()
+        payload = params.model_dump()
         self.validate_in_users_and_groups(trans, payload)
         quota, message = self.quota_manager.create_quota(payload)
         item = quota.to_dict(value_mapper={"id": Security.security.encode_id})
@@ -76,7 +76,7 @@ class QuotasService(ServiceBase):
 
     def update(self, trans: ProvidesUserContext, id: DecodedDatabaseIdField, params: UpdateQuotaParams) -> str:
         """Modifies a quota."""
-        payload = params.dict()
+        payload = params.model_dump()
         self.validate_in_users_and_groups(trans, payload)
         quota = self.quota_manager.get_quota(trans, id, deleted=False)
 

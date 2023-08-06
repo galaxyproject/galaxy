@@ -233,7 +233,7 @@ class ModelStoreManager:
     ) -> Optional[ExportObjectMetadata]:
         if request.export_association_id is None:
             return None
-        request_dict = request.dict()
+        request_dict = request.model_dump()
         request_payload = (
             WriteStoreToPayload(**request_dict)
             if isinstance(request, WriteHistoryTo)

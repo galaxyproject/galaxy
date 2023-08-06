@@ -322,7 +322,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         )
         return [
             self.serializer_by_type[content.history_content_type].serialize_to_view(
-                content, user=user, trans=trans, **serialization_params.dict()
+                content, user=user, trans=trans, **serialization_params.model_dump()
             )
             for content in contents
         ]
@@ -665,7 +665,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         serialization_params.default_view = "detailed"
         converted = self._get_or_create_converted(trans, hda, ext)
         return self.hda_serializer.serialize_to_view(
-            converted, user=trans.user, trans=trans, **serialization_params.dict()
+            converted, user=trans.user, trans=trans, **serialization_params.model_dump()
         )
 
     def converted(

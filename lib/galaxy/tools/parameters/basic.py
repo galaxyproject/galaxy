@@ -658,7 +658,7 @@ class FileToolParameter(ToolParameter):
         # should be pluggable)
         if isinstance(value, FilesPayload):
             # multi-part upload handled and persisted in service layer
-            return value.dict()
+            return value.model_dump()
         if type(value) == dict:
             if "session_id" in value:
                 # handle api upload

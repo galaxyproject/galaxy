@@ -35,7 +35,7 @@ class ConfigurationManager:
         host = getattr(trans, "host", None)
         serializer_class = AdminConfigSerializer if is_admin else ConfigSerializer
         serializer = serializer_class(self._app)
-        return serializer.serialize_to_view(self._app.config, host=host, **serialization_params.dict())
+        return serializer.serialize_to_view(self._app.config, host=host, **serialization_params.model_dump())
 
     def version(self) -> Dict[str, Any]:
         version_info = {

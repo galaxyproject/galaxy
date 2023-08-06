@@ -168,7 +168,7 @@ class InvocationsService(ServiceBase):
             user=trans.async_request_user,
             invocation_id=workflow_invocation.id,
             galaxy_url=trans.request.url_path,
-            **payload.dict(),
+            **payload.model_dump(),
         )
         result = prepare_invocation_download.delay(request=request, task_user_id=getattr(trans.user, "id", None))
         return AsyncFile(storage_request_id=short_term_storage_target.request_id, task=async_task_summary(result))
@@ -184,7 +184,7 @@ class InvocationsService(ServiceBase):
             galaxy_url=trans.request.url_path,
             user=trans.async_request_user,
             invocation_id=workflow_invocation.id,
-            **payload.dict(),
+            **payload.model_dump(),
         )
         result = write_invocation_to.delay(request=request, task_user_id=getattr(trans.user, "id", None))
         rval = async_task_summary(result)

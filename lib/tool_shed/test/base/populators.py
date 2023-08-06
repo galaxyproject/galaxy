@@ -124,7 +124,7 @@ class ToolShedPopulator:
             changeset_revision=revision_metadata.changeset_revision,
         )
         revisions_response = self._api_interactor.get(
-            "repositories/get_repository_revision_install_info", params=request.dict()
+            "repositories/get_repository_revision_install_info", params=request.model_dump()
         )
         api_asserts.assert_status_code_is_ok(revisions_response)
         return from_legacy_install_info(revisions_response.json())
@@ -145,7 +145,7 @@ class ToolShedPopulator:
         files = {"file": path.open("rb")}
         repository_id = self._repository_id(repository)
         response = self._api_interactor.post(
-            f"repositories/{repository_id}/changeset_revision", params=body.dict(), files=files
+            f"repositories/{repository_id}/changeset_revision", params=body.model_dump(), files=files
         )
         return response
 
@@ -193,7 +193,7 @@ class ToolShedPopulator:
         category_name = name or random_name(prefix=prefix)
         category_description = description or "testcreaterepo"
         request = CreateCategoryRequest(name=category_name, description=category_description)
-        response = self._admin_api_interactor.post("categories", json=request.dict())
+        response = self._admin_api_interactor.post("categories", json=request.model_dump())
         response.raise_for_status()
         return Category(**response.json())
 
@@ -239,7 +239,7 @@ class ToolShedPopulator:
         return index.root[0] if index.root else None
 
     def repository_index(self, request: Optional[RepositoryIndexRequest]) -> RepositoryIndexResponse:
-        repository_response = self._api_interactor.get("repositories", params=(request.dict() if request else {}))
+        repository_response = self._api_interactor.get("repositories", params=(request.model_dump() if request else {}))
         api_asserts.assert_status_code_is_ok(repository_response)
         return RepositoryIndexResponse(root=repository_response.json())
 
@@ -254,7 +254,9 @@ class ToolShedPopulator:
     def reset_metadata(self, repository: HasRepositoryId) -> ResetMetadataOnRepositoryResponse:
         repository_id = self._repository_id(repository)
         request = ResetMetadataOnRepositoryRequest(repository_id=repository_id)
-        reset_response = self._api_interactor.post("repositories/reset_metadata_on_repository", json=request.dict())
+        reset_response = self._api_interactor.post(
+            "repositories/reset_metadata_on_repository", json=request.model_dump()
+        )
         api_asserts.assert_status_code_is_ok(reset_response)
         return ResetMetadataOnRepositoryResponse(**reset_response.json())
 
@@ -262,7 +264,7 @@ class ToolShedPopulator:
         return self.tool_search(ToolSearchRequest(q=query))
 
     def tool_search(self, search_request: ToolSearchRequest) -> ToolSearchResults:
-        search_response = self._api_interactor.get("tools", params=search_request.dict())
+        search_response = self._api_interactor.get("tools", params=search_request.model_dump())
         api_asserts.assert_status_code_is_ok(search_response)
         return ToolSearchResults(**search_response.json())
 
@@ -270,7 +272,7 @@ class ToolShedPopulator:
         return self.repo_search(RepositorySearchRequest(q=query))
 
     def repo_search(self, repo_search_request: RepositorySearchRequest) -> RepositorySearchResults:
-        search_response = self._api_interactor.get("repositories", params=repo_search_request.dict())
+        search_response = self._api_interactor.get("repositories", params=repo_search_request.model_dump())
         api_asserts.assert_status_code_is_ok(search_response)
         return RepositorySearchResults(**search_response.json())
 

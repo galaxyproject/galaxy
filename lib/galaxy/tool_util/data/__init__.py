@@ -642,7 +642,7 @@ class TabularToolDataTable(ToolDataTable):
                     # we have a data manager, use its repo_info method
                     source_data_manager = cast("DataManager", source)
                     source_repo_info_model = source_data_manager.repo_info
-                source_repo_info = source_repo_info_model.dict() if source_repo_info_model else None
+                source_repo_info = source_repo_info_model.model_dump() if source_repo_info_model else None
         filename = default
         for name, value in self.filenames.items():
             repo_info = value.get("tool_shed_repository")
@@ -1189,7 +1189,7 @@ class ToolDataTableManager(Dictifiable):
             extra_files_path = dataset.extra_files_path
             bundle_path = os.path.join(extra_files_path, BUNDLE_INDEX_FILE_NAME)
             with open(bundle_path, "w") as fw:
-                json.dump(bundle.dict(), fw)
+                json.dump(bundle.model_dump(), fw)
 
 
 SUPPORTED_DATA_TABLE_TYPES = TabularToolDataTable

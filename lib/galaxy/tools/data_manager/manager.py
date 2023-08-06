@@ -261,4 +261,4 @@ class DataManager:
     # data manager manual integration test provides coverage
     def get_tool_shed_repository_info_dict(self) -> Optional[dict]:
         repo_info = self.repo_info
-        return repo_info.dict() if repo_info else None
+        return repo_info.model_dump() if repo_info else None
