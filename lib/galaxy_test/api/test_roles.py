@@ -79,7 +79,6 @@ class TestRolesApi(ApiTestCase):
 
         # Test missing name
         payload_missing_name = {
-            "name": None,
             "description": description,
             "user_ids": [self.dataset_populator.user_id()],
         }
