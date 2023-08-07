@@ -7,16 +7,966 @@ from typing import (
     Any,
     Dict,
     List,
+    Optional,
 )
 
 from pydantic import Field
-from typing_extensions import Annotated
+from typing_extensions import (
+    Annotated,
+    Literal,
+)
 
 from galaxy.schema.schema import Model
 
+WatchToolOptions = Literal["false", "auto", "polling"]
 
-class GalaxyConfigModel(Model):
-    """Contains Galaxy configuration values."""
+
+class ComputedGalaxyConfig(Model):
+    """Contains Galaxy configuration options computed at runtime."""
+
+    is_admin_user: Annotated[
+        Optional[bool],
+        Field(
+            deprecated=True,  # TODO: redundant, this is available from user data (deprecated for now)
+            title="Is Admin User",
+            description="""Determines if the current user is an admin user.
+**Deprecated**: This is deprecated and will be removed in a future release.
+Please get this information from the user data instead.""",
+        ),
+    ] = False
+
+    lims_doc_url: Annotated[
+        Optional[str],
+        Field(
+            deprecated=True,  # TODO: This option seems to be unused in the codebase (?)
+            title="Lims Doc Url",
+            description="""The URL linked by the "LIMS Documentation" link in the "Help" menu.
+**Deprecated**: This is deprecated and will be removed in a future release.
+Please use the `helpsite_url` option instead.""",
+        ),
+    ] = "https://usegalaxy.org/u/rkchak/p/sts"
+
+    markdown_to_pdf_available: Annotated[
+        Optional[bool],
+        Field(
+            deprecated=True,  # TODO: This option seems to be used only in tests (?)
+            title="Markdown To Pdf Available",
+            description="""Determines if the markdown to pdf conversion is available.
+**Deprecated**: This is deprecated and will be removed in a future release.""",
+        ),
+    ] = False
+
+    has_user_tool_filters: Annotated[
+        bool,
+        Field(
+            title="Has User Tool Filters",
+            description="""Determines if the user has tool filters.""",
+        ),
+    ] = False
+
+    version_major: Annotated[
+        str,
+        Field(
+            title="Version Major",
+            description="""The major version of Galaxy.""",
+        ),
+    ]
+
+    version_minor: Annotated[
+        str,
+        Field(
+            title="Version Minor",
+            description="""The minor version of Galaxy.""",
+        ),
+    ]
+
+    version_extra: Annotated[
+        Optional[Any],
+        Field(
+            title="Version Extra",
+            description="""The extra version of Galaxy.""",
+        ),
+    ]
+
+    carbon_intensity: Annotated[
+        Optional[float],
+        Field(
+            title="Carbon Intensity",
+            description="""The carbon intensity of the electricity used by the Galaxy server.""",
+        ),
+    ]
+
+    geographical_server_location_name: Annotated[
+        Optional[str],
+        Field(
+            title="Geographical Server Location Name",
+            description="""The name of the geographical location of the Galaxy server.""",
+        ),
+    ]
+
+    server_startttime: Annotated[
+        int,
+        Field(
+            title="Server Start Time",
+            description="""The time when the Galaxy server was started (seconds since Epoch).""",
+        ),
+    ]
+
+    server_mail_configured: Annotated[
+        bool,
+        Field(
+            title="Server Mail Configured",
+            description="""Determines if the Galaxy instance has a SMTP server configured.""",
+        ),
+    ] = False
+
+    python: Annotated[
+        List[int],
+        Field(
+            title="Python Version",
+            description="""The Python version used by Galaxy as a tuple of integers [mayor, minor].""",
+        ),
+    ]
+
+    file_sources_configured: Annotated[
+        bool,
+        Field(
+            title="File Sources Configured",
+            description="""Determines if the Galaxy instance has custom file sources configured.""",
+        ),
+    ]
+
+    quota_source_labels: Annotated[
+        List[str],
+        Field(
+            title="Quota Source Labels",
+            description="""The labels of the disk quota sources available on this Galaxy instance.""",
+        ),
+    ]
+
+    object_store_allows_id_selection: Annotated[
+        bool,
+        Field(
+            title="Object Store Allows Id Selection",
+            description="""Determines if the object store allows id selection.""",
+        ),
+    ]
+
+    object_store_ids_allowing_selection: Annotated[
+        List[str],
+        Field(
+            title="Object Store Ids Allowing Selection",
+            description="""The ids of the object stores that can be selected.""",
+        ),
+    ]
+
+    user_library_import_dir_available: Annotated[
+        bool,
+        Field(
+            title="User Library Import Dir Available",
+            description="""Determines if the user library import directory is available.""",
+        ),
+    ]
+
+    themes: Annotated[
+        Dict[str, Dict[str, str]],
+        Field(
+            title="Themes",
+            description="""The visual style themes available on this Galaxy instance.""",
+        ),
+    ]
+
+
+class UserExposableGalaxyConfig(Model):
+    """Contains Galaxy configuration values that can be exposed to regular users.
+
+    These values are used to generate the OpenAPI and Configuration YAML schema for the Galaxy configuration.
+    When a new configuration option is added to Galaxy, it should be added to this model as well as
+    to the ConfigSerializer.
+    """
+
+    brand: Annotated[
+        str,
+        Field(
+            title="Brand",
+            description="""Append "{brand}" text to the masthead.""",
+        ),
+    ]
+
+    logo_url: Annotated[
+        str,
+        Field(
+            title="Logo Url",
+            description="""The URL linked by the "Galaxy/brand" text.""",
+        ),
+    ] = "/"
+
+    logo_src: Annotated[
+        str,
+        Field(
+            title="Logo Src",
+            description="""The brand image source.""",
+        ),
+    ] = "/static/favicon.svg"
+
+    logo_src_secondary: Annotated[
+        str,
+        Field(
+            title="Logo Src Secondary",
+            description="""The custom brand image source.""",
+        ),
+    ]
+
+    terms_url: Annotated[
+        str,
+        Field(
+            title="Terms Url",
+            description="""The URL linked by the "Terms and Conditions" link in the "Help" menu, as well
+as on the user registration and login forms and in the activation emails.""",
+        ),
+    ]
+
+    wiki_url: Annotated[
+        str,
+        Field(
+            title="Wiki Url",
+            description="""The URL linked by the "Community Hub" link in the "Help" menu.""",
+        ),
+    ] = "https://galaxyproject.org/"
+
+    screencasts_url: Annotated[
+        str,
+        Field(
+            title="Screencasts Url",
+            description="""The URL linked by the "Videos" link in the "Help" menu.""",
+        ),
+    ] = "https://www.youtube.com/c/galaxyproject"
+
+    citation_url: Annotated[
+        str,
+        Field(
+            title="Citation Url",
+            description="""The URL linked by the "How to Cite Galaxy" link in the "Help" menu.""",
+        ),
+    ] = "https://galaxyproject.org/citing-galaxy"
+
+    citations_export_message_html: Annotated[
+        str,
+        Field(
+            title="Citations Export Message Html",
+            description="""Message to display on the export citations tool page""",
+        ),
+    ] = 'When writing up your analysis, remember to include all references that should be cited in order to completely describe your work. Also, please remember to <a href="https://galaxyproject.org/citing-galaxy">cite Galaxy</a>.'
+
+    support_url: Annotated[
+        str,
+        Field(
+            title="Support Url",
+            description="""The URL linked by the "Support" link in the "Help" menu.""",
+        ),
+    ] = "https://galaxyproject.org/support/"
+
+    quota_url: Annotated[
+        str,
+        Field(
+            title="Quota Url",
+            description="""The URL linked for quota information in the UI.""",
+        ),
+    ] = "https://galaxyproject.org/support/account-quotas/"
+
+    helpsite_url: Annotated[
+        str,
+        Field(
+            title="Helpsite Url",
+            description="""The URL linked by the "Galaxy Help" link in the "Help" menu.""",
+        ),
+    ] = "https://help.galaxyproject.org/"
+
+    default_locale: Annotated[
+        str,
+        Field(
+            title="Default Locale",
+            description="""Default localization for Galaxy UI.
+Allowed values are listed at the end of client/src/nls/locale.js.
+With the default value (auto), the locale will be automatically adjusted to
+the user's navigator language.
+Users can override this settings in their user preferences if the localization
+settings are enabled in user_preferences_extra_conf.yml""",
+        ),
+    ] = "auto"
+
+    enable_account_interface: Annotated[
+        bool,
+        Field(
+            title="Enable Account Interface",
+            description="""Allow users to manage their account data, change passwords or delete their accounts.""",
+        ),
+    ] = True
+
+    enable_tool_recommendations: Annotated[
+        bool,
+        Field(
+            title="Enable Tool Recommendations",
+            description="""Allow the display of tool recommendations in workflow editor and after tool execution.
+If it is enabled and set to true, please enable 'tool_recommendation_model_path' as well""",
+        ),
+    ] = False
+
+    tool_recommendation_model_path: Annotated[
+        str,
+        Field(
+            title="Tool Recommendation Model Path",
+            description="""Set remote path of the trained model (HDF5 file) for tool recommendation.""",
+        ),
+    ] = "https://github.com/galaxyproject/galaxy-test-data/raw/master/tool_recommendation_model_v_0.2.hdf5"
+
+    admin_tool_recommendations_path: Annotated[
+        str,
+        Field(
+            title="Admin Tool Recommendations Path",
+            description="""Set path to the additional tool preferences from Galaxy admins.
+It has two blocks. One for listing deprecated tools which will be removed from the recommendations and
+another is for adding additional tools to be recommended along side those from the deep learning model.""",
+        ),
+    ] = "tool_recommendations_overwrite.yml"
+
+    overwrite_model_recommendations: Annotated[
+        bool,
+        Field(
+            title="Overwrite Model Recommendations",
+            description="""Overwrite or append to the tool recommendations by the deep learning model. When set to true, all the recommendations by the deep learning model
+are overwritten by the recommendations set by an admin in a config file 'tool_recommendations_overwrite.yml'. When set to false, the recommended tools
+by admins and predicted by the deep learning model are shown.""",
+        ),
+    ] = False
+
+    topk_recommendations: Annotated[
+        int,
+        Field(
+            title="Topk Recommendations",
+            description="""Set the number of predictions/recommendations to be made by the model""",
+        ),
+    ] = 20
+
+    allow_user_impersonation: Annotated[
+        bool,
+        Field(
+            title="Allow User Impersonation",
+            description="""Allow administrators to log in as other users (useful for debugging).""",
+        ),
+    ] = False
+
+    allow_user_creation: Annotated[
+        bool,
+        Field(
+            title="Allow User Creation",
+            description="""Allow unregistered users to create new accounts (otherwise, they will have to be created by an admin).""",
+        ),
+    ] = True
+
+    allow_user_dataset_purge: Annotated[
+        bool,
+        Field(
+            title="Allow User Dataset Purge",
+            description="""Allow users to remove their datasets from disk immediately (otherwise,
+datasets will be removed after a time period specified by an administrator in
+the cleanup scripts run via cron)""",
+        ),
+    ] = True
+
+    use_remote_user: Annotated[
+        bool,
+        Field(
+            title="Use Remote User",
+            description="""User authentication can be delegated to an upstream proxy server (usually
+Apache). The upstream proxy should set a REMOTE_USER header in the request.
+Enabling remote user disables regular logins. For more information, see:
+https://docs.galaxyproject.org/en/master/admin/special_topics/apache.html""",
+        ),
+    ] = False
+
+    remote_user_logout_href: Annotated[
+        Optional[str],
+        Field(
+            title="Remote User Logout Href",
+            description="""If use_remote_user is enabled, you can set this to a URL that will log your users out.""",
+        ),
+    ] = None
+
+    single_user: Annotated[
+        str,
+        Field(
+            title="Single User",
+            description="""If an e-mail address is specified here, it will hijack remote user mechanics
+(``use_remote_user``) and have the webapp inject a single fixed user. This
+has the effect of turning Galaxy into a single user application with no
+login or external proxy required. Such applications should not be exposed to
+the world.""",
+        ),
+    ]
+
+    enable_oidc: Annotated[
+        bool,
+        Field(
+            title="Enable Oidc",
+            description="""Enables and disables OpenID Connect (OIDC) support.""",
+        ),
+    ] = False
+
+    # TODO: This is a placeholder for the OIDC configuration. It should be
+    # replaced with a proper model. Is not part of the YAML config file.
+    oidc: Annotated[
+        Dict[str, Any],
+        Field(
+            title="Oidc",
+            description="""OpenID Connect (OIDC) configuration.""",
+        ),
+    ] = {}
+
+    prefer_custos_login: Annotated[
+        bool,
+        Field(
+            title="Prefer Custos Login",
+            description="""Controls the order of the login page to prefer Custos-based login and registration.""",
+        ),
+    ] = False
+
+    enable_quotas: Annotated[
+        bool,
+        Field(
+            title="Enable Quotas",
+            description="""Enable enforcement of quotas. Quotas can be set from the Admin interface.""",
+        ),
+    ] = False
+
+    post_user_logout_href: Annotated[
+        str,
+        Field(
+            title="Post User Logout Href",
+            description="""This is the default url to which users are redirected after they log out.""",
+        ),
+    ] = "/root/login?is_logout_redirect=true"
+
+    datatypes_disable_auto: Annotated[
+        bool,
+        Field(
+            title="Datatypes Disable Auto",
+            description="""Disable the 'Auto-detect' option for file uploads""",
+        ),
+    ] = False
+
+    ga_code: Annotated[
+        Optional[str],
+        Field(
+            title="Google Analytics Code",
+            description="""You can enter tracking code here to track visitor's behavior
+through your Google Analytics account. Example: UA-XXXXXXXX-Y""",
+        ),
+    ] = None
+
+    plausible_server: Annotated[
+        Optional[str],
+        Field(
+            title="Plausible Server",
+            description="""Please enter the URL for the Plausible server (including https) so this can be used for tracking
+with Plausible (https://plausible.io/).""",
+        ),
+    ] = None
+
+    plausible_domain: Annotated[
+        Optional[str],
+        Field(
+            title="Plausible Domain",
+            description="""Please enter the URL for the Galaxy server so this can be used for tracking
+with Plausible (https://plausible.io/).""",
+        ),
+    ] = None
+
+    matomo_server: Annotated[
+        Optional[str],
+        Field(
+            title="Matomo Server",
+            description="""Please enter the URL for the Matomo server (including https) so this can be used for tracking
+with Matomo (https://matomo.org/).""",
+        ),
+    ] = None
+
+    matomo_site_id: Annotated[
+        Optional[str],
+        Field(
+            title="Matomo Site Id",
+            description="""Please enter the site ID for the Matomo server so this can be used for tracking
+with Matomo (https://matomo.org/).""",
+        ),
+    ] = None
+
+    enable_unique_workflow_defaults: Annotated[
+        bool,
+        Field(
+            title="Enable Unique Workflow Defaults",
+            description="""Enable a feature when running workflows. When enabled, default datasets
+are selected for "Set at Runtime" inputs from the history such that the
+same input will not be selected twice, unless there are more inputs than
+compatible datasets in the history.
+When false, the most recently added compatible item in the history will
+be used for each "Set at Runtime" input, independent of others in the workflow.""",
+        ),
+    ] = False
+
+    enable_beta_markdown_export: Annotated[
+        bool,
+        Field(
+            title="Enable Beta Markdown Export",
+            description="""Enable export of Galaxy Markdown documents (pages and workflow reports)
+to PDF. Requires manual installation and setup of weasyprint (latest version
+available for Python 2.7 is 0.42).""",
+        ),
+    ] = False
+
+    enable_beacon_integration: Annotated[
+        bool,
+        Field(
+            title="Enable Beacon Integration",
+            description="""Enables user preferences and api endpoint for the beacon integration.""",
+        ),
+    ] = False
+
+    simplified_workflow_run_ui: Annotated[
+        Literal["off", "prefer"],
+        Field(
+            title="Simplified Workflow Run Ui",
+            description="""If set to 'off' by default, always use the traditional workflow form that renders
+all steps in the GUI and serializes the tool state of all steps during
+invocation. Set to 'prefer' to default to a simplified workflow UI that
+only renders the inputs if possible (the workflow must have no disconnected
+runtime inputs and not replacement parameters within tool steps). In the
+future 'force' may be added an option for Galaskio-style servers that should
+only render simplified workflows.""",
+        ),
+    ] = "prefer"
+
+    simplified_workflow_run_ui_target_history: Annotated[
+        Literal["prefer_current", "prefer_new"],
+        Field(
+            title="Simplified Workflow Run Ui Target History",
+            description="""When the simplified workflow run form is rendered, should the invocation outputs
+be sent to the 'current' history or a 'new' history. If the user should be presented
+and option between these - set this to 'prefer_current' or 'prefer_new' to display
+a runtime setting with the corresponding default. The default is to provide the
+user this option and default it to the current history (the traditional behavior
+of Galaxy for years) - this corresponds to the setting 'prefer_current'.
+""",
+        ),
+    ] = "prefer_current"
+
+    simplified_workflow_run_ui_job_cache: Annotated[
+        Literal["on", "off"],
+        Field(
+            title="Simplified Workflow Run Ui Job Cache",
+            description="""When the simplified workflow run form is rendered, should the invocation use job
+caching. This isn't a boolean so an option for 'show-selection' can be added later.""",
+        ),
+    ] = "off"
+
+    nginx_upload_path: Annotated[
+        str,
+        Field(
+            title="Nginx Upload Path",
+            description="""This value overrides the action set on the file upload form, e.g. the web
+path where the nginx_upload_module has been configured to intercept upload requests.""",
+        ),
+    ]
+
+    chunk_upload_size: Annotated[
+        int,
+        Field(
+            title="Chunk Upload Size",
+            description="""Galaxy can upload user files in chunks without using nginx. Enable the chunk
+uploader by specifying a chunk size larger than 0. The chunk size is specified
+in bytes (default: 10MB).
+""",
+        ),
+    ] = 10485760
+
+    ftp_upload_site: Annotated[
+        Optional[str],
+        Field(
+            title="Ftp Upload Site",
+            description="""Enable Galaxy's "Upload via FTP" interface.
+You'll need to install and configure an FTP server (we've used ProFTPd since it can use Galaxy's
+database for authentication) and set the following two options.
+This will be provided to users in the help text as 'log in to the FTP server at '.
+Thus, it should be the hostname of your FTP server.""",
+        ),
+    ] = None
+
+    require_login: Annotated[
+        bool,
+        Field(
+            title="Require Login",
+            description="""Force everyone to log in (disable anonymous access).""",
+        ),
+    ] = False
+
+    inactivity_box_content: Annotated[
+        str,
+        Field(
+            title="Inactivity Box Content",
+            description="""Shown in warning box to users that were not activated yet.
+In use only if activation_grace_period is set.""",
+        ),
+    ] = "Your account has not been activated yet. Feel free to browse around and see what's available, but you won't be able to upload data or run jobs until you have verified your email address."
+
+    visualizations_visible: Annotated[
+        bool,
+        Field(
+            title="Visualizations Visible",
+            description="""Show visualization tab and list in masthead.""",
+        ),
+    ] = True
+
+    interactivetools_enable: Annotated[
+        bool,
+        Field(
+            title="Interactivetools Enable",
+            description="""Enable InteractiveTools.""",
+        ),
+    ] = False
+
+    aws_estimate: Annotated[
+        bool,
+        Field(
+            title="Aws Estimate",
+            description="""This flag enables an AWS cost estimate for every job based on their runtime matrices.
+CPU, RAM and runtime usage is mapped against AWS pricing table.
+Please note, that those numbers are only estimates.""",
+        ),
+    ] = False
+
+    carbon_emission_estimates: Annotated[
+        bool,
+        Field(
+            title="Carbon Emission Estimates",
+            description="""This flag enables carbon emissions estimates for every job based on its runtime metrics.
+CPU and RAM usage and the total job runtime are used to determine an estimate value.
+These estimates and are based off of the work of the Green Algorithms Project and
+the United States Environmental Protection Agency (EPA).
+Visit https://www.green-algorithms.org/ and https://www.epa.gov/energy/greenhouse-gas-equivalencies-calculator.
+for more details.""",
+        ),
+    ] = True
+
+    geographical_server_location_code: Annotated[
+        str,
+        Field(
+            title="Geographical Server Location Code",
+            description="""The estimated geographical location of the server hosting your galaxy instance given as an ISO 3166 code.
+This is used to make carbon emissions estimates more accurate as the location effects the
+carbon intensity values used in the estimate calculation. This defaults to "GLOBAL" if not set or the
+`geographical_server_location_code` value is invalid or unsupported. To see a full list of supported locations,
+visit https://galaxyproject.org/admin/carbon_emissions""",
+        ),
+    ] = "GLOBAL"
+
+    power_usage_effectiveness: Annotated[
+        float,
+        Field(
+            title="Power Usage Effectiveness",
+            description="""The estimated power usage effectiveness of the data centre housing the server your galaxy
+instance is running on. This can make carbon emissions estimates more accurate.
+For more information on how to calculate a PUE value, visit
+https://en.wikipedia.org/wiki/Power_usage_effectiveness
+""",
+        ),
+    ] = 1.67
+
+    message_box_visible: Annotated[
+        bool,
+        Field(
+            title="Message Box Visible",
+            description="""Show a message box under the masthead.""",
+        ),
+    ] = False
+
+    message_box_content: Annotated[
+        str,
+        Field(
+            title="Message Box Content",
+            description="""Show a message box under the masthead.""",
+        ),
+    ]
+
+    message_box_class: Annotated[
+        Literal["info", "warning", "error", "done"],
+        Field(
+            title="Message Box Class",
+            description="""Class of the message box under the masthead.
+Possible values are: 'info' (the default), 'warning', 'error', 'done'.""",
+        ),
+    ] = "info"
+
+    mailing_join_addr: Annotated[
+        Optional[str],
+        Field(
+            title="Mailing Join Address",
+            description="""On the user registration form, users may choose to join a mailing list. This
+is the address used to subscribe to the list. Uncomment and leave empty if you
+want to remove this option from the user registration form.
+
+Example value 'galaxy-announce-join@lists.galaxyproject.org'""",
+        ),
+    ] = "galaxy-announce-join@bx.psu.edu"
+
+    registration_warning_message: Annotated[
+        Optional[str],
+        Field(
+            title="Registration Warning Message",
+            description="""Registration warning message is used to discourage people from registering
+multiple accounts. Applies mostly for the main Galaxy instance.
+If no message specified the warning box will not be shown.""",
+        ),
+    ] = "Please register only one account - we provide this service free of charge and have limited computational resources. Multi-accounts are tracked and will be subjected to account termination and data deletion."
+
+    welcome_url: Annotated[
+        str,
+        Field(
+            title="Welcome Url",
+            description="""The URL of the page to display in Galaxy's middle pane when loaded. This can
+be an absolute or relative URL.""",
+        ),
+    ] = "/static/welcome.html"
+
+    show_welcome_with_login: Annotated[
+        bool,
+        Field(
+            title="Show Welcome With Login",
+            description="""Show the site's welcome page (see welcome_url) alongside the login page
+(even if require_login is true).""",
+        ),
+    ] = False
+
+    cookie_domain: Annotated[
+        str,
+        Field(
+            title="Cookie Domain",
+            description="""Tell Galaxy that multiple domains sharing the same root are associated
+to this instance and wants to share the same session cookie.
+This allow a user to stay logged in when passing from one subdomain to the other.
+This root domain will be written in the unique session cookie shared by all subdomains.""",
+        ),
+    ]
+
+    select_type_workflow_threshold: Annotated[
+        int,
+        Field(
+            title="Select Type Workflow Threshold",
+            description="""Due to performance considerations (select2 fields are pretty 'expensive' in terms of memory usage)
+Galaxy uses the regular select fields for non-dataset selectors in the workflow run form.
+use 0 in order to always use select2 fields, use -1 (default) in order to always use the regular select fields,
+use any other positive number as threshold (above threshold: regular select fields will be used)""",
+        ),
+    ] = -1
+
+    toolbox_auto_sort: Annotated[
+        bool,
+        Field(
+            title="Toolbox Auto Sort",
+            description="""If true, the toolbox will be sorted by tool id when the toolbox is loaded.
+This is useful for ensuring that tools are always displayed in the same
+order in the UI. If false, the order of tools in the toolbox will be
+preserved as they are loaded from the tool config files.""",
+        ),
+    ] = True
+
+    panel_views: Annotated[
+        List[Any],
+        Field(
+            title="Panel Views",
+            description="""Definitions of static toolbox panel views embedded directly in the config instead of reading
+YAML from directory with panel_views_dir.""",
+        ),
+    ]
+
+    default_panel_view: Annotated[
+        str,
+        Field(
+            title="Default Panel View",
+            description="""Default tool panel view for the current Galaxy configuration. This should refer to an id of
+a panel view defined using the panel_views or panel_views_dir configuration options or an
+EDAM panel view. The default panel view is simply called `default` and refers to the tool
+panel state defined by the integrated tool panel.""",
+        ),
+    ] = "default"
+
+    upload_from_form_button: Annotated[
+        Literal["always-on", "always-off"],
+        Field(
+            title="Upload From Form Button",
+            description="""If 'always-on', add another button to tool form data inputs that allow uploading
+data from the tool form in fewer clicks (at the expense of making the form more complicated). This applies to workflows as well.
+
+Avoiding making this a boolean because we may add options such as 'in-single-form-view'
+or 'in-simplified-workflow-views'. https://github.com/galaxyproject/galaxy/pull/9809/files#r461889109""",
+        ),
+    ] = "always-off"
+
+    release_doc_base_url: Annotated[
+        str,
+        Field(
+            title="Release Doc Base Url",
+            description="""The URL linked by the "Galaxy Version" link in the "Help" menu.""",
+        ),
+    ] = "https://docs.galaxyproject.org/en/release_"
+
+    expose_user_email: Annotated[
+        bool,
+        Field(
+            title="Expose User Email",
+            description="""Expose user list. Setting this to true will expose the user list to
+authenticated users. This makes sharing datasets in smaller galaxy instances
+much easier as they can type a name/email and have the correct user show up.
+This makes less sense on large public Galaxy instances where that data
+shouldn't be exposed. For semi-public Galaxies, it may make sense to expose
+just the username and not email, or vice versa.
+
+If enable_beta_gdpr is set to true, then this option will be overridden and set to false.""",
+        ),
+    ] = False
+
+    enable_tool_source_display: Annotated[
+        bool,
+        Field(
+            title="Enable Tool Source Display",
+            description="""This option allows users to view the tool wrapper source code. This is
+safe to enable if you have not hardcoded any secrets in any of the tool
+wrappers installed on this Galaxy server. If you have only installed tool
+wrappers from public tool sheds and tools shipped with Galaxy there you
+can enable this option.""",
+        ),
+    ] = False
+
+    enable_celery_tasks: Annotated[
+        bool,
+        Field(
+            title="Enable Celery Tasks",
+            description="""Offload long-running tasks to a Celery task queue.
+Activate this only if you have setup a Celery worker for Galaxy.
+For details, see https://docs.galaxyproject.org/en/master/admin/production.html""",
+        ),
+    ] = False
+
+    welcome_directory: Annotated[
+        str,
+        Field(
+            title="Welcome Directory",
+            description="""Location of New User Welcome data, a single directory containing the
+images and JSON of Topics/Subtopics/Slides as export. This location
+is relative to galaxy/static""",
+        ),
+    ] = "plugins/welcome_page/new_user/static/topics/"
+
+    tool_training_recommendations: Annotated[
+        bool,
+        Field(
+            title="Tool Training Recommendations",
+            description="""Displays a link to training material, if any includes the current tool.
+When activated the following options also need to be set:
+ tool_training_recommendations_link,
+ tool_training_recommendations_api_url
+""",
+        ),
+    ] = True
+
+    tool_training_recommendations_link: Annotated[
+        str,
+        Field(
+            title="Tool Training Recommendations Link",
+            description="""Template URL to display all tutorials containing current tool.
+Valid template inputs are:
+ {repository_owner}
+ {name}
+ {tool_id}
+ {training_tool_identifier}
+ {version}
+""",
+        ),
+    ] = "https://training.galaxyproject.org/training-material/by-tool/{training_tool_identifier}.html"
+
+    tool_training_recommendations_api_url: Annotated[
+        str,
+        Field(
+            title="Tool Training Recommendations Api Url",
+            description="""URL to API describing tutorials containing specific tools.
+When CORS is used, make sure to add this host.""",
+        ),
+    ] = "https://training.galaxyproject.org/training-material/api/top-tools.json"
+
+    enable_notification_system: Annotated[
+        bool,
+        Field(
+            title="Enable Notification System",
+            description="""Enables the Notification System integrated in Galaxy.
+
+Users can receive automatic notifications when a certain resource is shared with them or when some long running operations have finished, etc.
+
+The system allows notification scheduling and expiration, and users can opt-out of specific notification categories or channels.
+
+Admins can schedule and broadcast notifications that will be visible to all users, including special server-wide announcements such as scheduled maintenance, high load warnings, and event announcements, to name a few examples.
+""",
+        ),
+    ] = False
+
+
+class AdminExposableGalaxyConfig(UserExposableGalaxyConfig):
+    """Configuration options available only to Galaxy admins.
+
+    These values are used to generate the OpenAPI and Configuration YAML schema for the Galaxy configuration.
+    """
+
+    library_import_dir: Annotated[
+        Optional[str],
+        Field(
+            title="Library Import Dir",
+            description="""Add an option to the library upload form which allows administrators to
+upload a directory of files.""",
+        ),
+    ] = None
+
+    user_library_import_dir: Annotated[
+        Optional[str],
+        Field(
+            title="User Library Import Dir",
+            description="""Add an option to the library upload form which allows authorized
+non-administrators to upload a directory of files. The configured directory
+must contain sub-directories named the same as the non-admin user's Galaxy
+login ( email ). The non-admin user is restricted to uploading files or
+sub-directories of files contained in their directory.""",
+        ),
+    ] = None
+
+    allow_library_path_paste: Annotated[
+        bool,
+        Field(
+            title="Allow Library Path Paste",
+            description="""Adds an option to the admin library upload tool allowing admins to paste
+filesystem paths to files and directories in a box, and these paths will be added to a library.""",
+        ),
+    ] = False
+
+    allow_user_deletion: Annotated[
+        bool,
+        Field(
+            title="Allow User Deletion",
+            description="""Allow administrators to delete accounts.""",
+        ),
+    ] = False
+
+
+class FullGalaxyConfig(AdminExposableGalaxyConfig):
+    """Contains all options from the Galaxy Configuration File.
+
+    This model should be used only to generate the Configuration YAML schema.
+    """
 
     config_dir: Annotated[
         str,
@@ -28,17 +978,19 @@ directory in which galaxy.yml is located.
 """,
         ),
     ]
+
     managed_config_dir: Annotated[
         str,
         Field(
             title="Managed Config Dir",
             description="""The directory that will be prepended to relative paths in options specifying
 config files controlled by Galaxy (such as shed_tool_config_file, etc.). Must be
-writable by the user running Galaxy.  Defaults to `<config_dir>/` if running
+writable by the user running Galaxy. Defaults to `<config_dir>/` if running
 Galaxy from source or `<data_dir>/config` otherwise.
 """,
         ),
     ]
+
     data_dir: Annotated[
         str,
         Field(
@@ -50,23 +1002,24 @@ file_path, etc.). Defaults to `database/` if running Galaxy from source or
 """,
         ),
     ]
+
     templates_dir: Annotated[
         str,
         Field(
             title="Templates Dir",
-            description="""The directory containing custom templates for Galaxy, such as HTML/text email templates. Defaults to 'templates'. Default templates can be found in the Galaxy root under config/templates. These can be copied to <templates_dir> if you wish to customize them.
-""",
+            description="""The directory containing custom templates for Galaxy, such as HTML/text email templates. Defaults to 'templates'. Default templates can be found in the Galaxy root under config/templates. These can be copied to <templates_dir> if you wish to customize them.""",
         ),
     ] = "templates"
+
     cache_dir: Annotated[
         str,
         Field(
             title="Cache Dir",
             description="""Top level cache directory. Any other cache directories (tool_cache_data_dir,
-template_cache_path, etc.) should be subdirectories.
-""",
+template_cache_path, etc.) should be subdirectories.""",
         ),
     ] = "cache"
+
     database_connection: Annotated[
         str,
         Field(
@@ -89,55 +1042,56 @@ https://docs.sqlalchemy.org/en/14/core/engines.html?highlight=create_engine#sqla
 """,
         ),
     ]
+
     database_engine_option_pool_size: Annotated[
         int,
         Field(
             title="Database Engine Option Pool Size",
             description="""If the server logs errors about not having enough database pool connections,
-you will want to increase these values, or consider running more Galaxy
-processes.
-""",
+you will want to increase these values, or consider running more Galaxy processes.""",
         ),
     ] = 5
+
     database_engine_option_max_overflow: Annotated[
         int,
         Field(
             title="Database Engine Option Max Overflow",
             description="""If the server logs errors about not having enough database pool connections,
-you will want to increase these values, or consider running more Galaxy
-processes.
-""",
+you will want to increase these values, or consider running more Galaxy processes.""",
         ),
     ] = 10
+
     database_engine_option_pool_recycle: Annotated[
         int,
         Field(
             title="Database Engine Option Pool Recycle",
             description="""If using MySQL and the server logs the error "MySQL server has gone away",
-you will want to set this to some positive value (7200 should work).
-""",
+you will want to set this to some positive value (7200 should work).""",
         ),
     ] = -1
+
     database_engine_option_server_side_cursors: Annotated[
         bool,
         Field(
             title="Database Engine Option Server Side Cursors",
             description="""If large database query results are causing memory or response time issues in
-the Galaxy process, leave the result on the server instead.  This option is
+the Galaxy process, leave the result on the server instead. This option is
 only available for PostgreSQL and is highly recommended.
 """,
         ),
     ] = False
+
     database_query_profiling_proxy: Annotated[
         bool,
         Field(
             title="Database Query Profiling Proxy",
             description="""Log all database transactions, can be useful for debugging and performance
-profiling.  Logging is done via Python's 'logging' module under the qualname
+profiling. Logging is done via Python's 'logging' module under the qualname
 'galaxy.model.orm.logging_connection_proxy'
 """,
         ),
     ] = False
+
     database_template: Annotated[
         str,
         Field(
@@ -148,6 +1102,7 @@ documentation is included here for completeness.
 """,
         ),
     ]
+
     database_log_query_counts: Annotated[
         bool,
         Field(
@@ -161,16 +1116,18 @@ sql_debug middleware and adding sql_debug=1 to a request string.
 """,
         ),
     ] = False
+
     slow_query_log_threshold: Annotated[
         float,
         Field(
             title="Slow Query Log Threshold",
-            description="""Slow query logging.  Queries slower than the threshold indicated below will
-be logged to debug.  A value of '0' is disabled.  For example, you would set
+            description="""Slow query logging. Queries slower than the threshold indicated below will
+be logged to debug. A value of '0' is disabled. For example, you would set
 this to .005 to log all queries taking longer than 5 milliseconds.
 """,
         ),
     ] = 0.0
+
     enable_per_request_sql_debugging: Annotated[
         bool,
         Field(
@@ -182,14 +1139,15 @@ useful for debugging slow endpoints during development.
 """,
         ),
     ] = False
+
     install_database_connection: Annotated[
         str,
         Field(
             title="Install Database Connection",
             description="""By default, Galaxy will use the same database to track user data and
-tool shed install data.  There are many situations in which it is
+tool shed install data. There are many situations in which it is
 valuable to separate these - for instance bootstrapping fresh Galaxy
-instances with pretested installs.  The following option can be used to
+instances with pretested installs. The following option can be used to
 separate the tool shed install database (all other options listed above
 but prefixed with ``install_`` are also available).
 
@@ -197,40 +1155,41 @@ Defaults to the value of the 'database_connection' option.
 """,
         ),
     ]
+
     database_auto_migrate: Annotated[
         bool,
         Field(
             title="Database Auto Migrate",
             description="""Setting the following option to true will cause Galaxy to automatically
-migrate the database forward after updates. This is not recommended for production
-use.
+migrate the database forward after updates. This is not recommended for production use.
 """,
         ),
     ] = False
+
     database_wait: Annotated[
         bool,
         Field(
             title="Database Wait",
-            description="""Wait for database to become available instead of failing immediately.
-""",
+            description="""Wait for database to become available instead of failing immediately.""",
         ),
     ] = False
+
     database_wait_attempts: Annotated[
         int,
         Field(
             title="Database Wait Attempts",
-            description="""Number of attempts before failing if database_wait is enabled.
-""",
+            description="""Number of attempts before failing if database_wait is enabled.""",
         ),
     ] = 60
+
     database_wait_sleep: Annotated[
         float,
         Field(
             title="Database Wait Sleep",
-            description="""Time to sleep between attempts if database_wait is enabled (in seconds).
-""",
+            description="""Time to sleep between attempts if database_wait is enabled (in seconds).""",
         ),
     ] = 1.0
+
     history_audit_table_prune_interval: Annotated[
         int,
         Field(
@@ -240,6 +1199,7 @@ Set to 0 to disable pruning.
 """,
         ),
     ] = 3600
+
     file_path: Annotated[
         str,
         Field(
@@ -251,6 +1211,7 @@ directory exists before using 'objects' as the default.
 """,
         ),
     ] = "objects"
+
     new_file_path: Annotated[
         str,
         Field(
@@ -260,6 +1221,7 @@ nodes that will run Galaxy jobs, unless using Pulsar.
 """,
         ),
     ] = "tmp"
+
     maximum_upload_file_size: Annotated[
         int,
         Field(
@@ -269,6 +1231,7 @@ This value is ignored if an external upload server is configured.
 """,
         ),
     ] = 107374182400
+
     tool_config_file: Annotated[
         Any,
         Field(
@@ -281,6 +1244,7 @@ files, or (for backwards compatibility) a comma-separated list of files.
 """,
         ),
     ] = "tool_conf.xml"
+
     shed_tool_config_file: Annotated[
         str,
         Field(
@@ -297,6 +1261,7 @@ tool_config_file cannot be read.
 """,
         ),
     ] = "shed_tool_conf.xml"
+
     migrated_tools_config: Annotated[
         str,
         Field(
@@ -308,19 +1273,21 @@ these scripts were previously run and such a file exists.
 """,
         ),
     ] = "migrated_tools_conf.xml"
+
     integrated_tool_panel_config: Annotated[
         str,
         Field(
             title="Integrated Tool Panel Config",
             description="""File that contains the XML section and tool tags from all tool panel config
-files integrated into a single file that defines the tool panel layout.  This
+files integrated into a single file that defines the tool panel layout. This
 file can be changed by the Galaxy administrator to alter the layout of the
-tool panel.  If not present, Galaxy will create it.
+tool panel. If not present, Galaxy will create it.
 
 The value of this option will be resolved with respect to <managed_config_dir>.
 """,
         ),
     ] = "integrated_tool_panel.xml"
+
     tool_path: Annotated[
         str,
         Field(
@@ -331,6 +1298,7 @@ Other tool config files must include the tool_path as an attribute in the
 """,
         ),
     ] = "tools"
+
     tool_dependency_dir: Annotated[
         str,
         Field(
@@ -345,6 +1313,7 @@ from the Tool Shed or in Conda will fail.
 """,
         ),
     ] = "dependencies"
+
     dependency_resolvers_config_file: Annotated[
         str,
         Field(
@@ -355,6 +1324,7 @@ description of the 'dependency_resolvers' option for details.
 """,
         ),
     ] = "dependency_resolvers_conf.xml"
+
     conda_prefix: Annotated[
         str,
         Field(
@@ -366,6 +1336,7 @@ Sample default '<tool_dependency_dir>/_conda'
 """,
         ),
     ]
+
     conda_exec: Annotated[
         str,
         Field(
@@ -375,14 +1346,15 @@ PATH (if available) and then to <conda_prefix>/bin/conda
 """,
         ),
     ]
+
     conda_debug: Annotated[
         bool,
         Field(
             title="Conda Debug",
-            description="""Pass debug flag to conda commands.
-""",
+            description="""Pass debug flag to conda commands.""",
         ),
     ] = False
+
     conda_ensure_channels: Annotated[
         str,
         Field(
@@ -392,14 +1364,15 @@ PATH (if available) and then to <conda_prefix>/bin/conda
 """,
         ),
     ] = "conda-forge,bioconda,defaults"
+
     conda_use_local: Annotated[
         bool,
         Field(
             title="Conda Use Local",
-            description="""Use locally-built conda packages.
-""",
+            description="""Use locally-built conda packages.""",
         ),
     ] = False
+
     conda_auto_install: Annotated[
         bool,
         Field(
@@ -409,6 +1382,7 @@ dependencies before each job runs.
 """,
         ),
     ] = False
+
     conda_auto_init: Annotated[
         bool,
         Field(
@@ -418,6 +1392,7 @@ if it cannot find a local copy and conda_exec is not configured.
 """,
         ),
     ] = True
+
     conda_copy_dependencies: Annotated[
         bool,
         Field(
@@ -430,6 +1405,7 @@ of extra disk space usage and extra time spent copying packages.
 """,
         ),
     ] = False
+
     local_conda_mapping_file: Annotated[
         str,
         Field(
@@ -439,6 +1415,7 @@ See `config/local_conda_mapping.yml.sample` for examples.
 """,
         ),
     ] = "local_conda_mapping.yml"
+
     modules_mapping_files: Annotated[
         str,
         Field(
@@ -448,13 +1425,14 @@ See `config/environment_modules_mapping.yml.sample` for examples.
 """,
         ),
     ] = "environment_modules_mapping.yml"
+
     use_cached_dependency_manager: Annotated[
         bool,
         Field(
             title="Use Cached Dependency Manager",
             description="""Certain dependency resolvers (namely Conda) take a considerable amount of
 time to build an isolated job environment in the job_working_directory if the
-job working directory is on a network share.  Set this option to true
+job working directory is on a network share. Set this option to true
 to cache the dependencies in a folder. This option is beta and should only be
 used if you experience long waiting times before a job is actually submitted
 to your cluster.
@@ -465,6 +1443,7 @@ directory.
 """,
         ),
     ] = False
+
     tool_dependency_cache_dir: Annotated[
         str,
         Field(
@@ -476,6 +1455,7 @@ Sample default '<tool_dependency_dir>/_cache'
 """,
         ),
     ]
+
     precache_dependencies: Annotated[
         bool,
         Field(
@@ -486,6 +1466,7 @@ Set this to false if you prefer dependencies to be cached only when installing n
 """,
         ),
     ] = True
+
     tool_sheds_config_file: Annotated[
         str,
         Field(
@@ -495,12 +1476,13 @@ install from in the admin interface (.sample used if default does not exist).
 """,
         ),
     ] = "tool_sheds_conf.xml"
+
     watch_tools: Annotated[
-        str,
+        WatchToolOptions,
         Field(
             title="Watch Tools",
             description="""Monitor the tools and tool directories listed in any tool config file specified in
-tool_config_file option.  If changes are found, tools are automatically reloaded.
+tool_config_file option. If changes are found, tools are automatically reloaded.
 Watchdog ( https://pypi.org/project/watchdog/ ) must be installed and available to Galaxy
 to use this option. Other options include 'auto' which will attempt to watch tools if the
 watchdog library is available but won't fail to load Galaxy if it is not and 'polling'
@@ -509,8 +1491,9 @@ scenarios than the watchdog default.
 """,
         ),
     ] = "false"
+
     watch_job_rules: Annotated[
-        str,
+        WatchToolOptions,
         Field(
             title="Watch Job Rules",
             description="""Monitor dynamic job rules. If changes are found, rules are automatically reloaded. Takes
@@ -518,18 +1501,20 @@ the same values as the 'watch_tools' option.
 """,
         ),
     ] = "false"
+
     watch_core_config: Annotated[
-        str,
+        WatchToolOptions,
         Field(
             title="Watch Core Config",
             description="""Monitor a subset of options in the core configuration file (See RELOADABLE_CONFIG_OPTIONS
-in lib/galaxy/config/__init__.py).  If changes are found, modified options are
+in lib/galaxy/config/__init__.py). If changes are found, modified options are
 automatically reloaded. Takes the same values as the 'watch_tools' option.
 """,
         ),
     ] = "false"
+
     watch_tours: Annotated[
-        str,
+        WatchToolOptions,
         Field(
             title="Watch Tours",
             description="""Monitor the interactive tours directory specified in the 'tour_config_dir' option. If
@@ -538,6 +1523,7 @@ changes are found, modified tours are automatically reloaded. Takes the same val
 """,
         ),
     ] = "false"
+
     short_term_storage_dir: Annotated[
         str,
         Field(
@@ -551,6 +1537,7 @@ framework and should not require such external tooling.
 """,
         ),
     ] = "short_term_web_storage"
+
     short_term_storage_default_duration: Annotated[
         int,
         Field(
@@ -560,15 +1547,17 @@ tasks (in seconds). The default duration is 1 day.
 """,
         ),
     ] = 86400
+
     short_term_storage_maximum_duration: Annotated[
         int,
         Field(
             title="Short Term Storage Maximum Duration",
             description="""The maximum duration short term storage files can hosted before they will be marked for
-clean up.  The default setting of 0 indicates no limit here.
+clean up. The default setting of 0 indicates no limit here.
 """,
         ),
     ] = 0
+
     short_term_storage_cleanup_interval: Annotated[
         int,
         Field(
@@ -578,22 +1567,23 @@ Celery task configuration.
 """,
         ),
     ] = 3600
+
     file_sources_config_file: Annotated[
         str,
         Field(
             title="File Sources Config File",
-            description="""Configured FileSource plugins.
-""",
+            description="""Configured FileSource plugins.""",
         ),
     ] = "file_sources_conf.yml"
+
     file_sources: Annotated[
         List[Any],
         Field(
             title="File Sources",
-            description="""FileSource plugins described embedded into Galaxy's config.
-""",
+            description="""FileSource plugins described embedded into Galaxy's config.""",
         ),
     ]
+
     enable_mulled_containers: Annotated[
         bool,
         Field(
@@ -606,6 +1596,7 @@ for job destinations with Docker or Singularity enabled.
 """,
         ),
     ] = True
+
     container_resolvers_config_file: Annotated[
         str,
         Field(
@@ -618,6 +1609,7 @@ For available options see https://docs.galaxyproject.org/en/master/admin/contain
 """,
         ),
     ]
+
     container_resolvers: Annotated[
         List[Any],
         Field(
@@ -629,6 +1621,7 @@ Takes the same options that can be set in container_resolvers_config_file.
 """,
         ),
     ]
+
     involucro_path: Annotated[
         str,
         Field(
@@ -641,6 +1634,7 @@ involucro_auto_init is set to false.
 """,
         ),
     ] = "involucro"
+
     involucro_auto_init: Annotated[
         bool,
         Field(
@@ -650,69 +1644,75 @@ relevant container resolver is not used.
 """,
         ),
     ] = True
+
     mulled_channels: Annotated[
         str,
         Field(
             title="Mulled Channels",
-            description="""Conda channels to use when building Docker or Singularity containers using involucro.
-""",
+            description="""Conda channels to use when building Docker or Singularity containers using involucro.""",
         ),
     ] = "conda-forge,bioconda"
+
     enable_tool_shed_check: Annotated[
         bool,
         Field(
             title="Enable Tool Shed Check",
             description="""Enable automatic polling of relative tool sheds to see if any updates
-are available for installed repositories.  Ideally only one Galaxy
-server process should be able to check for repository updates.  The
+are available for installed repositories. Ideally only one Galaxy
+server process should be able to check for repository updates. The
 setting for hours_between_check should be an integer between 1 and 24.
 """,
         ),
     ] = False
+
     hours_between_check: Annotated[
         int,
         Field(
             title="Hours Between Check",
             description="""Enable automatic polling of relative tool sheds to see if any updates
-are available for installed repositories.  Ideally only one Galaxy
-server process should be able to check for repository updates.  The
+are available for installed repositories. Ideally only one Galaxy
+server process should be able to check for repository updates. The
 setting for hours_between_check should be an integer between 1 and 24.
 """,
         ),
     ] = 12
+
     tool_data_table_config_path: Annotated[
         str,
         Field(
             title="Tool Data Table Config Path",
             description="""XML config file that contains data table entries for the
-ToolDataTableManager.  This file is manually # maintained by the Galaxy
+ToolDataTableManager. This file is manually # maintained by the Galaxy
 administrator (.sample used if default does not exist).
 """,
         ),
     ] = "tool_data_table_conf.xml"
+
     shed_tool_data_table_config: Annotated[
         str,
         Field(
             title="Shed Tool Data Table Config",
             description="""XML config file that contains additional data table entries for the
-ToolDataTableManager.  This file is automatically generated based on the
+ToolDataTableManager. This file is automatically generated based on the
 current installed tool shed repositories that contain valid
-tool_data_table_conf.xml.sample files.  At the time of installation, these
+tool_data_table_conf.xml.sample files. At the time of installation, these
 entries are automatically added to the following file, which is parsed and
 applied to the ToolDataTableManager at server start up.
 """,
         ),
     ] = "shed_tool_data_table_conf.xml"
+
     tool_data_path: Annotated[
         str,
         Field(
             title="Tool Data Path",
-            description="""Directory where data used by tools is located.  See the samples in that
+            description="""Directory where data used by tools is located. See the samples in that
 directory and the Galaxy Community Hub for help:
 https://galaxyproject.org/admin/data-integration
 """,
         ),
     ] = "tool-data"
+
     shed_tool_data_path: Annotated[
         str,
         Field(
@@ -722,8 +1722,9 @@ ToolShed. Defaults to the value of the 'tool_data_path' option.
 """,
         ),
     ]
+
     watch_tool_data_dir: Annotated[
-        str,
+        WatchToolOptions,
         Field(
             title="Watch Tool Data Dir",
             description="""Monitor the tool_data and shed_tool_data_path directories. If changes in tool data table
@@ -736,6 +1737,7 @@ the watchdog default.
 """,
         ),
     ] = "false"
+
     refgenie_config_file: Annotated[
         str,
         Field(
@@ -744,6 +1746,7 @@ the watchdog default.
 """,
         ),
     ]
+
     build_sites_config_file: Annotated[
         str,
         Field(
@@ -753,6 +1756,7 @@ and the URL to those sites.
 """,
         ),
     ] = "build_sites.yml"
+
     builds_file_path: Annotated[
         str,
         Field(
@@ -763,6 +1767,7 @@ The value of this option will be resolved with respect to <tool_data_path>.
 """,
         ),
     ] = "shared/ucsc/builds.txt"
+
     len_file_path: Annotated[
         str,
         Field(
@@ -773,17 +1778,19 @@ The value of this option will be resolved with respect to <tool_data_path>.
 """,
         ),
     ] = "shared/ucsc/chrom"
+
     datatypes_config_file: Annotated[
         str,
         Field(
             title="Datatypes Config File",
             description="""Datatypes config file(s), defines what data (file) types are available in
-Galaxy (.sample is used if default does not exist).  If a datatype appears in
+Galaxy (.sample is used if default does not exist). If a datatype appears in
 multiple files, the last definition is used (though the first sniffer is used
 so limit sniffer definitions to one file).
 """,
         ),
     ] = "datatypes_conf.xml"
+
     sniff_compressed_dynamic_datatypes_default: Annotated[
         bool,
         Field(
@@ -795,24 +1802,18 @@ before sniffing.
 """,
         ),
     ] = True
-    datatypes_disable_auto: Annotated[
-        bool,
-        Field(
-            title="Datatypes Disable Auto",
-            description="""Disable the 'Auto-detect' option for file uploads
-""",
-        ),
-    ] = False
+
     visualization_plugins_directory: Annotated[
         str,
         Field(
             title="Visualization Plugins Directory",
             description="""Visualizations config directory: where to look for individual visualization
-plugins.  The path is relative to the Galaxy root dir.  To use an absolute
-path begin the path with '/'.  This is a comma-separated list.
+plugins. The path is relative to the Galaxy root dir. To use an absolute
+path begin the path with '/'. This is a comma-separated list.
 """,
         ),
     ] = "config/plugins/visualizations"
+
     tour_config_dir: Annotated[
         str,
         Field(
@@ -820,23 +1821,25 @@ path begin the path with '/'.  This is a comma-separated list.
             description="""Interactive tour directory: where to store interactive tour definition files.
 Galaxy ships with several basic interface tours enabled, though a different
 directory with custom tours can be specified here. The path is relative to the
-Galaxy root dir.  To use an absolute path begin the path with '/'.  This is a
+Galaxy root dir. To use an absolute path begin the path with '/'. This is a
 comma-separated list.
 """,
         ),
     ] = "config/plugins/tours"
+
     webhooks_dir: Annotated[
         str,
         Field(
             title="Webhooks Dir",
             description="""Webhooks directory: where to store webhooks - plugins to extend the Galaxy UI.
-By default none will be loaded.  Set to config/plugins/webhooks/demo to load Galaxy's
-demo webhooks.  To use an absolute path begin the path with '/'.  This is a
+By default none will be loaded. Set to config/plugins/webhooks/demo to load Galaxy's
+demo webhooks. To use an absolute path begin the path with '/'. This is a
 comma-separated list. Add test/functional/webhooks to this list to include the demo
 webhooks used to test the webhook framework.
 """,
         ),
     ] = "config/plugins/webhooks"
+
     job_working_directory: Annotated[
         str,
         Field(
@@ -849,6 +1852,7 @@ The value of this option will be resolved with respect to <data_dir>.
 """,
         ),
     ] = "jobs_directory"
+
     template_cache_path: Annotated[
         str,
         Field(
@@ -858,6 +1862,7 @@ used for the cache
 """,
         ),
     ] = "compiled_templates"
+
     check_job_script_integrity: Annotated[
         bool,
         Field(
@@ -867,22 +1872,23 @@ can run job scripts before attempting to execute or submit them.
 """,
         ),
     ] = True
+
     check_job_script_integrity_count: Annotated[
         int,
         Field(
             title="Check Job Script Integrity Count",
-            description="""Number of checks to execute if check_job_script_integrity is enabled.
-""",
+            description="""Number of checks to execute if check_job_script_integrity is enabled.""",
         ),
     ] = 35
+
     check_job_script_integrity_sleep: Annotated[
         float,
         Field(
             title="Check Job Script Integrity Sleep",
-            description="""Time to sleep between checks if check_job_script_integrity is enabled (in seconds).
-""",
+            description="""Time to sleep between checks if check_job_script_integrity is enabled (in seconds).""",
         ),
     ] = 0.25
+
     default_job_shell: Annotated[
         str,
         Field(
@@ -896,6 +1902,7 @@ portability tool authors should assume generated commands run in sh.
 """,
         ),
     ] = "/bin/bash"
+
     enable_tool_document_cache: Annotated[
         bool,
         Field(
@@ -908,6 +1915,7 @@ using the ``tool_cache_data_dir`` setting, but can be disabled completely here.
 """,
         ),
     ] = False
+
     tool_cache_data_dir: Annotated[
         str,
         Field(
@@ -918,6 +1926,7 @@ the tool_cache_data_dir attribute.
 """,
         ),
     ] = "tool_cache"
+
     tool_search_index_dir: Annotated[
         str,
         Field(
@@ -925,16 +1934,17 @@ the tool_cache_data_dir attribute.
             description="""Directory in which the toolbox search index is stored.""",
         ),
     ] = "tool_search_index"
+
     delay_tool_initialization: Annotated[
         bool,
         Field(
             title="Delay Tool Initialization",
             description="""Set this to true to delay parsing of tool inputs and outputs until they are needed.
-This results in faster startup times but uses more memory when using forked Galaxy
-processes.
+This results in faster startup times but uses more memory when using forked Galaxy processes.
 """,
         ),
     ] = False
+
     biotools_content_directory: Annotated[
         str,
         Field(
@@ -944,6 +1954,7 @@ https://github.com/bio-tools/content/) to resolve bio.tools data for tool metada
 """,
         ),
     ]
+
     biotools_use_api: Annotated[
         bool,
         Field(
@@ -953,32 +1964,31 @@ resovled via biotools_content_directory.
 """,
         ),
     ] = False
+
     biotools_service_cache_type: Annotated[
         str,
         Field(
             title="Biotools Service Cache Type",
-            description="""bio.tools web service request related caching. The type of beaker cache used.
-""",
+            description="""bio.tools web service request related caching. The type of beaker cache used.""",
         ),
     ] = "file"
+
     biotools_service_cache_data_dir: Annotated[
         str,
         Field(
             title="Biotools Service Cache Data Dir",
-            description="""bio.tools web service request related caching. The data directory to point
-beaker cache at.
-""",
+            description="""bio.tools web service request related caching. The data directory to point beaker cache at.""",
         ),
     ] = "biotools/data"
+
     biotools_service_cache_lock_dir: Annotated[
         str,
         Field(
             title="Biotools Service Cache Lock Dir",
-            description="""bio.tools web service request related caching. The lock directory to point
-beaker cache at.
-""",
+            description="""bio.tools web service request related caching. The lock directory to point beaker cache at.""",
         ),
     ] = "biotools/locks"
+
     biotools_service_cache_url: Annotated[
         str,
         Field(
@@ -991,6 +2001,7 @@ value of database_connection if this is not set.
 """,
         ),
     ]
+
     biotools_service_cache_table_name: Annotated[
         str,
         Field(
@@ -1001,6 +2012,7 @@ bio.tools web service request related caching.
 """,
         ),
     ] = "beaker_cache"
+
     biotools_service_cache_schema_name: Annotated[
         str,
         Field(
@@ -1011,36 +2023,40 @@ bio.tools web service request related caching.
 """,
         ),
     ]
+
     citation_cache_type: Annotated[
         str,
         Field(
             title="Citation Cache Type",
-            description="""Citation related caching.  Tool citations information maybe fetched from
+            description="""Citation related caching. Tool citations information maybe fetched from
 external sources such as https://doi.org/ by Galaxy - the following
 parameters can be used to control the caching used to store this information.
 """,
         ),
     ] = "file"
+
     citation_cache_data_dir: Annotated[
         str,
         Field(
             title="Citation Cache Data Dir",
-            description="""Citation related caching.  Tool citations information maybe fetched from
+            description="""Citation related caching. Tool citations information maybe fetched from
 external sources such as https://doi.org/ by Galaxy - the following
 parameters can be used to control the caching used to store this information.
 """,
         ),
     ] = "citations/data"
+
     citation_cache_lock_dir: Annotated[
         str,
         Field(
             title="Citation Cache Lock Dir",
-            description="""Citation related caching.  Tool citations information maybe fetched from
+            description="""Citation related caching. Tool citations information maybe fetched from
 external sources such as https://doi.org/ by Galaxy - the following
 parameters can be used to control the caching used to store this information.
 """,
         ),
     ] = "citations/locks"
+
     citation_cache_url: Annotated[
         str,
         Field(
@@ -1052,6 +2068,7 @@ value of database_connection if this is not set.
 """,
         ),
     ]
+
     citation_cache_table_name: Annotated[
         str,
         Field(
@@ -1062,6 +2079,7 @@ citation related caching.
 """,
         ),
     ] = "beaker_cache"
+
     citation_cache_schema_name: Annotated[
         str,
         Field(
@@ -1072,6 +2090,7 @@ citation related caching.
 """,
         ),
     ]
+
     mulled_resolution_cache_type: Annotated[
         str,
         Field(
@@ -1081,22 +2100,23 @@ requests are caching using this and the following parameters
 """,
         ),
     ] = "file"
+
     mulled_resolution_cache_data_dir: Annotated[
         str,
         Field(
             title="Mulled Resolution Cache Data Dir",
-            description="""Data directory used by beaker for caching mulled resolution requests.
-""",
+            description="""Data directory used by beaker for caching mulled resolution requests.""",
         ),
     ] = "mulled/data"
+
     mulled_resolution_cache_lock_dir: Annotated[
         str,
         Field(
             title="Mulled Resolution Cache Lock Dir",
-            description="""Lock directory used by beaker for caching mulled resolution requests.
-""",
+            description="""Lock directory used by beaker for caching mulled resolution requests.""",
         ),
     ] = "mulled/locks"
+
     mulled_resolution_cache_expire: Annotated[
         int,
         Field(
@@ -1105,6 +2125,7 @@ requests are caching using this and the following parameters
 """,
         ),
     ] = 3600
+
     mulled_resolution_cache_url: Annotated[
         str,
         Field(
@@ -1116,6 +2137,7 @@ value of database_connection if this is not set.
 """,
         ),
     ]
+
     mulled_resolution_cache_table_name: Annotated[
         str,
         Field(
@@ -1126,6 +2148,7 @@ caching mulled resolution requests.
 """,
         ),
     ] = "beaker_cache"
+
     mulled_resolution_cache_schema_name: Annotated[
         str,
         Field(
@@ -1136,6 +2159,7 @@ caching mulled resolution requests.
 """,
         ),
     ]
+
     object_store_config_file: Annotated[
         str,
         Field(
@@ -1145,8 +2169,9 @@ If this is set and exists, it overrides any other objectstore settings.
 """,
         ),
     ] = "object_store_conf.xml"
+
     object_store_cache_monitor_driver: Annotated[
-        str,
+        Literal["auto", "external", "celery", "inprocess"],
         Field(
             title="Object Store Cache Monitor Driver",
             description="""Specify where cache monitoring is driven for caching object stores
@@ -1163,6 +2188,7 @@ cache paths).
 """,
         ),
     ] = "auto"
+
     object_store_cache_monitor_interval: Annotated[
         int,
         Field(
@@ -1175,6 +2201,7 @@ external).
 """,
         ),
     ] = 600
+
     object_store_cache_path: Annotated[
         str,
         Field(
@@ -1184,6 +2211,7 @@ that object store entry.
 """,
         ),
     ] = "object_store_cache"
+
     object_store_cache_size: Annotated[
         int,
         Field(
@@ -1193,6 +2221,7 @@ that object store entry.
 """,
         ),
     ] = -1
+
     object_store_store_by: Annotated[
         str,
         Field(
@@ -1206,6 +2235,7 @@ to 'uuid', otherwise it will be 'id'.
 """,
         ),
     ]
+
     smtp_server: Annotated[
         str,
         Field(
@@ -1218,6 +2248,7 @@ Galaxy will automatically try STARTTLS but will continue upon failure.
 """,
         ),
     ]
+
     smtp_username: Annotated[
         str,
         Field(
@@ -1228,6 +2259,7 @@ will be sent over the network encrypted).
 """,
         ),
     ]
+
     smtp_password: Annotated[
         str,
         Field(
@@ -1238,26 +2270,15 @@ will be sent over the network encrypted).
 """,
         ),
     ]
+
     smtp_ssl: Annotated[
         bool,
         Field(
             title="Smtp Ssl",
-            description="""If your SMTP server requires SSL from the beginning of the connection
-""",
+            description="""If your SMTP server requires SSL from the beginning of the connection""",
         ),
     ] = False
-    mailing_join_addr: Annotated[
-        str,
-        Field(
-            title="Mailing Join Addr",
-            description="""On the user registration form, users may choose to join a mailing list. This
-is the address used to subscribe to the list. Uncomment and leave empty if you
-want to remove this option from the user registration form.
 
-Example value 'galaxy-announce-join@lists.galaxyproject.org'
-""",
-        ),
-    ]
     mailing_join_subject: Annotated[
         str,
         Field(
@@ -1267,6 +2288,7 @@ Example value 'galaxy-announce-join@lists.galaxyproject.org'
 """,
         ),
     ] = "Join Mailing List"
+
     mailing_join_body: Annotated[
         str,
         Field(
@@ -1276,29 +2298,32 @@ Example value 'galaxy-announce-join@lists.galaxyproject.org'
 """,
         ),
     ] = "Join Mailing List"
+
     error_email_to: Annotated[
         str,
         Field(
             title="Error Email To",
-            description="""Datasets in an error state include a link to report the error.  Those reports
-will be sent to this address.  Error reports are disabled if no address is
-set.  Also this email is shown as a contact to user in case of Galaxy
+            description="""Datasets in an error state include a link to report the error. Those reports
+will be sent to this address. Error reports are disabled if no address is
+set. Also this email is shown as a contact to user in case of Galaxy
 misconfiguration and other events user may encounter.
 """,
         ),
     ]
+
     email_from: Annotated[
         str,
         Field(
             title="Email From",
             description="""Email address to use in the 'From' field when sending emails for
 account activations, workflow step notifications, password resets, and
-tool error reports.  We recommend using a string in the following format:
+tool error reports. We recommend using a string in the following format:
 Galaxy Project <galaxy-no-reply@example.com>.
 If not configured, '<galaxy-no-reply@HOSTNAME>' will be used.
 """,
         ),
     ]
+
     custom_activation_email_message: Annotated[
         str,
         Field(
@@ -1308,32 +2333,31 @@ the 'Your Galaxy Team' signature.
 """,
         ),
     ]
+
     instance_resource_url: Annotated[
         str,
         Field(
             title="Instance Resource Url",
-            description="""URL of the support resource for the galaxy instance.  Used in activation
-emails.
-
-Example value 'https://galaxyproject.org/'
-""",
+            description="""URL of the support resource for the galaxy instance. Used in activation emails.""",
+            example="https://galaxyproject.org/",
         ),
     ]
+
     email_domain_blocklist_file: Annotated[
         str,
         Field(
             title="Email Domain Blocklist File",
             description="""E-mail domains blocklist is used for filtering out users that are using
-disposable email addresses at registration.  If their address's base domain
+disposable email addresses at registration. If their address's base domain
 matches any domain on the list, they are refused registration. Address subdomains
 are ignored (both 'name@spam.com' and 'name@foo.spam.com' will match 'spam.com').
 
-Example value 'email_blocklist.conf'
-
 The value of this option will be resolved with respect to <config_dir>.
 """,
+            example="email_blocklist.conf",
         ),
     ]
+
     email_domain_allowlist_file: Annotated[
         str,
         Field(
@@ -1347,52 +2371,35 @@ This is a more restrictive option than <email_domain_blocklist_file>, and
 therefore, in case <email_domain_allowlist_file> is set and is not empty,
 <email_domain_blocklist_file> will be ignored.
 
-Example value 'email_allowlist.conf'
-
 The value of this option will be resolved with respect to <config_dir>.
 """,
+            example="email_allowlist.conf",
         ),
     ]
-    registration_warning_message: Annotated[
-        str,
-        Field(
-            title="Registration Warning Message",
-            description="""Registration warning message is used to discourage people from registering
-multiple accounts.  Applies mostly for the main Galaxy instance.
-If no message specified the warning box will not be shown.
-""",
-        ),
-    ] = "Please register only one account - we provide this service free of charge and have limited computational resources. Multi-accounts are tracked and will be subjected to account termination and data deletion."
+
     user_activation_on: Annotated[
         bool,
         Field(
             title="User Activation On",
-            description="""User account activation feature global flag.  If set to false, the rest of
+            description="""User account activation feature global flag. If set to false, the rest of
 the Account activation configuration is ignored and user activation is
 disabled (i.e. accounts are active since registration).
 The activation is also not working in case the SMTP server is not defined.
 """,
         ),
     ] = False
+
     activation_grace_period: Annotated[
         int,
         Field(
             title="Activation Grace Period",
-            description="""Activation grace period (in hours).  Activation is not forced (login is not
-disabled) until grace period has passed.  Users under grace period can't run
+            description="""Activation grace period (in hours). Activation is not forced (login is not
+disabled) until grace period has passed. Users under grace period can't run
 jobs. Enter 0 to disable grace period.
 """,
         ),
     ] = 3
-    inactivity_box_content: Annotated[
-        str,
-        Field(
-            title="Inactivity Box Content",
-            description="""Shown in warning box to users that were not activated yet.
-In use only if activation_grace_period is set.
-""",
-        ),
-    ] = "Your account has not been activated yet.  Feel free to browse around and see what's available, but you won't be able to upload data or run jobs until you have verified your email address."
+
     password_expiration_period: Annotated[
         int,
         Field(
@@ -1404,15 +2411,7 @@ password expiration.
 """,
         ),
     ] = 0
-    enable_account_interface: Annotated[
-        bool,
-        Field(
-            title="Enable Account Interface",
-            description="""Allow users to manage their account data, change passwords or delete their
-accounts.
-""",
-        ),
-    ] = True
+
     session_duration: Annotated[
         int,
         Field(
@@ -1423,64 +2422,20 @@ A duration of 0 disables this feature.
 """,
         ),
     ] = 0
-    ga_code: Annotated[
-        str,
-        Field(
-            title="Ga Code",
-            description="""You can enter tracking code here to track visitor's behavior
-through your Google Analytics account.  Example: UA-XXXXXXXX-Y
-""",
-        ),
-    ]
-    plausible_server: Annotated[
-        str,
-        Field(
-            title="Plausible Server",
-            description="""Please enter the URL for the Plausible server (including https) so this can be used for tracking
-with Plausible (https://plausible.io/).
-""",
-        ),
-    ]
-    plausible_domain: Annotated[
-        str,
-        Field(
-            title="Plausible Domain",
-            description="""Please enter the URL for the Galaxy server so this can be used for tracking
-with Plausible (https://plausible.io/).
-""",
-        ),
-    ]
-    matomo_server: Annotated[
-        str,
-        Field(
-            title="Matomo Server",
-            description="""Please enter the URL for the Matomo server (including https) so this can be used for tracking
-with Matomo (https://matomo.org/).
-""",
-        ),
-    ]
-    matomo_site_id: Annotated[
-        str,
-        Field(
-            title="Matomo Site Id",
-            description="""Please enter the site ID for the Matomo server so this can be used for tracking
-with Matomo (https://matomo.org/).
-""",
-        ),
-    ]
+
     display_servers: Annotated[
         str,
         Field(
             title="Display Servers",
-            description="""Galaxy can display data at various external browsers.  These options specify
-which browsers should be available.  URLs and builds available at these
+            description="""Galaxy can display data at various external browsers. These options specify
+which browsers should be available. URLs and builds available at these
 browsers are defined in the specified files.
 
 If use_remote_user is set to true, display application servers will be denied access
 to Galaxy and so displaying datasets in these sites will fail.
 display_servers contains a list of hostnames which should be allowed to
-bypass security to display datasets.  Please be aware that there are security
-implications if this is allowed.  More details (including required changes to
+bypass security to display datasets. Please be aware that there are security
+implications if this is allowed. More details (including required changes to
 the proxy server config) are available in the Apache proxy documentation on
 the Galaxy Community Hub.
 
@@ -1491,6 +2446,7 @@ them).
 """,
         ),
     ] = "hgw1.cse.ucsc.edu,hgw2.cse.ucsc.edu,hgw3.cse.ucsc.edu,hgw4.cse.ucsc.edu,hgw5.cse.ucsc.edu,hgw6.cse.ucsc.edu,hgw7.cse.ucsc.edu,hgw8.cse.ucsc.edu,lowepub.cse.ucsc.edu"
+
     enable_old_display_applications: Annotated[
         bool,
         Field(
@@ -1507,60 +2463,7 @@ Galaxy user to access said site.
 """,
         ),
     ] = True
-    aws_estimate: Annotated[
-        bool,
-        Field(
-            title="Aws Estimate",
-            description="""This flag enables an AWS cost estimate for every job based on their runtime matrices.
-CPU, RAM and runtime usage is mapped against AWS pricing table.
-Please note, that those numbers are only estimates.
-""",
-        ),
-    ] = False
-    carbon_emission_estimates: Annotated[
-        bool,
-        Field(
-            title="Carbon Emission Estimates",
-            description="""This flag enables carbon emissions estimates for every job based on its runtime metrics.
-CPU and RAM usage and the total job runtime are used to determine an estimate value.
-These estimates and are based off of the work of the Green Algorithms Project and
-the United States Environmental Protection Agency (EPA).
-Visit https://www.green-algorithms.org/ and https://www.epa.gov/energy/greenhouse-gas-equivalencies-calculator.
-for more detals.
-""",
-        ),
-    ] = True
-    geographical_server_location_code: Annotated[
-        str,
-        Field(
-            title="Geographical Server Location Code",
-            description="""The estimated geographical location of the server hosting your galaxy instance given as an ISO 3166 code.
-This is used to make carbon emissions estimates more accurate as the location effects the
-carbon intensity values used in the estimate calculation. This defaults to "GLOBAL" if not set or the
-`geographical_server_location_code` value is invalid or unsupported. To see a full list of supported locations,
-visit https://galaxyproject.org/admin/carbon_emissions
-""",
-        ),
-    ] = "GLOBAL"
-    power_usage_effectiveness: Annotated[
-        float,
-        Field(
-            title="Power Usage Effectiveness",
-            description="""The estimated power usage effectiveness of the data centre housing the server your galaxy
-instance is running on. This can make carbon emissions estimates more accurate.
-For more information on how to calculate a PUE value, visit
-https://en.wikipedia.org/wiki/Power_usage_effectiveness
-""",
-        ),
-    ] = 1.67
-    interactivetools_enable: Annotated[
-        bool,
-        Field(
-            title="Interactivetools Enable",
-            description="""Enable InteractiveTools.
-""",
-        ),
-    ] = False
+
     interactivetools_upstream_proxy: Annotated[
         bool,
         Field(
@@ -1568,6 +2471,7 @@ https://en.wikipedia.org/wiki/Power_usage_effectiveness
             description="""Set this to false to redirect users of Interactive tools directly to the Interactive tools proxy. `interactivetools_upstream_proxy` should only be set to false in development.""",
         ),
     ] = True
+
     interactivetools_proxy_host: Annotated[
         str,
         Field(
@@ -1577,30 +2481,31 @@ Galaxy by default.
 """,
         ),
     ]
+
     interactivetools_base_path: Annotated[
         str,
         Field(
             title="Interactivetools Base Path",
-            description="""Base path for interactive tools running at a subpath without a subdomain. Defaults to "/".
-""",
+            description="""Base path for interactive tools running at a subpath without a subdomain. Defaults to "/".""",
         ),
     ] = "/"
+
     interactivetools_map: Annotated[
         str,
         Field(
             title="Interactivetools Map",
-            description="""Map for interactivetool proxy.
-""",
+            description="""Map for interactivetool proxy.""",
         ),
     ] = "interactivetools_map.sqlite"
+
     interactivetools_prefix: Annotated[
         str,
         Field(
             title="Interactivetools Prefix",
-            description="""Prefix to use in the formation of the subdomain or path for interactive tools
-""",
+            description="""Prefix to use in the formation of the subdomain or path for interactive tools""",
         ),
     ] = "interactivetool"
+
     interactivetools_shorten_url: Annotated[
         bool,
         Field(
@@ -1611,6 +2516,7 @@ subdomain under 63 chars
 """,
         ),
     ] = False
+
     retry_interactivetool_metadata_internally: Annotated[
         bool,
         Field(
@@ -1623,47 +2529,7 @@ internally (in the Galaxy job handler process). The default is is the value of
 """,
         ),
     ] = True
-    visualizations_visible: Annotated[
-        bool,
-        Field(
-            title="Visualizations Visible",
-            description="""Show visualization tab and list in masthead.
-""",
-        ),
-    ] = True
-    message_box_visible: Annotated[
-        bool,
-        Field(
-            title="Message Box Visible",
-            description="""Show a message box under the masthead.
-""",
-        ),
-    ] = False
-    message_box_content: Annotated[
-        str,
-        Field(
-            title="Message Box Content",
-            description="""Show a message box under the masthead.
-""",
-        ),
-    ]
-    message_box_class: Annotated[
-        str,
-        Field(
-            title="Message Box Class",
-            description="""Class of the message box under the masthead. Possible values are:
-'info' (the default), 'warning', 'error', 'done'.
-""",
-        ),
-    ] = "info"
-    brand: Annotated[
-        str,
-        Field(
-            title="Brand",
-            description="""Append "{brand}" text to the masthead.
-""",
-        ),
-    ]
+
     display_galaxy_brand: Annotated[
         bool,
         Field(
@@ -1673,6 +2539,7 @@ default logo including the galaxy brand title.
 """,
         ),
     ] = True
+
     pretty_datetime_format: Annotated[
         str,
         Field(
@@ -1680,13 +2547,14 @@ default logo including the galaxy brand title.
             description="""Format string used when showing date and time information.
 The string may contain:
 - the directives used by Python time.strftime() function (see
-  https://docs.python.org/library/time.html#time.strftime),
+ https://docs.python.org/library/time.html#time.strftime),
 - $locale (complete format string for the server locale),
 - $iso8601 (complete format string as specified by ISO 8601 international
-  standard).
+ standard).
 """,
         ),
     ] = "$locale (UTC)"
+
     trs_servers_config_file: Annotated[
         str,
         Field(
@@ -1701,27 +2569,15 @@ just Dockstore will be used.
 """,
         ),
     ] = "trs_servers_conf.yml"
+
     user_preferences_extra_conf_path: Annotated[
         str,
         Field(
             title="User Preferences Extra Conf Path",
-            description="""Location of the configuration file containing extra user preferences.
-""",
+            description="""Location of the configuration file containing extra user preferences.""",
         ),
     ] = "user_preferences_extra_conf.yml"
-    default_locale: Annotated[
-        str,
-        Field(
-            title="Default Locale",
-            description="""Default localization for Galaxy UI.
-Allowed values are listed at the end of client/src/nls/locale.js.
-With the default value (auto), the locale will be automatically adjusted to
-the user's navigator language.
-Users can override this settings in their user preferences if the localization
-settings are enabled in user_preferences_extra_conf.yml
-""",
-        ),
-    ] = "auto"
+
     galaxy_url_prefix: Annotated[
         str,
         Field(
@@ -1731,6 +2587,7 @@ the desired prefix value.
 """,
         ),
     ] = "/"
+
     galaxy_infrastructure_url: Annotated[
         str,
         Field(
@@ -1745,13 +2602,14 @@ can reach this URL.
 """,
         ),
     ] = "http://localhost:8080"
+
     galaxy_infrastructure_web_port: Annotated[
         int,
         Field(
             title="Galaxy Infrastructure Web Port",
             description="""If the above URL cannot be determined ahead of time in dynamic environments
 but the port which should be used to access Galaxy can be - this should be
-set to prevent Galaxy from having to guess.  For example if Galaxy is sitting
+set to prevent Galaxy from having to guess. For example if Galaxy is sitting
 behind a proxy with REMOTE_USER enabled - infrastructure shouldn't talk to
 Python processes directly and this should be set to 80 or 443, etc... If
 unset this file will be read for a server block defining a port corresponding
@@ -1759,144 +2617,50 @@ to the webapp.
 """,
         ),
     ] = 8080
-    welcome_url: Annotated[
-        str,
-        Field(
-            title="Welcome Url",
-            description="""The URL of the page to display in Galaxy's middle pane when loaded.  This can
-be an absolute or relative URL.
-""",
-        ),
-    ] = "/static/welcome.html"
-    logo_url: Annotated[
-        str,
-        Field(
-            title="Logo Url",
-            description="""The URL linked by the "Galaxy/brand" text.
-""",
-        ),
-    ] = "/"
-    logo_src: Annotated[
-        str,
-        Field(
-            title="Logo Src",
-            description="""The brand image source.
-""",
-        ),
-    ] = "/static/favicon.svg"
-    logo_src_secondary: Annotated[
-        str,
-        Field(
-            title="Logo Src Secondary",
-            description="""The custom brand image source.
-""",
-        ),
-    ]
-    helpsite_url: Annotated[
-        str,
-        Field(
-            title="Helpsite Url",
-            description="""The URL linked by the "Galaxy Help" link in the "Help" menu.
-""",
-        ),
-    ] = "https://help.galaxyproject.org/"
-    wiki_url: Annotated[
-        str,
-        Field(
-            title="Wiki Url",
-            description="""The URL linked by the "Community Hub" link in the "Help" menu.
-""",
-        ),
-    ] = "https://galaxyproject.org/"
-    quota_url: Annotated[
-        str,
-        Field(
-            title="Quota Url",
-            description="""The URL linked for quota information in the UI.
-""",
-        ),
-    ] = "https://galaxyproject.org/support/account-quotas/"
-    support_url: Annotated[
-        str,
-        Field(
-            title="Support Url",
-            description="""The URL linked by the "Support" link in the "Help" menu.
-""",
-        ),
-    ] = "https://galaxyproject.org/support/"
-    citation_url: Annotated[
-        str,
-        Field(
-            title="Citation Url",
-            description="""The URL linked by the "How to Cite Galaxy" link in the "Help" menu.
-""",
-        ),
-    ] = "https://galaxyproject.org/citing-galaxy"
-    release_doc_base_url: Annotated[
-        str,
-        Field(
-            title="Release Doc Base Url",
-            description="""The URL linked by the "Galaxy Version" link in the "Help" menu.
-""",
-        ),
-    ] = "https://docs.galaxyproject.org/en/release_"
-    screencasts_url: Annotated[
-        str,
-        Field(
-            title="Screencasts Url",
-            description="""The URL linked by the "Videos" link in the "Help" menu.
-""",
-        ),
-    ] = "https://www.youtube.com/c/galaxyproject"
-    terms_url: Annotated[
-        str,
-        Field(
-            title="Terms Url",
-            description="""The URL linked by the "Terms and Conditions" link in the "Help" menu, as well
-as on the user registration and login forms and in the activation emails.
-""",
-        ),
-    ]
+
     static_enabled: Annotated[
         bool,
         Field(
             title="Static Enabled",
             description="""Serve static content, which must be enabled if you're not serving it via a
-proxy server.  These options should be self explanatory and so are not
-documented individually.  You can use these paths (or ones in the proxy
+proxy server. These options should be self explanatory and so are not
+documented individually. You can use these paths (or ones in the proxy
 server) to point to your own styles.
 """,
         ),
     ] = True
+
     static_cache_time: Annotated[
         int,
         Field(
             title="Static Cache Time",
             description="""Serve static content, which must be enabled if you're not serving it via a
-proxy server.  These options should be self explanatory and so are not
-documented individually.  You can use these paths (or ones in the proxy
+proxy server. These options should be self explanatory and so are not
+documented individually. You can use these paths (or ones in the proxy
 server) to point to your own styles.
 """,
         ),
     ] = 360
+
     static_dir: Annotated[
         str,
         Field(
             title="Static Dir",
             description="""Serve static content, which must be enabled if you're not serving it via a
-proxy server.  These options should be self explanatory and so are not
-documented individually.  You can use these paths (or ones in the proxy
+proxy server. These options should be self explanatory and so are not
+documented individually. You can use these paths (or ones in the proxy
 server) to point to your own styles.
 """,
         ),
     ] = "static/"
+
     static_images_dir: Annotated[
         str,
         Field(
             title="Static Images Dir",
             description="""Serve static content, which must be enabled if you're not serving it via a
-proxy server.  These options should be self explanatory and so are not
-documented individually.  You can use these paths (or ones in the proxy
+proxy server. These options should be self explanatory and so are not
+documented individually. You can use these paths (or ones in the proxy
 server) to point to your own styles.
 """,
         ),
@@ -1906,45 +2670,49 @@ server) to point to your own styles.
         Field(
             title="Static Favicon Dir",
             description="""Serve static content, which must be enabled if you're not serving it via a
-proxy server.  These options should be self explanatory and so are not
-documented individually.  You can use these paths (or ones in the proxy
+proxy server. These options should be self explanatory and so are not
+documented individually. You can use these paths (or ones in the proxy
 server) to point to your own styles.
 """,
         ),
     ] = "static/favicon.ico"
+
     static_scripts_dir: Annotated[
         str,
         Field(
             title="Static Scripts Dir",
             description="""Serve static content, which must be enabled if you're not serving it via a
-proxy server.  These options should be self explanatory and so are not
-documented individually.  You can use these paths (or ones in the proxy
+proxy server. These options should be self explanatory and so are not
+documented individually. You can use these paths (or ones in the proxy
 server) to point to your own styles.
 """,
         ),
     ] = "static/scripts/"
+
     static_style_dir: Annotated[
         str,
         Field(
             title="Static Style Dir",
             description="""Serve static content, which must be enabled if you're not serving it via a
-proxy server.  These options should be self explanatory and so are not
-documented individually.  You can use these paths (or ones in the proxy
+proxy server. These options should be self explanatory and so are not
+documented individually. You can use these paths (or ones in the proxy
 server) to point to your own styles.
 """,
         ),
     ] = "static/style"
+
     static_robots_txt: Annotated[
         str,
         Field(
             title="Static Robots Txt",
             description="""Serve static content, which must be enabled if you're not serving it via a
-proxy server.  These options should be self explanatory and so are not
-documented individually.  You can use these paths (or ones in the proxy
+proxy server. These options should be self explanatory and so are not
+documented individually. You can use these paths (or ones in the proxy
 server) to point to your own styles.
 """,
         ),
     ] = "static/robots.txt"
+
     display_chunk_size: Annotated[
         int,
         Field(
@@ -1953,6 +2721,7 @@ server) to point to your own styles.
 """,
         ),
     ] = 65536
+
     apache_xsendfile: Annotated[
         bool,
         Field(
@@ -1960,21 +2729,23 @@ server) to point to your own styles.
             description="""For help on configuring the Advanced proxy features, see:
 https://docs.galaxyproject.org/en/master/admin/production.html
 
-Apache can handle file downloads (Galaxy-to-user) via mod_xsendfile.  Set
+Apache can handle file downloads (Galaxy-to-user) via mod_xsendfile. Set
 this to true to inform Galaxy that mod_xsendfile is enabled upstream.
 """,
         ),
     ] = False
+
     nginx_x_accel_redirect_base: Annotated[
         str,
         Field(
             title="Nginx X Accel Redirect Base",
-            description="""The same download handling can be done by nginx using X-Accel-Redirect.  This
+            description="""The same download handling can be done by nginx using X-Accel-Redirect. This
 should be set to the path defined in the nginx config as an internal redirect
 with access to Galaxy's data files (see documentation linked above).
 """,
         ),
     ]
+
     upstream_gzip: Annotated[
         bool,
         Field(
@@ -1986,6 +2757,7 @@ to the proxy's compressable mimetypes.
 """,
         ),
     ] = False
+
     upstream_mod_zip: Annotated[
         bool,
         Field(
@@ -1999,6 +2771,7 @@ for details.
 """,
         ),
     ] = False
+
     x_frame_options: Annotated[
         str,
         Field(
@@ -2007,56 +2780,50 @@ for details.
 will cause modern web browsers to not allow Galaxy to be embedded in
 the frames of web applications hosted at other hosts - this can help
 prevent a class of attack called clickjacking
-(https://www.owasp.org/index.php/Clickjacking).  If you configure a
+(https://www.owasp.org/index.php/Clickjacking). If you configure a
 proxy in front of Galaxy - please ensure this header remains intact
-to protect your users.  Uncomment and leave empty to not set the
+to protect your users. Uncomment and leave empty to not set the
 `X-Frame-Options` header.
 """,
         ),
     ] = "SAMEORIGIN"
+
     nginx_upload_store: Annotated[
         str,
         Field(
             title="Nginx Upload Store",
             description="""nginx can also handle file uploads (user-to-Galaxy) via nginx_upload_module.
 Configuration for this is complex and explained in detail in the
-documentation linked above.  The upload store is a temporary directory in
+documentation linked above. The upload store is a temporary directory in
 which files uploaded by the upload module will be placed.
 """,
         ),
     ]
-    nginx_upload_path: Annotated[
-        str,
-        Field(
-            title="Nginx Upload Path",
-            description="""This value overrides the action set on the file upload form, e.g. the web
-path where the nginx_upload_module has been configured to intercept upload
-requests.
-""",
-        ),
-    ]
+
     nginx_upload_job_files_store: Annotated[
         str,
         Field(
             title="Nginx Upload Job Files Store",
             description="""Galaxy can also use nginx_upload_module to receive files staged out upon job
 completion by remote job runners (i.e. Pulsar) that initiate staging
-operations on the remote end.  See the Galaxy nginx documentation for the
+operations on the remote end. See the Galaxy nginx documentation for the
 corresponding nginx configuration.
 """,
         ),
     ]
+
     nginx_upload_job_files_path: Annotated[
         str,
         Field(
             title="Nginx Upload Job Files Path",
             description="""Galaxy can also use nginx_upload_module to receive files staged out upon job
 completion by remote job runners (i.e. Pulsar) that initiate staging
-operations on the remote end.  See the Galaxy nginx documentation for the
+operations on the remote end. See the Galaxy nginx documentation for the
 corresponding nginx configuration.
 """,
         ),
     ]
+
     tus_upload_store: Annotated[
         str,
         Field(
@@ -2067,31 +2834,23 @@ Defaults to new_file_path if not set.
 """,
         ),
     ]
-    chunk_upload_size: Annotated[
-        int,
-        Field(
-            title="Chunk Upload Size",
-            description="""Galaxy can upload user files in chunks without using nginx. Enable the chunk
-uploader by specifying a chunk size larger than 0. The chunk size is specified
-in bytes (default: 10MB).
-""",
-        ),
-    ] = 10485760
+
     dynamic_proxy_manage: Annotated[
         bool,
         Field(
             title="Dynamic Proxy Manage",
             description="""Have Galaxy manage dynamic proxy component for routing requests to other
-services based on Galaxy's session cookie.  It will attempt to do this by
+services based on Galaxy's session cookie. It will attempt to do this by
 default though you do need to install node+npm and do an npm install from
-`lib/galaxy/web/proxy/js`.  It is generally more robust to configure this
-externally, managing it in the same way Galaxy itself is managed.  If true, Galaxy will only
+`lib/galaxy/web/proxy/js`. It is generally more robust to configure this
+externally, managing it in the same way Galaxy itself is managed. If true, Galaxy will only
 launch the proxy if it is actually going to be used (e.g. for Jupyter).
 """,
         ),
     ] = True
+
     dynamic_proxy: Annotated[
-        str,
+        Literal["node", "golang"],
         Field(
             title="Dynamic Proxy",
             description="""As of 16.04 Galaxy supports multiple proxy types. The original NodeJS
@@ -2100,6 +2859,7 @@ version. Valid values are (node, golang)
 """,
         ),
     ] = "node"
+
     dynamic_proxy_session_map: Annotated[
         str,
         Field(
@@ -2109,6 +2869,7 @@ set that here.
 """,
         ),
     ] = "session_map.sqlite"
+
     dynamic_proxy_bind_port: Annotated[
         int,
         Field(
@@ -2118,6 +2879,7 @@ the external configuration if dynamic_proxy_manage is set to false.
 """,
         ),
     ] = 8800
+
     dynamic_proxy_bind_ip: Annotated[
         str,
         Field(
@@ -2127,14 +2889,15 @@ the external configuration if dynamic_proxy_manage is set to false.
 """,
         ),
     ] = "0.0.0.0"
+
     dynamic_proxy_debug: Annotated[
         bool,
         Field(
             title="Dynamic Proxy Debug",
-            description="""Enable verbose debugging of Galaxy-managed dynamic proxy.
-""",
+            description="""Enable verbose debugging of Galaxy-managed dynamic proxy.""",
         ),
     ] = False
+
     dynamic_proxy_external_proxy: Annotated[
         bool,
         Field(
@@ -2144,6 +2907,7 @@ nodejs to wrap connections in SSL).
 """,
         ),
     ] = False
+
     dynamic_proxy_prefix: Annotated[
         str,
         Field(
@@ -2155,6 +2919,7 @@ https://FQDN/galaxy-prefix/gie_proxy for proxying
 """,
         ),
     ] = "gie_proxy"
+
     dynamic_proxy_golang_noaccess: Annotated[
         int,
         Field(
@@ -2165,6 +2930,7 @@ inactive and kills it.
 """,
         ),
     ] = 60
+
     dynamic_proxy_golang_clean_interval: Annotated[
         int,
         Field(
@@ -2175,6 +2941,7 @@ but the default value is probably fine.
 """,
         ),
     ] = 10
+
     dynamic_proxy_golang_docker_address: Annotated[
         str,
         Field(
@@ -2184,6 +2951,7 @@ TLS is not supported, that will come in an update.
 """,
         ),
     ] = "unix:///var/run/docker.sock"
+
     dynamic_proxy_golang_api_key: Annotated[
         str,
         Field(
@@ -2195,6 +2963,7 @@ manually.
 """,
         ),
     ]
+
     auto_configure_logging: Annotated[
         bool,
         Field(
@@ -2204,6 +2973,7 @@ manually.
 """,
         ),
     ] = True
+
     log_destination: Annotated[
         str,
         Field(
@@ -2214,6 +2984,7 @@ disabled.
 """,
         ),
     ] = "stdout"
+
     log_rotate_size: Annotated[
         str,
         Field(
@@ -2225,6 +2996,7 @@ rotation. Size can be a number of bytes or a human-friendly representation like 
 """,
         ),
     ] = "0"
+
     log_rotate_count: Annotated[
         int,
         Field(
@@ -2236,6 +3008,7 @@ rotation will be performed. A value of 0 (the default) means no rotation.
 """,
         ),
     ] = 0
+
     log_level: Annotated[
         str,
         Field(
@@ -2246,6 +3019,7 @@ A custom debug level of "TRACE" is available for even more verbosity.
 """,
         ),
     ] = "DEBUG"
+
     logging: Annotated[
         Dict[str, Any],
         Field(
@@ -2256,101 +3030,109 @@ https://docs.galaxyproject.org/en/master/admin/config_logging.html
 """,
         ),
     ]
+
     database_engine_option_echo: Annotated[
         bool,
         Field(
             title="Database Engine Option Echo",
-            description="""Print database operations to the server log (warning, quite verbose!).
-""",
+            description="""Print database operations to the server log (warning, quite verbose!).""",
         ),
     ] = False
+
     database_engine_option_echo_pool: Annotated[
         bool,
         Field(
             title="Database Engine Option Echo Pool",
-            description="""Print database pool operations to the server log (warning, quite verbose!).
-""",
+            description="""Print database pool operations to the server log (warning, quite verbose!).""",
         ),
     ] = False
+
     log_events: Annotated[
         bool,
         Field(
             title="Log Events",
-            description="""Turn on logging of application events and some user events to the database.
-""",
+            description="""Turn on logging of application events and some user events to the database.""",
         ),
     ] = False
+
     log_actions: Annotated[
         bool,
         Field(
             title="Log Actions",
-            description="""Turn on logging of user actions to the database.  Actions currently logged
-are grid views, tool searches, and use of "recently" used tools menu.  The
+            description="""Turn on logging of user actions to the database. Actions currently logged
+are grid views, tool searches, and use of "recently" used tools menu. The
 log_events and log_actions functionality will eventually be merged.
 """,
         ),
     ] = False
+
     fluent_log: Annotated[
         bool,
         Field(
             title="Fluent Log",
-            description="""Fluentd configuration.  Various events can be logged to the fluentd instance
+            description="""Fluentd configuration. Various events can be logged to the fluentd instance
 configured below by enabling fluent_log.
 """,
         ),
     ] = False
+
     fluent_host: Annotated[
         str,
         Field(
             title="Fluent Host",
-            description="""Fluentd configuration.  Various events can be logged to the fluentd instance
+            description="""Fluentd configuration. Various events can be logged to the fluentd instance
 configured below by enabling fluent_log.
 """,
         ),
     ] = "localhost"
+
     fluent_port: Annotated[
         int,
         Field(
             title="Fluent Port",
-            description="""Fluentd configuration.  Various events can be logged to the fluentd instance
+            description="""Fluentd configuration. Various events can be logged to the fluentd instance
 configured below by enabling fluent_log.
 """,
         ),
     ] = 24224
+
     sanitize_all_html: Annotated[
         bool,
         Field(
             title="Sanitize All Html",
-            description="""Sanitize all HTML tool output.  By default, all tool output served as
-'text/html' will be sanitized thoroughly.  This can be disabled if you have
-special tools that require unaltered output.  WARNING: disabling this does
+            description="""Sanitize all HTML tool output. By default, all tool output served as
+'text/html' will be sanitized thoroughly. This can be disabled if you have
+special tools that require unaltered output. WARNING: disabling this does
 make the Galaxy instance susceptible to XSS attacks initiated by your users.
 """,
         ),
     ] = True
+
     sanitize_allowlist_file: Annotated[
         str,
         Field(
             title="Sanitize Allowlist File",
             description="""Datasets created by tools listed in this file are trusted and will not have
-their HTML sanitized on display.  This can be manually edited or manipulated
+their HTML sanitized on display. This can be manually edited or manipulated
 through the Admin control panel -- see "Manage Allowlist"
 
 The value of this option will be resolved with respect to <managed_config_dir>.
 """,
         ),
     ] = "sanitize_allowlist.txt"
+
     serve_xss_vulnerable_mimetypes: Annotated[
         bool,
         Field(
             title="Serve Xss Vulnerable Mimetypes",
             description="""By default Galaxy will serve non-HTML tool output that may potentially
-contain browser executable JavaScript content as plain text.  This will for
+contain browser executable JavaScript content as plain text. This will for
 instance cause SVG datasets to not render properly and so may be disabled
 by setting this option to true.
 """,
         ),
     ] = False
+
     allowed_origin_hostnames: Annotated[
         str,
         Field(
@@ -2364,53 +3146,56 @@ See: https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
 """,
         ),
     ]
+
     trust_jupyter_notebook_conversion: Annotated[
         bool,
         Field(
             title="Trust Jupyter Notebook Conversion",
             description="""Set to true to use Jupyter nbconvert to build HTML from Jupyter
-notebooks in Galaxy histories.  This process may allow users to execute
-arbitrary code or serve arbitrary HTML.  If enabled, Jupyter must be
+notebooks in Galaxy histories. This process may allow users to execute
+arbitrary code or serve arbitrary HTML. If enabled, Jupyter must be
 available and on Galaxy's PATH, to do this run
 `pip install jinja2 pygments jupyter` in Galaxy's virtualenv.
 """,
         ),
     ] = False
+
     debug: Annotated[
         bool,
         Field(
             title="Debug",
             description="""Debug enables access to various config options useful for development
-and debugging: use_lint, use_profile, and use_printdebug.  It also
+and debugging: use_lint, use_profile, and use_printdebug. It also
 causes the files used by PBS/SGE (submission script, output, and error)
 to remain on disk after the job is complete.
 """,
         ),
     ] = False
+
     use_lint: Annotated[
         bool,
         Field(
             title="Use Lint",
-            description="""Check for WSGI compliance.
-""",
+            description="""Check for WSGI compliance.""",
         ),
     ] = False
+
     use_profile: Annotated[
         bool,
         Field(
             title="Use Profile",
-            description="""Run the Python profiler on each request.
-""",
+            description="""Run the Python profiler on each request.""",
         ),
     ] = False
+
     use_printdebug: Annotated[
         bool,
         Field(
             title="Use Printdebug",
-            description="""Intercept print statements and show them on the returned page.
-""",
+            description="""Intercept print statements and show them on the returned page.""",
         ),
     ] = True
+
     monitor_thread_join_timeout: Annotated[
         int,
         Field(
@@ -2425,16 +3210,18 @@ Galaxy Admin Documentation for more.
 """,
         ),
     ] = 30
+
     use_heartbeat: Annotated[
         bool,
         Field(
             title="Use Heartbeat",
-            description="""Write thread status periodically to 'heartbeat.log',  (careful, uses disk
-space rapidly!).  Useful to determine why your processes may be consuming a
+            description="""Write thread status periodically to 'heartbeat.log', (careful, uses disk
+space rapidly!). Useful to determine why your processes may be consuming a
 lot of CPU.
 """,
         ),
     ] = False
+
     heartbeat_interval: Annotated[
         int,
         Field(
@@ -2445,26 +3232,28 @@ SIGUSR1 (`kill -USR1`) to force a dump.
 """,
         ),
     ] = 20
+
     heartbeat_log: Annotated[
         str,
         Field(
             title="Heartbeat Log",
-            description="""Heartbeat log filename. Can accept the template variables {server_name} and {pid}
-""",
+            description="""Heartbeat log filename. Can accept the template variables {server_name} and {pid}""",
         ),
     ] = "heartbeat_{server_name}.log"
+
     sentry_dsn: Annotated[
         str,
         Field(
             title="Sentry Dsn",
             description="""Log to Sentry
-Sentry is an open source logging and error aggregation platform.  Setting
+Sentry is an open source logging and error aggregation platform. Setting
 sentry_dsn will enable the Sentry middleware and errors will be sent to the
-indicated sentry instance.  This connection string is available in your
+indicated sentry instance. This connection string is available in your
 sentry instance under <project_name> -> Settings -> API Keys.
 """,
         ),
     ]
+
     sentry_event_level: Annotated[
         str,
         Field(
@@ -2474,6 +3263,7 @@ Possible values are DEBUG, INFO, WARNING, ERROR or CRITICAL.
 """,
         ),
     ] = "ERROR"
+
     sentry_traces_sample_rate: Annotated[
         float,
         Field(
@@ -2484,6 +3274,7 @@ is required to analyze performance.
 """,
         ),
     ] = 0.0
+
     sentry_ca_certs: Annotated[
         str,
         Field(
@@ -2493,6 +3284,7 @@ certificate file if the sentry server uses a self-signed certificate.
 """,
         ),
     ]
+
     statsd_host: Annotated[
         str,
         Field(
@@ -2500,12 +3292,13 @@ certificate file if the sentry server uses a self-signed certificate.
             description="""Log to statsd
 Statsd is an external statistics aggregator (https://github.com/etsy/statsd)
 Enabling the following options will cause galaxy to log request timing and
-other statistics to the configured statsd instance.  The statsd_prefix is
+other statistics to the configured statsd instance. The statsd_prefix is
 useful if you are running multiple Galaxy instances and want to segment
 statistics between them within the same aggregator.
 """,
         ),
     ]
+
     statsd_port: Annotated[
         int,
         Field(
@@ -2513,12 +3306,13 @@ statistics between them within the same aggregator.
             description="""Log to statsd
 Statsd is an external statistics aggregator (https://github.com/etsy/statsd)
 Enabling the following options will cause galaxy to log request timing and
-other statistics to the configured statsd instance.  The statsd_prefix is
+other statistics to the configured statsd instance. The statsd_prefix is
 useful if you are running multiple Galaxy instances and want to segment
 statistics between them within the same aggregator.
 """,
         ),
     ] = 8125
+
     statsd_prefix: Annotated[
         str,
         Field(
@@ -2526,12 +3320,13 @@ statistics between them within the same aggregator.
             description="""Log to statsd
 Statsd is an external statistics aggregator (https://github.com/etsy/statsd)
 Enabling the following options will cause galaxy to log request timing and
-other statistics to the configured statsd instance.  The statsd_prefix is
+other statistics to the configured statsd instance. The statsd_prefix is
 useful if you are running multiple Galaxy instances and want to segment
 statistics between them within the same aggregator.
 """,
         ),
     ] = "galaxy"
+
     statsd_influxdb: Annotated[
         bool,
         Field(
@@ -2543,6 +3338,7 @@ prefix with a tag path set to the page url
 """,
         ),
     ] = False
+
     statsd_mock_calls: Annotated[
         bool,
         Field(
@@ -2552,27 +3348,7 @@ Do not set this in production environments.
 """,
         ),
     ] = False
-    library_import_dir: Annotated[
-        str,
-        Field(
-            title="Library Import Dir",
-            description="""Add an option to the library upload form which allows administrators to
-upload a directory of files.
-""",
-        ),
-    ]
-    user_library_import_dir: Annotated[
-        str,
-        Field(
-            title="User Library Import Dir",
-            description="""Add an option to the library upload form which allows authorized
-non-administrators to upload a directory of files.  The configured directory
-must contain sub-directories named the same as the non-admin user's Galaxy
-login ( email ).  The non-admin user is restricted to uploading files or
-sub-directories of files contained in their directory.
-""",
-        ),
-    ]
+
     user_library_import_dir_auto_creation: Annotated[
         bool,
         Field(
@@ -2582,6 +3358,7 @@ import directory for every user (based on their email) upon login.
 """,
         ),
     ] = False
+
     user_library_import_symlink_allowlist: Annotated[
         str,
         Field(
@@ -2595,6 +3372,7 @@ create symlinks to them).
 """,
         ),
     ]
+
     user_library_import_check_permissions: Annotated[
         bool,
         Field(
@@ -2605,6 +3383,7 @@ For this to work, the username has to match the username on the filesystem.
 """,
         ),
     ] = False
+
     allow_path_paste: Annotated[
         bool,
         Field(
@@ -2612,25 +3391,27 @@ For this to work, the username has to match the username on the filesystem.
             description="""Allow admins to paste filesystem paths during upload. For libraries this
 adds an option to the admin library upload tool allowing admins to paste
 filesystem paths to files and directories in a box, and these paths will be
-added to a library.  For history uploads, this allows pasting in paths as URIs.
-(i.e. prefixed with file://). Set to true to enable.  Please note the security
+added to a library. For history uploads, this allows pasting in paths as URIs.
+(i.e. prefixed with file://). Set to true to enable. Please note the security
 implication that this will give Galaxy Admins access to anything your Galaxy
 user has access to.
 """,
         ),
     ] = False
+
     disable_library_comptypes: Annotated[
         str,
         Field(
             title="Disable Library Comptypes",
-            description="""Users may choose to download multiple files from a library in an archive.  By
+            description="""Users may choose to download multiple files from a library in an archive. By
 default, Galaxy allows users to select from a few different archive formats
 if testing shows that Galaxy is able to create files using these formats.
 Specific formats can be disabled with this option, separate more than one
-format with commas.  Available formats are currently 'zip', 'gz', and 'bz2'.
+format with commas. Available formats are currently 'zip', 'gz', and 'bz2'.
 """,
         ),
     ]
+
     tool_name_boost: Annotated[
         float,
         Field(
@@ -2640,6 +3421,7 @@ this score multiplier.
 """,
         ),
     ] = 20.0
+
     tool_name_exact_multiplier: Annotated[
         float,
         Field(
@@ -2649,6 +3431,7 @@ multiplied by this factor.
 """,
         ),
     ] = 10.0
+
     tool_id_boost: Annotated[
         float,
         Field(
@@ -2659,6 +3442,7 @@ in order to be counted as a match.
 """,
         ),
     ] = 20.0
+
     tool_section_boost: Annotated[
         float,
         Field(
@@ -2668,6 +3452,7 @@ receive this score multiplier.
 """,
         ),
     ] = 3.0
+
     tool_description_boost: Annotated[
         float,
         Field(
@@ -2677,6 +3462,7 @@ receive this score multiplier.
 """,
         ),
     ] = 8.0
+
     tool_label_boost: Annotated[
         float,
         Field(
@@ -2686,6 +3472,7 @@ receive this score multiplier.
 """,
         ),
     ] = 1.0
+
     tool_stub_boost: Annotated[
         float,
         Field(
@@ -2696,6 +3483,7 @@ this score multiplier.
 """,
         ),
     ] = 2.0
+
     tool_help_boost: Annotated[
         float,
         Field(
@@ -2705,6 +3493,7 @@ this score multiplier.
 """,
         ),
     ] = 1.0
+
     tool_help_bm25f_k1: Annotated[
         float,
         Field(
@@ -2717,6 +3506,7 @@ occurrence and little reward thereafter.
 """,
         ),
     ] = 0.5
+
     tool_search_limit: Annotated[
         int,
         Field(
@@ -2726,6 +3516,7 @@ maximum number of tool search results to display.
 """,
         ),
     ] = 20
+
     tool_enable_ngram_search: Annotated[
         bool,
         Field(
@@ -2738,22 +3529,23 @@ also match query substrings e.g. "genome" will match "genomics" or
 """,
         ),
     ] = True
+
     tool_ngram_minsize: Annotated[
         int,
         Field(
             title="Tool Ngram Minsize",
-            description="""Set minimum character length of ngrams
-""",
+            description="""Set minimum character length of ngrams""",
         ),
     ] = 3
+
     tool_ngram_maxsize: Annotated[
         int,
         Field(
             title="Tool Ngram Maxsize",
-            description="""Set maximum character length of ngrams
-""",
+            description="""Set maximum character length of ngrams""",
         ),
     ] = 4
+
     tool_ngram_factor: Annotated[
         float,
         Field(
@@ -2763,6 +3555,7 @@ be below 1, because an ngram match is a partial match of a search term.
 """,
         ),
     ] = 0.2
+
     tool_test_data_directories: Annotated[
         str,
         Field(
@@ -2776,30 +3569,21 @@ instead of a Git HTTP repository.
 """,
         ),
     ] = "test-data"
+
     id_secret: Annotated[
         str,
         Field(
             title="Id Secret",
             description="""Galaxy encodes various internal values when these values will be output in
-some format (for example, in a URL or cookie).  You should set a key to be
+some format (for example, in a URL or cookie). You should set a key to be
 used by the algorithm that encodes and decodes these values. It can be any
 string with a length between 5 and 56 bytes.
 One simple way to generate a value for this is with the shell command:
-  python -c 'from __future__ import print_function; import time; print(time.time())' | md5sum | cut -f 1 -d ' '
+ python -c 'from __future__ import print_function; import time; print(time.time())' | md5sum | cut -f 1 -d ' '
 """,
         ),
     ] = "USING THE DEFAULT IS NOT SECURE!"
-    use_remote_user: Annotated[
-        bool,
-        Field(
-            title="Use Remote User",
-            description="""User authentication can be delegated to an upstream proxy server (usually
-Apache).  The upstream proxy should set a REMOTE_USER header in the request.
-Enabling remote user disables regular logins.  For more information, see:
-https://docs.galaxyproject.org/en/master/admin/special_topics/apache.html
-""",
-        ),
-    ] = False
+
     remote_user_maildomain: Annotated[
         str,
         Field(
@@ -2810,24 +3594,26 @@ to usernames, to become your Galaxy usernames (email addresses).
 """,
         ),
     ]
+
     remote_user_header: Annotated[
         str,
         Field(
             title="Remote User Header",
             description="""If use_remote_user is enabled, the header that the upstream proxy provides
 the remote username in defaults to HTTP_REMOTE_USER (the ``HTTP_`` is prepended
-by WSGI).  This option allows you to change the header.  Note, you still need
+by WSGI). This option allows you to change the header. Note, you still need
 to prepend ``HTTP_`` to the header in this option, but your proxy server should
 *not* include ``HTTP_`` at the beginning of the header name.
 """,
         ),
     ] = "HTTP_REMOTE_USER"
+
     remote_user_secret: Annotated[
         str,
         Field(
             title="Remote User Secret",
             description="""If use_remote_user is enabled, anyone who can log in to the Galaxy host may
-impersonate any other user by simply sending the appropriate header.  Thus a
+impersonate any other user by simply sending the appropriate header. Thus a
 secret shared between the upstream proxy server, and Galaxy is required.
 If anyone other than the Galaxy user is using the server, then apache/nginx
 should pass a value in the header 'GX_SECRET' that is identical to the one
@@ -2835,23 +3621,7 @@ below.
 """,
         ),
     ] = "USING THE DEFAULT IS NOT SECURE!"
-    remote_user_logout_href: Annotated[
-        str,
-        Field(
-            title="Remote User Logout Href",
-            description="""If use_remote_user is enabled, you can set this to a URL that will log your
-users out.
-""",
-        ),
-    ]
-    post_user_logout_href: Annotated[
-        str,
-        Field(
-            title="Post User Logout Href",
-            description="""This is the default url to which users are redirected after they log out.
-""",
-        ),
-    ] = "/root/login?is_logout_redirect=true"
+
     normalize_remote_user_email: Annotated[
         bool,
         Field(
@@ -2862,80 +3632,20 @@ to true to force these to lower case.
 """,
         ),
     ] = False
-    single_user: Annotated[
-        str,
-        Field(
-            title="Single User",
-            description="""If an e-mail address is specified here, it will hijack remote user mechanics
-(``use_remote_user``) and have the webapp inject a single fixed user. This
-has the effect of turning Galaxy into a single user application with no
-login or external proxy required. Such applications should not be exposed to
-the world.
-""",
-        ),
-    ]
+
     admin_users: Annotated[
         str,
         Field(
             title="Admin Users",
             description="""Administrative users - set this to a comma-separated list of valid Galaxy
-users (email addresses).  These users will have access to the Admin section
+users (email addresses). These users will have access to the Admin section
 of the server, and will have access to create users, groups, roles,
-libraries, and more.  For more information, see:
-  https://galaxyproject.org/admin/
+libraries, and more. For more information, see:
+ https://galaxyproject.org/admin/
 """,
         ),
     ]
-    require_login: Annotated[
-        bool,
-        Field(
-            title="Require Login",
-            description="""Force everyone to log in (disable anonymous access).
-""",
-        ),
-    ] = False
-    show_welcome_with_login: Annotated[
-        bool,
-        Field(
-            title="Show Welcome With Login",
-            description="""Show the site's welcome page (see welcome_url) alongside the login page
-(even if require_login is true).
-""",
-        ),
-    ] = False
-    prefer_custos_login: Annotated[
-        bool,
-        Field(
-            title="Prefer Custos Login",
-            description="""Controls the order of the login page to prefer Custos-based login and registration.
-""",
-        ),
-    ] = False
-    allow_user_creation: Annotated[
-        bool,
-        Field(
-            title="Allow User Creation",
-            description="""Allow unregistered users to create new accounts (otherwise, they will have to
-be created by an admin).
-""",
-        ),
-    ] = True
-    allow_user_deletion: Annotated[
-        bool,
-        Field(
-            title="Allow User Deletion",
-            description="""Allow administrators to delete accounts.
-""",
-        ),
-    ] = False
-    allow_user_impersonation: Annotated[
-        bool,
-        Field(
-            title="Allow User Impersonation",
-            description="""Allow administrators to log in as other users (useful for debugging).
-""",
-        ),
-    ] = False
+
     show_user_prepopulate_form: Annotated[
         bool,
         Field(
@@ -2945,49 +3655,28 @@ using an additional form on 'Create new user'
 """,
         ),
     ] = False
-    upload_from_form_button: Annotated[
-        str,
-        Field(
-            title="Upload From Form Button",
-            description="""If 'always-on', add another button to tool form data inputs that allow uploading
-data from the tool form in fewer clicks (at the expense of making the form more
-complicated). This applies to workflows as well.
 
-Avoiding making this a boolean because we may add options such as 'in-single-form-view'
-or 'in-simplified-workflow-views'. https://github.com/galaxyproject/galaxy/pull/9809/files#r461889109
-""",
-        ),
-    ] = "always-off"
-    allow_user_dataset_purge: Annotated[
-        bool,
-        Field(
-            title="Allow User Dataset Purge",
-            description="""Allow users to remove their datasets from disk immediately (otherwise,
-datasets will be removed after a time period specified by an administrator in
-the cleanup scripts run via cron)
-""",
-        ),
-    ] = True
     new_user_dataset_access_role_default_private: Annotated[
         bool,
         Field(
             title="New User Dataset Access Role Default Private",
             description="""By default, users' data will be public, but setting this to true will cause
-it to be private.  Does not affect existing users and data, only ones created
-after this option is set.  Users may still change their default back to
+it to be private. Does not affect existing users and data, only ones created
+after this option is set. Users may still change their default back to
 public.
 """,
         ),
     ] = False
+
     expose_user_name: Annotated[
         bool,
         Field(
             title="Expose User Name",
-            description="""Expose user list.  Setting this to true will expose the user list to
-authenticated users.  This makes sharing datasets in smaller galaxy instances
+            description="""Expose user list. Setting this to true will expose the user list to
+authenticated users. This makes sharing datasets in smaller galaxy instances
 much easier as they can type a name/email and have the correct user show up.
 This makes less sense on large public Galaxy instances where that data
-shouldn't be exposed.  For semi-public Galaxies, it may make sense to expose
+shouldn't be exposed. For semi-public Galaxies, it may make sense to expose
 just the username and not email, or vice versa.
 
 If enable_beta_gdpr is set to true, then this option will be
@@ -2995,22 +3684,7 @@ overridden and set to false.
 """,
         ),
     ] = False
-    expose_user_email: Annotated[
-        bool,
-        Field(
-            title="Expose User Email",
-            description="""Expose user list.  Setting this to true will expose the user list to
-authenticated users.  This makes sharing datasets in smaller galaxy instances
-much easier as they can type a name/email and have the correct user show up.
-This makes less sense on large public Galaxy instances where that data
-shouldn't be exposed.  For semi-public Galaxies, it may make sense to expose
-just the username and not email, or vice versa.
 
-If enable_beta_gdpr is set to true, then this option will be
-overridden and set to false.
-""",
-        ),
-    ] = False
     fetch_url_allowlist: Annotated[
         str,
         Field(
@@ -3025,6 +3699,7 @@ It should be a comma-separated list of IP addresses or IP address/mask, e.g.
 """,
         ),
     ]
+
     enable_beta_gdpr: Annotated[
         bool,
         Field(
@@ -3046,6 +3721,7 @@ admin documentation.
 """,
         ),
     ] = False
+
     enable_beta_workflow_modules: Annotated[
         bool,
         Field(
@@ -3056,6 +3732,7 @@ these modules may not function in the future.)
 """,
         ),
     ] = False
+
     edam_panel_views: Annotated[
         str,
         Field(
@@ -3066,44 +3743,26 @@ to override default tool panel to use an EDAM view.
 """,
         ),
     ] = "operations,topics"
+
     edam_toolbox_ontology_path: Annotated[
         str,
         Field(
             title="Edam Toolbox Ontology Path",
-            description="""Sets the path to EDAM ontology file - if the path doesn't exist PyPI package data will be loaded.
-""",
+            description="""Sets the path to EDAM ontology file - if the path doesn't exist PyPI package data will be loaded.""",
         ),
     ] = "EDAM.tsv"
+
     panel_views_dir: Annotated[
         str,
         Field(
             title="Panel Views Dir",
             description="""Directory to check out for toolbox tool panel views. The path is relative to the
-Galaxy root dir.  To use an absolute path begin the path with '/'.  This is a
+Galaxy root dir. To use an absolute path begin the path with '/'. This is a
 comma-separated list.
 """,
         ),
     ] = "config/plugins/activities"
-    panel_views: Annotated[
-        List[Any],
-        Field(
-            title="Panel Views",
-            description="""Definitions of static toolbox panel views embedded directly in the config instead of reading
-YAML from directory with panel_views_dir.
-""",
-        ),
-    ]
-    default_panel_view: Annotated[
-        str,
-        Field(
-            title="Default Panel View",
-            description="""Default tool panel view for the current Galaxy configuration. This should refer to an id of
-a panel view defined using the panel_views or panel_views_dir configuration options or an
-EDAM panel view. The default panel view is simply called `default` and refers to the tool
-panel state defined by the integrated tool panel.
-""",
-        ),
-    ] = "default"
+
     default_workflow_export_format: Annotated[
         str,
         Field(
@@ -3113,6 +3772,7 @@ or 'format2'.
 """,
         ),
     ] = "ga"
+
     parallelize_workflow_scheduling_within_histories: Annotated[
         bool,
         Field(
@@ -3123,6 +3783,7 @@ less predictable order of workflow datasets within in histories.
 """,
         ),
     ] = False
+
     maximum_workflow_invocation_duration: Annotated[
         int,
         Field(
@@ -3133,6 +3794,7 @@ invocation to schedule indefinitely. The default corresponds to 1 month.
 """,
         ),
     ] = 2678400
+
     maximum_workflow_jobs_per_scheduling_iteration: Annotated[
         int,
         Field(
@@ -3146,6 +3808,7 @@ Set to -1 to disable any such maximum.
 """,
         ),
     ] = 1000
+
     flush_per_n_datasets: Annotated[
         int,
         Field(
@@ -3157,6 +3820,7 @@ more memory. Set to -1 to disable creating datasets in batches.
 """,
         ),
     ] = 1000
+
     max_discovered_files: Annotated[
         int,
         Field(
@@ -3168,38 +3832,31 @@ into a collection of datasets for each line in an input dataset.
 """,
         ),
     ] = 10000
+
     history_local_serial_workflow_scheduling: Annotated[
         bool,
         Field(
             title="History Local Serial Workflow Scheduling",
-            description="""Force serial scheduling of workflows within the context of a particular history
-""",
+            description="""Force serial scheduling of workflows within the context of a particular history""",
         ),
     ] = False
-    enable_oidc: Annotated[
-        bool,
-        Field(
-            title="Enable Oidc",
-            description="""Enables and disables OpenID Connect (OIDC) support.
-""",
-        ),
-    ] = False
+
     oidc_config_file: Annotated[
         str,
         Field(
             title="Oidc Config File",
-            description="""Sets the path to OIDC configuration file.
-""",
+            description="""Sets the path to OIDC configuration file.""",
         ),
     ] = "oidc_config.xml"
+
     oidc_backends_config_file: Annotated[
         str,
         Field(
             title="Oidc Backends Config File",
-            description="""Sets the path to OIDC backends configuration file.
-""",
+            description="""Sets the path to OIDC backends configuration file.""",
         ),
     ] = "oidc_backends_config.xml"
+
     auth_config_file: Annotated[
         str,
         Field(
@@ -3210,6 +3867,7 @@ if default does not exist).
 """,
         ),
     ] = "auth_conf.xml"
+
     api_allow_run_as: Annotated[
         str,
         Field(
@@ -3219,6 +3877,7 @@ other users.
 """,
         ),
     ]
+
     bootstrap_admin_api_key: Annotated[
         str,
         Field(
@@ -3231,6 +3890,7 @@ You should probably not set this on a production server.
 """,
         ),
     ]
+
     ga4gh_service_id: Annotated[
         str,
         Field(
@@ -3250,6 +3910,7 @@ org.usegalaxy.drs.
 """,
         ),
     ]
+
     ga4gh_service_organization_name: Annotated[
         str,
         Field(
@@ -3263,6 +3924,7 @@ and https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-disco
 """,
         ),
     ]
+
     ga4gh_service_organization_url: Annotated[
         str,
         Field(
@@ -3276,6 +3938,7 @@ and https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-disco
 """,
         ),
     ]
+
     ga4gh_service_environment: Annotated[
         str,
         Field(
@@ -3291,77 +3954,18 @@ and https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-disco
 """,
         ),
     ]
+
     enable_tool_tags: Annotated[
         bool,
         Field(
             title="Enable Tool Tags",
-            description="""Enable tool tags (associating tools with tags).  This has its own option
+            description="""Enable tool tags (associating tools with tags). This has its own option
 since its implementation has a few performance implications on startup for
 large servers.
 """,
         ),
     ] = False
-    enable_unique_workflow_defaults: Annotated[
-        bool,
-        Field(
-            title="Enable Unique Workflow Defaults",
-            description="""Enable a feature when running workflows.  When enabled, default datasets
-are selected for "Set at Runtime" inputs from the history such that the
-same input will not be selected twice, unless there are more inputs than
-compatible datasets in the history.
-When false, the most recently added compatible item in the history will
-be used for each "Set at Runtime" input, independent of others in the workflow.
-""",
-        ),
-    ] = False
-    simplified_workflow_run_ui: Annotated[
-        str,
-        Field(
-            title="Simplified Workflow Run Ui",
-            description="""If set to 'off' by default, always use the traditional workflow form that renders
-all steps in the GUI and serializes the tool state of all steps during
-invocation. Set to 'prefer' to default to a simplified workflow UI that
-only renders the inputs if possible (the workflow must have no disconnected
-runtime inputs and not replacement parameters within tool steps). In the
-future 'force' may be added an option for Galaskio-style servers that should
-only render simplified workflows.
-""",
-        ),
-    ] = "prefer"
-    simplified_workflow_run_ui_target_history: Annotated[
-        str,
-        Field(
-            title="Simplified Workflow Run Ui Target History",
-            description="""When the simplified workflow run form is rendered, should the invocation outputs
-be sent to the 'current' history or a 'new' history. If the user should be presented
-and option between these - set this to 'prefer_current' or 'prefer_new' to display
-a runtime setting with the corresponding default. The default is to provide the
-user this option and default it to the current history (the traditional behavior
-of Galaxy for years) - this corresponds to the setting 'prefer_current'.
-""",
-        ),
-    ] = "prefer_current"
-    simplified_workflow_run_ui_job_cache: Annotated[
-        str,
-        Field(
-            title="Simplified Workflow Run Ui Job Cache",
-            description="""When the simplified workflow run form is rendered, should the invocation use job
-caching. This isn't a boolean so an option for 'show-selection' can be added later.
-""",
-        ),
-    ] = "off"
-    ftp_upload_site: Annotated[
-        str,
-        Field(
-            title="Ftp Upload Site",
-            description="""Enable Galaxy's "Upload via FTP" interface.  You'll need to install and
-configure an FTP server (we've used ProFTPd since it can use Galaxy's
-database for authentication) and set the following two options.
-This will be provided to users in the help text as 'log in to the FTP
-server at '. Thus, it should be the hostname of your FTP server.
-""",
-        ),
-    ]
+
     ftp_upload_dir: Annotated[
         str,
         Field(
@@ -3371,6 +3975,7 @@ identifier (defaults to e-mail), where Galaxy will look for files.
 """,
         ),
     ]
+
     ftp_upload_dir_identifier: Annotated[
         str,
         Field(
@@ -3382,6 +3987,7 @@ username though.
 """,
         ),
     ] = "email"
+
     ftp_upload_dir_template: Annotated[
         str,
         Field(
@@ -3393,6 +3999,7 @@ Defaults to '${ftp_upload_dir}/${ftp_upload_dir_identifier}'.
 """,
         ),
     ]
+
     ftp_upload_purge: Annotated[
         bool,
         Field(
@@ -3402,14 +4009,7 @@ as it imports them.
 """,
         ),
     ] = True
-    enable_quotas: Annotated[
-        bool,
-        Field(
-            title="Enable Quotas",
-            description="""Enable enforcement of quotas.  Quotas can be set from the Admin interface.
-""",
-        ),
-    ] = False
+
     expose_dataset_path: Annotated[
         bool,
         Field(
@@ -3420,26 +4020,15 @@ non-administrative users. Administrators can always see dataset paths.
 """,
         ),
     ] = False
-    enable_tool_source_display: Annotated[
-        bool,
-        Field(
-            title="Enable Tool Source Display",
-            description="""This option allows users to view the tool wrapper source code. This is
-safe to enable if you have not hardcoded any secrets in any of the tool
-wrappers installed on this Galaxy server. If you have only installed tool
-wrappers from  public tool sheds and tools shipped with Galaxy there you
-can enable this option.
-""",
-        ),
-    ] = False
+
     job_metrics_config_file: Annotated[
         str,
         Field(
             title="Job Metrics Config File",
-            description="""XML config file that contains the job metric collection configuration.
-""",
+            description="""XML config file that contains the job metric collection configuration.""",
         ),
     ] = "job_metrics_conf.xml"
+
     expose_potentially_sensitive_job_metrics: Annotated[
         bool,
         Field(
@@ -3449,31 +4038,31 @@ variables).
 """,
         ),
     ] = False
+
     enable_legacy_sample_tracking_api: Annotated[
         bool,
         Field(
             title="Enable Legacy Sample Tracking Api",
-            description="""Enable the API for sample tracking
-""",
+            description="""Enable the API for sample tracking""",
         ),
     ] = False
+
     enable_data_manager_user_view: Annotated[
         bool,
         Field(
             title="Enable Data Manager User View",
-            description="""Allow non-admin users to view available Data Manager options.
-""",
+            description="""Allow non-admin users to view available Data Manager options.""",
         ),
     ] = False
+
     data_manager_config_file: Annotated[
         str,
         Field(
             title="Data Manager Config File",
-            description="""File where Data Managers are configured (.sample used if default does not
-exist).
-""",
+            description="""File where Data Managers are configured (.sample used if default does not exist).""",
         ),
     ] = "data_manager_conf.xml"
+
     shed_data_manager_config_file: Annotated[
         str,
         Field(
@@ -3483,6 +4072,7 @@ automatically upon data manager installation.
 """,
         ),
     ] = "shed_data_manager_conf.xml"
+
     galaxy_data_manager_data_path: Annotated[
         str,
         Field(
@@ -3492,23 +4082,25 @@ automatically upon data manager installation.
 """,
         ),
     ]
+
     job_config_file: Annotated[
         str,
         Field(
             title="Job Config File",
             description="""To increase performance of job execution and the web interface, you can
-separate Galaxy into multiple processes.  There are more than one way to do
+separate Galaxy into multiple processes. There are more than one way to do
 this, and they are explained in detail in the documentation:
 
 https://docs.galaxyproject.org/en/master/admin/scaling.html
 
 By default, Galaxy manages and executes jobs from within a single process and
-notifies itself of new jobs via in-memory queues.  Jobs are run locally on
-the system on which Galaxy is started.  Advanced job running capabilities can
+notifies itself of new jobs via in-memory queues. Jobs are run locally on
+the system on which Galaxy is started. Advanced job running capabilities can
 be configured through the job configuration file or the <job_config> option.
 """,
         ),
     ] = "job_conf.yml"
+
     job_config: Annotated[
         Dict[str, Any],
         Field(
@@ -3516,6 +4108,7 @@ be configured through the job configuration file or the <job_config> option.
             description="""Description of job running configuration, can be embedded into Galaxy configuration or loaded from an additional file with the job_config_file option.""",
         ),
     ]
+
     dependency_resolvers: Annotated[
         List[Any],
         Field(
@@ -3531,6 +4124,7 @@ https://docs.galaxyproject.org/en/master/admin/dependency_resolvers.html
 """,
         ),
     ]
+
     dependency_resolution: Annotated[
         Dict[str, Any],
         Field(
@@ -3542,6 +4136,7 @@ to another.
 """,
         ),
     ]
+
     default_job_resubmission_condition: Annotated[
         str,
         Field(
@@ -3561,6 +4156,7 @@ failing jobs are just failed outright.
 """,
         ),
     ]
+
     track_jobs_in_database: Annotated[
         bool,
         Field(
@@ -3570,6 +4166,7 @@ job configuration instead.
 """,
         ),
     ] = True
+
     use_tasked_jobs: Annotated[
         bool,
         Field(
@@ -3580,6 +4177,7 @@ This is a new feature and not recommended for production servers yet.
 """,
         ),
     ] = False
+
     local_task_queue_workers: Annotated[
         int,
         Field(
@@ -3590,6 +4188,7 @@ This is a new feature and not recommended for production servers yet.
 """,
         ),
     ] = 2
+
     job_handler_monitor_sleep: Annotated[
         float,
         Field(
@@ -3602,30 +4201,33 @@ Float values are allowed.
 """,
         ),
     ] = 1.0
+
     job_runner_monitor_sleep: Annotated[
         float,
         Field(
             title="Job Runner Monitor Sleep",
             description="""Each Galaxy job handler process runs one thread per job runner plugin responsible for
-checking the state of queued and running jobs.  This thread operates in a loop and
+checking the state of queued and running jobs. This thread operates in a loop and
 sleeps for the given number of seconds at the end of each iteration. This can be
 decreased if extremely high job throughput is necessary, but doing so can increase CPU
 usage of handler processes. Float values are allowed.
 """,
         ),
     ] = 1.0
+
     workflow_monitor_sleep: Annotated[
         float,
         Field(
             title="Workflow Monitor Sleep",
             description="""Each Galaxy workflow handler process runs one thread responsible for
-checking the state of active workflow invocations.  This thread operates in a loop and
+checking the state of active workflow invocations. This thread operates in a loop and
 sleeps for the given number of seconds at the end of each iteration. This can be
 decreased if extremely high job throughput is necessary, but doing so can increase CPU
 usage of handler processes. Float values are allowed.
 """,
         ),
     ] = 1.0
+
     metadata_strategy: Annotated[
         str,
         Field(
@@ -3641,30 +4243,33 @@ will be set within a celery task.
 """,
         ),
     ] = "directory"
+
     retry_metadata_internally: Annotated[
         bool,
         Field(
             title="Retry Metadata Internally",
-            description="""Although it is fairly reliable, setting metadata can occasionally fail.  In
+            description="""Although it is fairly reliable, setting metadata can occasionally fail. In
 these instances, you can choose to retry setting it internally or leave it in
 a failed state (since retrying internally may cause the Galaxy process to be
-unresponsive).  If this option is set to false, the user will be given the
+unresponsive). If this option is set to false, the user will be given the
 option to retry externally, or set metadata manually (when possible).
 """,
         ),
     ] = True
+
     max_metadata_value_size: Annotated[
         int,
         Field(
             title="Max Metadata Value Size",
-            description="""Very large metadata values can cause Galaxy crashes.  This will allow
+            description="""Very large metadata values can cause Galaxy crashes. This will allow
 limiting the maximum metadata key size (in bytes used in memory, not the end
-result database value size) Galaxy will attempt to save with a dataset.  Use
-0 to disable this feature.  The default is 5MB, but as low as 1MB seems to be
+result database value size) Galaxy will attempt to save with a dataset. Use
+0 to disable this feature. The default is 5MB, but as low as 1MB seems to be
 a reasonable size.
 """,
         ),
     ] = 5242880
+
     outputs_to_working_directory: Annotated[
         bool,
         Field(
@@ -3679,18 +4284,20 @@ user than the galaxy user).
 """,
         ),
     ] = False
+
     retry_job_output_collection: Annotated[
         int,
         Field(
             title="Retry Job Output Collection",
             description="""If your network filesystem's caching prevents the Galaxy server from seeing
 the job's stdout and stderr files when it completes, you can retry reading
-these files.  The job runner will retry the number of times specified below,
-waiting 1 second between tries.  For NFS, you may want to try the -noac mount
+these files. The job runner will retry the number of times specified below,
+waiting 1 second between tries. For NFS, you may want to try the -noac mount
 option (Linux) or -actimeo=0 (Solaris).
 """,
         ),
     ] = 0
+
     tool_evaluation_strategy: Annotated[
         str,
         Field(
@@ -3704,6 +4311,7 @@ to ``extended`` if you set this option to ``remote``.
 """,
         ),
     ] = "local"
+
     preserve_python_environment: Annotated[
         str,
         Field(
@@ -3721,17 +4329,19 @@ installing software into Galaxy's virtualenv for tool development).
 """,
         ),
     ] = "legacy_only"
+
     cleanup_job: Annotated[
         str,
         Field(
             title="Cleanup Job",
-            description="""Clean up various bits of jobs left on the filesystem after completion.  These
+            description="""Clean up various bits of jobs left on the filesystem after completion. These
 bits include the job working directory, external metadata temporary files,
-and DRM stdout and stderr files (if using a DRM).  Possible values are:
+and DRM stdout and stderr files (if using a DRM). Possible values are:
 always, onsuccess, never
 """,
         ),
     ] = "always"
+
     drmaa_external_runjob_script: Annotated[
         str,
         Field(
@@ -3744,6 +4354,7 @@ Example value 'sudo -E scripts/drmaa_external_runner.py --assign_all_groups'
 """,
         ),
     ]
+
     drmaa_external_killjob_script: Annotated[
         str,
         Field(
@@ -3757,6 +4368,7 @@ Example value 'sudo -E scripts/drmaa_external_killer.py'
 """,
         ),
     ]
+
     external_chown_script: Annotated[
         str,
         Field(
@@ -3770,6 +4382,7 @@ Example value 'sudo -E scripts/external_chown_script.py'
 """,
         ),
     ]
+
     real_system_username: Annotated[
         str,
         Field(
@@ -3787,32 +4400,24 @@ Possible values are user_email (default), username or <common_system_user>
 """,
         ),
     ] = "user_email"
+
     environment_setup_file: Annotated[
         str,
         Field(
             title="Environment Setup File",
-            description="""File to source to set up the environment when running jobs.  By default, the
+            description="""File to source to set up the environment when running jobs. By default, the
 environment in which the Galaxy server starts is used when running jobs
 locally, and the environment set up per the DRM's submission method and
 policy is used when running jobs on a cluster (try testing with `qsub` on the
-command line).  environment_setup_file can be set to the path of a file on
+command line). environment_setup_file can be set to the path of a file on
 the cluster that should be sourced by the user to set up the environment
-prior to running tools.  This can be especially useful for running jobs as
+prior to running tools. This can be especially useful for running jobs as
 the actual user, to remove the need to configure each user's environment
 individually.
 """,
         ),
     ]
-    enable_beta_markdown_export: Annotated[
-        bool,
-        Field(
-            title="Enable Beta Markdown Export",
-            description="""Enable export of Galaxy Markdown documents (pages and workflow reports)
-to PDF. Requires manual installation and setup of weasyprint (latest version
-available for Python 2.7 is 0.42).
-""",
-        ),
-    ] = False
+
     markdown_export_css: Annotated[
         str,
         Field(
@@ -3822,6 +4427,7 @@ WeasyPrint during rendering an HTML export of the document to PDF.
 """,
         ),
     ] = "markdown_export.css"
+
     markdown_export_css_pages: Annotated[
         str,
         Field(
@@ -3832,6 +4438,7 @@ would like to tailor different kinds of exports.
 """,
         ),
     ] = "markdown_export_pages.css"
+
     markdown_export_css_invocation_reports: Annotated[
         str,
         Field(
@@ -3842,6 +4449,7 @@ would like to tailor different kinds of exports.
 """,
         ),
     ] = "markdown_export_invocation_reports.css"
+
     markdown_export_prologue: Annotated[
         str,
         Field(
@@ -3851,6 +4459,7 @@ branded headers.
 """,
         ),
     ] = ""
+
     markdown_export_epilogue: Annotated[
         str,
         Field(
@@ -3860,14 +4469,15 @@ branded footers.
 """,
         ),
     ] = ""
+
     markdown_export_prologue_pages: Annotated[
         str,
         Field(
             title="Markdown Export Prologue Pages",
-            description="""Alternative to markdown_export_prologue that applies just to page exports.
-""",
+            description="""Alternative to markdown_export_prologue that applies just to page exports.""",
         ),
     ] = ""
+
     markdown_export_prologue_invocation_reports: Annotated[
         str,
         Field(
@@ -3877,23 +4487,23 @@ exports.
 """,
         ),
     ] = ""
+
     markdown_export_epilogue_pages: Annotated[
         str,
         Field(
             title="Markdown Export Epilogue Pages",
-            description="""Alternative to markdown_export_epilogue that applies just to page exports.
-""",
+            description="""Alternative to markdown_export_epilogue that applies just to page exports.""",
         ),
     ] = ""
+
     markdown_export_epilogue_invocation_reports: Annotated[
         str,
         Field(
             title="Markdown Export Epilogue Invocation Reports",
-            description="""Alternative to markdown_export_epilogue that applies just to invocation report
-exports.
-""",
+            description="""Alternative to markdown_export_epilogue that applies just to invocation report exports.""",
         ),
     ] = ""
+
     job_resource_params_file: Annotated[
         str,
         Field(
@@ -3905,6 +4515,7 @@ walltime.
 """,
         ),
     ] = "job_resource_params_conf.xml"
+
     workflow_resource_params_file: Annotated[
         str,
         Field(
@@ -3916,6 +4527,7 @@ job_resource_params_file if not set).
 """,
         ),
     ] = "workflow_resource_params_conf.xml"
+
     workflow_resource_params_mapper: Annotated[
         str,
         Field(
@@ -3932,6 +4544,7 @@ Sample default path 'config/workflow_resource_mapper_conf.yml.sample'
 """,
         ),
     ]
+
     workflow_schedulers_config_file: Annotated[
         str,
         Field(
@@ -3941,13 +4554,14 @@ which Galaxy processes should schedule workflows.
 """,
         ),
     ] = "workflow_schedulers_conf.xml"
+
     cache_user_job_count: Annotated[
         bool,
         Field(
             title="Cache User Job Count",
             description="""If using job concurrency limits (configured in job_config_file), several
 extra database queries must be performed to determine the number of jobs a
-user has dispatched to a given destination.  By default, these queries will
+user has dispatched to a given destination. By default, these queries will
 happen for every job that is waiting to run, but if cache_user_job_count is
 set to true, it will only happen once per iteration of the handler queue.
 Although better for performance due to reduced queries, the trade-off is a
@@ -3956,17 +4570,7 @@ if running many handlers.
 """,
         ),
     ] = False
-    toolbox_auto_sort: Annotated[
-        bool,
-        Field(
-            title="Toolbox Auto Sort",
-            description="""If true, the toolbox will be sorted by tool id when the toolbox is loaded.
-This is useful for ensuring that tools are always displayed in the same
-order in the UI.  If false, the order of tools in the toolbox will be
-preserved as they are loaded from the tool config files.
-""",
-        ),
-    ] = True
+
     tool_filters: Annotated[
         str,
         Field(
@@ -3976,6 +4580,7 @@ that admins may use to restrict the tools to display.
 """,
         ),
     ]
+
     tool_label_filters: Annotated[
         str,
         Field(
@@ -3985,6 +4590,7 @@ that admins may use to restrict the tool labels to display.
 """,
         ),
     ]
+
     tool_section_filters: Annotated[
         str,
         Field(
@@ -3994,6 +4600,7 @@ that admins may use to restrict the tool sections to display.
 """,
         ),
     ]
+
     user_tool_filters: Annotated[
         str,
         Field(
@@ -4003,6 +4610,7 @@ that users may use to restrict the tools to display.
 """,
         ),
     ] = "examples:restrict_upload_to_admins, examples:restrict_encode"
+
     user_tool_section_filters: Annotated[
         str,
         Field(
@@ -4012,6 +4620,7 @@ that users may use to restrict the tool sections to display.
 """,
         ),
     ] = "examples:restrict_text"
+
     user_tool_label_filters: Annotated[
         str,
         Field(
@@ -4021,6 +4630,7 @@ that users may use to restrict the tool labels to display.
 """,
         ),
     ] = "examples:restrict_upload_to_admins, examples:restrict_encode"
+
     toolbox_filter_base_modules: Annotated[
         str,
         Field(
@@ -4030,23 +4640,25 @@ that users may use to restrict the tool labels to display.
 """,
         ),
     ] = "galaxy.tools.filters,galaxy.tools.toolbox.filters,galaxy.tool_util.toolbox.filters"
+
     amqp_internal_connection: Annotated[
         str,
         Field(
             title="Amqp Internal Connection",
-            description="""Galaxy uses AMQP internally for communicating between processes.  For
+            description="""Galaxy uses AMQP internally for communicating between processes. For
 example, when reloading the toolbox or locking job execution, the process
 that handled that particular request will tell all others to also reload,
 lock jobs, etc.
 For connection examples, see https://docs.celeryq.dev/projects/kombu/en/stable/userguide/connections.html
 
 Without specifying anything here, galaxy will first attempt to use your
-specified database_connection above.  If that's not specified either, Galaxy
+specified database_connection above. If that's not specified either, Galaxy
 will automatically create and use a separate sqlite database located in your
 <galaxy>/database folder (indicated in the commented out line below).
 """,
         ),
     ] = "sqlalchemy+sqlite:///./database/control.sqlite?isolation_level=IMMEDIATE"
+
     celery_conf: Annotated[
         Any,
         Field(
@@ -4066,16 +4678,7 @@ For details, see Celery documentation at https://docs.celeryq.dev/en/stable/user
 """,
         ),
     ] = {"task_routes": {"galaxy.fetch_data": "galaxy.external", "galaxy.set_job_metadata": "galaxy.external"}}
-    enable_celery_tasks: Annotated[
-        bool,
-        Field(
-            title="Enable Celery Tasks",
-            description="""Offload long-running tasks to a Celery task queue.
-Activate this only if you have setup a Celery worker for Galaxy.
-For details, see https://docs.galaxyproject.org/en/master/admin/production.html
-""",
-        ),
-    ] = False
+
     celery_user_rate_limit: Annotated[
         float,
         Field(
@@ -4085,6 +4688,7 @@ tasks that can be executed per user per second.
 """,
         ),
     ] = 0.0
+
     use_pbkdf2: Annotated[
         bool,
         Field(
@@ -4095,110 +4699,31 @@ reason to disable it.
 """,
         ),
     ] = True
-    cookie_domain: Annotated[
-        str,
-        Field(
-            title="Cookie Domain",
-            description="""Tell Galaxy that multiple domains sharing the same root are associated
-to this instance and wants to share the same session cookie.
-This allow a user to stay logged in when passing from one subdomain
-to the other.
-This root domain will be written in the unique session cookie shared
-by all subdomains.
-""",
-        ),
-    ]
-    select_type_workflow_threshold: Annotated[
-        int,
-        Field(
-            title="Select Type Workflow Threshold",
-            description="""Due to performance considerations (select2 fields are pretty 'expensive' in terms of memory usage)
-Galaxy uses the regular select fields for non-dataset selectors in the workflow run form.
-use 0 in order to always use select2 fields,
-use -1 (default) in order to always use the regular select fields,
-use any other positive number as threshold (above threshold: regular select fields will be used)
-""",
-        ),
-    ] = -1
-    enable_tool_recommendations: Annotated[
-        bool,
-        Field(
-            title="Enable Tool Recommendations",
-            description="""Allow the display of tool recommendations in workflow editor and after tool execution.
-If it is enabled and set to true, please enable 'tool_recommendation_model_path' as well
-""",
-        ),
-    ] = False
-    tool_recommendation_model_path: Annotated[
-        str,
-        Field(
-            title="Tool Recommendation Model Path",
-            description="""Set remote path of the trained model (HDF5 file) for tool recommendation.
-""",
-        ),
-    ] = "https://github.com/galaxyproject/galaxy-test-data/raw/master/tool_recommendation_model_v_0.2.hdf5"
-    topk_recommendations: Annotated[
-        int,
-        Field(
-            title="Topk Recommendations",
-            description="""Set the number of predictions/recommendations to be made by the model
-""",
-        ),
-    ] = 20
-    admin_tool_recommendations_path: Annotated[
-        str,
-        Field(
-            title="Admin Tool Recommendations Path",
-            description="""Set path to the additional tool preferences from Galaxy admins.
-It has two blocks. One for listing deprecated tools which will be removed from the recommendations and
-another is for adding additional tools to be recommended along side those from the deep learning model.
-""",
-        ),
-    ] = "tool_recommendations_overwrite.yml"
-    overwrite_model_recommendations: Annotated[
-        bool,
-        Field(
-            title="Overwrite Model Recommendations",
-            description="""Overwrite or append to the tool recommendations by the deep learning model. When set to true, all the recommendations by the deep learning model
-are overwritten by the recommendations set by an admin in a config file 'tool_recommendations_overwrite.yml'. When set to false, the recommended tools
-by admins and predicted by the deep learning model are shown.
-""",
-        ),
-    ] = False
+
     error_report_file: Annotated[
         str,
         Field(
             title="Error Report File",
-            description="""Path to error reports configuration file.
-""",
+            description="""Path to error reports configuration file.""",
         ),
     ] = "error_report.yml"
+
     tool_destinations_config_file: Annotated[
         str,
         Field(
             title="Tool Destinations Config File",
-            description="""Path to dynamic tool destinations configuration file.
-""",
+            description="""Path to dynamic tool destinations configuration file.""",
         ),
     ] = "tool_destinations.yml"
-    welcome_directory: Annotated[
-        str,
-        Field(
-            title="Welcome Directory",
-            description="""Location of New User Welcome data, a single directory containing the
-images and JSON of Topics/Subtopics/Slides as export. This location
-is relative to galaxy/static
-""",
-        ),
-    ] = "plugins/welcome_page/new_user/static/topics/"
+
     vault_config_file: Annotated[
         str,
         Field(
             title="Vault Config File",
-            description="""Vault config file.
-""",
+            description="""Vault config file.""",
         ),
     ] = "vault_conf.yml"
+
     display_builtin_converters: Annotated[
         bool,
         Field(
@@ -4206,6 +4731,7 @@ is relative to galaxy/static
             description="""Display built-in converters in the tool panel.""",
         ),
     ] = True
+
     themes_config_file: Annotated[
         str,
         Field(
@@ -4215,75 +4741,11 @@ are defined, users can choose their preferred theme in the client.
 """,
         ),
     ] = "themes_conf.yml"
-    enable_beacon_integration: Annotated[
-        bool,
-        Field(
-            title="Enable Beacon Integration",
-            description="""Enables user preferences and api endpoint for the beacon integration.
-""",
-        ),
-    ] = False
-    tool_training_recommendations: Annotated[
-        bool,
-        Field(
-            title="Tool Training Recommendations",
-            description="""Displays a link to training material, if any includes the current tool.
-When activated the following options also need to be set:
-  tool_training_recommendations_link,
-  tool_training_recommendations_api_url
-""",
-        ),
-    ] = True
-    tool_training_recommendations_link: Annotated[
-        str,
-        Field(
-            title="Tool Training Recommendations Link",
-            description="""Template URL to display all tutorials containing current tool.
-Valid template inputs are:
-  {repository_owner}
-  {name}
-  {tool_id}
-  {training_tool_identifier}
-  {version}
-""",
-        ),
-    ] = "https://training.galaxyproject.org/training-material/by-tool/{training_tool_identifier}.html"
-    tool_training_recommendations_api_url: Annotated[
-        str,
-        Field(
-            title="Tool Training Recommendations Api Url",
-            description="""URL to API describing tutorials containing specific tools.
-When CORS is used, make sure to add this host.
-""",
-        ),
-    ] = "https://training.galaxyproject.org/training-material/api/top-tools.json"
-    citations_export_message_html: Annotated[
-        str,
-        Field(
-            title="Citations Export Message Html",
-            description="""Message to display on the export citations tool page
-""",
-        ),
-    ] = 'When writing up your analysis, remember to include all references that should be cited in order to completely describe your work. Also, please remember to <a href="https://galaxyproject.org/citing-galaxy">cite Galaxy</a>.'
-    enable_notification_system: Annotated[
-        bool,
-        Field(
-            title="Enable Notification System",
-            description="""Enables the Notification System integrated in Galaxy.
 
-Users can receive automatic notifications when a certain resource is shared with them or when some long running operations have finished, etc.
-
-The system allows notification scheduling and expiration, and users can opt-out of specific notification categories or channels.
-
-Admins can schedule and broadcast notifications that will be visible to all users, including special server-wide announcements such as scheduled maintenance, high load warnings, and event announcements, to name a few examples.
-""",
-        ),
-    ] = False
     expired_notifications_cleanup_interval: Annotated[
         int,
         Field(
             title="Expired Notifications Cleanup Interval",
-            description="""The interval in seconds between attempts to delete all expired notifications from the database (every 24 hours by default). Runs in a Celery task.
-""",
+            description="""The interval in seconds between attempts to delete all expired notifications from the database (every 24 hours by default). Runs in a Celery task.""",
         ),
     ] = 86400

@@ -8,13 +8,18 @@ from typing import (
     Dict,
     List,
     Optional,
+    Union,
 )
 
 from fastapi import Path
 
 from galaxy.managers.configuration import ConfigurationManager
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.schema.configuration import GalaxyConfigModel
+from galaxy.schema.configuration import (
+    AdminExposableGalaxyConfig,
+    ComputedGalaxyConfig,
+    UserExposableGalaxyConfig,
+)
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import UserModel
 from galaxy.webapps.galaxy.api import (
@@ -40,6 +45,21 @@ EncodedIdPathParam = Path(
 )
 
 
+class ConfigResponse(ComputedGalaxyConfig, UserExposableGalaxyConfig):
+    """Configuration settings that can be exposed to users."""
+
+    pass
+
+
+class AdminOnlyConfigResponse(ConfigResponse, AdminExposableGalaxyConfig):
+    """Configuration settings that can be exposed to admins."""
+
+    pass
+
+
+GalaxyConfigResponse = Union[ConfigResponse, AdminOnlyConfigResponse]
+
+
 @router.cbv
 class FastAPIConfiguration:
     configuration_manager: ConfigurationManager = depends(ConfigurationManager)
@@ -63,7 +83,7 @@ class FastAPIConfiguration:
         trans: ProvidesUserContext = DependsOnTrans,
         view: Optional[str] = SerializationViewQueryParam,
         keys: Optional[str] = SerializationKeysQueryParam,
-    ) -> GalaxyConfigModel:
+    ) -> GalaxyConfigResponse:
         """
         Return an object containing exposable configuration settings.
 
