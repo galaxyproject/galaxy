@@ -19,6 +19,10 @@ export const COLLECTION_TYPES = [
 export const DEFAULT_DBKEY = "?";
 export const DEFAULT_EXTENSION = "auto";
 export const DEFAULT_FILE_NAME = "New File";
+export const RULES_TYPES = [
+    { id: "collections", text: "Collections" },
+    { id: "datasets", text: "Datasets" },
+];
 
 /**
  * Local cache.

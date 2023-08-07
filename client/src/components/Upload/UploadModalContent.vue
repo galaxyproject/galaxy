@@ -30,7 +30,13 @@
                 v-on="$listeners" />
         </BTab>
         <BTab v-if="showRules" id="rule-based" title="Rule-based" button-id="tab-title-link-rule-based">
-            <RulesInput :details="details" :has-callback="hasCallback" :selectable="selectable" v-on="$listeners" />
+            <RulesInput
+                :current-ftp="details.currentFtp"
+                :file-sources-configured="details.fileSourcesConfigured"
+                :details="details"
+                :has-callback="hasCallback"
+                :history-id="details.history_id"
+                v-on="$listeners" />
         </BTab>
     </BTabs>
     <div v-else>

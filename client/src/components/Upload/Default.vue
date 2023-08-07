@@ -5,10 +5,10 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
 import { filesDialog } from "utils/data";
 import { UploadQueue } from "utils/uploadbox";
-import { rulesBuilder } from "./rulesBuilder.js";
 import Vue, { computed, ref } from "vue";
 
 import { defaultModel } from "./model.js";
+import { rulesBuilder } from "./rulesBuilder.js";
 import { COLLECTION_TYPES, DEFAULT_FILE_NAME, findExtension, hasBrowserSupport, openBrowserDialog } from "./utils";
 
 import DefaultRow from "./DefaultRow.vue";

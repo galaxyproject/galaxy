@@ -1,233 +1,157 @@
-<template>
-    <div class="upload-wrapper">
-        <div class="upload-header" v-html="topInfo" />
-        <div ref="uploadBox" class="upload-box" :style="{ height: '335px' }">
-            <span style="width: 25%; display: inline; height: 100%" class="float-left">
-                <div class="upload-rule-option">
-                    <div class="upload-rule-option-title">{{ "Upload data as" | l }}</div>
-                    <div class="rule-data-type">
-                        <Select2 v-model="dataType" container-class="upload-footer-selection">
-                            <option value="datasets">Datasets</option>
-                            <option value="collections">Collection(s)</option>
-                        </Select2>
-                    </div>
-                </div>
-                <div class="upload-rule-option">
-                    <div class="upload-rule-option-title">{{ "Load tabular data from" | l }}</div>
-                    <div class="rule-select-type">
-                        <Select2 v-model="selectionType" container-class="upload-footer-selection">
-                            <option value="paste">{{ "Pasted Table" | l }}</option>
-                            <option value="dataset">{{ "History Dataset" | l }}</option>
-                            <option v-if="ftpUploadSite" value="ftp">{{ "FTP Directory" | l }}</option>
-                            <option value="remote_files">{{ "Remote Files Directory" | l }}</option>
-                        </Select2>
-                    </div>
-                </div>
-                <div v-if="selectionType == 'dataset'" id="upload-rule-dataset-option" class="upload-rule-option">
-                    <div class="upload-rule-option-title">History dataset</div>
-                    <div>
-                        <BLink v-if="selectedDatasetName == null" @click="onSelectDataset">
-                            {{ "Select" | l }}
-                        </BLink>
-                        <span v-else>
-                            {{ selectedDatasetName }} <FontAwesomeIcon icon="edit" @click="onSelectDataset" />
-                        </span>
-                    </div>
-                </div>
-            </span>
-            <span style="display: inline; float: right; width: 75%; height: 300px">
-                <textarea
-                    v-model="sourceContent"
-                    class="upload-rule-source-content form-control"
-                    style="height: 100%"
-                    :disabled="selectionType != 'paste'"></textarea>
-            </span>
-        </div>
-        <div class="upload-buttons">
-            <BButton
-                id="btn-close"
-                ref="btnClose"
-                class="ui-button-default"
-                :title="btnCloseTitle"
-                @click="$emit('dismiss')">
-                {{ btnCloseTitle | l }}
-            </BButton>
-            <BButton
-                id="btn-build"
-                ref="btnBuild"
-                class="ui-button-default"
-                :disabled="!sourceContent"
-                :title="btnBuildTitle"
-                :variant="sourceContent ? 'primary' : ''"
-                @click="_eventBuild">
-                {{ btnBuildTitle | l }}
-            </BButton>
-            <BButton
-                id="btn-reset"
-                ref="btnReset"
-                class="ui-button-default"
-                :title="btnResetTitle"
-                :disabled="!enableReset"
-                @click="_eventReset">
-                {{ btnResetTitle | l }}
-            </BButton>
-        </div>
-    </div>
-</template>
-
-<script>
+<script setup>
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEdit } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { getGalaxyInstance } from "app";
 import axios from "axios";
-import { BButton, BLink } from "bootstrap-vue";
+import { BAlert, BButton, BLink } from "bootstrap-vue";
 import Select2 from "components/Select2";
-import UploadUtils from "components/Upload/utils";
+import { getRemoteEntries, getRemoteEntriesAt } from "components/Upload/utils";
 import { getAppRoot } from "onload/loadConfig";
 import { filesDialog } from "utils/data";
+import { urlData } from "utils/url";
+import { ref } from "vue";
+
+import { RULES_TYPES } from "./utils.js";
+
+import UploadSettingsSelect from "./UploadSettingsSelect.vue";
 
 library.add(faEdit);
 
-export default {
-    components: { BLink, BButton, FontAwesomeIcon, Select2 },
-    props: {
-        hasCallback: {
-            type: Boolean,
-            default: false,
-        },
-        details: {
-            type: Object,
-            required: true,
-        },
+const props = defineProps({
+    hasCallback: {
+        type: Boolean,
+        default: false,
     },
-    data() {
-        return {
-            datasets: [],
-            ftpFiles: [],
-            ftpUploadSite: null,
-            uris: [],
-            topInfo: "Tabular source data to extract collection files and metadata from",
-            enableBuild: false,
-            dataType: "datasets",
-            selectedDatasetId: null,
-            selectedDatasetName: null,
-            sourceContent: "",
-            selectionType: "paste",
-            btnBuildTitle: "Build",
-            btnResetTitle: "Reset",
-        };
+    currentFtp: {
+        type: String,
+        required: true,
     },
-    computed: {
-        enableReset: function () {
-            return this.sourceContent.length > 0;
-        },
-        btnCloseTitle() {
-            return this.hasCallback ? "Cancel" : "Close";
-        },
+    fileSourcesConfigured: {
+        type: Boolean,
+        required: true,
     },
-    watch: {
-        selectionType: function (selectionType) {
-            if (selectionType == "dataset" && !this.datasetsSet) {
-                this.onSelectDataset();
-            } else if (selectionType == "ftp") {
-                UploadUtils.getRemoteEntries((ftp_files) => {
-                    this.sourceContent = ftp_files.map((file) => file["path"]).join("\n");
-                    this.ftpFiles = ftp_files;
-                });
-            } else if (selectionType == "remote_files") {
-                filesDialog(this._handleRemoteFilesUri, { mode: "directory" });
-            }
-        },
-        selectedDatasetId: function (selectedDatasetId) {
-            if (!selectedDatasetId) {
-                this.sourceContent = "";
-                return;
-            }
-            const Galaxy = getGalaxyInstance();
-            axios
-                .get(
-                    `${getAppRoot()}api/histories/${
-                        Galaxy.currHistoryPanel.model.id
-                    }/contents/${selectedDatasetId}/display`,
-                    // The Rule builder expects strings, we should not parse the respone to the default JSON type
-                    {
-                        responseType: "text",
-                    }
-                )
-                .then((response) => {
-                    this.sourceContent = response.data;
+    historyId: {
+        type: String,
+        required: true,
+    },
+    details: {
+        type: Object,
+        required: true,
+    },
+});
+
+const dataType = ref("datasets");
+const errorMessage = ref(null);
+const ftpFiles = ref([]);
+const selectedDatasetId = ref(null);
+const selectedDatasetName = ref(null);
+const selectionType = ref("paste");
+const sourceContent = ref(null);
+const uris = ref([]);
+
+function eventBuild() {
+    const selectionType = selectionType.value;
+    const selection = {};
+    const Galaxy = getGalaxyInstance();
+    if (selectionType == "dataset" || selectionType == "paste") {
+        selection.selectionType = "raw";
+        selection.content = sourceContent.value;
+    } else if (selectionType == "ftp") {
+        selection.selectionType = "ftp";
+        selection.elements = ftpFiles.value;
+        selection.ftpUploadSite = currentFtp;
+    } else if (selectionType == "remote_files") {
+        selection.selectionType = "remote_files";
+        selection.elements = uris.value;
+    }
+    selection.dataType = dataType.value;
+    Galaxy.currHistoryPanel.buildCollection("rules", selection, null, true);
+}
+
+function eventReset() {
+    selectedDatasetId.value = null;
+    sourceContent.value = null;
+}
+
+function inputDialog() {
+    const Galaxy = getGalaxyInstance();
+    Galaxy.data.dialog(
+        (response) => {
+            selectedDatasetId.value = response.id;
+            selectedDatasetName.value = response.name;
+            urlData({ url: `/api/histories/${props.historyId}/contents/${selectedDatasetId.value}/display` })
+                .then((newSourceContent) => {
+                    sourceContent.value = newSourceContent;
                 })
-                .catch((error) => console.log(error));
+                .catch((error) => {
+                    errorMessage.value = error;
+                });
         },
-    },
-    created() {
-        this.ftpUploadSite = this.details.currentFtp;
-    },
-    methods: {
-        _eventReset: function () {
-            this.selectedDatasetId = null;
-            this.sourceContent = "";
-        },
+        {
+            multiple: false,
+            library: false,
+            format: null,
+            allowUpload: false,
+        }
+    );
+}
 
-        _handleRemoteFilesUri: function (record) {
-            // fetch files at URI
-            UploadUtils.getRemoteEntriesAt(record.url).then((files) => {
-                files = files.filter((file) => file["class"] == "File");
-                this.sourceContent = files.map((file) => file["uri"]).join("\n");
-                this.uris = files;
-            });
-        },
+function inputFtp() {
+    getRemoteEntries((ftp_files) => {
+        sourceContent.value = ftp_files.map((file) => file["path"]).join("\n");
+        ftpFiles.value = ftp_files;
+    });
+}
 
-        _eventBuild: function () {
-            this._buildSelection(this.sourceContent);
-        },
-
-        onSelectDataset: function () {
-            const galaxy = getGalaxyInstance();
-            galaxy.data.dialog(
-                (response) => {
-                    this.selectedDatasetId = response.id;
-                    this.selectedDatasetName = response.name;
-                },
-                {
-                    multiple: false,
-                    library: false,
-                    format: null,
-                    allowUpload: false,
-                }
-            );
-        },
-
-        _buildSelection: function (content) {
-            const selectionType = this.selectionType;
-            const selection = {};
-            const Galaxy = getGalaxyInstance();
-            if (selectionType == "dataset" || selectionType == "paste") {
-                selection.selectionType = "raw";
-                selection.content = content;
-            } else if (selectionType == "ftp") {
-                selection.selectionType = "ftp";
-                selection.elements = this.ftpFiles;
-                selection.ftpUploadSite = this.ftpUploadSite;
-            } else if (selectionType == "remote_files") {
-                selection.selectionType = "remote_files";
-                selection.elements = this.uris;
-            }
-            selection.dataType = this.dataType;
-            Galaxy.currHistoryPanel.buildCollection("rules", selection, null, true);
-            this.$emit("dismiss");
-        },
-    },
-};
+function inputRemote() {
+    function handleRemoteFilesUri(record) {
+        getRemoteEntriesAt(record.url).then((files) => {
+            files = files.filter((file) => file["class"] == "File");
+            sourceContent.value = files.map((file) => file["uri"]).join("\n");
+            uris.value = files;
+        });
+    }
+    filesDialog(handleRemoteFilesUri, { mode: "directory" });
+}
 </script>
 
-<style>
-.upload-rule-option {
-    padding-top: 20px;
-    .upload-rule-option-title {
-        font-weight: bold;
-        padding-bottom: 5px;
-    }
-}
-</style>
+<template>
+    <div class="upload-wrapper d-flex flex-column">
+        <BAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
+        <div v-localize class="upload-header">Insert tabular source data to extract collection files and metadata.</div>
+        <textarea v-model="sourceContent" class="upload-box" no-resize placeholder="Insert tabular source data here." />
+        <div class="upload-footer text-center">
+            <span class="upload-footer-title">Upload type:</span>
+            <UploadSettingsSelect v-model="dataType" :options="RULES_TYPES" />
+        </div>
+        <div class="upload-buttons d-flex justify-content-end">
+            <BButton @click="inputDialog">
+                <FontAwesomeIcon icon="fa-file" />
+                <span v-localize>Choose dataset</span>
+            </BButton>
+            <BButton v-if="currentFtp" @click="inputFtp">
+                <FontAwesomeIcon icon="fa-folder-open" />
+                <span v-localize>Import FTP files</span>
+            </BButton>
+            <BButton @click="inputRemote">
+                <FontAwesomeIcon icon="fa-folder-open" />
+                <span v-localize>Choose remote file</span>
+            </BButton>
+            <BButton
+                id="btn-build"
+                :disabled="!sourceContent"
+                title="Build"
+                :variant="sourceContent ? 'primary' : ''"
+                @click="eventBuild">
+                <span>Build</span>
+            </BButton>
+            <BButton id="btn-reset" title="Reset" :disabled="!sourceContent" @click="eventReset">
+                <span>Reset</span>
+            </BButton>
+            <BButton id="btn-close" title="Close" @click="$emit('dismiss')">
+                <span>Close</span>
+            </BButton>
+        </div>
+    </div>
+</template>
