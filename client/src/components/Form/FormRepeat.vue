@@ -159,7 +159,7 @@ function getOrSetKey(object: Object) {
         </FormCard>
 
         <b-button v-if="!props.sustainRepeats" @click="onInsert">
-            <font-awesome-icon icon="plus" class="mr-1" />
+            <FontAwesomeIcon icon="plus" class="mr-1" />
             <span data-description="repeat insert">Insert {{ props.input.title || "Repeat" }}</span>
         </b-button>
     </div>
