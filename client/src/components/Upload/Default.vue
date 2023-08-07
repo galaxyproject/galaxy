@@ -2,10 +2,10 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCopy, faEdit, faFolderOpen, faLaptop } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { getGalaxyInstance } from "app";
 import { BButton } from "bootstrap-vue";
 import { filesDialog } from "utils/data";
 import { UploadQueue } from "utils/uploadbox";
+import { rulesBuilder } from "./rulesBuilder.js";
 import Vue, { computed, ref } from "vue";
 
 import { defaultModel } from "./model.js";
@@ -107,27 +107,7 @@ function eventAnnounce(index, file) {
 
 /** Populates collection builder with uploaded files */
 function eventBuild() {
-    const Galaxy = getGalaxyInstance();
-    const models = {};
-    uploadValues.value.forEach((model) => {
-        model.extension = extension.value;
-        model.genome = genome.value;
-        const outputs = model.outputs;
-        if (outputs) {
-            Object.entries(outputs).forEach((output) => {
-                const outputDetails = output[1];
-                models[outputDetails.id] = outputDetails;
-            });
-        } else {
-            console.debug("Warning, upload response does not contain outputs.", model);
-        }
-    });
-    // Build selection object
-    const selection = {
-        models: Object.values(models),
-        historyId: Galaxy.currHistoryPanel.model.id,
-    };
-    Galaxy.currHistoryPanel.buildCollection(collectionType.value, selection);
+    rulesBuilder(historyId, collectionType.value, extension.value, genome.value, uploadValues.value);
     counterRunning.value = 0;
     eventReset();
     emit("dismiss");
