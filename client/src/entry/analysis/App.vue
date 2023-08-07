@@ -173,5 +173,6 @@ export default {
 </script>
 
 <style lang="scss">
+@import "@fontsource/atkinson-hyperlegible/700.css";
 @import "custom_theme_variables.scss";
 </style>

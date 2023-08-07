@@ -148,7 +148,6 @@ onMounted(() => {
 
 <style scoped lang="scss">
 @import "theme/blue.scss";
-@import "@fontsource/atkinson-hyperlegible/700.css";
 
 #masthead {
     padding: 0;
