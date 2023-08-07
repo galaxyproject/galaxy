@@ -13,7 +13,7 @@ import UploadModalContent from "./UploadModalContent";
 const { currentUser } = storeToRefs(useUserStore());
 const { currentHistoryId } = useUserHistories(currentUser);
 
-const { config, isLoaded } = useConfig();
+const { config, isConfigLoaded } = useConfig();
 
 function getDefaultOptions() {
     const baseOptions = {
@@ -27,7 +27,7 @@ function getDefaultOptions() {
         immediateFiles: null,
     };
 
-    const configOptions = isLoaded.value
+    const configOptions = isConfigLoaded.value
         ? {
               uploadPath: config.value.nginx_upload_path ?? `${getAppRoot()}api/tools`,
               chunkUploadSize: config.value.chunk_upload_size,

@@ -25,12 +25,6 @@ type TrainingMaterialResponse = {
     [id: string]: TrainingDetails;
 };
 
-type Config = {
-    tool_training_recommendations: boolean;
-    tool_training_recommendations_api_url: string;
-    tool_training_recommendations_link: string;
-};
-
 export type TutorialDetails = {
     category: string;
     title: string;
@@ -61,10 +55,10 @@ function mapToolIds() {
 
 /** Training information about given tool */
 export function useToolTrainingMaterial(id: string, name: string, version: string, owner?: string) {
-    const { config, isLoaded }: { config: Ref<Config>; isLoaded: Ref<boolean> } = useConfig();
+    const { config, isConfigLoaded } = useConfig();
     const apiEnabled = computed(() => {
         return Boolean(
-            isLoaded.value &&
+            isConfigLoaded.value &&
                 config.value.tool_training_recommendations &&
                 config.value.tool_training_recommendations_api_url
         );
@@ -73,9 +67,9 @@ export function useToolTrainingMaterial(id: string, name: string, version: strin
     const cacheLoaded = ref(false);
 
     watch(
-        () => isLoaded.value,
+        () => isConfigLoaded.value,
         async () => {
-            if (!isLoaded.value) {
+            if (!isConfigLoaded.value) {
                 return;
             }
 

@@ -10,7 +10,7 @@ useConfig.mockReturnValue({
     config: {
         toolbox_auto_sort: true,
     },
-    isLoaded: true,
+    isConfigLoaded: true,
 });
 
 describe("ToolBox", () => {

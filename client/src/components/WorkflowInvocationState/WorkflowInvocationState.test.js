@@ -11,7 +11,7 @@ useConfig.mockReturnValue({
     config: {
         enable_celery_tasks: true,
     },
-    isLoaded: true,
+    isConfigLoaded: true,
 });
 
 const invocationJobsSummaryById = {

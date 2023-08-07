@@ -173,7 +173,7 @@ export function getRouter(Galaxy) {
                         redirect: redirectAnon(),
                     },
                     {
-                        path: "collection/:collection_id/edit",
+                        path: "collection/:collectionId/edit",
                         component: CollectionEditView,
                         props: true,
                     },
