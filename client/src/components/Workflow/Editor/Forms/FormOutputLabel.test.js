@@ -29,7 +29,9 @@ describe("FormOutputLabel", () => {
             },
             localVue,
             pinia,
+            provide: { workflowId: "mock-workflow" },
         });
+
         const stepTwo = { id: 1, outputs: [{ name: "other-name" }], workflow_outputs: outputs };
         wrapperOther = mount(FormOutputLabel, {
             propsData: {
@@ -38,6 +40,7 @@ describe("FormOutputLabel", () => {
             },
             localVue,
             pinia,
+            provide: { workflowId: "mock-workflow" },
         });
         stepStore = useWorkflowStepStore("mock-workflow");
         stepStore.addStep(stepOne);

@@ -65,14 +65,15 @@ describe("NodeOutput", () => {
     it("does not display multiple icon if not mapped over", async () => {
         const simpleDataStep = stepForLabel("simple data", stepStore.steps);
         const propsData = propsForStep(simpleDataStep);
-        const wrapper = shallowMount(NodeOutput, {
+        const wrapper = shallowMount(NodeOutput as any, {
             propsData: propsData,
             localVue,
             pinia,
-            provide: { transform },
+            provide: { transform, workflowId: "mock-workflow" },
         });
         expect(wrapper.find(".multiple").exists()).toBe(false);
     });
+
     it("displays multiple icon if not mapped over", async () => {
         const simpleDataStep = stepForLabel("simple data", stepStore.steps);
         const listInputStep = stepForLabel("list input", stepStore.steps);
@@ -91,11 +92,11 @@ describe("NodeOutput", () => {
             stepStore
         );
         const propsData = propsForStep(simpleDataStep);
-        const wrapper = shallowMount(NodeOutput, {
+        const wrapper = shallowMount(NodeOutput as any, {
             propsData: propsData,
             localVue,
             pinia,
-            provide: { transform },
+            provide: { transform, workflowId: "mock-workflow" },
         });
         expect(wrapper.find(".multiple").exists()).toBe(false);
         inputTerminal.connect(outputTerminal);
