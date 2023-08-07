@@ -24,6 +24,7 @@ from galaxy import (
     util,
     web,
 )
+from galaxy.managers.users import get_user_by_username
 from galaxy.model.base import transaction
 from galaxy.tool_shed.util import dependency_display
 from galaxy.tools.repositories import ValidationContext
@@ -2292,7 +2293,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
     def sharable_owner(self, trans, owner):
         """Support for sharable URL for each repository owner's tools, e.g. http://example.org/view/owner."""
         try:
-            user = common_util.get_user_by_username(trans, owner)
+            user = get_user_by_username(trans, owner)
         except Exception:
             user = None
         if user:
@@ -2320,7 +2321,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         else:
             # If the owner is valid, then show all of their repositories.
             try:
-                user = common_util.get_user_by_username(trans, owner)
+                user = get_user_by_username(trans, owner)
             except Exception:
                 user = None
             if user:
