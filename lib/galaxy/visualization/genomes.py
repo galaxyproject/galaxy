@@ -289,11 +289,12 @@ class Genomes:
         Returns a naturally sorted list of chroms/contigs for a given dbkey.
         Use either chrom or low to specify the starting chrom in the return list.
         """
+        session = trans.sa_session
         self.check_and_reload()
         # If there is no dbkey owner, default to current user.
         dbkey_owner, dbkey = decode_dbkey(dbkey)
         if dbkey_owner:
-            dbkey_user = trans.sa_session.query(trans.app.model.User).filter_by(username=dbkey_owner).first()
+            dbkey_user = get_user_by_username(session, dbkey_owner)
         else:
             dbkey_user = trans.user
 
@@ -309,12 +310,9 @@ class Genomes:
             if dbkey in user_keys:
                 dbkey_attributes = user_keys[dbkey]
                 dbkey_name = dbkey_attributes["name"]
-
                 # If there's a fasta for genome, convert to 2bit for later use.
                 if "fasta" in dbkey_attributes:
-                    build_fasta = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(
-                        dbkey_attributes["fasta"]
-                    )
+                    build_fasta = session.get(HistoryDatasetAssociation, dbkey_attributes["fasta"])
                     len_file = build_fasta.get_converted_dataset(trans, "len").file_name
                     build_fasta.get_converted_dataset(trans, "twobit")
                     # HACK: set twobit_file to True rather than a file name because
@@ -323,11 +321,7 @@ class Genomes:
                     twobit_file = True
                 # Backwards compatibility: look for len file directly.
                 elif "len" in dbkey_attributes:
-                    len_file = (
-                        trans.sa_session.query(trans.app.model.HistoryDatasetAssociation)
-                        .get(user_keys[dbkey]["len"])
-                        .file_name
-                    )
+                    len_file = session.get(HistoryDatasetAssociation, user_keys[dbkey]["len"]).file_name
                 if len_file:
                     genome = Genome(dbkey, dbkey_name, len_file=len_file, twobit_file=twobit_file)
 
@@ -376,7 +370,7 @@ class Genomes:
         # If there is no dbkey owner, default to current user.
         dbkey_owner, dbkey = decode_dbkey(dbkey)
         if dbkey_owner:
-            dbkey_user = trans.sa_session.query(trans.app.model.User).filter_by(username=dbkey_owner).first()
+            dbkey_user = get_user_by_username(trans.sa_session, dbkey_owner)
         else:
             dbkey_user = trans.user
 
@@ -393,9 +387,7 @@ class Genomes:
         else:
             user_keys = loads(dbkey_user.preferences["dbkeys"])
             dbkey_attributes = user_keys[dbkey]
-            fasta_dataset = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(
-                dbkey_attributes["fasta"]
-            )
+            fasta_dataset = trans.sa_session.get(HistoryDatasetAssociation, dbkey_attributes["fasta"])
             msg = fasta_dataset.convert_dataset(trans, "twobit")
             if msg:
                 return msg
