@@ -21,6 +21,7 @@ from webob.compat import cgi_FieldStorage
 
 from galaxy import util
 from galaxy.files import ProvidesUserFileSourcesUserContext
+from galaxy.managers import dbkeys
 from galaxy.model import (
     cached_id,
     Dataset,
@@ -33,7 +34,6 @@ from galaxy.model import (
 from galaxy.schema.fetch_data import FilesPayload
 from galaxy.tool_util.parser import get_input_source as ensure_input_source
 from galaxy.util import (
-    dbkeys,
     sanitize_param,
     string_as_bool,
     string_as_bool_or_none,

@@ -4,9 +4,9 @@ import shutil
 import tempfile
 from contextlib import contextmanager
 
+from galaxy.managers.dbkeys import GenomeBuilds
 from galaxy.tools.data import ToolDataTableManager
 from galaxy.util.bunch import Bunch
-from galaxy.util.dbkeys import GenomeBuilds
 
 
 class ValidationContext:

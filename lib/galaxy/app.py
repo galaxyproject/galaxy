@@ -41,6 +41,7 @@ from galaxy.jobs.manager import JobManager
 from galaxy.managers.api_keys import ApiKeyManager
 from galaxy.managers.citations import CitationsManager
 from galaxy.managers.collections import DatasetCollectionManager
+from galaxy.managers.dbkeys import GenomeBuilds
 from galaxy.managers.folders import FolderManager
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.histories import HistoryManager
@@ -126,7 +127,6 @@ from galaxy.util import (
     listify,
     StructuredExecutionTimer,
 )
-from galaxy.util.dbkeys import GenomeBuilds
 from galaxy.util.task import IntervalTask
 from galaxy.util.tool_shed import tool_shed_registry
 from galaxy.visualization.data_providers.registry import DataProviderRegistry

@@ -5,6 +5,10 @@ import logging
 import os.path
 import re
 from json import loads
+from typing import (
+    Dict,
+    List,
+)
 
 from galaxy.util import (
     galaxy_directory,
@@ -17,9 +21,9 @@ log = logging.getLogger(__name__)
 
 def read_dbnames(filename):
     """Read build names from file"""
-    db_names = []
+    db_names: List = []
     try:
-        ucsc_builds = {}
+        ucsc_builds: Dict = {}
         man_builds = []  # assume these are integers
         name_to_db_base = {}
         if filename is None:
@@ -43,9 +47,9 @@ def read_dbnames(filename):
                         ucsc_builds[db_base] = []
                         name_to_db_base[fields[1]] = db_base
                     # we want to sort within a species numerically by revision number
-                    build_rev = re.compile(r"\d+$")
+                    pattern = re.compile(r"\d+$")
                     try:
-                        build_rev = int(build_rev.findall(fields[0])[0])
+                        build_rev = int(pattern.findall(fields[0])[0])
                     except Exception:
                         build_rev = 0
                     ucsc_builds[db_base].append((build_rev, fields[0], fields[1]))
