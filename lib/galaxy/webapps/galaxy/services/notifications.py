@@ -48,7 +48,8 @@ class NotificationService(ServiceBase):
         self._ensure_user_can_send_notifications(sender_context)
         notification, recipient_user_count = self.notification_manager.send_notification_to_recipients(payload)
         return NotificationCreatedResponse(
-            total_notifications_sent=recipient_user_count, notification=NotificationResponse.from_orm(notification)
+            total_notifications_sent=recipient_user_count,
+            notification=NotificationResponse.model_validate(notification),
         )
 
     def broadcast(
@@ -62,7 +63,7 @@ class NotificationService(ServiceBase):
         self._ensure_user_can_broadcast_notifications(sender_context)
         notification = self.notification_manager.create_broadcast_notification(payload)
         return NotificationCreatedResponse(
-            total_notifications_sent=1, notification=NotificationResponse.from_orm(notification)
+            total_notifications_sent=1, notification=NotificationResponse.model_validate(notification)
         )
 
     def get_notifications_status(self, user_context: ProvidesUserContext, since: datetime) -> NotificationStatusSummary:
@@ -108,7 +109,7 @@ class NotificationService(ServiceBase):
             broadcasted_notification = self.notification_manager.get_broadcasted_notification(
                 notification_id, active_only
             )
-            return BroadcastNotificationResponse.from_orm(broadcasted_notification)
+            return BroadcastNotificationResponse.model_validate(broadcasted_notification)
         except ObjectNotFound:
             self._raise_notification_not_found(notification_id)
 
@@ -125,7 +126,7 @@ class NotificationService(ServiceBase):
         self.notification_manager.ensure_notifications_enabled()
         try:
             notification = self.notification_manager.get_user_notification(user, notification_id)
-            return UserNotificationResponse.from_orm(notification)
+            return UserNotificationResponse.model_validate(notification)
         except ObjectNotFound:
             self._raise_notification_not_found(notification_id)
 
@@ -209,7 +210,7 @@ class NotificationService(ServiceBase):
     ) -> List[BroadcastNotificationResponse]:
         notifications = self.notification_manager.get_all_broadcasted_notifications(since, active_only)
         broadcasted_notifications = [
-            BroadcastNotificationResponse.from_orm(notification) for notification in notifications
+            BroadcastNotificationResponse.model_validate(notification) for notification in notifications
         ]
         return broadcasted_notifications
 
@@ -221,7 +222,7 @@ class NotificationService(ServiceBase):
         since: Optional[datetime] = None,
     ) -> List[UserNotificationResponse]:
         notifications = self.notification_manager.get_user_notifications(user_context.user, limit, offset, since)
-        user_notifications = [UserNotificationResponse.from_orm(notification) for notification in notifications]
+        user_notifications = [UserNotificationResponse.model_validate(notification) for notification in notifications]
         return user_notifications
 
     def _raise_notification_not_found(self, notification_id: int) -> NoReturn:
