@@ -101,18 +101,12 @@ config-convert-dry-run: ## convert old style galaxy ini to yaml (dry run)
 config-convert: ## convert old style galaxy ini to yaml
 	$(CONFIG_MANAGE) convert galaxy
 
-config-api-schema: ## generates the schema model for the galaxy config file
-	$(CONFIG_MANAGE) generate_api_models galaxy
-	$(IN_VENV) isort lib/galaxy/schema/configuration.py
-	$(IN_VENV) black lib/galaxy/schema/configuration.py
-
 config-rebuild: ## Rebuild all sample YAML and RST files from config schema
 	$(CONFIG_MANAGE) build_sample_yaml galaxy --add-comments
 	$(CONFIG_MANAGE) build_rst galaxy > doc/source/admin/galaxy_options.rst
 	$(CONFIG_MANAGE) build_sample_yaml reports --add-comments
 	$(CONFIG_MANAGE) build_rst reports > doc/source/admin/reports_options.rst
 	$(CONFIG_MANAGE) build_sample_yaml tool_shed --add-comments
-	$(MAKE) config-api-schema
 
 config-lint: ## lint galaxy YAML configuration file
 	$(CONFIG_MANAGE) lint galaxy
@@ -192,7 +186,7 @@ build-api-schema:
 remove-api-schema:
 	rm _schema.yaml
 
-update-client-api-schema: config-api-schema client-node-deps build-api-schema
+update-client-api-schema: client-node-deps build-api-schema
 	$(IN_VENV) cd client && node openapi_to_schema.mjs ../_schema.yaml > src/schema/schema.ts && npx prettier --write src/schema/schema.ts
 	$(MAKE) remove-api-schema
 
