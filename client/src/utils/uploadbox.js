@@ -163,8 +163,6 @@ export class UploadQueue {
                 }
             });
         }
-        // Returns last added file index.
-        return String(parseInt(this.nextIndex) - 1);
     }
 
     // Set options

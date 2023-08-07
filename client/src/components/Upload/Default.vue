@@ -1,6 +1,6 @@
 <script setup>
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faEdit, faFolderOpen, faLaptop } from "@fortawesome/free-solid-svg-icons";
+import { faCopy, faEdit, faFolderOpen, faLaptop } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { getGalaxyInstance } from "app";
 import { BButton } from "bootstrap-vue";
@@ -16,9 +16,13 @@ import UploadBox from "./UploadBox.vue";
 import UploadExtensionDetails from "./UploadExtensionDetails.vue";
 import UploadSettingsSelect from "./UploadSettingsSelect.vue";
 
-library.add(faEdit, faFolderOpen, faLaptop);
+library.add(faCopy, faEdit, faFolderOpen, faLaptop);
 
 const props = defineProps({
+    effectiveExtensions: {
+        type: Array,
+        required: true,
+    },
     multiple: {
         type: Boolean,
         default: true,
@@ -27,9 +31,9 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
-    effectiveExtensions: {
-        type: Array,
-        required: true,
+    lazyLoad: {
+        type: Number,
+        default: 50,
     },
     details: {
         type: Object,
@@ -65,24 +69,7 @@ const listExtensions = computed(() => props.effectiveExtensions.filter((ext) => 
 const hasRemoteFiles = computed(() => !props.details.fileSourcesConfigured || !!props.details.currentFtp);
 const historyId = computed(() => props.details.history_id);
 const showHelper = computed(() => Object.keys(uploadItems.value).length === 0);
-const topInfo = computed(() => {
-    let message = "";
-    if (counterAnnounce.value == 0) {
-        if (hasBrowserSupport) {
-            message = "&nbsp;";
-        } else {
-            message =
-                "Browser does not support Drag & Drop. Try Firefox 4+, Chrome 7+, IE 10+, Opera 12+ or Safari 6+.";
-        }
-    } else {
-        if (counterRunning.value == 0) {
-            message = `You added ${counterAnnounce.value} file(s) to the queue. Add more files or click 'Start' to proceed.`;
-        } else {
-            message = `Please wait...${counterAnnounce.value} out of ${counterRunning.value} remaining.`;
-        }
-    }
-    return message;
-});
+const uploadValues = computed(() => Object.values(uploadItems.value));
 
 const queue = new UploadQueue({
     announce: eventAnnounce,
@@ -122,7 +109,7 @@ function eventAnnounce(index, file) {
 function eventBuild() {
     const Galaxy = getGalaxyInstance();
     const models = {};
-    Object.values(uploadItems.value).forEach((model) => {
+    uploadValues.value.forEach((model) => {
         model.extension = extension.value;
         model.genome = genome.value;
         const outputs = model.outputs;
@@ -148,7 +135,7 @@ function eventBuild() {
 
 /** Queue is done */
 function eventComplete() {
-    Object.values(uploadItems.value).forEach((model) => {
+    uploadValues.value.forEach((model) => {
         if (model.status === "queued") {
             model.status = "init";
         }
@@ -255,20 +242,19 @@ function eventSuccess(index, incoming) {
 
 /** Start upload process */
 function eventStart() {
-    if (counterAnnounce.value == 0 || counterRunning.value > 0) {
-        return;
+    if (counterAnnounce.value > 0 && counterRunning.value === 0) {
+        uploadSize.value = 0;
+        uploadCompleted.value = 0;
+        uploadValues.value.forEach((model) => {
+            if (model.status === "init") {
+                model.status = "queued";
+                uploadSize.value += model.file_size;
+            }
+        });
+        props.details.model.set({ percentage: 0, status: "success" });
+        counterRunning.value = counterAnnounce.value;
+        queue.start(true);
     }
-    uploadSize.value = 0;
-    uploadCompleted.value = 0;
-    Object.values(uploadItems.value).forEach((model) => {
-        if (model.status === "init") {
-            model.status = "queued";
-            uploadSize.value += model.file_size;
-        }
-    });
-    props.details.model.set({ percentage: 0, status: "success" });
-    counterRunning.value = counterAnnounce.value;
-    queue.start(true);
 }
 
 /** Pause upload process */
@@ -295,7 +281,7 @@ function updateCollectionType(newCollectionType) {
 /* Update extension type for all entries */
 function updateExtension(newExtension) {
     extension.value = newExtension;
-    Object.values(uploadItems.value).forEach((model) => {
+    uploadValues.value.forEach((model) => {
         if (model.status === "init" && model.extension === props.details.defaultExtension) {
             model.extension = newExtension;
         }
@@ -304,7 +290,7 @@ function updateExtension(newExtension) {
 
 /** Update reference dataset for all entries */
 function updateGenome(newGenome) {
-    Object.values(uploadItems.value).forEach((model) => {
+    uploadValues.value.forEach((model) => {
         if (model.status === "init" && model.genome === props.details.defaultDbKey) {
             model.genome = newGenome;
         }
@@ -328,12 +314,28 @@ defineExpose({
 
 <template>
     <div class="upload-wrapper">
-        <div class="upload-header" v-html="topInfo" />
+        <div class="upload-header">
+            <div v-if="counterAnnounce === 0">
+                <div v-if="hasBrowserSupport">&nbsp;</div>
+                <div v-else>
+                    Browser does not support Drag & Drop. Try Firefox 4+, Chrome 7+, IE 10+, Opera 12+ or Safari 6+.
+                </div>
+            </div>
+            <div v-else>
+                <div v-if="counterRunning === 0">
+                    You added {{ counterAnnounce }} file(s) to the queue. Add more files or click 'Start' to proceed.
+                </div>
+                <div v-else>Please wait...{{ counterAnnounce }} out of {{ counterRunning }} remaining..</div>
+            </div>
+        </div>
         <UploadBox :multiple="true" @add="addFiles">
-            <div v-show="showHelper" class="upload-helper"><i class="fa fa-files-o" />Drop files here</div>
+            <div v-show="showHelper" class="upload-helper">
+                <FontAwesomeIcon class="mr-1" icon="fa-copy" />
+                <span v-localize>Drop files here</span>
+            </div>
             <div v-show="!showHelper">
                 <DefaultRow
-                    v-for="(uploadItem, uploadIndex) in uploadItems"
+                    v-for="[uploadIndex, uploadItem] in Object.entries(uploadItems).slice(0, lazyLoad)"
                     :key="uploadIndex"
                     :index="uploadIndex"
                     :deferred="uploadItem.deferred"
@@ -352,6 +354,9 @@ defineExpose({
                     :to_posix_lines="uploadItem.to_posix_lines"
                     @remove="eventRemove"
                     @input="eventInput" />
+                <div v-if="uploadValues.length > lazyLoad" v-localize class="text-primary">
+                    Only showing first {{ lazyLoad }} of {{ uploadValues.length }} entries.
+                </div>
             </div>
         </UploadBox>
         <div class="upload-footer text-center">
