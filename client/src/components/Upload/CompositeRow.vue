@@ -98,9 +98,9 @@ function removeUpload() {
             <div>
                 <BDropdown
                     :id="`upload-type-${index}`"
+                    :disabled="isDisabled"
                     text="Select"
-                    size="sm"
-                    button-class="upload-type-dropdown py-0 px-1">
+                    :variant="fileSize > 0 ? 'secondary' : 'primary'">
                     <BDropdownItem @click="inputDialog">
                         <FontAwesomeIcon icon="fa-laptop" />
                         <span v-localize>Choose local file</span>
@@ -148,35 +148,14 @@ function removeUpload() {
             {{ info }}
         </div>
         <div v-if="fileMode == 'new'" class="upload-text">
-            <div class="upload-text-info">
+            <div class="upload-text-message">
                 Download data from the web by entering URLs (one per line) or directly paste content.
             </div>
-            <b-textarea :value="fileContent" class="upload-text-content form-control" @input="inputFileContent" />
+            <b-textarea
+                :value="fileContent"
+                class="upload-text-content form-control"
+                :disabled="isDisabled"
+                @input="inputFileContent" />
         </div>
     </div>
 </template>
-
-<style scoped lang="scss">
-@import "theme/blue.scss";
-button {
-    padding: 20px !important;
-    font-size: $h2-font-size !important;
-}
-.upload-text-content {
-    width: 100%;
-    height: 80px;
-    background: inherit;
-    color: $text-color;
-    white-space: pre;
-    overflow: auto;
-}
-.upload-title {
-    width: 275px;
-}
-.upload-type-dropdown {
-    .btn {
-        padding: 0;
-        margin: 0;
-    }
-}
-</style>

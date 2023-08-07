@@ -71,6 +71,16 @@
             }
         }
         .upload-row {
+            button.dropdown-toggle {
+                @extend .px-2;
+                @extend .py-0;
+            }
+            input {
+                font-size: $font-size-base;
+                color: $text-color;
+                height: 20px;
+                line-height: 18px;
+            }
             .upload-progress {
                 width: 130px;
                 line-height: $font-size-base;
@@ -102,29 +112,17 @@
                 word-wrap: break-word;
                 background: inherit;
             }
-            input.upload-title {
-                font-size: $font-size-base;
-                color: $text-color;
-                height: 20px;
-                line-height: 18px;
-            }
-            .upload-text-column {
-                position: relative;
-                .upload-text {
-                    position: absolute;
-                    display: none;
-                    .upload-text-content {
-                        width: 100%;
-                        height: 80px;
-                        resize: none;
-                        background: inherit;
-                        color: $text-color;
-                        white-space: pre;
-                        overflow: auto;
-                    }
-                    .upload-text-info {
-                        @extend .text-primary;
-                    }
+            .upload-text {
+                .upload-text-content {
+                    background: inherit;
+                    color: $text-color;
+                    height: 80px;
+                    overflow: auto;
+                    white-space: pre;
+                    width: 100%;
+                }
+                .upload-text-message {
+                    @extend .text-primary;
                 }
             }
         }

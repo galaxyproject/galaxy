@@ -140,22 +140,14 @@ function removeUpload() {
             {{ info }}
         </div>
         <div v-if="fileMode == 'new'" class="upload-text">
-            <div class="upload-text-info">
+            <div class="upload-text-message">
                 Download data from the web by entering URLs (one per line) or directly paste content.
             </div>
-            <b-textarea :value="fileContent" class="upload-text-content form-control" @input="inputFileContent" />
+            <b-textarea
+                :value="fileContent"
+                class="upload-text-content form-control"
+                :disabled="isDisabled"
+                @input="inputFileContent" />
         </div>
     </div>
 </template>
-
-<style scoped lang="scss">
-@import "theme/blue.scss";
-.upload-text-content {
-    width: 100%;
-    height: 80px;
-    background: inherit;
-    color: $text-color;
-    white-space: pre;
-    overflow: auto;
-}
-</style>
