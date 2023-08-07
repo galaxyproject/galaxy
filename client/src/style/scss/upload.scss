@@ -78,8 +78,7 @@
             input {
                 font-size: $font-size-base;
                 color: $text-color;
-                height: 20px;
-                line-height: 18px;
+                height: 22px;
             }
             .upload-progress {
                 width: 130px;
@@ -122,6 +121,7 @@
                     width: 100%;
                 }
                 .upload-text-message {
+                    @extend .my-1;
                     @extend .text-primary;
                 }
             }

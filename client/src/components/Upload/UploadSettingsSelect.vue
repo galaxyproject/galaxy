@@ -22,45 +22,40 @@ const currentValue = computed({
 <template>
     <Multiselect
         v-model="currentValue"
-        class="upload-settings-select"
+        class="upload-settings-select rounded"
         deselect-label=""
         :disabled="disabled"
         label="text"
         :options="options"
         :placeholder="placeholder"
         select-label=""
+        selected-label=""
         track-by="id" />
 </template>
 
-<style>
+<style lang="scss">
+@import "theme/blue.scss";
 .upload-settings-select.multiselect {
     display: inline-block;
+    min-height: unset;
     width: 150px;
-    .multiselect__select {
-        height: 15px;
-        width: 22px;
-        padding: 0px;
-        top: 5px;
-    }
-    .multiselect__single {
-        background: transparent;
-        margin: 0px;
-        height: 18px;
-        overflow: hidden;
-    }
-    .multiselect__tags {
-        background: transparent;
-        border-radius: 0.25rem;
-        height: 22px;
-        min-height: unset;
-        padding: 0px;
-        margin: 0px;
-        .multiselect__single {
-            width: 135px;
-        }
-    }
     .multiselect__content-wrapper {
         width: 300px;
+    }
+    .multiselect__select {
+        height: 22px;
+        padding: 0px;
+        background: transparent;
+        width: 20px;
+    }
+    .multiselect__tags {
+        border-radius: 0.25rem;
+        height: 22px;
+        margin: 0px;
+        padding: 0px;
+        .multiselect__single {
+            width: 130px;
+        }
     }
 }
 </style>
