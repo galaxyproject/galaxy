@@ -88,9 +88,9 @@ const queue = new UploadQueue({
     announce: eventAnnounce,
     chunkSize: props.details.chunkUploadSize,
     complete: eventComplete,
-    historyId: historyId.value,
     error: eventError,
     get: (index) => uploadItems.value[index],
+    historyId: historyId.value,
     multiple: props.multiple,
     progress: eventProgress,
     success: eventSuccess,
@@ -99,9 +99,6 @@ const queue = new UploadQueue({
 
 /** Add files to queue */
 function addFiles(files) {
-    files.forEach((file) => {
-        file.chunk_mode = true;
-    });
     queue.add(files);
 }
 
@@ -111,12 +108,12 @@ function eventAnnounce(index, file) {
     const uploadModel = {
         ...defaultModel,
         id: index,
-        file_name: file.name,
-        file_size: file.size,
-        file_mode: file.mode || "local",
-        file_path: file.path,
-        file_uri: file.uri,
         file_data: file,
+        file_mode: file.mode || "local",
+        file_name: file.name,
+        file_path: file.path,
+        file_size: file.size,
+        file_uri: file.uri,
     };
     Vue.set(uploadItems.value, index, uploadModel);
 }

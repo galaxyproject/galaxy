@@ -35,6 +35,7 @@ const emit = defineEmits();
 
 const percentageInt = computed(() => parseInt(props.percentage || 0));
 const isDisabled = computed(() => props.status !== "init");
+const isDragging = ref(false);
 
 function inputFileContent(newFileContent) {
     emit("input", props.index, {
@@ -47,11 +48,11 @@ function inputDialog() {
     openBrowserDialog((files) => {
         if (props.status !== "running" && files && files.length > 0) {
             emit("input", props.index, {
-                chunk_mode: true,
                 file_data: files[0],
-                file_name: files[0].name,
-                file_size: files[0].size,
                 file_mode: "local",
+                file_name: files[0].name,
+                file_path: null,
+                file_size: files[0].size,
             });
         }
     });
@@ -59,8 +60,11 @@ function inputDialog() {
 
 function inputPaste() {
     emit("input", props.index, {
-        file_name: DEFAULT_FILE_NAME,
+        file_data: null,
         file_mode: "new",
+        file_name: DEFAULT_FILE_NAME,
+        file_path: null,
+        file_size: 0,
     });
 }
 
@@ -69,10 +73,11 @@ function inputRemoteFiles() {
     filesDialog(
         (item) => {
             emit("input", props.index, {
+                file_data: null,
+                file_mode: "ftp",
                 file_name: item.label,
                 file_path: item.url,
                 file_size: item.size,
-                file_mode: "ftp",
             });
         },
         { multiple: false }
@@ -85,6 +90,21 @@ function inputSettings(settingId) {
     emit("input", props.index, newSettings);
 }
 
+/** Handle files dropped into the upload row **/
+function onDrop(evt) {
+    isDragging.value = false;
+    const droppedFile = evt.dataTransfer && evt.dataTransfer.files && evt.dataTransfer.files[0];
+    if (droppedFile) {
+        emit("input", props.index, {
+            file_data: droppedFile,
+            file_mode: "local",
+            file_name: droppedFile.name,
+            file_path: null,
+            file_size: droppedFile.size,
+        });
+    }
+}
+
 function removeUpload() {
     if (["init", "success", "error"].indexOf(props.status) !== -1) {
         emit("remove", props.index);
@@ -93,7 +113,13 @@ function removeUpload() {
 </script>
 
 <template>
-    <div :id="`upload-row-${index}`" class="upload-row rounded my-1 p-2" :class="`upload-${status}`">
+    <div
+        :id="`upload-row-${index}`"
+        class="upload-row rounded my-1 p-2"
+        :class="[`upload-${status}`, isDragging && 'bg-warning']"
+        @dragover.prevent="isDragging = true"
+        @dragleave.prevent="isDragging = false"
+        @drop.prevent="onDrop">
         <div class="d-flex justify-content-around">
             <div>
                 <BDropdown
