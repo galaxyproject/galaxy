@@ -170,10 +170,10 @@ function removeUpload() {
                 <FontAwesomeIcon v-else icon="fa-exclamation" />
             </div>
         </div>
-        <div v-if="info" v-localize class="upload-info-text">
+        <div v-if="info" v-localize class="upload-text-message">
             {{ info }}
         </div>
-        <div v-if="fileMode == 'new'" class="upload-text">
+        <div v-if="fileMode == 'new'">
             <div class="upload-text-message">
                 Download data from the web by entering URLs (one per line) or directly paste content.
             </div>

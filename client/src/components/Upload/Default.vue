@@ -334,7 +334,7 @@ defineExpose({
                     :to_posix_lines="uploadItem.to_posix_lines"
                     @remove="eventRemove"
                     @input="eventInput" />
-                <div v-if="uploadValues.length > lazyLoad" v-localize class="text-primary">
+                <div v-if="uploadValues.length > lazyLoad" v-localize class="upload-text-message">
                     Only showing first {{ lazyLoad }} of {{ uploadValues.length }} entries.
                 </div>
             </div>

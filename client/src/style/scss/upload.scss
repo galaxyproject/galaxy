@@ -70,6 +70,11 @@
                 font-size: inherit;
             }
         }
+        .upload-text-message {
+            @extend .my-1;
+            @extend .text-primary;
+            text-align: center;
+        }
         .upload-row {
             button.dropdown-toggle {
                 @extend .px-2;
@@ -111,19 +116,13 @@
                 word-wrap: break-word;
                 background: inherit;
             }
-            .upload-text {
-                .upload-text-content {
-                    background: inherit;
-                    color: $text-color;
-                    height: 80px;
-                    overflow: auto;
-                    white-space: pre;
-                    width: 100%;
-                }
-                .upload-text-message {
-                    @extend .my-1;
-                    @extend .text-primary;
-                }
+            .upload-text-content {
+                background: inherit;
+                color: $text-color;
+                height: 80px;
+                overflow: auto;
+                white-space: pre;
+                width: 100%;
             }
         }
     }
