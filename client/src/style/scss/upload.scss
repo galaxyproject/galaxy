@@ -1,12 +1,3 @@
-.upload-dialog {
-    width: 900px;
-}
-
-.upload-dialog-body {
-    height: 500px;
-    overflow: hidden;
-}
-
 .upload-button {
     @extend .w-100;
     @extend .mb-2;
@@ -39,14 +30,7 @@
     }
 }
 
-.upload-input {
-    font-size: $font-size-base;
-    color: $text-color;
-    height: 20px;
-    line-height: 18px;
-}
-
-.upload-view-default {
+.upload-wrapper {
     .upload-box.highlight {
         border-color: $border-color;
         border-width: 2px;
@@ -68,15 +52,6 @@
         border: 1px dashed $border-color;
         overflow-x: hidden;
         -ms-overflow-style: none;
-        .upload-helper {
-            @extend h3;
-            padding: 120px;
-            color: $border-color;
-            i {
-                @extend .mr-2;
-                font-size: inherit;
-            }
-        }
         .upload-error {
             background: $state-danger-bg;
         }
@@ -86,38 +61,16 @@
         .upload-running {
             background: $state-running-bg;
         }
+        .upload-helper {
+            @extend h3;
+            padding: 120px;
+            color: $border-color;
+            i {
+                @extend .mr-2;
+                font-size: inherit;
+            }
+        }
         .upload-row {
-            .upload-title {
-                width: 130px;
-                word-wrap: break-word;
-                background: inherit;
-            }
-            input.upload-title {
-                @extend .upload-input;
-            }
-            .upload-size {
-                width: 60px;
-                white-space: nowrap;
-            }
-            .upload-text-column {
-                position: relative;
-                .upload-text {
-                    position: absolute;
-                    display: none;
-                    .upload-text-content {
-                        width: 100%;
-                        height: 80px;
-                        resize: none;
-                        background: inherit;
-                        color: $text-color;
-                        white-space: pre;
-                        overflow: auto;
-                    }
-                    .upload-text-info {
-                        @extend .text-primary;
-                    }
-                }
-            }
             .upload-progress {
                 width: 130px;
                 line-height: $font-size-base;
@@ -140,13 +93,40 @@
                     }
                 }
             }
-        }
-    }
-    .upload-rule-option {
-        padding-top: 20px;
-        .upload-rule-option-title {
-            font-weight: bold;
-            padding-bottom: 5px;
+            .upload-size {
+                width: 60px;
+                white-space: nowrap;
+            }
+            .upload-title {
+                width: 130px;
+                word-wrap: break-word;
+                background: inherit;
+            }
+            input.upload-title {
+                font-size: $font-size-base;
+                color: $text-color;
+                height: 20px;
+                line-height: 18px;
+            }
+            .upload-text-column {
+                position: relative;
+                .upload-text {
+                    position: absolute;
+                    display: none;
+                    .upload-text-content {
+                        width: 100%;
+                        height: 80px;
+                        resize: none;
+                        background: inherit;
+                        color: $text-color;
+                        white-space: pre;
+                        overflow: auto;
+                    }
+                    .upload-text-info {
+                        @extend .text-primary;
+                    }
+                }
+            }
         }
     }
     .upload-buttons {
@@ -155,21 +135,16 @@
             @extend .ml-1;
         }
     }
-}
-
-.upload-footer {
-    @extend .mt-2;
-    height: 20px;
-    text-align: center;
-    .upload-footer-title {
-        @extend .ml-2;
-        font-weight: bold;
+    .upload-footer {
+        @extend .mt-2;
+        height: 20px;
+        text-align: center;
+        .upload-footer-title {
+            @extend .ml-2;
+            font-weight: bold;
+        }
     }
-}
-
-.upload-top {
-    text-align: center;
-    .upload-top-info {
+    .upload-header {
         font-weight: $font-size-base;
         text-align: center;
     }

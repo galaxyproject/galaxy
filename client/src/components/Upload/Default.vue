@@ -330,10 +330,8 @@ defineExpose({
 </script>
 
 <template>
-    <div class="upload-view-default">
-        <div class="upload-top">
-            <div class="upload-top-info" v-html="topInfo" />
-        </div>
+    <div class="upload-wrapper">
+        <div class="upload-header" v-html="topInfo" />
         <UploadBox :multiple="true" @add="addFiles">
             <div v-show="showHelper" class="upload-helper"><i class="fa fa-files-o" />Drop files here</div>
             <div v-show="!showHelper">

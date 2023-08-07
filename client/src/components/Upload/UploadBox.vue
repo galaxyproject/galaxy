@@ -20,7 +20,7 @@ function onDrop(evt) {
 
 <template>
     <div
-        class="upload-box upload-box-with-footer"
+        class="upload-box"
         :class="{ highlight: isDragging }"
         @dragover.prevent="isDragging = true"
         @dragleave.prevent="isDragging = false"
@@ -30,7 +30,7 @@ function onDrop(evt) {
 </template>
 
 <style scoped>
-.upload-box-with-footer {
+.upload {
     height: 300px;
 }
 </style>

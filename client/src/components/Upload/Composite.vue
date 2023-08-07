@@ -139,8 +139,9 @@ function inputExtension(newExtension) {
 </script>
 
 <template>
-    <div class="upload-view-default">
-        <div class="upload-box" :style="{ height: '335px' }">
+    <div class="upload-wrapper">
+        <div class="upload-header">&nbsp;</div>
+        <div class="upload-box">
             <div v-show="showHelper" class="upload-helper">Select a composite type</div>
             <div v-show="!showHelper">
                 <CompositeRow

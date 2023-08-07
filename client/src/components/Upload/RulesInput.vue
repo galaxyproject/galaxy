@@ -1,8 +1,6 @@
 <template>
-    <div class="upload-view-default">
-        <div class="upload-top">
-            <div class="upload-top-info" v-html="topInfo"></div>
-        </div>
+    <div class="upload-wrapper">
+        <div class="upload-header" v-html="topInfo" />
         <div ref="uploadBox" class="upload-box" :style="{ height: '335px' }">
             <span style="width: 25%; display: inline; height: 100%" class="float-left">
                 <div class="upload-rule-option">
@@ -223,3 +221,13 @@ export default {
     },
 };
 </script>
+
+<style>
+.upload-rule-option {
+    padding-top: 20px;
+    .upload-rule-option-title {
+        font-weight: bold;
+        padding-bottom: 5px;
+    }
+}
+</style>

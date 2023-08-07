@@ -61,6 +61,7 @@ const emit = defineEmits();
 <style lang="scss">
 @import "theme/blue.scss";
 .upload-settings {
+    position: relative;
     .upload-settings-cover {
         background: $white;
         cursor: no-drop;
