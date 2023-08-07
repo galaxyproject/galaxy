@@ -70,8 +70,8 @@ watch(
 
         try {
             const [{ data: workflowInfoData }, { data: fullWorkflow }] = await Promise.all([
-                axios.get(`/api/workflows/${id}`),
-                axios.get(`/workflow/load_workflow?_=true&id=${id}`),
+                axios.get(withPrefix(`/api/workflows/${id}`)),
+                axios.get(withPrefix(`/workflow/load_workflow?_=true&id=${id}`)),
             ]);
 
             assertDefined(workflowInfoData.name);
