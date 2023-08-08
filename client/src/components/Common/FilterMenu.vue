@@ -23,7 +23,7 @@ interface BackendFilterError {
 const props = withDefaults(
     defineProps<{
         name?: string;
-        placeholder: string;
+        placeholder?: string;
         filterClass: Filtering<any>;
         filterText: string;
         hasHelp?: boolean;
@@ -208,16 +208,17 @@ function updateFilterText(newFilterText: string) {
                 </b-button>
             </b-input-group-append>
         </b-input-group>
+        <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
         <div
             v-if="showAdvanced"
             class="mt-2"
-            description="advanced filters"
+            data-description="advanced filters"
             @keyup.enter="onSearch"
             @keyup.esc="onToggle">
             <div v-for="filter in Object.keys(validFilters)" :key="filter">
                 <span v-if="validFilters[filter]?.menuItem">
-                    <!-- is a Boolean filter -->
-                    <span v-if="validFilters[filter]?.type == Boolean">
+                    <!-- is a Radio filter -->
+                    <span v-if="validFilters[filter]?.type == 'Radio'">
                         <small>{{ validFilters[filter]?.placeholder }}:</small>
                         <FilterMenuRadio
                             v-if="validFilters[filter]?.options"
@@ -225,13 +226,18 @@ function updateFilterText(newFilterText: string) {
                             :options="validFilters[filter]?.options"
                             :settings="filters"
                             @change="onOption" />
-                        <b-form-group v-else class="m-0">
+                    </span>
+
+                    <!-- is a Boolean filter -->
+                    <span v-else-if="validFilters[filter]?.type == Boolean">
+                        <small>{{ validFilters[filter]?.placeholder }}:</small>
+                        <b-form-group class="m-0">
                             <b-form-radio-group
                                 v-model="filters[filter]"
                                 :options="defaultBoolOptions"
                                 size="sm"
                                 buttons
-                                :description="`filter ${validFilters[filter]?.placeholder}`" />
+                                :data-description="`filter ${filter}`" />
                         </b-form-group>
                     </span>
 
@@ -337,7 +343,7 @@ function updateFilterText(newFilterText: string) {
                             <b-input-group-append>
                                 <b-button
                                     v-if="validFilters[filter]?.helpInfo"
-                                    :title="`${validFilters[filter]?.placeholder} Help`"
+                                    :title="`${capitalize(validFilters[filter]?.placeholder)} Help`"
                                     size="sm"
                                     @click="helpModals[filter] = true">
                                     <icon icon="question" />
@@ -358,7 +364,13 @@ function updateFilterText(newFilterText: string) {
                             v-model="helpModals[filter]"
                             :title="`${capitalize(validFilters[filter]?.placeholder)} Help`"
                             ok-only>
-                            <component :is="validFilters[filter]?.helpInfo" @set-filter="onOption" />
+                            <component
+                                :is="validFilters[filter]?.helpInfo"
+                                v-if="typeof validFilters[filter]?.helpInfo == 'object'"
+                                @set-filter="onOption" />
+                            <div v-else-if="typeof validFilters[filter]?.helpInfo == 'string'">
+                                <p>{{ validFilters[filter]?.helpInfo }}</p>
+                            </div>
                         </b-modal>
                     </span>
                 </span>
@@ -371,7 +383,7 @@ function updateFilterText(newFilterText: string) {
                     class="mr-1"
                     size="sm"
                     variant="primary"
-                    description="apply filters"
+                    data-description="apply filters"
                     @click="onSearch">
                     <icon icon="search" />
                     <span v-localize>Search</span>

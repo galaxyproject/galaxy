@@ -38,16 +38,20 @@ interface RadioOption {
     value: string | number | boolean | Date | undefined;
 }
 
-/** A ValidFilter<T> for the Filtering<T> class, with its properties */
+/** A ValidFilter<T> with a `handler` for the `Filtering<T>` class,
+ * and remaining properties for the `FilterMenu` component
+ * */
 export type ValidFilter<T> = {
     /** The `FilterMenu` input field/tooltip/label placeholder */
     placeholder?: string;
     /** The data type of the `FilterMenu` input field */
-    type?: typeof String | typeof Number | typeof Boolean | typeof Date;
+    type?: typeof String | typeof Number | typeof Boolean | "Radio" | typeof Date;
     /** The handler function for this filter */
     handler: HandlerReturn<T>;
-    /** Is this an filter to include as a field in `FilterMenu`? */
-    menuItem?: boolean;
+    /** Is this a filter to include as a field in `FilterMenu`?
+     * (if `false` the filter is still valid for the search bar `filterText`)
+     */
+    menuItem: boolean;
     /** Is there a datalist of values for this field */
     datalist?: string[];
     /** Is this a `FilterMenu` range filter?
@@ -56,7 +60,7 @@ export type ValidFilter<T> = {
      */
     isRangeInput?: boolean;
     /** The help info component to append to the `FilterMenu` input field */
-    helpInfo?: DefineComponent | HTMLElement | string;
+    helpInfo?: DefineComponent | string;
     /** The radio options if filter is a `FilterMenu` radio input */
     options?: RadioOption[];
 };
@@ -210,6 +214,36 @@ export default class Filtering<T> {
         this.validFilters = validFilters;
         this.useDefaultFilters = useDefaultFilters;
         this.validAliases = validAliases || defaultValidAliases;
+        // Add `name` filter if not present
+        if (this.validFilters["name"] === undefined) {
+            this.validFilters["name"] = {
+                handler: contains("name"),
+                menuItem: false,
+            };
+        }
+        this.addRangedFiltersIfNotPresent();
+    }
+
+    /** For `FilterMenu` validFilters, if `isRangeInput`, then adds handlers
+     * for the `lt` & `gt` filters if not included in `validFilters` already
+     */
+    addRangedFiltersIfNotPresent() {
+        Object.entries(this.validFilters).forEach(([key, filter]) => {
+            if (filter.isRangeInput) {
+                if (this.validFilters[`${key}_gt`] === undefined) {
+                    this.validFilters[`${key}_gt`] = {
+                        handler: compare(key, "gt"),
+                        menuItem: false,
+                    };
+                }
+                if (this.validFilters[`${key}_lt`] === undefined) {
+                    this.validFilters[`${key}_lt`] = {
+                        handler: compare(key, "lt"),
+                        menuItem: false,
+                    };
+                }
+            }
+        });
     }
 
     /** Returns true if default filter values are not changed

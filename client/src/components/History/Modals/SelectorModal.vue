@@ -33,9 +33,7 @@ const validFilters = {
         menuItem: true,
     },
     update_time_ge: { handler: compare("update_time", "ge", toDate), menuItem: false },
-    update_time_gt: { handler: compare("update_time", "gt", toDate), menuItem: false },
     update_time_le: { handler: compare("update_time", "le", toDate), menuItem: false },
-    update_time_lt: { handler: compare("update_time", "lt", toDate), menuItem: false },
 };
 const HistoriesFilters = new Filtering(validFilters, false);
 
