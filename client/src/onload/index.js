@@ -11,6 +11,7 @@ import "./publicPath";
 
 // Default Font
 import "@fontsource/atkinson-hyperlegible";
+import "@fontsource/atkinson-hyperlegible/700.css";
 
 import { overrideProductionConsole } from "./console";
 
