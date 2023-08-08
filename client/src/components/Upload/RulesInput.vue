@@ -38,8 +38,7 @@ const dataType = ref("datasets");
 const errorMessage = ref(null);
 const ftpFiles = ref([]);
 const selectedDatasetId = ref(null);
-const selectedDatasetName = ref(null);
-const selectionType = ref("paste");
+const selectionType = ref("raw");
 const sourceContent = ref(null);
 const uris = ref([]);
 
@@ -62,6 +61,7 @@ function eventBuild() {
 
 function eventReset() {
     selectedDatasetId.value = null;
+    selectionType.value = "raw";
     sourceContent.value = null;
 }
 
@@ -70,7 +70,6 @@ function inputDialog() {
     Galaxy.data.dialog(
         (response) => {
             selectedDatasetId.value = response.id;
-            selectedDatasetName.value = response.name;
             urlData({ url: `/api/histories/${props.historyId}/contents/${selectedDatasetId.value}/display` })
                 .then((newSourceContent) => {
                     selectionType.value = "raw";
@@ -120,7 +119,11 @@ function inputRemote() {
     <div class="upload-wrapper d-flex flex-column">
         <BAlert v-if="errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
         <div v-localize class="upload-header">Insert tabular source data to extract collection files and metadata.</div>
-        <textarea v-model="sourceContent" class="upload-box" no-resize placeholder="Insert tabular source data here." />
+        <textarea
+            v-model="sourceContent"
+            class="upload-box upload-text-area"
+            placeholder="Insert tabular source data here."
+            :disabled="selectionType !== 'raw'" />
         <div class="upload-footer text-center">
             <span class="upload-footer-title">Upload type:</span>
             <UploadSettingsSelect v-model="dataType" :options="RULES_TYPES" />
@@ -159,3 +162,9 @@ function inputRemote() {
         </div>
     </div>
 </template>
+
+<style scoped>
+.upload-text-area {
+    resize: none;
+}
+</style>
