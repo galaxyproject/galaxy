@@ -151,6 +151,7 @@ function logInTitle(title: string) {
                                 :href="importUrl"
                                 :disabled="userStore.isAnonymous"
                                 :title="logInTitle('Import Workflow')"
+                                data-description="workflow import"
                                 target="blank"
                                 variant="secondary"
                                 size="md">

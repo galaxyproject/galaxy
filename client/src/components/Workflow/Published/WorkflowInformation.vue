@@ -37,7 +37,10 @@ const publishedByUser = computed(() => `/workflows/list_published?f-username=${p
     <aside class="workflow-information">
         <hgroup>
             <Heading h2 size="xl" class="mb-0">About This Workflow</Heading>
-            <span class="ml-2">{{ workflowInfo.name }} - Version {{ workflowInfo.version }}</span>
+            <span class="ml-2">
+                <span data-description="workflow name"> {{ workflowInfo.name }} </span> - Version
+                {{ workflowInfo.version }}
+            </span>
         </hgroup>
 
         <div class="workflow-info-box">
