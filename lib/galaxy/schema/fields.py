@@ -34,9 +34,9 @@ def ensure_valid_id(v: str) -> str:
 
 def ensure_valid_folder_id(v):
     if not isinstance(v, str):
-        raise TypeError("String required")
+        raise ValueError("String required")
     if not v.startswith("F"):
-        raise TypeError("Invalid library folder ID. Folder IDs must start with an 'F'")
+        raise ValueError("Invalid library folder ID. Folder IDs must start with an 'F'")
     v = v[1:]
     ensure_valid_id(v)
     return v
