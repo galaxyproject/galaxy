@@ -186,9 +186,14 @@ Builtin Tool Updates
 Release Testing Team
 ===========================================================
 
-A special thanks to the release testing team for testing many of the new features and reporting many bugs:
+A special thanks to the release testing team for testing many of the new features:
 
-<team members go here>
+* `Jennifer Hillman-Jackson <https://github.com/jennaj>`__
+* `John Davis <https://github.com/jdavcs>`__
+* `Luke Sargent <https://github.com/luke-c-sargent>`__
+* `Martin Cech <https://github.com/martenson>`__
+* `Michelle Savage <https://github.com/hujambo-dunia>`__
+* `Stephen Mosher <https://github.com/slmosher>`__
 
 Release Notes
 ===========================================================
