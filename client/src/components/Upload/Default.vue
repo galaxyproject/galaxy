@@ -7,8 +7,8 @@ import { filesDialog } from "utils/data";
 import { UploadQueue } from "utils/uploadbox";
 import Vue, { computed, ref } from "vue";
 
-import { defaultModel } from "./model.js";
 import { collectionBuilder } from "./builders.js";
+import { defaultModel } from "./model.js";
 import { COLLECTION_TYPES, DEFAULT_FILE_NAME, findExtension, hasBrowserSupport, openBrowserDialog } from "./utils";
 
 import DefaultRow from "./DefaultRow.vue";

@@ -1,19 +1,19 @@
 <script setup>
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faEdit } from "@fortawesome/free-solid-svg-icons";
+import { faEdit, faFile, faFolderOpen, faLock } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { getGalaxyInstance } from "app";
 import { BAlert, BButton, BLink } from "bootstrap-vue";
 import { getRemoteEntries, getRemoteEntriesAt } from "components/Upload/utils";
 import { filesDialog } from "utils/data";
 import { urlData } from "utils/url";
-import { ref } from "vue";
+import { computed, ref } from "vue";
 
 import { RULES_TYPES } from "./utils.js";
 
 import UploadSettingsSelect from "./UploadSettingsSelect.vue";
 
-library.add(faEdit);
+library.add(faEdit, faFile, faFolderOpen, faLock);
 
 const props = defineProps({
     hasCallback: {
@@ -41,6 +41,8 @@ const selectedDatasetId = ref(null);
 const selectionType = ref("raw");
 const sourceContent = ref(null);
 const uris = ref([]);
+
+const isDisabled = computed(() => selectionType.value !== "raw");
 
 function eventBuild() {
     const Galaxy = getGalaxyInstance();
@@ -123,7 +125,8 @@ function inputRemote() {
             v-model="sourceContent"
             class="upload-box upload-text-area"
             placeholder="Insert tabular source data here."
-            :disabled="selectionType !== 'raw'" />
+            :disabled="isDisabled" />
+        <FontAwesomeIcon v-if="isDisabled" class="upload-text-lock" icon="fa-lock" />
         <div class="upload-footer text-center">
             <span class="upload-footer-title">Upload type:</span>
             <UploadSettingsSelect v-model="dataType" :options="RULES_TYPES" />
@@ -166,5 +169,12 @@ function inputRemote() {
 <style scoped>
 .upload-text-area {
     resize: none;
+}
+.upload-text-lock {
+    bottom: 22%;
+    font-size: 1.275rem;
+    opacity: 0.2;
+    right: 3%;
+    position: absolute;
 }
 </style>
