@@ -24,17 +24,6 @@ WatchToolOptions = Literal["false", "auto", "polling"]
 class ComputedGalaxyConfig(Model):
     """Contains Galaxy configuration options computed at runtime."""
 
-    is_admin_user: Annotated[
-        Optional[bool],
-        Field(
-            deprecated=True,  # TODO: redundant, this is available from user data (deprecated for now)
-            title="Is Admin User",
-            description="""Determines if the current user is an admin user.
-**Deprecated**: This is deprecated and will be removed in a future release.
-Please get this information from the user data instead.""",
-        ),
-    ] = False
-
     lims_doc_url: Annotated[
         Optional[str],
         Field(
@@ -177,6 +166,26 @@ Please use the `helpsite_url` option instead.""",
     ]
 
 
+# This field is redundant (as it can be obtained from the user data), but...
+# we could use it for now as a simple discriminator for Admin/NonAdmin models
+IsAdminUserField = Field(
+    title="Is Admin User",
+    description="""Determines if the current user is an admin user.""",
+)
+
+
+class AdminExposableComputedGalaxyConfig(ComputedGalaxyConfig):
+    """Contains Galaxy configuration options computed at runtime exposed to admins only."""
+
+    is_admin_user: Annotated[Literal[True], IsAdminUserField] = True
+
+
+class UserExposableComputedGalaxyConfig(ComputedGalaxyConfig):
+    """Contains Galaxy configuration options computed at runtime that can be exposed to users."""
+
+    is_admin_user: Annotated[Literal[False], IsAdminUserField] = False
+
+
 class UserExposableGalaxyConfig(Model):
     """Contains Galaxy configuration values that can be exposed to regular users.
 
@@ -186,15 +195,15 @@ class UserExposableGalaxyConfig(Model):
     """
 
     brand: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Brand",
             description="""Append "{brand}" text to the masthead.""",
         ),
-    ]
+    ] = None
 
     logo_url: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Logo Url",
             description="""The URL linked by the "Galaxy/brand" text.""",
@@ -202,7 +211,7 @@ class UserExposableGalaxyConfig(Model):
     ] = "/"
 
     logo_src: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Logo Src",
             description="""The brand image source.""",
@@ -210,21 +219,21 @@ class UserExposableGalaxyConfig(Model):
     ] = "/static/favicon.svg"
 
     logo_src_secondary: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Logo Src Secondary",
             description="""The custom brand image source.""",
         ),
-    ]
+    ] = None
 
     terms_url: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Terms Url",
             description="""The URL linked by the "Terms and Conditions" link in the "Help" menu, as well
 as on the user registration and login forms and in the activation emails.""",
         ),
-    ]
+    ] = None
 
     wiki_url: Annotated[
         str,
@@ -375,7 +384,7 @@ the cleanup scripts run via cron)""",
     ] = True
 
     use_remote_user: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Use Remote User",
             description="""User authentication can be delegated to an upstream proxy server (usually
@@ -569,7 +578,7 @@ caching. This isn't a boolean so an option for 'show-selection' can be added lat
     ] = "off"
 
     nginx_upload_path: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Nginx Upload Path",
             description="""This value overrides the action set on the file upload form, e.g. the web
@@ -689,7 +698,7 @@ https://en.wikipedia.org/wiki/Power_usage_effectiveness
     ] = False
 
     message_box_content: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Message Box Content",
             description="""Show a message box under the masthead.""",
@@ -746,7 +755,7 @@ be an absolute or relative URL.""",
     ] = False
 
     cookie_domain: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Cookie Domain",
             description="""Tell Galaxy that multiple domains sharing the same root are associated
@@ -779,7 +788,7 @@ preserved as they are loaded from the tool config files.""",
     ] = True
 
     panel_views: Annotated[
-        List[Any],
+        Dict[str, Dict],
         Field(
             title="Panel Views",
             description="""Definitions of static toolbox panel views embedded directly in the config instead of reading

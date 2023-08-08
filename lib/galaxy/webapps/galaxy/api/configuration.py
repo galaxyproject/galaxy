@@ -12,12 +12,15 @@ from typing import (
 )
 
 from fastapi import Path
+from pydantic import Field
+from typing_extensions import Annotated
 
 from galaxy.managers.configuration import ConfigurationManager
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.schema.configuration import (
+    AdminExposableComputedGalaxyConfig,
     AdminExposableGalaxyConfig,
-    ComputedGalaxyConfig,
+    UserExposableComputedGalaxyConfig,
     UserExposableGalaxyConfig,
 )
 from galaxy.schema.fields import DecodedDatabaseIdField
@@ -45,19 +48,21 @@ EncodedIdPathParam = Path(
 )
 
 
-class ConfigResponse(ComputedGalaxyConfig, UserExposableGalaxyConfig):
-    """Configuration settings that can be exposed to users."""
+class ConfigResponse(UserExposableComputedGalaxyConfig, UserExposableGalaxyConfig):
+    """Configuration values that can be exposed to users."""
 
     pass
 
 
-class AdminOnlyConfigResponse(ConfigResponse, AdminExposableGalaxyConfig):
-    """Configuration settings that can be exposed to admins."""
+class AdminOnlyConfigResponse(AdminExposableComputedGalaxyConfig, AdminExposableGalaxyConfig):
+    """Configuration values that can be exposed to admins."""
 
     pass
 
 
-GalaxyConfigResponse = Union[ConfigResponse, AdminOnlyConfigResponse]
+AnyGalaxyConfigResponse = Annotated[
+    Union[ConfigResponse, AdminOnlyConfigResponse], Field(discriminator="is_admin_user")
+]
 
 
 @router.cbv
@@ -83,7 +88,7 @@ class FastAPIConfiguration:
         trans: ProvidesUserContext = DependsOnTrans,
         view: Optional[str] = SerializationViewQueryParam,
         keys: Optional[str] = SerializationKeysQueryParam,
-    ) -> GalaxyConfigResponse:
+    ) -> AnyGalaxyConfigResponse:
         """
         Return an object containing exposable configuration settings.
 

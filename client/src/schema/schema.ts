@@ -1727,7 +1727,7 @@ export interface components {
         };
         /**
          * AdminOnlyConfigResponse
-         * @description Configuration settings that can be exposed to admins.
+         * @description Configuration values that can be exposed to admins.
          */
         AdminOnlyConfigResponse: {
             /**
@@ -1783,7 +1783,7 @@ export interface components {
              * Brand
              * @description Append "{brand}" text to the masthead.
              */
-            brand: string;
+            brand?: string;
             /**
              * Carbon Emission Estimates
              * @description This flag enables carbon emissions estimates for every job based on its runtime metrics.
@@ -1828,7 +1828,7 @@ export interface components {
              * This allow a user to stay logged in when passing from one subdomain to the other.
              * This root domain will be written in the unique session cookie shared by all subdomains.
              */
-            cookie_domain: string;
+            cookie_domain?: string;
             /**
              * Datatypes Disable Auto
              * @description Disable the 'Auto-detect' option for file uploads
@@ -2011,13 +2011,11 @@ export interface components {
             interactivetools_enable?: boolean;
             /**
              * Is Admin User
-             * @deprecated
              * @description Determines if the current user is an admin user.
-             * **Deprecated**: This is deprecated and will be removed in a future release.
-             * Please get this information from the user data instead.
-             * @default false
+             * @default true
+             * @enum {boolean}
              */
-            is_admin_user?: boolean;
+            is_admin_user?: true;
             /**
              * Library Import Dir
              * @description Add an option to the library upload form which allows administrators to
@@ -2043,7 +2041,7 @@ export interface components {
              * Logo Src Secondary
              * @description The custom brand image source.
              */
-            logo_src_secondary: string;
+            logo_src_secondary?: string;
             /**
              * Logo Url
              * @description The URL linked by the "Galaxy/brand" text.
@@ -2092,7 +2090,7 @@ export interface components {
              * Message Box Content
              * @description Show a message box under the masthead.
              */
-            message_box_content: string;
+            message_box_content?: string;
             /**
              * Message Box Visible
              * @description Show a message box under the masthead.
@@ -2104,7 +2102,7 @@ export interface components {
              * @description This value overrides the action set on the file upload form, e.g. the web
              * path where the nginx_upload_module has been configured to intercept upload requests.
              */
-            nginx_upload_path: string;
+            nginx_upload_path?: string;
             /**
              * Object Store Allows Id Selection
              * @description Determines if the object store allows id selection.
@@ -2134,7 +2132,9 @@ export interface components {
              * @description Definitions of static toolbox panel views embedded directly in the config instead of reading
              * YAML from directory with panel_views_dir.
              */
-            panel_views: Record<string, never>[];
+            panel_views: {
+                [key: string]: Record<string, never> | undefined;
+            };
             /**
              * Plausible Domain
              * @description Please enter the URL for the Galaxy server so this can be used for tracking
@@ -2297,7 +2297,7 @@ export interface components {
              * @description The URL linked by the "Terms and Conditions" link in the "Help" menu, as well
              * as on the user registration and login forms and in the activation emails.
              */
-            terms_url: string;
+            terms_url?: string;
             /**
              * Themes
              * @description The visual style themes available on this Galaxy instance.
@@ -3339,7 +3339,7 @@ export interface components {
         };
         /**
          * ConfigResponse
-         * @description Configuration settings that can be exposed to users.
+         * @description Configuration values that can be exposed to users.
          */
         ConfigResponse: {
             /**
@@ -3382,7 +3382,7 @@ export interface components {
              * Brand
              * @description Append "{brand}" text to the masthead.
              */
-            brand: string;
+            brand?: string;
             /**
              * Carbon Emission Estimates
              * @description This flag enables carbon emissions estimates for every job based on its runtime metrics.
@@ -3427,7 +3427,7 @@ export interface components {
              * This allow a user to stay logged in when passing from one subdomain to the other.
              * This root domain will be written in the unique session cookie shared by all subdomains.
              */
-            cookie_domain: string;
+            cookie_domain?: string;
             /**
              * Datatypes Disable Auto
              * @description Disable the 'Auto-detect' option for file uploads
@@ -3610,13 +3610,11 @@ export interface components {
             interactivetools_enable?: boolean;
             /**
              * Is Admin User
-             * @deprecated
              * @description Determines if the current user is an admin user.
-             * **Deprecated**: This is deprecated and will be removed in a future release.
-             * Please get this information from the user data instead.
              * @default false
+             * @enum {boolean}
              */
-            is_admin_user?: boolean;
+            is_admin_user?: false;
             /**
              * Lims Doc Url
              * @deprecated
@@ -3636,7 +3634,7 @@ export interface components {
              * Logo Src Secondary
              * @description The custom brand image source.
              */
-            logo_src_secondary: string;
+            logo_src_secondary?: string;
             /**
              * Logo Url
              * @description The URL linked by the "Galaxy/brand" text.
@@ -3685,7 +3683,7 @@ export interface components {
              * Message Box Content
              * @description Show a message box under the masthead.
              */
-            message_box_content: string;
+            message_box_content?: string;
             /**
              * Message Box Visible
              * @description Show a message box under the masthead.
@@ -3697,7 +3695,7 @@ export interface components {
              * @description This value overrides the action set on the file upload form, e.g. the web
              * path where the nginx_upload_module has been configured to intercept upload requests.
              */
-            nginx_upload_path: string;
+            nginx_upload_path?: string;
             /**
              * Object Store Allows Id Selection
              * @description Determines if the object store allows id selection.
@@ -3727,7 +3725,9 @@ export interface components {
              * @description Definitions of static toolbox panel views embedded directly in the config instead of reading
              * YAML from directory with panel_views_dir.
              */
-            panel_views: Record<string, never>[];
+            panel_views: {
+                [key: string]: Record<string, never> | undefined;
+            };
             /**
              * Plausible Domain
              * @description Please enter the URL for the Galaxy server so this can be used for tracking
@@ -3890,7 +3890,7 @@ export interface components {
              * @description The URL linked by the "Terms and Conditions" link in the "Help" menu, as well
              * as on the user registration and login forms and in the activation emails.
              */
-            terms_url: string;
+            terms_url?: string;
             /**
              * Themes
              * @description The visual style themes available on this Galaxy instance.
