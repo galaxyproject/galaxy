@@ -1,5 +1,4 @@
 <script setup>
-import { computed, ref, onMounted, onUnmounted } from "vue";
 import { BTab, BTabs } from "bootstrap-vue";
 import { getDatatypesMapper } from "components/Datatypes";
 import LoadingSpan from "components/LoadingSpan";
@@ -10,7 +9,9 @@ import {
     getUploadDatatypes,
     getUploadDbKeys,
 } from "components/Upload/utils";
+import { computed, onMounted, onUnmounted, ref } from "vue";
 
+import { eventHub } from "@/components/plugins/eventHub.js";
 import { uploadPayload } from "@/utils/uploadpayload.js";
 
 import Composite from "./Composite";
@@ -67,14 +68,6 @@ const props = defineProps({
     multiple: {
         type: Boolean,
         default: true,
-    },
-    selectable: {
-        type: Boolean,
-        default: false,
-    },
-    uploadPath: {
-        type: String,
-        required: true,
     },
 });
 
@@ -142,10 +135,10 @@ async function loadMappers() {
 
 function progress(percentage, status = null) {
     if (percentage !== null) {
-        //this.eventHub.$emit(`upload:${field}`, val);
+        eventHub.$emit(`upload:percentage`, percentage);
     }
     if (status !== null) {
-        //this.eventHub.$emit(`upload:${field}`, val);
+        eventHub.$emit(`upload:status`, status);
     }
 }
 
@@ -153,12 +146,6 @@ onMounted(() => {
     loadExtensions();
     loadGenomes();
     loadMappers();
-    //this.id = String(this._uid);
-});
-
-onUnmounted(() => {
-    //const modelUnload = this.model.get("onunload");
-    //modelUnload();
 });
 
 defineExpose({

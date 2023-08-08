@@ -20,16 +20,12 @@ function getDefaultOptions() {
         title: "Upload from Disk or Web",
         modalStatic: true,
         callback: null,
-        multiple: true,
-        selectable: false,
-        uploadPath: "",
         immediateUpload: false,
         immediateFiles: null,
     };
 
     const configOptions = isConfigLoaded.value
         ? {
-              uploadPath: config.value.nginx_upload_path ?? `${getAppRoot()}api/tools`,
               chunkUploadSize: config.value.chunk_upload_size,
               fileSourcesConfigured: config.value.file_sources_configured,
               ftpUploadSite: config.value.ftp_upload_site,
@@ -37,7 +33,6 @@ function getDefaultOptions() {
               defaultExtension: config.value.default_extension,
           }
         : {};
-
     return { ...baseOptions, ...configOptions };
 }
 
@@ -49,24 +44,26 @@ function dismiss(result) {
     if (result && options.value.callback) {
         options.value.callback(result);
     }
-
     showModal.value = false;
 }
 
 async function open(overrideOptions) {
     const newOptions = overrideOptions ?? {};
-
     options.value = { ...getDefaultOptions(), ...newOptions };
-
     if (options.value.callback) {
         options.value.hasCallback = true;
     }
-
     showModal.value = true;
     await wait(100);
-
     if (options.value.immediateUpload) {
         content.value.immediateUpload(options.value.immediateFiles);
+    }
+}
+
+function setIframeEvents(disableEvents) {
+    const element = document.getElementById("galaxy_main");
+    if (element) {
+        element.style["pointer-events"] = disableEvents ? "none" : "auto";
     }
 }
 
@@ -74,14 +71,6 @@ watch(
     () => showModal.value,
     (modalShown) => setIframeEvents(modalShown)
 );
-
-function setIframeEvents(disableEvents) {
-    const element = document.getElementById("galaxy_main");
-
-    if (element) {
-        element.style["pointer-events"] = disableEvents ? "none" : "auto";
-    }
-}
 
 defineExpose({
     open,
