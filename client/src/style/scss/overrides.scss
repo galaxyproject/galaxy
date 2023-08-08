@@ -90,7 +90,7 @@ button {
 
 .modal-dialog {
     width: 690px;
-    max-width: 900px; // BS4 sets this to 500px now, so width not respected.
+    max-width: 900px !important; // BS4 sets this to 500px now, so width not respected.
 }
 
 // Scroll modal body.
