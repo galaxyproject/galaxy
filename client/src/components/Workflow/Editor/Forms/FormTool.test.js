@@ -48,6 +48,7 @@ describe("FormTool", () => {
                 ToolFooter: { template: "<div>tool-footer</div>" },
             },
             pinia: createTestingPinia(),
+            provide: { workflowId: "mock-workflow" },
         });
     }
 

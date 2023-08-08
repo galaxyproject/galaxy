@@ -120,10 +120,9 @@ import { getGalaxyInstance } from "@/app";
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
 import { useNodePosition } from "@/components/Workflow/Editor/composables/useNodePosition";
 import WorkflowIcons from "@/components/Workflow/icons";
-import { useConnectionStore } from "@/stores/workflowConnectionStore";
-import { type TerminalPosition, useWorkflowStateStore, type XYPosition } from "@/stores/workflowEditorStateStore";
+import { useWorkflowStores } from "@/composables/workflowStores";
+import type { TerminalPosition, XYPosition } from "@/stores/workflowEditorStateStore";
 import type { Step } from "@/stores/workflowStepStore";
-import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 
 import type { OutputTerminals } from "./modules/terminals";
 
@@ -180,9 +179,7 @@ const elHtml: Ref<HTMLElement | null> = computed(() => (el.value?.$el as HTMLEle
 
 const postJobActions = computed(() => props.step.post_job_actions || {});
 const workflowOutputs = computed(() => props.step.workflow_outputs || []);
-const connectionStore = useConnectionStore();
-const stateStore = useWorkflowStateStore();
-const stepStore = useWorkflowStepStore();
+const { connectionStore, stateStore, stepStore } = useWorkflowStores();
 const isLoading = computed(() => Boolean(stateStore.getStepLoadingState(props.id)?.loading));
 useNodePosition(
     elHtml,

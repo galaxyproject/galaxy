@@ -33,8 +33,8 @@ import { computed, inject, ref, toRefs, watch, watchEffect } from "vue";
 
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
 import { ConnectionAcceptable, terminalFactory } from "@/components/Workflow/Editor/modules/terminals";
-import { getConnectionId, useConnectionStore } from "@/stores/workflowConnectionStore";
-import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
+import { useWorkflowStores } from "@/composables/workflowStores";
+import { getConnectionId } from "@/stores/workflowConnectionStore";
 
 import { useRelativePosition } from "./composables/relativePosition";
 import { useTerminal } from "./composables/useTerminal";
@@ -85,7 +85,7 @@ export default {
         const isDragging = inject("isDragging");
         const id = computed(() => `node-${props.stepId}-input-${props.input.name}`);
         const iconId = computed(() => `${id.value}-icon`);
-        const connectionStore = useConnectionStore();
+        const { connectionStore, stateStore, stepStore } = useWorkflowStores();
         const { terminal, isMappedOver: isMultiple } = useTerminal(stepId, input, datatypesMapper);
         const hasTerminals = ref(false);
 
@@ -101,7 +101,6 @@ export default {
             return classes;
         });
 
-        const stateStore = useWorkflowStateStore();
         const { draggingTerminal } = storeToRefs(stateStore);
 
         const terminalIsHovered = ref(false);
@@ -153,6 +152,7 @@ export default {
             hasTerminals,
             terminal,
             stateStore,
+            stepStore,
             isMultiple,
             showRemove,
             terminalIsHovered,
@@ -214,7 +214,13 @@ export default {
         },
         onDrop(e) {
             const stepOut = JSON.parse(e.dataTransfer.getData("text/plain"));
-            const droppedTerminal = terminalFactory(stepOut.stepId, stepOut.output, this.datatypesMapper);
+            const droppedTerminal = terminalFactory(
+                stepOut.stepId,
+                stepOut.output,
+                this.datatypesMapper,
+                this.connectionStore,
+                this.stepStore
+            );
             this.$root.$emit("bv::hide::tooltip", this.iconId);
             if (this.terminal.canAccept(droppedTerminal).canAccept) {
                 this.terminal.connect(droppedTerminal);

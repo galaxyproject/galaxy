@@ -6,13 +6,13 @@ import type { UseElementBoundingReturn, UseScrollReturn } from "@vueuse/core";
 import { computed, nextTick, onBeforeUnmount, type Ref, ref, toRefs, type UnwrapRef, watch } from "vue";
 
 import type { DatatypesMapperModel } from "@/components/Datatypes/model";
-import { useWorkflowStateStore, type XYPosition } from "@/stores/workflowEditorStateStore";
+import { useWorkflowStores } from "@/composables/workflowStores";
+import type { XYPosition } from "@/stores/workflowEditorStateStore";
 import {
     type OutputTerminalSource,
     type PostJobAction,
     type PostJobActions,
     type Step,
-    useWorkflowStepStore,
 } from "@/stores/workflowStepStore";
 import { assertDefined, ensureDefined } from "@/utils/assertions";
 
@@ -43,8 +43,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits(["pan-by", "stopDragging", "onDragConnector"]);
-const stateStore = useWorkflowStateStore();
-const stepStore = useWorkflowStepStore();
+const { stateStore, stepStore } = useWorkflowStores();
 const icon: Ref<HTMLElement | null> = ref(null);
 const { rootOffset, output, stepId, datatypesMapper } = toRefs(props);
 

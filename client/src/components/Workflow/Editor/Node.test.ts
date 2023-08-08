@@ -18,7 +18,7 @@ describe("Node", () => {
     it("test attributes", async () => {
         const testingPinia = createTestingPinia();
         setActivePinia(testingPinia);
-        const wrapper = shallowMount(Node, {
+        const wrapper = shallowMount(Node as any, {
             propsData: {
                 id: 0,
                 contentId: "tool name",
@@ -30,6 +30,9 @@ describe("Node", () => {
             },
             localVue,
             pinia: testingPinia,
+            provide: {
+                workflowId: "mock-workflow",
+            },
         });
         await flushPromises();
         // fa-wrench is the tool icon ...

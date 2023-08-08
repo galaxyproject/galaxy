@@ -6,7 +6,7 @@
                 Best Practices Review
             </div>
             <div v-if="showRefactor">
-                <a href="#" @click="onRefactor"> Try to automatically fix issues. </a>
+                <a class="refactor-button" href="#" @click="onRefactor"> Try to automatically fix issues. </a>
             </div>
         </template>
         <b-card-body>
@@ -85,7 +85,7 @@ import { storeToRefs } from "pinia";
 import Vue from "vue";
 
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
-import { useWorkflowStepStore } from "@/stores/workflowStepStore";
+import { useWorkflowStores } from "@/composables/workflowStores";
 
 import {
     fixAllIssues,
@@ -135,8 +135,9 @@ export default {
         },
     },
     setup() {
-        const { hasActiveOutputs } = storeToRefs(useWorkflowStepStore());
-        return { hasActiveOutputs };
+        const { connectionStore, stepStore } = useWorkflowStores();
+        const { hasActiveOutputs } = storeToRefs(stepStore);
+        return { connectionStore, stepStore, hasActiveOutputs };
     },
     computed: {
         showRefactor() {
@@ -170,7 +171,7 @@ export default {
             return getUntypedParameters(this.untypedParameters);
         },
         warningDisconnectedInputs() {
-            return getDisconnectedInputs(this.steps, this.datatypesMapper);
+            return getDisconnectedInputs(this.steps, this.datatypesMapper, this.connectionStore, this.stepStore);
         },
         warningMissingMetadata() {
             return getMissingMetadata(this.steps);
@@ -226,7 +227,13 @@ export default {
             this.$emit("onUnhighlight", item.stepId);
         },
         onRefactor() {
-            const actions = fixAllIssues(this.steps, this.untypedParameters);
+            const actions = fixAllIssues(
+                this.steps,
+                this.untypedParameters,
+                this.datatypesMapper,
+                this.connectionStore,
+                this.stepStore
+            );
             this.$emit("onRefactor", actions);
         },
     },
