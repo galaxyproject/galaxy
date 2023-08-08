@@ -17,11 +17,11 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
-    space_to_tab: {
+    spaceToTab: {
         type: Boolean,
         default: null,
     },
-    to_posix_lines: {
+    toPosixLines: {
         type: Boolean,
         default: null,
     },
@@ -40,12 +40,12 @@ const emit = defineEmits();
                 <tbody>
                     <UploadSettingsOption
                         title="Convert spaces to tabs"
-                        :value="space_to_tab"
-                        @click="emit('input', 'space_to_tab')" />
+                        :value="spaceToTab"
+                        @click="emit('input', 'spaceToTab')" />
                     <UploadSettingsOption
                         title="Use POSIX standard"
-                        :value="to_posix_lines"
-                        @click="emit('input', 'to_posix_lines')" />
+                        :value="toPosixLines"
+                        @click="emit('input', 'toPosixLines')" />
                     <UploadSettingsOption
                         v-if="deferred !== null"
                         title="Defer dataset resolution"

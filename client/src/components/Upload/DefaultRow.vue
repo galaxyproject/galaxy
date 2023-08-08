@@ -30,9 +30,9 @@ const props = defineProps({
         default: null,
     },
     percentage: Number,
-    space_to_tab: Boolean,
+    spaceToTab: Boolean,
     status: String,
-    to_posix_lines: Boolean,
+    toPosixLines: Boolean,
 });
 
 const emit = defineEmits();
@@ -44,11 +44,11 @@ function inputExtension(newExtension) {
 }
 
 function inputFileContent(newFileContent) {
-    emit("input", props.index, { file_content: newFileContent, file_size: newFileContent.length });
+    emit("input", props.index, { fileContent: newFileContent, fileSize: newFileContent.length });
 }
 
 function inputFileName(newFileName) {
-    emit("input", props.index, { file_name: newFileName });
+    emit("input", props.index, { fileName: newFileName });
 }
 
 function inputGenome(newGenome) {
@@ -105,8 +105,8 @@ function removeUpload() {
             <UploadSettings
                 :deferred="deferred"
                 :disabled="isDisabled"
-                :to_posix_lines="to_posix_lines"
-                :space_to_tab="space_to_tab"
+                :to-posix-lines="toPosixLines"
+                :space-to-tab="spaceToTab"
                 @input="inputSettings" />
             <div class="upload-progress">
                 <div class="progress">

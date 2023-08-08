@@ -121,12 +121,12 @@ function eventAnnounce(index, file) {
     const uploadModel = {
         ...defaultModel,
         id: index,
-        file_data: file,
-        file_mode: file.mode || "local",
-        file_name: file.name,
-        file_path: file.path,
-        file_size: file.size,
-        file_uri: file.uri,
+        fileData: file,
+        fileMode: file.mode || "local",
+        fileName: file.name,
+        filePath: file.path,
+        fileSize: file.size,
+        fileUri: file.uri,
     };
     Vue.set(uploadItems.value, index, uploadModel);
 }
@@ -160,10 +160,10 @@ function eventError(index, message) {
     it.percentage = 100;
     it.status = "error";
     it.info = message;
-    uploadCompleted.value += it.file_size * 100;
+    uploadCompleted.value += it.fileSize * 100;
     counterAnnounce.value--;
     counterError.value++;
-    emit("progress", uploadPercentage(100, it.file_size), "danger");
+    emit("progress", uploadPercentage(100, it.fileSize), "danger");
 }
 
 /** Update model */
@@ -178,7 +178,7 @@ function eventInput(index, newData) {
 function eventProgress(index, percentage) {
     const it = uploadItems.value[index];
     it.percentage = percentage;
-    emit("progress", uploadPercentage(percentage, it.file_size));
+    emit("progress", uploadPercentage(percentage, it.fileSize));
 }
 
 /** Remove model from upload list */
@@ -237,8 +237,8 @@ function eventSuccess(index, incoming) {
     it.percentage = 100;
     it.status = "success";
     it.outputs = incoming.outputs || incoming.data.outputs || {};
-    emit("progress", uploadPercentage(100, it.file_size));
-    uploadCompleted.value += it.file_size * 100;
+    emit("progress", uploadPercentage(100, it.fileSize));
+    uploadCompleted.value += it.fileSize * 100;
     counterAnnounce.value--;
     counterSuccess.value++;
 }
@@ -251,7 +251,7 @@ function eventStart() {
         uploadValues.value.forEach((model) => {
             if (model.status === "init") {
                 model.status = "queued";
-                uploadSize.value += model.file_size;
+                uploadSize.value += model.fileSize;
             }
         });
         emit("progress", 0, "success");
@@ -343,18 +343,18 @@ defineExpose({
                     :index="uploadIndex"
                     :deferred="uploadItem.deferred"
                     :extension="uploadItem.extension"
-                    :file-content="uploadItem.file_content"
-                    :file-mode="uploadItem.file_mode"
-                    :file-name="uploadItem.file_name"
-                    :file-size="uploadItem.file_size"
+                    :file-content="uploadItem.fileContent"
+                    :file-mode="uploadItem.fileMode"
+                    :file-name="uploadItem.fileName"
+                    :file-size="uploadItem.fileSize"
                     :info="uploadItem.info"
                     :genome="uploadItem.genome"
                     :list-extensions="isCollection ? null : listExtensions"
                     :list-genomes="isCollection ? null : listGenomes"
                     :percentage="uploadItem.percentage"
-                    :space_to_tab="uploadItem.space_to_tab"
+                    :space-to-tab="uploadItem.spaceToTab"
                     :status="uploadItem.status"
-                    :to_posix_lines="uploadItem.to_posix_lines"
+                    :to-posix-lines="uploadItem.toPosixLines"
                     @remove="eventRemove"
                     @input="eventInput" />
                 <div v-if="uploadValues.length > lazyLoad" v-localize class="upload-text-message">

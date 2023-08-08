@@ -195,7 +195,7 @@ export class UploadQueue {
             // package ftp files separately, and remove them from queue
             const list = [];
             Object.entries(this.queue).forEach(([key, model]) => {
-                if (model.status === "queued" && model.file_mode === "ftp") {
+                if (model.status === "queued" && model.fileMode === "ftp") {
                     this.queue.remove(model.id);
                     list.push(this.opts.get(key));
                 }

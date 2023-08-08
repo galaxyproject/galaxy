@@ -26,9 +26,9 @@ const props = defineProps({
     info: String,
     hasRemoteFiles: Boolean,
     percentage: Number,
-    space_to_tab: Boolean,
+    spaceToTab: Boolean,
     status: String,
-    to_posix_lines: Boolean,
+    toPosixLines: Boolean,
 });
 
 const emit = defineEmits();
@@ -39,8 +39,8 @@ const isDragging = ref(false);
 
 function inputFileContent(newFileContent) {
     emit("input", props.index, {
-        file_content: newFileContent,
-        file_size: newFileContent.length,
+        fileContent: newFileContent,
+        fileSize: newFileContent.length,
     });
 }
 
@@ -48,11 +48,11 @@ function inputDialog() {
     openBrowserDialog((files) => {
         if (props.status !== "running" && files && files.length > 0) {
             emit("input", props.index, {
-                file_data: files[0],
-                file_mode: "local",
-                file_name: files[0].name,
-                file_path: null,
-                file_size: files[0].size,
+                fileData: files[0],
+                fileMode: "local",
+                fileName: files[0].name,
+                filePath: null,
+                fileSize: files[0].size,
             });
         }
     });
@@ -60,11 +60,11 @@ function inputDialog() {
 
 function inputPaste() {
     emit("input", props.index, {
-        file_data: null,
-        file_mode: "new",
-        file_name: DEFAULT_FILE_NAME,
-        file_path: null,
-        file_size: 0,
+        fileData: null,
+        fileMode: "new",
+        fileName: DEFAULT_FILE_NAME,
+        filePath: null,
+        fileSize: 0,
     });
 }
 
@@ -73,11 +73,11 @@ function inputRemoteFiles() {
     filesDialog(
         (item) => {
             emit("input", props.index, {
-                file_data: null,
-                file_mode: "ftp",
-                file_name: item.label,
-                file_path: item.url,
-                file_size: item.size,
+                fileData: null,
+                fileMode: "ftp",
+                fileName: item.label,
+                filePath: item.url,
+                fileSize: item.size,
             });
         },
         { multiple: false }
@@ -96,11 +96,11 @@ function onDrop(evt) {
     const droppedFile = evt.dataTransfer && evt.dataTransfer.files && evt.dataTransfer.files[0];
     if (droppedFile) {
         emit("input", props.index, {
-            file_data: droppedFile,
-            file_mode: "local",
-            file_name: droppedFile.name,
-            file_path: null,
-            file_size: droppedFile.size,
+            fileData: droppedFile,
+            fileMode: "local",
+            fileName: droppedFile.name,
+            filePath: null,
+            fileSize: droppedFile.size,
         });
     }
 }
@@ -152,8 +152,8 @@ function removeUpload() {
             </div>
             <UploadSettings
                 :disabled="isDisabled"
-                :to_posix_lines="to_posix_lines"
-                :space_to_tab="space_to_tab"
+                :to-posix-lines="toPosixLines"
+                :space-to-tab="spaceToTab"
                 @input="inputSettings" />
             <div class="upload-progress">
                 <div class="progress">

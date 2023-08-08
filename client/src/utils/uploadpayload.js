@@ -20,20 +20,20 @@ export function uploadPayload(items, history_id, composite = false) {
             }
             let src;
             let pasteContent = null;
-            let fileName = item.file_name;
+            let fileName = item.fileName;
             if (fileName === DEFAULT_FILE_NAME) {
                 fileName = null;
             }
-            const url = (item.file_uri || item.file_path || item.url_paste).trim();
+            const url = (item.fileUri || item.filePath || item.fileContent).trim();
             const elem = {
                 dbkey: item.genome ?? "?",
                 ext: item.extension ?? "auto",
-                space_to_tab: item.space_to_tab,
-                to_posix_lines: item.to_posix_lines,
+                space_to_tab: item.spaceToTab,
+                to_posix_lines: item.toPosixLines,
                 deferred: item.deferred,
             };
-            const isUrl = URI_PREFIXES.some((prefix) => item.url_paste.startsWith(prefix));
-            switch (item.file_mode) {
+            const isUrl = URI_PREFIXES.some((prefix) => item.fileContent.startsWith(prefix));
+            switch (item.fileMode) {
                 case "new":
                     if (isUrl) {
                         src = "url";
@@ -51,7 +51,7 @@ export function uploadPayload(items, history_id, composite = false) {
                             };
                         });
                     } else {
-                        pasteContent = item.url_paste;
+                        pasteContent = item.fileContent;
                         src = "pasted";
                     }
                     break;
@@ -62,10 +62,10 @@ export function uploadPayload(items, history_id, composite = false) {
                     break;
                 case "local":
                     src = "files";
-                    files.push(item.file_data);
+                    files.push(item.fileData);
                     break;
                 default:
-                    console.error("Unknown file_mode", item);
+                    console.error("Unknown fileMode", item);
             }
             if (src == "pasted") {
                 return {

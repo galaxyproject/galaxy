@@ -59,7 +59,7 @@ const running = computed(() => {
 });
 
 const readyStart = computed(() => {
-    const readyStates = uploadValues.value.filter((v) => v.file_size > 0).length;
+    const readyStates = uploadValues.value.filter((v) => v.fileSize > 0).length;
     const optionalStates = uploadValues.value.filter((v) => v.optional === true).length;
     return readyStates + optionalStates == uploadValues.value.length && uploadValues.value.length > 0;
 });
@@ -157,16 +157,16 @@ function inputExtension(newExtension) {
                     :key="uploadIndex"
                     :index="uploadIndex"
                     :file-description="uploadItem.description"
-                    :file-content="uploadItem.file_content"
-                    :file-mode="uploadItem.file_mode"
-                    :file-name="uploadItem.file_name"
-                    :file-size="uploadItem.file_size"
+                    :file-content="uploadItem.fileContent"
+                    :file-mode="uploadItem.fileMode"
+                    :file-name="uploadItem.fileName"
+                    :file-size="uploadItem.fileSize"
                     :info="uploadItem.info"
                     :has-remote-files="hasRemoteFiles"
                     :percentage="uploadItem.percentage"
-                    :space_to_tab="uploadItem.space_to_tab"
+                    :space-to-tab="uploadItem.spaceToTab"
                     :status="uploadItem.status"
-                    :to_posix_lines="uploadItem.to_posix_lines"
+                    :to-posix-lines="uploadItem.toPosixLines"
                     @input="eventInput" />
             </div>
         </div>
