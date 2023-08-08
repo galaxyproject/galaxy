@@ -375,7 +375,7 @@ def format_return_as_json(rval, jsonp_callback=None, pretty=False):
     """
     dumps_kwargs = dict(indent=4, sort_keys=True) if pretty else {}
     if isinstance(rval, BaseModel):
-        json = rval.model_dump_json(**dumps_kwargs)
+        json = rval.model_dump_json(indent=4)
     else:
         json = safe_dumps(rval, **dumps_kwargs)
     if jsonp_callback:
