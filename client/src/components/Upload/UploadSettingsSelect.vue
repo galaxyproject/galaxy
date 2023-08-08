@@ -40,7 +40,10 @@ const currentValue = computed({
     min-height: unset;
     width: 150px;
     .multiselect__content-wrapper {
-        width: 300px;
+        .multiselect__content {
+            width: inherit;
+            word-break: break-all;
+        }
     }
     .multiselect__select {
         height: 22px;
