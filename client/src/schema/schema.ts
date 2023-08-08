@@ -2285,7 +2285,7 @@ export interface components {
              * login or external proxy required. Such applications should not be exposed to
              * the world.
              */
-            single_user: string;
+            single_user: boolean | string;
             /**
              * Support Url
              * @description The URL linked by the "Support" link in the "Help" menu.
@@ -3878,7 +3878,7 @@ export interface components {
              * login or external proxy required. Such applications should not be exposed to
              * the world.
              */
-            single_user: string;
+            single_user: boolean | string;
             /**
              * Support Url
              * @description The URL linked by the "Support" link in the "Help" menu.

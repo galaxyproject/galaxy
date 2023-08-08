@@ -8,6 +8,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Union,
 )
 
 from pydantic import Field
@@ -403,7 +404,8 @@ https://docs.galaxyproject.org/en/master/admin/special_topics/apache.html""",
     ] = None
 
     single_user: Annotated[
-        str,
+        # Warning: This property behaves as a str in the YAML config file but as a bool in the API response
+        Union[bool, str],
         Field(
             title="Single User",
             description="""If an e-mail address is specified here, it will hijack remote user mechanics
