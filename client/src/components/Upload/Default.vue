@@ -9,7 +9,7 @@ import Vue, { computed, ref } from "vue";
 
 import { collectionBuilder } from "./builders.js";
 import { defaultModel } from "./model.js";
-import { COLLECTION_TYPES, DEFAULT_FILE_NAME, findExtension, hasBrowserSupport, openBrowserDialog } from "./utils";
+import { COLLECTION_TYPES, DEFAULT_FILE_NAME, hasBrowserSupport, openBrowserDialog } from "./utils";
 
 import DefaultRow from "./DefaultRow.vue";
 import UploadBox from "./UploadBox.vue";
@@ -69,7 +69,7 @@ const props = defineProps({
     },
 });
 
-const emit = defineEmits();
+const emit = defineEmits(["dismiss", "progress"]);
 
 const collectionType = ref("list");
 const counterAnnounce = ref(0);
@@ -78,22 +78,22 @@ const counterRunning = ref(0);
 const counterSuccess = ref(0);
 const extension = ref(props.defaultExtension);
 const genome = ref(props.defaultDbKey);
-const highlightBox = ref(false);
-const running = ref(false);
+const queueStopping = ref(false);
 const uploadCompleted = ref(0);
 const uploadItems = ref({});
 const uploadSize = ref(0);
 
 const counterNonRunning = computed(() => counterAnnounce.value + counterSuccess.value + counterError.value);
 const enableBuild = computed(
-    () => counterRunning.value == 0 && counterAnnounce.value == 0 && counterSuccess.value > 0 && counterError.value == 0
+    () => !isRunning.value && counterAnnounce.value == 0 && counterSuccess.value > 0 && counterError.value == 0
 );
-const enableReset = computed(() => counterRunning.value == 0 && counterNonRunning.value > 0);
-const enableStart = computed(() => counterRunning.value == 0 && counterAnnounce.value > 0);
-const enableSources = computed(() => counterRunning.value == 0 && (props.multiple || counterNonRunning.value == 0));
-const listExtensions = computed(() => props.effectiveExtensions.filter((ext) => !ext.composite_files));
+const enableReset = computed(() => !isRunning.value && counterNonRunning.value > 0);
+const enableStart = computed(() => !isRunning.value && counterAnnounce.value > 0);
+const enableSources = computed(() => !isRunning.value && (props.multiple || counterNonRunning.value == 0));
+const isRunning = computed(() => counterRunning.value > 0);
 const hasRemoteFiles = computed(() => props.fileSourcesConfigured || !!props.ftpUploadSite);
 const historyId = computed(() => props.historyId);
+const listExtensions = computed(() => props.effectiveExtensions.filter((ext) => !ext.composite_files));
 const showHelper = computed(() => Object.keys(uploadItems.value).length === 0);
 const uploadValues = computed(() => Object.values(uploadItems.value));
 
@@ -112,7 +112,16 @@ const queue = new UploadQueue({
 
 /** Add files to queue */
 function addFiles(files) {
-    queue.add(files);
+    if (!isRunning.value) {
+        if (props.multiple) {
+            queue.add(files);
+        } else {
+            eventReset();
+            if (files.length > 0) {
+                queue.add([files[0]]);
+            }
+        }
+    }
 }
 
 /** A new file has been dropped/selected through the uploadbox plugin */
@@ -147,6 +156,7 @@ function eventComplete() {
         }
     });
     counterRunning.value = 0;
+    queueStopping.value = false;
 }
 
 /** Create a new file */
@@ -218,11 +228,10 @@ function eventRemoteFiles() {
 
 /** Remove all */
 function eventReset() {
-    if (counterRunning.value === 0) {
+    if (!isRunning.value) {
         counterAnnounce.value = 0;
         counterSuccess.value = 0;
         counterError.value = 0;
-        counterRunning.value = 0;
         queue.reset();
         uploadItems.value = {};
         extension.value = props.defaultExtension;
@@ -245,7 +254,7 @@ function eventSuccess(index, incoming) {
 
 /** Start upload process */
 function eventStart() {
-    if (counterAnnounce.value > 0 && counterRunning.value === 0) {
+    if (!isRunning.value && counterAnnounce.value > 0) {
         uploadSize.value = 0;
         uploadCompleted.value = 0;
         uploadValues.value.forEach((model) => {
@@ -262,9 +271,9 @@ function eventStart() {
 
 /** Pause upload process */
 function eventStop() {
-    if (counterRunning.value > 0) {
+    if (isRunning.value) {
         emit("progress", null, "info");
-        topInfo.value = "Queue will pause after completing the current file...";
+        queueStopping.value = true;
         queue.stop();
     }
 }
@@ -318,20 +327,21 @@ defineExpose({
 <template>
     <div class="upload-wrapper">
         <div class="upload-header">
-            <div v-if="counterAnnounce === 0">
+            <div v-if="queueStopping" v-localize>Queue will pause after completing the current file...</div>
+            <div v-else-if="counterAnnounce === 0">
                 <div v-if="hasBrowserSupport">&nbsp;</div>
                 <div v-else>
                     Browser does not support Drag & Drop. Try Firefox 4+, Chrome 7+, IE 10+, Opera 12+ or Safari 6+.
                 </div>
             </div>
             <div v-else>
-                <div v-if="counterRunning === 0">
+                <div v-if="!isRunning">
                     You added {{ counterAnnounce }} file(s) to the queue. Add more files or click 'Start' to proceed.
                 </div>
-                <div v-else>Please wait...{{ counterAnnounce }} out of {{ counterRunning }} remaining..</div>
+                <div v-else>Please wait...{{ counterAnnounce }} out of {{ counterRunning }} remaining...</div>
             </div>
         </div>
-        <UploadBox :multiple="true" @add="addFiles">
+        <UploadBox @add="addFiles">
             <div v-show="showHelper" class="upload-helper">
                 <FontAwesomeIcon class="mr-1" icon="fa-copy" />
                 <span v-localize>Drop files here</span>
@@ -367,23 +377,23 @@ defineExpose({
             <UploadSettingsSelect
                 v-if="isCollection"
                 :value="collectionType"
+                :disabled="isRunning"
                 :options="COLLECTION_TYPES"
                 placeholder="Select Type"
-                :enabled="!running"
                 @input="updateCollectionType" />
             <span class="upload-footer-title">Type (set all):</span>
             <UploadSettingsSelect
                 :value="extension"
+                :disabled="isRunning"
                 :options="listExtensions"
                 placeholder="Select Type"
-                :disabled="running"
                 @input="updateExtension" />
             <UploadExtensionDetails :extension="extension" :list-extensions="listExtensions" />
             <span class="upload-footer-title">Reference (set all):</span>
             <UploadSettingsSelect
                 :value="genome"
+                :disabled="isRunning"
                 :options="listGenomes"
-                :disabled="running"
                 placeholder="Select Reference"
                 @input="updateGenome" />
         </div>
@@ -417,7 +427,7 @@ defineExpose({
                 @click="eventBuild">
                 <span v-localize>Build</span>
             </BButton>
-            <BButton id="btn-stop" title="Pause" :disabled="counterRunning == 0" @click="eventStop">
+            <BButton id="btn-stop" title="Pause" :disabled="!isRunning" @click="eventStop">
                 <span v-localize>Pause</span>
             </BButton>
             <BButton id="btn-reset" title="Reset" :disabled="!enableReset" @click="eventReset">

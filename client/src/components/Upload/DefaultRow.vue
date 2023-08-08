@@ -3,7 +3,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEdit, faFolderOpen, faLaptop } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { bytesToString } from "utils/utils";
-import { computed, ref } from "vue";
+import { computed } from "vue";
 
 import UploadExtensionDetails from "./UploadExtensionDetails.vue";
 import UploadSettings from "./UploadSettings.vue";
@@ -74,7 +74,7 @@ const props = defineProps({
     },
 });
 
-const emit = defineEmits();
+const emit = defineEmits(["input", "remove"]);
 
 const isDisabled = computed(() => props.status !== "init");
 function inputExtension(newExtension) {

@@ -1,7 +1,6 @@
 <script setup>
 import { useConfig } from "composables/config";
 import { useUserHistories } from "composables/userHistories";
-import { getAppRoot } from "onload";
 import { storeToRefs } from "pinia";
 import { ref, watch } from "vue";
 

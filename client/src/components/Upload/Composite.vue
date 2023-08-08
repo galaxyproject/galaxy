@@ -47,15 +47,15 @@ const uploadItems = ref({});
 
 const hasRemoteFiles = computed(() => props.fileSourcesConfigured || !!props.ftpUploadSite);
 
+const isRunning = computed(() => {
+    const model = uploadKeys.value[0];
+    return model && model.status === "running";
+});
+
 const listExtensions = computed(() => {
     const result = props.effectiveExtensions.filter((ext) => ext.composite_files);
     result.unshift({ id: null, text: "Select" });
     return result;
-});
-
-const running = computed(() => {
-    const model = uploadKeys.value[0];
-    return model && model.status === "running";
 });
 
 const readyStart = computed(() => {
@@ -65,7 +65,6 @@ const readyStart = computed(() => {
 });
 
 const showHelper = computed(() => uploadKeys.value.length === 0);
-
 const uploadValues = computed(() => Object.values(uploadItems.value));
 const uploadKeys = computed(() => Object.keys(uploadItems.value));
 
@@ -172,9 +171,13 @@ function inputExtension(newExtension) {
         </div>
         <div class="upload-footer">
             <span class="upload-footer-title">Composite Type:</span>
-            <UploadSettingsSelect :value="null" :options="listExtensions" :disabled="running" @input="inputExtension" />
+            <UploadSettingsSelect
+                :value="null"
+                :options="listExtensions"
+                :disabled="isRunning"
+                @input="inputExtension" />
             <span class="upload-footer-title">Genome/Build:</span>
-            <UploadSettingsSelect :value="genome" :options="listGenomes" :disabled="running" @input="inputDbkey" />
+            <UploadSettingsSelect :value="genome" :options="listGenomes" :disabled="isRunning" @input="inputDbkey" />
         </div>
         <div class="upload-buttons d-flex justify-content-end">
             <BButton

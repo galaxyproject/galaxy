@@ -10,7 +10,6 @@ import { computed, ref } from "vue";
 import { DEFAULT_FILE_NAME, openBrowserDialog } from "./utils";
 
 import UploadSettings from "./UploadSettings.vue";
-import UploadSettingsSelect from "./UploadSettingsSelect.vue";
 
 library.add(faCheck, faEdit, faExclamation, faFolderOpen, faLaptop);
 
@@ -65,7 +64,7 @@ const props = defineProps({
     },
 });
 
-const emit = defineEmits();
+const emit = defineEmits(["input"]);
 
 const isDisabled = computed(() => props.status !== "init");
 const isDragging = ref(false);
@@ -135,12 +134,6 @@ function onDrop(evt) {
             filePath: null,
             fileSize: droppedFile.size,
         });
-    }
-}
-
-function removeUpload() {
-    if (["init", "success", "error"].indexOf(props.status) !== -1) {
-        emit("remove", props.index);
     }
 }
 </script>

@@ -9,7 +9,7 @@ const props = defineProps({
     value: String,
 });
 
-const emit = defineEmits();
+const emit = defineEmits(["input"]);
 
 const currentValue = computed({
     get: () => props.options.find((option) => option.id === props.value),

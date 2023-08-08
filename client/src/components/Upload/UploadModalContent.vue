@@ -9,7 +9,7 @@ import {
     getUploadDatatypes,
     getUploadDbKeys,
 } from "components/Upload/utils";
-import { computed, onMounted, onUnmounted, ref } from "vue";
+import { computed, onMounted, ref } from "vue";
 
 import { eventHub } from "@/components/plugins/eventHub.js";
 import { uploadPayload } from "@/utils/uploadpayload.js";

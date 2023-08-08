@@ -50,7 +50,6 @@ function tusUpload(uploadables, index, data, tusEndpoint, cnf) {
             } else {
                 // 🎵 Never gonna give you up 🎵
                 console.log(`Failed because: ${err}\n, will retry in 10 seconds`);
-
                 setTimeout(() => tusUploadStart(upload), 10000);
             }
         },

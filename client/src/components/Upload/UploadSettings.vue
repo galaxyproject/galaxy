@@ -8,7 +8,7 @@ import Popper from "@/components/Popper/Popper.vue";
 
 library.add(faCog);
 
-const props = defineProps({
+defineProps({
     deferred: {
         type: Boolean,
         default: null,
@@ -27,7 +27,7 @@ const props = defineProps({
     },
 });
 
-const emit = defineEmits();
+const emit = defineEmits(["input"]);
 </script>
 
 <template>

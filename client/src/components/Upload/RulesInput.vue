@@ -3,7 +3,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEdit, faFile, faFolderOpen, faLock } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { getGalaxyInstance } from "app";
-import { BAlert, BButton, BLink } from "bootstrap-vue";
+import { BAlert, BButton } from "bootstrap-vue";
 import { getRemoteEntries, getRemoteEntriesAt } from "components/Upload/utils";
 import { filesDialog } from "utils/data";
 import { urlData } from "utils/url";

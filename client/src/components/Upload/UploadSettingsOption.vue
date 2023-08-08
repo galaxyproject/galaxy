@@ -6,13 +6,18 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 library.add(faCheckSquare, faSquare);
 
-const props = defineProps({
-    id: String,
-    title: String,
-    value: Boolean,
+defineProps({
+    title: {
+        type: String,
+        required: true,
+    },
+    value: {
+        type: Boolean,
+        required: true,
+    },
 });
 
-const emit = defineEmits();
+const emit = defineEmits("click");
 </script>
 
 <template>

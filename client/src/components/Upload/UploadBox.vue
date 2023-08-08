@@ -1,13 +1,9 @@
 <script setup>
 import { ref } from "vue";
 
-const props = defineProps({
-    multiple: Boolean,
-});
-
 const isDragging = ref(false);
 
-const emit = defineEmits();
+const emit = defineEmits(["add"]);
 
 /** Handle files dropped into the upload box **/
 function onDrop(evt) {
