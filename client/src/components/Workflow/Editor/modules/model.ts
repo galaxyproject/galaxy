@@ -10,6 +10,14 @@ interface Workflow {
     steps: Steps;
 }
 
+/**
+ * Loads a workflow into the editor
+ *
+ * @param id ID of workflow to load data *into*
+ * @param data Workflow data to load from
+ * @param appendData if true appends data to current workflow, making sure to create new uuids
+ * @param defaultPosition where to position workflow in the editor
+ */
 export async function fromSimple(
     id: string,
     data: Workflow,
