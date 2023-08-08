@@ -57,7 +57,7 @@ function tusUpload(uploadables, index, data, tusEndpoint, cnf) {
         onChunkComplete: function (chunkSize, bytesAccepted, bytesTotal) {
             const percentage = ((bytesAccepted / bytesTotal) * 100).toFixed(2);
             console.log(bytesAccepted, bytesTotal, percentage + "%");
-            cnf.progress(percentage);
+            cnf.progress(Math.round(percentage));
         },
         onSuccess: function () {
             console.log(

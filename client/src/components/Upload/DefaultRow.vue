@@ -76,7 +76,6 @@ const props = defineProps({
 
 const emit = defineEmits();
 
-const percentageInt = computed(() => parseInt(props.percentage));
 const isDisabled = computed(() => props.status !== "init");
 function inputExtension(newExtension) {
     emit("input", props.index, { extension: newExtension });
@@ -151,8 +150,8 @@ function removeUpload() {
                 <div class="progress">
                     <div
                         class="upload-progress-bar progress-bar progress-bar-success"
-                        :style="{ width: `${percentageInt}%` }" />
-                    <div class="upload-percentage">{{ percentageInt }}%</div>
+                        :style="{ width: `${percentage}%` }" />
+                    <div class="upload-percentage">{{ percentage }}%</div>
                 </div>
             </div>
             <div>
