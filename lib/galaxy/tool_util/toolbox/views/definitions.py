@@ -12,7 +12,10 @@ from pydantic import (
     ConfigDict,
     Field,
 )
-from typing_extensions import Literal
+from typing_extensions import (
+    Annotated,
+    Literal,
+)
 
 
 class StaticToolBoxViewTypeEnum(str, Enum):
@@ -39,7 +42,7 @@ Exclusions = Union[
     ExcludeToolRegex,
     ExcludeTypes,
 ]
-OptionalExclusionList = Optional[List[Exclusions]]
+OptionalExclusionList = Annotated[Optional[List[Exclusions]], Field(None)]
 
 
 class Tool(BaseModel):
