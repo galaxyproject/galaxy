@@ -32,7 +32,7 @@ class ToolDataEntryList(RootModel):
     )
 
     def find_entry(self, name: str) -> Optional[ToolDataEntry]:
-        for entry in self.__root__:
+        for entry in self.root:
             if entry.name == name:
                 return entry
         return None
