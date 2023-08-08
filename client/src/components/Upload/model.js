@@ -1,8 +1,8 @@
 export const defaultModel = {
+    dbKey: "?",
     deferred: false,
     enabled: true,
     extension: "auto",
-    genome: "?",
     fileContent: "",
     fileData: null,
     fileMode: "",

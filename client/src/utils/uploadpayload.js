@@ -26,7 +26,7 @@ export function uploadPayload(items, history_id, composite = false) {
             }
             const url = (item.fileUri || item.filePath || item.fileContent).trim();
             const elem = {
-                dbkey: item.genome ?? "?",
+                dbkey: item.dbKey ?? "?",
                 ext: item.extension ?? "auto",
                 space_to_tab: item.spaceToTab,
                 to_posix_lines: item.toPosixLines,

@@ -35,14 +35,14 @@ const props = defineProps({
         type: String,
         default: null,
     },
-    listGenomes: {
+    listDbKeys: {
         type: Array,
         required: true,
     },
 });
 
 const extension = ref(null);
-const genome = ref(props.defaultDbKey);
+const dbKey = ref(props.defaultDbKey);
 const uploadItems = ref({});
 
 const hasRemoteFiles = computed(() => props.fileSourcesConfigured || !!props.ftpUploadSite);
@@ -95,14 +95,14 @@ function eventProgress(percentage) {
 function eventReset() {
     if (!uploadValues.value.find((v) => v.status === "running")) {
         uploadItems.value = {};
-        genome.value = props.defaultDbKey;
+        dbKey.value = props.defaultDbKey;
     }
 }
 
 /** Start upload process */
 function eventStart() {
     uploadValues.value.forEach((model) => {
-        model.genome = genome.value;
+        model.dbKey = dbKey.value;
         model.extension = extension.value;
     });
     submitUpload({
@@ -123,7 +123,7 @@ function eventSuccess() {
 }
 
 function inputDbkey(newDbkey) {
-    genome.value = newDbkey;
+    dbKey.value = newDbkey;
 }
 
 function inputExtension(newExtension) {
@@ -176,8 +176,8 @@ function inputExtension(newExtension) {
                 :options="listExtensions"
                 :disabled="isRunning"
                 @input="inputExtension" />
-            <span class="upload-footer-title">Genome/Build:</span>
-            <UploadSettingsSelect :value="genome" :options="listGenomes" :disabled="isRunning" @input="inputDbkey" />
+            <span class="upload-footer-title">Reference:</span>
+            <UploadSettingsSelect :value="dbKey" :options="listDbKeys" :disabled="isRunning" @input="inputDbkey" />
         </div>
         <div class="upload-buttons d-flex justify-content-end">
             <BButton

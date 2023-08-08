@@ -59,7 +59,7 @@ const props = defineProps({
         type: Number,
         default: 50,
     },
-    listGenomes: {
+    listDbKeys: {
         type: Array,
         required: true,
     },
@@ -77,7 +77,7 @@ const counterError = ref(0);
 const counterRunning = ref(0);
 const counterSuccess = ref(0);
 const extension = ref(props.defaultExtension);
-const genome = ref(props.defaultDbKey);
+const dbKey = ref(props.defaultDbKey);
 const queueStopping = ref(false);
 const uploadCompleted = ref(0);
 const uploadItems = ref({});
@@ -142,7 +142,7 @@ function eventAnnounce(index, file) {
 
 /** Populates collection builder with uploaded files */
 function eventBuild() {
-    collectionBuilder(historyId, collectionType.value, extension.value, genome.value, uploadValues.value);
+    collectionBuilder(historyId, collectionType.value, uploadValues.value);
     counterRunning.value = 0;
     eventReset();
     emit("dismiss");
@@ -235,7 +235,7 @@ function eventReset() {
         queue.reset();
         uploadItems.value = {};
         extension.value = props.defaultExtension;
-        genome.value = props.defaultDbKey;
+        dbKey.value = props.defaultDbKey;
         emit("progress", 0);
     }
 }
@@ -301,10 +301,10 @@ function updateExtension(newExtension) {
 }
 
 /** Update reference dataset for all entries */
-function updateGenome(newGenome) {
+function updateDbKey(newDbKey) {
     uploadValues.value.forEach((model) => {
-        if (model.status === "init" && model.genome === props.defaultDbKey) {
-            model.genome = newGenome;
+        if (model.status === "init" && model.dbKey === props.defaultDbKey) {
+            model.dbKey = newDbKey;
         }
     });
 }
@@ -351,6 +351,7 @@ defineExpose({
                     v-for="[uploadIndex, uploadItem] in Object.entries(uploadItems).slice(0, lazyLoad)"
                     :key="uploadIndex"
                     :index="uploadIndex"
+                    :db-key="uploadItem.dbKey"
                     :deferred="uploadItem.deferred"
                     :extension="uploadItem.extension"
                     :file-content="uploadItem.fileContent"
@@ -358,9 +359,8 @@ defineExpose({
                     :file-name="uploadItem.fileName"
                     :file-size="uploadItem.fileSize"
                     :info="uploadItem.info"
-                    :genome="uploadItem.genome"
                     :list-extensions="isCollection ? null : listExtensions"
-                    :list-genomes="isCollection ? null : listGenomes"
+                    :list-db-keys="isCollection ? null : listDbKeys"
                     :percentage="uploadItem.percentage"
                     :space-to-tab="uploadItem.spaceToTab"
                     :status="uploadItem.status"
@@ -391,11 +391,11 @@ defineExpose({
             <UploadExtensionDetails :extension="extension" :list-extensions="listExtensions" />
             <span class="upload-footer-title">Reference (set all):</span>
             <UploadSettingsSelect
-                :value="genome"
+                :value="dbKey"
                 :disabled="isRunning"
-                :options="listGenomes"
+                :options="listDbKeys"
                 placeholder="Select Reference"
-                @input="updateGenome" />
+                @input="updateDbKey" />
         </div>
         <div class="upload-buttons d-flex justify-content-end">
             <BButton id="btn-local" title="Choose local files" :disabled="!enableSources" @click="uploadSelect">

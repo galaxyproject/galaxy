@@ -4,12 +4,10 @@
 import { getGalaxyInstance } from "app";
 
 /** Populates collection builder with uploaded files */
-export function collectionBuilder(historyId, type, extension, genome, uploadValues) {
+export function collectionBuilder(historyId, type, uploadValues) {
     const Galaxy = getGalaxyInstance();
     const models = {};
     uploadValues.forEach((model) => {
-        model.extension = extension;
-        model.genome = genome;
         const outputs = model.outputs;
         if (outputs) {
             Object.entries(outputs).forEach((output) => {

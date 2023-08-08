@@ -3,7 +3,7 @@
  */
 import { errorMessageAsString, rethrowSimple } from "utils/simple-error";
 
-import { getDatatypes, getGenomes, getRemoteFiles } from "./services";
+import { getDbKeys, getDatatypes, getRemoteFiles } from "./services";
 
 export const AUTO_EXTENSION = {
     id: "auto",
@@ -49,7 +49,7 @@ async function loadDbKeys() {
     if (_cachedDbKeys) {
         return _cachedDbKeys;
     }
-    const { data: dbKeys } = await getGenomes();
+    const { data: dbKeys } = await getDbKeys();
     const dbKeyList = [];
     for (var key in dbKeys) {
         dbKeyList.push({

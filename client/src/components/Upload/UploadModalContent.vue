@@ -74,9 +74,9 @@ const props = defineProps({
 const extensionsSet = ref(false);
 const datatypesMapper = ref(null);
 const datatypesMapperReady = ref(false);
-const genomesSet = ref(false);
+const dbKeysSet = ref(false);
 const listExtensions = ref([]);
-const listGenomes = ref([]);
+const listDbKeys = ref([]);
 const regular = ref(null);
 
 const effectiveExtensions = computed(() => {
@@ -101,7 +101,7 @@ const hasCompositeExtension = computed(() =>
 const hasRegularExtension = computed(() => effectiveExtensions.value.some((extension) => !extension.composite_files));
 const historyAvailable = computed(() => Boolean(props.currentHistoryId));
 const ready = computed(
-    () => genomesSet.value && extensionsSet.value && historyAvailable.value && datatypesMapperReady.value
+    () => dbKeysSet.value && extensionsSet.value && historyAvailable.value && datatypesMapperReady.value
 );
 const showCollection = computed(() => !props.formats && props.multiple);
 const showComposite = computed(() => !props.formats || hasCompositeExtension);
@@ -121,9 +121,9 @@ async function loadExtensions() {
     extensionsSet.value = true;
 }
 
-async function loadGenomes() {
-    listGenomes.value = await getUploadDbKeys(props.defaultDbKey);
-    genomesSet.value = true;
+async function loadDbKeys() {
+    listDbKeys.value = await getUploadDbKeys(props.defaultDbKey);
+    dbKeysSet.value = true;
 }
 
 async function loadMappers() {
@@ -144,7 +144,7 @@ function progress(percentage, status = null) {
 
 onMounted(() => {
     loadExtensions();
-    loadGenomes();
+    loadDbKeys();
     loadMappers();
 });
 
@@ -167,7 +167,7 @@ defineExpose({
                 :ftp-upload-site="currentUserId && ftpUploadSite"
                 :has-callback="hasCallback"
                 :history-id="currentHistoryId"
-                :list-genomes="listGenomes"
+                :list-db-keys="listDbKeys"
                 :multiple="multiple"
                 @progress="progress"
                 v-on="$listeners" />
@@ -180,7 +180,7 @@ defineExpose({
                 :ftp-upload-site="currentUserId && ftpUploadSite"
                 :has-callback="hasCallback"
                 :history-id="currentHistoryId"
-                :list-genomes="listGenomes"
+                :list-db-keys="listDbKeys"
                 v-on="$listeners" />
         </BTab>
         <BTab v-if="showCollection" id="collection" title="Collection" button-id="tab-title-link-collection">
@@ -194,7 +194,7 @@ defineExpose({
                 :has-callback="hasCallback"
                 :history-id="currentHistoryId"
                 :is-collection="true"
-                :list-genomes="listGenomes"
+                :list-db-keys="listDbKeys"
                 v-on="$listeners" />
         </BTab>
         <BTab v-if="showRules" id="rule-based" title="Rule-based" button-id="tab-title-link-rule-based">

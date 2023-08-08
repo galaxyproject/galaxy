@@ -36,7 +36,7 @@ const props = defineProps({
         type: Number,
         required: true,
     },
-    genome: {
+    dbKey: {
         type: String,
         required: true,
     },
@@ -48,7 +48,7 @@ const props = defineProps({
         type: String,
         default: null,
     },
-    listGenomes: {
+    listDbKeys: {
         type: Array,
         default: null,
     },
@@ -89,8 +89,8 @@ function inputFileName(newFileName) {
     emit("input", props.index, { fileName: newFileName });
 }
 
-function inputGenome(newGenome) {
-    emit("input", props.index, { genome: newGenome });
+function inputDbKey(newDbKey) {
+    emit("input", props.index, { dbKey: newDbKey });
 }
 
 function inputSettings(settingId) {
@@ -134,12 +134,12 @@ function removeUpload() {
                 :extension="extension"
                 :list-extensions="listExtensions" />
             <UploadSettingsSelect
-                v-if="listGenomes !== null"
-                :value="genome"
+                v-if="listDbKeys !== null"
+                :value="dbKey"
                 :disabled="isDisabled"
-                :options="listGenomes"
+                :options="listDbKeys"
                 placeholder="Select Reference"
-                @input="inputGenome" />
+                @input="inputDbKey" />
             <UploadSettings
                 :deferred="deferred"
                 :disabled="isDisabled"
