@@ -66,7 +66,6 @@ class ToolShedRepositoriesService:
     def _show(self, tool_shed_repository: ToolShedRepository) -> InstalledToolShedRepository:
         tool_shed_repository_dict = tool_shed_repository.as_dict()
         encoded_id = Security.security.encode_id(tool_shed_repository.id)
-        tool_shed_repository_dict["id"] = encoded_id
         tool_shed_repository_dict["error_message"] = tool_shed_repository.error_message or ""
         tool_shed_repository_dict["url"] = url_for("tool_shed_repositories", id=encoded_id)
         return InstalledToolShedRepository(**tool_shed_repository_dict)
