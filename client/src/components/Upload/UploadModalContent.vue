@@ -3,50 +3,50 @@
         <BTab v-if="showRegular" id="regular" title="Regular" button-id="tab-title-link-regular">
             <Default
                 ref="regular"
-                :chunk-upload-size="details.chunkUploadSize"
-                :default-db-key="details.defaultDbKey"
-                :default-extension="details.defaultExtension"
-                :effective-extensions="details.effectiveExtensions"
-                :file-sources-configured="details.fileSourcesConfigured"
-                :ftp-upload-site="details.ftpUploadSite"
+                :chunk-upload-size="chunkUploadSize"
+                :default-db-key="defaultDbKey"
+                :default-extension="defaultExtension"
+                :effective-extensions="effectiveExtensions"
+                :file-sources-configured="fileSourcesConfigured"
+                :ftp-upload-site="currentUserId && ftpUploadSite"
                 :has-callback="hasCallback"
-                :history-id="details.history_id"
-                :list-genomes="details.listGenomes"
+                :history-id="currentHistoryId"
+                :list-genomes="listGenomes"
                 :multiple="multiple"
                 v-on="$listeners" />
         </BTab>
         <BTab v-if="showComposite" id="composite" title="Composite" button-id="tab-title-link-composite">
             <Composite
-                :effective-extensions="details.effectiveExtensions"
-                :default-db-key="details.defaultDbKey"
-                :file-sources-configured="details.fileSourcesConfigured"
-                :ftp-upload-site="details.ftpUploadSite"
+                :effective-extensions="effectiveExtensions"
+                :default-db-key="defaultDbKey"
+                :file-sources-configured="fileSourcesConfigured"
+                :ftp-upload-site="currentUserId && ftpUploadSite"
                 :has-callback="hasCallback"
-                :history-id="details.history_id"
-                :list-genomes="details.listGenomes"
+                :history-id="currentHistoryId"
+                :list-genomes="listGenomes"
                 v-on="$listeners" />
         </BTab>
         <BTab v-if="showCollection" id="collection" title="Collection" button-id="tab-title-link-collection">
             <Default
-                :chunk-upload-size="details.chunkUploadSize"
-                :default-db-key="details.defaultDbKey"
-                :default-extension="details.defaultExtension"
-                :effective-extensions="details.effectiveExtensions"
-                :file-sources-configured="details.fileSourcesConfigured"
-                :ftp-upload-site="details.ftpUploadSite"
+                :chunk-upload-size="chunkUploadSize"
+                :default-db-key="defaultDbKey"
+                :default-extension="defaultExtension"
+                :effective-extensions="effectiveExtensions"
+                :file-sources-configured="fileSourcesConfigured"
+                :ftp-upload-site="currentUserId && ftpUploadSite"
                 :has-callback="hasCallback"
-                :history-id="details.history_id"
+                :history-id="currentHistoryId"
                 :is-collection="true"
-                :list-genomes="details.listGenomes"
+                :list-genomes="listGenomes"
                 :multiple="true"
                 v-on="$listeners" />
         </BTab>
         <BTab v-if="showRules" id="rule-based" title="Rule-based" button-id="tab-title-link-rule-based">
             <RulesInput
-                :file-sources-configured="details.fileSourcesConfigured"
-                :ftp-upload-site="details.ftpUploadSite"
+                :file-sources-configured="fileSourcesConfigured"
+                :ftp-upload-site="currentUserId && ftpUploadSite"
                 :has-callback="hasCallback"
-                :history-id="details.history_id"
+                :history-id="currentHistoryId"
                 v-on="$listeners" />
         </BTab>
     </BTabs>
@@ -94,13 +94,13 @@ export default {
         defaultExtension: { type: String, default: DEFAULT_EXTENSION },
         datatypesDisableAuto: { type: Boolean, default: false },
         formats: { type: Array, default: null },
+        // Restrict the forms to a single dataset upload if false
         multiple: {
-            // Restrict the forms to a single dataset upload if false
             type: Boolean,
             default: true,
         },
+        // Return uploads when done if supplied.
         hasCallback: {
-            // Return uploads when done if supplied.
             type: Boolean,
             default: false,
         },
@@ -121,72 +121,44 @@ export default {
         };
     },
     computed: {
+        effectiveExtensions() {
+            if (this.formats === null || !this.datatypesMapperReady) {
+                return this.listExtensions;
+            } else {
+                const result = [];
+                this.listExtensions.forEach((extension) => {
+                    if (extension && extension.id == "auto") {
+                        result.push(extension);
+                    } else if (this.datatypesMapper.isSubTypeOfAny(extension.id, this.formats)) {
+                        result.push(extension);
+                    }
+                });
+                return result;
+            }
+        },
+        hasCompositeExtension() {
+            return this.effectiveExtensions.some((extension) => !!extension.composite_files);
+        },
+        hasRegularExtension() {
+            return this.effectiveExtensions.some((extension) => !extension.composite_files);
+        },
         historyAvailable() {
             return Boolean(this.currentHistoryId);
         },
         ready() {
             return this.genomesSet && this.extensionsSet && this.historyAvailable && this.datatypesMapperReady;
         },
-        unrestricted() {
-            return this.formats === null && this.multiple;
-        },
-        effectiveExtensions() {
-            if (this.formats === null || !this.datatypesMapperReady) {
-                return this.listExtensions;
-            }
-            const effectiveExtensions = [];
-            this.listExtensions.forEach((extension) => {
-                if (extension && extension.id == "auto") {
-                    effectiveExtensions.push(extension);
-                } else if (this.datatypesMapper.isSubTypeOfAny(extension.id, this.formats)) {
-                    effectiveExtensions.push(extension);
-                }
-            });
-            return effectiveExtensions;
-        },
-        formatRestricted() {
-            return this.formats !== null;
+        showCollection() {
+            return !this.formats && this.multiple;
         },
         showComposite() {
-            if (!this.formatRestricted) {
-                return true;
-            }
-            return this.effectiveExtensions.some((extension) => !!extension.composite_files);
+            return !this.formats || this.hasCompositeExtension;
         },
         showRegular() {
-            if (!this.formatRestricted) {
-                return true;
-            }
-            return this.effectiveExtensions.some((extension) => !extension.composite_files);
-        },
-        showCollection() {
-            if (this.unrestricted) {
-                return true;
-            }
-            return false;
+            return !this.formats || this.hasRegularExtension;
         },
         showRules() {
-            if (this.unrestricted) {
-                return true;
-            }
-            return this.multiple;
-        },
-        currentFtp() {
-            return this.currentUserId && this.ftpUploadSite;
-        },
-        details() {
-            return {
-                effectiveExtensions: this.effectiveExtensions,
-                listGenomes: this.listGenomes,
-                currentFtp: this.currentFtp,
-                fileSourcesConfigured: this.fileSourcesConfigured,
-                defaultExtension: this.defaultExtension,
-                defaultDbKey: this.defaultDbKey,
-                uploadPath: this.uploadPath,
-                model: this.model,
-                chunkUploadSize: this.chunkUploadSize,
-                history_id: this.currentHistoryId,
-            };
+            return !this.formats || this.multiple;
         },
     },
     created() {
