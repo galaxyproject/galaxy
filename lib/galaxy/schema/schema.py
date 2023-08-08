@@ -56,7 +56,7 @@ JOB_MODEL_CLASS = Literal["Job"]
 STORED_WORKFLOW_MODEL_CLASS = Literal["StoredWorkflow"]
 PAGE_MODEL_CLASS = Literal["Page"]
 
-OptionalNumberT = Optional[Union[int, float]]
+OptionalNumberT = Annotated[Optional[Union[int, float]], Field(None)]
 
 
 class DatasetState(str, Enum):
