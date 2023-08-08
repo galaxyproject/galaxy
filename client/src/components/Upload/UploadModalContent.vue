@@ -3,16 +3,24 @@
         <BTab v-if="showRegular" id="regular" title="Regular" button-id="tab-title-link-regular">
             <Default
                 ref="regular"
+                :chunk-upload-size="details.chunkUploadSize"
+                :default-db-key="details.defaultDbKey"
+                :default-extension="details.defaultExtension"
                 :effective-extensions="details.effectiveExtensions"
-                :details="details"
+                :file-sources-configured="details.fileSourcesConfigured"
+                :ftp-upload-site="details.ftpUploadSite"
                 :has-callback="hasCallback"
+                :history-id="details.history_id"
+                :list-genomes="details.listGenomes"
                 :multiple="multiple"
                 v-on="$listeners" />
         </BTab>
         <BTab v-if="showComposite" id="composite" title="Composite" button-id="tab-title-link-composite">
             <Composite
                 :effective-extensions="details.effectiveExtensions"
-                :details="details"
+                :default-db-key="details.defaultDbKey"
+                :file-sources-configured="details.fileSourcesConfigured"
+                :ftp-upload-site="details.ftpUploadSite"
                 :has-callback="hasCallback"
                 :history-id="details.history_id"
                 :list-genomes="details.listGenomes"
@@ -20,8 +28,12 @@
         </BTab>
         <BTab v-if="showCollection" id="collection" title="Collection" button-id="tab-title-link-collection">
             <Default
+                :chunk-upload-size="details.chunkUploadSize"
+                :default-db-key="details.defaultDbKey"
+                :default-extension="details.defaultExtension"
                 :effective-extensions="details.effectiveExtensions"
-                :details="details"
+                :file-sources-configured="details.fileSourcesConfigured"
+                :ftp-upload-site="details.ftpUploadSite"
                 :has-callback="hasCallback"
                 :history-id="details.history_id"
                 :is-collection="true"
@@ -31,9 +43,8 @@
         </BTab>
         <BTab v-if="showRules" id="rule-based" title="Rule-based" button-id="tab-title-link-rule-based">
             <RulesInput
-                :current-ftp="details.currentFtp"
                 :file-sources-configured="details.fileSourcesConfigured"
-                :details="details"
+                :ftp-upload-site="details.ftpUploadSite"
                 :has-callback="hasCallback"
                 :history-id="details.history_id"
                 v-on="$listeners" />

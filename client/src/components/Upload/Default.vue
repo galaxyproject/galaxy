@@ -8,7 +8,7 @@ import { UploadQueue } from "utils/uploadbox";
 import Vue, { computed, ref } from "vue";
 
 import { defaultModel } from "./model.js";
-import { rulesBuilder } from "./rulesBuilder.js";
+import { collectionBuilder } from "./uploadBuilder.js";
 import { COLLECTION_TYPES, DEFAULT_FILE_NAME, findExtension, hasBrowserSupport, openBrowserDialog } from "./utils";
 
 import DefaultRow from "./DefaultRow.vue";
@@ -19,8 +19,32 @@ import UploadSettingsSelect from "./UploadSettingsSelect.vue";
 library.add(faCopy, faEdit, faFolderOpen, faLaptop);
 
 const props = defineProps({
+    chunkUploadSize: {
+        type: Number,
+        required: true,
+    },
+    defaultDbKey: {
+        type: String,
+        required: true,
+    },
+    defaultExtension: {
+        type: String,
+        required: true,
+    },
     effectiveExtensions: {
         type: Array,
+        required: true,
+    },
+    fileSourcesConfigured: {
+        type: Boolean,
+        required: true,
+    },
+    ftpUploadSite: {
+        type: String,
+        default: null,
+    },
+    historyId: {
+        type: String,
         required: true,
     },
     multiple: {
@@ -35,8 +59,8 @@ const props = defineProps({
         type: Number,
         default: 50,
     },
-    details: {
-        type: Object,
+    listGenomes: {
+        type: Array,
         required: true,
     },
     isCollection: {
@@ -45,13 +69,15 @@ const props = defineProps({
     },
 });
 
+const emit = defineEmits();
+
 const collectionType = ref("list");
 const counterAnnounce = ref(0);
 const counterError = ref(0);
 const counterRunning = ref(0);
 const counterSuccess = ref(0);
-const extension = ref(props.details.defaultExtension);
-const genome = ref(props.details.defaultDbKey);
+const extension = ref(props.defaultExtension);
+const genome = ref(props.defaultDbKey);
 const highlightBox = ref(false);
 const running = ref(false);
 const uploadCompleted = ref(0);
@@ -66,14 +92,14 @@ const enableReset = computed(() => counterRunning.value == 0 && counterNonRunnin
 const enableStart = computed(() => counterRunning.value == 0 && counterAnnounce.value > 0);
 const enableSources = computed(() => counterRunning.value == 0 && (props.multiple || counterNonRunning.value == 0));
 const listExtensions = computed(() => props.effectiveExtensions.filter((ext) => !ext.composite_files));
-const hasRemoteFiles = computed(() => !props.details.fileSourcesConfigured || !!props.details.currentFtp);
-const historyId = computed(() => props.details.history_id);
+const hasRemoteFiles = computed(() => props.fileSourcesConfigured || !!props.ftpUploadSite);
+const historyId = computed(() => props.historyId);
 const showHelper = computed(() => Object.keys(uploadItems.value).length === 0);
 const uploadValues = computed(() => Object.values(uploadItems.value));
 
 const queue = new UploadQueue({
     announce: eventAnnounce,
-    chunkSize: props.details.chunkUploadSize,
+    chunkSize: props.chunkUploadSize,
     complete: eventComplete,
     error: eventError,
     get: (index) => uploadItems.value[index],
@@ -107,7 +133,7 @@ function eventAnnounce(index, file) {
 
 /** Populates collection builder with uploaded files */
 function eventBuild() {
-    rulesBuilder(historyId, collectionType.value, extension.value, genome.value, uploadValues.value);
+    collectionBuilder(historyId, collectionType.value, extension.value, genome.value, uploadValues.value);
     counterRunning.value = 0;
     eventReset();
     emit("dismiss");
@@ -130,17 +156,14 @@ function eventCreate() {
 
 /** Error */
 function eventError(index, message) {
-    var it = uploadItems.value[index];
+    const it = uploadItems.value[index];
     it.percentage = 100;
     it.status = "error";
     it.info = message;
-    props.details.model.set({
-        percentage: uploadPercentage(100, it.file_size),
-        status: "danger",
-    });
     uploadCompleted.value += it.file_size * 100;
     counterAnnounce.value--;
     counterError.value++;
+    emit("progress", uploadPercentage(100, it.file_size), "danger");
 }
 
 /** Update model */
@@ -155,7 +178,7 @@ function eventInput(index, newData) {
 function eventProgress(index, percentage) {
     const it = uploadItems.value[index];
     it.percentage = percentage;
-    props.details.model.set("percentage", _uploadPercentage(percentage, it.file_size));
+    emit("progress", uploadPercentage(percentage, it.file_size));
 }
 
 /** Remove model from upload list */
@@ -202,9 +225,9 @@ function eventReset() {
         counterRunning.value = 0;
         queue.reset();
         uploadItems.value = {};
-        extension.value = props.details.defaultExtension;
-        genome.value = props.details.defaultDbKey;
-        props.details.model.set("percentage", 0);
+        extension.value = props.defaultExtension;
+        genome.value = props.defaultDbKey;
+        emit("progress", 0);
     }
 }
 
@@ -214,7 +237,7 @@ function eventSuccess(index, incoming) {
     it.percentage = 100;
     it.status = "success";
     it.outputs = incoming.outputs || incoming.data.outputs || {};
-    props.details.model.set("percentage", uploadPercentage(100, it.file_size));
+    emit("progress", uploadPercentage(100, it.file_size));
     uploadCompleted.value += it.file_size * 100;
     counterAnnounce.value--;
     counterSuccess.value++;
@@ -231,7 +254,7 @@ function eventStart() {
                 uploadSize.value += model.file_size;
             }
         });
-        props.details.model.set({ percentage: 0, status: "success" });
+        emit("progress", 0, "success");
         counterRunning.value = counterAnnounce.value;
         queue.start(true);
     }
@@ -240,7 +263,7 @@ function eventStart() {
 /** Pause upload process */
 function eventStop() {
     if (counterRunning.value > 0) {
-        props.details.model.set("status", "info");
+        emit("progress", null, "info");
         topInfo.value = "Queue will pause after completing the current file...";
         queue.stop();
     }
@@ -262,7 +285,7 @@ function updateCollectionType(newCollectionType) {
 function updateExtension(newExtension) {
     extension.value = newExtension;
     uploadValues.value.forEach((model) => {
-        if (model.status === "init" && model.extension === props.details.defaultExtension) {
+        if (model.status === "init" && model.extension === props.defaultExtension) {
             model.extension = newExtension;
         }
     });
@@ -271,7 +294,7 @@ function updateExtension(newExtension) {
 /** Update reference dataset for all entries */
 function updateGenome(newGenome) {
     uploadValues.value.forEach((model) => {
-        if (model.status === "init" && model.genome === props.details.defaultDbKey) {
+        if (model.status === "init" && model.genome === props.defaultDbKey) {
             model.genome = newGenome;
         }
     });
@@ -327,7 +350,7 @@ defineExpose({
                     :info="uploadItem.info"
                     :genome="uploadItem.genome"
                     :list-extensions="isCollection ? null : listExtensions"
-                    :list-genomes="isCollection ? null : details.listGenomes"
+                    :list-genomes="isCollection ? null : listGenomes"
                     :percentage="uploadItem.percentage"
                     :space_to_tab="uploadItem.space_to_tab"
                     :status="uploadItem.status"
@@ -359,7 +382,7 @@ defineExpose({
             <span class="upload-footer-title">Reference (set all):</span>
             <UploadSettingsSelect
                 :value="genome"
-                :options="details.listGenomes"
+                :options="listGenomes"
                 :disabled="running"
                 placeholder="Select Reference"
                 @input="updateGenome" />

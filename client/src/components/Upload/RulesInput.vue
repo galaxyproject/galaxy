@@ -3,11 +3,8 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEdit } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { getGalaxyInstance } from "app";
-import axios from "axios";
 import { BAlert, BButton, BLink } from "bootstrap-vue";
-import Select2 from "components/Select2";
 import { getRemoteEntries, getRemoteEntriesAt } from "components/Upload/utils";
-import { getAppRoot } from "onload/loadConfig";
 import { filesDialog } from "utils/data";
 import { urlData } from "utils/url";
 import { ref } from "vue";
@@ -23,20 +20,16 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
-    currentFtp: {
-        type: String,
-        required: true,
-    },
     fileSourcesConfigured: {
         type: Boolean,
         required: true,
     },
+    ftpUploadSite: {
+        type: String,
+        default: null,
+    },
     historyId: {
         type: String,
-        required: true,
-    },
-    details: {
-        type: Object,
         required: true,
     },
 });
@@ -51,22 +44,20 @@ const sourceContent = ref(null);
 const uris = ref([]);
 
 function eventBuild() {
-    const selectionType = selectionType.value;
-    const selection = {};
     const Galaxy = getGalaxyInstance();
-    if (selectionType == "dataset" || selectionType == "paste") {
-        selection.selectionType = "raw";
-        selection.content = sourceContent.value;
-    } else if (selectionType == "ftp") {
-        selection.selectionType = "ftp";
-        selection.elements = ftpFiles.value;
-        selection.ftpUploadSite = currentFtp;
-    } else if (selectionType == "remote_files") {
-        selection.selectionType = "remote_files";
-        selection.elements = uris.value;
+    const entry = {
+        dataType: dataType.value,
+        selectionType: selectionType.value,
+    };
+    if (entry.selectionType == "ftp") {
+        entry.elements = ftpFiles.value;
+        entry.ftpUploadSite = props.ftpUploadSite;
+    } else if (entry.selectionType === "raw") {
+        entry.content = sourceContent.value;
+    } else if (entry.selectionType == "remote_files") {
+        entry.elements = uris.value;
     }
-    selection.dataType = dataType.value;
-    Galaxy.currHistoryPanel.buildCollection("rules", selection, null, true);
+    Galaxy.currHistoryPanel.buildCollection("rules", entry, null, true);
 }
 
 function eventReset() {
@@ -82,6 +73,7 @@ function inputDialog() {
             selectedDatasetName.value = response.name;
             urlData({ url: `/api/histories/${props.historyId}/contents/${selectedDatasetId.value}/display` })
                 .then((newSourceContent) => {
+                    selectionType.value = "raw";
                     sourceContent.value = newSourceContent;
                 })
                 .catch((error) => {
@@ -99,15 +91,23 @@ function inputDialog() {
 
 function inputFtp() {
     getRemoteEntries((ftp_files) => {
+        selectionType.value = "ftp";
         sourceContent.value = ftp_files.map((file) => file["path"]).join("\n");
         ftpFiles.value = ftp_files;
     });
+}
+
+function inputPaste() {
+    selectionType.value = "raw";
+    selectedDatasetId.value = null;
+    sourceContent.value = null;
 }
 
 function inputRemote() {
     function handleRemoteFilesUri(record) {
         getRemoteEntriesAt(record.url).then((files) => {
             files = files.filter((file) => file["class"] == "File");
+            selectionType.value = "remote_files";
             sourceContent.value = files.map((file) => file["uri"]).join("\n");
             uris.value = files;
         });
@@ -126,11 +126,15 @@ function inputRemote() {
             <UploadSettingsSelect v-model="dataType" :options="RULES_TYPES" />
         </div>
         <div class="upload-buttons d-flex justify-content-end">
+            <BButton @click="inputPaste">
+                <FontAwesomeIcon icon="fa-edit" />
+                <span v-localize>Paste data</span>
+            </BButton>
             <BButton @click="inputDialog">
                 <FontAwesomeIcon icon="fa-file" />
                 <span v-localize>Choose dataset</span>
             </BButton>
-            <BButton v-if="currentFtp" @click="inputFtp">
+            <BButton v-if="ftpUploadSite" @click="inputFtp">
                 <FontAwesomeIcon icon="fa-folder-open" />
                 <span v-localize>Import FTP files</span>
             </BButton>

@@ -11,9 +11,21 @@ import CompositeRow from "./CompositeRow.vue";
 import UploadSettingsSelect from "./UploadSettingsSelect.vue";
 
 const props = defineProps({
+    defaultDbKey: {
+        type: String,
+        required: true,
+    },
     effectiveExtensions: {
         type: Array,
         required: true,
+    },
+    fileSourcesConfigured: {
+        type: Boolean,
+        required: true,
+    },
+    ftpUploadSite: {
+        type: String,
+        default: null,
     },
     hasCallback: {
         type: Boolean,
@@ -27,17 +39,13 @@ const props = defineProps({
         type: Array,
         required: true,
     },
-    details: {
-        type: Object,
-        required: true,
-    },
 });
 
 const extension = ref(null);
-const genome = ref(props.details.defaultDbKey);
+const genome = ref(props.defaultDbKey);
 const uploadItems = ref({});
 
-const hasRemoteFiles = computed(() => !props.details.fileSourcesConfigured || !!props.details.currentFtp);
+const hasRemoteFiles = computed(() => props.fileSourcesConfigured || !!props.ftpUploadSite);
 
 const listExtensions = computed(() => {
     const result = props.effectiveExtensions.filter((ext) => ext.composite_files);
@@ -88,7 +96,7 @@ function eventProgress(percentage) {
 function eventReset() {
     if (!uploadValues.value.find((v) => v.status === "running")) {
         uploadItems.value = {};
-        genome.value = props.details.defaultDbKey;
+        genome.value = props.defaultDbKey;
     }
 }
 
