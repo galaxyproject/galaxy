@@ -99,6 +99,7 @@ export function uploadPayload(items, history_id, composite = false) {
         const compositeItems = [
             {
                 src: "composite",
+                dbkey: elements[0].dbkey,
                 ext: elements[0].ext,
                 composite: {
                     items: target.elements,

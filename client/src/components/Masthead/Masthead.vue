@@ -6,7 +6,7 @@ import { withPrefix } from "utils/redirect";
 import { onBeforeMount, onMounted, reactive, ref, watch } from "vue";
 import { useRoute } from "vue-router/composables";
 
-import { useConfig } from "@/composables/config";
+import { useConfig, isConfigLoaded } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
 
 import { loadWebhookMenuItems } from "./_webhooks";
@@ -139,7 +139,7 @@ onMounted(() => {
                 @open-url="emit('open-url', $event)" />
             <MastheadItem v-if="windowTab" :tab="windowTab" :toggle="windowToggle" @click="onWindowToggle" />
             <BNavItem
-                v-if="!isAnonymous && config.enable_notification_system && !showActivityBar"
+                v-if="!isAnonymous && isConfigLoaded && config.enable_notification_system && !showActivityBar"
                 id="notifications-bell">
                 <NotificationsBell tooltip-placement="bottom" />
             </BNavItem>
