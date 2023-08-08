@@ -60,8 +60,9 @@ const listExtensions = computed(() => {
 
 const readyStart = computed(() => {
     const readyStates = uploadValues.value.filter((v) => v.fileSize > 0).length;
-    const optionalStates = uploadValues.value.filter((v) => v.optional === true).length;
-    return readyStates + optionalStates == uploadValues.value.length && uploadValues.value.length > 0;
+    const optionalStates = uploadValues.value.filter((v) => v.optional).length;
+    const isValid = readyStates + optionalStates == uploadValues.value.length;
+    return !isRunning.value && uploadValues.value.length > 0 && isValid;
 });
 
 const showHelper = computed(() => uploadKeys.value.length === 0);
@@ -82,6 +83,7 @@ function eventInput(index, newData) {
     Object.entries(newData).forEach(([key, value]) => {
         it[key] = value;
     });
+    restoreStatus();
 }
 
 /** Refresh progress state */
@@ -124,6 +126,7 @@ function eventSuccess() {
 
 function inputDbkey(newDbkey) {
     dbKey.value = newDbkey;
+    restoreStatus();
 }
 
 function inputExtension(newExtension) {
@@ -142,6 +145,15 @@ function inputExtension(newExtension) {
             Vue.set(uploadItems.value, index, uploadModel);
         });
     }
+    restoreStatus();
+}
+
+/** Refresh init state if any user changes attributes */
+function restoreStatus() {
+    uploadValues.value.forEach((model) => {
+        model.percentage = 0;
+        model.status = "init";
+    });
 }
 </script>
 

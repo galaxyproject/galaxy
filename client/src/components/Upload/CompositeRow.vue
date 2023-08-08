@@ -66,7 +66,7 @@ const props = defineProps({
 
 const emit = defineEmits(["input"]);
 
-const isDisabled = computed(() => props.status !== "init");
+const isDisabled = computed(() => props.status === "running");
 const isDragging = ref(false);
 
 function inputFileContent(newFileContent) {

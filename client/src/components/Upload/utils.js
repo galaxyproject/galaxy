@@ -3,7 +3,7 @@
  */
 import { errorMessageAsString, rethrowSimple } from "utils/simple-error";
 
-import { getDbKeys, getDatatypes, getRemoteFiles } from "./services";
+import { getDatatypes, getDbKeys, getRemoteFiles } from "./services";
 
 export const AUTO_EXTENSION = {
     id: "auto",

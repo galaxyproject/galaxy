@@ -6,7 +6,7 @@ import { withPrefix } from "utils/redirect";
 import { onBeforeMount, onMounted, reactive, ref, watch } from "vue";
 import { useRoute } from "vue-router/composables";
 
-import { useConfig, isConfigLoaded } from "@/composables/config";
+import { isConfigLoaded, useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
 
 import { loadWebhookMenuItems } from "./_webhooks";
