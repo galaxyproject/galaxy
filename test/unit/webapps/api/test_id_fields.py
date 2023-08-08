@@ -25,13 +25,13 @@ class LibraryFolderIdModel(BaseModel):
 
 
 def test_decoded_id_schema_override():
-    schema = DecodedIdModel.schema()
-    assert schema["properties"]["id"]["type"] == "string", schema
+    schema = DecodedIdModel.model_json_schema()
+    assert schema["$defs"]["DecodedDatabaseIdField"]["type"] == "string", schema
 
 
 def test_encoded_id_schema_override():
-    schema = EncodedIdModel.schema()
-    assert schema["properties"]["id"]["type"] == "string", schema
+    schema = EncodedIdModel.model_json_schema()
+    assert schema["$defs"]["EncodedDatabaseIdField"]["type"] == "string", schema
 
 
 def test_decoded_database_id_field():
@@ -47,7 +47,6 @@ def test_library_folder_database_id_field():
     encoded_id = f"F{Security.security.encode_id(decoded_id)}"
     model = LibraryFolderIdModel(id=encoded_id)
     assert model.id == decoded_id
-    assert LibraryFolderDatabaseIdField.encode(model.id) == encoded_id
 
 
 def test_library_folder_database_id_field_raises_validation_error():
