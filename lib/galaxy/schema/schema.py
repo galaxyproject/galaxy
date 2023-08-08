@@ -276,6 +276,15 @@ class Model(BaseModel):
     model_config = ConfigDict(populate_by_name=True, use_enum_values=True)
 
 
+class RequireOneSetOption(Model):
+    # TODO: model in json schema
+    @model_validator(mode="after")
+    def check_some_ids_passed(self):
+        if not self.model_fields_set:
+            raise ValueError("Specify at least one ID to apply actions to")
+        return self
+
+
 class BaseUserModel(Model):
     id: EncodedDatabaseIdField = UserIdField
     username: str = UserNameField
@@ -2820,7 +2829,7 @@ RoleIdList = Union[
 ]  # Should we support just List[DecodedDatabaseIdField] in the future?
 
 
-class LegacyLibraryPermissionsPayload(Model):
+class LegacyLibraryPermissionsPayload(RequireOneSetOption):
     LIBRARY_ACCESS_in: Optional[RoleIdList] = Field(
         [],
         title="Access IDs",
@@ -2842,12 +2851,6 @@ class LegacyLibraryPermissionsPayload(Model):
         description="A list of role encoded IDs defining roles that should have modify permission on the library.",
     )
 
-    @model_validator(mode="after")
-    def check_some_ids_passed(self):
-        if not self.model_fields_set:
-            raise ValueError("Specify at least one ID to apply actions to")
-        return self
-
 
 class LibraryPermissionAction(str, Enum):
     set_permissions = "set_permissions"
@@ -2860,7 +2863,7 @@ class DatasetPermissionAction(str, Enum):
     remove_restrictions = "remove_restrictions"
 
 
-class LibraryPermissionsPayloadBase(Model):
+class LibraryPermissionsPayloadBase(RequireOneSetOption):
     add_ids: Optional[RoleIdList] = Field(
         [],
         alias="add_ids[]",
@@ -2882,7 +2885,8 @@ class LibraryPermissionsPayloadBase(Model):
 
 
 class LibraryPermissionsPayload(LibraryPermissionsPayloadBase):
-    action: LibraryPermissionAction = Field(
+    action: Optional[LibraryPermissionAction] = Field(
+        None,
         title="Action",
         description="Indicates what action should be performed on the Library.",
     )
