@@ -548,10 +548,10 @@ export default class Filtering<T> {
             if (!(key in this.validFilters)) {
                 console.error(`Invalid filter ${key}`);
             } else {
-                const filterAttribute = this.validFilters[key]?.handler.attribute;
-                const filterHandler = this.validFilters[key]?.handler.handler;
-                const itemValue = filterAttribute && item[filterAttribute];
-                if (itemValue === undefined || (filterHandler && itemValue && !filterHandler(itemValue, filterValue))) {
+                const filterAttribute = this.validFilters[key]!.handler.attribute;
+                const filterHandler = this.validFilters[key]!.handler.handler;
+                const itemValue = item[filterAttribute];
+                if (itemValue === undefined || !filterHandler(itemValue, filterValue)) {
                     return false;
                 }
             }

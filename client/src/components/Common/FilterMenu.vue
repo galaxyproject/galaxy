@@ -68,11 +68,7 @@ const filters = computed(() => Object.fromEntries(props.filterClass.getFiltersFo
 const identifier = kebabCase(props.name);
 
 // all filters that have help info
-const helpEntries: [string, any][] = Object.entries(validFilters.value).filter(
-    ([, value]) => (value as ValidFilter<any>).helpInfo !== undefined
-);
-const helpClass: { [k: string]: ValidFilter<any> } = Object.fromEntries(helpEntries);
-const helpKeys = Object.keys(helpClass);
+const helpKeys = Object.keys(validFilters.value).filter((key) => validFilters.value[key]?.helpInfo !== undefined);
 const defaultHelpModalsVal = helpKeys.reduce((acc: { [k: string]: boolean }, item: string) => {
     acc[item] = false;
     return acc;
@@ -91,17 +87,13 @@ const showHelp = ref(false);
  * (This was done to make the datepickers store values in the `filters` object)
  */
 const dateFilters: Ref<{ [key: string]: string }> = ref({});
-const dateEntries: [string, any][] = Object.entries(validFilters.value).filter(
-    ([, value]) => (value as ValidFilter<any>).type == Date
-);
-const dateClass: { [k: string]: ValidFilter<any> } = Object.fromEntries(dateEntries);
-const dateKeys = Object.keys(dateClass);
-for (const key in dateClass) {
-    if (dateClass[key]?.isRangeInput) {
+const dateKeys = Object.keys(validFilters.value).filter((key) => validFilters.value[key]?.type == Date);
+dateKeys.forEach((key: string) => {
+    if (validFilters.value[key]?.isRangeInput) {
         dateKeys.push(key + "_lt");
         dateKeys.push(key + "_gt");
     }
-}
+});
 watch(
     () => filters.value,
     (newFilters: { [k: string]: any }) => {
