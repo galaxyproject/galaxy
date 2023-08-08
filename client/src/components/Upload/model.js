@@ -3,7 +3,7 @@ export const defaultModel = {
     enabled: true,
     extension: "auto",
     genome: "?",
-    fileContent: null,
+    fileContent: "",
     fileData: null,
     fileMode: "",
     fileName: "",

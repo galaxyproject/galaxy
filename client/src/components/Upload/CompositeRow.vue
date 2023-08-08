@@ -15,25 +15,59 @@ import UploadSettingsSelect from "./UploadSettingsSelect.vue";
 library.add(faCheck, faEdit, faExclamation, faFolderOpen, faLaptop);
 
 const props = defineProps({
-    extension: String,
-    fileContent: String,
-    fileDescription: String,
-    fileMode: String,
-    fileName: String,
-    fileSize: Number,
-    genome: String,
-    index: String,
-    info: String,
-    hasRemoteFiles: Boolean,
-    percentage: Number,
-    spaceToTab: Boolean,
-    status: String,
-    toPosixLines: Boolean,
+    fileContent: {
+        type: String,
+        required: true,
+    },
+    fileDescription: {
+        type: String,
+        default: null,
+    },
+    fileMode: {
+        type: String,
+        required: true,
+    },
+    fileName: {
+        type: String,
+        required: true,
+    },
+    fileSize: {
+        type: Number,
+        required: true,
+    },
+    index: {
+        type: String,
+        required: true,
+    },
+    info: {
+        type: String,
+        default: null,
+    },
+    hasRemoteFiles: {
+        type: Boolean,
+        default: false,
+    },
+    percentage: {
+        type: Number,
+        required: true,
+    },
+    spaceToTab: {
+        type: Boolean,
+        required: true,
+    },
+    status: {
+        type: String,
+        required: true,
+    },
+    toPosixLines: {
+        type: Boolean,
+        required: true,
+    },
 });
 
 const emit = defineEmits();
 
-const percentageInt = computed(() => parseInt(props.percentage || 0));
+const percentageInt = computed(() => parseInt(props.percentage));
 const isDisabled = computed(() => props.status !== "init");
 const isDragging = ref(false);
 

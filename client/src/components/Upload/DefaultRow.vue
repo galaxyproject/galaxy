@@ -12,15 +12,42 @@ import UploadSettingsSelect from "./UploadSettingsSelect.vue";
 library.add(faEdit, faLaptop, faFolderOpen);
 
 const props = defineProps({
-    deferred: Boolean,
-    extension: String,
-    fileContent: String,
-    fileMode: String,
-    fileName: String,
-    fileSize: Number,
-    genome: String,
-    index: String,
-    info: String,
+    deferred: {
+        type: Boolean,
+        default: null,
+    },
+    extension: {
+        type: String,
+        required: true,
+    },
+    fileContent: {
+        type: String,
+        required: true,
+    },
+    fileMode: {
+        type: String,
+        required: true,
+    },
+    fileName: {
+        type: String,
+        required: true,
+    },
+    fileSize: {
+        type: Number,
+        required: true,
+    },
+    genome: {
+        type: String,
+        required: true,
+    },
+    index: {
+        type: String,
+        required: true,
+    },
+    info: {
+        type: String,
+        default: null,
+    },
     listGenomes: {
         type: Array,
         default: null,
@@ -29,15 +56,27 @@ const props = defineProps({
         type: Array,
         default: null,
     },
-    percentage: Number,
-    spaceToTab: Boolean,
-    status: String,
-    toPosixLines: Boolean,
+    percentage: {
+        type: Number,
+        required: true,
+    },
+    spaceToTab: {
+        type: Boolean,
+        required: true,
+    },
+    status: {
+        type: String,
+        required: true,
+    },
+    toPosixLines: {
+        type: Boolean,
+        required: true,
+    },
 });
 
 const emit = defineEmits();
 
-const percentageInt = computed(() => parseInt(props.percentage || 0));
+const percentageInt = computed(() => parseInt(props.percentage));
 const isDisabled = computed(() => props.status !== "init");
 function inputExtension(newExtension) {
     emit("input", props.index, { extension: newExtension });
