@@ -120,9 +120,10 @@ class AddStepAction(BaseAction):
     type: str = Field(description="Module type of the step to add, see galaxy.workflow.modules for available types.")
     tool_state: Optional[Dict[str, Any]] = None
     label: Optional[str] = Field(
-        description="A unique label for the step being added, must be distinct from the labels already present in the workflow."
+        None,
+        description="A unique label for the step being added, must be distinct from the labels already present in the workflow.",
     )
-    position: Optional[Position] = Field(description="The location of the step in the Galaxy workflow editor.")
+    position: Optional[Position] = Field(None, description="The location of the step in the Galaxy workflow editor.")
 
 
 class ConnectAction(BaseAction):
@@ -293,8 +294,12 @@ step with the previously connected input.
 class RefactorActionExecutionMessage(BaseModel):
     message: str
     message_type: RefactorActionExecutionMessageTypeEnum
-    step_label: Optional[str] = Field(description=f"Reference to the step the message refers to. ${INPUT_REFERENCE}")
-    order_index: Optional[int] = Field(description=f"Reference to the step the message refers to. ${INPUT_REFERENCE}")
+    step_label: Optional[str] = Field(
+        None, description=f"Reference to the step the message refers to. ${INPUT_REFERENCE}"
+    )
+    order_index: Optional[int] = Field(
+        None, description=f"Reference to the step the message refers to. ${INPUT_REFERENCE}"
+    )
     input_name: Optional[str] = Field(
         None,
         description=f"""If this message is about an input to a step,
