@@ -8,6 +8,7 @@ import "scss/base.scss";
 import "./publicPath";
 // Default Font
 import "@fontsource/atkinson-hyperlegible";
+import "@fontsource/atkinson-hyperlegible/700.css";
 
 // Client-side configuration variables (based on environment)
 import { library } from "@fortawesome/fontawesome-svg-core";

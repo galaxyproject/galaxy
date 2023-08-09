@@ -1,7 +1,7 @@
 <template>
     <div v-if="isSection && hasElements" class="tool-panel-section">
         <div
-            v-b-tooltip.topright.hover
+            v-b-tooltip.topright.hover.noninteractive
             :class="['toolSectionTitle', `tool-menu-section-${sectionName}`]"
             :title="title">
             <a class="title-link" href="javascript:void(0)" @click="toggleMenu()">

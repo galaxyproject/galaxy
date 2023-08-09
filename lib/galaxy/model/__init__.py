@@ -119,6 +119,7 @@ import galaxy.security.passwords
 import galaxy.util
 from galaxy.model.base import transaction
 from galaxy.model.custom_types import (
+    DoubleEncodedJsonType,
     JSONType,
     MetadataType,
     MutableJSONType,
@@ -2782,7 +2783,9 @@ class Notification(Base, Dictifiable, RepresentById):
     variant = Column(
         String(16), index=True
     )  # Defines the 'importance' of the notification ('info', 'warning', 'urgent', etc.). Used for filtering, highlight rendering, etc
-    content = Column(JSONType)  # Structured content in JSON. Depending on the category of the notification
+    # A bug in early 23.1 led to values being stored as json string, so we use this special type to process the result value twice.
+    # content should always be a dict
+    content = Column(DoubleEncodedJsonType)
 
     user_notification_associations = relationship("UserNotificationAssociation", back_populates="notification")
 
@@ -9821,13 +9824,11 @@ class Tag(Base, RepresentById):
 class ItemTagAssociation(Dictifiable):
     dict_collection_visible_keys = ["id", "user_tname", "user_value"]
     dict_element_visible_keys = dict_collection_visible_keys
-    associated_item_names: List[str] = []
     user_tname: Column
     user_value = Column(TrimmedString(255), index=True)
 
     def __init_subclass__(cls, **kwargs):
         super().__init_subclass__(**kwargs)
-        cls.associated_item_names.append(cls.__name__.replace("TagAssociation", ""))
 
     def copy(self, cls=None):
         if cls:

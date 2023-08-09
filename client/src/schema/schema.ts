@@ -4282,8 +4282,7 @@ export interface components {
              * @description The current state of this dataset.
              */
             state: components["schemas"]["DatasetState"];
-            /** Tags */
-            tags: string;
+            tags: components["schemas"]["TagCollection"];
             /**
              * Type
              * @enum {string}
@@ -8494,14 +8493,11 @@ export interface components {
         TaggableItemClass:
             | "History"
             | "HistoryDatasetAssociation"
+            | "HistoryDatasetCollectionAssociation"
             | "LibraryDatasetDatasetAssociation"
             | "Page"
-            | "WorkflowStep"
             | "StoredWorkflow"
-            | "Visualization"
-            | "HistoryDatasetCollection"
-            | "LibraryDatasetCollection"
-            | "Tool";
+            | "Visualization";
         /** ToolDataDetails */
         ToolDataDetails: {
             /**

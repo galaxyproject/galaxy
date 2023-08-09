@@ -152,12 +152,10 @@ class DoiCitation(BaseCitation):
                 log.exception("Failed to fetch bibtex for DOI %s", self.__doi)
 
         if self.raw_bibtex is DoiCitation.BIBTEX_UNSET:
-            return """@MISC{{{doi},
-                DOI = {{{doi}}},
+            return f"""@MISC{{{self.__doi},
+                DOI = {{{self.__doi}}},
                 note = {{Failed to fetch BibTeX for DOI.}}
-            }}""".format(
-                doi=self.__doi
-            )
+            }}"""
         else:
             return self.raw_bibtex
 

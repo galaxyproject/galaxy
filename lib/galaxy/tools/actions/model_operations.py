@@ -1,10 +1,14 @@
 import logging
+from typing import TYPE_CHECKING
 
 from galaxy.tools.actions import (
     DefaultToolAction,
     OutputCollections,
     ToolExecutionCache,
 )
+
+if TYPE_CHECKING:
+    from galaxy.managers.context import ProvidesUserContext
 
 log = logging.getLogger(__name__)
 
@@ -103,8 +107,10 @@ class ModelOperationToolAction(DefaultToolAction):
         log.info(f"Calling produce_outputs, tool is {tool}")
         return job, out_data, history
 
-    def _produce_outputs(self, trans, tool, out_data, output_collections, incoming, history, tags, hdca_tags):
-        tag_handler = trans.app.tag_handler.create_tag_handler_session()
+    def _produce_outputs(
+        self, trans: "ProvidesUserContext", tool, out_data, output_collections, incoming, history, tags, hdca_tags
+    ):
+        tag_handler = trans.tag_handler
         tool.produce_outputs(
             trans,
             out_data,

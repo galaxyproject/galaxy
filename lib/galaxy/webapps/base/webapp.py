@@ -147,7 +147,7 @@ class WebApplication(base.WebApplication):
             methods = []
             if rule.conditions:
                 m = rule.conditions.get("method", [])
-                methods = type(m) is str and [m] or m
+                methods = [m] if isinstance(m, str) else m
             # Find the controller class
             if controller not in self.api_controllers:
                 # Only happens when removing a controller after porting to FastAPI.

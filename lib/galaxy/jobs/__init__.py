@@ -1058,7 +1058,7 @@ class MinimalJobWrapper(HasResourceParameters):
     def job_io(self):
         if self._job_io is None:
             job = self.get_job()
-            work_request = WorkRequestContext(self.app, user=job.user)
+            work_request = WorkRequestContext(self.app, user=job.user, galaxy_session=job.galaxy_session)
             user_context = ProvidesUserFileSourcesUserContext(work_request)
             tool_source = self.tool and self.tool.tool_source.to_string()
             self._job_io = JobIO(
@@ -1913,7 +1913,7 @@ class MinimalJobWrapper(HasResourceParameters):
                     app=self.app,
                     import_options=import_options,
                     user=job.user,
-                    tag_handler=self.app.tag_handler.create_tag_handler_session(),
+                    tag_handler=self.app.tag_handler.create_tag_handler_session(job.galaxy_session),
                 )
                 import_model_store.perform_import(history=job.history, job=job)
                 if job.state == job.states.ERROR:
