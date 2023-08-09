@@ -357,7 +357,7 @@ class HasDockerLikeVolumes:
                 # and Galaxy.
                 defaults += ",$tmp_directory:/tmp:rw"
             else:
-                defaults = "$_GALAXY_JOB_TMP_DIR:rw,$_GALAXY_JOB_TMP_DIR/:/tmp:rw"
+                defaults = "$_GALAXY_JOB_TMP_DIR:rw,$_GALAXY_JOB_TMP_DIR/:/tmp:rw,$TMPDIR:rw,$TMP:rw,$TEMP:rw"
             defaults += ",$galaxy_root:default_ro"
             if self.job_info.tool_directory:
                 defaults += ",$tool_directory:default_ro"
