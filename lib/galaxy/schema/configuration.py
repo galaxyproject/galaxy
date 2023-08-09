@@ -4094,7 +4094,7 @@ automatically upon data manager installation.
     ] = None
 
     job_config_file: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Job Config File",
             description="""To increase performance of job execution and the web interface, you can
@@ -4112,6 +4112,7 @@ be configured through the job configuration file or the <job_config> option.
     ] = "job_conf.yml"
 
     job_config: Annotated[
+        # TODO: add model from job_config_schema.yml
         Optional[Dict[str, Any]],
         Field(
             title="Job Config",
