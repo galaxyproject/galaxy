@@ -22,6 +22,7 @@ from galaxy.config_watchers import ConfigWatchers
 from galaxy.job_metrics import JobMetrics
 from galaxy.jobs.manager import NoopManager
 from galaxy.managers.collections import DatasetCollectionManager
+from galaxy.managers.dbkeys import GenomeBuilds
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.histories import HistoryManager
 from galaxy.managers.jobs import JobSearch
@@ -51,7 +52,6 @@ from galaxy.tools.cache import ToolCache
 from galaxy.tools.data import ToolDataTableManager
 from galaxy.util import StructuredExecutionTimer
 from galaxy.util.bunch import Bunch
-from galaxy.util.dbkeys import GenomeBuilds
 from galaxy.web.short_term_storage import (
     ShortTermStorageAllocator,
     ShortTermStorageConfiguration,

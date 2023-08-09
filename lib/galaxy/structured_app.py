@@ -14,6 +14,7 @@ from galaxy.datatypes.registry import Registry
 from galaxy.di import Container
 from galaxy.files import ConfiguredFileSources
 from galaxy.job_metrics import JobMetrics
+from galaxy.managers.dbkeys import GenomeBuilds
 from galaxy.model.base import (
     ModelMapping,
     SharedModelMapping,
@@ -32,7 +33,6 @@ from galaxy.tool_shed.cache import ToolShedRepositoryCache
 from galaxy.tool_util.deps.containers import ContainerFinder
 from galaxy.tool_util.deps.views import DependencyResolversView
 from galaxy.tool_util.verify import test_data
-from galaxy.util.dbkeys import GenomeBuilds
 from galaxy.util.tool_shed.tool_shed_registry import Registry as ToolShedRegistry
 from galaxy.web_stack import ApplicationStack
 from galaxy.webhooks import WebhooksRegistry

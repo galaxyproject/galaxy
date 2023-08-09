@@ -5,6 +5,12 @@ import logging
 import os.path
 import re
 from json import loads
+from typing import (
+    Dict,
+    List,
+    Optional,
+    Tuple,
+)
 
 from galaxy.util import (
     galaxy_directory,
@@ -15,11 +21,11 @@ from galaxy.util import (
 log = logging.getLogger(__name__)
 
 
-def read_dbnames(filename):
+def read_dbnames(filename: Optional[str]) -> List[Tuple[str, str]]:
     """Read build names from file"""
-    db_names = []
+    db_names: List[Tuple[str, str]] = []
     try:
-        ucsc_builds = {}
+        ucsc_builds: Dict[str, List[Tuple[int, str, str]]] = {}
         man_builds = []  # assume these are integers
         name_to_db_base = {}
         if filename is None:
@@ -43,9 +49,9 @@ def read_dbnames(filename):
                         ucsc_builds[db_base] = []
                         name_to_db_base[fields[1]] = db_base
                     # we want to sort within a species numerically by revision number
-                    build_rev = re.compile(r"\d+$")
+                    pattern = re.compile(r"\d+$")
                     try:
-                        build_rev = int(build_rev.findall(fields[0])[0])
+                        build_rev = int(pattern.findall(fields[0])[0])
                     except Exception:
                         build_rev = 0
                     ucsc_builds[db_base].append((build_rev, fields[0], fields[1]))
@@ -56,11 +62,10 @@ def read_dbnames(filename):
             db_base = name_to_db_base[name]
             ucsc_builds[db_base].sort()
             ucsc_builds[db_base].reverse()
-            ucsc_builds[db_base] = [(build, name) for _, build, name in ucsc_builds[db_base]]
-            db_names = list(db_names + ucsc_builds[db_base])
+            db_names += [(build, name) for _, build, name in ucsc_builds[db_base]]
         man_builds.sort()
         man_builds = [(build, name) for name, build in man_builds]
-        db_names = list(db_names + man_builds)
+        db_names += man_builds
     except Exception as e:
         log.error("ERROR: Unable to read builds file: %s", unicodify(e))
     return db_names
