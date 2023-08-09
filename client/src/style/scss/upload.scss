@@ -51,6 +51,9 @@
         border: 1px dashed $border-color;
         overflow-x: hidden;
         -ms-overflow-style: none;
+        input[type="file"] {
+            display: none;
+        }
         .upload-error {
             background: $state-danger-bg;
         }

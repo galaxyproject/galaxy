@@ -7,7 +7,7 @@ import { filesDialog } from "utils/data";
 import { bytesToString } from "utils/utils";
 import { computed, ref } from "vue";
 
-import { DEFAULT_FILE_NAME, openBrowserDialog } from "./utils";
+import { DEFAULT_FILE_NAME } from "./utils";
 
 import UploadSettings from "./UploadSettings.vue";
 
@@ -68,6 +68,7 @@ const emit = defineEmits(["input"]);
 
 const isDisabled = computed(() => props.status === "running");
 const isDragging = ref(false);
+const uploadFile = ref(null);
 
 function inputFileContent(newFileContent) {
     emit("input", props.index, {
@@ -76,18 +77,16 @@ function inputFileContent(newFileContent) {
     });
 }
 
-function inputDialog() {
-    openBrowserDialog((files) => {
-        if (props.status !== "running" && files && files.length > 0) {
-            emit("input", props.index, {
-                fileData: files[0],
-                fileMode: "local",
-                fileName: files[0].name,
-                filePath: null,
-                fileSize: files[0].size,
-            });
-        }
-    });
+function inputDialog(files) {
+    if (files && files.length > 0) {
+        emit("input", props.index, {
+            fileData: files[0],
+            fileMode: "local",
+            fileName: files[0].name,
+            filePath: null,
+            fileSize: files[0].size,
+        });
+    }
 }
 
 function inputPaste() {
@@ -153,7 +152,7 @@ function onDrop(evt) {
                     :disabled="isDisabled"
                     text="Select"
                     :variant="fileSize > 0 ? 'secondary' : 'primary'">
-                    <BDropdownItem @click="inputDialog">
+                    <BDropdownItem @click="uploadFile.click()">
                         <FontAwesomeIcon icon="fa-laptop" />
                         <span v-localize>Choose local file</span>
                     </BDropdownItem>
@@ -209,5 +208,6 @@ function onDrop(evt) {
                 :disabled="isDisabled"
                 @input="inputFileContent" />
         </div>
+        <input ref="uploadFile" type="file" @change="inputDialog($event.target.files)" />
     </div>
 </template>

@@ -10,7 +10,7 @@ import { UploadQueue } from "@/utils/upload-queue.js";
 
 import { collectionBuilder } from "./builders.js";
 import { defaultModel } from "./model.js";
-import { COLLECTION_TYPES, DEFAULT_FILE_NAME, hasBrowserSupport, openBrowserDialog } from "./utils";
+import { COLLECTION_TYPES, DEFAULT_FILE_NAME, hasBrowserSupport } from "./utils";
 
 import DefaultRow from "./DefaultRow.vue";
 import UploadBox from "./UploadBox.vue";
@@ -81,6 +81,7 @@ const extension = ref(props.defaultExtension);
 const dbKey = ref(props.defaultDbKey);
 const queueStopping = ref(false);
 const uploadCompleted = ref(0);
+const uploadFile = ref(null);
 const uploadItems = ref({});
 const uploadSize = ref(0);
 
@@ -315,11 +316,6 @@ function uploadPercentage(percentage, size) {
     return (uploadCompleted.value + percentage * size) / uploadSize.value;
 }
 
-/** Open file dialog */
-function uploadSelect() {
-    openBrowserDialog(addFiles, true);
-}
-
 defineExpose({
     addFiles,
     counterAnnounce,
@@ -379,6 +375,7 @@ defineExpose({
                     Only showing first {{ lazyLoad }} of {{ uploadValues.length }} entries.
                 </div>
             </div>
+            <input ref="uploadFile" type="file" :multiple="multiple" @change="addFiles($event.target.files)" />
         </UploadBox>
         <div class="upload-footer text-center">
             <span v-if="isCollection" class="upload-footer-title">Collection:</span>
@@ -406,9 +403,9 @@ defineExpose({
                 @input="updateDbKey" />
         </div>
         <div class="upload-buttons d-flex justify-content-end">
-            <BButton id="btn-local" title="Choose local files" :disabled="!enableSources" @click="uploadSelect">
+            <BButton id="btn-local" :disabled="!enableSources" @click="uploadFile.click()">
                 <FontAwesomeIcon icon="fa-laptop" />
-                <span v-localize>Choose local files</span>
+                <span v-localize>Choose local file</span>
             </BButton>
             <BButton v-if="hasRemoteFiles" id="btn-remote-files" :disabled="!enableSources" @click="eventRemoteFiles">
                 <FontAwesomeIcon icon="fa-folder-open" />

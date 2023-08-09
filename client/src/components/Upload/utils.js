@@ -129,16 +129,6 @@ export async function getRemoteEntriesAt(target) {
 export function hasBrowserSupport() {
     return window.File && window.FormData && window.XMLHttpRequest && window.FileList;
 }
-export function openBrowserDialog(callback, multiple = false) {
-    const fileInput = document.createElement("input");
-    fileInput.setAttribute("type", "file");
-    fileInput.setAttribute("multiple", multiple);
-    fileInput.addEventListener("change", function handler(evt) {
-        callback(evt.target.files);
-        fileInput.removeEventListener("change", handler);
-    });
-    fileInput.click();
-}
 
 export default {
     AUTO_EXTENSION,
