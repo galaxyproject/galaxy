@@ -1,4 +1,3 @@
-import json
 from datetime import (
     datetime,
     timedelta,
@@ -109,7 +108,7 @@ class NotificationManagerBaseTestCase(NotificationsBaseTestCase):
             assert actual_notification.expiration_time is not None
 
         assert actual_notification.content
-        user_notification_content = json.loads(actual_notification.content)
+        user_notification_content = actual_notification.content
         assert user_notification_content["category"] == expected_notification["content"]["category"]
         assert user_notification_content["subject"] == expected_notification["content"]["subject"]
         assert user_notification_content["message"] == expected_notification["content"]["message"]
@@ -122,7 +121,7 @@ class TestBroadcastNotifications(NotificationManagerBaseTestCase):
 
         assert actual_notification.id
         assert actual_notification.category == "broadcast"
-        notification_content = json.loads(actual_notification.content)
+        notification_content = actual_notification.content
         assert notification_content["category"] == "broadcast"
         assert notification_content["subject"] == "Testing Broadcast Subject"
         assert notification_content["message"] == "Testing Broadcast Message"
@@ -161,16 +160,16 @@ class TestBroadcastNotifications(NotificationManagerBaseTestCase):
 
         notifications = self.notification_manager.get_all_broadcasted_notifications()
         assert len(notifications) == 1
-        assert json.loads(notifications[0].content)["subject"] == "Recent Notification"
+        assert notifications[0].content["subject"] == "Recent Notification"
 
         notifications = self.notification_manager.get_all_broadcasted_notifications(since=next_week, active_only=False)
         assert len(notifications) == 2
-        assert json.loads(notifications[0].content)["subject"] == "Scheduled Next Week Notification"
-        assert json.loads(notifications[1].content)["subject"] == "Scheduled Next Month Notification"
+        assert notifications[0].content["subject"] == "Scheduled Next Week Notification"
+        assert notifications[1].content["subject"] == "Scheduled Next Month Notification"
 
         notifications = self.notification_manager.get_all_broadcasted_notifications(since=next_month, active_only=False)
         assert len(notifications) == 1
-        assert json.loads(notifications[0].content)["subject"] == "Scheduled Next Month Notification"
+        assert notifications[0].content["subject"] == "Scheduled Next Month Notification"
 
     def test_update_broadcasted_notification(self):
         next_month = datetime.utcnow() + timedelta(days=30)
@@ -195,7 +194,7 @@ class TestBroadcastNotifications(NotificationManagerBaseTestCase):
         assert updated_notification.source == update_request.source
         assert updated_notification.variant == update_request.variant
         assert updated_notification.publication_time == update_request.publication_time
-        content = json.loads(updated_notification.content)
+        content = updated_notification.content
         assert content["subject"] == expected_content.subject
         assert content["message"] == expected_content.message
 
