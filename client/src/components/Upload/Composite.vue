@@ -155,6 +155,12 @@ function restoreStatus() {
         model.status = "init";
     });
 }
+
+defineExpose({
+    listExtensions,
+    readyStart,
+    showHelper,
+});
 </script>
 
 <template>

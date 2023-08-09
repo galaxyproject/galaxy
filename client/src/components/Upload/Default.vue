@@ -321,6 +321,9 @@ function uploadSelect() {
 
 defineExpose({
     addFiles,
+    counterAnnounce,
+    listExtensions,
+    showHelper,
 });
 </script>
 
@@ -367,7 +370,11 @@ defineExpose({
                     :to-posix-lines="uploadItem.toPosixLines"
                     @remove="eventRemove"
                     @input="eventInput" />
-                <div v-if="uploadValues.length > lazyLoad" v-localize class="upload-text-message">
+                <div
+                    v-if="uploadValues.length > lazyLoad"
+                    v-localize
+                    class="upload-text-message"
+                    data-description="lazyload message">
                     Only showing first {{ lazyLoad }} of {{ uploadValues.length }} entries.
                 </div>
             </div>

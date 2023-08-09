@@ -1,16 +1,26 @@
-import { mountWithDetails } from "./testHelpers";
+import { mount } from "@vue/test-utils";
+import { getLocalVue } from "tests/jest/helpers";
 
-import RulesInput from "./RulesInput.vue";
+import mountTarget from "./RulesInput.vue";
 
-describe("RulesInput.vue", () => {
-    it("loads with correct initial state", async () => {
-        const { wrapper } = mountWithDetails(RulesInput);
-        expect(wrapper.find("#btn-reset").classes()).toEqual(expect.arrayContaining(["disabled"]));
+const localVue = getLocalVue();
+
+function getWrapper() {
+    return mount(mountTarget, {
+        propsData: {
+            fileSourcesConfigured: true,
+            ftpUploadSite: null,
+            historyId: "historyId",
+        },
+        localVue,
     });
+}
 
-    it("enables reset when sourceContent is populated", async () => {
-        const { wrapper } = mountWithDetails(RulesInput);
-        const textInput = wrapper.find(".upload-rule-source-content");
+describe("RulesInput", () => {
+    it("rendering and reset", async () => {
+        const wrapper = getWrapper();
+        expect(wrapper.find("#btn-reset").classes()).toEqual(expect.arrayContaining(["disabled"]));
+        const textInput = wrapper.find(".upload-text-area");
         expect(textInput.element.value).toBe("");
         await textInput.setValue("a b c d");
         expect(textInput.element.value).toBe("a b c d");

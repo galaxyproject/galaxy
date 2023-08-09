@@ -150,6 +150,8 @@ onMounted(() => {
 
 defineExpose({
     immediateUpload,
+    listDbKeys,
+    listExtensions,
     toData,
 });
 </script>

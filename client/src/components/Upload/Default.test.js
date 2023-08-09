@@ -1,44 +1,44 @@
-import Backbone from "backbone";
-import UploadRow from "mvc/upload/default/default-row";
+import { mount } from "@vue/test-utils";
+import { getLocalVue } from "tests/jest/helpers";
 
-import { mountWithDetails } from "./testHelpers";
+import mountTarget from "./Default.vue";
 
-import Default from "./Default.vue";
+const localVue = getLocalVue();
 
-jest.mock("app");
+function getWrapper() {
+    return mount(mountTarget, {
+        propsData: {
+            chunkUploadSize: 100,
+            defaultDbKey: "?",
+            defaultExtension: "auto",
+            effectiveExtensions: [{ id: "ab1" }],
+            fileSourcesConfigured: true,
+            ftpUploadSite: null,
+            historyId: "historyId",
+            lazyLoad: 3,
+            listDbKeys: [],
+        },
+        localVue,
+        stubs: {
+            FontAwesomeIcon: true,
+        },
+    });
+}
 
-jest.mock("mvc/upload/default/default-row");
-UploadRow.mockImplementation(Backbone.View);
-
-describe("Default.vue", () => {
-    it("loads with correct initial state", async () => {
-        const { wrapper } = mountWithDetails(Default);
+describe("Default", () => {
+    it("rendering", async () => {
+        const wrapper = getWrapper();
         expect(wrapper.vm.counterAnnounce).toBe(0);
         expect(wrapper.vm.showHelper).toBe(true);
-        expect(wrapper.vm.extensions[0].id).toBe("ab1");
+        expect(wrapper.vm.listExtensions[0].id).toBe("ab1");
         expect(wrapper.find("#btn-reset").classes()).toEqual(expect.arrayContaining(["disabled"]));
         expect(wrapper.find("#btn-start").classes()).toEqual(expect.arrayContaining(["disabled"]));
         expect(wrapper.find("#btn-stop").classes()).toEqual(expect.arrayContaining(["disabled"]));
     });
 
-    it("does render FTP is site set", async () => {
-        const { wrapper } = mountWithDetails(Default);
-        expect(wrapper.find("#btn-ftp").element).toBeVisible();
-        await wrapper.find("#btn-ftp").trigger("click");
-        // TODO: test popover appears... not sure best way to do this...
-    });
-
-    it("doesn't render FTP is no site set", async () => {
-        const { wrapper } = mountWithDetails(Default, {
-            currentFtp: null,
-        });
-        expect(wrapper.findAll("#btn-ftp").length).toBe(0);
-    });
-
     it("resets properly", async () => {
-        const { wrapper, localVue } = mountWithDetails(Default);
+        const wrapper = getWrapper();
         expect(wrapper.vm.showHelper).toBe(true);
-        await localVue.nextTick();
         await wrapper.find("#btn-new").trigger("click");
         expect(wrapper.vm.showHelper).toBe(false);
         expect(wrapper.vm.counterAnnounce).toBe(1);
@@ -46,10 +46,20 @@ describe("Default.vue", () => {
         expect(wrapper.vm.showHelper).toBe(true);
     });
 
-    it("renders a limitloader element if lazyLoadMax set", async () => {
-        const { wrapper } = mountWithDetails(Default, {}, { lazyLoadMax: 2 });
-        expect(wrapper.findAll(".ui-limitloader").length).toBe(1);
-        // hard to actually test the functionality like in Collection.test.js
-        // because we're stubbing out all of UploadRow.
+    it("does render remote files button", async () => {
+        const wrapper = getWrapper();
+        expect(wrapper.find("#btn-remote-files").exists()).toBeTruthy();
+        await wrapper.setProps({ fileSourcesConfigured: false });
+        expect(wrapper.find("#btn-remote-files").exists()).toBeFalsy();
+    });
+
+    it("renders a limited set", async () => {
+        const wrapper = getWrapper();
+        for (let i = 0; i < 5; i++) {
+            await wrapper.find("#btn-new").trigger("click");
+        }
+        expect(wrapper.findAll(".upload-row").length).toBe(3);
+        const textMessage = wrapper.find("[data-description='lazyload message']");
+        expect(textMessage.text()).toBe("Only showing first 3 of 5 entries.");
     });
 });

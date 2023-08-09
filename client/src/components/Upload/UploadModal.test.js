@@ -6,9 +6,10 @@ import { useHistoryStore } from "stores/historyStore";
 import { useUserStore } from "stores/userStore";
 import { getLocalVue } from "tests/jest/helpers";
 
-import { getDatatypes, getGenomes } from "./services";
-import UploadModal from "./UploadModal";
+import { getDatatypes, getDbKeys } from "./services";
 import UploadModalContent from "./UploadModalContent";
+
+import UploadModal from "./UploadModal.vue";
 
 jest.mock("app");
 jest.mock("./services");
@@ -36,11 +37,10 @@ const genomesResponse = [
 ];
 
 getDatatypes.mockReturnValue({ data: [fastaResponse] });
-getGenomes.mockReturnValue({ data: genomesResponse });
+getDbKeys.mockReturnValue({ data: genomesResponse });
 
 const propsData = {
     chunkUploadSize: 1024,
-    uploadPath: "/api/tools",
     fileSourcesConfigured: true,
 };
 
@@ -92,7 +92,6 @@ describe("UploadModal.vue", () => {
     });
 
     it("should fetch datatypes and parse them", async () => {
-        // lists are one layer deeper now, it won't matter after refactoring
         const contentWrapper = wrapper.findComponent(UploadModalContent);
         expect(contentWrapper.exists()).toBe(true);
         expect(contentWrapper.vm.listExtensions.length).toBe(2);
@@ -101,8 +100,7 @@ describe("UploadModal.vue", () => {
     });
 
     it("should fetch genomes and parse them", async () => {
-        // lists are one yaer deeper now, it won't matter after refactoring
         const contentWrapper = wrapper.findComponent(UploadModalContent);
-        expect(contentWrapper.vm.listGenomes.length).toBe(3);
+        expect(contentWrapper.vm.listDbKeys.length).toBe(3);
     });
 });
