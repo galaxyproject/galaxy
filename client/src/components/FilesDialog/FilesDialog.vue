@@ -34,9 +34,7 @@ const props = withDefaults(defineProps<FilesDialogProps>(), {
     callback: () => {},
 });
 
-// TODO: this is not working currently because this component
-// has it's own Vue instance and therefore doesn't inject the store.
-const { config, isLoaded: configIsLoaded } = useConfig();
+const { config, isConfigLoaded } = useConfig();
 
 const model = ref<Model>(new Model({ multiple: props.multiple }));
 
@@ -329,7 +327,7 @@ onMounted(() => {
             <DataDialogSearch v-model="filter" />
         </template>
         <template v-slot:helper>
-            <BAlert v-if="showFTPHelper && configIsLoaded" id="helper" variant="info" show>
+            <BAlert v-if="showFTPHelper && isConfigLoaded" id="helper" variant="info" show>
                 This Galaxy server allows you to upload files via FTP. To upload some files, log in to the FTP server at
                 <strong>{{ config.ftp_upload_site }}</strong> using your Galaxy credentials. For help visit the
                 <a href="https://galaxyproject.org/ftp-upload/" target="_blank">tutorial</a>.

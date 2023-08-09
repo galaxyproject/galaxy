@@ -32,7 +32,7 @@ jest.mock("@/schema");
 jest.mock("@/composables/config", () => ({
     useConfig: jest.fn(() => ({
         config: { ftp_upload_site: "Test ftp upload site" },
-        isLoaded: true,
+        isConfigLoaded: true,
     })),
 }));
 
@@ -332,7 +332,7 @@ class Utils {
     }
 
     findFirstFile(): RowElement {
-        const file = this.getRenderedFiles().at(0);
+        const file = this.getRenderedFiles()[0];
         if (!file) {
             throw new Error("File not found");
         }
