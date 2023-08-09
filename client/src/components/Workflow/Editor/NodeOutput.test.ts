@@ -98,12 +98,12 @@ describe("NodeOutput", () => {
             pinia,
             provide: { transform, workflowId: "mock-workflow" },
         });
-        expect(wrapper.find(".multiple").exists()).toBe(false);
+        expect(wrapper.find(".mapped-over").exists()).toBe(false);
         inputTerminal.connect(outputTerminal);
         await nextTick();
-        expect(wrapper.find(".multiple").exists()).toBe(true);
+        expect(wrapper.find(".mapped-over").exists()).toBe(true);
         inputTerminal.disconnect(outputTerminal);
         await nextTick();
-        expect(wrapper.find(".multiple").exists()).toBe(false);
+        expect(wrapper.find(".mapped-over").exists()).toBe(false);
     });
 });
