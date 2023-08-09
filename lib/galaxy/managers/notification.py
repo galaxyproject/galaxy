@@ -323,7 +323,7 @@ class NotificationManager:
             payload.source,
             payload.category,
             payload.variant,
-            payload.content.json(),
+            payload.content.dict(),
         )
         notification.publication_time = payload.publication_time
         notification.expiration_time = payload.expiration_time

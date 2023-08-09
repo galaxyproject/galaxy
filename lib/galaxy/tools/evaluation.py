@@ -268,7 +268,9 @@ class ToolEvaluator:
         visit_input_values(self.tool.inputs, incoming, replace_deferred)
 
     def _validate_incoming(self, incoming: dict):
-        request_context = WorkRequestContext(app=self.app, user=self._user, history=self._history)
+        request_context = WorkRequestContext(
+            app=self.app, user=self._user, history=self._history, galaxy_session=self.job.galaxy_session
+        )
 
         def validate_inputs(input, value, context, **kwargs):
             value = input.from_json(value, request_context, context)

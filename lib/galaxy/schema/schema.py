@@ -3050,7 +3050,7 @@ class FileLibraryFolderItem(LibraryFolderItemBase):
     file_size: str
     raw_size: int
     ldda_id: EncodedDatabaseIdField
-    tags: str
+    tags: TagCollection
     message: Optional[str]
 
 

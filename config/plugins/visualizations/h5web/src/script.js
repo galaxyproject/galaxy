@@ -8,46 +8,51 @@
  * point.
  */
 
-import './styles.css';
-import React, { StrictMode } from 'react'
-import {render as reactRender} from 'react-dom'
-import {App, H5GroveProvider} from '@h5web/app'
+import "./styles.css";
+import React from "react";
+import { createRoot } from "react-dom/client";
+import { App, H5GroveProvider } from "@h5web/app";
 
 /* This will be part of the charts/viz standard lib in 23.1 */
 const slashCleanup = /(\/)+/g;
 function prefixedDownloadUrl(root, path) {
-    return `${root}/${path}`.replace(slashCleanup, "/");
+  return `${root}/${path}`.replace(slashCleanup, "/");
 }
 
 function MyApp(props) {
-    return (
-          <H5GroveProvider
-            url={props.url}
-            filepath={props.name}
-            axiosConfig={{ params: { file: props.name } }}
-          >
-            <App explorerOpen={props.explorer} />
-          </H5GroveProvider>
-      );
+  return (
+    <H5GroveProvider
+      url={props.url}
+      filepath={props.name}
+      axiosConfig={{ params: { file: props.name } }}
+    >
+      <App explorerOpen={props.explorer} />
+    </H5GroveProvider>
+  );
 }
 
 window.bundleEntries = window.bundleEntries || {};
 window.bundleEntries.load = function (options) {
-    var dataset = options.dataset;
-    var settings = options.chart.settings;
-    var explorer = settings.get('explorer');
-    var url = window.location.origin + prefixedDownloadUrl(options.root, "/api/datasets/" + dataset.id + "/content");
-    reactRender(
-      <MyApp
-        url={url}
-        name={dataset.name}
-        filepath={dataset.file_name}
-        explorer={explorer}
-      />,
-      document.getElementById(options.target)
-    )
-    options.chart.state('ok', 'Chart drawn.');
-    options.process.resolve();
+  const dataset = options.dataset;
+  const settings = options.chart.settings;
+  const explorer = settings.get("explorer");
+  const url =
+    window.location.origin +
+    prefixedDownloadUrl(
+      options.root,
+      "/api/datasets/" + dataset.id + "/content"
+    );
+  const root = createRoot(document.getElementById(options.target));
+  root.render(
+    <MyApp
+      url={url}
+      name={dataset.name}
+      filepath={dataset.file_name}
+      explorer={explorer}
+    />
+  );
+  options.chart.state("ok", "Chart drawn.");
+  options.process.resolve();
 };
 
 export default MyApp;

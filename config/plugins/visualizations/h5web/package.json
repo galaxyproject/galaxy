@@ -1,27 +1,23 @@
 {
     "name": "visualization",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "keywords": [
         "galaxy",
-        "visualization"
+        "visualization",
+        "h5web"
     ],
     "license": "AFL-3.0",
     "dependencies": {
-        "@galaxyproject/charts": "^0.0.6",
-        "@h5web/app": "^7.1.0",
-        "backbone": "^1.3.3",
+        "@h5web/app": "^8.0.0",
+        "buffer": "^6.0.3",
         "normalize.css": "^8.0.1",
-        "react": "17.0.2",
-        "react-dom": "17.0.2"
+        "react": "18.2.0",
+        "react-dom": "18.2.0"
     },
     "scripts": {
         "build": "parcel build src/script.js --dist-dir static"
     },
     "devDependencies": {
-        "@types/react": "^17.0.52",
-        "@types/react-dom": "^17.0.18",
-        "buffer": "^5.7.1",
-        "parcel": "^2.0.0",
-        "typescript": "4.9.3"
+        "parcel": "^2.9.3"
     }
 }
