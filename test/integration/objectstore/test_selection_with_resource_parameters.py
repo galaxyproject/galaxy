@@ -68,7 +68,7 @@ class TestObjectStoreSelectionWithResourceParameterIntegration(BaseObjectStoreIn
         config["job_resource_params_file"] = JOB_RESOURCE_PARAMETERS_CONFIG_FILE
         config["object_store_store_by"] = "uuid"
         # Broken in dev https://github.com/galaxyproject/galaxy/pull/14055
-        # config["metadata_strategy"] = "celery_extended"
+        # config["metadata_strategy"] = "extended_celery"
         config["outputs_to_working_directory"] = True
 
     def _object_store_counts(self):
