@@ -1,8 +1,6 @@
-import json
 from datetime import datetime
 from enum import Enum
 from typing import (
-    Any,
     Dict,
     List,
     Optional,
@@ -14,7 +12,6 @@ from pydantic import (
     Field,
     Required,
 )
-from pydantic.utils import GetterDict
 from typing_extensions import (
     Annotated,
     Literal,
@@ -125,21 +122,6 @@ AnyNotificationContent = Annotated[
     ),
 ]
 
-
-class NotificationGetter(GetterDict):
-    """Helper to convert a Notification ORM model into a NotificationResponse.
-    For more information: https://docs.pydantic.dev/usage/models/#data-binding
-    """
-
-    def get(self, key: Any, default: Any = None) -> Any:
-        # The `content` column of the ORM model is a JSON string that needs to be passed
-        # as a dictionary to the `from_orm` constructor to build the correct `AnyNotificationContent`.
-        if key in {"content"} and isinstance(self._obj.content, str):
-            return json.loads(self._obj.content)
-
-        return super().get(key, default)
-
-
 NotificationIdField = Field(
     Required,
     title="ID",
@@ -204,7 +186,6 @@ class NotificationResponse(Model):
 
     class Config:
         orm_mode = True
-        getter_dict = NotificationGetter
 
 
 class UserNotificationResponse(NotificationResponse):
