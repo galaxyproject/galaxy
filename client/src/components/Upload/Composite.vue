@@ -1,9 +1,9 @@
 <script setup>
 import { BButton } from "bootstrap-vue";
-import { submitUpload } from "utils/uploadbox";
 import Vue, { computed, ref } from "vue";
 
-import { uploadPayload } from "@/utils/uploadpayload.js";
+import { uploadPayload } from "@/utils/upload-payload.js";
+import { uploadSubmit } from "@/utils/upload-submit.js";
 
 import { defaultModel } from "./model.js";
 
@@ -107,7 +107,7 @@ function eventStart() {
         model.dbKey = dbKey.value;
         model.extension = extension.value;
     });
-    submitUpload({
+    uploadSubmit({
         data: uploadPayload(uploadValues.value, props.historyId, true),
         error: eventError,
         progress: eventProgress,

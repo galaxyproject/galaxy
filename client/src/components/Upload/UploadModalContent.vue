@@ -12,7 +12,7 @@ import {
 import { computed, onMounted, ref } from "vue";
 
 import { eventHub } from "@/components/plugins/eventHub.js";
-import { uploadPayload } from "@/utils/uploadpayload.js";
+import { uploadPayload } from "@/utils/upload-payload.js";
 
 import Composite from "./Composite";
 import Default from "./Default";

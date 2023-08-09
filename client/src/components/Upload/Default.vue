@@ -4,8 +4,9 @@ import { faCopy, faEdit, faFolderOpen, faLaptop } from "@fortawesome/free-solid-
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
 import { filesDialog } from "utils/data";
-import { UploadQueue } from "utils/uploadbox";
 import Vue, { computed, ref } from "vue";
+
+import { UploadQueue } from "@/utils/upload-queue.js";
 
 import { collectionBuilder } from "./builders.js";
 import { defaultModel } from "./model.js";
@@ -124,7 +125,7 @@ function addFiles(files) {
     }
 }
 
-/** A new file has been dropped/selected through the uploadbox plugin */
+/** A new file has been announced to the upload queue */
 function eventAnnounce(index, file) {
     counterAnnounce.value++;
     const uploadModel = {
