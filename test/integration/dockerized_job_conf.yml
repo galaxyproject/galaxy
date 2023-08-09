@@ -11,6 +11,7 @@ execution:
       runner: local
       docker_enabled: true
       require_container: true
+      tmp_dir: '$(mktemp -d)'
     local_docker_inline_container_resolvers:
       runner: local
       docker_enabled: true
