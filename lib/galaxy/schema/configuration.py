@@ -4240,7 +4240,7 @@ usage of handler processes. Float values are allowed.
     ] = 1.0
 
     metadata_strategy: Annotated[
-        str,
+        Literal["directory", "extended", "directory_celery", "extended_celery", "legacy"],
         Field(
             title="Metadata Strategy",
             description="""Determines how metadata will be set. Valid values are `directory`, `extended`,
