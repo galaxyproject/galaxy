@@ -440,3 +440,18 @@ $ui-margin-horizontal-large: $margin-v * 2;
 .overflow-x-hidden {
     overflow-x: hidden !important;
 }
+
+// TODO: move this to component library, once that exists
+.inline-icon-button {
+    border: none;
+    background-color: transparent;
+    color: $brand-primary;
+    display: inline;
+
+    padding: 0 0.1rem;
+
+    &:hover {
+        background-color: $brand-primary;
+        color: $brand-light;
+    }
+}

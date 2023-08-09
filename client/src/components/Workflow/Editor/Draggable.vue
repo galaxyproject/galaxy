@@ -34,7 +34,7 @@ const props = defineProps({
 
 const emit = defineEmits(["mousedown", "mouseup", "move", "dragstart", "start", "stop"]);
 
-let dragImg: HTMLImageElement | undefined;
+let dragImg: HTMLImageElement | null = null;
 const draggable = ref();
 const size = reactive(useAnimationFrameSize(draggable));
 const transform: Ref<ZoomTransform> | undefined = inject("transform");
@@ -90,6 +90,7 @@ const onMove = (position: Position, event: DragEvent) => {
 const onEnd = (position: Position, event: DragEvent) => {
     if (dragImg) {
         document.body.removeChild(dragImg);
+        dragImg = null;
     }
 
     dragging = false;
