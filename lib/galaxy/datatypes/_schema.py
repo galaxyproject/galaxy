@@ -32,13 +32,13 @@ class DatatypeDetails(BaseModel):
         ...,  # Mark this field as required
         title="Extension",
         description="The data type’s Dataset file extension",
-        example="bed",
+        examples=["bed"],
     )
     description: Optional[str] = Field(title="Description", description="A summary description for this data type")
     description_url: Optional[HttpUrl] = Field(
         title="Description URL",
         description="The URL to a detailed description for this datatype",
-        example="https://wiki.galaxyproject.org/Learn/Datatypes#Bed",
+        examples=["https://wiki.galaxyproject.org/Learn/Datatypes#Bed"],
     )
     display_in_upload: bool = Field(
         default=False,
@@ -81,13 +81,13 @@ class DatatypeConverter(BaseModel):
         ...,  # Mark this field as required
         title="Source",
         description="Source type for conversion",
-        example="bam",
+        examples=["bam"],
     )
     target: str = Field(
         ...,  # Mark this field as required
         title="Target",
         description="Target type for conversion",
-        example="bai",
+        examples=["bai"],
     )
     tool_id: str = Field(
         ...,  # Mark this field as required
