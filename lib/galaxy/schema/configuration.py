@@ -405,7 +405,7 @@ https://docs.galaxyproject.org/en/master/admin/special_topics/apache.html""",
 
     single_user: Annotated[
         # Warning: This property behaves as a str in the YAML config file but as a bool in the API response
-        Union[bool, str],
+        Optional[Union[bool, str]],
         Field(
             title="Single User",
             description="""If an e-mail address is specified here, it will hijack remote user mechanics
@@ -414,7 +414,7 @@ has the effect of turning Galaxy into a single user application with no
 login or external proxy required. Such applications should not be exposed to
 the world.""",
         ),
-    ]
+    ] = None
 
     enable_oidc: Annotated[
         bool,
@@ -790,13 +790,13 @@ preserved as they are loaded from the tool config files.""",
     ] = True
 
     panel_views: Annotated[
-        Dict[str, Dict],
+        Optional[Dict[str, Dict]],
         Field(
             title="Panel Views",
             description="""Definitions of static toolbox panel views embedded directly in the config instead of reading
 YAML from directory with panel_views_dir.""",
         ),
-    ]
+    ] = None
 
     default_panel_view: Annotated[
         str,
@@ -980,7 +980,7 @@ class FullGalaxyConfig(AdminExposableGalaxyConfig):
     """
 
     config_dir: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Config Dir",
             description="""The directory that will be prepended to relative paths in options specifying
@@ -988,10 +988,10 @@ other Galaxy config files (e.g. datatypes_config_file). Defaults to the
 directory in which galaxy.yml is located.
 """,
         ),
-    ]
+    ] = None
 
     managed_config_dir: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Managed Config Dir",
             description="""The directory that will be prepended to relative paths in options specifying
@@ -1000,10 +1000,10 @@ writable by the user running Galaxy. Defaults to `<config_dir>/` if running
 Galaxy from source or `<data_dir>/config` otherwise.
 """,
         ),
-    ]
+    ] = None
 
     data_dir: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Data Dir",
             description="""The directory that will be prepended to relative paths in options specifying
@@ -1012,7 +1012,7 @@ file_path, etc.). Defaults to `database/` if running Galaxy from source or
 `<config_dir>/data` otherwise.
 """,
         ),
-    ]
+    ] = None
 
     templates_dir: Annotated[
         str,
@@ -1032,7 +1032,7 @@ template_cache_path, etc.) should be subdirectories.""",
     ] = "cache"
 
     database_connection: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Database Connection",
             description="""By default, Galaxy uses a SQLite database at '<data_dir>/universe.sqlite'. You
@@ -1052,7 +1052,7 @@ For more options, please check SQLAlchemy's documentation at
 https://docs.sqlalchemy.org/en/14/core/engines.html?highlight=create_engine#sqlalchemy.create_engine
 """,
         ),
-    ]
+    ] = None
 
     database_engine_option_pool_size: Annotated[
         int,
@@ -1104,7 +1104,7 @@ profiling. Logging is done via Python's 'logging' module under the qualname
     ] = False
 
     database_template: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Database Template",
             description="""If auto-creating a postgres database on startup - it can be based on an existing
@@ -1112,7 +1112,7 @@ template database. This will set that. This is probably only useful for testing 
 documentation is included here for completeness.
 """,
         ),
-    ]
+    ] = None
 
     database_log_query_counts: Annotated[
         bool,
@@ -1152,7 +1152,7 @@ useful for debugging slow endpoints during development.
     ] = False
 
     install_database_connection: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Install Database Connection",
             description="""By default, Galaxy will use the same database to track user data and
@@ -1165,7 +1165,7 @@ but prefixed with ``install_`` are also available).
 Defaults to the value of the 'database_connection' option.
 """,
         ),
-    ]
+    ] = None
 
     database_auto_migrate: Annotated[
         bool,
@@ -1337,7 +1337,7 @@ description of the 'dependency_resolvers' option for details.
     ] = "dependency_resolvers_conf.xml"
 
     conda_prefix: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Conda Prefix",
             description="""conda_prefix is the location on the filesystem where Conda packages and environments are
@@ -1346,17 +1346,17 @@ installed.
 Sample default '<tool_dependency_dir>/_conda'
 """,
         ),
-    ]
+    ] = None
 
     conda_exec: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Conda Exec",
             description="""Override the Conda executable to use, it will default to the one on the
 PATH (if available) and then to <conda_prefix>/bin/conda
 """,
         ),
-    ]
+    ] = None
 
     conda_debug: Annotated[
         bool,
@@ -1456,7 +1456,7 @@ directory.
     ] = False
 
     tool_dependency_cache_dir: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Tool Dependency Cache Dir",
             description="""By default the tool_dependency_cache_dir is the _cache directory
@@ -1465,7 +1465,7 @@ of the tool dependency directory.
 Sample default '<tool_dependency_dir>/_cache'
 """,
         ),
-    ]
+    ] = None
 
     precache_dependencies: Annotated[
         bool,
@@ -1588,12 +1588,12 @@ Celery task configuration.
     ] = "file_sources_conf.yml"
 
     file_sources: Annotated[
-        List[Any],
+        Optional[List[Any]],
         Field(
             title="File Sources",
             description="""FileSource plugins described embedded into Galaxy's config.""",
         ),
-    ]
+    ] = None
 
     enable_mulled_containers: Annotated[
         bool,
@@ -1609,7 +1609,7 @@ for job destinations with Docker or Singularity enabled.
     ] = True
 
     container_resolvers_config_file: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Container Resolvers Config File",
             description="""Container resolvers configuration. Set up a file describing
@@ -1619,10 +1619,10 @@ determined by enable_mulled_containers.
 For available options see https://docs.galaxyproject.org/en/master/admin/container_resolvers.html
 """,
         ),
-    ]
+    ] = None
 
     container_resolvers: Annotated[
-        List[Any],
+        Optional[List[Any]],
         Field(
             title="Container Resolvers",
             description="""Rather than specifying a container_resolvers_config_file, the definition of the
@@ -1631,7 +1631,7 @@ This has no effect if a container_resolvers_config_file is used.
 Takes the same options that can be set in container_resolvers_config_file.
 """,
         ),
-    ]
+    ] = None
 
     involucro_path: Annotated[
         str,
@@ -1725,14 +1725,14 @@ https://galaxyproject.org/admin/data-integration
     ] = "tool-data"
 
     shed_tool_data_path: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Shed Tool Data Path",
             description="""Directory where Tool Data Table related files will be placed when installed from a
 ToolShed. Defaults to the value of the 'tool_data_path' option.
 """,
         ),
-    ]
+    ] = None
 
     watch_tool_data_dir: Annotated[
         WatchToolOptions,
@@ -1750,13 +1750,12 @@ the watchdog default.
     ] = "false"
 
     refgenie_config_file: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Refgenie Config File",
-            description="""File containing refgenie configuration, e.g. /path/to/genome_config.yaml. Can be used by refgenie backed tool data tables.
-""",
+            description="""File containing refgenie configuration, e.g. /path/to/genome_config.yaml. Can be used by refgenie backed tool data tables.""",
         ),
-    ]
+    ] = None
 
     build_sites_config_file: Annotated[
         str,
@@ -1957,14 +1956,14 @@ This results in faster startup times but uses more memory when using forked Gala
     ] = False
 
     biotools_content_directory: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Biotools Content Directory",
             description="""Point Galaxy at a repository consisting of a copy of the bio.tools database (e.g.
 https://github.com/bio-tools/content/) to resolve bio.tools data for tool metadata.
 """,
         ),
-    ]
+    ] = None
 
     biotools_use_api: Annotated[
         bool,
@@ -2001,7 +2000,7 @@ resovled via biotools_content_directory.
     ] = "biotools/locks"
 
     biotools_service_cache_url: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Biotools Service Cache Url",
             description="""When biotools_service_cache_type = ext:database, this is
@@ -2011,7 +2010,7 @@ The application config code will set it to the
 value of database_connection if this is not set.
 """,
         ),
-    ]
+    ] = None
 
     biotools_service_cache_table_name: Annotated[
         str,
@@ -2025,7 +2024,7 @@ bio.tools web service request related caching.
     ] = "beaker_cache"
 
     biotools_service_cache_schema_name: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Biotools Service Cache Schema Name",
             description="""When biotools_service_cache_type = ext:database, this is
@@ -2033,7 +2032,7 @@ the database table name used by beaker for
 bio.tools web service request related caching.
 """,
         ),
-    ]
+    ] = None
 
     citation_cache_type: Annotated[
         str,
@@ -2069,7 +2068,7 @@ parameters can be used to control the caching used to store this information.
     ] = "citations/locks"
 
     citation_cache_url: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Citation Cache Url",
             description="""When citation_cache_type = ext:database, this is
@@ -2078,7 +2077,7 @@ caching. The application config code will set it to the
 value of database_connection if this is not set.
 """,
         ),
-    ]
+    ] = None
 
     citation_cache_table_name: Annotated[
         str,
@@ -2092,7 +2091,7 @@ citation related caching.
     ] = "beaker_cache"
 
     citation_cache_schema_name: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Citation Cache Schema Name",
             description="""When citation_cache_type = ext:database, this is
@@ -2100,7 +2099,7 @@ the database schema name of the table used by beaker for
 citation related caching.
 """,
         ),
-    ]
+    ] = None
 
     mulled_resolution_cache_type: Annotated[
         str,
@@ -2138,7 +2137,7 @@ requests are caching using this and the following parameters
     ] = 3600
 
     mulled_resolution_cache_url: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Mulled Resolution Cache Url",
             description="""When mulled_resolution_cache_type = ext:database, this is
@@ -2147,7 +2146,7 @@ requests. The application config code will set it to the
 value of database_connection if this is not set.
 """,
         ),
-    ]
+    ] = None
 
     mulled_resolution_cache_table_name: Annotated[
         str,
@@ -2161,7 +2160,7 @@ caching mulled resolution requests.
     ] = "beaker_cache"
 
     mulled_resolution_cache_schema_name: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Mulled Resolution Cache Schema Name",
             description="""When mulled_resolution_cache_type = ext:database, this is
@@ -2169,7 +2168,7 @@ the database schema name of the table used by beaker for
 caching mulled resolution requests.
 """,
         ),
-    ]
+    ] = None
 
     object_store_config_file: Annotated[
         str,
@@ -2234,7 +2233,7 @@ that object store entry.
     ] = -1
 
     object_store_store_by: Annotated[
-        str,
+        Optional[Literal["uuid", "id"]],
         Field(
             title="Object Store Store By",
             description="""What Dataset attribute is used to reference files in an ObjectStore implementation,
@@ -2245,10 +2244,10 @@ if the name of the directory set in <file_path> is `objects`, the default will b
 to 'uuid', otherwise it will be 'id'.
 """,
         ),
-    ]
+    ] = None
 
     smtp_server: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Smtp Server",
             description="""Galaxy sends mail for various things: subscribing users to the mailing list
@@ -2258,10 +2257,10 @@ which you may define here (host:port).
 Galaxy will automatically try STARTTLS but will continue upon failure.
 """,
         ),
-    ]
+    ] = None
 
     smtp_username: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Smtp Username",
             description="""If your SMTP server requires a username and password, you can provide them
@@ -2269,10 +2268,10 @@ here (password in cleartext here, but if your server supports STARTTLS it
 will be sent over the network encrypted).
 """,
         ),
-    ]
+    ] = None
 
     smtp_password: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Smtp Password",
             description="""If your SMTP server requires a username and password, you can provide them
@@ -2280,7 +2279,7 @@ here (password in cleartext here, but if your server supports STARTTLS it
 will be sent over the network encrypted).
 """,
         ),
-    ]
+    ] = None
 
     smtp_ssl: Annotated[
         bool,
@@ -2311,7 +2310,7 @@ will be sent over the network encrypted).
     ] = "Join Mailing List"
 
     error_email_to: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Error Email To",
             description="""Datasets in an error state include a link to report the error. Those reports
@@ -2320,10 +2319,10 @@ set. Also this email is shown as a contact to user in case of Galaxy
 misconfiguration and other events user may encounter.
 """,
         ),
-    ]
+    ] = None
 
     email_from: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Email From",
             description="""Email address to use in the 'From' field when sending emails for
@@ -2333,29 +2332,29 @@ Galaxy Project <galaxy-no-reply@example.com>.
 If not configured, '<galaxy-no-reply@HOSTNAME>' will be used.
 """,
         ),
-    ]
+    ] = None
 
     custom_activation_email_message: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Custom Activation Email Message",
             description="""This text will be inserted at the end of the activation email's message, before
 the 'Your Galaxy Team' signature.
 """,
         ),
-    ]
+    ] = None
 
     instance_resource_url: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Instance Resource Url",
             description="""URL of the support resource for the galaxy instance. Used in activation emails.""",
             example="https://galaxyproject.org/",
         ),
-    ]
+    ] = None
 
     email_domain_blocklist_file: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Email Domain Blocklist File",
             description="""E-mail domains blocklist is used for filtering out users that are using
@@ -2367,10 +2366,10 @@ The value of this option will be resolved with respect to <config_dir>.
 """,
             example="email_blocklist.conf",
         ),
-    ]
+    ] = None
 
     email_domain_allowlist_file: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Email Domain Allowlist File",
             description="""E-mail domains allowlist is used to specify allowed email address domains.
@@ -2386,7 +2385,7 @@ The value of this option will be resolved with respect to <config_dir>.
 """,
             example="email_allowlist.conf",
         ),
-    ]
+    ] = None
 
     user_activation_on: Annotated[
         bool,
@@ -2484,14 +2483,14 @@ Galaxy user to access said site.
     ] = True
 
     interactivetools_proxy_host: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Interactivetools Proxy Host",
             description="""Hostname and port of Interactive tools proxy. It is assumed to be hosted on the same hostname and port as
 Galaxy by default.
 """,
         ),
-    ]
+    ] = None
 
     interactivetools_base_path: Annotated[
         str,
@@ -2747,7 +2746,7 @@ this to true to inform Galaxy that mod_xsendfile is enabled upstream.
     ] = False
 
     nginx_x_accel_redirect_base: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Nginx X Accel Redirect Base",
             description="""The same download handling can be done by nginx using X-Accel-Redirect. This
@@ -2755,7 +2754,7 @@ should be set to the path defined in the nginx config as an internal redirect
 with access to Galaxy's data files (see documentation linked above).
 """,
         ),
-    ]
+    ] = None
 
     upstream_gzip: Annotated[
         bool,
@@ -2800,7 +2799,7 @@ to protect your users. Uncomment and leave empty to not set the
     ] = "SAMEORIGIN"
 
     nginx_upload_store: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Nginx Upload Store",
             description="""nginx can also handle file uploads (user-to-Galaxy) via nginx_upload_module.
@@ -2809,10 +2808,10 @@ documentation linked above. The upload store is a temporary directory in
 which files uploaded by the upload module will be placed.
 """,
         ),
-    ]
+    ] = None
 
     nginx_upload_job_files_store: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Nginx Upload Job Files Store",
             description="""Galaxy can also use nginx_upload_module to receive files staged out upon job
@@ -2821,10 +2820,10 @@ operations on the remote end. See the Galaxy nginx documentation for the
 corresponding nginx configuration.
 """,
         ),
-    ]
+    ] = None
 
     nginx_upload_job_files_path: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Nginx Upload Job Files Path",
             description="""Galaxy can also use nginx_upload_module to receive files staged out upon job
@@ -2833,10 +2832,10 @@ operations on the remote end. See the Galaxy nginx documentation for the
 corresponding nginx configuration.
 """,
         ),
-    ]
+    ] = None
 
     tus_upload_store: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Tus Upload Store",
             description="""The upload store is a temporary directory in which files uploaded by the
@@ -2844,7 +2843,7 @@ tus middleware or server will be placed.
 Defaults to new_file_path if not set.
 """,
         ),
-    ]
+    ] = None
 
     dynamic_proxy_manage: Annotated[
         bool,
@@ -2964,7 +2963,7 @@ TLS is not supported, that will come in an update.
     ] = "unix:///var/run/docker.sock"
 
     dynamic_proxy_golang_api_key: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Dynamic Proxy Golang Api Key",
             description="""The golang proxy uses a RESTful HTTP API for communication with Galaxy
@@ -2973,7 +2972,7 @@ be set randomly for you. You should set this if you are managing the proxy
 manually.
 """,
         ),
-    ]
+    ] = None
 
     auto_configure_logging: Annotated[
         bool,
@@ -3032,7 +3031,7 @@ A custom debug level of "TRACE" is available for even more verbosity.
     ] = "DEBUG"
 
     logging: Annotated[
-        Dict[str, Any],
+        Optional[Dict[str, Any]],
         Field(
             title="Logging",
             description="""Controls where and how the server logs messages. If set, overrides all settings in the log_* configuration
@@ -3040,7 +3039,7 @@ options. Configuration is described in the documentation at:
 https://docs.galaxyproject.org/en/master/admin/config_logging.html
 """,
         ),
-    ]
+    ] = None
 
     database_engine_option_echo: Annotated[
         bool,
@@ -3145,7 +3144,7 @@ by setting this option to true.
     ] = False
 
     allowed_origin_hostnames: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Allowed Origin Hostnames",
             description="""Return a Access-Control-Allow-Origin response header that matches the Origin
@@ -3156,7 +3155,7 @@ E.g. mysite.com,google.com,usegalaxy.org,/^[\\w\\.]*example\\.com/
 See: https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
 """,
         ),
-    ]
+    ] = None
 
     trust_jupyter_notebook_conversion: Annotated[
         bool,
@@ -3253,7 +3252,7 @@ SIGUSR1 (`kill -USR1`) to force a dump.
     ] = "heartbeat_{server_name}.log"
 
     sentry_dsn: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Sentry Dsn",
             description="""Log to Sentry
@@ -3263,7 +3262,7 @@ indicated sentry instance. This connection string is available in your
 sentry instance under <project_name> -> Settings -> API Keys.
 """,
         ),
-    ]
+    ] = None
 
     sentry_event_level: Annotated[
         str,
@@ -3287,17 +3286,17 @@ is required to analyze performance.
     ] = 0.0
 
     sentry_ca_certs: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Sentry Ca Certs",
             description="""Use this option to provide the path to location of the CA (Certificate Authority)
 certificate file if the sentry server uses a self-signed certificate.
 """,
         ),
-    ]
+    ] = None
 
     statsd_host: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Statsd Host",
             description="""Log to statsd
@@ -3308,7 +3307,7 @@ useful if you are running multiple Galaxy instances and want to segment
 statistics between them within the same aggregator.
 """,
         ),
-    ]
+    ] = None
 
     statsd_port: Annotated[
         int,
@@ -3371,7 +3370,7 @@ import directory for every user (based on their email) upon login.
     ] = False
 
     user_library_import_symlink_allowlist: Annotated[
-        str,
+        Optional[str],
         Field(
             title="User Library Import Symlink Allowlist",
             description="""For security reasons, users may not import any files that actually lie
@@ -3382,7 +3381,7 @@ can import from anywhere in these directories (assuming they are able to
 create symlinks to them).
 """,
         ),
-    ]
+    ] = None
 
     user_library_import_check_permissions: Annotated[
         bool,
@@ -3411,7 +3410,7 @@ user has access to.
     ] = False
 
     disable_library_comptypes: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Disable Library Comptypes",
             description="""Users may choose to download multiple files from a library in an archive. By
@@ -3421,7 +3420,7 @@ Specific formats can be disabled with this option, separate more than one
 format with commas. Available formats are currently 'zip', 'gz', and 'bz2'.
 """,
         ),
-    ]
+    ] = None
 
     tool_name_boost: Annotated[
         float,
@@ -3596,7 +3595,7 @@ One simple way to generate a value for this is with the shell command:
     ] = "USING THE DEFAULT IS NOT SECURE!"
 
     remote_user_maildomain: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Remote User Maildomain",
             description="""If use_remote_user is enabled and your external authentication
@@ -3604,7 +3603,7 @@ method just returns bare usernames, set a default mail domain to be appended
 to usernames, to become your Galaxy usernames (email addresses).
 """,
         ),
-    ]
+    ] = None
 
     remote_user_header: Annotated[
         str,
@@ -3645,7 +3644,7 @@ to true to force these to lower case.
     ] = False
 
     admin_users: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Admin Users",
             description="""Administrative users - set this to a comma-separated list of valid Galaxy
@@ -3655,7 +3654,7 @@ libraries, and more. For more information, see:
  https://galaxyproject.org/admin/
 """,
         ),
-    ]
+    ] = None
 
     show_user_prepopulate_form: Annotated[
         bool,
@@ -3697,7 +3696,7 @@ overridden and set to false.
     ] = False
 
     fetch_url_allowlist: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Fetch Url Allowlist",
             description="""List of allowed local network addresses for "Upload from URL" dialog.
@@ -3709,7 +3708,7 @@ It should be a comma-separated list of IP addresses or IP address/mask, e.g.
 10.10.10.10,10.0.1.0/24,fd00::/8
 """,
         ),
-    ]
+    ] = None
 
     enable_beta_gdpr: Annotated[
         bool,
@@ -3880,17 +3879,17 @@ if default does not exist).
     ] = "auth_conf.xml"
 
     api_allow_run_as: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Api Allow Run As",
             description="""Optional list of email addresses of API users who can make calls on behalf of
 other users.
 """,
         ),
-    ]
+    ] = None
 
     bootstrap_admin_api_key: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Bootstrap Admin Api Key",
             description="""API key that allows performing some admin actions without actually
@@ -3900,10 +3899,10 @@ a real admin user account via API.
 You should probably not set this on a production server.
 """,
         ),
-    ]
+    ] = None
 
     ga4gh_service_id: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Ga4Gh Service Id",
             description="""Service ID for GA4GH services (exposed via the service-info endpoint for the Galaxy DRS API).
@@ -3920,10 +3919,10 @@ service "id" (available via the DRS API) for the above configuration value would
 org.usegalaxy.drs.
 """,
         ),
-    ]
+    ] = None
 
     ga4gh_service_organization_name: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Ga4Gh Service Organization Name",
             description="""Service name for host organization (exposed via the service-info endpoint for the Galaxy DRS API).
@@ -3934,10 +3933,10 @@ https://github.com/ga4gh-discovery/ga4gh-service-registry
 and https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-discovery/ga4gh-service-registry/develop/service-registry.yaml
 """,
         ),
-    ]
+    ] = None
 
     ga4gh_service_organization_url: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Ga4Gh Service Organization Url",
             description="""Organization URL for host organization (exposed via the service-info endpoint for the Galaxy DRS API).
@@ -3948,10 +3947,10 @@ https://github.com/ga4gh-discovery/ga4gh-service-registry
 and https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-discovery/ga4gh-service-registry/develop/service-registry.yaml
 """,
         ),
-    ]
+    ] = None
 
     ga4gh_service_environment: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Ga4Gh Service Environment",
             description="""Service environment (exposed via the service-info endpoint for the Galaxy DRS API) for
@@ -3964,7 +3963,7 @@ https://github.com/ga4gh-discovery/ga4gh-service-registry
 and https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-discovery/ga4gh-service-registry/develop/service-registry.yaml
 """,
         ),
-    ]
+    ] = None
 
     enable_tool_tags: Annotated[
         bool,
@@ -3978,14 +3977,14 @@ large servers.
     ] = False
 
     ftp_upload_dir: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Ftp Upload Dir",
             description="""This should point to a directory containing subdirectories matching users'
 identifier (defaults to e-mail), where Galaxy will look for files.
 """,
         ),
-    ]
+    ] = None
 
     ftp_upload_dir_identifier: Annotated[
         str,
@@ -4000,7 +3999,7 @@ username though.
     ] = "email"
 
     ftp_upload_dir_template: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Ftp Upload Dir Template",
             description="""Python string template used to determine an FTP upload directory for a
@@ -4009,7 +4008,7 @@ particular user.
 Defaults to '${ftp_upload_dir}/${ftp_upload_dir_identifier}'.
 """,
         ),
-    ]
+    ] = None
 
     ftp_upload_purge: Annotated[
         bool,
@@ -4085,14 +4084,14 @@ automatically upon data manager installation.
     ] = "shed_data_manager_conf.xml"
 
     galaxy_data_manager_data_path: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Galaxy Data Manager Data Path",
             description="""Directory to store Data Manager based tool-data. Defaults to the value of the
 <tool_data_path> option.
 """,
         ),
-    ]
+    ] = None
 
     job_config_file: Annotated[
         str,
@@ -4113,15 +4112,15 @@ be configured through the job configuration file or the <job_config> option.
     ] = "job_conf.yml"
 
     job_config: Annotated[
-        Dict[str, Any],
+        Optional[Dict[str, Any]],
         Field(
             title="Job Config",
             description="""Description of job running configuration, can be embedded into Galaxy configuration or loaded from an additional file with the job_config_file option.""",
         ),
-    ]
+    ] = None
 
     dependency_resolvers: Annotated[
-        List[Any],
+        Optional[List[Any]],
         Field(
             title="Dependency Resolvers",
             description="""Rather than specifying a dependency_resolvers_config_file, the definition of the
@@ -4134,10 +4133,10 @@ documentation:
 https://docs.galaxyproject.org/en/master/admin/dependency_resolvers.html
 """,
         ),
-    ]
+    ] = None
 
     dependency_resolution: Annotated[
-        Dict[str, Any],
+        Optional[Dict[str, Any]],
         Field(
             title="Dependency Resolution",
             description="""Alternative representation of various dependency resolution parameters. Takes the
@@ -4146,10 +4145,10 @@ configuration of dependency resolution from one application that uses a Dependen
 to another.
 """,
         ),
-    ]
+    ] = None
 
     default_job_resubmission_condition: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Default Job Resubmission Condition",
             description="""When jobs fail due to job runner problems, Galaxy can be configured to retry
@@ -4166,7 +4165,7 @@ commented out default below results in no default job resubmission condition,
 failing jobs are just failed outright.
 """,
         ),
-    ]
+    ] = None
 
     track_jobs_in_database: Annotated[
         bool,
@@ -4354,7 +4353,7 @@ always, onsuccess, never
     ] = "always"
 
     drmaa_external_runjob_script: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Drmaa External Runjob Script",
             description="""When running DRMAA jobs as the Galaxy user
@@ -4364,10 +4363,10 @@ this script is used to run the job script Galaxy generates for a tool execution.
 Example value 'sudo -E scripts/drmaa_external_runner.py --assign_all_groups'
 """,
         ),
-    ]
+    ] = None
 
     drmaa_external_killjob_script: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Drmaa External Killjob Script",
             description="""When running DRMAA jobs as the Galaxy user
@@ -4378,10 +4377,10 @@ the job).
 Example value 'sudo -E scripts/drmaa_external_killer.py'
 """,
         ),
-    ]
+    ] = None
 
     external_chown_script: Annotated[
-        str,
+        Optional[str],
         Field(
             title="External Chown Script",
             description="""When running DRMAA jobs as the Galaxy user
@@ -4392,7 +4391,7 @@ and the user that is running the job.
 Example value 'sudo -E scripts/external_chown_script.py'
 """,
         ),
-    ]
+    ] = None
 
     real_system_username: Annotated[
         str,
@@ -4413,7 +4412,7 @@ Possible values are user_email (default), username or <common_system_user>
     ] = "user_email"
 
     environment_setup_file: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Environment Setup File",
             description="""File to source to set up the environment when running jobs. By default, the
@@ -4427,7 +4426,7 @@ the actual user, to remove the need to configure each user's environment
 individually.
 """,
         ),
-    ]
+    ] = None
 
     markdown_export_css: Annotated[
         str,
@@ -4540,7 +4539,7 @@ job_resource_params_file if not set).
     ] = "workflow_resource_params_conf.xml"
 
     workflow_resource_params_mapper: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Workflow Resource Params Mapper",
             description="""This parameter describes how to map users and workflows to a set of workflow
@@ -4554,7 +4553,7 @@ haven't yet - for instance using workflow tags to do the mapping).
 Sample default path 'config/workflow_resource_mapper_conf.yml.sample'
 """,
         ),
-    ]
+    ] = None
 
     workflow_schedulers_config_file: Annotated[
         str,
@@ -4583,34 +4582,34 @@ if running many handlers.
     ] = False
 
     tool_filters: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Tool Filters",
             description="""Define toolbox filters (https://galaxyproject.org/user-defined-toolbox-filters/)
 that admins may use to restrict the tools to display.
 """,
         ),
-    ]
+    ] = None
 
     tool_label_filters: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Tool Label Filters",
             description="""Define toolbox filters (https://galaxyproject.org/user-defined-toolbox-filters/)
 that admins may use to restrict the tool labels to display.
 """,
         ),
-    ]
+    ] = None
 
     tool_section_filters: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Tool Section Filters",
             description="""Define toolbox filters (https://galaxyproject.org/user-defined-toolbox-filters/)
 that admins may use to restrict the tool sections to display.
 """,
         ),
-    ]
+    ] = None
 
     user_tool_filters: Annotated[
         str,
