@@ -5,7 +5,7 @@ import { computed, onMounted, ref, unref, watch } from "vue";
 
 import { useAnimationFrame } from "@/composables/sensors/animationFrame";
 import { useAnimationFrameThrottle } from "@/composables/throttle";
-import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
+import { useWorkflowStores } from "@/composables/workflowStores";
 import type { Step, Steps } from "@/stores/workflowStepStore";
 
 import { AxisAlignedBoundingBox, Transform } from "./modules/geometry";
@@ -21,7 +21,7 @@ const emit = defineEmits<{
     (e: "moveTo", position: { x: number; y: number }): void;
 }>();
 
-const stateStore = useWorkflowStateStore();
+const { stateStore } = useWorkflowStores();
 
 /** reference to the main canvas element */
 const canvas: Ref<HTMLCanvasElement | null> = ref(null);

@@ -21,7 +21,7 @@
 import LoadingSpan from "components/LoadingSpan";
 import _l from "utils/localization";
 
-import { useWorkflowStepStore } from "@/stores/workflowStepStore";
+import { useWorkflowStores } from "@/composables/workflowStores";
 
 import { getToolPredictions } from "./modules/services";
 import { getCompatibleRecommendations } from "./modules/utilities";
@@ -41,7 +41,7 @@ export default {
         },
     },
     setup() {
-        const stepStore = useWorkflowStepStore();
+        const { stepStore } = useWorkflowStores();
         return { stepStore };
     },
     data() {

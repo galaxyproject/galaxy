@@ -34,6 +34,9 @@ describe("FormDefault", () => {
             },
             localVue,
             pinia: createTestingPinia(),
+            provide: {
+                workflowId: "mock-workflow",
+            },
         });
     });
 

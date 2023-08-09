@@ -47,9 +47,9 @@ import { storeToRefs } from "pinia";
 import { computed, type PropType, provide, reactive, type Ref, ref, watch, watchEffect } from "vue";
 
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
+import { useWorkflowStores } from "@/composables/workflowStores";
 import type { TerminalPosition, XYPosition } from "@/stores/workflowEditorStateStore";
-import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
-import { type Step, useWorkflowStepStore } from "@/stores/workflowStepStore";
+import type { Step } from "@/stores/workflowStepStore";
 import { assertDefined } from "@/utils/assertions";
 
 import { useD3Zoom } from "./composables/d3Zoom";
@@ -72,8 +72,7 @@ const props = defineProps({
     readonly: { type: Boolean, default: false },
 });
 
-const stateStore = useWorkflowStateStore();
-const stepStore = useWorkflowStepStore();
+const { stateStore, stepStore } = useWorkflowStores();
 const { scale, activeNodeId, draggingPosition, draggingTerminal } = storeToRefs(stateStore);
 const canvas: Ref<HTMLElement | null> = ref(null);
 

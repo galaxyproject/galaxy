@@ -56,7 +56,7 @@
 import Utils from "utils/utils";
 import { toRef } from "vue";
 
-import { useWorkflowStepStore } from "@/stores/workflowStepStore";
+import { useWorkflowStores } from "@/composables/workflowStores";
 
 import { useStepProps } from "../composables/useStepProps";
 import { useUniqueLabelError } from "../composables/useUniqueLabelError";
@@ -93,7 +93,7 @@ export default {
         const { stepId, annotation, label, stepInputs, stepOutputs, configForm, postJobActions } = useStepProps(
             toRef(props, "step")
         );
-        const stepStore = useWorkflowStepStore();
+        const { stepStore } = useWorkflowStores();
         const uniqueErrorLabel = useUniqueLabelError(stepStore, label);
 
         return {

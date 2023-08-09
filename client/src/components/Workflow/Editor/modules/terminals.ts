@@ -5,7 +5,7 @@ import {
     type Connection,
     type ConnectionId,
     getConnectionId,
-    useConnectionStore,
+    type useConnectionStore,
 } from "@/stores/workflowConnectionStore";
 import type {
     CollectionOutput,
@@ -15,8 +15,8 @@ import type {
     ParameterOutput,
     ParameterStepInput,
     TerminalSource,
+    useWorkflowStepStore,
 } from "@/stores/workflowStepStore";
-import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 import { assertDefined } from "@/utils/assertions";
 
 import {
@@ -39,6 +39,8 @@ interface BaseTerminalArgs {
     name: string;
     stepId: number;
     datatypesMapper: DatatypesMapperModel;
+    connectionStore: ReturnType<typeof useConnectionStore>;
+    stepStore: ReturnType<typeof useWorkflowStepStore>;
 }
 
 interface InputTerminalInputs {
@@ -64,8 +66,8 @@ class Terminal extends EventEmitter {
 
     constructor(attr: BaseTerminalArgs) {
         super();
-        this.connectionStore = useConnectionStore();
-        this.stepStore = useWorkflowStepStore();
+        this.connectionStore = attr.connectionStore;
+        this.stepStore = attr.stepStore;
         this.stepId = attr.stepId;
         this.name = attr.name;
         this.multiple = false;
@@ -244,12 +246,24 @@ class BaseInputTerminal extends Terminal {
                 // step must have an output, since it is or was connected to this step
                 const terminalSource = step.outputs[0];
                 if (terminalSource) {
-                    const terminal = terminalFactory(step.id, terminalSource, this.datatypesMapper);
+                    const terminal = terminalFactory(
+                        step.id,
+                        terminalSource,
+                        this.datatypesMapper,
+                        this.connectionStore,
+                        this.stepStore
+                    );
                     // drop mapping restrictions
                     terminal.resetMappingIfNeeded();
                     // re-establish map over through inputs
                     step.inputs.forEach((input) => {
-                        terminalFactory(step.id, input, this.datatypesMapper).getStepMapOver();
+                        terminalFactory(
+                            step.id,
+                            input,
+                            this.datatypesMapper,
+                            this.connectionStore,
+                            this.stepStore
+                        ).getStepMapOver();
                     });
                 }
             } else {
@@ -356,6 +370,8 @@ class BaseInputTerminal extends Terminal {
                     name: connection.output.name,
                     valid: false,
                     datatypesMapper: this.datatypesMapper,
+                    connectionStore: this.connectionStore,
+                    stepStore: this.stepStore,
                 });
             }
             let terminalSource = outputStep.outputs.find((output) => output.name === connection.output.name);
@@ -367,6 +383,8 @@ class BaseInputTerminal extends Terminal {
                     name: connection.output.name,
                     valid: false,
                     datatypesMapper: this.datatypesMapper,
+                    connectionStore: this.connectionStore,
+                    stepStore: this.stepStore,
                 });
             }
             const postJobActionKey = `ChangeDatatypeAction${connection.output.name}`;
@@ -383,7 +401,13 @@ class BaseInputTerminal extends Terminal {
                 };
             }
 
-            return terminalFactory(outputStep.id, terminalSource, this.datatypesMapper);
+            return terminalFactory(
+                outputStep.id,
+                terminalSource,
+                this.datatypesMapper,
+                this.connectionStore,
+                this.stepStore
+            );
         });
     }
 
@@ -658,9 +682,17 @@ class BaseOutputTerminal extends Terminal {
                         optional: false,
                         multiple: false,
                     },
+                    connectionStore: this.connectionStore,
+                    stepStore: this.stepStore,
                 });
             }
-            return terminalFactory(inputStep.id, terminalSource, this.datatypesMapper);
+            return terminalFactory(
+                inputStep.id,
+                terminalSource,
+                this.datatypesMapper,
+                this.connectionStore,
+                this.stepStore
+            );
         });
     }
 
@@ -689,7 +721,13 @@ class BaseOutputTerminal extends Terminal {
         const validInputTerminals: InputTerminals[] = [];
         Object.values(this.stepStore.steps).map((step) => {
             step.inputs?.forEach((input) => {
-                const inputTerminal = terminalFactory(step.id, input, this.datatypesMapper);
+                const inputTerminal = terminalFactory(
+                    step.id,
+                    input,
+                    this.datatypesMapper,
+                    this.connectionStore,
+                    this.stepStore
+                );
                 if (inputTerminal.canAccept(this).canAccept) {
                     validInputTerminals.push(inputTerminal);
                 }
@@ -738,8 +776,20 @@ export class OutputCollectionTerminal extends BaseOutputTerminal {
                 const stepOutput = outputStep.outputs.find((output) => output.name == connection.output.name);
                 const stepInput = inputStep.inputs.find((input) => input.name === this.collectionTypeSource);
                 if (stepInput && stepOutput) {
-                    const outputTerminal = terminalFactory(connection.output.stepId, stepOutput, this.datatypesMapper);
-                    const inputTerminal = terminalFactory(connection.output.stepId, stepInput, this.datatypesMapper);
+                    const outputTerminal = terminalFactory(
+                        connection.output.stepId,
+                        stepOutput,
+                        this.datatypesMapper,
+                        this.connectionStore,
+                        this.stepStore
+                    );
+                    const inputTerminal = terminalFactory(
+                        connection.output.stepId,
+                        stepInput,
+                        this.datatypesMapper,
+                        this.connectionStore,
+                        this.stepStore
+                    );
                     // otherCollectionType is the mapped over output collection as it would appear at the input terminal
                     const otherCollectionType = inputTerminal._otherCollectionType(outputTerminal);
                     // we need to find which of the possible input collection types is connected
@@ -885,7 +935,9 @@ type TerminalOf<T extends TerminalSourceAndInvalid> = T extends InvalidInputTerm
 export function terminalFactory<T extends TerminalSourceAndInvalid>(
     stepId: number,
     terminalSource: T,
-    datatypesMapper: DatatypesMapperModel
+    datatypesMapper: DatatypesMapperModel,
+    connectionStore: ReturnType<typeof useConnectionStore>,
+    stepStore: ReturnType<typeof useWorkflowStepStore>
 ): TerminalOf<T> {
     if ("input_type" in terminalSource) {
         const terminalArgs = {
@@ -893,6 +945,8 @@ export function terminalFactory<T extends TerminalSourceAndInvalid>(
             input_type: terminalSource.input_type,
             name: terminalSource.name,
             stepId: stepId,
+            connectionStore,
+            stepStore,
         };
         if ("valid" in terminalSource) {
             return new InvalidInputTerminal({
@@ -940,6 +994,8 @@ export function terminalFactory<T extends TerminalSourceAndInvalid>(
             optional: terminalSource.optional,
             stepId: stepId,
             datatypesMapper: datatypesMapper,
+            connectionStore,
+            stepStore,
         };
         if (isOutputParameterArg(terminalSource)) {
             return new OutputParameterTerminal({

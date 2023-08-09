@@ -25,8 +25,8 @@ import {
     terminalFactory,
 } from "@/components/Workflow/Editor/modules/terminals";
 import { useUid } from "@/composables/utils/uid";
-import { getConnectionId, useConnectionStore } from "@/stores/workflowConnectionStore";
-import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
+import { useWorkflowStores } from "@/composables/workflowStores";
+import { getConnectionId } from "@/stores/workflowConnectionStore";
 import type { InputTerminalSource } from "@/stores/workflowStepStore";
 
 import { useRelativePosition } from "./composables/relativePosition";
@@ -91,7 +91,7 @@ const position = useRelativePosition(
     computed(() => props.parentNode)
 );
 
-const connectionStore = useConnectionStore();
+const { connectionStore, stateStore, stepStore } = useWorkflowStores();
 const hasTerminals = ref(false);
 watchEffect(() => {
     hasTerminals.value = connectionStore.getOutputTerminalsForInputTerminal(id.value).length > 0;
@@ -107,7 +107,6 @@ const invalidConnectionReasons = computed(() =>
         .filter((reason) => reason)
 );
 
-const stateStore = useWorkflowStateStore();
 const { draggingTerminal } = storeToRefs(stateStore);
 
 const canAccept = computed(() => {
@@ -180,7 +179,9 @@ function onDrop(event: DragEvent) {
     const droppedTerminal = terminalFactory(
         stepOut.stepId,
         stepOut.output,
-        props.datatypesMapper
+        props.datatypesMapper,
+        connectionStore,
+        stepStore
     ) as OutputCollectionTerminal;
 
     showTooltip.value = false;

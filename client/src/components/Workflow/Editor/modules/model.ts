@@ -10,8 +10,21 @@ interface Workflow {
     steps: Steps;
 }
 
-export async function fromSimple(data: Workflow, appendData = false, defaultPosition = { top: 0, left: 0 }) {
-    const stepStore = useWorkflowStepStore();
+/**
+ * Loads a workflow into the editor
+ *
+ * @param id ID of workflow to load data *into*
+ * @param data Workflow data to load from
+ * @param appendData if true appends data to current workflow, making sure to create new uuids
+ * @param defaultPosition where to position workflow in the editor
+ */
+export async function fromSimple(
+    id: string,
+    data: Workflow,
+    appendData = false,
+    defaultPosition = { top: 0, left: 0 }
+) {
+    const stepStore = useWorkflowStepStore(id);
     const stepIdOffset = stepStore.getStepIndex + 1;
     Object.values(data.steps).forEach((step) => {
         // If workflow being copied into another, wipe UUID and let

@@ -62,7 +62,8 @@ import { computed, toRef } from "vue";
 
 import type { DatatypesMapperModel } from "@/components/Datatypes/model";
 import WorkflowIcons from "@/components/Workflow/icons";
-import { type Step, useWorkflowStepStore } from "@/stores/workflowStepStore";
+import { useWorkflowStores } from "@/composables/workflowStores";
+import type { Step } from "@/stores/workflowStepStore";
 
 import { useStepProps } from "../composables/useStepProps";
 import { useUniqueLabelError } from "../composables/useUniqueLabelError";
@@ -80,7 +81,7 @@ const props = defineProps<{
 const emit = defineEmits(["onAnnotation", "onLabel", "onAttemptRefactor", "onEditSubworkflow", "onSetData"]);
 const stepRef = toRef(props, "step");
 const { stepId, contentId, annotation, label, name, type, configForm } = useStepProps(stepRef);
-const stepStore = useWorkflowStepStore();
+const { stepStore } = useWorkflowStores();
 const uniqueErrorLabel = useUniqueLabelError(stepStore, label.value);
 const stepTitle = computed(() => {
     if (label.value) {

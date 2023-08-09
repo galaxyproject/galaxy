@@ -3,15 +3,13 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faBuilding, faDownload, faEdit, faPlay, faSpinner, faUser } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios, { type AxiosError } from "axios";
-import { computed, onUnmounted, ref, watch } from "vue";
+import { computed, ref, watch } from "vue";
 
 import { fromSimple } from "@/components/Workflow/Editor/modules/model";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
 import { usePanels } from "@/composables/usePanels";
+import { provideScopedWorkflowStores } from "@/composables/workflowStores";
 import { useUserStore } from "@/stores/userStore";
-import { useConnectionStore } from "@/stores/workflowConnectionStore";
-import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
-import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 import type { Workflow } from "@/stores/workflowStore";
 import { assertDefined } from "@/utils/assertions";
 import { withPrefix } from "@/utils/redirect";
@@ -48,17 +46,9 @@ const errorMessage = ref("");
 
 const { datatypesMapper } = useDatatypesMapper();
 
-const connectionsStore = useConnectionStore();
-const stepStore = useWorkflowStepStore();
-const stateStore = useWorkflowStateStore();
+const { stateStore } = provideScopedWorkflowStores(props.id);
 
 stateStore.setScale(0.75);
-
-onUnmounted(() => {
-    connectionsStore.$reset();
-    stepStore.$reset();
-    stateStore.$reset();
-});
 
 watch(
     () => props.id,
@@ -79,7 +69,7 @@ watch(
             workflowInfo.value = workflowInfoData;
             workflow.value = fullWorkflow;
 
-            fromSimple(fullWorkflow);
+            fromSimple(props.id, fullWorkflow);
         } catch (e) {
             const error = e as AxiosError<{ err_msg?: string }>;
 
