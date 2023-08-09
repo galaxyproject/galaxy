@@ -300,8 +300,8 @@ class LimitedUserModel(Model):
     """This is used when config options (expose_user_name and expose_user_email) are in place."""
 
     id: EncodedDatabaseIdField = UserIdField
-    username: Optional[str]
-    email: Optional[str]
+    username: Optional[str] = None
+    email: Optional[str] = None
 
 
 class DiskUsageUserModel(Model):
