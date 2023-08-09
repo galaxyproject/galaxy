@@ -1087,7 +1087,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             for prefixed_name in payload:
                 if prefixed_name.startswith(filter_type):
                     filter_selection = payload.get(prefixed_name)
-                    if type(filter_selection) != bool:
+                    if not isinstance(filter_selection, bool):
                         raise exceptions.RequestParameterInvalidException(
                             "Please specify the filter selection as boolean value."
                         )

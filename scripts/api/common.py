@@ -109,7 +109,7 @@ def display(api_key, url, return_formatted=True):
         print("------------------")
         for k, v in r.items():
             print(f"{k}: {v}")
-    elif type(r) == str:
+    elif isinstance(r, str):
         print(r)
     else:
         print("response is unknown type: %s" % type(r))

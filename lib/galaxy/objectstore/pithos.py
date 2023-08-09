@@ -320,10 +320,7 @@ class PithosObjectStore(ConcreteObjectStore):
             try:
                 return os.path.getsize(self._get_cache_path(path))
             except OSError as ex:
-                log.warning(
-                    "Could not get size of file {path} in local cache,"
-                    "will try Pithos. Error: {err}".format(path=path, err=ex)
-                )
+                log.warning(f"Could not get size of file {path} in local cache," f"will try Pithos. Error: {ex}")
         try:
             file = self.pithos.get_object_info(path)
         except ClientError as ce:
@@ -406,10 +403,7 @@ class PithosObjectStore(ConcreteObjectStore):
         if kwargs.get("create"):
             self._create(obj, **kwargs)
         if not self._exists(obj, **kwargs):
-            raise ObjectNotFound(
-                "objectstore.update_from_file, object does not exist: {obj}, "
-                "kwargs: {kwargs}".format(obj=obj, kwargs=kwargs)
-            )
+            raise ObjectNotFound(f"objectstore.update_from_file, object does not exist: {obj}, " f"kwargs: {kwargs}")
 
         path = self._construct_path(obj, **kwargs)
         cache_path = self._get_cache_path(path)

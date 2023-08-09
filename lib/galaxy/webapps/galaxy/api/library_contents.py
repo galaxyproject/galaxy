@@ -371,9 +371,9 @@ class LibraryContentsController(
                 trans, folder_id=folder.id, replace_dataset=replace_dataset, **kwd
             )
             if created_outputs_dict:
-                if type(created_outputs_dict) == str:
+                if isinstance(created_outputs_dict, str):
                     return 400, created_outputs_dict
-                elif type(created_outputs_dict) == tuple:
+                elif isinstance(created_outputs_dict, tuple):
                     return created_outputs_dict[0], created_outputs_dict[1]
                 return 200, created_outputs_dict
             else:
