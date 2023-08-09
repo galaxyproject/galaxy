@@ -41,6 +41,7 @@ from galaxy.jobs.manager import JobManager
 from galaxy.managers.api_keys import ApiKeyManager
 from galaxy.managers.citations import CitationsManager
 from galaxy.managers.collections import DatasetCollectionManager
+from galaxy.managers.configuration import ConfigurationManager
 from galaxy.managers.dbkeys import GenomeBuilds
 from galaxy.managers.folders import FolderManager
 from galaxy.managers.hdas import HDAManager
@@ -244,6 +245,7 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
         self.is_webapp = False
         # Read config file and check for errors
         self.config = self._register_singleton(config.GalaxyAppConfiguration, config.GalaxyAppConfiguration(**kwargs))
+        ConfigurationManager.validate_config(self.config._raw_config)
         self.config.check()
         self._configure_object_store(fsmon=True)
         self._register_singleton(BaseObjectStore, self.object_store)
