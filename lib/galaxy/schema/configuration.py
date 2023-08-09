@@ -19,7 +19,7 @@ from typing_extensions import (
 
 from galaxy.schema.schema import Model
 
-WatchToolOptions = Literal["false", "auto", "polling"]
+WatchToolOptions = Union[bool, Literal["false", "true", "auto", "polling"]]
 
 
 class ComputedGalaxyConfig(Model):
