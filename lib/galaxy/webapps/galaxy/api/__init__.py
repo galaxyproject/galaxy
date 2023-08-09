@@ -509,7 +509,7 @@ def as_form(cls: Type[BaseModel]):
         try:
             return cls(**data)
         except ValidationError as e:
-            raise RequestValidationError(e.raw_errors)
+            raise RequestValidationError(e.errors())
 
     sig = inspect.signature(_as_form)
     sig = sig.replace(parameters=new_params)
