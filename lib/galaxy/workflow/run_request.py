@@ -370,26 +370,22 @@ def build_workflow_run_configs(
             input_id = input_dict["id"]
             try:
                 if input_source == "ldda":
-                    ldda = trans.sa_session.query(LibraryDatasetDatasetAssociation).get(
-                        trans.security.decode_id(input_id)
-                    )
+                    ldda = trans.sa_session.get(LibraryDatasetDatasetAssociation, trans.security.decode_id(input_id))
                     assert trans.user_is_admin or trans.app.security_agent.can_access_dataset(
                         trans.get_current_user_roles(), ldda.dataset
                     )
                     content = ldda.to_history_dataset_association(history, add_to_history=add_to_history)
                 elif input_source == "ld":
-                    ldda = (
-                        trans.sa_session.query(LibraryDataset)
-                        .get(trans.security.decode_id(input_id))
-                        .library_dataset_dataset_association
-                    )
+                    ldda = trans.sa_session.get(
+                        LibraryDataset, trans.security.decode_id(input_id)
+                    ).library_dataset_dataset_association
                     assert trans.user_is_admin or trans.app.security_agent.can_access_dataset(
                         trans.get_current_user_roles(), ldda.dataset
                     )
                     content = ldda.to_history_dataset_association(history, add_to_history=add_to_history)
                 elif input_source == "hda":
                     # Get dataset handle, add to dict and history if necessary
-                    content = trans.sa_session.query(HistoryDatasetAssociation).get(trans.security.decode_id(input_id))
+                    content = trans.sa_session.get(HistoryDatasetAssociation, trans.security.decode_id(input_id))
                     assert trans.user_is_admin or trans.app.security_agent.can_access_dataset(
                         trans.get_current_user_roles(), content.dataset
                     )
