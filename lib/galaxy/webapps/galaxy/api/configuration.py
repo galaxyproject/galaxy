@@ -8,22 +8,13 @@ from typing import (
     Dict,
     List,
     Optional,
-    Union,
 )
 
 from fastapi import Path
-from pydantic import Field
-from typing_extensions import Annotated
 
 from galaxy.managers.configuration import ConfigurationManager
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.schema.configuration import (
-    AdminExposableComputedGalaxyConfig,
-    AdminExposableGalaxyConfig,
-    ApiCompatibleConfigValues,
-    UserExposableComputedGalaxyConfig,
-    UserExposableGalaxyConfig,
-)
+from galaxy.schema.configuration import AnyGalaxyConfigResponse
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import UserModel
 from galaxy.webapps.galaxy.api import (
@@ -47,25 +38,6 @@ EncodedIdPathParam = Path(
     title="Encoded id",
     description="Encoded id to be decoded",
 )
-
-
-class ConfigResponse(UserExposableComputedGalaxyConfig, UserExposableGalaxyConfig, ApiCompatibleConfigValues):
-    """Configuration values that can be exposed to users."""
-
-    pass
-
-
-class AdminOnlyConfigResponse(
-    AdminExposableComputedGalaxyConfig, AdminExposableGalaxyConfig, ApiCompatibleConfigValues
-):
-    """Configuration values that can be exposed to admins."""
-
-    pass
-
-
-AnyGalaxyConfigResponse = Annotated[
-    Union[ConfigResponse, AdminOnlyConfigResponse], Field(discriminator="is_admin_user")
-]
 
 
 @router.cbv

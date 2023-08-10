@@ -2132,9 +2132,7 @@ export interface components {
              * @description Definitions of static toolbox panel views embedded directly in the config instead of reading
              * YAML from directory with panel_views_dir.
              */
-            panel_views?: {
-                [key: string]: Record<string, never> | undefined;
-            };
+            panel_views?: Record<string, never>;
             /**
              * Plausible Domain
              * @description Please enter the URL for the Galaxy server so this can be used for tracking
@@ -3336,690 +3334,6 @@ export interface components {
             /** Private */
             private: boolean;
             quota: components["schemas"]["QuotaModel"];
-        };
-        /**
-         * ConfigResponse
-         * @description Configuration values that can be exposed to users.
-         */
-        ConfigResponse: {
-            /**
-             * Admin Tool Recommendations Path
-             * @description Set path to the additional tool preferences from Galaxy admins.
-             * It has two blocks. One for listing deprecated tools which will be removed from the recommendations and
-             * another is for adding additional tools to be recommended along side those from the deep learning model.
-             * @default tool_recommendations_overwrite.yml
-             */
-            admin_tool_recommendations_path?: string;
-            /**
-             * Allow User Creation
-             * @description Allow unregistered users to create new accounts (otherwise, they will have to be created by an admin).
-             * @default true
-             */
-            allow_user_creation?: boolean;
-            /**
-             * Allow User Dataset Purge
-             * @description Allow users to remove their datasets from disk immediately (otherwise,
-             * datasets will be removed after a time period specified by an administrator in
-             * the cleanup scripts run via cron)
-             * @default true
-             */
-            allow_user_dataset_purge?: boolean;
-            /**
-             * Allow User Impersonation
-             * @description Allow administrators to log in as other users (useful for debugging).
-             * @default false
-             */
-            allow_user_impersonation?: boolean;
-            /**
-             * Aws Estimate
-             * @description This flag enables an AWS cost estimate for every job based on their runtime matrices.
-             * CPU, RAM and runtime usage is mapped against AWS pricing table.
-             * Please note, that those numbers are only estimates.
-             * @default false
-             */
-            aws_estimate?: boolean;
-            /**
-             * Brand
-             * @description Append "{brand}" text to the masthead.
-             */
-            brand?: string;
-            /**
-             * Carbon Emission Estimates
-             * @description This flag enables carbon emissions estimates for every job based on its runtime metrics.
-             * CPU and RAM usage and the total job runtime are used to determine an estimate value.
-             * These estimates and are based off of the work of the Green Algorithms Project and
-             * the United States Environmental Protection Agency (EPA).
-             * Visit https://www.green-algorithms.org/ and https://www.epa.gov/energy/greenhouse-gas-equivalencies-calculator.
-             * for more details.
-             * @default true
-             */
-            carbon_emission_estimates?: boolean;
-            /**
-             * Carbon Intensity
-             * @description The carbon intensity of the electricity used by the Galaxy server.
-             */
-            carbon_intensity?: number;
-            /**
-             * Chunk Upload Size
-             * @description Galaxy can upload user files in chunks without using nginx. Enable the chunk
-             * uploader by specifying a chunk size larger than 0. The chunk size is specified
-             * in bytes (default: 10MB).
-             *
-             * @default 10485760
-             */
-            chunk_upload_size?: number;
-            /**
-             * Citation Url
-             * @description The URL linked by the "How to Cite Galaxy" link in the "Help" menu.
-             * @default https://galaxyproject.org/citing-galaxy
-             */
-            citation_url?: string;
-            /**
-             * Citations Export Message Html
-             * @description Message to display on the export citations tool page
-             * @default When writing up your analysis, remember to include all references that should be cited in order to completely describe your work. Also, please remember to <a href="https://galaxyproject.org/citing-galaxy">cite Galaxy</a>.
-             */
-            citations_export_message_html?: string;
-            /**
-             * Cookie Domain
-             * @description Tell Galaxy that multiple domains sharing the same root are associated
-             * to this instance and wants to share the same session cookie.
-             * This allow a user to stay logged in when passing from one subdomain to the other.
-             * This root domain will be written in the unique session cookie shared by all subdomains.
-             */
-            cookie_domain?: string;
-            /**
-             * Datatypes Disable Auto
-             * @description Disable the 'Auto-detect' option for file uploads
-             * @default false
-             */
-            datatypes_disable_auto?: boolean;
-            /**
-             * Default Locale
-             * @description Default localization for Galaxy UI.
-             * Allowed values are listed at the end of client/src/nls/locale.js.
-             * With the default value (auto), the locale will be automatically adjusted to
-             * the user's navigator language.
-             * Users can override this settings in their user preferences if the localization
-             * settings are enabled in user_preferences_extra_conf.yml
-             * @default auto
-             */
-            default_locale?: string;
-            /**
-             * Default Panel View
-             * @description Default tool panel view for the current Galaxy configuration. This should refer to an id of
-             * a panel view defined using the panel_views or panel_views_dir configuration options or an
-             * EDAM panel view. The default panel view is simply called `default` and refers to the tool
-             * panel state defined by the integrated tool panel.
-             * @default default
-             */
-            default_panel_view?: string;
-            /**
-             * Enable Account Interface
-             * @description Allow users to manage their account data, change passwords or delete their accounts.
-             * @default true
-             */
-            enable_account_interface?: boolean;
-            /**
-             * Enable Beacon Integration
-             * @description Enables user preferences and api endpoint for the beacon integration.
-             * @default false
-             */
-            enable_beacon_integration?: boolean;
-            /**
-             * Enable Beta Markdown Export
-             * @description Enable export of Galaxy Markdown documents (pages and workflow reports)
-             * to PDF. Requires manual installation and setup of weasyprint (latest version
-             * available for Python 2.7 is 0.42).
-             * @default false
-             */
-            enable_beta_markdown_export?: boolean;
-            /**
-             * Enable Celery Tasks
-             * @description Offload long-running tasks to a Celery task queue.
-             * Activate this only if you have setup a Celery worker for Galaxy.
-             * For details, see https://docs.galaxyproject.org/en/master/admin/production.html
-             * @default false
-             */
-            enable_celery_tasks?: boolean;
-            /**
-             * Enable Notification System
-             * @description Enables the Notification System integrated in Galaxy.
-             *
-             * Users can receive automatic notifications when a certain resource is shared with them or when some long running operations have finished, etc.
-             *
-             * The system allows notification scheduling and expiration, and users can opt-out of specific notification categories or channels.
-             *
-             * Admins can schedule and broadcast notifications that will be visible to all users, including special server-wide announcements such as scheduled maintenance, high load warnings, and event announcements, to name a few examples.
-             *
-             * @default false
-             */
-            enable_notification_system?: boolean;
-            /**
-             * Enable Oidc
-             * @description Enables and disables OpenID Connect (OIDC) support.
-             * @default false
-             */
-            enable_oidc?: boolean;
-            /**
-             * Enable Quotas
-             * @description Enable enforcement of quotas. Quotas can be set from the Admin interface.
-             * @default false
-             */
-            enable_quotas?: boolean;
-            /**
-             * Enable Tool Recommendations
-             * @description Allow the display of tool recommendations in workflow editor and after tool execution.
-             * If it is enabled and set to true, please enable 'tool_recommendation_model_path' as well
-             * @default false
-             */
-            enable_tool_recommendations?: boolean;
-            /**
-             * Enable Tool Source Display
-             * @description This option allows users to view the tool wrapper source code. This is
-             * safe to enable if you have not hardcoded any secrets in any of the tool
-             * wrappers installed on this Galaxy server. If you have only installed tool
-             * wrappers from public tool sheds and tools shipped with Galaxy there you
-             * can enable this option.
-             * @default false
-             */
-            enable_tool_source_display?: boolean;
-            /**
-             * Enable Unique Workflow Defaults
-             * @description Enable a feature when running workflows. When enabled, default datasets
-             * are selected for "Set at Runtime" inputs from the history such that the
-             * same input will not be selected twice, unless there are more inputs than
-             * compatible datasets in the history.
-             * When false, the most recently added compatible item in the history will
-             * be used for each "Set at Runtime" input, independent of others in the workflow.
-             * @default false
-             */
-            enable_unique_workflow_defaults?: boolean;
-            /**
-             * Expose User Email
-             * @description Expose user list. Setting this to true will expose the user list to
-             * authenticated users. This makes sharing datasets in smaller galaxy instances
-             * much easier as they can type a name/email and have the correct user show up.
-             * This makes less sense on large public Galaxy instances where that data
-             * shouldn't be exposed. For semi-public Galaxies, it may make sense to expose
-             * just the username and not email, or vice versa.
-             *
-             * If enable_beta_gdpr is set to true, then this option will be overridden and set to false.
-             * @default false
-             */
-            expose_user_email?: boolean;
-            /**
-             * File Sources Configured
-             * @description Determines if the Galaxy instance has custom file sources configured.
-             */
-            file_sources_configured: boolean;
-            /**
-             * Ftp Upload Site
-             * @description Enable Galaxy's "Upload via FTP" interface.
-             * You'll need to install and configure an FTP server (we've used ProFTPd since it can use Galaxy's
-             * database for authentication) and set the following two options.
-             * This will be provided to users in the help text as 'log in to the FTP server at '.
-             * Thus, it should be the hostname of your FTP server.
-             */
-            ftp_upload_site?: string;
-            /**
-             * Google Analytics Code
-             * @description You can enter tracking code here to track visitor's behavior
-             * through your Google Analytics account. Example: UA-XXXXXXXX-Y
-             */
-            ga_code?: string;
-            /**
-             * Geographical Server Location Code
-             * @description The estimated geographical location of the server hosting your galaxy instance given as an ISO 3166 code.
-             * This is used to make carbon emissions estimates more accurate as the location effects the
-             * carbon intensity values used in the estimate calculation. This defaults to "GLOBAL" if not set or the
-             * `geographical_server_location_code` value is invalid or unsupported. To see a full list of supported locations,
-             * visit https://galaxyproject.org/admin/carbon_emissions
-             * @default GLOBAL
-             */
-            geographical_server_location_code?: string;
-            /**
-             * Geographical Server Location Name
-             * @description The name of the geographical location of the Galaxy server.
-             */
-            geographical_server_location_name?: string;
-            /**
-             * Has User Tool Filters
-             * @description Determines if the user has tool filters.
-             * @default false
-             */
-            has_user_tool_filters?: boolean;
-            /**
-             * Helpsite Url
-             * @description The URL linked by the "Galaxy Help" link in the "Help" menu.
-             * @default https://help.galaxyproject.org/
-             */
-            helpsite_url?: string;
-            /**
-             * Inactivity Box Content
-             * @description Shown in warning box to users that were not activated yet.
-             * In use only if activation_grace_period is set.
-             * @default Your account has not been activated yet. Feel free to browse around and see what's available, but you won't be able to upload data or run jobs until you have verified your email address.
-             */
-            inactivity_box_content?: string;
-            /**
-             * Interactivetools Enable
-             * @description Enable InteractiveTools.
-             * @default false
-             */
-            interactivetools_enable?: boolean;
-            /**
-             * Is Admin User
-             * @description Determines if the current user is an admin user.
-             * @default false
-             * @enum {boolean}
-             */
-            is_admin_user?: false;
-            /**
-             * Lims Doc Url
-             * @deprecated
-             * @description The URL linked by the "LIMS Documentation" link in the "Help" menu.
-             * **Deprecated**: This is deprecated and will be removed in a future release.
-             * Please use the `helpsite_url` option instead.
-             * @default https://usegalaxy.org/u/rkchak/p/sts
-             */
-            lims_doc_url?: string;
-            /**
-             * Logo Src
-             * @description The brand image source.
-             * @default /static/favicon.svg
-             */
-            logo_src?: string;
-            /**
-             * Logo Src Secondary
-             * @description The custom brand image source.
-             */
-            logo_src_secondary?: string;
-            /**
-             * Logo Url
-             * @description The URL linked by the "Galaxy/brand" text.
-             * @default /
-             */
-            logo_url?: string;
-            /**
-             * Mailing Join Address
-             * @description On the user registration form, users may choose to join a mailing list. This
-             * is the address used to subscribe to the list. Uncomment and leave empty if you
-             * want to remove this option from the user registration form.
-             *
-             * Example value 'galaxy-announce-join@lists.galaxyproject.org'
-             * @default galaxy-announce-join@bx.psu.edu
-             */
-            mailing_join_addr?: string;
-            /**
-             * Markdown To Pdf Available
-             * @deprecated
-             * @description Determines if the markdown to pdf conversion is available.
-             * **Deprecated**: This is deprecated and will be removed in a future release.
-             * @default false
-             */
-            markdown_to_pdf_available?: boolean;
-            /**
-             * Matomo Server
-             * @description Please enter the URL for the Matomo server (including https) so this can be used for tracking
-             * with Matomo (https://matomo.org/).
-             */
-            matomo_server?: string;
-            /**
-             * Matomo Site Id
-             * @description Please enter the site ID for the Matomo server so this can be used for tracking
-             * with Matomo (https://matomo.org/).
-             */
-            matomo_site_id?: string;
-            /**
-             * Message Box Class
-             * @description Class of the message box under the masthead.
-             * Possible values are: 'info' (the default), 'warning', 'error', 'done'.
-             * @default info
-             * @enum {string}
-             */
-            message_box_class?: "info" | "warning" | "error" | "done";
-            /**
-             * Message Box Content
-             * @description Show a message box under the masthead.
-             */
-            message_box_content?: string;
-            /**
-             * Message Box Visible
-             * @description Show a message box under the masthead.
-             * @default false
-             */
-            message_box_visible?: boolean;
-            /**
-             * Nginx Upload Path
-             * @description This value overrides the action set on the file upload form, e.g. the web
-             * path where the nginx_upload_module has been configured to intercept upload requests.
-             */
-            nginx_upload_path?: string;
-            /**
-             * Object Store Allows Id Selection
-             * @description Determines if the object store allows id selection.
-             */
-            object_store_allows_id_selection: boolean;
-            /**
-             * Object Store Ids Allowing Selection
-             * @description The ids of the object stores that can be selected.
-             */
-            object_store_ids_allowing_selection: string[];
-            /**
-             * Oidc
-             * @description OpenID Connect (OIDC) configuration.
-             * @default {}
-             */
-            oidc?: Record<string, never>;
-            /**
-             * Overwrite Model Recommendations
-             * @description Overwrite or append to the tool recommendations by the deep learning model. When set to true, all the recommendations by the deep learning model
-             * are overwritten by the recommendations set by an admin in a config file 'tool_recommendations_overwrite.yml'. When set to false, the recommended tools
-             * by admins and predicted by the deep learning model are shown.
-             * @default false
-             */
-            overwrite_model_recommendations?: boolean;
-            /**
-             * Panel Views
-             * @description Definitions of static toolbox panel views embedded directly in the config instead of reading
-             * YAML from directory with panel_views_dir.
-             */
-            panel_views?: {
-                [key: string]: Record<string, never> | undefined;
-            };
-            /**
-             * Plausible Domain
-             * @description Please enter the URL for the Galaxy server so this can be used for tracking
-             * with Plausible (https://plausible.io/).
-             */
-            plausible_domain?: string;
-            /**
-             * Plausible Server
-             * @description Please enter the URL for the Plausible server (including https) so this can be used for tracking
-             * with Plausible (https://plausible.io/).
-             */
-            plausible_server?: string;
-            /**
-             * Post User Logout Href
-             * @description This is the default url to which users are redirected after they log out.
-             * @default /root/login?is_logout_redirect=true
-             */
-            post_user_logout_href?: string;
-            /**
-             * Power Usage Effectiveness
-             * @description The estimated power usage effectiveness of the data centre housing the server your galaxy
-             * instance is running on. This can make carbon emissions estimates more accurate.
-             * For more information on how to calculate a PUE value, visit
-             * https://en.wikipedia.org/wiki/Power_usage_effectiveness
-             *
-             * @default 1.67
-             */
-            power_usage_effectiveness?: number;
-            /**
-             * Prefer Custos Login
-             * @description Controls the order of the login page to prefer Custos-based login and registration.
-             * @default false
-             */
-            prefer_custos_login?: boolean;
-            /**
-             * Python Version
-             * @description The Python version used by Galaxy as a tuple of integers [mayor, minor].
-             */
-            python: number[];
-            /**
-             * Quota Source Labels
-             * @description The labels of the disk quota sources available on this Galaxy instance.
-             */
-            quota_source_labels: string[];
-            /**
-             * Quota Url
-             * @description The URL linked for quota information in the UI.
-             * @default https://galaxyproject.org/support/account-quotas/
-             */
-            quota_url?: string;
-            /**
-             * Registration Warning Message
-             * @description Registration warning message is used to discourage people from registering
-             * multiple accounts. Applies mostly for the main Galaxy instance.
-             * If no message specified the warning box will not be shown.
-             * @default Please register only one account - we provide this service free of charge and have limited computational resources. Multi-accounts are tracked and will be subjected to account termination and data deletion.
-             */
-            registration_warning_message?: string;
-            /**
-             * Release Doc Base Url
-             * @description The URL linked by the "Galaxy Version" link in the "Help" menu.
-             * @default https://docs.galaxyproject.org/en/release_
-             */
-            release_doc_base_url?: string;
-            /**
-             * Remote User Logout Href
-             * @description If use_remote_user is enabled, you can set this to a URL that will log your users out.
-             */
-            remote_user_logout_href?: string;
-            /**
-             * Require Login
-             * @description Force everyone to log in (disable anonymous access).
-             * @default false
-             */
-            require_login?: boolean;
-            /**
-             * Screencasts Url
-             * @description The URL linked by the "Videos" link in the "Help" menu.
-             * @default https://www.youtube.com/c/galaxyproject
-             */
-            screencasts_url?: string;
-            /**
-             * Select Type Workflow Threshold
-             * @description Due to performance considerations (select2 fields are pretty 'expensive' in terms of memory usage)
-             * Galaxy uses the regular select fields for non-dataset selectors in the workflow run form.
-             * use 0 in order to always use select2 fields, use -1 (default) in order to always use the regular select fields,
-             * use any other positive number as threshold (above threshold: regular select fields will be used)
-             * @default -1
-             */
-            select_type_workflow_threshold?: number;
-            /**
-             * Server Mail Configured
-             * @description Determines if the Galaxy instance has a SMTP server configured.
-             * @default false
-             */
-            server_mail_configured?: boolean;
-            /**
-             * Server Start Time
-             * @description The time when the Galaxy server was started (seconds since Epoch).
-             */
-            server_startttime: number;
-            /**
-             * Show Welcome With Login
-             * @description Show the site's welcome page (see welcome_url) alongside the login page
-             * (even if require_login is true).
-             * @default false
-             */
-            show_welcome_with_login?: boolean;
-            /**
-             * Simplified Workflow Run Ui
-             * @description If set to 'off' by default, always use the traditional workflow form that renders
-             * all steps in the GUI and serializes the tool state of all steps during
-             * invocation. Set to 'prefer' to default to a simplified workflow UI that
-             * only renders the inputs if possible (the workflow must have no disconnected
-             * runtime inputs and not replacement parameters within tool steps). In the
-             * future 'force' may be added an option for Galaskio-style servers that should
-             * only render simplified workflows.
-             * @default prefer
-             * @enum {string}
-             */
-            simplified_workflow_run_ui?: "off" | "prefer";
-            /**
-             * Simplified Workflow Run Ui Job Cache
-             * @description When the simplified workflow run form is rendered, should the invocation use job
-             * caching. This isn't a boolean so an option for 'show-selection' can be added later.
-             * @default off
-             * @enum {string}
-             */
-            simplified_workflow_run_ui_job_cache?: "on" | "off";
-            /**
-             * Simplified Workflow Run Ui Target History
-             * @description When the simplified workflow run form is rendered, should the invocation outputs
-             * be sent to the 'current' history or a 'new' history. If the user should be presented
-             * and option between these - set this to 'prefer_current' or 'prefer_new' to display
-             * a runtime setting with the corresponding default. The default is to provide the
-             * user this option and default it to the current history (the traditional behavior
-             * of Galaxy for years) - this corresponds to the setting 'prefer_current'.
-             *
-             * @default prefer_current
-             * @enum {string}
-             */
-            simplified_workflow_run_ui_target_history?: "prefer_current" | "prefer_new";
-            /**
-             * Single User
-             * @description If an e-mail address is specified here, it will hijack remote user mechanics
-             * (``use_remote_user``) and have the webapp inject a single fixed user. This
-             * has the effect of turning Galaxy into a single user application with no
-             * login or external proxy required. Such applications should not be exposed to
-             * the world.
-             */
-            single_user?: boolean | string;
-            /**
-             * Support Url
-             * @description The URL linked by the "Support" link in the "Help" menu.
-             * @default https://galaxyproject.org/support/
-             */
-            support_url?: string;
-            /**
-             * Terms Url
-             * @description The URL linked by the "Terms and Conditions" link in the "Help" menu, as well
-             * as on the user registration and login forms and in the activation emails.
-             */
-            terms_url?: string;
-            /**
-             * Themes
-             * @description The visual style themes available on this Galaxy instance.
-             */
-            themes: {
-                [key: string]:
-                    | {
-                          [key: string]: string | undefined;
-                      }
-                    | undefined;
-            };
-            /**
-             * Tool Recommendation Model Path
-             * @description Set remote path of the trained model (HDF5 file) for tool recommendation.
-             * @default https://github.com/galaxyproject/galaxy-test-data/raw/master/tool_recommendation_model_v_0.2.hdf5
-             */
-            tool_recommendation_model_path?: string;
-            /**
-             * Tool Training Recommendations
-             * @description Displays a link to training material, if any includes the current tool.
-             * When activated the following options also need to be set:
-             *  tool_training_recommendations_link,
-             *  tool_training_recommendations_api_url
-             *
-             * @default true
-             */
-            tool_training_recommendations?: boolean;
-            /**
-             * Tool Training Recommendations Api Url
-             * @description URL to API describing tutorials containing specific tools.
-             * When CORS is used, make sure to add this host.
-             * @default https://training.galaxyproject.org/training-material/api/top-tools.json
-             */
-            tool_training_recommendations_api_url?: string;
-            /**
-             * Tool Training Recommendations Link
-             * @description Template URL to display all tutorials containing current tool.
-             * Valid template inputs are:
-             *  {repository_owner}
-             *  {name}
-             *  {tool_id}
-             *  {training_tool_identifier}
-             *  {version}
-             *
-             * @default https://training.galaxyproject.org/training-material/by-tool/{training_tool_identifier}.html
-             */
-            tool_training_recommendations_link?: string;
-            /**
-             * Toolbox Auto Sort
-             * @description If true, the toolbox will be sorted by tool id when the toolbox is loaded.
-             * This is useful for ensuring that tools are always displayed in the same
-             * order in the UI. If false, the order of tools in the toolbox will be
-             * preserved as they are loaded from the tool config files.
-             * @default true
-             */
-            toolbox_auto_sort?: boolean;
-            /**
-             * Topk Recommendations
-             * @description Set the number of predictions/recommendations to be made by the model
-             * @default 20
-             */
-            topk_recommendations?: number;
-            /**
-             * Upload From Form Button
-             * @description If 'always-on', add another button to tool form data inputs that allow uploading
-             * data from the tool form in fewer clicks (at the expense of making the form more complicated). This applies to workflows as well.
-             *
-             * Avoiding making this a boolean because we may add options such as 'in-single-form-view'
-             * or 'in-simplified-workflow-views'. https://github.com/galaxyproject/galaxy/pull/9809/files#r461889109
-             * @default always-off
-             * @enum {string}
-             */
-            upload_from_form_button?: "always-on" | "always-off";
-            /**
-             * Use Remote User
-             * @description User authentication can be delegated to an upstream proxy server (usually
-             * Apache). The upstream proxy should set a REMOTE_USER header in the request.
-             * Enabling remote user disables regular logins. For more information, see:
-             * https://docs.galaxyproject.org/en/master/admin/special_topics/apache.html
-             * @default false
-             */
-            use_remote_user?: boolean;
-            /**
-             * User Library Import Dir Available
-             * @description Determines if the user library import directory is available.
-             */
-            user_library_import_dir_available: boolean;
-            /**
-             * Version Extra
-             * @description The extra version of Galaxy.
-             */
-            version_extra?: Record<string, never>;
-            /**
-             * Version Major
-             * @description The major version of Galaxy.
-             */
-            version_major: string;
-            /**
-             * Version Minor
-             * @description The minor version of Galaxy.
-             */
-            version_minor: string;
-            /**
-             * Visualizations Visible
-             * @description Show visualization tab and list in masthead.
-             * @default true
-             */
-            visualizations_visible?: boolean;
-            /**
-             * Welcome Directory
-             * @description Location of New User Welcome data, a single directory containing the
-             * images and JSON of Topics/Subtopics/Slides as export. This location
-             * is relative to galaxy/static
-             * @default plugins/welcome_page/new_user/static/topics/
-             */
-            welcome_directory?: string;
-            /**
-             * Welcome Url
-             * @description The URL of the page to display in Galaxy's middle pane when loaded. This can
-             * be an absolute or relative URL.
-             * @default /static/welcome.html
-             */
-            welcome_url?: string;
-            /**
-             * Wiki Url
-             * @description The URL linked by the "Community Hub" link in the "Help" menu.
-             * @default https://galaxyproject.org/
-             */
-            wiki_url?: string;
         };
         /** ContentsObject */
         ContentsObject: {
@@ -10554,6 +9868,688 @@ export interface components {
             enabled: boolean;
         };
         /**
+         * UserConfigResponse
+         * @description Configuration values that can be exposed to users.
+         */
+        UserConfigResponse: {
+            /**
+             * Admin Tool Recommendations Path
+             * @description Set path to the additional tool preferences from Galaxy admins.
+             * It has two blocks. One for listing deprecated tools which will be removed from the recommendations and
+             * another is for adding additional tools to be recommended along side those from the deep learning model.
+             * @default tool_recommendations_overwrite.yml
+             */
+            admin_tool_recommendations_path?: string;
+            /**
+             * Allow User Creation
+             * @description Allow unregistered users to create new accounts (otherwise, they will have to be created by an admin).
+             * @default true
+             */
+            allow_user_creation?: boolean;
+            /**
+             * Allow User Dataset Purge
+             * @description Allow users to remove their datasets from disk immediately (otherwise,
+             * datasets will be removed after a time period specified by an administrator in
+             * the cleanup scripts run via cron)
+             * @default true
+             */
+            allow_user_dataset_purge?: boolean;
+            /**
+             * Allow User Impersonation
+             * @description Allow administrators to log in as other users (useful for debugging).
+             * @default false
+             */
+            allow_user_impersonation?: boolean;
+            /**
+             * Aws Estimate
+             * @description This flag enables an AWS cost estimate for every job based on their runtime matrices.
+             * CPU, RAM and runtime usage is mapped against AWS pricing table.
+             * Please note, that those numbers are only estimates.
+             * @default false
+             */
+            aws_estimate?: boolean;
+            /**
+             * Brand
+             * @description Append "{brand}" text to the masthead.
+             */
+            brand?: string;
+            /**
+             * Carbon Emission Estimates
+             * @description This flag enables carbon emissions estimates for every job based on its runtime metrics.
+             * CPU and RAM usage and the total job runtime are used to determine an estimate value.
+             * These estimates and are based off of the work of the Green Algorithms Project and
+             * the United States Environmental Protection Agency (EPA).
+             * Visit https://www.green-algorithms.org/ and https://www.epa.gov/energy/greenhouse-gas-equivalencies-calculator.
+             * for more details.
+             * @default true
+             */
+            carbon_emission_estimates?: boolean;
+            /**
+             * Carbon Intensity
+             * @description The carbon intensity of the electricity used by the Galaxy server.
+             */
+            carbon_intensity?: number;
+            /**
+             * Chunk Upload Size
+             * @description Galaxy can upload user files in chunks without using nginx. Enable the chunk
+             * uploader by specifying a chunk size larger than 0. The chunk size is specified
+             * in bytes (default: 10MB).
+             *
+             * @default 10485760
+             */
+            chunk_upload_size?: number;
+            /**
+             * Citation Url
+             * @description The URL linked by the "How to Cite Galaxy" link in the "Help" menu.
+             * @default https://galaxyproject.org/citing-galaxy
+             */
+            citation_url?: string;
+            /**
+             * Citations Export Message Html
+             * @description Message to display on the export citations tool page
+             * @default When writing up your analysis, remember to include all references that should be cited in order to completely describe your work. Also, please remember to <a href="https://galaxyproject.org/citing-galaxy">cite Galaxy</a>.
+             */
+            citations_export_message_html?: string;
+            /**
+             * Cookie Domain
+             * @description Tell Galaxy that multiple domains sharing the same root are associated
+             * to this instance and wants to share the same session cookie.
+             * This allow a user to stay logged in when passing from one subdomain to the other.
+             * This root domain will be written in the unique session cookie shared by all subdomains.
+             */
+            cookie_domain?: string;
+            /**
+             * Datatypes Disable Auto
+             * @description Disable the 'Auto-detect' option for file uploads
+             * @default false
+             */
+            datatypes_disable_auto?: boolean;
+            /**
+             * Default Locale
+             * @description Default localization for Galaxy UI.
+             * Allowed values are listed at the end of client/src/nls/locale.js.
+             * With the default value (auto), the locale will be automatically adjusted to
+             * the user's navigator language.
+             * Users can override this settings in their user preferences if the localization
+             * settings are enabled in user_preferences_extra_conf.yml
+             * @default auto
+             */
+            default_locale?: string;
+            /**
+             * Default Panel View
+             * @description Default tool panel view for the current Galaxy configuration. This should refer to an id of
+             * a panel view defined using the panel_views or panel_views_dir configuration options or an
+             * EDAM panel view. The default panel view is simply called `default` and refers to the tool
+             * panel state defined by the integrated tool panel.
+             * @default default
+             */
+            default_panel_view?: string;
+            /**
+             * Enable Account Interface
+             * @description Allow users to manage their account data, change passwords or delete their accounts.
+             * @default true
+             */
+            enable_account_interface?: boolean;
+            /**
+             * Enable Beacon Integration
+             * @description Enables user preferences and api endpoint for the beacon integration.
+             * @default false
+             */
+            enable_beacon_integration?: boolean;
+            /**
+             * Enable Beta Markdown Export
+             * @description Enable export of Galaxy Markdown documents (pages and workflow reports)
+             * to PDF. Requires manual installation and setup of weasyprint (latest version
+             * available for Python 2.7 is 0.42).
+             * @default false
+             */
+            enable_beta_markdown_export?: boolean;
+            /**
+             * Enable Celery Tasks
+             * @description Offload long-running tasks to a Celery task queue.
+             * Activate this only if you have setup a Celery worker for Galaxy.
+             * For details, see https://docs.galaxyproject.org/en/master/admin/production.html
+             * @default false
+             */
+            enable_celery_tasks?: boolean;
+            /**
+             * Enable Notification System
+             * @description Enables the Notification System integrated in Galaxy.
+             *
+             * Users can receive automatic notifications when a certain resource is shared with them or when some long running operations have finished, etc.
+             *
+             * The system allows notification scheduling and expiration, and users can opt-out of specific notification categories or channels.
+             *
+             * Admins can schedule and broadcast notifications that will be visible to all users, including special server-wide announcements such as scheduled maintenance, high load warnings, and event announcements, to name a few examples.
+             *
+             * @default false
+             */
+            enable_notification_system?: boolean;
+            /**
+             * Enable Oidc
+             * @description Enables and disables OpenID Connect (OIDC) support.
+             * @default false
+             */
+            enable_oidc?: boolean;
+            /**
+             * Enable Quotas
+             * @description Enable enforcement of quotas. Quotas can be set from the Admin interface.
+             * @default false
+             */
+            enable_quotas?: boolean;
+            /**
+             * Enable Tool Recommendations
+             * @description Allow the display of tool recommendations in workflow editor and after tool execution.
+             * If it is enabled and set to true, please enable 'tool_recommendation_model_path' as well
+             * @default false
+             */
+            enable_tool_recommendations?: boolean;
+            /**
+             * Enable Tool Source Display
+             * @description This option allows users to view the tool wrapper source code. This is
+             * safe to enable if you have not hardcoded any secrets in any of the tool
+             * wrappers installed on this Galaxy server. If you have only installed tool
+             * wrappers from public tool sheds and tools shipped with Galaxy there you
+             * can enable this option.
+             * @default false
+             */
+            enable_tool_source_display?: boolean;
+            /**
+             * Enable Unique Workflow Defaults
+             * @description Enable a feature when running workflows. When enabled, default datasets
+             * are selected for "Set at Runtime" inputs from the history such that the
+             * same input will not be selected twice, unless there are more inputs than
+             * compatible datasets in the history.
+             * When false, the most recently added compatible item in the history will
+             * be used for each "Set at Runtime" input, independent of others in the workflow.
+             * @default false
+             */
+            enable_unique_workflow_defaults?: boolean;
+            /**
+             * Expose User Email
+             * @description Expose user list. Setting this to true will expose the user list to
+             * authenticated users. This makes sharing datasets in smaller galaxy instances
+             * much easier as they can type a name/email and have the correct user show up.
+             * This makes less sense on large public Galaxy instances where that data
+             * shouldn't be exposed. For semi-public Galaxies, it may make sense to expose
+             * just the username and not email, or vice versa.
+             *
+             * If enable_beta_gdpr is set to true, then this option will be overridden and set to false.
+             * @default false
+             */
+            expose_user_email?: boolean;
+            /**
+             * File Sources Configured
+             * @description Determines if the Galaxy instance has custom file sources configured.
+             */
+            file_sources_configured: boolean;
+            /**
+             * Ftp Upload Site
+             * @description Enable Galaxy's "Upload via FTP" interface.
+             * You'll need to install and configure an FTP server (we've used ProFTPd since it can use Galaxy's
+             * database for authentication) and set the following two options.
+             * This will be provided to users in the help text as 'log in to the FTP server at '.
+             * Thus, it should be the hostname of your FTP server.
+             */
+            ftp_upload_site?: string;
+            /**
+             * Google Analytics Code
+             * @description You can enter tracking code here to track visitor's behavior
+             * through your Google Analytics account. Example: UA-XXXXXXXX-Y
+             */
+            ga_code?: string;
+            /**
+             * Geographical Server Location Code
+             * @description The estimated geographical location of the server hosting your galaxy instance given as an ISO 3166 code.
+             * This is used to make carbon emissions estimates more accurate as the location effects the
+             * carbon intensity values used in the estimate calculation. This defaults to "GLOBAL" if not set or the
+             * `geographical_server_location_code` value is invalid or unsupported. To see a full list of supported locations,
+             * visit https://galaxyproject.org/admin/carbon_emissions
+             * @default GLOBAL
+             */
+            geographical_server_location_code?: string;
+            /**
+             * Geographical Server Location Name
+             * @description The name of the geographical location of the Galaxy server.
+             */
+            geographical_server_location_name?: string;
+            /**
+             * Has User Tool Filters
+             * @description Determines if the user has tool filters.
+             * @default false
+             */
+            has_user_tool_filters?: boolean;
+            /**
+             * Helpsite Url
+             * @description The URL linked by the "Galaxy Help" link in the "Help" menu.
+             * @default https://help.galaxyproject.org/
+             */
+            helpsite_url?: string;
+            /**
+             * Inactivity Box Content
+             * @description Shown in warning box to users that were not activated yet.
+             * In use only if activation_grace_period is set.
+             * @default Your account has not been activated yet. Feel free to browse around and see what's available, but you won't be able to upload data or run jobs until you have verified your email address.
+             */
+            inactivity_box_content?: string;
+            /**
+             * Interactivetools Enable
+             * @description Enable InteractiveTools.
+             * @default false
+             */
+            interactivetools_enable?: boolean;
+            /**
+             * Is Admin User
+             * @description Determines if the current user is an admin user.
+             * @default false
+             * @enum {boolean}
+             */
+            is_admin_user?: false;
+            /**
+             * Lims Doc Url
+             * @deprecated
+             * @description The URL linked by the "LIMS Documentation" link in the "Help" menu.
+             * **Deprecated**: This is deprecated and will be removed in a future release.
+             * Please use the `helpsite_url` option instead.
+             * @default https://usegalaxy.org/u/rkchak/p/sts
+             */
+            lims_doc_url?: string;
+            /**
+             * Logo Src
+             * @description The brand image source.
+             * @default /static/favicon.svg
+             */
+            logo_src?: string;
+            /**
+             * Logo Src Secondary
+             * @description The custom brand image source.
+             */
+            logo_src_secondary?: string;
+            /**
+             * Logo Url
+             * @description The URL linked by the "Galaxy/brand" text.
+             * @default /
+             */
+            logo_url?: string;
+            /**
+             * Mailing Join Address
+             * @description On the user registration form, users may choose to join a mailing list. This
+             * is the address used to subscribe to the list. Uncomment and leave empty if you
+             * want to remove this option from the user registration form.
+             *
+             * Example value 'galaxy-announce-join@lists.galaxyproject.org'
+             * @default galaxy-announce-join@bx.psu.edu
+             */
+            mailing_join_addr?: string;
+            /**
+             * Markdown To Pdf Available
+             * @deprecated
+             * @description Determines if the markdown to pdf conversion is available.
+             * **Deprecated**: This is deprecated and will be removed in a future release.
+             * @default false
+             */
+            markdown_to_pdf_available?: boolean;
+            /**
+             * Matomo Server
+             * @description Please enter the URL for the Matomo server (including https) so this can be used for tracking
+             * with Matomo (https://matomo.org/).
+             */
+            matomo_server?: string;
+            /**
+             * Matomo Site Id
+             * @description Please enter the site ID for the Matomo server so this can be used for tracking
+             * with Matomo (https://matomo.org/).
+             */
+            matomo_site_id?: string;
+            /**
+             * Message Box Class
+             * @description Class of the message box under the masthead.
+             * Possible values are: 'info' (the default), 'warning', 'error', 'done'.
+             * @default info
+             * @enum {string}
+             */
+            message_box_class?: "info" | "warning" | "error" | "done";
+            /**
+             * Message Box Content
+             * @description Show a message box under the masthead.
+             */
+            message_box_content?: string;
+            /**
+             * Message Box Visible
+             * @description Show a message box under the masthead.
+             * @default false
+             */
+            message_box_visible?: boolean;
+            /**
+             * Nginx Upload Path
+             * @description This value overrides the action set on the file upload form, e.g. the web
+             * path where the nginx_upload_module has been configured to intercept upload requests.
+             */
+            nginx_upload_path?: string;
+            /**
+             * Object Store Allows Id Selection
+             * @description Determines if the object store allows id selection.
+             */
+            object_store_allows_id_selection: boolean;
+            /**
+             * Object Store Ids Allowing Selection
+             * @description The ids of the object stores that can be selected.
+             */
+            object_store_ids_allowing_selection: string[];
+            /**
+             * Oidc
+             * @description OpenID Connect (OIDC) configuration.
+             * @default {}
+             */
+            oidc?: Record<string, never>;
+            /**
+             * Overwrite Model Recommendations
+             * @description Overwrite or append to the tool recommendations by the deep learning model. When set to true, all the recommendations by the deep learning model
+             * are overwritten by the recommendations set by an admin in a config file 'tool_recommendations_overwrite.yml'. When set to false, the recommended tools
+             * by admins and predicted by the deep learning model are shown.
+             * @default false
+             */
+            overwrite_model_recommendations?: boolean;
+            /**
+             * Panel Views
+             * @description Definitions of static toolbox panel views embedded directly in the config instead of reading
+             * YAML from directory with panel_views_dir.
+             */
+            panel_views?: Record<string, never>;
+            /**
+             * Plausible Domain
+             * @description Please enter the URL for the Galaxy server so this can be used for tracking
+             * with Plausible (https://plausible.io/).
+             */
+            plausible_domain?: string;
+            /**
+             * Plausible Server
+             * @description Please enter the URL for the Plausible server (including https) so this can be used for tracking
+             * with Plausible (https://plausible.io/).
+             */
+            plausible_server?: string;
+            /**
+             * Post User Logout Href
+             * @description This is the default url to which users are redirected after they log out.
+             * @default /root/login?is_logout_redirect=true
+             */
+            post_user_logout_href?: string;
+            /**
+             * Power Usage Effectiveness
+             * @description The estimated power usage effectiveness of the data centre housing the server your galaxy
+             * instance is running on. This can make carbon emissions estimates more accurate.
+             * For more information on how to calculate a PUE value, visit
+             * https://en.wikipedia.org/wiki/Power_usage_effectiveness
+             *
+             * @default 1.67
+             */
+            power_usage_effectiveness?: number;
+            /**
+             * Prefer Custos Login
+             * @description Controls the order of the login page to prefer Custos-based login and registration.
+             * @default false
+             */
+            prefer_custos_login?: boolean;
+            /**
+             * Python Version
+             * @description The Python version used by Galaxy as a tuple of integers [mayor, minor].
+             */
+            python: number[];
+            /**
+             * Quota Source Labels
+             * @description The labels of the disk quota sources available on this Galaxy instance.
+             */
+            quota_source_labels: string[];
+            /**
+             * Quota Url
+             * @description The URL linked for quota information in the UI.
+             * @default https://galaxyproject.org/support/account-quotas/
+             */
+            quota_url?: string;
+            /**
+             * Registration Warning Message
+             * @description Registration warning message is used to discourage people from registering
+             * multiple accounts. Applies mostly for the main Galaxy instance.
+             * If no message specified the warning box will not be shown.
+             * @default Please register only one account - we provide this service free of charge and have limited computational resources. Multi-accounts are tracked and will be subjected to account termination and data deletion.
+             */
+            registration_warning_message?: string;
+            /**
+             * Release Doc Base Url
+             * @description The URL linked by the "Galaxy Version" link in the "Help" menu.
+             * @default https://docs.galaxyproject.org/en/release_
+             */
+            release_doc_base_url?: string;
+            /**
+             * Remote User Logout Href
+             * @description If use_remote_user is enabled, you can set this to a URL that will log your users out.
+             */
+            remote_user_logout_href?: string;
+            /**
+             * Require Login
+             * @description Force everyone to log in (disable anonymous access).
+             * @default false
+             */
+            require_login?: boolean;
+            /**
+             * Screencasts Url
+             * @description The URL linked by the "Videos" link in the "Help" menu.
+             * @default https://www.youtube.com/c/galaxyproject
+             */
+            screencasts_url?: string;
+            /**
+             * Select Type Workflow Threshold
+             * @description Due to performance considerations (select2 fields are pretty 'expensive' in terms of memory usage)
+             * Galaxy uses the regular select fields for non-dataset selectors in the workflow run form.
+             * use 0 in order to always use select2 fields, use -1 (default) in order to always use the regular select fields,
+             * use any other positive number as threshold (above threshold: regular select fields will be used)
+             * @default -1
+             */
+            select_type_workflow_threshold?: number;
+            /**
+             * Server Mail Configured
+             * @description Determines if the Galaxy instance has a SMTP server configured.
+             * @default false
+             */
+            server_mail_configured?: boolean;
+            /**
+             * Server Start Time
+             * @description The time when the Galaxy server was started (seconds since Epoch).
+             */
+            server_startttime: number;
+            /**
+             * Show Welcome With Login
+             * @description Show the site's welcome page (see welcome_url) alongside the login page
+             * (even if require_login is true).
+             * @default false
+             */
+            show_welcome_with_login?: boolean;
+            /**
+             * Simplified Workflow Run Ui
+             * @description If set to 'off' by default, always use the traditional workflow form that renders
+             * all steps in the GUI and serializes the tool state of all steps during
+             * invocation. Set to 'prefer' to default to a simplified workflow UI that
+             * only renders the inputs if possible (the workflow must have no disconnected
+             * runtime inputs and not replacement parameters within tool steps). In the
+             * future 'force' may be added an option for Galaskio-style servers that should
+             * only render simplified workflows.
+             * @default prefer
+             * @enum {string}
+             */
+            simplified_workflow_run_ui?: "off" | "prefer";
+            /**
+             * Simplified Workflow Run Ui Job Cache
+             * @description When the simplified workflow run form is rendered, should the invocation use job
+             * caching. This isn't a boolean so an option for 'show-selection' can be added later.
+             * @default off
+             * @enum {string}
+             */
+            simplified_workflow_run_ui_job_cache?: "on" | "off";
+            /**
+             * Simplified Workflow Run Ui Target History
+             * @description When the simplified workflow run form is rendered, should the invocation outputs
+             * be sent to the 'current' history or a 'new' history. If the user should be presented
+             * and option between these - set this to 'prefer_current' or 'prefer_new' to display
+             * a runtime setting with the corresponding default. The default is to provide the
+             * user this option and default it to the current history (the traditional behavior
+             * of Galaxy for years) - this corresponds to the setting 'prefer_current'.
+             *
+             * @default prefer_current
+             * @enum {string}
+             */
+            simplified_workflow_run_ui_target_history?: "prefer_current" | "prefer_new";
+            /**
+             * Single User
+             * @description If an e-mail address is specified here, it will hijack remote user mechanics
+             * (``use_remote_user``) and have the webapp inject a single fixed user. This
+             * has the effect of turning Galaxy into a single user application with no
+             * login or external proxy required. Such applications should not be exposed to
+             * the world.
+             */
+            single_user?: boolean | string;
+            /**
+             * Support Url
+             * @description The URL linked by the "Support" link in the "Help" menu.
+             * @default https://galaxyproject.org/support/
+             */
+            support_url?: string;
+            /**
+             * Terms Url
+             * @description The URL linked by the "Terms and Conditions" link in the "Help" menu, as well
+             * as on the user registration and login forms and in the activation emails.
+             */
+            terms_url?: string;
+            /**
+             * Themes
+             * @description The visual style themes available on this Galaxy instance.
+             */
+            themes: {
+                [key: string]:
+                    | {
+                          [key: string]: string | undefined;
+                      }
+                    | undefined;
+            };
+            /**
+             * Tool Recommendation Model Path
+             * @description Set remote path of the trained model (HDF5 file) for tool recommendation.
+             * @default https://github.com/galaxyproject/galaxy-test-data/raw/master/tool_recommendation_model_v_0.2.hdf5
+             */
+            tool_recommendation_model_path?: string;
+            /**
+             * Tool Training Recommendations
+             * @description Displays a link to training material, if any includes the current tool.
+             * When activated the following options also need to be set:
+             *  tool_training_recommendations_link,
+             *  tool_training_recommendations_api_url
+             *
+             * @default true
+             */
+            tool_training_recommendations?: boolean;
+            /**
+             * Tool Training Recommendations Api Url
+             * @description URL to API describing tutorials containing specific tools.
+             * When CORS is used, make sure to add this host.
+             * @default https://training.galaxyproject.org/training-material/api/top-tools.json
+             */
+            tool_training_recommendations_api_url?: string;
+            /**
+             * Tool Training Recommendations Link
+             * @description Template URL to display all tutorials containing current tool.
+             * Valid template inputs are:
+             *  {repository_owner}
+             *  {name}
+             *  {tool_id}
+             *  {training_tool_identifier}
+             *  {version}
+             *
+             * @default https://training.galaxyproject.org/training-material/by-tool/{training_tool_identifier}.html
+             */
+            tool_training_recommendations_link?: string;
+            /**
+             * Toolbox Auto Sort
+             * @description If true, the toolbox will be sorted by tool id when the toolbox is loaded.
+             * This is useful for ensuring that tools are always displayed in the same
+             * order in the UI. If false, the order of tools in the toolbox will be
+             * preserved as they are loaded from the tool config files.
+             * @default true
+             */
+            toolbox_auto_sort?: boolean;
+            /**
+             * Topk Recommendations
+             * @description Set the number of predictions/recommendations to be made by the model
+             * @default 20
+             */
+            topk_recommendations?: number;
+            /**
+             * Upload From Form Button
+             * @description If 'always-on', add another button to tool form data inputs that allow uploading
+             * data from the tool form in fewer clicks (at the expense of making the form more complicated). This applies to workflows as well.
+             *
+             * Avoiding making this a boolean because we may add options such as 'in-single-form-view'
+             * or 'in-simplified-workflow-views'. https://github.com/galaxyproject/galaxy/pull/9809/files#r461889109
+             * @default always-off
+             * @enum {string}
+             */
+            upload_from_form_button?: "always-on" | "always-off";
+            /**
+             * Use Remote User
+             * @description User authentication can be delegated to an upstream proxy server (usually
+             * Apache). The upstream proxy should set a REMOTE_USER header in the request.
+             * Enabling remote user disables regular logins. For more information, see:
+             * https://docs.galaxyproject.org/en/master/admin/special_topics/apache.html
+             * @default false
+             */
+            use_remote_user?: boolean;
+            /**
+             * User Library Import Dir Available
+             * @description Determines if the user library import directory is available.
+             */
+            user_library_import_dir_available: boolean;
+            /**
+             * Version Extra
+             * @description The extra version of Galaxy.
+             */
+            version_extra?: Record<string, never>;
+            /**
+             * Version Major
+             * @description The major version of Galaxy.
+             */
+            version_major: string;
+            /**
+             * Version Minor
+             * @description The minor version of Galaxy.
+             */
+            version_minor: string;
+            /**
+             * Visualizations Visible
+             * @description Show visualization tab and list in masthead.
+             * @default true
+             */
+            visualizations_visible?: boolean;
+            /**
+             * Welcome Directory
+             * @description Location of New User Welcome data, a single directory containing the
+             * images and JSON of Topics/Subtopics/Slides as export. This location
+             * is relative to galaxy/static
+             * @default plugins/welcome_page/new_user/static/topics/
+             */
+            welcome_directory?: string;
+            /**
+             * Welcome Url
+             * @description The URL of the page to display in Galaxy's middle pane when loaded. This can
+             * be an absolute or relative URL.
+             * @default /static/welcome.html
+             */
+            welcome_url?: string;
+            /**
+             * Wiki Url
+             * @description The URL linked by the "Community Hub" link in the "Help" menu.
+             * @default https://galaxyproject.org/
+             */
+            wiki_url?: string;
+        };
+        /**
          * UserCreationPayload
          * @description Base model definition with common configuration used by all derived models.
          */
@@ -11113,7 +11109,7 @@ export interface operations {
             200: {
                 content: {
                     "application/json":
-                        | components["schemas"]["ConfigResponse"]
+                        | components["schemas"]["UserConfigResponse"]
                         | components["schemas"]["AdminOnlyConfigResponse"];
                 };
             };

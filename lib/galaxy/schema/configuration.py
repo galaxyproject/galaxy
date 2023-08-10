@@ -175,13 +175,13 @@ IsAdminUserField = Field(
 )
 
 
-class AdminExposableComputedGalaxyConfig(ComputedGalaxyConfig):
+class AdminOnlyComputedGalaxyConfig(ComputedGalaxyConfig):
     """Contains Galaxy configuration options computed at runtime exposed to admins only."""
 
     is_admin_user: Annotated[Literal[True], IsAdminUserField] = True
 
 
-class UserExposableComputedGalaxyConfig(ComputedGalaxyConfig):
+class UserOnlyComputedGalaxyConfig(ComputedGalaxyConfig):
     """Contains Galaxy configuration options computed at runtime that can be exposed to users."""
 
     is_admin_user: Annotated[Literal[False], IsAdminUserField] = False
@@ -215,7 +215,7 @@ class SchemaCompatibleConfigValues(Model):
     panel_views: Annotated[Optional[PanelViewList], PanelViewField] = None
 
 
-class UserExposableGalaxyConfig(Model):
+class ExposableGalaxyConfig(Model):
     """Contains Galaxy configuration values that can be exposed to regular users.
 
     These values are used to generate the OpenAPI and Configuration YAML schema for the Galaxy configuration.
@@ -947,7 +947,7 @@ Admins can schedule and broadcast notifications that will be visible to all user
     ] = False
 
 
-class AdminExposableGalaxyConfig(UserExposableGalaxyConfig):
+class AdminExposableGalaxyConfig(ExposableGalaxyConfig):
     """Configuration options available only to Galaxy admins.
 
     These values are used to generate the OpenAPI and Configuration YAML schema for the Galaxy configuration.
@@ -4779,3 +4779,20 @@ are defined, users can choose their preferred theme in the client.
             description="""The interval in seconds between attempts to delete all expired notifications from the database (every 24 hours by default). Runs in a Celery task.""",
         ),
     ] = 86400
+
+
+class UserConfigResponse(UserOnlyComputedGalaxyConfig, ExposableGalaxyConfig, ApiCompatibleConfigValues):
+    """Configuration values that can be exposed to users."""
+
+    pass
+
+
+class AdminOnlyConfigResponse(AdminOnlyComputedGalaxyConfig, AdminExposableGalaxyConfig, ApiCompatibleConfigValues):
+    """Configuration values that can be exposed to admins."""
+
+    pass
+
+
+AnyGalaxyConfigResponse = Annotated[
+    Union[UserConfigResponse, AdminOnlyConfigResponse], Field(discriminator="is_admin_user")
+]
