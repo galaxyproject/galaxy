@@ -124,6 +124,7 @@ function removeUpload() {
             </div>
             <UploadSettingsSelect
                 v-if="listExtensions !== null"
+                class="upload-extension"
                 :value="extension"
                 :disabled="isDisabled"
                 :options="listExtensions"
@@ -135,12 +136,14 @@ function removeUpload() {
                 :list-extensions="listExtensions" />
             <UploadSettingsSelect
                 v-if="listDbKeys !== null"
+                class="upload-genome"
                 :value="dbKey"
                 :disabled="isDisabled"
                 :options="listDbKeys"
                 placeholder="Select Reference"
                 @input="inputDbKey" />
             <UploadSettings
+                class="upload-settings"
                 :deferred="deferred"
                 :disabled="isDisabled"
                 :to-posix-lines="toPosixLines"

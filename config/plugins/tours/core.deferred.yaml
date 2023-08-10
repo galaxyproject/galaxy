@@ -38,7 +38,7 @@ steps:
       postclick: true
 
     - title: Close Settings
-      element: .popover-close
+      element: .popper-close
       postclick: true
 
     - title: Start Upload

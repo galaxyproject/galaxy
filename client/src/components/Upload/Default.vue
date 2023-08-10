@@ -132,6 +132,8 @@ function eventAnnounce(index, file) {
     const uploadModel = {
         ...defaultModel,
         id: index,
+        dbKey: dbKey.value,
+        extension: extension.value,
         fileData: file,
         fileMode: file.mode || "local",
         fileName: file.name,
@@ -304,6 +306,7 @@ function updateExtension(newExtension) {
 
 /** Update reference dataset for all entries */
 function updateDbKey(newDbKey) {
+    dbKey.value = newDbKey;
     uploadValues.value.forEach((model) => {
         if (model.status === "init" && model.dbKey === props.defaultDbKey) {
             model.dbKey = newDbKey;
@@ -381,6 +384,7 @@ defineExpose({
             <span v-if="isCollection" class="upload-footer-title">Collection:</span>
             <UploadSettingsSelect
                 v-if="isCollection"
+                class="upload-footer-collection-type"
                 :value="collectionType"
                 :disabled="isRunning"
                 :options="COLLECTION_TYPES"
@@ -388,6 +392,7 @@ defineExpose({
                 @input="updateCollectionType" />
             <span class="upload-footer-title">Type (set all):</span>
             <UploadSettingsSelect
+                class="upload-footer-extension"
                 :value="extension"
                 :disabled="isRunning"
                 :options="listExtensions"
@@ -396,6 +401,7 @@ defineExpose({
             <UploadExtensionDetails :extension="extension" :list-extensions="listExtensions" />
             <span class="upload-footer-title">Reference (set all):</span>
             <UploadSettingsSelect
+                class="upload-footer-genome"
                 :value="dbKey"
                 :disabled="isRunning"
                 :options="listDbKeys"

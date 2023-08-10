@@ -35,19 +35,22 @@ const emit = defineEmits(["input"]);
         <template v-slot:reference>
             <FontAwesomeIcon class="cursor-pointer" icon="fa-cog" />
         </template>
-        <div class="upload-settings px-2 py-2 no-highlight">
+        <div class="upload-settings-content px-2 py-2 no-highlight">
             <table class="upload-settings-table grid">
                 <tbody>
                     <UploadSettingsOption
+                        class="upload-space-to-tab"
                         title="Convert spaces to tabs"
                         :value="spaceToTab"
                         @click="emit('input', 'spaceToTab')" />
                     <UploadSettingsOption
+                        class="upload-to-posix-lines"
                         title="Use POSIX standard"
                         :value="toPosixLines"
                         @click="emit('input', 'toPosixLines')" />
                     <UploadSettingsOption
                         v-if="deferred !== null"
+                        class="upload-deferred"
                         title="Defer dataset resolution"
                         :value="deferred"
                         @click="emit('input', 'deferred')" />
@@ -60,7 +63,7 @@ const emit = defineEmits(["input"]);
 
 <style lang="scss">
 @import "theme/blue.scss";
-.upload-settings {
+.upload-settings-content {
     position: relative;
     .upload-settings-cover {
         background: $white;

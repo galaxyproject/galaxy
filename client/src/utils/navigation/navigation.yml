@@ -357,7 +357,7 @@ edit_collection_attributes:
     data_value:
       type: xpath
       selector: '//span[contains(text(), "${data_change}")]'
-    genome_select_search: ".database-dropdown input.multiselect__input"
+    genome_select_search: '.database-dropdown input.multiselect__input'
     datatype_select_search: '.datatype-dropdown input.multiselect__input'
     save_dbkey_btn: '.save-dbkey-edit'
     save_datatype_btn: '.save-datatype-edit'
@@ -1038,16 +1038,19 @@ upload:
     ftp_items: '.upload-ftp-row'
     ftp_close: '.popover-header .popover-close'
     row: '#upload-row-${n}'
-    settings_button: '#upload-row-${n} .upload-settings'
+    settings_button: '#upload-row-${n} .upload-settings span'
+    title: '#upload-row-${n} .upload-title'
     paste_content: '#upload-row-${n} .upload-text-content'
     settings: '.upload-settings-table'
+    setting_space_to_tab: '.upload-space-to-tab'
     setting_deferred: '.upload-deferred'
     start: '#activity-upload'
-    start_uploading: '.upload-start'
-    close: '.upload-close'
+    start_uploading: '#btn-start'
+    create: '#btn-new'
+    close: '#btn-close'
     rule_source_content: 'textarea.upload-rule-source-content'
     rule_select_data_type: '.rule-data-type'
-    rule_select_input_type: '.rule-select-type'
+    rule_dataset_dialog: '[data-description="rules dataset dialog"]'
     rule_dataset_selector:
       selector: '.selection-dialog-modal'
     rule_dataset_selector_row:

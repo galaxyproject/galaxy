@@ -222,9 +222,8 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         self.history_panel_wait_for_hid_ok(1)
         self.upload_rule_start()
         self.upload_rule_set_data_type("Collection")
-        self.upload_rule_set_input_type("History Dataset")
+        self.upload_rule_dataset_dialog()
         self.upload_rule_set_dataset(1)
-        self._wait_for_upload_modal()
         self.screenshot("rules_example_2_1_inputs")
         self.upload_rule_build()
         rule_builder = self.components.rule_builder
@@ -250,7 +249,7 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         self.history_panel_wait_for_hid_ok(1)
         self.upload_rule_start()
         self.upload_rule_set_data_type("Collection")
-        self.upload_rule_set_input_type("History Dataset")
+        self.upload_rule_dataset_dialog()
         self.upload_rule_set_dataset(1)
         self._wait_for_upload_modal()
         self.screenshot("rules_example_3_1_inputs")
@@ -361,7 +360,7 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         self.history_panel_wait_for_hid_ok(1)
         self.upload_rule_start()
         self.upload_rule_set_data_type("Collection")
-        self.upload_rule_set_input_type("History Dataset")
+        self.upload_rule_dataset_dialog()
         self.upload_rule_set_dataset(1)
 
         self._wait_for_upload_modal()
@@ -439,7 +438,7 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         self.history_panel_wait_for_hid_ok(1)
         self.upload_rule_start()
         self.upload_rule_set_data_type("Collection")
-        self.upload_rule_set_input_type("History Dataset")
+        self.upload_rule_dataset_dialog()
         self.upload_rule_set_dataset(1)
 
         self._wait_for_upload_modal()
@@ -493,7 +492,7 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
         self.history_panel_wait_for_hid_ok(1)
         self.upload_rule_start()
         self.upload_rule_set_data_type("Collection")
-        self.upload_rule_set_input_type("History Dataset")
+        self.upload_rule_dataset_dialog()
         self.upload_rule_set_dataset(1)
 
     # @selenium_test

@@ -20,7 +20,7 @@ describe("RulesInput", () => {
     it("rendering and reset", async () => {
         const wrapper = getWrapper();
         expect(wrapper.find("#btn-reset").classes()).toEqual(expect.arrayContaining(["disabled"]));
-        const textInput = wrapper.find(".upload-text-area");
+        const textInput = wrapper.find(".upload-rule-source-content");
         expect(textInput.element.value).toBe("");
         await textInput.setValue("a b c d");
         expect(textInput.element.value).toBe("a b c d");

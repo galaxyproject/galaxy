@@ -34,6 +34,8 @@ const props = defineProps({
     },
 });
 
+const emit = defineEmits(["dismiss"]);
+
 const dataType = ref("datasets");
 const errorMessage = ref(null);
 const ftpFiles = ref([]);
@@ -59,6 +61,7 @@ function eventBuild() {
         entry.elements = uris.value;
     }
     Galaxy.currHistoryPanel.buildCollection("rules", entry, null, true);
+    emit("dismiss");
 }
 
 function eventReset() {
@@ -123,20 +126,20 @@ function inputRemote() {
         <div v-localize class="upload-header">Insert tabular source data to extract collection files and metadata.</div>
         <textarea
             v-model="sourceContent"
-            class="upload-box upload-text-area"
+            class="upload-box upload-rule-source-content"
             placeholder="Insert tabular source data here."
             :disabled="isDisabled" />
         <FontAwesomeIcon v-if="isDisabled" class="upload-text-lock" icon="fa-lock" />
         <div class="upload-footer text-center">
             <span class="upload-footer-title">Upload type:</span>
-            <UploadSettingsSelect v-model="dataType" :options="RULES_TYPES" />
+            <UploadSettingsSelect v-model="dataType" class="rule-data-type" :options="RULES_TYPES" />
         </div>
         <div class="upload-buttons d-flex justify-content-end">
             <BButton @click="inputPaste">
                 <FontAwesomeIcon icon="fa-edit" />
                 <span v-localize>Paste data</span>
             </BButton>
-            <BButton @click="inputDialog">
+            <BButton data-description="rules dataset dialog" @click="inputDialog">
                 <FontAwesomeIcon icon="fa-file" />
                 <span v-localize>Choose dataset</span>
             </BButton>
@@ -167,7 +170,7 @@ function inputRemote() {
 </template>
 
 <style scoped>
-.upload-text-area {
+.upload-rule-source-content {
     resize: none;
 }
 .upload-text-lock {

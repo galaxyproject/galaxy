@@ -13,8 +13,8 @@
             <div v-if="arrow" class="popper-arrow" data-popper-arrow />
             <div v-if="title" class="popper-header px-2 py-1 rounded-top d-flex justify-content-between">
                 <span class="px-1">{{ title }}</span>
-                <span class="align-items-center cursor-pointer">
-                    <FontAwesomeIcon icon="fa-times-circle" @click="visible = false" />
+                <span class="popper-close align-items-center cursor-pointer" @click="visible = false">
+                    <FontAwesomeIcon icon="fa-times-circle" />
                 </span>
             </div>
             <slot />
