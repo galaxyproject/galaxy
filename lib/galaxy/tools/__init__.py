@@ -807,6 +807,7 @@ class Tool(Dictifiable):
             "template_macro_params",
             "outputs",
             "output_collections",
+            "is_workflow_compatible",
         }
         if name in lazy_attributes:
             self.assert_finalized()
@@ -818,7 +819,11 @@ class Tool(Dictifiable):
             try:
                 self.parse_inputs(self.tool_source)
                 self.parse_outputs(self.tool_source)
+                self.is_workflow_compatible
                 self.finalized = True
+                mem_optimize = getattr(self.tool_source, "mem_optimize", None)
+                if mem_optimize is not None:
+                    mem_optimize()
             except Exception:
                 toolbox = getattr(self.app, "toolbox", None)
                 if toolbox:
@@ -1142,6 +1147,7 @@ class Tool(Dictifiable):
         self.hidden = tool_source.parse_hidden()
         self.license = tool_source.parse_license()
         self.creator = tool_source.parse_creator()
+        self.raw_help = tool_source.parse_help()
 
         self.__parse_legacy_features(tool_source)
 
@@ -1713,24 +1719,13 @@ class Tool(Dictifiable):
             self.__ensure_help()
         return self.__help_by_page
 
-    @property
-    def raw_help(self):
-        # may return rst (or Markdown in the future)
-        tool_source = self.__help_source
-        help_text = tool_source.parse_help()
-        return help_text
-
     def __ensure_help(self):
         with HELP_UNINITIALIZED:
             if self.__help is HELP_UNINITIALIZED:
                 self.__inititalize_help()
 
     def __inititalize_help(self):
-        tool_source = self.__help_source
-        self.__help = None
-        __help_by_page = []
-        help_footer = ""
-        help_text = tool_source.parse_help()
+        help_text = self.raw_help
         if help_text is not None:
             try:
                 if help_text.find(".. image:: ") >= 0 and (self.tool_shed_repository or self.repository_id):
@@ -1757,11 +1752,14 @@ class Tool(Dictifiable):
                 log.exception("Exception while parsing help for tool with id '%s'", self.id)
 
             # Handle deprecated multi-page help text in XML case.
-            if hasattr(tool_source, "root"):
+            __help_by_page = []
+            tool_source = self.tool_source
+            if getattr(tool_source, "root", None):
                 help_elem = tool_source.root.find("help")
                 help_header = help_text
                 help_pages = help_elem.findall("page")
                 # Multiple help page case
+                help_footer = ""
                 if help_pages:
                     for help_page in help_pages:
                         __help_by_page.append(help_page.text)
@@ -1802,8 +1800,7 @@ class Tool(Dictifiable):
         is_workflow_compatible = self._is_workflow_compatible
         if is_workflow_compatible is None:
             is_workflow_compatible = self.check_workflow_compatible(self.tool_source)
-            if self.finalized:
-                self._is_workflow_compatible = is_workflow_compatible
+            self._is_workflow_compatible = is_workflow_compatible
         return is_workflow_compatible
 
     def check_workflow_compatible(self, tool_source):
