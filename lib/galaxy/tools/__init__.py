@@ -1102,10 +1102,12 @@ class Tool(Dictifiable):
         self.license = tool_source.parse_license()
         self.creator = tool_source.parse_creator()
         self.raw_help = tool_source.parse_help()
-        self.__initialize_help()
         self.parse_inputs(self.tool_source)
         self.parse_outputs(self.tool_source)
 
+        if self.app.is_webapp:
+            self.__initialize_help()
+            _ = self.tests
         self.__parse_legacy_features(tool_source)
 
         # Load any tool specific options (optional)
