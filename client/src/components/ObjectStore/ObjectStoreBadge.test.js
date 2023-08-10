@@ -1,4 +1,5 @@
 import { mount } from "@vue/test-utils";
+import { GPopover } from "component-library";
 import { getLocalVue } from "tests/jest/helpers";
 import { ROOT_COMPONENT } from "utils/navigation";
 
@@ -13,9 +14,13 @@ describe("ObjectStoreBadge", () => {
 
     function mountBadge(badge) {
         wrapper = mount(ObjectStoreBadge, {
-            propsData: { badge },
+            propsData: {
+                badge,
+            },
             localVue,
-            stubs: { "b-popover": true },
+            stubs: {
+                GPopover,
+            },
         });
     }
 

@@ -20,7 +20,6 @@ function mountComponent() {
     const wrapper = mount(UserPreferredObjectStore, {
         propsData: { userId: TEST_USER_ID },
         localVue,
-        stubs: { "b-popover": true },
     });
     return wrapper;
 }

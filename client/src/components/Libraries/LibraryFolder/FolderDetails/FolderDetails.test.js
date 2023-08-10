@@ -24,7 +24,7 @@ const INPUT_PROP_DATA = {
 
 const DETAILS_BUTTON = '[data-testid="loc-details-btn"]';
 const LIBRARY_TABLE = '[data-testid="library-table"]';
-const DETAILS_MODAL = "#details-modal";
+const DETAILS_MODAL = "#details-modal [role='dialog']";
 const FOLDER_TABLE = '[data-testid="folder-table"]';
 const ERROR_ALERT = '[data-testid="error-alert"]';
 
