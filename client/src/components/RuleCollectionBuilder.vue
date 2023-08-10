@@ -2,10 +2,9 @@
     <StateDiv v-if="state == 'build'" class="rule-collection-builder">
         <!-- Different instructions if building up from individual datasets vs.
         initial data import.-->
-        <RuleModalHeader v-if="ruleView == 'source'"
-            >Below is a raw JSON description of the rules to apply to the tabular data. This is an advanced
-            setting.</RuleModalHeader
-        >
+        <RuleModalHeader v-if="ruleView == 'source'">
+            Below is a raw JSON description of the rules to apply to the tabular data. This is an advanced setting.
+        </RuleModalHeader>
         <RuleModalHeader v-else-if="elementsType == 'datasets' || elementsType == 'library_datasets'">
             Use this form to describe rules for building collection(s) from the specified datasets.
             <b>Be sure to specify at least one column as a list identifier</b> - specify more to created nested list
@@ -313,9 +312,9 @@
                                         class="dropdown-item"
                                         href="javascript:void(0)"
                                         :class="'rule-add-mapping-' + target.replace(/_/g, '-')"
-                                        @click="addIdentifier(target)"
-                                        >{{ mappingTargets()[target].label }}</a
-                                    >
+                                        @click="addIdentifier(target)">
+                                        {{ mappingTargets()[target].label }}
+                                    </a>
                                 </div>
                                 <GButton
                                     v-if="!hasActiveMappingEdit"
@@ -462,15 +461,15 @@
             </div>
         </RuleModalMiddle>
         <RuleModalFooter v-if="ruleView == 'source'">
-            <GButton v-b-tooltip.hover :title="titleSourceCancel" class="rule-btn-cancel" @click="cancelSourceEdit">{{
-                l("Cancel")
-            }}</GButton>
-            <GButton v-b-tooltip.hover :title="titleSourceReset" class="creator-reset-btn rule-btn-reset">{{
-                l("Reset")
-            }}</GButton>
-            <GButton v-b-tooltip.hover :title="titleSourceApply" class="rule-btn-okay" @click="attemptRulePreview">{{
-                l("Apply")
-            }}</GButton>
+            <GButton v-b-tooltip.hover :title="titleSourceCancel" class="rule-btn-cancel" @click="cancelSourceEdit">
+                {{ l("Cancel") }}
+            </GButton>
+            <GButton v-b-tooltip.hover :title="titleSourceReset" class="creator-reset-btn rule-btn-reset">
+                {{ l("Reset") }}
+            </GButton>
+            <GButton v-b-tooltip.hover :title="titleSourceApply" class="rule-btn-okay" @click="attemptRulePreview">
+                {{ l("Apply") }}
+            </GButton>
         </RuleModalFooter>
         <RuleModalFooter v-else-if="ruleView == 'normal'">
             <template v-slot:inputs>
@@ -510,9 +509,9 @@
                 </GButton>
 
                 <TooltipOnHover class="menu-option" :title="titleReset">
-                    <GButton class="creator-reset-btn rule-btn-reset" @click="resetRulesAndState">{{
-                        l("Reset")
-                    }}</GButton>
+                    <GButton class="creator-reset-btn rule-btn-reset" @click="resetRulesAndState">
+                        {{ l("Reset") }}
+                    </GButton>
                 </TooltipOnHover>
                 <TooltipOnHover class="menu-option" :disabled="!validInput" :title="titleFinish">
                     <GButton
@@ -552,12 +551,12 @@
             <p class="errormessagelarge">{{ errorMessage }}</p>
         </RuleModalMiddle>
         <RuleModalFooter>
-            <GButton v-b-tooltip.hover :title="titleCancel" class="creator-cancel-btn" tabindex="-1" @click="cancel">{{
-                l("Close")
-            }}</GButton>
-            <GButton v-b-tooltip.hover :title="titleErrorOkay" tabindex="-1" @click="state = 'build'">{{
-                l("Okay")
-            }}</GButton>
+            <GButton v-b-tooltip.hover :title="titleCancel" class="creator-cancel-btn" tabindex="-1" @click="cancel">
+                {{ l("Close") }}
+            </GButton>
+            <GButton v-b-tooltip.hover :title="titleErrorOkay" tabindex="-1" @click="state = 'build'">
+                {{ l("Okay") }}
+            </GButton>
         </RuleModalFooter>
     </StateDiv>
 </template>

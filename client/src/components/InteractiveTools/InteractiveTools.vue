@@ -32,8 +32,8 @@
                     :index="row.index"
                     :href="row.item.target"
                     target="_blank"
-                    :name="row.item.name"
-                    >{{ row.item.name }}
+                    :name="row.item.name">
+                    {{ row.item.name }}
                     <FontAwesomeIcon icon="external-link-alt" />
                 </a>
             </template>
@@ -58,8 +58,8 @@
             id="stopInteractiveTool"
             v-b-tooltip.hover.bottom
             title="Terminate selected tools"
-            @click.stop="stopInteractiveToolSession()"
-            >Stop
+            @click.stop="stopInteractiveToolSession()">
+            Stop
         </GButton>
     </div>
 </template>

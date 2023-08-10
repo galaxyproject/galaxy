@@ -35,7 +35,7 @@
                 </GBadge>
             </div>
             <div v-else-if="queryTooShort" class="pb-2">
-                <b-badge class="alert-danger w-100">Search string too short!</b-badge>
+                <GBadge class="alert-danger w-100">Search string too short!</GBadge>
             </div>
             <div v-else-if="noResults" class="pb-2">
                 <GBadge class="alert-danger w-100">No results found!</GBadge>

@@ -6,9 +6,9 @@
                 id="select-preferred-object-store"
                 v-b-modal.modal-select-preferred-object-store
                 class="preferred-storage"
-                href="javascript:void(0)"
-                ><b v-localize>Preferred Object Store</b></a
-            >
+                href="javascript:void(0)">
+                <b v-localize>Preferred Object Store</b>
+            </a>
             <div v-localize class="form-text text-muted">
                 Select a preferred default object store for the outputs of new jobs to be created in.
             </div>

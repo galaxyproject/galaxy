@@ -23,9 +23,9 @@
                 <GCard>
                     <small class="float-right" :data-invocation-id="row.item.id">
                         <b>Last updated: <UtcDate :date="row.item.update_time" mode="elapsed" />;</b>
-                        <b
-                            >Invocation ID: <code>{{ row.item.id }}</code></b
-                        >
+                        <b>
+                            Invocation ID: <code>{{ row.item.id }}</code>
+                        </b>
                     </small>
                     <WorkflowInvocationState :invocation-id="row.item.id" @invocation-cancelled="refresh" />
                 </GCard>

@@ -65,9 +65,8 @@
 <script>
 import ToolPanelViewProvider from "components/providers/ToolPanelViewProvider";
 
-import { useConfig } from "@/composables/config";
-
 import { GAlert, GCard, GLink, GTable } from "@/component-library";
+import { useConfig } from "@/composables/config";
 
 import { Services } from "../services";
 

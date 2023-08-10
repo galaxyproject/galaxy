@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-import { GAlert, GModal } from "@/component-library";
+import { GModal } from "@/component-library";
 
 import { STATES } from "./states";
 import type { HelpText, States } from "./stateTypes";
