@@ -510,10 +510,7 @@ class ToolBox(AbstractToolBox):
                 cache.set(config_file, tool_source)
         else:
             tool_source = self.get_expanded_tool_source(config_file)
-        tool = self._create_tool_from_source(tool_source, config_file=config_file, **kwds)
-        if not self.app.config.delay_tool_initialization:
-            tool.assert_finalized(raise_if_invalid=True)
-        return tool
+        return self._create_tool_from_source(tool_source, config_file=config_file, **kwds)
 
     def get_expanded_tool_source(self, config_file, **kwargs):
         try:
@@ -764,6 +761,7 @@ class Tool(Dictifiable):
         self.changeset_revision = None
         self.installed_changeset_revision = None
         self.sharable_url = None
+        self.npages = 0
         # The tool.id value will be the value of guid, but we'll keep the
         # guid attribute since it is useful to have.
         self.guid = guid
@@ -779,61 +777,18 @@ class Tool(Dictifiable):
         # Parse XML element containing configuration
         self.tool_source = tool_source
         self._is_workflow_compatible = None
-        self.finalized = False
         try:
             self.parse(tool_source, guid=guid, dynamic=dynamic)
         except Exception as e:
             global_tool_errors.add_error(config_file, "Tool Loading", e)
             raise e
+        mem_optimize = getattr(self.tool_source, "mem_optimize", None)
+        if mem_optimize is not None:
+            mem_optimize()
         # The job search is only relevant in a galaxy context, and breaks
         # loading tools into the toolshed for validation.
         if self.app.name == "galaxy":
             self.job_search = self.app.job_search
-
-    def __getattr__(self, name):
-        lazy_attributes = {
-            "action",
-            "check_values",
-            "display_by_page",
-            "enctype",
-            "has_multiple_pages",
-            "inputs",
-            "inputs_by_page",
-            "last_page",
-            "method",
-            "npages",
-            "nginx_upload",
-            "target",
-            "template_macro_params",
-            "outputs",
-            "output_collections",
-            "is_workflow_compatible",
-        }
-        if name in lazy_attributes:
-            self.assert_finalized()
-            return getattr(self, name)
-        raise AttributeError(name)
-
-    def assert_finalized(self, raise_if_invalid=False):
-        if self.finalized is False:
-            try:
-                self.parse_inputs(self.tool_source)
-                self.parse_outputs(self.tool_source)
-                _ = self.is_workflow_compatible
-                self.finalized = True
-                mem_optimize = getattr(self.tool_source, "mem_optimize", None)
-                if mem_optimize is not None:
-                    mem_optimize()
-            except Exception:
-                toolbox = getattr(self.app, "toolbox", None)
-                if toolbox:
-                    toolbox.remove_tool_by_id(self.id)
-                if raise_if_invalid:
-                    raise
-                else:
-                    log.warning(
-                        "An error occured while parsing the tool wrapper xml, the tool is not functional", exc_info=True
-                    )
 
     def remove_from_cache(self):
         source_path = self.tool_source.source_path
@@ -1148,6 +1103,9 @@ class Tool(Dictifiable):
         self.license = tool_source.parse_license()
         self.creator = tool_source.parse_creator()
         self.raw_help = tool_source.parse_help()
+        self.__initialize_help()
+        self.parse_inputs(self.tool_source)
+        self.parse_outputs(self.tool_source)
 
         self.__parse_legacy_features(tool_source)
 
@@ -1162,9 +1120,6 @@ class Tool(Dictifiable):
         # Read in name of galaxy.json metadata file and how to parse it.
         self.provided_metadata_file = tool_source.parse_provided_metadata_file()
         self.provided_metadata_style = tool_source.parse_provided_metadata_style()
-
-        # Parse tool help
-        self.parse_help(tool_source)
 
         # Parse result handling for tool exit codes and stdout/stderr messages:
         self.parse_stdio(tool_source)
@@ -1226,6 +1181,8 @@ class Tool(Dictifiable):
         # Record macro paths so we can reload a tool if any of its macro has changes
         self._macro_paths = tool_source.macro_paths
         self.ports = tool_source.parse_interactivetool()
+
+        self._is_workflow_compatible = self.check_workflow_compatible(self.tool_source)
 
     def __parse_legacy_features(self, tool_source):
         self.code_namespace: Dict[str, str] = {}
@@ -1318,7 +1275,6 @@ class Tool(Dictifiable):
 
     @property
     def tests(self):
-        self.assert_finalized()
         if not self.__tests_populated:
             tests_source = self.__tests_source
             if tests_source:
@@ -1473,16 +1429,14 @@ class Tool(Dictifiable):
                 self.input_required = True
                 break
 
-    def parse_help(self, tool_source):
+    def parse_help(self):
         """
         Parse the help text for the tool. Formatted in reStructuredText, but
         stored as Mako to allow for dynamic image paths.
         This implementation supports multiple pages.
         """
         # TODO: Allow raw HTML or an external link.
-        self.__help = HELP_UNINITIALIZED
-        self.__help_by_page = HELP_UNINITIALIZED
-        self.__help_source = tool_source
+        self.__initialize_help()
 
     def parse_outputs(self, tool_source):
         """
@@ -1700,6 +1654,10 @@ class Tool(Dictifiable):
             )
 
     @property
+    def help(self):
+        return self.__help
+
+    @property
     def biotools_reference(self) -> Optional[str]:
         """Return a bio.tools ID if external reference to it is found.
 
@@ -1707,80 +1665,62 @@ class Tool(Dictifiable):
         """
         return biotools_reference(self.xrefs)
 
-    @property
-    def help(self):
-        if self.__help is HELP_UNINITIALIZED:
-            self.__ensure_help()
-        return self.__help
+    def __initialize_help(self):
+        help_text = self.raw_help or ""
+        try:
+            if help_text.find(".. image:: ") >= 0 and (self.tool_shed_repository or self.repository_id):
+                help_text = set_image_paths(
+                    self.app,
+                    help_text,
+                    encoded_repository_id=self.repository_id,
+                    tool_shed_repository=self.tool_shed_repository,
+                    tool_id=self.old_id,
+                    tool_version=self.version,
+                )
+        except Exception:
+            log.exception(
+                "Exception in parse_help, so images may not be properly displayed for tool with id '%s'", self.id
+            )
+        try:
+            self.__help = Template(
+                rst_to_html(help_text),
+                input_encoding="utf-8",
+                default_filters=["decode.utf8"],
+                encoding_errors="replace",
+            )
+        except Exception:
+            self.__help = Template("", input_encoding="utf-8")
+            log.exception("Exception while parsing help for tool with id '%s'", self.id)
 
-    @property
-    def help_by_page(self):
-        if self.__help_by_page is HELP_UNINITIALIZED:
-            self.__ensure_help()
-        return self.__help_by_page
-
-    def __ensure_help(self):
-        with HELP_UNINITIALIZED:
-            if self.__help is HELP_UNINITIALIZED:
-                self.__inititalize_help()
-
-    def __inititalize_help(self):
-        help_text = self.raw_help
-        if help_text is not None:
+        # Handle deprecated multi-page help text in XML case.
+        self.__help_by_page = []
+        tool_source = self.tool_source
+        if isinstance(tool_source, XmlToolSource):
+            help_elem = tool_source.root.find("help")
+            help_header = help_text
+            help_pages = help_elem is not None and help_elem.findall("page")
+            # Multiple help page case
+            help_footer = ""
+            if help_pages:
+                for help_page in help_pages:
+                    self.__help_by_page.append(help_page.text)
+                    help_footer = help_footer + help_page.tail
+            # Each page has to rendered all-together because of backreferences allowed by rst
             try:
-                if help_text.find(".. image:: ") >= 0 and (self.tool_shed_repository or self.repository_id):
-                    help_text = set_image_paths(
-                        self.app,
-                        help_text,
-                        encoded_repository_id=self.repository_id,
-                        tool_shed_repository=self.tool_shed_repository,
-                        tool_id=self.old_id,
-                        tool_version=self.version,
+                self.__help_by_page = [
+                    Template(
+                        rst_to_html(help_header + x + help_footer),
+                        input_encoding="utf-8",
+                        default_filters=["decode.utf8"],
+                        encoding_errors="replace",
                     )
+                    for x in self.__help_by_page
+                ]
             except Exception:
-                log.exception(
-                    "Exception in parse_help, so images may not be properly displayed for tool with id '%s'", self.id
-                )
-            try:
-                self.__help = Template(
-                    rst_to_html(help_text),
-                    input_encoding="utf-8",
-                    default_filters=["decode.utf8"],
-                    encoding_errors="replace",
-                )
-            except Exception:
-                self.__help = Template("", input_encoding="utf-8")
-                log.exception("Exception while parsing help for tool with id '%s'", self.id)
-
-            # Handle deprecated multi-page help text in XML case.
-            self.__help_by_page = []
-            tool_source = self.tool_source
-            if isinstance(tool_source, XmlToolSource):
-                help_elem = tool_source.root.find("help")
-                help_header = help_text
-                help_pages = help_elem.findall("page")
-                # Multiple help page case
-                help_footer = ""
-                if help_pages:
-                    for help_page in help_pages:
-                        self.__help_by_page.append(help_page.text)
-                        help_footer = help_footer + help_page.tail
-                # Each page has to rendered all-together because of backreferences allowed by rst
-                try:
-                    self.__help_by_page = [
-                        Template(
-                            rst_to_html(help_header + x + help_footer),
-                            input_encoding="utf-8",
-                            default_filters=["decode.utf8"],
-                            encoding_errors="replace",
-                        )
-                        for x in self.__help_by_page
-                    ]
-                except Exception:
-                    log.exception("Exception while parsing multi-page help for tool with id '%s'", self.id)
-                # Pad out help pages to match npages ... could this be done better?
-                while len(self.__help_by_page) < self.npages:
-                    self.__help_by_page.append(self.__help)
+                log.exception("Exception while parsing multi-page help for tool with id '%s'", self.id)
+            # Pad out help pages to match npages ... could this be done better?
+            while len(self.__help_by_page) < self.npages:
+                self.__help_by_page.append(self.__help)
 
     def find_output_def(self, name):
         # name is JobToOutputDatasetAssociation name.
@@ -1797,11 +1737,7 @@ class Tool(Dictifiable):
 
     @property
     def is_workflow_compatible(self):
-        is_workflow_compatible = self._is_workflow_compatible
-        if is_workflow_compatible is None:
-            is_workflow_compatible = self.check_workflow_compatible(self.tool_source)
-            self._is_workflow_compatible = is_workflow_compatible
-        return is_workflow_compatible
+        return self._is_workflow_compatible
 
     def check_workflow_compatible(self, tool_source):
         """
@@ -1810,7 +1746,7 @@ class Tool(Dictifiable):
         """
         # Multiple page tools are not supported -- we're eliminating most
         # of these anyway
-        if self.finalized and self.has_multiple_pages:
+        if self.has_multiple_pages:
             return False
         # This is probably the best bet for detecting external web tools
         # right now

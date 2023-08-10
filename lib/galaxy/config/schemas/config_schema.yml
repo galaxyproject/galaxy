@@ -846,15 +846,6 @@ mapping:
         desc:
           Directory in which the toolbox search index is stored.
 
-      delay_tool_initialization:
-        type: bool
-        default: false
-        required: false
-        desc: |
-          Set this to true to delay parsing of tool inputs and outputs until they are needed.
-          This results in faster startup times but uses more memory when using forked Galaxy
-          processes.
-
       biotools_content_directory:
         type: str
         required: false

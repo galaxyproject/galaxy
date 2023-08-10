@@ -89,7 +89,6 @@ class ToolValidator:
                 repository_id=repository_id,
                 allow_code_files=False,
             )
-            tool.assert_finalized(raise_if_invalid=True)
             valid = True
             error_message = None
         except KeyError as e:

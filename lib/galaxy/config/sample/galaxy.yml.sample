@@ -899,11 +899,6 @@ galaxy:
   # this option will be resolved with respect to <data_dir>.
   #tool_search_index_dir: tool_search_index
 
-  # Set this to true to delay parsing of tool inputs and outputs until
-  # they are needed. This results in faster startup times but uses more
-  # memory when using forked Galaxy processes.
-  #delay_tool_initialization: false
-
   # Point Galaxy at a repository consisting of a copy of the bio.tools
   # database (e.g. https://github.com/bio-tools/content/) to resolve
   # bio.tools data for tool metadata.
