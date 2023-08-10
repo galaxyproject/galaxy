@@ -4,13 +4,8 @@ import Filtering, { compare, contains, equals, expandNameTag, toBool, toDate } f
 
 const excludeStates = ["empty", "failed", "upload"];
 const states = Object.keys(STATES).filter((state) => !excludeStates.includes(state));
-const options = [
-    { text: "Any", value: "any" },
-    { text: "Yes", value: true },
-    { text: "No", value: false },
-];
 
-export const validFilters = {
+const validFilters = {
     name: { placeholder: "name", type: String, handler: contains("name"), menuItem: true },
     extension: { placeholder: "extension", type: String, handler: equals("extension"), menuItem: true },
     tag: { placeholder: "tag", type: String, handler: contains("tags", "tag", expandNameTag), menuItem: true },
@@ -38,16 +33,16 @@ export const validFilters = {
     create_time_le: { handler: compare("create_time", "le", toDate), menuItem: false },
     deleted: {
         placeholder: "Deleted",
-        type: "Radio",
-        options: options,
+        type: Boolean,
         handler: equals("deleted", "deleted", toBool),
+        default: false,
         menuItem: true,
     },
     visible: {
         placeholder: "Visible",
-        type: "Radio",
-        options: options,
+        type: Boolean,
         handler: equals("visible", "visible", toBool),
+        default: true,
         menuItem: true,
     },
     update_time: { handler: compare("update_time", "le", toDate), menuItem: false },
@@ -57,4 +52,4 @@ export const validFilters = {
     update_time_lt: { handler: compare("update_time", "lt", toDate), menuItem: false },
 };
 
-export const HistoryFilters = new Filtering(validFilters, true);
+export const HistoryFilters = new Filtering(validFilters);

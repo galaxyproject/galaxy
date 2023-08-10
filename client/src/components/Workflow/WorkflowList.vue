@@ -137,7 +137,7 @@ const helpHtml = `<div>
         </dd>
         <dt><code>is:importable</code></dt>
         <dd>
-            Shows importable workflows (this also means they have URL generated).
+            Shows importable workflows (this also means they are URL generated).
         </dd>
         <dt><code>is:shared_with_me</code></dt>
         <dd>

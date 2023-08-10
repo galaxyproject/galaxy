@@ -34,6 +34,7 @@
                     placeholder="search datasets"
                     :filter-class="filterClass"
                     :filter-text.sync="filterText"
+                    :loading="loading"
                     :search-error="searchError"
                     :show-advanced.sync="showAdvanced" />
                 <section v-if="!showAdvanced">

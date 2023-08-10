@@ -35,7 +35,7 @@ const validFilters = {
     update_time_ge: { handler: compare("update_time", "ge", toDate), menuItem: false },
     update_time_le: { handler: compare("update_time", "le", toDate), menuItem: false },
 };
-const HistoriesFilters = new Filtering(validFilters, false);
+const HistoriesFilters = new Filtering(validFilters);
 
 type AdditionalOptions = "set-current" | "multi" | "center";
 type HistorySummary = components["schemas"]["HistorySummary"];
@@ -233,6 +233,7 @@ async function loadMore(noScroll = false) {
                     placeholder="search datasets"
                     :filter-class="HistoriesFilters"
                     :filter-text.sync="filter"
+                    :loading="busy"
                     :show-advanced.sync="showAdvanced" />
             </BFormGroup>
 

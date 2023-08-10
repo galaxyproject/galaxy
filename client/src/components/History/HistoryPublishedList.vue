@@ -31,7 +31,7 @@ const validFilters = {
     update_time_le: { handler: compare("update_time", "le", toDate), menuItem: false },
 };
 
-const filters = new Filtering(validFilters, false);
+const filters = new Filtering(validFilters);
 
 const props = defineProps({
     fUsername: {
@@ -214,6 +214,7 @@ watch([filterText, sortBy, sortDesc], async () => {
                 :placeholder="'Search by name or use the advanced filtering options' | localize"
                 :filter-class="filters"
                 :filter-text.sync="filterText"
+                :loading="loading"
                 :show-advanced.sync="showAdvanced" />
 
             <b-alert v-if="noResults || error" :variant="error ? 'danger' : 'info'" show>

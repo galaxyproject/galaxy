@@ -12,7 +12,7 @@
 import { omit } from "lodash";
 import type { DefineComponent } from "vue";
 
-type Converter<T> = (value: T) => T;
+export type Converter<T> = (value: T) => T;
 type Handler<T> = (v: T, q: T) => boolean;
 
 /** Add comparison aliases i.e. '*>value' is converted to '*_gt=value' */
@@ -33,11 +33,6 @@ type OperatorForAlias = typeof operatorForAlias;
 export type Alias = keyof OperatorForAlias;
 type Operator = OperatorForAlias[Alias];
 
-interface RadioOption {
-    text: string;
-    value: string | number | boolean | Date | undefined;
-}
-
 /** A ValidFilter<T> with a `handler` for the `Filtering<T>` class,
  * and remaining properties for the `FilterMenu` component
  * */
@@ -45,7 +40,12 @@ export type ValidFilter<T> = {
     /** The `FilterMenu` input field/tooltip/label placeholder */
     placeholder?: string;
     /** The data type of the `FilterMenu` input field */
-    type?: typeof String | typeof Number | typeof Boolean | "Radio" | typeof Date;
+    type?: typeof String | typeof Number | typeof Boolean | typeof Date;
+    /** If type: Boolean:
+     * - booleanType: 'default' creates: `filter:true|false|any`
+     * - booleanType: 'is' creates: `is:filter`
+     */
+    boolType?: "default" | "is";
     /** The handler function for this filter */
     handler: HandlerReturn<T>;
     /** Is this a filter to include as a field in `FilterMenu`?
@@ -61,8 +61,8 @@ export type ValidFilter<T> = {
     isRangeInput?: boolean;
     /** The help info component to append to the `FilterMenu` input field */
     helpInfo?: DefineComponent | string;
-    /** The radio options if filter is a `FilterMenu` radio input */
-    options?: RadioOption[];
+    /** A default value (will make this a default filter for an empty `filterText`) */
+    default?: T;
 };
 
 /** Converts user input to backend compatible date
@@ -200,20 +200,17 @@ export function compare<T>(attribute: string, variant: string, converter?: Conve
 export default class Filtering<T> {
     validFilters: Record<string, ValidFilter<T>>;
     validAliases: Array<[string, string]>;
-    useDefaultFilters: boolean;
-    defaultFilters: Record<string, T> = {
-        deleted: false as T,
-        visible: true as T,
-    };
+    defaultFilters: Record<string, T>;
+    quoteStrings: boolean;
 
     constructor(
         validFilters: Record<string, ValidFilter<T>>,
-        useDefaultFilters = true,
-        validAliases?: Array<[string, string]>
+        validAliases?: Array<[string, string]>,
+        quoteStrings = true
     ) {
         this.validFilters = validFilters;
-        this.useDefaultFilters = useDefaultFilters;
         this.validAliases = validAliases || defaultValidAliases;
+        this.quoteStrings = quoteStrings;
         // Add `name` filter if not present
         if (this.validFilters["name"] === undefined) {
             this.validFilters["name"] = {
@@ -221,6 +218,7 @@ export default class Filtering<T> {
                 menuItem: false,
             };
         }
+        this.defaultFilters = this.createDefaultFiltersIfPresent();
         this.addRangedFiltersIfNotPresent();
     }
 
@@ -246,12 +244,26 @@ export default class Filtering<T> {
         });
     }
 
+    /** If any `validFilters` are given the `default` key, a `defaultFilters`
+     * object is created with provided values, that an empty `filterText`
+     * corresponds to.
+     * */
+    createDefaultFiltersIfPresent(): Record<string, T> {
+        const defaultFilters: Record<string, T> = {};
+        Object.entries(this.validFilters).forEach(([key, filter]) => {
+            if (filter.default !== undefined) {
+                defaultFilters[key] = filter.default;
+            }
+        });
+        return defaultFilters;
+    }
+
     /** Returns true if default filter values are not changed
      * @param filters Object containing filters
      * @returns true if default filter values are not changed
      * **/
     containsDefaults(filters: Record<string, T>): boolean {
-        if (this.useDefaultFilters === false) {
+        if (this.defaultFilters === undefined) {
             return false;
         }
         let hasDefaults = true;
@@ -273,7 +285,7 @@ export default class Filtering<T> {
      */
     hasAllDefaultKeys(filters: Record<string, T>): boolean {
         return (
-            this.useDefaultFilters &&
+            this.defaultFilters !== undefined &&
             Object.keys(this.defaultFilters).every((def) => Object.keys(filters).includes(def))
         );
     }
@@ -294,14 +306,19 @@ export default class Filtering<T> {
                 if (newFilterText) {
                     newFilterText += " ";
                 }
-                if (String(value).includes(" ")) {
-                    value = `'${value}'` as T;
+                if (this.validFilters[key]?.type == Boolean && this.validFilters[key]?.boolType == "is") {
+                    if (value === true) {
+                        newFilterText += `is:${key}`;
+                    }
+                } else if (this.quoteStrings && String(value).includes(" ")) {
+                    newFilterText += `${this.toAliasKey(key)}'${value}'`;
+                } else {
+                    newFilterText += `${this.toAliasKey(key)}${value}`;
                 }
-                newFilterText += `${this.toAliasKey(key)}${value}`;
             }
         });
         // enforce `filter:any` for any default *boolean* filters missing in filters object
-        if (!hasDefaults && this.useDefaultFilters) {
+        if (!hasDefaults && this.defaultFilters !== undefined) {
             Object.entries(this.defaultFilters).forEach(([key, value]) => {
                 if (filters[key] == undefined && typeof value === "boolean") {
                     if (newFilterText) {
@@ -353,20 +370,22 @@ export default class Filtering<T> {
         if (!hasMatches && filterText.length > 0) {
             result["name"] = filterText as T;
         }
-        // check if any default filter keys have been used
-        let hasDefaults = false;
-        Object.keys(this.defaultFilters).forEach((defaultKey) => {
-            const value = result[defaultKey];
-            if (value !== undefined) {
-                if (value == "any" && removeAny) {
-                    delete result[defaultKey];
+        // check if any default filter keys have been used in the filter text
+        if (this.defaultFilters !== undefined) {
+            let hasDefaults = false;
+            Object.keys(this.defaultFilters).forEach((defaultKey) => {
+                const value = result[defaultKey];
+                if (value !== undefined) {
+                    if (value == "any" && removeAny) {
+                        delete result[defaultKey];
+                    }
+                    hasDefaults = true;
                 }
-                hasDefaults = true;
+            });
+            // use default filters if none of the default filters has been explicitly specified
+            if (!hasDefaults) {
+                result = { ...result, ...this.defaultFilters };
             }
-        });
-        // use default filters if none of the default filters has been explicitly specified
-        if (!hasDefaults && this.useDefaultFilters) {
-            result = { ...result, ...this.defaultFilters };
         }
 
         return Object.entries(result);

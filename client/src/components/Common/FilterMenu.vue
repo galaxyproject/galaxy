@@ -2,11 +2,11 @@
 import { capitalize, kebabCase } from "lodash";
 import { computed, type Ref, ref, watch } from "vue";
 
-import type { Alias, ValidFilter } from "@/utils/filtering";
 import type Filtering from "@/utils/filtering";
-import { getOperatorForAlias } from "@/utils/filtering";
+import { type Alias, getOperatorForAlias } from "@/utils/filtering";
 
-import FilterMenuRadio from "@/components/Common/FilterMenuRadio.vue";
+import DelayedInput from "@/components/Common/DelayedInput.vue";
+import FilterMenuBoolean from "@/components/Common/FilterMenuBoolean.vue";
 
 interface BackendFilterError {
     err_msg: string;
@@ -22,48 +22,46 @@ interface BackendFilterError {
 
 const props = withDefaults(
     defineProps<{
+        /** A name for the menu */
         name?: string;
+        /** A placeholder for the main search input */
         placeholder?: string;
+        /** The `Filtering` class to use */
         filterClass: Filtering<any>;
-        filterText: string;
+        /** The current filter text in the main field */
+        filterText?: string;
+        /** Whether a help `<template>` has been provided for the `<slot>` */
         hasHelp?: boolean;
+        /** Whether to replace default Cancel (toggle) button with Clear */
+        hasClearBtn?: boolean;
+        /** Triggers the loading icon */
+        loading?: boolean;
+        /** Default `linked`: filters react to current `filterText` */
+        menuType?: "linked" | "separate" | "standalone";
+        /** A `BackendFilterError` if provided */
         searchError?: BackendFilterError;
+        /** Whether the advanced menu is currently expanded */
         showAdvanced?: boolean;
     }>(),
     {
         name: "Menu",
         placeholder: "search for items",
         filterText: "",
+        menuType: "linked",
         showAdvanced: false,
         searchError: undefined,
     }
 );
 
 const emit = defineEmits<{
-    (e: "update:show-advanced", showAdvanced: boolean): void;
     (e: "update:filter-text", filter: string): void;
-    (e: "show-help", filter: string, show: boolean): void;
+    (e: "update:show-advanced", showAdvanced: boolean): void;
+    (e: "on-search", filters: Record<string, string | boolean>, filterText?: string): void;
 }>();
-
-const defaultBoolOptions = [
-    { text: "Yes", value: true },
-    { text: "No", value: false },
-];
-
-const localFilterText = computed({
-    get: () => {
-        return props.filterText;
-    },
-    set: (newVal: any) => {
-        if (newVal !== props.filterText) {
-            updateFilterText(newVal as string);
-        }
-    },
-});
 
 const validFilters = computed(() => props.filterClass.validFilters);
 
-const filters = computed(() => Object.fromEntries(props.filterClass.getFiltersForText(localFilterText.value)));
+const filters = computed(() => Object.fromEntries(props.filterClass.getFiltersForText(props.filterText)));
 
 const identifier = kebabCase(props.name);
 
@@ -145,11 +143,18 @@ function onOption(filter: string, value: any) {
 }
 
 function onSearch() {
-    onToggle();
+    if (props.menuType === "linked") {
+        onToggle();
+    }
     Object.keys(dateFilters.value).forEach((key) => {
         onOption(key, dateFilters.value[key]);
     });
-    updateFilterText(props.filterClass.getFilterText(filters.value));
+    const newFilterText = props.filterClass.getFilterText(filters.value);
+    if (props.menuType !== "linked") {
+        emit("on-search", filters.value, newFilterText);
+    } else {
+        updateFilterText(newFilterText);
+    }
 }
 
 function onToggle() {
@@ -163,74 +168,47 @@ function updateFilterText(newFilterText: string) {
 
 <template>
     <div>
-        <b-input-group>
-            <b-form-input
-                :id="`${identifier}-filter`"
-                v-model="localFilterText"
-                size="sm"
-                :class="filterText && 'font-weight-bold'"
-                :placeholder="props.placeholder"
-                data-description="filter text input"
-                debounce="400"
-                @keyup.esc="updateFilterText('')" />
-            <b-input-group-append>
-                <b-button
-                    :id="`${identifier}-advanced-filter-toggle`"
-                    v-b-tooltip.hover
-                    aria-haspopup="true"
-                    size="sm"
-                    :pressed="showAdvanced"
-                    :variant="showAdvanced ? 'info' : 'secondary'"
-                    data-description="show advanced filter toggle"
-                    title="Show Advanced Filter"
-                    aria-label="Show advanced filter"
-                    @click="onToggle">
-                    <icon v-if="showAdvanced" icon="angle-double-up" />
-                    <icon v-else icon="angle-double-down" />
-                </b-button>
-                <b-button
-                    v-b-tooltip.hover
-                    aria-haspopup="true"
-                    size="sm"
-                    title="Clear Filters (esc)"
-                    aria-label="Clear filters"
-                    data-description="clear filters"
-                    @click="updateFilterText('')">
-                    <icon icon="times" />
-                </b-button>
-            </b-input-group-append>
-        </b-input-group>
-        <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
+        <DelayedInput
+            v-if="props.menuType !== 'standalone'"
+            v-show="props.menuType == 'linked' || (props.menuType == 'separate' && !props.showAdvanced)"
+            :class="props.filterText && 'font-weight-bold'"
+            :query="props.filterText"
+            :delay="400"
+            :loading="props.loading"
+            :show-advanced="props.showAdvanced"
+            enable-advanced
+            :placeholder="props.placeholder"
+            @change="updateFilterText"
+            @onToggle="onToggle" />
+        <b-button
+            v-if="props.menuType == 'separate' && props.showAdvanced"
+            v-b-tooltip.hover.noninteractive
+            class="w-100"
+            aria-haspopup="true"
+            size="sm"
+            :pressed="props.showAdvanced"
+            :variant="props.showAdvanced ? 'info' : 'secondary'"
+            :title="`Toggle Advanced Search`"
+            data-description="reset query"
+            @click="onToggle">
+            <icon fixed-width icon="angle-double-up" />
+        </b-button>
         <div
-            v-if="showAdvanced"
+            v-if="props.menuType == 'standalone' || props.showAdvanced"
             class="mt-2"
             data-description="advanced filters"
             @keyup.enter="onSearch"
             @keyup.esc="onToggle">
             <div v-for="filter in Object.keys(validFilters)" :key="filter">
                 <span v-if="validFilters[filter]?.menuItem">
-                    <!-- is a Radio filter -->
-                    <span v-if="validFilters[filter]?.type == 'Radio'">
+                    <!-- is a Boolean filter -->
+                    <span v-if="validFilters[filter]?.type == Boolean">
                         <small>{{ validFilters[filter]?.placeholder }}:</small>
-                        <FilterMenuRadio
-                            v-if="validFilters[filter]?.options"
-                            :filter="filter"
-                            :options="validFilters[filter]?.options"
+                        <FilterMenuBoolean
+                            :name="filter"
+                            :filter="validFilters[filter]"
                             :settings="filters"
                             @change="onOption" />
-                    </span>
-
-                    <!-- is a Boolean filter -->
-                    <span v-else-if="validFilters[filter]?.type == Boolean">
-                        <small>{{ validFilters[filter]?.placeholder }}:</small>
-                        <b-form-group class="m-0">
-                            <b-form-radio-group
-                                v-model="filters[filter]"
-                                :options="defaultBoolOptions"
-                                size="sm"
-                                buttons
-                                :data-description="`filter ${filter}`" />
-                        </b-form-group>
                     </span>
 
                     <!-- is a Ranged filter -->
@@ -380,7 +358,7 @@ function updateFilterText(newFilterText: string) {
                     <icon icon="search" />
                     <span v-localize>Search</span>
                 </b-button>
-                <b-button size="sm" @click="onToggle">
+                <b-button v-if="props.menuType !== 'standalone'" size="sm" @click="onToggle">
                     <icon icon="redo" />
                     <span v-localize>Cancel</span>
                 </b-button>
