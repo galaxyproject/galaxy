@@ -22,6 +22,8 @@ const model = computed({
     },
 });
 
+const isHidden = computed(() => !model.value);
+
 function hide() {
     modalRef.value.hide();
 }
@@ -35,6 +37,7 @@ function toggle() {
 }
 
 defineExpose({
+    isHidden,
     hide,
     show,
     toggle,
