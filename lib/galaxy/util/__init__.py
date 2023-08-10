@@ -88,10 +88,12 @@ except ImportError:
 
 try:
     import docutils.core as docutils_core
+    import docutils.utils as docutils_utils
     import docutils.writers.html4css1 as docutils_html4css1
 except ImportError:
     docutils_core = None  # type: ignore[assignment]
     docutils_html4css1 = None  # type: ignore[assignment]
+    docutils_utils = None  # type: ignore[assignment]
 
 from .custom_logging import get_logger
 from .inflection import Inflector
@@ -960,7 +962,7 @@ def rst_to_html(s, error=False):
     """Convert a blob of reStructuredText to HTML"""
     log = get_logger("docutils")
 
-    if docutils_core is None:
+    if docutils_core is None or docutils_utils is None:
         raise Exception("Attempted to use rst_to_html but docutils unavailable.")
 
     class FakeStream:
@@ -970,12 +972,16 @@ def rst_to_html(s, error=False):
                     raise Exception(str)
                 log.warning(str)
 
+    no_report_level = docutils_utils.Reporter.SEVERE_LEVEL + 1
+
     settings_overrides = {
         "embed_stylesheet": False,
         "template": os.path.join(os.path.dirname(__file__), "docutils_template.txt"),
         "warning_stream": FakeStream(),
         "doctitle_xform": False,  # without option, very different rendering depending on
         # number of sections in help content.
+        "report_level": no_report_level,
+        "halt_level": no_report_level,
     }
 
     return unicodify(
