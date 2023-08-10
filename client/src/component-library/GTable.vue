@@ -42,26 +42,8 @@ defineExpose({
 
 <template>
     <BTable ref="tableRef" v-model="model" v-bind="$attrs" v-on="$listeners">
-        <template v-slot:empty>
-            <slot name="empty"></slot>
+        <template v-for="(_, slot) of $scopedSlots" v-slot:[slot]="scope">
+            <slot :name="slot" v-bind="scope" />
         </template>
-
-        <template v-slot:head()="data">
-            <slot :name="`head(${data.field.key})`" v-bind="data"></slot>
-        </template>
-
-        <template v-slot:cell()="data">
-            <slot :name="`cell(${data.field.key})`" v-bind="data"></slot>
-        </template>
-
-        <template v-slot:row-details="row">
-            <slot name="row-details" v-bind="row"></slot>
-        </template>
-
-        <template v-slot:table-caption>
-            <slot name="table-caption"></slot>
-        </template>
-
-        <slot></slot>
     </BTable>
 </template>

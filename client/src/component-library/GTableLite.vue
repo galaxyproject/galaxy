@@ -4,14 +4,8 @@ import { BTableLite } from "bootstrap-vue";
 
 <template>
     <BTableLite v-bind="$attrs" v-on="$listeners">
-        <template v-slot:table-caption>
-            <slot name="table-caption"></slot>
+        <template v-for="(_, slot) of $scopedSlots" v-slot:[slot]="scope">
+            <slot :name="slot" v-bind="scope" />
         </template>
-
-        <template v-slot:cell()="data">
-            <slot :name="`cell(${data.field.key})`" v-bind="data"></slot>
-        </template>
-
-        <slot></slot>
     </BTableLite>
 </template>

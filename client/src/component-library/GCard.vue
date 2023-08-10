@@ -4,10 +4,8 @@ import { BCard } from "bootstrap-vue";
 
 <template>
     <BCard v-bind="$attrs" v-on="$listeners">
-        <template v-slot:header>
-            <slot name="header"></slot>
+        <template v-for="(_, slot) of $scopedSlots" v-slot:[slot]="scope">
+            <slot :name="slot" v-bind="scope" />
         </template>
-
-        <slot></slot>
     </BCard>
 </template>

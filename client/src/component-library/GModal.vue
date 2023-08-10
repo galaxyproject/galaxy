@@ -43,22 +43,8 @@ defineExpose({
 
 <template>
     <BModal ref="modalRef" v-model="model" v-bind="$attrs" v-on="$listeners">
-        <template v-slot:modal-header>
-            <slot name="modal-header"></slot>
-        </template>
-
-        <template v-slot:modal-title>
-            <slot name="modal-title"></slot>
-        </template>
-
-        <slot></slot>
-
-        <template v-slot:modal-body>
-            <slot name="modal-body"></slot>
-        </template>
-
-        <template v-slot:modal-footer>
-            <slot name="modal-footer"></slot>
+        <template v-for="(_, slot) of $scopedSlots" v-slot:[slot]="scope">
+            <slot :name="slot" v-bind="scope" />
         </template>
     </BModal>
 </template>
