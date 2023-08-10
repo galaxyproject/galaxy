@@ -585,7 +585,7 @@ only render simplified workflows.""",
     ] = "prefer"
 
     simplified_workflow_run_ui_target_history: Annotated[
-        Literal["prefer_current", "prefer_new"],
+        Literal["current", "new", "prefer_current", "prefer_new"],
         Field(
             title="Simplified Workflow Run Ui Target History",
             description="""When the simplified workflow run form is rendered, should the invocation outputs

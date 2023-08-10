@@ -2274,7 +2274,7 @@ export interface components {
              * @default prefer_current
              * @enum {string}
              */
-            simplified_workflow_run_ui_target_history?: "prefer_current" | "prefer_new";
+            simplified_workflow_run_ui_target_history?: "current" | "new" | "prefer_current" | "prefer_new";
             /**
              * Single User
              * @description If an e-mail address is specified here, it will hijack remote user mechanics
@@ -10397,7 +10397,7 @@ export interface components {
              * @default prefer_current
              * @enum {string}
              */
-            simplified_workflow_run_ui_target_history?: "prefer_current" | "prefer_new";
+            simplified_workflow_run_ui_target_history?: "current" | "new" | "prefer_current" | "prefer_new";
             /**
              * Single User
              * @description If an e-mail address is specified here, it will hijack remote user mechanics
