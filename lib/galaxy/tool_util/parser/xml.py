@@ -70,13 +70,18 @@ class XmlToolSource(ToolSource):
 
     def __init__(self, xml_tree: ElementTree, source_path=None, macro_paths=None):
         self.xml_tree = xml_tree
-        self.root = xml_tree.getroot()
+        self.root = self.xml_tree.getroot()
         self._source_path = source_path
         self._macro_paths = macro_paths or []
         self.legacy_defaults = self.parse_profile() == "16.01"
+        self._string = xml_to_string(self.root)
 
     def to_string(self):
-        return xml_to_string(self.root)
+        return self._string
+
+    def mem_optimize(self):
+        self.root = None
+        self._xml_tree = None
 
     def parse_version(self):
         return self.root.get("version", None)
