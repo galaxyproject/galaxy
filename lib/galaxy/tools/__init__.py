@@ -1752,7 +1752,7 @@ class Tool(Dictifiable):
                 log.exception("Exception while parsing help for tool with id '%s'", self.id)
 
             # Handle deprecated multi-page help text in XML case.
-            __help_by_page = []
+            self.__help_by_page = []
             tool_source = self.tool_source
             if getattr(tool_source, "root", None):
                 help_elem = tool_source.root.find("help")
@@ -1762,25 +1762,24 @@ class Tool(Dictifiable):
                 help_footer = ""
                 if help_pages:
                     for help_page in help_pages:
-                        __help_by_page.append(help_page.text)
+                        self.__help_by_page.append(help_page.text)
                         help_footer = help_footer + help_page.tail
                 # Each page has to rendered all-together because of backreferences allowed by rst
                 try:
-                    __help_by_page = [
+                    self.__help_by_page = [
                         Template(
                             rst_to_html(help_header + x + help_footer),
                             input_encoding="utf-8",
                             default_filters=["decode.utf8"],
                             encoding_errors="replace",
                         )
-                        for x in __help_by_page
+                        for x in self.__help_by_page
                     ]
                 except Exception:
                     log.exception("Exception while parsing multi-page help for tool with id '%s'", self.id)
-        # Pad out help pages to match npages ... could this be done better?
-        while len(__help_by_page) < self.npages:
-            __help_by_page.append(self.__help)
-        self.__help_by_page = __help_by_page
+                # Pad out help pages to match npages ... could this be done better?
+                while len(self.__help_by_page) < self.npages:
+                    self.__help_by_page.append(self.__help)
 
     def find_output_def(self, name):
         # name is JobToOutputDatasetAssociation name.
