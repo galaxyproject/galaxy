@@ -24,7 +24,6 @@ import {
     type OutputCollectionTerminal,
     terminalFactory,
 } from "@/components/Workflow/Editor/modules/terminals";
-import { useUid } from "@/composables/utils/uid";
 import { useWorkflowStores } from "@/composables/workflowStores";
 import { getConnectionId } from "@/stores/workflowConnectionStore";
 import type { InputTerminalSource } from "@/stores/workflowStepStore";
@@ -152,7 +151,6 @@ const rowClass = computed(() => {
 });
 
 const showTooltip = ref(false);
-const tooltipTargetId = useUid("tooltip-target-");
 
 function dragEnter(event: DragEvent) {
     if (reason.value) {
@@ -193,10 +191,10 @@ function onDrop(event: DragEvent) {
 </script>
 
 <template>
-    <div :id="id" class="node-input" :class="rowClass">
+    <div class="node-input" :class="rowClass">
         <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
         <div
-            :id="tooltipTargetId"
+            :id="id"
             ref="dropTarget"
             class="input-terminal prevent-zoom"
             :class="{
@@ -209,7 +207,7 @@ function onDrop(event: DragEvent) {
             @drop.prevent="onDrop"
             @dragenter.prevent="dragEnter"
             @dragleave.prevent="dragLeave">
-            <b-tooltip :target="tooltipTargetId" :show="showTooltip">
+            <b-tooltip :target="id" :show="showTooltip">
                 {{ reason }}
             </b-tooltip>
             <FontAwesomeIcon class="terminal-icon" icon="fa-chevron-circle-right" />

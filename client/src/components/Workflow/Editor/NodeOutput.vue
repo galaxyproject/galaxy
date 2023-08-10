@@ -310,7 +310,8 @@ const removeTagsAction = computed(() => {
                 <button
                     v-if="showCalloutActiveOutput"
                     v-b-tooltip
-                    class="callout-terminal inline-icon-button"
+                    class="callout-terminal inline-icon-button mark-terminal"
+                    :class="{ 'mark-terminal-active': workflowOutput }"
                     title="Checked outputs will become primary workflow outputs and are available as subworkflow outputs."
                     @click="onToggleActive">
                     <FontAwesomeIcon v-if="workflowOutput" fixed-width icon="fa-check-square" />
@@ -319,7 +320,8 @@ const removeTagsAction = computed(() => {
                 <button
                     v-if="showCalloutVisible"
                     v-b-tooltip
-                    class="callout-terminal inline-icon-button"
+                    class="callout-terminal inline-icon-button mark-terminal"
+                    :class="{ 'mark-terminal-visible': isVisible, 'mark-terminal-hidden': !isVisible }"
                     :title="visibleHint"
                     @click="onToggleVisible">
                     <FontAwesomeIcon v-if="isVisible" fixed-width icon="fa-eye" />
