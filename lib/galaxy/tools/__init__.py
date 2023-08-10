@@ -1140,7 +1140,7 @@ class Tool(Dictifiable):
                 try:
                     expressions.find_engine(self.app.config)
                 except Exception:
-                    message = REQUIRES_JS_RUNTIME_MESSAGE % self.tool_id or self.tool_uuid
+                    message = REQUIRES_JS_RUNTIME_MESSAGE % self.id or getattr(self, "uuid", "unknown tool id")
                     raise Exception(message)
         # Tests
         self.__parse_tests(tool_source)
@@ -3450,6 +3450,10 @@ class FilterDatasetsTool(DatabaseOperationTool):
                 copied_value = dce.element_object.copy()
             new_elements[element_identifier] = copied_value
         return new_elements
+
+    @staticmethod
+    def element_is_valid(element: model.DatasetCollectionElement):
+        return element.element_object.is_ok
 
     def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
         collection = incoming["input"]
