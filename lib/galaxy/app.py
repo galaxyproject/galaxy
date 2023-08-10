@@ -619,6 +619,8 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
             ("application stack", self._shutdown_application_stack),
         ]
         self._register_singleton(StructuredApp, self)  # type: ignore[type-abstract]
+        if kwargs.get("is_webapp"):
+            self.is_webapp = kwargs["is_webapp"]
         # A lot of postfork initialization depends on the server name, ensure it is set immediately after forking before other postfork functions
         self.application_stack.register_postfork_function(self.application_stack.set_postfork_server_name, self)
         self.config.reload_sanitize_allowlist(explicit="sanitize_allowlist_file" in kwargs)

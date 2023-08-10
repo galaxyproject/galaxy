@@ -776,6 +776,7 @@ class Tool(Dictifiable):
         self.tool_source = tool_source
         self._is_workflow_compatible = None
         self.__help = None
+        self.__tests_populated = False
         try:
             self.parse(tool_source, guid=guid, dynamic=dynamic)
         except Exception as e:
@@ -1143,8 +1144,6 @@ class Tool(Dictifiable):
                 except Exception:
                     message = REQUIRES_JS_RUNTIME_MESSAGE % self.id or getattr(self, "uuid", "unknown tool id")
                     raise Exception(message)
-        # Tests
-        self.__parse_tests(tool_source)
 
         # Requirements (dependencies)
         requirements, containers, resource_requirements = tool_source.parse_requirements_and_containers()
@@ -1232,10 +1231,6 @@ class Tool(Dictifiable):
             for key, value in uihints_elem.attrib.items():
                 self.uihints[key] = value
 
-    def __parse_tests(self, tool_source):
-        self.__tests_source = tool_source
-        self.__tests_populated = False
-
     def __parse_config_files(self, tool_source):
         self.config_files = []
         if not hasattr(tool_source, "root"):
@@ -1277,7 +1272,7 @@ class Tool(Dictifiable):
     @property
     def tests(self):
         if not self.__tests_populated:
-            tests_source = self.__tests_source
+            tests_source = self.tool_source
             if tests_source:
                 try:
                     self.__tests = parse_tests(self, tests_source)
