@@ -1,12 +1,8 @@
 /*
     galaxy upload utilities - requires FormData and XMLHttpRequest
 */
-
-import axios from "axios";
-import { getAppRoot } from "onload/loadConfig";
-
 import { uploadPayload } from "@/utils/upload-payload.js";
-import { uploadSubmit } from "@/utils/upload-submit.js";
+import { sendPayload, uploadSubmit } from "@/utils/upload-submit.js";
 
 export class UploadQueue {
     constructor(options) {
@@ -70,34 +66,10 @@ export class UploadQueue {
     }
 
     // Initiate upload process
-    start(ftpBatch = false) {
-        if (ftpBatch) {
-            // package ftp files separately, and remove them from queue
-            const list = [];
-            Object.entries(this.queue).forEach(([key, model]) => {
-                if (model.status === "queued" && model.fileMode === "ftp") {
-                    this.queue.remove(model.id);
-                    list.push(this.opts.get(key));
-                }
-            });
-            if (list.length > 0) {
-                const data = uploadPayload(list, this.opts.historyId);
-                axios
-                    .post(`${getAppRoot()}api/tools/fetch`, data)
-                    .then((message) => {
-                        list.forEach((model) => {
-                            this.opts.success(model.id, message);
-                        });
-                    })
-                    .catch((message) => {
-                        list.forEach((model) => {
-                            this.opts.error(model.id, message);
-                        });
-                    });
-            }
-        }
+    start() {
         if (!this.isRunning) {
             this.isRunning = true;
+            this._processFtp();
             this._process();
         }
     }
@@ -125,6 +97,33 @@ export class UploadQueue {
         this.remove(index);
         // Initiate upload request
         this._processSubmit(index, data);
+    }
+
+    // Submit remote files as single batch request
+    _processFtp() {
+        const list = [];
+        for (const index of this.queue.keys()) {
+            const model = this.opts.get(index);
+            if (model.status === "queued" && model.fileMode === "ftp") {
+                list.push({ index, ...model });
+                this.remove(index);
+            }
+        }
+        if (list.length > 0) {
+            const data = uploadPayload(list, this.opts.historyId);
+            sendPayload(data, {
+                success: (message) => {
+                    list.forEach((model) => {
+                        this.opts.success(model.index, message);
+                    });
+                },
+                error: (message) => {
+                    list.forEach((model) => {
+                        this.opts.error(model.index, message);
+                    });
+                },
+            });
+        }
     }
 
     // Get next item to be processed

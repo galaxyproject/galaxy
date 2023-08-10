@@ -269,7 +269,7 @@ function eventStart() {
         });
         emit("progress", 0, "success");
         counterRunning.value = counterAnnounce.value;
-        queue.start(true);
+        queue.start();
     }
 }
 

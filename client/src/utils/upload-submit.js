@@ -12,7 +12,7 @@ function buildFingerprint(cnf) {
     };
 }
 
-function submitPayload(payload, cnf) {
+export function sendPayload(payload, cnf) {
     axios
         .post(`${getAppRoot()}api/tools/fetch`, payload)
         .then((response) => {
@@ -31,7 +31,7 @@ function tusUpload(uploadables, index, data, tusEndpoint, cnf) {
     if (!uploadable) {
         // We've uploaded all files or blobs; delete files from data and submit fetch payload
         delete data["files"];
-        return submitPayload(data, cnf);
+        return sendPayload(data, cnf);
     }
     console.debug(`Starting chunked upload for ${uploadable.name} [chunkSize=${chunkSize}].`);
     const upload = new tus.Upload(uploadable, {
@@ -115,7 +115,7 @@ export function uploadSubmit(config) {
         if (data.targets.length && data.targets[0].elements.length) {
             const pasted = data.targets[0].elements[0];
             if (pasted.src == "url") {
-                return submitPayload(data, cnf);
+                return sendPayload(data, cnf);
             } else {
                 const blob = new Blob([pasted.paste_content]);
                 blob.name = data.targets[0].elements[0].name || "default";
