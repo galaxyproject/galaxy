@@ -9,7 +9,24 @@ function getWrapper() {
     return mount(mountTarget, {
         propsData: {
             defaultDbKey: "?",
-            effectiveExtensions: [{ id: "affybatch", composite_files: [] }],
+            effectiveExtensions: [
+                {
+                    id: "affybatch",
+                    text: "affybatch",
+                    composite_files: [
+                        {
+                            name: "%s.pheno",
+                            optional: false,
+                            description: "Phenodata tab text file",
+                        },
+                        {
+                            name: "%s.affybatch",
+                            optional: false,
+                            description: "AffyBatch R object saved to file",
+                        },
+                    ],
+                },
+            ],
             fileSourcesConfigured: true,
             ftpUploadSite: null,
             historyId: "historyId",
