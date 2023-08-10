@@ -43,6 +43,7 @@ export { default as GImg } from "./GImg.vue";
 export { default as GInput } from "./GInput.vue";
 export { default as GInputGroup } from "./GInputGroup.vue";
 export { default as GInputGroupAppend } from "./GInputGroupAppend.vue";
+export { default as GInputGroupPrepend } from "./GInputGroupPrepend.vue";
 export { default as GInputGroupText } from "./GInputGroupText.vue";
 export { default as GLink } from "./GLink.vue";
 export { default as GListGroup } from "./GListGroup.vue";
