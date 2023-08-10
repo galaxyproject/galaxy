@@ -819,7 +819,7 @@ class Tool(Dictifiable):
             try:
                 self.parse_inputs(self.tool_source)
                 self.parse_outputs(self.tool_source)
-                self.is_workflow_compatible
+                _ = self.is_workflow_compatible
                 self.finalized = True
                 mem_optimize = getattr(self.tool_source, "mem_optimize", None)
                 if mem_optimize is not None:
