@@ -980,9 +980,11 @@ def rst_to_html(s, error=False):
         "warning_stream": FakeStream(),
         "doctitle_xform": False,  # without option, very different rendering depending on
         # number of sections in help content.
-        "report_level": no_report_level,
         "halt_level": no_report_level,
     }
+    if not error:
+        # in normal operation we don't want noisy warnings, that's tool author business
+        settings_overrides["report_level"] = no_report_level
 
     return unicodify(
         docutils_core.publish_string(s, writer=docutils_html4css1.Writer(), settings_overrides=settings_overrides)
