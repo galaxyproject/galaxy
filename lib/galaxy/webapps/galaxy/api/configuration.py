@@ -20,6 +20,7 @@ from galaxy.managers.context import ProvidesUserContext
 from galaxy.schema.configuration import (
     AdminExposableComputedGalaxyConfig,
     AdminExposableGalaxyConfig,
+    ApiCompatibleConfigValues,
     UserExposableComputedGalaxyConfig,
     UserExposableGalaxyConfig,
 )
@@ -48,13 +49,15 @@ EncodedIdPathParam = Path(
 )
 
 
-class ConfigResponse(UserExposableComputedGalaxyConfig, UserExposableGalaxyConfig):
+class ConfigResponse(UserExposableComputedGalaxyConfig, UserExposableGalaxyConfig, ApiCompatibleConfigValues):
     """Configuration values that can be exposed to users."""
 
     pass
 
 
-class AdminOnlyConfigResponse(AdminExposableComputedGalaxyConfig, AdminExposableGalaxyConfig):
+class AdminOnlyConfigResponse(
+    AdminExposableComputedGalaxyConfig, AdminExposableGalaxyConfig, ApiCompatibleConfigValues
+):
     """Configuration values that can be exposed to admins."""
 
     pass

@@ -187,6 +187,34 @@ class UserExposableComputedGalaxyConfig(ComputedGalaxyConfig):
     is_admin_user: Annotated[Literal[False], IsAdminUserField] = False
 
 
+# TODO: import StaticToolBoxView or move it to a common module
+PanelViewList = List[Dict[str, Any]]
+PanelViewDict = Dict[str, Any]
+PanelViewField = Field(
+    title="Panel Views",
+    description="""Definitions of static toolbox panel views embedded directly in the config instead of reading
+YAML from directory with panel_views_dir.""",
+)
+
+
+class ApiCompatibleConfigValues(Model):
+    """Contains Galaxy configuration options that can be exposed to the API.
+
+    These values are used to generate the OpenAPI schema and may differ from the YAML schema.
+    """
+
+    panel_views: Annotated[Optional[PanelViewDict], PanelViewField] = None
+
+
+class SchemaCompatibleConfigValues(Model):
+    """Contains Galaxy configuration options that are used to generate the YAML schema.
+
+    These values are used to generate the Configuration YAML schema and may differ from the OpenAPI schema.
+    """
+
+    panel_views: Annotated[Optional[PanelViewList], PanelViewField] = None
+
+
 class UserExposableGalaxyConfig(Model):
     """Contains Galaxy configuration values that can be exposed to regular users.
 
@@ -789,15 +817,6 @@ preserved as they are loaded from the tool config files.""",
         ),
     ] = True
 
-    panel_views: Annotated[
-        Optional[Dict[str, Dict]],
-        Field(
-            title="Panel Views",
-            description="""Definitions of static toolbox panel views embedded directly in the config instead of reading
-YAML from directory with panel_views_dir.""",
-        ),
-    ] = None
-
     default_panel_view: Annotated[
         str,
         Field(
@@ -973,7 +992,7 @@ filesystem paths to files and directories in a box, and these paths will be adde
     ] = False
 
 
-class FullGalaxyConfig(AdminExposableGalaxyConfig):
+class FullGalaxyConfig(AdminExposableGalaxyConfig, SchemaCompatibleConfigValues):
     """Contains all options from the Galaxy Configuration File.
 
     This model should be used only to generate the Configuration YAML schema.
