@@ -227,7 +227,7 @@ class MockAppConfig(GalaxyDataTestConfig, CommonConfigurationMixin):
 
         # set by MockDir
         self.enable_tool_document_cache = False
-        self.delay_tool_initialization = True
+        self.tool_cache_data_dir = os.path.join(self.root, "tool_cache")
         self.external_chown_script = None
         self.check_job_script_integrity = False
         self.check_job_script_integrity_count = 0
