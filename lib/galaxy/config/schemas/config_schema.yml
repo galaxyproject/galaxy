@@ -65,8 +65,8 @@ mapping:
         path_resolves_to: data_dir
         required: false
         desc: |
-          Top level cache directory. Any other cache directories (tool_cache_data_dir,
-          template_cache_path, etc.) should be subdirectories.
+          Top level cache directory. Any other cache directories
+          (template_cache_path, etc.) should be subdirectories.
 
       database_connection:
         type: str
@@ -836,17 +836,7 @@ mapping:
           expanded XML strings. Enabling the tool cache results in slightly faster startup
           times. The tool cache is backed by a SQLite database, which cannot
           be stored on certain network disks. The cache location is configurable
-          using the ``tool_cache_data_dir`` setting, but can be disabled completely here.
-
-      tool_cache_data_dir:
-        type: str
-        default: tool_cache
-        path_resolves_to: cache_dir
-        required: false
-        desc: |
-          Tool related caching. Fully expanded tools and metadata will be stored at this path.
-          Per tool_conf cache locations can be configured in (``shed_``)tool_conf.xml files using
-          the tool_cache_data_dir attribute.
+          with the ``tool_cache_data_dir`` tag in tool config files.
 
       tool_search_index_dir:
         type: str
