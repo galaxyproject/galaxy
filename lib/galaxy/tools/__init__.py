@@ -704,7 +704,7 @@ class Tool(Dictifiable):
     tool_action: ToolAction
     tool_type_local = False
     dict_collection_visible_keys = ["id", "name", "version", "description", "labels"]
-    __help: Optional[threading.Lock]
+    __help: Optional[Union[threading.Lock, Template]]
     __help_by_page: Union[threading.Lock, List[str]]
     job_search: "JobSearch"
     version: str
@@ -1749,12 +1749,13 @@ class Tool(Dictifiable):
                     encoding_errors="replace",
                 )
             except Exception:
+                self.__help = Template("", input_encoding="utf-8")
                 log.exception("Exception while parsing help for tool with id '%s'", self.id)
 
             # Handle deprecated multi-page help text in XML case.
             self.__help_by_page = []
             tool_source = self.tool_source
-            if getattr(tool_source, "root", None):
+            if isinstance(tool_source, XmlToolSource):
                 help_elem = tool_source.root.find("help")
                 help_header = help_text
                 help_pages = help_elem.findall("page")
