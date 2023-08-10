@@ -3248,6 +3248,19 @@ value of "V1".
 <param name="xlab" type="text" value="V1" label="Label for x axis" />
 ```
 
+Unlike other types of parameters, type="text" parameters are always optional, and tool
+author need to restrict the input with validator elements. By using a profile of at
+least 23.0 text parameters that set ``optional="false"`` or define a validator are
+indicated as required, but without validator the tool can be executed in any case.
+That is a mandatory text parameter should be implemented as:
+
+```
+  <param name="mandatory" type="text" optional="false">
+    <validator type="empty_field"/>
+  </param>
+```
+
+
 The ``area`` boolean attribute can be used to change the ``text`` parameter to a
 two-dimensional text area instead of a single line text box.
 
