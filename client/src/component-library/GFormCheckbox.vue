@@ -3,17 +3,18 @@ import { BFormCheckbox } from "bootstrap-vue";
 import { computed } from "vue";
 
 interface Props {
-    value: boolean;
+    checked?: any;
+    value?: any;
 }
 
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
-    (e: "input", value: Props["value"]): void;
+    (e: "input", value: Props["checked"] | Props["value"]): void;
 }>();
 
 const model = computed({
-    get: () => props.value,
+    get: () => props.checked ?? props.value,
     set: (value) => {
         emit("input", value);
     },

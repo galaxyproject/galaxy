@@ -3,19 +3,19 @@ import { BFormRadioGroup } from "bootstrap-vue";
 import { computed } from "vue";
 
 interface Props {
-    value: boolean;
+    checekd?: boolean;
 }
 
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
-    (e: "input", value: Props["value"]): void;
+    (e: "change", value: Props["checekd"]): void;
 }>();
 
 const model = computed({
-    get: () => props.value,
+    get: () => props.checekd,
     set: (value) => {
-        emit("input", value);
+        emit("change", value);
     },
 });
 </script>

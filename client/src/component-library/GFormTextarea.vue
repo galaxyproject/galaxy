@@ -3,7 +3,7 @@ import { BFormTextarea } from "bootstrap-vue";
 import { computed } from "vue";
 
 interface Props {
-    value: string | number;
+    value?: string | number;
 }
 
 const props = defineProps<Props>();

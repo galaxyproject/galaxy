@@ -3,17 +3,17 @@ import { BFormRadio } from "bootstrap-vue";
 import { computed } from "vue";
 
 interface Props {
-    value: boolean;
+    checked?: boolean;
 }
 
 const props = defineProps<Props>();
 
 const emit = defineEmits<{
-    (e: "input", value: Props["value"]): void;
+    (e: "input", value: Props["checked"]): void;
 }>();
 
 const model = computed({
-    get: () => props.value,
+    get: () => props.checked,
     set: (value) => {
         emit("input", value);
     },
