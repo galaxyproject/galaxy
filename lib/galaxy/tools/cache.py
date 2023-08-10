@@ -49,7 +49,7 @@ class ToolDocumentCache:
             else:
                 cache_file = self.writeable_cache_file.name if self.writeable_cache_file else self.cache_file
                 self._cache = SqliteDict(cache_file, flag=flag, encode=encoder, decode=decoder, autocommit=False)
-        except sqlite3.OperationalError:
+        except (sqlite3.OperationalError, RuntimeError):
             log.warning("Tool document cache unavailable")
             self._cache = None
             self.disabled = True
