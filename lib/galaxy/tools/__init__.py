@@ -9,7 +9,6 @@ import os
 import re
 import tarfile
 import tempfile
-import threading
 from collections.abc import MutableMapping
 from pathlib import Path
 from typing import (
@@ -181,7 +180,6 @@ REQUIRES_JS_RUNTIME_MESSAGE = (
     "but node or nodejs could not be found. Please contact the Galaxy adminstrator"
 )
 
-HELP_UNINITIALIZED = threading.Lock()
 MODEL_TOOLS_PATH = os.path.abspath(os.path.dirname(__file__))
 # Tools that require Galaxy's Python environment to be preserved.
 GALAXY_LIB_TOOLS_UNVERSIONED = [
@@ -701,8 +699,8 @@ class Tool(Dictifiable):
     tool_action: ToolAction
     tool_type_local = False
     dict_collection_visible_keys = ["id", "name", "version", "description", "labels"]
-    __help: Optional[Union[threading.Lock, Template]]
-    __help_by_page: Union[threading.Lock, List[str]]
+    __help: Optional[Template]
+    __help_by_page: List[str]
     job_search: "JobSearch"
     version: str
 
@@ -777,6 +775,7 @@ class Tool(Dictifiable):
         # Parse XML element containing configuration
         self.tool_source = tool_source
         self._is_workflow_compatible = None
+        self.__help = None
         try:
             self.parse(tool_source, guid=guid, dynamic=dynamic)
         except Exception as e:
