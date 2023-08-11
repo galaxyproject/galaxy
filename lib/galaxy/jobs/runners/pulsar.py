@@ -36,6 +36,7 @@ from pulsar.client import (
 
 # TODO: Perform pulsar release with this included in the client package
 from pulsar.client.staging import DEFAULT_DYNAMIC_COLLECTION_PATTERN
+from sqlalchemy import select
 
 from galaxy import model
 from galaxy.job_execution.compute_environment import (
@@ -974,10 +975,8 @@ class PulsarJobRunner(AsynchronousJobRunner):
             remote_job_id = full_status["job_id"]
             if len(remote_job_id) == 32:
                 # It is a UUID - assign_ids = uuid in destination params...
-                sa_session = self.app.model.session
-                galaxy_job_id = (
-                    sa_session.query(model.Job).filter(model.Job.job_runner_external_id == remote_job_id).one().id
-                )
+                stmt = select(model.Job).filter(model.Job.job_runner_external_id == remote_job_id)
+                galaxy_job_id = self.app.model.session.execute(stmt).scalar_one().id
             else:
                 galaxy_job_id = remote_job_id
             job, job_wrapper = self.app.job_manager.job_handler.job_queue.job_pair_for_id(galaxy_job_id)
