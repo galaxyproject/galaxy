@@ -183,16 +183,25 @@ def _process_raw_inputs(
                 param_value = raw_input_dict["value"]
                 param_extra = raw_input_dict["attributes"]
                 location = param_extra.get("location")
-                if param_value is None and location:
-                    # If no value is given, we try to get the file name directly from the URL
-                    param_value = os.path.basename(location)
                 if not value.type == "text":
                     param_value = _split_if_str(param_value)
                 if isinstance(value, galaxy.tools.parameters.basic.DataToolParameter):
-                    if not isinstance(param_value, list):
-                        param_value = [param_value]
-                    for v in param_value:
-                        _add_uploaded_dataset(context.for_state(), v, param_extra, value, required_files)
+                    if param_value is None and location:
+                        # We get the input/s from the location which can be a list of urls separated by commas
+                        locations = _split_if_str(location)
+                        param_value = []
+                        for location in locations:
+                            v = os.path.basename(location)
+                            param_value.append(v)
+                            # param_extra should contain only the corresponding location
+                            extra = dict(param_extra)
+                            extra["location"] = location
+                            _add_uploaded_dataset(context.for_state(), v, extra, value, required_files)
+                    else:
+                        if not isinstance(param_value, list):
+                            param_value = [param_value]
+                        for v in param_value:
+                            _add_uploaded_dataset(context.for_state(), v, param_extra, value, required_files)
                     processed_value = param_value
                 elif isinstance(value, galaxy.tools.parameters.basic.DataCollectionToolParameter):
                     assert "collection" in param_extra
