@@ -59,6 +59,7 @@ export interface ParameterOutput extends Omit<DataOutput, "type" | "extensions">
 }
 
 interface BaseStepInput {
+    valid?: boolean;
     name: string;
     label: string;
     multiple: boolean;

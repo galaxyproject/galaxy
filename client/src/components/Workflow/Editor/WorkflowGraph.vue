@@ -1,12 +1,7 @@
 <template>
     <div id="workflow-canvas" class="unified-panel-body workflow-canvas">
         <ZoomControl :zoom-level="scale" :pan="transform" @onZoom="onZoom" @update:pan="panBy" />
-        <div
-            id="canvas-container"
-            ref="canvas"
-            class="canvas-content position-relative"
-            @drop.prevent
-            @dragover.prevent>
+        <div id="canvas-container" ref="canvas" class="canvas-content" @drop.prevent @dragover.prevent>
             <AdaptiveGrid
                 :viewport-bounds="elementBounding"
                 :viewport-bounding-box="viewportBoundingBox"
@@ -28,6 +23,7 @@
                     :root-offset="elementBounding"
                     :scroll="scroll"
                     :scale="scale"
+                    :readonly="readonly"
                     @pan-by="panBy"
                     @stopDragging="onStopDragging"
                     @onDragConnector="onDragConnector"
@@ -71,8 +67,9 @@ const emit = defineEmits(["transform", "graph-offset", "onRemove", "scrollTo"]);
 const props = defineProps({
     steps: { type: Object as PropType<{ [index: string]: Step }>, required: true },
     datatypesMapper: { type: DatatypesMapperModel, required: true },
-    highlightId: { type: null as unknown as PropType<number | null>, default: null },
-    scrollToId: { type: null as unknown as PropType<number | null>, default: null },
+    highlightId: { type: Number as PropType<number | null>, default: null },
+    scrollToId: { type: Number as PropType<number | null>, default: null },
+    readonly: { type: Boolean, default: false },
 });
 
 const { stateStore, stepStore } = useWorkflowStores();
@@ -81,7 +78,10 @@ const canvas: Ref<HTMLElement | null> = ref(null);
 
 const elementBounding = useElementBounding(canvas, { windowResize: false, windowScroll: false });
 const scroll = useScroll(canvas);
-const { transform, panBy, setZoom, moveTo } = useD3Zoom(1, minZoom, maxZoom, canvas, scroll, { x: 20, y: 20 });
+const { transform, panBy, setZoom, moveTo } = useD3Zoom(scale.value, minZoom, maxZoom, canvas, scroll, {
+    x: 20,
+    y: 20,
+});
 const { viewportBoundingBox } = useViewportBoundingBox(elementBounding, scale, transform);
 
 const isDragging = ref(false);
@@ -155,3 +155,27 @@ const canvasStyle = computed(() => {
     return { transform: `translate(${transform.value.x}px, ${transform.value.y}px) scale(${transform.value.k})` };
 });
 </script>
+
+<style scoped land="scss">
+.workflow-canvas {
+    position: relative;
+
+    .canvas-content {
+        width: 100%;
+        height: 100%;
+        position: relative;
+        left: 0px;
+        top: 0px;
+        overflow: hidden;
+    }
+
+    .node-area {
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        transform-origin: 0 0;
+    }
+}
+</style>

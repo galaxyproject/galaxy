@@ -131,3 +131,17 @@ export default {
     },
 };
 </script>
+
+<style scoped lang="scss">
+@import "theme/blue.scss";
+
+.workflow-recommendations {
+    display: block;
+    height: 30rem;
+
+    .header-background {
+        border-bottom: solid 1px $brand-primary;
+        margin-bottom: 0.5rem;
+    }
+}
+</style>

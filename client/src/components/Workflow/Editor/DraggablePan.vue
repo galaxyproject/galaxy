@@ -27,6 +27,10 @@ const props = defineProps({
         required: false,
         default: null,
     },
+    disabled: {
+        tyoe: Boolean,
+        default: false,
+    },
 });
 
 type Size = { width: number; height: number };
@@ -148,6 +152,7 @@ function onMouseUp(e: MouseEvent) {
         :prevent-default="preventDefault"
         :stop-propagation="stopPropagation"
         :drag-data="dragData"
+        :disabled="disabled"
         @move="onMove"
         @mouseup="onMouseUp"
         v-on="$listeners">

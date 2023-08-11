@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import type { ZoomTransform } from "d3-zoom";
 import type { Ref } from "vue";
-import { inject, PropType, reactive, ref } from "vue";
+import { computed, inject, PropType, reactive, ref } from "vue";
 
 import { useAnimationFrameSize } from "@/composables/sensors/animationFrameSize";
 import { useAnimationFrameThrottle } from "@/composables/throttle";
@@ -26,11 +26,15 @@ const props = defineProps({
         required: false,
         default: null,
     },
+    disabled: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 const emit = defineEmits(["mousedown", "mouseup", "move", "dragstart", "start", "stop"]);
 
-let dragImg: HTMLImageElement | undefined;
+let dragImg: HTMLImageElement | null = null;
 const draggable = ref();
 const size = reactive(useAnimationFrameSize(draggable));
 const transform: Ref<ZoomTransform> | undefined = inject("transform");
@@ -86,6 +90,7 @@ const onMove = (position: Position, event: DragEvent) => {
 const onEnd = (position: Position, event: DragEvent) => {
     if (dragImg) {
         document.body.removeChild(dragImg);
+        dragImg = null;
     }
 
     dragging = false;
@@ -93,7 +98,9 @@ const onEnd = (position: Position, event: DragEvent) => {
     emit("stop");
 };
 
-useDraggable(draggable, {
+const maybeDraggable = computed(() => (props.disabled ? null : draggable.value));
+
+useDraggable(maybeDraggable, {
     preventDefault: props.preventDefault,
     stopPropagation: props.stopPropagation,
     useCapture: false,

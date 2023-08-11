@@ -956,7 +956,7 @@ export function terminalFactory<T extends TerminalSourceAndInvalid>(
                     multiple: false,
                     optional: false,
                 },
-                valid: terminalSource.valid,
+                valid: terminalSource.valid as false,
             }) as TerminalOf<T>;
         } else {
             const inputArgs = {

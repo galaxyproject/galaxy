@@ -675,7 +675,8 @@ workflow_editor:
         selector: '//div[contains(@class, "output-data-row") and contains(string(), "${output_name} (${extension})")]'
       output_terminal: "${_} [output-name='${name}']"
       input_terminal: "${_} [input-name='${name}']"
-      input_mapping_icon: "${_} [input-name='${name}'].multiple"
+      input_mapping_icon: "${_} [input-name='${name}'].mapped-over"
+      connector_destroy_callout: "${_} [input-name='${name}'] + .delete-terminal-button"
       workflow_output_toggle: "${_} [data-output-name='${name}'] .callout-terminal "
       workflow_output_toggle_active: "${_} [data-output-name='${name}'] .mark-terminal-active"
   selectors:
@@ -770,7 +771,6 @@ workflow_editor:
     tool_version_button: ".tool-versions"
     connector_for: "#connection-${sink_id}-${source_id}"
     connector_invalid_for: "#connection-${sink_id}-${source_id} .connection.invalid"
-    connector_destroy_callout: '.delete-terminal'
     save_button: '.editor-button-save'
     save_workflow_confirmation_button: '#save-workflow-confirmation .btn-primary'
     state_modal_body: '.state-upgrade-modal'
@@ -778,7 +778,7 @@ workflow_editor:
 
 workflow_show:
   selectors:
-    _: '.workflow-display'
+    _: '.published-workflow'
     title: '[data-description="workflow name"]'
     import_link: '[data-description="workflow import"]'
 

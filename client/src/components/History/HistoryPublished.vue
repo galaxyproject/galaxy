@@ -1,19 +1,20 @@
 <template>
-    <Published :item="history">
+    <PublishedItem :item="history">
         <template v-slot>
             <HistoryView :id="id" />
         </template>
-    </Published>
+    </PublishedItem>
 </template>
 
 <script>
-import Published from "components/Common/Published";
-import HistoryView from "components/History/HistoryView";
 import { urlData } from "utils/url";
+
+import PublishedItem from "@/components/Common/PublishedItem.vue";
+import HistoryView from "@/components/History/HistoryView.vue";
 
 export default {
     components: {
-        Published,
+        PublishedItem,
         HistoryView,
     },
     props: {

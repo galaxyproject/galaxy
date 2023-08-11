@@ -130,3 +130,9 @@ function toggleConnection(inputObject: InputObject) {
     }
 }
 </script>
+
+<style scoped lang="scss">
+#input-choices-menu {
+    color: black;
+}
+</style>
