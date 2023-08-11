@@ -1,5 +1,5 @@
 <tool id="composite_output_tests" name="composite_output_tests" version="1.0.0">
-  <!-- command mixes files_path and extra_files_path, both shuold work -->
+  <!-- command mixes files_path and extra_files_path, both should work -->
   <command>
     mkdir '$output.files_path';
     mkdir '$output.files_path/output';
