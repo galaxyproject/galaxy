@@ -4,9 +4,10 @@
 import { orderBy } from "lodash";
 import levenshteinDistance from "utils/levenshtein";
 
+const TOOL_ID_KEYS = ["id", "tool_id"];
 const TOOLS_RESULTS_SORT_LABEL = "apiSort";
 const TOOLS_RESULTS_SECTIONS_HIDE = ["Expression Tools"];
-const STRING_REPLACEMENTS = [" ", "-", "(", ")", "'", ":"];
+const STRING_REPLACEMENTS = [" ", "-", "(", ")", "'", ":", `"`];
 
 // Converts filterSettings { key: value } to query = "key:value"
 export function createWorkflowQuery(filterSettings) {
@@ -132,6 +133,11 @@ export function hasResults(results) {
 export function searchToolsByKeys(tools, keys, query, usesDL = false) {
     let returnedTools = [];
     let closestTerm = null;
+    const id = processForId(query, TOOL_ID_KEYS);
+    if (id) {
+        query = id;
+        keys = { id: 1 };
+    }
     const queryValue = sanitizeString(query.trim().toLowerCase(), STRING_REPLACEMENTS);
     const minimumQueryLength = 5; // for DL
     for (const tool of tools) {
@@ -170,7 +176,7 @@ export function searchToolsByKeys(tools, keys, query, usesDL = false) {
         }
     }
     // no results with string.match(): recursive call with usesDL
-    if (!usesDL && returnedTools.length == 0) {
+    if (!id && !usesDL && returnedTools.length == 0) {
         return searchToolsByKeys(tools, keys, query, true);
     }
     // sorting results by indexed order of keys
@@ -277,6 +283,22 @@ function sanitizeString(value, targets = [], substitute = "") {
     });
 
     return sanitized.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
+}
+
+/**
+ * If the query is of the form "id:1234" (or "tool_id:1234"), return the id.
+ * Otherwise, return null.
+ * @param {String} query - the raw query
+ * @param {Array} keys - Optional: keys to check for (default: ["id"])
+ * @returns id or null
+ */
+function processForId(query, keys = ["id"]) {
+    for (const key of keys) {
+        if (query.includes(`${key}:`)) {
+            return query.split(`${key}:`)[1].trim();
+        }
+    }
+    return null;
 }
 
 function flattenToolsSection(section) {

@@ -108,6 +108,30 @@ describe("test helpers in tool searching utilities", () => {
                 keys: { description: 1, name: 2 },
                 list: tempToolsList,
             },
+            {
+                // id is not searchable if not identified by colon
+                q: "__ZIP_COLLECTION__",
+                expectedResults: [],
+                keys: { description: 1, name: 2 },
+                list: toolsList,
+            },
+            {
+                // id is searchable if provided "id:"
+                q: "id:__ZIP_COLLECTION__",
+                expectedResults: ["__ZIP_COLLECTION__"],
+                keys: { description: 1, name: 2 },
+                list: toolsList,
+            },
+            {
+                // id is searchable if provided "tool_id:"
+                q: "tool_id:umi_tools",
+                expectedResults: [
+                    "toolshed.g2.bx.psu.edu/repos/iuc/umi_tools_extract/umi_tools_extract/1.1.2+galaxy2",
+                    "umi_tools_reduplicate",
+                ],
+                keys: { description: 1, name: 2 },
+                list: tempToolsList,
+            },
         ];
         searches.forEach((search) => {
             const { results } = searchToolsByKeys(flattenTools(search.list), search.keys, search.q);
