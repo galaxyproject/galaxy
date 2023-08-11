@@ -2,11 +2,11 @@ import json
 from typing import (
     Any,
     Dict,
+    List,
 )
 
 import pytest
 from selenium.webdriver.common.by import By
-from typing import List
 
 from galaxy.model.unittest_utils.store_fixtures import one_hda_model_store_dict
 from galaxy.selenium.navigates_galaxy import retry_call_during_transitions
