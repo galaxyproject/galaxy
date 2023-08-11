@@ -172,6 +172,7 @@ class AzureBlobObjectStore(ConcreteObjectStore):
         extra_dir_at_root=False,
         alt_name=None,
         obj_dir=False,
+        in_cache=False,
         **kwargs,
     ):
         # extra_dir should never be constructed from provided data but just
@@ -209,6 +210,9 @@ class AzureBlobObjectStore(ConcreteObjectStore):
 
         if not dir_only:
             rel_path = os.path.join(rel_path, alt_name if alt_name else f"dataset_{self._get_object_id(obj)}.dat")
+
+        if in_cache:
+            return self._get_cache_path(rel_path)
 
         return rel_path
 
