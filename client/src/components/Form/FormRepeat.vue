@@ -2,9 +2,9 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCaretDown, faCaretUp, faPlus, faTrashAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { defineAsyncComponent, nextTick, type PropType, unref } from "vue";
+import { defineAsyncComponent, nextTick, type PropType } from "vue";
 
-import { useUid } from "@/composables/utils/uid";
+import { useKeyedObjects } from "@/composables/keyedObjects";
 
 import FormCard from "./FormCard.vue";
 
@@ -85,19 +85,7 @@ function getButtonId(index: number, direction: "up" | "down") {
     return `${prefix}_${direction}`;
 }
 
-const keyCache = new WeakMap<object, string>();
-
-function getOrSetKey(object: Object) {
-    const cachedKey = keyCache.get(object);
-
-    if (cachedKey) {
-        return cachedKey;
-    } else {
-        const key = unref(useUid("repeat-"));
-        keyCache.set(object, key);
-        return key;
-    }
-}
+const { keyObject } = useKeyedObjects();
 </script>
 
 <template>
@@ -109,7 +97,7 @@ function getOrSetKey(object: Object) {
 
         <FormCard
             v-for="(cache, cacheId) in props.input.cache"
-            :key="getOrSetKey(cache)"
+            :key="keyObject(cache)"
             data-description="repeat block"
             class="card"
             :title="getTitle(cacheId)">
