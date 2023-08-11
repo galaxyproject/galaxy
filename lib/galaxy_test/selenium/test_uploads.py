@@ -473,8 +473,8 @@ PRJDA60709  SAMD00016382    DRX000480   ftp.sra.ebi.ac.uk/vol1/fastq/DRR000/DRR0
             return f.read()
 
     def _wait_for_upload_modal(self):
-        self.components.upload.build_btn.wait_for_visible()
-        self.components.upload.build_btn.wait_for_clickable()
+        self.components.upload.build_button.wait_for_visible()
+        self.components.upload.build_button.wait_for_clickable()
 
     def _scroll_to_end_of_table(self):
         rule_builder = self.components.rule_builder

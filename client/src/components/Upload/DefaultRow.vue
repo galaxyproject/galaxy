@@ -110,9 +110,9 @@ function removeUpload() {
     <div :id="`upload-row-${index}`" class="upload-row rounded my-1 p-2" :class="`upload-${status}`">
         <div class="d-flex justify-content-around">
             <div>
-                <FontAwesomeIcon v-if="fileMode == 'new'" icon="fa-edit" />
-                <FontAwesomeIcon v-if="fileMode == 'local'" icon="fa-laptop" />
-                <FontAwesomeIcon v-if="fileMode == 'ftp'" icon="fa-folder-open" />
+                <FontAwesomeIcon v-if="fileMode == 'new'" icon="fa-edit" fixed-width />
+                <FontAwesomeIcon v-if="fileMode == 'local'" icon="fa-laptop" fixed-width />
+                <FontAwesomeIcon v-if="fileMode == 'ftp'" icon="fa-folder-open" fixed-width />
             </div>
             <b-input
                 :value="fileName"
@@ -163,16 +163,19 @@ function removeUpload() {
                     v-else-if="status === 'error'"
                     class="cursor-pointer"
                     icon="fa-exclamation-triangle"
+                    fixed-width
                     @click="removeUpload" />
                 <FontAwesomeIcon
                     v-else-if="status === 'init'"
                     class="cursor-pointer"
                     icon="fa-trash"
+                    fixed-width
                     @click="removeUpload" />
                 <FontAwesomeIcon
                     v-else-if="status === 'success'"
                     class="cursor-pointer"
                     icon="fa-check"
+                    fixed-width
                     @click="removeUpload" />
                 <FontAwesomeIcon v-else icon="fa-exclamation" />
             </div>

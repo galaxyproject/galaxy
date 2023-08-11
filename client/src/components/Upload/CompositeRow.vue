@@ -46,6 +46,10 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
+    optional: {
+        type: Boolean,
+        required: true,
+    },
     percentage: {
         type: Number,
         required: true,
@@ -149,6 +153,7 @@ function onDrop(evt) {
             <div>
                 <BDropdown
                     :id="`upload-type-${index}`"
+                    class="upload-source"
                     :disabled="isDisabled"
                     text="Select"
                     :variant="fileSize > 0 ? 'secondary' : 'primary'">
@@ -189,10 +194,11 @@ function onDrop(evt) {
                 </div>
             </div>
             <div>
-                <FontAwesomeIcon v-if="['running', 'queued'].includes(status)" icon="fa-spinner" spin />
-                <FontAwesomeIcon v-else-if="status === 'error'" icon="fa-exclamation-triangle" />
-                <FontAwesomeIcon v-else-if="fileSize > 0" icon="fa-check" />
-                <FontAwesomeIcon v-else icon="fa-exclamation" />
+                <FontAwesomeIcon v-if="['running', 'queued'].includes(status)" icon="fa-spinner" spin fixed-width />
+                <FontAwesomeIcon v-else-if="status === 'error'" icon="fa-exclamation-triangle" fixed-width />
+                <FontAwesomeIcon v-else-if="fileSize > 0" icon="fa-check" fixed-width />
+                <FontAwesomeIcon v-else-if="optional" class="text-info" icon="fa-check" fixed-width />
+                <FontAwesomeIcon v-else icon="fa-exclamation" fixed-width />
             </div>
         </div>
         <div v-if="info" v-localize class="upload-text-message">

@@ -1,7 +1,7 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 
-import mountTarget from "./Composite.vue";
+import mountTarget from "./CompositeBox.vue";
 
 const localVue = getLocalVue();
 
@@ -41,7 +41,7 @@ describe("Composite", () => {
         const wrapper = getWrapper();
         expect(wrapper.find("#btn-start").classes()).toEqual(expect.arrayContaining(["disabled"]));
         expect(wrapper.vm.showHelper).toBe(true);
-        expect(wrapper.vm.readyStart).toBe(false);
+        expect(wrapper.vm.enableStart).toBe(false);
         const extensions = wrapper.vm.listExtensions;
         expect(extensions.length).toBe(2);
         expect(extensions[0].id).toBe(null);

@@ -1,7 +1,7 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 
-import mountTarget from "./Default.vue";
+import mountTarget from "./DefaultBox.vue";
 
 const localVue = getLocalVue();
 

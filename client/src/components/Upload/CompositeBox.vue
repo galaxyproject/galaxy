@@ -45,6 +45,11 @@ const extension = ref(null);
 const dbKey = ref(props.defaultDbKey);
 const uploadItems = ref({});
 
+const enableStart = computed(() => {
+    const incomplete = uploadValues.value.find((v) => v.status === "init" && !v.optional && v.fileSize === 0);
+    return !isRunning.value && uploadValues.value.length > 0 && !incomplete;
+});
+
 const hasRemoteFiles = computed(() => props.fileSourcesConfigured || !!props.ftpUploadSite);
 
 const isRunning = computed(() => {
@@ -56,13 +61,6 @@ const listExtensions = computed(() => {
     const result = props.effectiveExtensions.filter((ext) => ext.composite_files);
     result.unshift({ id: null, text: "Select" });
     return result;
-});
-
-const readyStart = computed(() => {
-    const readyStates = uploadValues.value.filter((v) => v.fileSize > 0).length;
-    const optionalStates = uploadValues.value.filter((v) => v.optional).length;
-    const isValid = readyStates + optionalStates == uploadValues.value.length;
-    return !isRunning.value && uploadValues.value.length > 0 && isValid;
 });
 
 const showHelper = computed(() => uploadKeys.value.length === 0);
@@ -157,8 +155,8 @@ function restoreStatus() {
 }
 
 defineExpose({
+    enableStart,
     listExtensions,
-    readyStart,
     showHelper,
 });
 </script>
@@ -180,6 +178,7 @@ defineExpose({
                     :file-size="uploadItem.fileSize"
                     :info="uploadItem.info"
                     :has-remote-files="hasRemoteFiles"
+                    :optional="uploadItem.optional"
                     :percentage="uploadItem.percentage"
                     :space-to-tab="uploadItem.spaceToTab"
                     :status="uploadItem.status"
@@ -190,6 +189,7 @@ defineExpose({
         <div class="upload-footer">
             <span class="upload-footer-title">Composite Type:</span>
             <UploadSettingsSelect
+                class="upload-footer-extension"
                 :value="null"
                 :options="listExtensions"
                 :disabled="isRunning"
@@ -200,16 +200,16 @@ defineExpose({
         <div class="upload-buttons d-flex justify-content-end">
             <BButton
                 id="btn-start"
-                :disabled="!readyStart"
+                :disabled="!enableStart"
                 title="Start"
-                :variant="readyStart ? 'primary' : null"
+                :variant="enableStart ? 'primary' : null"
                 @click="eventStart">
                 <span v-localize>Start</span>
             </BButton>
             <BButton id="btn-reset" title="Reset" @click="eventReset">
                 <span v-localize>Reset</span>
             </BButton>
-            <BButton title="Close" @click="$emit('dismiss')">
+            <BButton id="btn-close" title="Close" @click="$emit('dismiss')">
                 <span v-if="hasCallback" v-localize>Close</span>
                 <span v-else v-localize>Cancel</span>
             </BButton>

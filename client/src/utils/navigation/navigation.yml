@@ -1026,22 +1026,18 @@ gies:
     iframe: 'body iframe[seamless="seamless"]'
 
 upload:
-  composite:
-    selectors:
-      table: 'div#composite table.upload-table'
-      close: 'div#composite div.upload-buttons button'
-
   selectors:
-    build_btn: '#rule-based #btn-build'
-    close: '#btn-close'
-    create: '#btn-new'
+    build_button: '#rule-based #btn-build'
+    close_button: '#regular #btn-close'
+    composite_close_button: '#composite #btn-close'
+    create_button: '#btn-new'
     file_dialog: '#btn-remote-files'
     file_dialog_ok: '.file-dialog-modal-ok'
     file_source_selector:
       type: xpath
       selector: '//span[contains(@title, "${path}")]'
+    paste_option: '#upload-row-${n} .upload-source .dropdown-menu .dropdown-item .fa-edit'
     paste_content: '#upload-row-${n} .upload-text-content'
-    paste_new: .upload-paste
     row: '#upload-row-${n}'
     rule_dataset_dialog: '[data-description="rules dataset dialog"]'
     rule_dataset_selector:
@@ -1056,8 +1052,9 @@ upload:
     settings_button: '#upload-row-${n} .upload-settings span'
     setting_deferred: '.upload-deferred'
     setting_space_to_tab: '.upload-space-to-tab'
+    source_button: '#upload-row-${n} .upload-source'
     start: '#activity-upload'
-    start_uploading: '#btn-start'
+    start_button: '#btn-start'
 
 new_user_welcome:
   selectors:

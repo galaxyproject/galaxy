@@ -14,8 +14,8 @@ import { computed, onMounted, ref } from "vue";
 import { eventHub } from "@/components/plugins/eventHub.js";
 import { uploadPayload } from "@/utils/upload-payload.js";
 
-import Composite from "./Composite";
-import Default from "./Default";
+import CompositeBox from "./CompositeBox";
+import DefaultBox from "./DefaultBox";
 import RulesInput from "./RulesInput";
 
 const props = defineProps({
@@ -159,7 +159,7 @@ defineExpose({
 <template>
     <BTabs v-if="ready">
         <BTab v-if="showRegular" id="regular" title="Regular" button-id="tab-title-link-regular">
-            <Default
+            <DefaultBox
                 ref="regular"
                 :chunk-upload-size="chunkUploadSize"
                 :default-db-key="defaultDbKey"
@@ -175,7 +175,7 @@ defineExpose({
                 v-on="$listeners" />
         </BTab>
         <BTab v-if="showComposite" id="composite" title="Composite" button-id="tab-title-link-composite">
-            <Composite
+            <CompositeBox
                 :effective-extensions="effectiveExtensions"
                 :default-db-key="defaultDbKey"
                 :file-sources-configured="fileSourcesConfigured"
@@ -186,7 +186,7 @@ defineExpose({
                 v-on="$listeners" />
         </BTab>
         <BTab v-if="showCollection" id="collection" title="Collection" button-id="tab-title-link-collection">
-            <Default
+            <DefaultBox
                 :chunk-upload-size="chunkUploadSize"
                 :default-db-key="defaultDbKey"
                 :default-extension="defaultExtension"
