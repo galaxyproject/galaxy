@@ -2,11 +2,29 @@
 import { computed } from "vue";
 import Multiselect from "vue-multiselect";
 
+import { uid } from "@/utils/utils";
+
 const props = defineProps({
-    disabled: Boolean,
-    options: Array,
-    placeholder: String,
-    value: String,
+    id: {
+        type: String,
+        default: `upload-settings-select-${uid()}`,
+    },
+    disabled: {
+        type: Boolean,
+        default: false,
+    },
+    options: {
+        type: Array,
+        required: true,
+    },
+    placeholder: {
+        type: String,
+        default: "",
+    },
+    value: {
+        type: String,
+        default: null,
+    },
 });
 
 const emit = defineEmits(["input"]);
@@ -21,6 +39,7 @@ const currentValue = computed({
 
 <template>
     <Multiselect
+        :id="id"
         v-model="currentValue"
         class="upload-settings-select rounded"
         deselect-label=""

@@ -11,7 +11,7 @@ import { computed, ref } from "vue";
 
 import { RULES_TYPES } from "./utils.js";
 
-import UploadSettingsSelect from "./UploadSettingsSelect.vue";
+import UploadSelect from "./UploadSelect.vue";
 
 library.add(faEdit, faFile, faFolderOpen, faLock);
 
@@ -132,7 +132,7 @@ function inputRemote() {
         <FontAwesomeIcon v-if="isDisabled" class="upload-text-lock" icon="fa-lock" />
         <div class="upload-footer text-center">
             <span class="upload-footer-title">Upload type:</span>
-            <UploadSettingsSelect v-model="dataType" class="rule-data-type" :options="RULES_TYPES" />
+            <UploadSelect v-model="dataType" class="rule-data-type" :options="RULES_TYPES" />
         </div>
         <div class="upload-buttons d-flex justify-content-end">
             <BButton @click="inputPaste">

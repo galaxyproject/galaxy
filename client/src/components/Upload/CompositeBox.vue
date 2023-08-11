@@ -8,7 +8,7 @@ import { uploadSubmit } from "@/utils/upload-submit.js";
 import { defaultModel } from "./model.js";
 
 import CompositeRow from "./CompositeRow.vue";
-import UploadSettingsSelect from "./UploadSettingsSelect.vue";
+import UploadSelect from "./UploadSelect.vue";
 
 const props = defineProps({
     defaultDbKey: {
@@ -188,14 +188,14 @@ defineExpose({
         </div>
         <div class="upload-footer">
             <span class="upload-footer-title">Composite Type:</span>
-            <UploadSettingsSelect
+            <UploadSelect
                 class="upload-footer-extension"
                 :value="null"
                 :options="listExtensions"
                 :disabled="isRunning"
                 @input="inputExtension" />
             <span class="upload-footer-title">Reference:</span>
-            <UploadSettingsSelect :value="dbKey" :options="listDbKeys" :disabled="isRunning" @input="inputDbkey" />
+            <UploadSelect :value="dbKey" :options="listDbKeys" :disabled="isRunning" @input="inputDbkey" />
         </div>
         <div class="upload-buttons d-flex justify-content-end">
             <BButton

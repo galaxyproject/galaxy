@@ -14,8 +14,8 @@ import { COLLECTION_TYPES, DEFAULT_FILE_NAME, hasBrowserSupport } from "./utils"
 
 import DefaultRow from "./DefaultRow.vue";
 import UploadBox from "./UploadBox.vue";
-import UploadExtensionDetails from "./UploadExtensionDetails.vue";
-import UploadSettingsSelect from "./UploadSettingsSelect.vue";
+import UploadExtension from "./UploadExtension.vue";
+import UploadSelect from "./UploadSelect.vue";
 
 library.add(faCopy, faEdit, faFolderOpen, faLaptop);
 
@@ -382,7 +382,7 @@ defineExpose({
         </UploadBox>
         <div class="upload-footer text-center">
             <span v-if="isCollection" class="upload-footer-title">Collection:</span>
-            <UploadSettingsSelect
+            <UploadSelect
                 v-if="isCollection"
                 class="upload-footer-collection-type"
                 :value="collectionType"
@@ -391,16 +391,16 @@ defineExpose({
                 placeholder="Select Type"
                 @input="updateCollectionType" />
             <span class="upload-footer-title">Type (set all):</span>
-            <UploadSettingsSelect
+            <UploadSelect
                 class="upload-footer-extension"
                 :value="extension"
                 :disabled="isRunning"
                 :options="listExtensions"
                 placeholder="Select Type"
                 @input="updateExtension" />
-            <UploadExtensionDetails :extension="extension" :list-extensions="listExtensions" />
+            <UploadExtension :extension="extension" :list-extensions="listExtensions" />
             <span class="upload-footer-title">Reference (set all):</span>
-            <UploadSettingsSelect
+            <UploadSelect
                 class="upload-footer-genome"
                 :value="dbKey"
                 :disabled="isRunning"

@@ -3,7 +3,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCog } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
-import UploadSettingsOption from "./UploadSettingsOption.vue";
+import UploadOption from "./UploadOption.vue";
 import Popper from "@/components/Popper/Popper.vue";
 
 library.add(faCog);
@@ -38,17 +38,17 @@ const emit = defineEmits(["input"]);
         <div class="upload-settings-content px-2 py-2 no-highlight">
             <table class="upload-settings-table grid">
                 <tbody>
-                    <UploadSettingsOption
+                    <UploadOption
                         class="upload-space-to-tab"
                         title="Convert spaces to tabs"
                         :value="spaceToTab"
                         @click="emit('input', 'spaceToTab')" />
-                    <UploadSettingsOption
+                    <UploadOption
                         class="upload-to-posix-lines"
                         title="Use POSIX standard"
                         :value="toPosixLines"
                         @click="emit('input', 'toPosixLines')" />
-                    <UploadSettingsOption
+                    <UploadOption
                         v-if="deferred !== null"
                         class="upload-deferred"
                         title="Defer dataset resolution"

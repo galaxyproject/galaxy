@@ -7,7 +7,7 @@ import { ref, watch } from "vue";
 import { useUserStore } from "@/stores/userStore";
 import { wait } from "@/utils/utils";
 
-import UploadModalContent from "./UploadModalContent";
+import UploadContainer from "./UploadContainer.vue";
 
 const { currentUser } = storeToRefs(useUserStore());
 const { currentHistoryId } = useUserHistories(currentUser);
@@ -89,7 +89,7 @@ defineExpose({
         <template v-slot:modal-header>
             <h2 class="title h-sm" tabindex="0">{{ options.title }}</h2>
         </template>
-        <UploadModalContent
+        <UploadContainer
             v-if="currentHistoryId"
             ref="content"
             :key="showModal"

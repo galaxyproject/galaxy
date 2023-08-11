@@ -5,9 +5,9 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { bytesToString } from "utils/utils";
 import { computed } from "vue";
 
-import UploadExtensionDetails from "./UploadExtensionDetails.vue";
+import UploadExtension from "./UploadExtension.vue";
+import UploadSelect from "./UploadSelect.vue";
 import UploadSettings from "./UploadSettings.vue";
-import UploadSettingsSelect from "./UploadSettingsSelect.vue";
 
 library.add(faEdit, faLaptop, faFolderOpen);
 
@@ -122,7 +122,7 @@ function removeUpload() {
             <div class="upload-size">
                 {{ bytesToString(fileSize) }}
             </div>
-            <UploadSettingsSelect
+            <UploadSelect
                 v-if="listExtensions !== null"
                 class="upload-extension"
                 :value="extension"
@@ -130,11 +130,8 @@ function removeUpload() {
                 :options="listExtensions"
                 placeholder="Select Type"
                 @input="inputExtension" />
-            <UploadExtensionDetails
-                v-if="listExtensions !== null"
-                :extension="extension"
-                :list-extensions="listExtensions" />
-            <UploadSettingsSelect
+            <UploadExtension v-if="listExtensions !== null" :extension="extension" :list-extensions="listExtensions" />
+            <UploadSelect
                 v-if="listDbKeys !== null"
                 class="upload-genome"
                 :value="dbKey"
