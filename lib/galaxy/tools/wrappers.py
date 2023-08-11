@@ -475,7 +475,7 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
         if self.false_path is not None and key == "file_name":
             # Path to dataset was rewritten for this job.
             return self.false_path
-        elif key == "extra_files_path":
+        elif key in ("extra_files_path", "files_path"):
             if self.__io_type == "input":
                 path_rewrite = self.compute_environment and self.compute_environment.input_extra_files_rewrite(
                     self.unsanitized

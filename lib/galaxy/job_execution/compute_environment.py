@@ -125,16 +125,19 @@ class SharedComputeEnvironment(SimpleComputeEnvironment, ComputeEnvironment):
 
     def output_path_rewrite(self, dataset):
         dataset_path = self.job_io.get_output_path(dataset)
-        if hasattr(dataset_path, "false_path"):
+        if getattr(dataset_path, "false_path", None):
             return dataset_path.false_path
         else:
-            return dataset_path
+            return dataset_path.real_path
 
     def input_extra_files_rewrite(self, dataset):
         return None
 
     def output_extra_files_rewrite(self, dataset):
-        return None
+        output_path_rewrite = self.output_path_rewrite(dataset)
+        base_output_path = output_path_rewrite[0 : -len(".dat")]
+        remote_extra_files_path_rewrite = f"{base_output_path}_files"
+        return remote_extra_files_path_rewrite
 
     def input_metadata_rewrite(self, dataset, metadata_value):
         return None
