@@ -133,6 +133,9 @@ class MockContext:
     def query(self, clazz):
         return MockQuery(self.model_objects.get(clazz))
 
+    def get(self, clazz, id):
+        return self.query(clazz).get(id)
+
     def flush(self):
         self.flushed = True
 
