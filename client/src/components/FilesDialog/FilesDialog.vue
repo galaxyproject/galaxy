@@ -65,12 +65,10 @@ function clicked(record: RecordItem) {
     }
     if (record.isLeaf) {
         // record is file
-        selectLeaf(record as FileRecord);
+        selectLeaf(record);
     } else {
-        // record is directory
-        const directory = record as DirectoryRecord;
         // you cannot select entire root directory
-        urlTracker.value.atRoot() ? open(directory) : selectDirectory(directory);
+        urlTracker.value.atRoot() ? open(record) : selectDirectory(record);
     }
     formatRows();
 }
@@ -133,13 +131,13 @@ function selectDirectory(record: DirectoryRecord) {
         browseRemoteFiles(record.url, recursive).then((items) => {
             items.forEach((item) => {
                 // construct record
-                const sub_record = entryToRecord(item);
-                if (sub_record.isLeaf) {
+                const subRecord = entryToRecord(item);
+                if (subRecord.isLeaf) {
                     // select file under this path
-                    selectLeaf(sub_record as FileRecord, true);
+                    selectLeaf(subRecord, true);
                 } else {
                     // select subdirectory
-                    selectedDirectories.value.push(sub_record as DirectoryRecord);
+                    selectedDirectories.value.push(subRecord);
                 }
             });
             isBusy.value = false;
@@ -281,10 +279,10 @@ function toggleSelectAll() {
     for (const item of items.value) {
         if (isUnselectAll) {
             if (model.value.exists(item.id) || model.value.pathExists(item.id)) {
-                item.isLeaf ? model.value.add(item) : selectDirectory(item as DirectoryRecord);
+                item.isLeaf ? model.value.add(item) : selectDirectory(item);
             }
         } else {
-            item.isLeaf ? model.value.add(item) : selectDirectory(item as DirectoryRecord);
+            item.isLeaf ? model.value.add(item) : selectDirectory(item);
         }
     }
 

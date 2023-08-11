@@ -3,7 +3,7 @@
  */
 import { isSubPath } from "@/components/FilesDialog/utilities";
 
-export interface RecordItem {
+export interface BaseRecordItem {
     id: string;
     label: string;
     details: string;
@@ -12,11 +12,11 @@ export interface RecordItem {
     labelTitle: string | undefined;
 }
 
-export interface FileRecord extends RecordItem {
+export interface FileRecord extends BaseRecordItem {
     isLeaf: true;
 }
 
-export interface DirectoryRecord extends RecordItem {
+export interface DirectoryRecord extends BaseRecordItem {
     isLeaf: false;
 }
 
@@ -24,8 +24,10 @@ interface ModelOptions {
     multiple?: boolean;
 }
 
+export type RecordItem = FileRecord | DirectoryRecord;
+
 export class Model {
-    private values: Record<string, RecordItem>;
+    private values: Record<string, BaseRecordItem>;
     private multiple: boolean;
 
     constructor(options: ModelOptions = {}) {
@@ -34,7 +36,7 @@ export class Model {
     }
 
     /** Adds a new record to the value stack **/
-    add(record: RecordItem) {
+    add(record: BaseRecordItem) {
         if (!this.multiple) {
             this.values = {};
         }
@@ -78,13 +80,13 @@ export class Model {
     }
 
     /** Finalizes the results from added records **/
-    finalize(): RecordItem | RecordItem[] {
-        const results: RecordItem[] = [];
+    finalize(): BaseRecordItem | BaseRecordItem[] {
+        const results: BaseRecordItem[] = [];
         Object.values(this.values).forEach((v) => {
             results.push(v);
         });
         if (results.length > 0 && !this.multiple) {
-            return results.at(0) as RecordItem;
+            return results.at(0) as BaseRecordItem;
         }
         return results;
     }

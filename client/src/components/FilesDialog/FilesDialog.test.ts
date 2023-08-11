@@ -5,7 +5,7 @@ import flushPromises from "flush-promises";
 import { selectionStates } from "@/components/SelectionDialog/selectionStates";
 import { mockFetcher } from "@/schema/__mocks__";
 
-import { RecordItem } from "./model";
+import { BaseRecordItem } from "./model";
 import {
     directory1RecursiveResponse,
     directory1Response,
@@ -45,7 +45,7 @@ interface RemoteFilesResponse {
     data?: RemoteFilesList;
 }
 
-interface RowElement extends RecordItem, Element {
+interface RowElement extends BaseRecordItem, Element {
     _rowVariant: string;
 }
 
