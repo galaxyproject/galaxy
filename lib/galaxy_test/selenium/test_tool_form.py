@@ -6,6 +6,7 @@ from typing import (
 
 import pytest
 from selenium.webdriver.common.by import By
+from typing import List
 
 from galaxy.model.unittest_utils.store_fixtures import one_hda_model_store_dict
 from galaxy.selenium.navigates_galaxy import retry_call_during_transitions
@@ -112,6 +113,41 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
             key_value_pairs.append((tds[0], tds[1]))
 
         return key_value_pairs
+
+    @selenium_test
+    def test_repeat_reordering(self):
+        self.home()
+        self.tool_open("text_repeat")
+
+        def assert_input_order(inputs: List[str]):
+            for index, input in enumerate(inputs):
+                parameter_input = self.components.tool_form.parameter_input(parameter=f"the_repeat_{index}|texttest")
+                parameter_value = parameter_input.wait_for_value()
+                assert parameter_value == input
+
+        self.components.tool_form.repeat_insert.wait_for_and_click()
+        self.tool_set_value("the_repeat_0|texttest", "Text A")
+        self.components.tool_form.repeat_insert.wait_for_and_click()
+        self.tool_set_value("the_repeat_1|texttest", "Text B")
+        self.components.tool_form.repeat_insert.wait_for_and_click()
+        self.tool_set_value("the_repeat_2|texttest", "Text C")
+
+        assert_input_order(["Text A", "Text B", "Text C"])
+        self.components.tool_form.repeat_move_up(parameter="the_repeat_1").wait_for_and_click()
+        assert_input_order(["Text B", "Text A", "Text C"])
+        self.components.tool_form.repeat_move_up(parameter="the_repeat_2").wait_for_and_click()
+        assert_input_order(["Text B", "Text C", "Text A"])
+        self.components.tool_form.repeat_move_up(parameter="the_repeat_1").wait_for_and_click()
+        assert_input_order(["Text C", "Text B", "Text A"])
+        self.components.tool_form.repeat_move_up(parameter="the_repeat_0").wait_for_and_click()
+        assert_input_order(["Text C", "Text B", "Text A"])
+
+        self.tool_form_execute()
+        self.history_panel_wait_for_hid_ok(1)
+
+        details = list(map(lambda d: d.text, self._get_dataset_tool_parameters(1)))
+
+        assert details == ["texttest", "Text C", "texttest", "Text B", "texttest", "Text A"]
 
     @selenium_test
     def test_rerun(self):
@@ -261,13 +297,17 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
         self.screenshot("tool_form_citations_formatted")
 
     def _check_dataset_details_for_inttest_value(self, hid, expected_value="42"):
+        tds = self._get_dataset_tool_parameters(hid)
+        assert tds
+        assert any(expected_value in td.text for td in tds)
+
+    def _get_dataset_tool_parameters(self, hid):
         self.hda_click_details(hid)
         self.components.dataset_details._.wait_for_visible()
         tool_parameters_table = self.components.dataset_details.tool_parameters.wait_for_visible()
         tbody_element = tool_parameters_table.find_element(By.CSS_SELECTOR, "tbody")
         tds = tbody_element.find_elements(By.CSS_SELECTOR, "td")
-        assert tds
-        assert any(expected_value in td.text for td in tds)
+        return tds
 
     def _run_environment_test_tool(self, inttest_value="42"):
         self.home()

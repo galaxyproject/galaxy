@@ -564,13 +564,14 @@ tool_form:
     data_option_value: option[value="${item_id}"]
 
     repeat_insert: '[data-description="repeat insert"]'
+    repeat_move_up: '#${parameter}_up'
+    repeat_move_down: '#${parameter}_down'
     reference: '.formatted-reference'
     about: '.tool-footer'
     storage_options: '.tool-storage'
     drilldown_select_all: 'div.ui-form-element[id="form-element-${parameter}"] div.select-all-checkbox'
     drilldown_option: '.drilldown-option'
     drilldown_expand: '.fa-plus-square'
-
 
   labels:
     generate_tour: 'Generate Tour'
