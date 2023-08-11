@@ -40,7 +40,7 @@ export class Model {
         if (!this.multiple) {
             this.values = {};
         }
-        const key = record && record.id;
+        const key = record.id;
         if (key) {
             if (!this.values[key]) {
                 this.values[key] = record;

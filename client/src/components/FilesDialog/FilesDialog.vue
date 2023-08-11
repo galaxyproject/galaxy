@@ -11,7 +11,7 @@ import { selectionStates } from "@/components/SelectionDialog/selectionStates";
 import { useConfig } from "@/composables/config";
 import { errorMessageAsString } from "@/utils/simple-error";
 
-import { DirectoryRecord, FileRecord, Model, RecordItem } from "./model";
+import { DirectoryRecord, Model, RecordItem } from "./model";
 import { browseRemoteFiles, FilesSourcePlugin, getFileSources, RemoteEntry } from "./services";
 
 import DataDialogSearch from "@/components/SelectionDialog/DataDialogSearch.vue";
@@ -36,7 +36,7 @@ const props = withDefaults(defineProps<FilesDialogProps>(), {
 
 const { config, isConfigLoaded } = useConfig();
 
-const model = ref<Model>(new Model({ multiple: props.multiple }));
+const selectionModel = ref<Model>(new Model({ multiple: props.multiple }));
 
 const allSelected = ref(false);
 const selectedDirectories = ref<DirectoryRecord[]>([]);
@@ -65,28 +65,28 @@ function clicked(record: RecordItem) {
     }
     if (record.isLeaf) {
         // record is file
-        selectLeaf(record);
+        selectSingleRecord(record);
     } else {
         // you cannot select entire root directory
-        urlTracker.value.atRoot() ? open(record) : selectDirectory(record);
+        urlTracker.value.atRoot() ? open(record) : selectDirectoryRecursive(record);
     }
     formatRows();
 }
 
-function selectLeaf(file: FileRecord, selectOnly = false) {
-    const selected = model.value.exists(file.id);
+function selectSingleRecord(record: RecordItem, selectOnly = false) {
+    const selected = selectionModel.value.exists(record.id);
     if (selected) {
-        unselectPath(file.url, true);
+        unselectPath(record.url, true);
     }
     if (selectOnly) {
         if (!selected) {
-            model.value.add(file);
+            selectionModel.value.add(record);
         }
     } else {
-        model.value.add(file);
+        selectionModel.value.add(record);
     }
 
-    hasValue.value = model.value.count() > 0;
+    hasValue.value = selectionModel.value.count() > 0;
     if (props.multiple) {
         formatRows();
     } else {
@@ -115,13 +115,13 @@ function unselectPath(path: string, unselectOnlyAboveDirectories = false, unsele
     // unselect files
     if (!unselectOnlyAboveDirectories) {
         // unselect all files under this path
-        model.value.unselectUnderPath(path);
+        selectionModel.value.unselectUnderPath(path);
     }
 }
 
-function selectDirectory(record: DirectoryRecord) {
+function selectDirectoryRecursive(record: DirectoryRecord) {
     // if directory is `selected` or `mixed` unselect everything
-    if (isDirectorySelected(record.id) || model.value.pathExists(record.url)) {
+    if (isDirectorySelected(record.id) || selectionModel.value.pathExists(record.url)) {
         unselectPath(record.url, false, record.id);
     } else {
         selectedDirectories.value.push(record);
@@ -134,7 +134,7 @@ function selectDirectory(record: DirectoryRecord) {
                 const subRecord = entryToRecord(item);
                 if (subRecord.isLeaf) {
                     // select file under this path
-                    selectLeaf(subRecord, true);
+                    selectSingleRecord(subRecord, true);
                 } else {
                     // select subdirectory
                     selectedDirectories.value.push(subRecord);
@@ -151,15 +151,15 @@ function formatRows() {
         if (isSelected) {
             return selectionStates.selected;
         } else {
-            return model.value.pathExists(path) ? selectionStates.mixed : selectionStates.unselected;
+            return selectionModel.value.pathExists(path) ? selectionStates.mixed : selectionStates.unselected;
         }
     };
 
-    hasValue.value = model.value.count() > 0 || selectedDirectories.value.length > 0;
+    hasValue.value = selectionModel.value.count() > 0 || selectedDirectories.value.length > 0;
     for (const item of items.value) {
         let _rowVariant = "active";
         if (item.isLeaf || !fileMode.value) {
-            _rowVariant = model.value.exists(item.id) ? "success" : "default";
+            _rowVariant = selectionModel.value.exists(item.id) ? "success" : "default";
         }
         // if directory
         else if (!item.isLeaf) {
@@ -180,7 +180,8 @@ function isDirectorySelected(directoryId: string): boolean {
 /** check if all objects in this folders are selected **/
 function checkIfAllSelected(): boolean {
     const isAllSelected =
-        Boolean(items.value.length) && items.value.every(({ id }) => model.value.exists(id) || isDirectorySelected(id));
+        Boolean(items.value.length) &&
+        items.value.every(({ id }) => selectionModel.value.exists(id) || isDirectorySelected(id));
 
     if (isAllSelected && currentDirectory.value && !isDirectorySelected(currentDirectory.value.id)) {
         // if all selected, select current folder
@@ -274,31 +275,31 @@ function toggleSelectAll() {
     if (!currentDirectory.value) {
         return;
     }
-    const isUnselectAll = model.value.pathExists(currentDirectory.value.url);
+    const isUnselectAll = selectionModel.value.pathExists(currentDirectory.value.url);
 
     for (const item of items.value) {
         if (isUnselectAll) {
-            if (model.value.exists(item.id) || model.value.pathExists(item.id)) {
-                item.isLeaf ? model.value.add(item) : selectDirectory(item);
+            if (selectionModel.value.exists(item.id) || selectionModel.value.pathExists(item.id)) {
+                item.isLeaf ? selectionModel.value.add(item) : selectDirectoryRecursive(item);
             }
         } else {
-            item.isLeaf ? model.value.add(item) : selectDirectory(item);
+            item.isLeaf ? selectionModel.value.add(item) : selectDirectoryRecursive(item);
         }
     }
 
     if (!isUnselectAll && items.value.length !== 0) {
         selectedDirectories.value.push(currentDirectory.value);
     } else if (isDirectorySelected(currentDirectory.value.id)) {
-        selectDirectory(currentDirectory.value);
+        selectDirectoryRecursive(currentDirectory.value);
     }
 
-    hasValue.value = model.value.count() > 0;
+    hasValue.value = selectionModel.value.count() > 0;
     formatRows();
 }
 
 /** Called when selection is complete, values are formatted and parsed to external callback **/
 function finalize() {
-    const results = model.value.finalize();
+    const results = selectionModel.value.finalize();
     modalShow.value = false;
     props.callback(results);
 }
@@ -306,6 +307,13 @@ function finalize() {
 function goBack() {
     // Loading without a record navigates back one level
     load();
+}
+
+function onOk() {
+    if (!fileMode.value && currentDirectory.value) {
+        selectSingleRecord(currentDirectory.value);
+    }
+    finalize();
 }
 
 onMounted(() => {
@@ -363,7 +371,7 @@ onMounted(() => {
                 class="float-right ml-1 file-dialog-modal-ok"
                 variant="primary"
                 :disabled="(fileMode && !hasValue) || isBusy || (!fileMode && urlTracker.atRoot())"
-                @click="fileMode ? finalize() : selectLeaf(currentDirectory)">
+                @click="onOk">
                 {{ fileMode ? "Ok" : "Select this folder" }}
             </BButton>
         </template>
