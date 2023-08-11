@@ -7,7 +7,10 @@ from typing import (
     Type,
 )
 
-from galaxy.app_unittest_utils.tools_support import UsesApp
+from galaxy.app_unittest_utils.tools_support import (
+    MockContext,
+    UsesApp,
+)
 from galaxy.jobs import (
     JobWrapper,
     TaskWrapper,
@@ -132,39 +135,6 @@ class MockJobDispatcher:
 
     def url_to_destination(self):
         pass
-
-
-class MockContext:
-    def __init__(self, model_objects):
-        self.expunged_all = False
-        self.model_objects = model_objects
-        self.created_objects = []
-
-    def expunge_all(self):
-        self.expunged_all = True
-
-    def query(self, clazz):
-        return MockQuery(self.model_objects.get(clazz))
-
-    def flush(self):
-        pass
-
-    def commit(self):
-        pass
-
-    def add(self, object):
-        self.created_objects.append(object)
-
-
-class MockQuery:
-    def __init__(self, class_objects):
-        self.class_objects = class_objects
-
-    def filter_by(self, **kwds):
-        return Bunch(first=lambda: None)
-
-    def get(self, id):
-        return self.class_objects.get(id, None)
 
 
 class MockTool:
