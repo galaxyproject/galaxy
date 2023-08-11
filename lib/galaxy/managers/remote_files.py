@@ -1,12 +1,7 @@
 import hashlib
 import logging
 from operator import itemgetter
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional,
-)
+from typing import Optional
 
 from galaxy import exceptions
 from galaxy.files import (
@@ -15,6 +10,7 @@ from galaxy.files import (
 )
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.schema.remote_files import (
+    AnyRemoteFilesListResponse,
     FilesSourcePlugin,
     FilesSourcePluginList,
     RemoteFilesDisableMode,
@@ -45,7 +41,7 @@ class RemoteFilesManager:
         format: Optional[RemoteFilesFormat],
         recursive: Optional[bool],
         disable: Optional[RemoteFilesDisableMode],
-    ) -> List[Dict[str, Any]]:
+    ) -> AnyRemoteFilesListResponse:
         """Returns a list of remote files available to the user."""
 
         user_file_source_context = ProvidesUserFileSourcesUserContext(user_ctx)

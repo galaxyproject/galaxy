@@ -4339,7 +4339,7 @@ export interface components {
              * @description The URI root used by this type of plugin.
              * @example gximport://
              */
-            uri_root?: string;
+            uri_root: string;
             /**
              * Writeable
              * @description Whether this files source plugin allows write access.
@@ -6772,6 +6772,19 @@ export interface components {
             name: string;
         };
         /**
+         * ListJstreeResponse
+         * @deprecated
+         * @description List of files in Jstree format.
+         * @default []
+         */
+        ListJstreeResponse: Record<string, never>[];
+        /**
+         * ListUriResponse
+         * @description List of directories and files.
+         * @default []
+         */
+        ListUriResponse: (components["schemas"]["RemoteFile"] | components["schemas"]["RemoteDirectory"])[];
+        /**
          * MandatoryNotificationCategory
          * @description These notification categories cannot be opt-out by the user.
          *
@@ -7893,6 +7906,68 @@ export interface components {
             message: string;
             /** Reloaded */
             reloaded: string[];
+        };
+        /**
+         * RemoteDirectory
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        RemoteDirectory: {
+            /**
+             * Class
+             * @enum {string}
+             */
+            class: "Directory";
+            /**
+             * Name
+             * @description The name of the entry.
+             */
+            name: string;
+            /**
+             * Path
+             * @description The path of the entry.
+             */
+            path: string;
+            /**
+             * URI
+             * @description The URI of the entry.
+             */
+            uri: string;
+        };
+        /**
+         * RemoteFile
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        RemoteFile: {
+            /**
+             * Class
+             * @enum {string}
+             */
+            class: "File";
+            /**
+             * Creation time
+             * @description The creation time of the file.
+             */
+            ctime: string;
+            /**
+             * Name
+             * @description The name of the entry.
+             */
+            name: string;
+            /**
+             * Path
+             * @description The path of the entry.
+             */
+            path: string;
+            /**
+             * Size
+             * @description The size of the file in bytes.
+             */
+            size: number;
+            /**
+             * URI
+             * @description The URI of the entry.
+             */
+            uri: string;
         };
         /**
          * RemoteFilesDisableMode
@@ -11062,7 +11137,9 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>[];
+                    "application/json":
+                        | components["schemas"]["ListUriResponse"]
+                        | components["schemas"]["ListJstreeResponse"];
                 };
             };
             /** @description Validation Error */
@@ -16019,7 +16096,9 @@ export interface operations {
             /** @description A list with details about the remote files available to the user. */
             200: {
                 content: {
-                    "application/json": Record<string, never>[];
+                    "application/json":
+                        | components["schemas"]["ListUriResponse"]
+                        | components["schemas"]["ListJstreeResponse"];
                 };
             };
             /** @description Validation Error */
