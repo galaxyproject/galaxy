@@ -1,18 +1,24 @@
 <template>
     <div>
         <small>Deleted:</small>
-        <b-form-group class="m-0">
-            <b-form-radio-group v-model="deleted" :options="options" size="sm" buttons description="filter deleted" />
-        </b-form-group>
+        <GFormGroup class="m-0">
+            <GFormRadioGroup v-model="deleted" :options="options" size="sm" buttons description="filter deleted" />
+        </GFormGroup>
         <small>Visible:</small>
-        <b-form-group class="m-0">
-            <b-form-radio-group v-model="visible" :options="options" size="sm" buttons description="filter visible" />
-        </b-form-group>
+        <GFormGroup class="m-0">
+            <GFormRadioGroup v-model="visible" :options="options" size="sm" buttons description="filter visible" />
+        </GFormGroup>
     </div>
 </template>
 
 <script>
+import { GFormGroup, GFormRadioGroup } from "@/component-library";
+
 export default {
+    components: {
+        GFormGroup,
+        GFormRadioGroup,
+    },
     props: {
         settings: { type: Object, required: true },
     },

@@ -1,13 +1,13 @@
 <template>
-    <b-table small caption-top :fields="['label', 'parameter_value']" :items="parameters" />
+    <GTable :fields="['label', 'parameter_value']" :items="parameters" caption-top small />
 </template>
 <script>
-import BootstrapVue from "bootstrap-vue";
-import Vue from "vue";
-
-Vue.use(BootstrapVue);
+import { GTable } from "@/component-library";
 
 export default {
+    components: {
+        GTable,
+    },
     props: {
         parameters: { type: Array, required: true },
     },

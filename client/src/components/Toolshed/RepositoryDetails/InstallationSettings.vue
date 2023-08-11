@@ -1,5 +1,5 @@
 <template>
-    <b-modal id="repo-install-settings" v-model="modalShow" :static="modalStatic" @ok="onOk" @hide="onHide">
+    <GModal id="repo-install-settings" v-model="modalShow" :static="modalStatic" @ok="onOk" @hide="onHide">
         <template v-slot:modal-header>
             <h2 class="title m-0 h-sm">
                 {{ modalTitle }}
@@ -9,44 +9,52 @@
             {{ repo.long_description || repo.description }}
         </div>
         <div class="revision text-muted small mb-3">{{ repo.owner }} rev. {{ changesetRevision }}</div>
-        <b-form-group
+        <GFormGroup
             v-if="requiresPanel"
             label="Target Section:"
             description="Choose an existing tool panel section or create a new section to contain the installed tools (optional).">
-            <b-form-input v-model="toolSection" list="sectionSelect" />
+            <GInput v-model="toolSection" list="sectionSelect" />
             <datalist id="sectionSelect">
                 <option v-for="section in toolSections" :key="section.id">
                     {{ section.name }}
                 </option>
             </datalist>
-        </b-form-group>
-        <b-link variant="primary" @click="onAdvanced"> {{ advancedTitle }} advanced settings. </b-link>
-        <b-collapse id="advanced-collapse" v-model="advancedShow" class="mt-2">
-            <b-card>
-                <b-form-group v-if="showConfig" label="Tool Configuration:" description="Choose a tool configuration.">
-                    <b-form-radio
-                        v-for="filename in toolConfigs"
-                        :key="filename"
-                        v-model="toolConfig"
-                        :value="filename">
+        </GFormGroup>
+        <GLink variant="primary" @click="onAdvanced"> {{ advancedTitle }} advanced settings. </GLink>
+        <GCollapse id="advanced-collapse" v-model="advancedShow" class="mt-2">
+            <GCard>
+                <GFormGroup v-if="showConfig" label="Tool Configuration:" description="Choose a tool configuration.">
+                    <GFormRadio v-for="filename in toolConfigs" :key="filename" v-model="toolConfig" :value="filename">
                         {{ filename }}
-                    </b-form-radio>
-                </b-form-group>
-                <b-form-group label="Dependencies:" description="Choose how to handle dependencies.">
-                    <b-form-checkbox v-model="installResolverDependencies">
+                    </GFormRadio>
+                </GFormGroup>
+                <GFormGroup label="Dependencies:" description="Choose how to handle dependencies.">
+                    <GFormCheckbox v-model="installResolverDependencies">
                         Install resolvable dependencies
-                    </b-form-checkbox>
-                    <b-form-checkbox v-model="installRepositoryDependencies">
+                    </GFormCheckbox>
+                    <GFormCheckbox v-model="installRepositoryDependencies">
                         Install repository dependencies
-                    </b-form-checkbox>
-                    <b-form-checkbox v-model="installToolDependencies"> Install tool dependencies </b-form-checkbox>
-                </b-form-group>
-            </b-card>
-        </b-collapse>
-    </b-modal>
+                    </GFormCheckbox>
+                    <GFormCheckbox v-model="installToolDependencies"> Install tool dependencies </GFormCheckbox>
+                </GFormGroup>
+            </GCard>
+        </GCollapse>
+    </GModal>
 </template>
 <script>
+import { GCard, GCollapse, GFormCheckbox, GFormGroup, GFormRadio, GInput, GLink, GModal } from "@/component-library";
+
 export default {
+    components: {
+        GCard,
+        GCollapse,
+        GFormCheckbox,
+        GFormGroup,
+        GFormRadio,
+        GInput,
+        GLink,
+        GModal,
+    },
     props: {
         repo: {
             type: Object,

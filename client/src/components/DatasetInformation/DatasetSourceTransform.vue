@@ -19,11 +19,6 @@
 </template>
 
 <script>
-import BootstrapVue from "bootstrap-vue";
-import Vue from "vue";
-
-Vue.use(BootstrapVue);
-
 const TRANSFORM_ACTION_DESCRIPTIONS = {
     to_posix_lines: {
         short: "Normalized new line characters",

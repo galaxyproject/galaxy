@@ -2,7 +2,8 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faGlobe, faLink, faShareAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, VBTooltip } from "bootstrap-vue";
+
+import { GButton } from "@/component-library";
 
 library.add(faGlobe, faShareAlt, faLink);
 
@@ -14,7 +15,7 @@ const props = defineProps<SharingIndicatorsProps>();
 
 <template>
     <span>
-        <BButton
+        <GButton
             v-if="props.object.published"
             v-b-tooltip.hover
             class="sharing-indicator-published"
@@ -23,8 +24,8 @@ const props = defineProps<SharingIndicatorsProps>();
             :title="'Find all published items' | localize"
             @click.prevent="$emit('filter', 'is:published')">
             <FontAwesomeIcon icon="globe" />
-        </BButton>
-        <BButton
+        </GButton>
+        <GButton
             v-if="props.object.importable"
             v-b-tooltip.hover
             class="sharing-indicator-importable"
@@ -33,8 +34,8 @@ const props = defineProps<SharingIndicatorsProps>();
             :title="'Find all importable items' | localize"
             @click.prevent="$emit('filter', 'is:importable')">
             <FontAwesomeIcon icon="link" />
-        </BButton>
-        <BButton
+        </GButton>
+        <GButton
             v-if="props.object.shared"
             v-b-tooltip.hover
             class="sharing-indicator-shared"
@@ -43,6 +44,6 @@ const props = defineProps<SharingIndicatorsProps>();
             :title="'Find all items shared with me' | localize"
             @click.prevent="$emit('filter', 'is:shared_with_me')">
             <FontAwesomeIcon icon="share-alt" />
-        </BButton>
+        </GButton>
     </span>
 </template>

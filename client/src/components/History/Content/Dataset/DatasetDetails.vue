@@ -13,9 +13,9 @@
                     </span>
                     <span v-if="result.genome_build" class="dbkey">
                         <label v-localize class="prompt">database</label>
-                        <BLink class="value" data-label="Database/Build" @click.stop="$emit('edit')">{{
-                            result.genome_build
-                        }}</BLink>
+                        <GLink class="value" data-label="Database/Build" @click.stop="$emit('edit')">
+                            {{ result.genome_build }}
+                        </GLink>
                     </span>
                     <div v-if="result.misc_info" class="info">
                         <span class="value">{{ result.misc_info }}</span>
@@ -85,17 +85,18 @@
 </template>
 
 <script>
-import { BLink } from "bootstrap-vue";
 import { STATES } from "components/History/Content/model/states";
 import { DatasetProvider } from "components/providers/storeProviders";
+
+import { GLink } from "@/component-library";
 
 import DatasetActions from "./DatasetActions";
 
 export default {
     components: {
+        GLink,
         DatasetActions,
         DatasetProvider,
-        BLink,
     },
     props: {
         dataset: { type: Object, required: true },

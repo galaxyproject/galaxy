@@ -1,6 +1,8 @@
 <script setup>
 import { computed, ref } from "vue";
 
+import { GCollapse, GLink } from "@/component-library";
+
 import HistoryDatasetAsImage from "./Elements/HistoryDatasetAsImage.vue";
 import HistoryDatasetCollectionDisplay from "./Elements/HistoryDatasetCollection/CollectionDisplay.vue";
 import HistoryDatasetDetails from "./Elements/HistoryDatasetDetails.vue";
@@ -65,10 +67,10 @@ const isVisible = computed(() => !isCollapsible.value || toggle.value);
 
 <template>
     <div>
-        <b-link v-if="isCollapsible" class="font-weight-bold" @click="toggle = !toggle">
+        <GLink v-if="isCollapsible" class="font-weight-bold" @click="toggle = !toggle">
             {{ args.collapse }}
-        </b-link>
-        <b-collapse :visible="isVisible">
+        </GLink>
+        <GCollapse :visible="isVisible">
             <div v-if="name == 'generate_galaxy_version'" class="galaxy-version">
                 <pre><code>{{ version }}</code></pre>
             </div>
@@ -109,6 +111,6 @@ const isVisible = computed(() => !isCollapsible.value || toggle.value);
                 :name="name"
                 :args="args"
                 :datasets="datasets" />
-        </b-collapse>
+        </GCollapse>
     </div>
 </template>

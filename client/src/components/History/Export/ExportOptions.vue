@@ -1,7 +1,8 @@
 <script setup>
-import { BCard, BCollapse, BFormCheckbox, BFormGroup, BFormSelect, BLink } from "bootstrap-vue";
 import { ExportParamsModel } from "components/Common/models/exportRecordModel";
 import { computed, reactive, ref } from "vue";
+
+import { GCard, GCollapse, GFormCheckbox, GFormGroup, GFormSelect, GLink } from "@/component-library";
 
 import { AVAILABLE_EXPORT_FORMATS } from "./services";
 
@@ -30,52 +31,52 @@ function onValueChanged() {
 
 <template>
     <div>
-        <BLink
+        <GLink
             id="toggle-options-link"
             :class="isExpanded ? null : 'collapsed'"
             :aria-expanded="isExpanded ? 'true' : 'false'"
             aria-controls="collapse-options"
             @click="isExpanded = !isExpanded">
             {{ title }}
-        </BLink>
-        <BCollapse id="collapse-options" v-model="isExpanded">
-            <BCard>
-                <BFormGroup label="Export Format:" label-for="format">
-                    <BFormSelect
+        </GLink>
+        <GCollapse id="collapse-options" v-model="isExpanded">
+            <GCard>
+                <GFormGroup label="Export Format:" label-for="format">
+                    <GFormSelect
                         id="format-selector"
                         v-model="localOptions.modelStoreFormat"
                         :options="AVAILABLE_EXPORT_FORMATS"
                         value-field="id"
                         text-field="name"
                         @change="onValueChanged" />
-                </BFormGroup>
+                </GFormGroup>
 
-                <BFormGroup label="Dataset files included in the package:">
-                    <BFormCheckbox
+                <GFormGroup label="Dataset files included in the package:">
+                    <GFormCheckbox
                         id="include-files-check"
                         v-model="localOptions.includeFiles"
                         switch
                         @change="onValueChanged">
                         Include Active
-                    </BFormCheckbox>
+                    </GFormCheckbox>
 
-                    <BFormCheckbox
+                    <GFormCheckbox
                         id="include-deleted-check"
                         v-model="localOptions.includeDeleted"
                         switch
                         @change="onValueChanged">
                         Include Deleted (not purged)
-                    </BFormCheckbox>
+                    </GFormCheckbox>
 
-                    <BFormCheckbox
+                    <GFormCheckbox
                         id="include-hidden-check"
                         v-model="localOptions.includeHidden"
                         switch
                         @change="onValueChanged">
                         Include Hidden
-                    </BFormCheckbox>
-                </BFormGroup>
-            </BCard>
-        </BCollapse>
+                    </GFormCheckbox>
+                </GFormGroup>
+            </GCard>
+        </GCollapse>
     </div>
 </template>

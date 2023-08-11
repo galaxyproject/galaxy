@@ -1,21 +1,23 @@
 <template>
     <div aria-labelledby="collection-edit-view-heading">
         <h1 id="collection-edit-view-heading" class="h-lg">{{ l("Edit Collection Attributes") }}</h1>
-        <b-alert show variant="info" dismissible>
+        <GAlert show variant="info" dismissible>
             {{ l(infoMessage) }}
-        </b-alert>
+        </GAlert>
         <div v-if="jobError">
-            <b-alert show variant="danger" dismissible>
+            <GAlert show variant="danger" dismissible>
                 {{ l(errorMessage) }}
-            </b-alert>
+            </GAlert>
         </div>
-        <b-tabs content-class="mt-3">
-            <b-tab
+        <GTabs content-class="mt-3">
+            <GTab
                 title-link-class="collection-edit-change-genome-nav"
                 @click="updateInfoMessage(newCollectionMessage + ' ' + noQuotaIncreaseMessage)">
                 <template v-slot:title> <FontAwesomeIcon icon="table" /> &nbsp; {{ l("Database/Build") }}</template>
                 <DbKeyProvider v-slot="{ item, loading }">
-                    <div v-if="loading"><b-spinner label="Loading Database/Builds..."></b-spinner></div>
+                    <div v-if="loading">
+                        <GSpinner label="Loading Database/Builds..." />
+                    </div>
                     <div v-else>
                         <DatabaseEditTab
                             v-if="item && databaseKeyFromElements"
@@ -24,23 +26,25 @@
                             @clicked-save="clickedSave" />
                     </div>
                 </DbKeyProvider>
-            </b-tab>
+            </GTab>
             <SuitableConvertersProvider :id="collectionId" v-slot="{ item }">
-                <b-tab
+                <GTab
                     v-if="item && item.length"
                     title-link-class="collection-edit-convert-datatype-nav"
                     @click="updateInfoMessage(newCollectionMessage)">
-                    <template v-slot:title> <FontAwesomeIcon icon="cog" /> &nbsp; {{ l("Convert") }}</template>
+                    <template v-slot:title> <FontAwesomeIcon icon="cog" /> &nbsp; {{ l("Convert") }} </template>
                     <SuitableConvertersTab :suitable-converters="item" @clicked-convert="clickedConvert" />
-                </b-tab>
+                </GTab>
             </SuitableConvertersProvider>
-            <b-tab
+            <GTab
                 v-if="isConfigLoaded && config.enable_celery_tasks"
                 title-link-class="collection-edit-change-datatype-nav"
                 @click="updateInfoMessage(expectWaitTimeMessage)">
                 <template v-slot:title> <FontAwesomeIcon icon="database" /> &nbsp; {{ l("Datatypes") }} </template>
                 <DatatypesProvider v-slot="{ item, loading }">
-                    <div v-if="loading"><LoadingSpan :message="loadingString" /></div>
+                    <div v-if="loading">
+                        <LoadingSpan :message="loadingString" />
+                    </div>
                     <div v-else>
                         <ChangeDatatypeTab
                             v-if="item && datatypeFromElements"
@@ -49,8 +53,8 @@
                             @clicked-save="clickedDatatypeChange" />
                     </div>
                 </DatatypesProvider>
-            </b-tab>
-        </b-tabs>
+            </GTab>
+        </GTabs>
     </div>
 </template>
 
@@ -59,12 +63,11 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faBars, faCog, faDatabase, faTable, faUser } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
-import BootstrapVue from "bootstrap-vue";
 import { mapState } from "pinia";
 import { prependPath } from "utils/redirect";
 import { errorMessageAsString } from "utils/simple-error";
-import Vue from "vue";
 
+import { GAlert, GSpinner, GTab, GTabs } from "@/component-library";
 import { useConfig } from "@/composables/config";
 import { useHistoryStore } from "@/stores/historyStore";
 
@@ -77,17 +80,20 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 
 library.add(faDatabase, faTable, faBars, faUser, faCog);
 
-Vue.use(BootstrapVue);
 export default {
     components: {
-        DatabaseEditTab,
-        SuitableConvertersTab,
-        FontAwesomeIcon,
-        DbKeyProvider,
-        SuitableConvertersProvider,
         ChangeDatatypeTab,
+        DatabaseEditTab,
         DatatypesProvider,
+        DbKeyProvider,
+        FontAwesomeIcon,
+        GAlert,
+        GSpinner,
+        GTab,
+        GTabs,
         LoadingSpan,
+        SuitableConvertersProvider,
+        SuitableConvertersTab,
     },
     props: {
         collectionId: {

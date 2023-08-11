@@ -3,44 +3,44 @@
         <div class="row justify-content-md-center">
             <template v-if="!confirmURL">
                 <div class="col col-lg-6">
-                    <b-alert :show="!!messageText" :variant="messageVariant">
+                    <GAlert :show="!!messageText" :variant="messageVariant">
                         <span v-html="messageText" />
-                    </b-alert>
-                    <b-alert :show="!!connectExternalProvider" variant="info">
+                    </GAlert>
+                    <GAlert :show="!!connectExternalProvider" variant="info">
                         There already exists a user with the email <i>{{ connectExternalEmail }}</i
                         >. In order to associate this account with <i>{{ connectExternalLabel }}</i
                         >, you must first login to your existing account.
-                    </b-alert>
-                    <b-form id="login" @submit.prevent="submitLogin()">
-                        <b-card no-body>
-                            <b-card-header v-if="!connectExternalProvider">
+                    </GAlert>
+                    <GForm id="login" @submit.prevent="submitLogin()">
+                        <GCard no-body>
+                            <GCardHeader v-if="!connectExternalProvider">
                                 <span>{{ headerWelcome }}</span>
-                            </b-card-header>
-                            <b-card-body>
+                            </GCardHeader>
+                            <GCardBody>
                                 <div>
                                     <!-- standard internal galaxy login -->
-                                    <b-form-group :label="labelNameAddress" label-for="login-form-name">
-                                        <b-form-input
+                                    <GFormGroup :label="labelNameAddress" label-for="login-form-name">
+                                        <GInput
                                             v-if="!connectExternalProvider"
                                             id="login-form-name"
                                             v-model="login"
                                             name="login"
                                             type="text" />
-                                        <b-form-input
+                                        <GInput
                                             v-else
                                             id="login-form-name"
                                             disabled
                                             :value="connectExternalEmail"
                                             name="login"
                                             type="text" />
-                                    </b-form-group>
-                                    <b-form-group :label="labelPassword" label-for="login-form-password">
-                                        <b-form-input
+                                    </GFormGroup>
+                                    <GFormGroup :label="labelPassword" label-for="login-form-password">
+                                        <GInput
                                             id="login-form-password"
                                             v-model="password"
                                             name="password"
                                             type="password" />
-                                        <b-form-text>
+                                        <GFormText>
                                             <span v-localize>Forgot password?</span>
                                             <a
                                                 v-localize
@@ -49,16 +49,16 @@
                                                 @click.prevent="resetLogin">
                                                 Click here to reset your password.
                                             </a>
-                                        </b-form-text>
-                                    </b-form-group>
-                                    <b-button v-localize name="login" type="submit">Login</b-button>
+                                        </GFormText>
+                                    </GFormGroup>
+                                    <GButton v-localize name="login" type="submit">Login</GButton>
                                 </div>
                                 <div v-if="enableOidc">
                                     <!-- OIDC login-->
                                     <ExternalLogin :login_page="true" :exclude_idps="[connectExternalProvider]" />
                                 </div>
-                            </b-card-body>
-                            <b-card-footer>
+                            </GCardBody>
+                            <GCardFooter>
                                 <span v-if="!connectExternalProvider">
                                     Don't have an account?
                                     <span v-if="allowUserCreation">
@@ -82,9 +82,9 @@
                                         Return to login here.
                                     </a>
                                 </span>
-                            </b-card-footer>
-                        </b-card>
-                    </b-form>
+                            </GCardFooter>
+                        </GCard>
+                    </GForm>
                 </div>
             </template>
             <template v-else>
@@ -94,7 +94,7 @@
                     @setRedirect="setRedirect" />
             </template>
             <div v-if="showWelcomeWithLogin" class="col">
-                <b-embed type="iframe" :src="welcomeUrlWithRoot" aspect="1by1" />
+                <GEmbed type="iframe" :src="welcomeUrlWithRoot" aspect="1by1" />
             </div>
         </div>
     </div>
@@ -102,19 +102,40 @@
 
 <script>
 import axios from "axios";
-import BootstrapVue from "bootstrap-vue";
 import ExternalLogin from "components/User/ExternalIdentities/ExternalLogin";
 import _l from "utils/localization";
 import { withPrefix } from "utils/redirect";
-import Vue from "vue";
+
+import {
+    GAlert,
+    GButton,
+    GCard,
+    GCardBody,
+    GCardFooter,
+    GCardHeader,
+    GEmbed,
+    GForm,
+    GFormGroup,
+    GFormText,
+    GInput,
+} from "@/component-library";
 
 import NewUserConfirmation from "./NewUserConfirmation";
-
-Vue.use(BootstrapVue);
 
 export default {
     components: {
         ExternalLogin,
+        GAlert,
+        GButton,
+        GCard,
+        GCardBody,
+        GCardFooter,
+        GCardHeader,
+        GEmbed,
+        GForm,
+        GFormGroup,
+        GFormText,
+        GInput,
         NewUserConfirmation,
     },
     props: {

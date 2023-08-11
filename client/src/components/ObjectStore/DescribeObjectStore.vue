@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
+import { GSpinner } from "@/component-library";
 import { QuotaSourceUsageProvider } from "@/components/User/DiskUsage/Quota/QuotaUsageProvider.js";
 
 import type { ConcreteObjectStoreModel } from "./types";
@@ -47,7 +48,7 @@ defineExpose({
             v-if="storageInfo.quota && storageInfo.quota.enabled"
             v-slot="{ result: quotaUsage, loading: isLoadingUsage }"
             :quota-source-label="quotaSourceLabel">
-            <b-spinner v-if="isLoadingUsage" />
+            <GSpinner v-if="isLoadingUsage" />
             <QuotaUsageBar v-else-if="quotaUsage" :quota-usage="quotaUsage" :embedded="true" />
         </QuotaSourceUsageProvider>
         <div v-else>Galaxy has no quota configured for this object store.</div>

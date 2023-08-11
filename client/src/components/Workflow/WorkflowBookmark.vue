@@ -1,8 +1,8 @@
 <template>
-    <BLink v-b-tooltip.hover :title="title" class="workflow-bookmark-link" @click="onClick">
+    <GLink v-b-tooltip.hover :title="title" class="workflow-bookmark-link" @click="onClick">
         <FontAwesomeIcon v-if="checked" :icon="['fas', 'star']" />
         <FontAwesomeIcon v-else :icon="['far', 'star']" />
-    </BLink>
+    </GLink>
 </template>
 
 <script>
@@ -10,7 +10,8 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faStar as farStar } from "@fortawesome/free-regular-svg-icons";
 import { faStar } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BLink, VBTooltip } from "bootstrap-vue";
+
+import { GLink } from "@/component-library";
 
 library.add(faStar, farStar);
 
@@ -19,11 +20,8 @@ const UNCHECKED_DESCRIPTION = "Add a bookmark. This workflow will appear in the 
 
 export default {
     components: {
-        BLink,
+        GLink,
         FontAwesomeIcon,
-    },
-    directives: {
-        VBTooltip,
     },
     props: {
         checked: {

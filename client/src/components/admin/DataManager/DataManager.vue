@@ -1,38 +1,35 @@
 <template>
     <div>
-        <Alert :message="message" :variant="status" />
-        <Alert v-if="viewOnly" message="Not implemented" variant="dark" />
-        <Alert v-else-if="loading" message="Waiting for data" variant="info" />
+        <GAlert :message="message" :variant="status" />
+        <GAlert v-if="viewOnly" message="Not implemented" variant="dark" />
+        <GAlert v-else-if="loading" message="Waiting for data" variant="info" />
         <div v-else-if="dataManagers && !dataManagers.length">
-            <Alert variant="primary">
+            <GAlert variant="primary">
                 <span class="alert-heading h-sm">None installed</span>
                 You do not currently have any Data Managers installed.
-            </Alert>
+            </GAlert>
         </div>
         <div v-else-if="dataManagers && dataTables">
-            <b-container fluid>
-                <b-row>
-                    <b-col md="6">
-                        <b-form-group description="Search for strings or regular expressions">
-                            <b-input-group>
-                                <b-form-input
-                                    v-model="filter"
-                                    placeholder="Type to Search"
-                                    @keyup.esc.native="filter = ''" />
-                                <b-input-group-append>
-                                    <b-btn :disabled="!filter" @click="filter = ''">Clear (esc)</b-btn>
-                                </b-input-group-append>
-                            </b-input-group>
-                        </b-form-group>
-                    </b-col>
-                </b-row>
-            </b-container>
-            <b-card-group columns>
-                <b-card id="data-managers-card" no-body header="Installed Data Managers">
-                    <b-list-group flush>
-                        <b-list-group-item v-for="(dataManager, index) in dataManagersFiltered" :key="index">
-                            <b-button-group vertical>
-                                <b-button
+            <GContainer fluid>
+                <GRow>
+                    <GCol md="6">
+                        <GFormGroup description="Search for strings or regular expressions">
+                            <GInputGroup>
+                                <GInput v-model="filter" placeholder="Type to Search" @keyup.esc.native="filter = ''" />
+                                <GInputGroupAppend>
+                                    <GButton :disabled="!filter" @click="filter = ''">Clear (esc)</GButton>
+                                </GInputGroupAppend>
+                            </GInputGroup>
+                        </GFormGroup>
+                    </GCol>
+                </GRow>
+            </GContainer>
+            <GCardGroup columns>
+                <GCard id="data-managers-card" no-body header="Installed Data Managers">
+                    <GListGroup flush>
+                        <GListGroupItem v-for="(dataManager, index) in dataManagersFiltered" :key="index">
+                            <GButtonGroup vertical>
+                                <GButton
                                     :id="kebabCase(dataManager['name'])"
                                     :href="dataManager['toolUrl']"
                                     target="_blank"
@@ -41,35 +38,35 @@
                                     <div v-if="dataManager['description']">
                                         <i>{{ dataManager["description"] }}</i>
                                     </div>
-                                </b-button>
-                                <b-button
+                                </GButton>
+                                <GButton
                                     :id="kebabCase(dataManager['name']) + '-jobs'"
                                     :to="{
                                         name: 'DataManagerJobs',
                                         params: { id: encodeURIComponent(dataManager['id']) },
                                     }">
                                     Jobs
-                                </b-button>
-                            </b-button-group>
-                        </b-list-group-item>
-                    </b-list-group>
-                </b-card>
-                <b-card no-body header="Tool Data Tables">
-                    <b-list-group flush>
-                        <b-list-group-item
+                                </GButton>
+                            </GButtonGroup>
+                        </GListGroupItem>
+                    </GListGroup>
+                </GCard>
+                <GCard no-body header="Tool Data Tables">
+                    <GListGroup flush>
+                        <GListGroupItem
                             v-for="(dataTable, index) in dataTablesFiltered"
                             :id="kebabCase(dataTable['name']) + '-table'"
                             :key="index"
                             :to="{ name: 'DataManagerTable', params: { name: dataTable['name'] } }"
                             :variant="dataTable['managed'] === true ? 'primary' : 'link'">
                             {{ dataTable["name"] }}
-                            <b-badge v-if="dataTable['managed'] === true" variant="primary" pill
-                                ><span class="fa fa-exchange"
-                            /></b-badge>
-                        </b-list-group-item>
-                    </b-list-group>
-                </b-card>
-            </b-card-group>
+                            <GBadge v-if="dataTable['managed'] === true" variant="primary" pill>
+                                <span class="fa fa-exchange" />
+                            </GBadge>
+                        </GListGroupItem>
+                    </GListGroup>
+                </GCard>
+            </GCardGroup>
         </div>
     </div>
 </template>
@@ -79,11 +76,41 @@ import axios from "axios";
 import { getAppRoot } from "onload/loadConfig";
 import { debounce } from "underscore";
 
-import Alert from "components/Alert.vue";
+import {
+    GAlert,
+    GBadge,
+    GButton,
+    GButtonGroup,
+    GCard,
+    GCardGroup,
+    GCol,
+    GContainer,
+    GFormGroup,
+    GInput,
+    GInputGroup,
+    GInputGroupAppend,
+    GListGroup,
+    GListGroupItem,
+    GRow,
+} from "@/component-library";
 
 export default {
     components: {
-        Alert,
+        GAlert,
+        GButton,
+        GButtonGroup,
+        GBadge,
+        GCard,
+        GCardGroup,
+        GCol,
+        GContainer,
+        GFormGroup,
+        GInput,
+        GInputGroup,
+        GInputGroupAppend,
+        GListGroup,
+        GListGroupItem,
+        GRow,
     },
     beforeRouteEnter(to, from, next) {
         console.log("beforeRouteEnter");

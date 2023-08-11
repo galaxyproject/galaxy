@@ -2,9 +2,9 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faHourglassHalf } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BCol, BInputGroup, BRow } from "bootstrap-vue";
 import { formatDistanceToNow, parseISO } from "date-fns";
 
+import { GButton, GCol, GInputGroup, GRow } from "@/component-library";
 import type { UserNotification } from "@/components/Notifications";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 
@@ -34,30 +34,30 @@ function getNotificationExpirationTitle(notification: UserNotification) {
 </script>
 
 <template>
-    <BCol v-if="notification">
-        <BRow align-h="end" align-v="center">
+    <GCol v-if="notification">
+        <GRow align-h="end" align-v="center">
             <UtcDate class="mx-2" :date="notification.create_time" mode="elapsed" />
-            <BInputGroup>
+            <GInputGroup>
                 <AsyncButton
                     v-if="!notification.seen_time"
                     id="mark-as-read-button"
                     title="Mark as read"
                     icon="check"
                     :action="() => notificationsStore.updateNotification(notification, { seen: true })" />
-                <BButton
+                <GButton
                     v-else-if="notification.expiration_time"
                     id="expiration-time-button"
                     v-b-tooltip.hover
                     variant="link"
                     :title="getNotificationExpirationTitle(notification)">
                     <FontAwesomeIcon icon="hourglass-half" />
-                </BButton>
+                </GButton>
                 <AsyncButton
                     id="delete-button"
                     icon="trash"
                     title="Delete"
                     :action="() => notificationsStore.updateNotification(notification, { deleted: true })" />
-            </BInputGroup>
-        </BRow>
-    </BCol>
+            </GInputGroup>
+        </GRow>
+    </GCol>
 </template>

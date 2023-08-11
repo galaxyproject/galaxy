@@ -1,10 +1,10 @@
 <template>
     <div>
         <message :message="message" :status="status"></message>
-        <b-tabs>
-            <b-tab title="Toolshed Tools">
-                <b-tabs>
-                    <b-tab title="HTML Sanitized">
+        <GTabs>
+            <GTab title="Toolshed Tools">
+                <GTabs>
+                    <GTab title="HTML Sanitized">
                         <base-grid id="sanitize-allow-grid" :is-loaded="isLoaded" :columns="toolshedColumns">
                             <template v-slot:rows>
                                 <template v-for="(row, blockedIdx) in toolshedBlocked">
@@ -29,8 +29,8 @@
                                 </template>
                             </template>
                         </base-grid>
-                    </b-tab>
-                    <b-tab title="HTML Rendered">
+                    </GTab>
+                    <GTab title="HTML Rendered">
                         <base-grid id="sanitize-allow-grid" :is-loaded="isLoaded" :columns="columns">
                             <template v-slot:rows>
                                 <template v-for="(row, allowedIdx) in toolshedAllowed">
@@ -56,12 +56,12 @@
                                 </template>
                             </template>
                         </base-grid>
-                    </b-tab>
-                </b-tabs>
-            </b-tab>
-            <b-tab title="Local Tools">
-                <b-tabs>
-                    <b-tab title="HTML Sanitized">
+                    </GTab>
+                </GTabs>
+            </GTab>
+            <GTab title="Local Tools">
+                <GTabs>
+                    <GTab title="HTML Sanitized">
                         <base-grid id="sanitize-allow-grid" :is-loaded="isLoaded" :columns="columns">
                             <template v-slot:rows>
                                 <template v-for="(row, localBlockedIdx) in localBlocked">
@@ -75,8 +75,8 @@
                                 </template>
                             </template>
                         </base-grid>
-                    </b-tab>
-                    <b-tab title="HTML Rendered">
+                    </GTab>
+                    <GTab title="HTML Rendered">
                         <base-grid id="sanitize-allow-grid" :is-loaded="isLoaded" :columns="columns">
                             <template v-slot:rows>
                                 <template v-for="(row, localAllowedIdx) in localAllowed">
@@ -97,10 +97,10 @@
                                 </template>
                             </template>
                         </base-grid>
-                    </b-tab>
-                </b-tabs>
-            </b-tab>
-        </b-tabs>
+                    </GTab>
+                </GTabs>
+            </GTab>
+        </GTabs>
     </div>
 </template>
 
@@ -108,11 +108,15 @@
 import axios from "axios";
 import { getAppRoot } from "onload/loadConfig";
 
+import { GTab, GTabs } from "@/component-library";
+
 import Message from "../Message.vue";
 import BaseGrid from "./BaseGrid.vue";
 
 export default {
     components: {
+        GTab,
+        GTabs,
         message: Message,
         "base-grid": BaseGrid,
     },

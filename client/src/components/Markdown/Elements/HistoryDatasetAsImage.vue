@@ -5,12 +5,8 @@
 </template>
 
 <script>
-import BootstrapVue from "bootstrap-vue";
 import DatasetAsImage from "components/Dataset/DatasetAsImage/DatasetAsImage";
 import { getAppRoot } from "onload/loadConfig";
-import Vue from "vue";
-
-Vue.use(BootstrapVue);
 
 export default {
     components: {

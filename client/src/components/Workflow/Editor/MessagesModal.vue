@@ -1,5 +1,5 @@
 <template>
-    <b-modal
+    <GModal
         v-model="show"
         :title="title"
         scrollable
@@ -20,11 +20,16 @@
                 {{ message }}
             </div>
         </div>
-    </b-modal>
+    </GModal>
 </template>
 
 <script>
+import { GModal } from "@/component-library";
+
 export default {
+    components: {
+        GModal,
+    },
     props: {
         title: {
             type: String,

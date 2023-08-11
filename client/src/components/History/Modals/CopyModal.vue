@@ -1,56 +1,76 @@
 <template>
-    <b-modal v-bind="$attrs" :title="title" title-tag="h2" v-on="$listeners">
+    <GModal v-bind="$attrs" :title="title" title-tag="h2" v-on="$listeners">
         <transition name="fade">
-            <b-alert v-localize :show="isAnonymous" variant="warning">
+            <GAlert v-localize :show="isAnonymous" variant="warning">
                 As an anonymous user, unless you login or register, you will lose your current history after copying
                 this history. You can <a href="/user/login">log in here</a> or <a href="/user/create">register here</a>.
-            </b-alert>
+            </GAlert>
         </transition>
 
         <transition name="fade">
             <div v-if="loading" class="d-flex justify-content-center mb-3">
-                <b-spinner label="Copying History..."></b-spinner>
+                <GSpinner label="Copying History..." />
             </div>
         </transition>
 
         <transition>
-            <b-form v-if="!loading">
-                <b-form-group label="Enter a title for the new history" label-for="copy-modal-title">
-                    <b-input id="copy-modal-title" v-model="name" :state="newNameValid" required />
-                    <b-form-invalid-feedback :state="newNameValid">
+            <GForm v-if="!loading">
+                <GFormGroup label="Enter a title for the new history" label-for="copy-modal-title">
+                    <GInput id="copy-modal-title" v-model="name" :state="newNameValid" required />
+                    <GFormInvalidFeedback :state="newNameValid">
                         Please enter a valid history title.
-                    </b-form-invalid-feedback>
-                </b-form-group>
+                    </GFormInvalidFeedback>
+                </GFormGroup>
 
-                <b-form-group label="Choose which datasets from the original history to include.">
-                    <b-form-radio v-model="copyAll" :value="false">
+                <GFormGroup label="Choose which datasets from the original history to include.">
+                    <GFormRadio v-model="copyAll" :value="false">
                         Copy only the active, non-deleted datasets.
-                    </b-form-radio>
-                    <b-form-radio v-model="copyAll" :value="true">
-                        Copy all datasets including deleted ones.
-                    </b-form-radio>
-                </b-form-group>
-            </b-form>
+                    </GFormRadio>
+                    <GFormRadio v-model="copyAll" :value="true"> Copy all datasets including deleted ones. </GFormRadio>
+                </GFormGroup>
+            </GForm>
         </transition>
 
         <div slot="modal-footer" slot-scope="{ ok, cancel }">
             <div>
-                <b-button class="mr-3" @click="cancel()"> Cancel </b-button>
-                <b-button :variant="saveVariant" :disabled="!formValid" @click="copy(ok)">
+                <GButton class="mr-3" @click="cancel()"> Cancel</GButton>
+                <GButton :variant="saveVariant" :disabled="!formValid" @click="copy(ok)">
                     {{ saveTitle | localize }}
-                </b-button>
+                </GButton>
             </div>
         </div>
-    </b-modal>
+    </GModal>
 </template>
 
 <script>
 import { mapActions, mapState } from "pinia";
 
+import {
+    GAlert,
+    GButton,
+    GForm,
+    GFormGroup,
+    GFormInvalidFeedback,
+    GFormRadio,
+    GInput,
+    GModal,
+    GSpinner,
+} from "@/component-library";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
 export default {
+    components: {
+        GAlert,
+        GButton,
+        GForm,
+        GFormGroup,
+        GFormInvalidFeedback,
+        GFormRadio,
+        GInput,
+        GModal,
+        GSpinner,
+    },
     props: {
         history: { type: Object, required: true },
     },

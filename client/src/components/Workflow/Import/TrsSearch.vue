@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import axios from "axios";
-import { BCard } from "bootstrap-vue";
 import { computed, type Ref, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
+import { GAlert, GButton, GCard, GInput, GInputGroup, GInputGroupAppend, GTable } from "@/component-library";
 import { withPrefix } from "@/utils/redirect";
 
 import { getRedirectOnImportPath } from "../redirectPath";
@@ -78,7 +78,7 @@ function onTrsSelectionError(message: string) {
     errorMessage.value = message;
 }
 
-function showRowDetails(row: BCard, index: number, e: MouseEvent) {
+function showRowDetails(row: any, index: number, e: MouseEvent) {
     if ((e.target as Node | undefined)?.nodeName !== "A") {
         row._showDetails = !row._showDetails;
     }
@@ -121,8 +121,8 @@ async function importVersion(trsId?: string, toolIdToImport?: string, version?: 
 </script>
 
 <template>
-    <BCard class="workflow-import-trs-search" title="GA4GH Tool Registry Server (TRS) Workflow Search">
-        <b-alert :show="hasErrorMessage" variant="danger">{{ errorMessage }}</b-alert>
+    <GCard class="workflow-import-trs-search" title="GA4GH Tool Registry Server (TRS) Workflow Search">
+        <GAlert :show="hasErrorMessage" variant="danger">{{ errorMessage }}</GAlert>
 
         <div class="mb-3">
             <b>TRS Server:</b>
@@ -133,38 +133,38 @@ async function importVersion(trsId?: string, toolIdToImport?: string, version?: 
         </div>
 
         <div>
-            <b-input-group class="mb-3">
-                <b-form-input
+            <GInputGroup class="mb-3">
+                <GInput
                     id="trs-search-query"
                     v-model="query"
                     debounce="500"
                     placeholder="search query"
                     data-description="filter text input"
                     @keyup.esc="query = ''" />
-                <b-input-group-append>
-                    <b-button
+                <GInputGroupAppend>
+                    <GButton
                         v-b-tooltip
                         placement="bottom"
                         size="sm"
                         data-description="show help toggle"
                         :title="searchHelp">
                         <icon icon="question" />
-                    </b-button>
-                    <b-button size="sm" title="clear search" @click="query = ''">
+                    </GButton>
+                    <GButton size="sm" title="clear search" @click="query = ''">
                         <icon icon="times" />
-                    </b-button>
-                </b-input-group-append>
-            </b-input-group>
+                    </GButton>
+                </GInputGroupAppend>
+            </GInputGroup>
         </div>
         <div>
-            <b-alert v-if="loading" variant="info" show>
+            <GAlert v-if="loading" variant="info" show>
                 <LoadingSpan :message="`Searching for ${query}, this may take a while - please be patient`" />
-            </b-alert>
-            <b-alert v-else-if="!query" variant="info" show> Enter search query to begin search. </b-alert>
-            <b-alert v-else-if="results.length == 0" variant="info" show>
+            </GAlert>
+            <GAlert v-else-if="!query" variant="info" show> Enter search query to begin search.</GAlert>
+            <GAlert v-else-if="results.length == 0" variant="info" show>
                 No search results found, refine your search.
-            </b-alert>
-            <b-table
+            </GAlert>
+            <GTable
                 v-else
                 :fields="fields"
                 :items="itemsComputed"
@@ -174,16 +174,16 @@ async function importVersion(trsId?: string, toolIdToImport?: string, version?: 
                 :busy="loading"
                 @row-clicked="showRowDetails">
                 <template v-slot:row-details="row">
-                    <BCard>
-                        <b-alert v-if="importing" variant="info" show>
+                    <GCard>
+                        <GAlert v-if="importing" variant="info" show>
                             <LoadingSpan message="Importing workflow" />
-                        </b-alert>
+                        </GAlert>
                         <TrsTool
                             :trs-tool="row.item.data"
                             @onImport="(versionId) => importVersion(trsSelection?.id, row.item.data.id, versionId)" />
-                    </BCard>
+                    </GCard>
                 </template>
-            </b-table>
+            </GTable>
         </div>
-    </BCard>
+    </GCard>
 </template>

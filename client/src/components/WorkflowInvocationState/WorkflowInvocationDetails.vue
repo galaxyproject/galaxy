@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { GTab, GTabs } from "@/component-library";
 import { useWorkflowInstance } from "@/composables/useWorkflowInstance";
 
 import ParameterStep from "./ParameterStep.vue";
@@ -33,11 +34,11 @@ function dataInputStepLabel(key: number, input: HasSrc) {
 </script>
 <template>
     <div v-if="invocation">
-        <b-tabs lazy>
-            <b-tab v-if="Object.keys(invocation.input_step_parameters).length" title="Parameters">
+        <GTabs lazy>
+            <GTab v-if="Object.keys(invocation.input_step_parameters).length" title="Parameters">
                 <ParameterStep :parameters="Object.values(invocation.input_step_parameters)" />
-            </b-tab>
-            <b-tab v-if="Object.keys(invocation.inputs).length" title="Inputs">
+            </GTab>
+            <GTab v-if="Object.keys(invocation.inputs).length" title="Inputs">
                 <div
                     v-for="(input, key) in invocation.inputs"
                     :key="input.id"
@@ -45,27 +46,27 @@ function dataInputStepLabel(key: number, input: HasSrc) {
                     <b>{{ dataInputStepLabel(key, input) }}</b>
                     <GenericHistoryItem :item-id="input.id" :item-src="input.src" />
                 </div>
-            </b-tab>
-            <b-tab v-if="Object.keys(invocation.outputs).length" title="Outputs">
+            </GTab>
+            <GTab v-if="Object.keys(invocation.outputs).length" title="Outputs">
                 <div v-for="(output, key) in invocation.outputs" :key="output.id">
                     <b>{{ key }}:</b>
                     <GenericHistoryItem :item-id="output.id" :item-src="output.src" />
                 </div>
-            </b-tab>
-            <b-tab v-if="Object.keys(invocation.output_collections).length" title="Output Collections">
+            </GTab>
+            <GTab v-if="Object.keys(invocation.output_collections).length" title="Output Collections">
                 <div v-for="(output, key) in invocation.output_collections" :key="output.id">
                     <b>{{ key }}:</b>
                     <GenericHistoryItem :item-id="output.id" :item-src="output.src" />
                 </div>
-            </b-tab>
-            <b-tab v-if="workflow" title="Steps">
+            </GTab>
+            <GTab v-if="workflow" title="Steps">
                 <WorkflowInvocationStep
                     v-for="step in Object.values(workflow.steps)"
                     :key="step.id"
                     :invocation="invocation"
                     :workflow="workflow"
                     :workflow-step="step" />
-            </b-tab>
-        </b-tabs>
+            </GTab>
+        </GTabs>
     </div>
 </template>

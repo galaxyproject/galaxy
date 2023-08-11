@@ -7,9 +7,9 @@
         </div>
         <div class="unified-panel-body">
             <div class="toolMenuContainer">
-                <b-alert v-if="error" variant="danger" class="my-2 mx-3 px-2 py-1" show>
+                <GAlert v-if="error" variant="danger" class="my-2 mx-3 px-2 py-1" show>
                     {{ error }}
-                </b-alert>
+                </GAlert>
                 <ToolSection v-if="isWorkflow" :category="historyInEditorSection" :expanded="true" @onClick="onClick" />
                 <ToolSection v-else :category="historySection" :expanded="true" @onClick="onClick" />
                 <ToolSection :category="jobSection" :expanded="true" @onClick="onClick" />
@@ -41,14 +41,12 @@
 
 <script>
 import axios from "axios";
-import BootstrapVue from "bootstrap-vue";
 import ToolSection from "components/Panels/Common/ToolSection";
 import { getAppRoot } from "onload/loadConfig";
-import Vue from "vue";
+
+import { GAlert } from "@/component-library";
 
 import MarkdownDialog from "./MarkdownDialog";
-
-Vue.use(BootstrapVue);
 
 const historySharedElements = [
     {
@@ -105,6 +103,7 @@ const historySharedElements = [
 
 export default {
     components: {
+        GAlert,
         MarkdownDialog,
         ToolSection,
     },

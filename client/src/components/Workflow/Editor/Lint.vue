@@ -1,5 +1,5 @@
 <template>
-    <b-card id="lint-panel" header-tag="header" body-class="p-0" class="right-content">
+    <GCard id="lint-panel" header-tag="header" body-class="p-0" class="right-content">
         <template v-slot:header>
             <div class="mb-1 font-weight-bold">
                 <FontAwesomeIcon icon="magic" class="mr-1" />
@@ -9,7 +9,7 @@
                 <a class="refactor-button" href="#" @click="onRefactor"> Try to automatically fix issues. </a>
             </div>
         </template>
-        <b-card-body>
+        <GCardBody>
             <LintSection
                 :okay="checkAnnotation"
                 success-message="This workflow is annotated. Ideally, this helps the executors of the workflow
@@ -70,20 +70,19 @@
                 <FontAwesomeIcon icon="exclamation-triangle" class="text-warning" />
                 <span>This workflow has no labeled outputs, please select and label at least one output.</span>
             </div>
-        </b-card-body>
-    </b-card>
+        </GCardBody>
+    </GCard>
 </template>
 
 <script>
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faExclamationTriangle, faMagic } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import BootstrapVue from "bootstrap-vue";
 import LintSection from "components/Workflow/Editor/LintSection";
 import { UntypedParameters } from "components/Workflow/Editor/modules/parameters";
 import { storeToRefs } from "pinia";
-import Vue from "vue";
 
+import { GCard, GCardBody } from "@/component-library";
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
 import { useWorkflowStores } from "@/composables/workflowStores";
 
@@ -98,13 +97,13 @@ import {
     getUntypedParameters,
 } from "./modules/linting";
 
-Vue.use(BootstrapVue);
-
 library.add(faExclamationTriangle);
 library.add(faMagic);
 
 export default {
     components: {
+        GCard,
+        GCardBody,
         FontAwesomeIcon,
         LintSection,
     },

@@ -1,6 +1,6 @@
 <template>
-    <BTabs v-if="ready">
-        <BTab v-if="showRegular" id="regular" title="Regular" button-id="tab-title-link-regular">
+    <GTabs v-if="ready">
+        <GTab v-if="showRegular" id="regular" title="Regular" button-id="tab-title-link-regular">
             <Default
                 ref="regular"
                 :details="details"
@@ -9,17 +9,17 @@
                 :has-callback="hasCallback"
                 :selectable="selectable"
                 v-on="$listeners" />
-        </BTab>
-        <BTab v-if="showComposite" id="composite" title="Composite" button-id="tab-title-link-composite">
+        </GTab>
+        <GTab v-if="showComposite" id="composite" title="Composite" button-id="tab-title-link-composite">
             <Composite :details="details" :has-callback="hasCallback" :selectable="selectable" v-on="$listeners" />
-        </BTab>
-        <BTab v-if="showCollection" id="collection" title="Collection" button-id="tab-title-link-collection">
+        </GTab>
+        <GTab v-if="showCollection" id="collection" title="Collection" button-id="tab-title-link-collection">
             <Collection :details="details" :has-callback="hasCallback" :selectable="selectable" v-on="$listeners" />
-        </BTab>
-        <BTab v-if="showRules" id="rule-based" title="Rule-based" button-id="tab-title-link-rule-based">
+        </GTab>
+        <GTab v-if="showRules" id="rule-based" title="Rule-based" button-id="tab-title-link-rule-based">
             <RulesInput :details="details" :has-callback="hasCallback" :selectable="selectable" v-on="$listeners" />
-        </BTab>
-    </BTabs>
+        </GTab>
+    </GTabs>
     <div v-else>
         <LoadingSpan message="Loading required information from Galaxy server." />
     </div>
@@ -27,7 +27,6 @@
 
 <script>
 import Backbone from "backbone";
-import { BTab, BTabs } from "bootstrap-vue";
 import { getDatatypesMapper } from "components/Datatypes";
 import LoadingSpan from "components/LoadingSpan";
 import {
@@ -37,6 +36,8 @@ import {
     getUploadDatatypes,
     getUploadDbKeys,
 } from "components/Upload/utils";
+
+import { GTab, GTabs } from "@/component-library";
 
 import Collection from "./Collection";
 import Composite from "./Composite";
@@ -49,10 +50,10 @@ export default {
         Collection,
         Composite,
         Default,
+        GTab,
+        GTabs,
         RulesInput,
         LoadingSpan,
-        BTabs,
-        BTab,
     },
     props: {
         currentHistoryId: { type: String, required: true },

@@ -1,12 +1,12 @@
 <template>
-    <b-modal v-if="modalShow" modal-class="selection-dialog-modal" visible :static="modalStatic" @hide="hideModal">
+    <GModal v-if="modalShow" modal-class="selection-dialog-modal" visible :static="modalStatic" @hide="hideModal">
         <template v-slot:modal-header>
             <slot name="search"> </slot>
         </template>
         <slot name="helper"> </slot>
-        <b-alert v-if="errorMessage" variant="danger" show>
+        <GAlert v-if="errorMessage" variant="danger" show>
             {{ errorMessage }}
-        </b-alert>
+        </GAlert>
         <div v-else>
             <slot v-if="optionsShow" name="options"> </slot>
             <div v-else><span class="fa fa-spinner fa-spin" /> <span>Please wait...</span></div>
@@ -15,34 +15,35 @@
             <div class="w-100">
                 <div v-if="!errorMessage">
                     <slot name="buttons"> </slot>
-                    <b-btn size="sm" class="float-right selection-dialog-modal-cancel" @click="hideModal">
+                    <GButton size="sm" class="float-right selection-dialog-modal-cancel" @click="hideModal">
                         Cancel
-                    </b-btn>
+                    </GButton>
                 </div>
                 <div v-else>
-                    <b-btn v-if="undoShow" id="back-btn" size="sm" class="float-left" @click="backFunc">
+                    <GButton v-if="undoShow" id="back-btn" size="sm" class="float-left" @click="backFunc">
                         <FontAwesomeIcon :icon="['fas', 'caret-left']" />
                         Back
-                    </b-btn>
-                    <b-btn id="close-btn" size="sm" class="float-right" variant="primary" @click="hideModal">
+                    </GButton>
+                    <GButton id="close-btn" size="sm" class="float-right" variant="primary" @click="hideModal">
                         Close
-                    </b-btn>
+                    </GButton>
                 </div>
             </div>
         </template>
-    </b-modal>
+    </GModal>
 </template>
 
 <script>
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import BootstrapVue from "bootstrap-vue";
-import Vue from "vue";
 
-Vue.use(BootstrapVue);
+import { GAlert, GButton, GModal } from "@/component-library";
 
 export default {
     components: {
         FontAwesomeIcon,
+        GAlert,
+        GButton,
+        GModal,
     },
     props: {
         multiple: {

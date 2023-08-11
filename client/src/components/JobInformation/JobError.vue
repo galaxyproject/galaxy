@@ -1,6 +1,6 @@
 <template>
-    <b-card border-variant="danger" :header="header">
-        <b-card-text>
+    <GCard border-variant="danger" :header="header">
+        <GCardText>
             <div @click="showInfo = true">
                 <a href="#">See full job details <FontAwesomeIcon icon="info-circle" /></a>
             </div>
@@ -10,27 +10,32 @@
                 <b v-if="!expanded">(Click to expand job standard error)</b>
             </div>
             <!-- TODO: modal for reporting error. -->
-        </b-card-text>
-        <b-modal v-model="showInfo" modal-class="job-information-modal" scrollable ok-only hide-header>
+        </GCardText>
+        <GModal v-model="showInfo" modal-class="job-information-modal" scrollable ok-only hide-header>
             <JobInformation :job_id="job.id" :include-times="true" />
-        </b-modal>
-    </b-card>
+        </GModal>
+    </GCard>
 </template>
 
 <script>
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import BootstrapVue from "bootstrap-vue";
-import Vue from "vue";
+
+import { GCard, GCardText, GModal } from "@/component-library";
 
 import JobInformation from "./JobInformation.vue";
 
 library.add(faInfoCircle);
-Vue.use(BootstrapVue);
 
 export default {
-    components: { JobInformation, FontAwesomeIcon },
+    components: {
+        GCard,
+        GCardText,
+        GModal,
+        JobInformation,
+        FontAwesomeIcon,
+    },
     props: {
         job: {
             type: Object,

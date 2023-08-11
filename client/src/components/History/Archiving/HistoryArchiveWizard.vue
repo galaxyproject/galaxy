@@ -2,10 +2,10 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faArchive } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BCard, BTab, BTabs } from "bootstrap-vue";
 import { computed, ref } from "vue";
 import { RouterLink } from "vue-router";
 
+import { GAlert, GCard, GTab, GTabs } from "@/component-library";
 import { useConfig } from "@/composables/config";
 import { useFileSources } from "@/composables/fileSources";
 import { useToast } from "@/composables/toast";
@@ -75,28 +75,28 @@ async function onArchiveHistory(exportRecordId?: string) {
             <b v-else>{{ history.name }}</b>
         </h1>
 
-        <BAlert v-if="isHistoryAlreadyArchived" id="history-archived-alert" show variant="success">
+        <GAlert v-if="isHistoryAlreadyArchived" id="history-archived-alert" show variant="success">
             This history has been archived. You can access it from the
             <RouterLink :to="archivedHistoriesRoute">Archived Histories</RouterLink> section.
-        </BAlert>
+        </GAlert>
         <div v-else-if="history">
-            <BAlert show variant="info">
+            <GAlert show variant="info">
                 Archiving a history will remove it from your <i>active histories</i>. You can still access it from the
                 <RouterLink :to="archivedHistoriesRoute">Archived Histories</RouterLink> section.
-            </BAlert>
+            </GAlert>
 
             <div v-if="canFreeStorage">
                 <h2 class="h-md">How do you want to archive this history?</h2>
-                <BCard no-body class="mt-3">
-                    <BTabs pills card vertical lazy class="archival-option-tabs">
-                        <BTab id="keep-storage-tab" title="Keep storage space" active>
+                <GCard no-body class="mt-3">
+                    <GTabs pills card vertical lazy class="archival-option-tabs">
+                        <GTab id="keep-storage-tab" title="Keep storage space" active>
                             <HistoryArchiveSimple :history="history" @onArchive="onArchiveHistory" />
-                        </BTab>
-                        <BTab id="free-storage-tab" title="Free storage space">
+                        </GTab>
+                        <GTab id="free-storage-tab" title="Free storage space">
                             <HistoryArchiveExportSelector :history="history" @onArchive="onArchiveHistory" />
-                        </BTab>
-                    </BTabs>
-                </BCard>
+                        </GTab>
+                    </GTabs>
+                </GCard>
             </div>
             <HistoryArchiveSimple v-else :history="history" @onArchive="onArchiveHistory" />
         </div>

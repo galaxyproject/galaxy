@@ -24,7 +24,7 @@ describe("PageIndexActions.vue", () => {
 
     describe("navigation", () => {
         it("should create a page when create is clicked", async () => {
-            await wrapper.find("#page-create").trigger("click");
+            await wrapper.find("#page-create").vm.$emit("click");
             expect(mockRouter.push).toHaveBeenCalledTimes(1);
             expect(mockRouter.push).toHaveBeenCalledWith("/pages/create");
         });

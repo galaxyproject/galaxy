@@ -300,7 +300,7 @@ describe("FilesDialog, directory mode", () => {
     it("should select folders", async () => {
         const btn = wrapper.find("#ok-btn");
 
-        expect(btn.attributes().disabled).toBe("disabled");
+        expect(btn.attributes().disabled).toBe("true");
         await utils.open_root_folder(false);
         const folder = utils.getRenderedDirectory(directoryId);
         await utils.getTable().$emit("open", folder);

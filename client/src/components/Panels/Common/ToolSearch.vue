@@ -3,6 +3,7 @@ import { computed, onMounted, onUnmounted, type PropType, type Ref, ref } from "
 import { useRouter } from "vue-router/composables";
 
 import { getGalaxyInstance } from "@/app";
+import { GButton, GFormDatalist, GInput, GModal } from "@/component-library";
 import _l from "@/utils/localization";
 
 import { flattenTools } from "../utilities.js";
@@ -158,32 +159,32 @@ function onToggle(toggleAdvanced: boolean) {
             @keyup.enter="onSearch"
             @keyup.esc="onToggle(false)">
             <small class="mt-1">Filter by {{ sectionLabel }}:</small>
-            <b-form-input
+            <GInput
                 v-model="filterSettings['section']"
                 autocomplete="off"
                 size="sm"
                 :placeholder="`any ${sectionLabel}`"
                 list="sectionSelect" />
-            <b-form-datalist id="sectionSelect" :options="sectionNames"></b-form-datalist>
+            <GFormDatalist id="sectionSelect" :options="sectionNames" />
             <small class="mt-1">Filter by id:</small>
-            <b-form-input v-model="filterSettings['id']" size="sm" placeholder="any id" />
+            <GInput v-model="filterSettings['id']" size="sm" placeholder="any id" />
             <small class="mt-1">Filter by repository owner:</small>
-            <b-form-input v-model="filterSettings['owner']" size="sm" placeholder="any owner" />
+            <GInput v-model="filterSettings['owner']" size="sm" placeholder="any owner" />
             <small class="mt-1">Filter by help text:</small>
-            <b-form-input v-model="filterSettings['help']" size="sm" placeholder="any help text" />
+            <GInput v-model="filterSettings['help']" size="sm" placeholder="any help text" />
             <div class="mt-3">
-                <b-button class="mr-1 filter-search-btn" size="sm" variant="primary" @click="onSearch">
+                <GButton class="mr-1 filter-search-btn" size="sm" variant="primary" @click="onSearch">
                     <icon icon="search" />
                     <span>{{ _l("Search") }}</span>
-                </b-button>
-                <b-button size="sm" @click="onToggle(false)">
+                </GButton>
+                <GButton size="sm" @click="onToggle(false)">
                     <icon icon="redo" />
                     <span>{{ _l("Cancel") }}</span>
-                </b-button>
-                <b-button title="Search Help" size="sm" @click="showHelp = true">
+                </GButton>
+                <GButton title="Search Help" size="sm" @click="showHelp = true">
                     <icon icon="question" />
-                </b-button>
-                <b-modal v-model="showHelp" title="Tool Advanced Search Help" ok-only>
+                </GButton>
+                <GModal v-model="showHelp" title="Tool Advanced Search Help" ok-only>
                     <div>
                         <p>
                             You can use this Advanced Tool Search Panel to find tools by applying search filters, with
@@ -230,7 +231,7 @@ function onToggle(toggleAdvanced: boolean) {
                             </dd>
                         </dl>
                     </div>
-                </b-modal>
+                </GModal>
             </div>
         </div>
     </div>

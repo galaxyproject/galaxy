@@ -82,24 +82,22 @@
                     <HistoryDropZone v-if="showDropZone" />
                     <div>
                         <div v-if="loading && itemsLoaded && itemsLoaded.length === 0">
-                            <b-alert class="m-2" variant="info" show>
+                            <GAlert class="m-2" variant="info" show>
                                 <LoadingSpan message="Loading History" />
-                            </b-alert>
+                            </GAlert>
                         </div>
-                        <b-alert v-else-if="isProcessing" class="m-2" variant="info" show>
+                        <GAlert v-else-if="isProcessing" class="m-2" variant="info" show>
                             <LoadingSpan message="Processing operation" />
-                        </b-alert>
+                        </GAlert>
                         <div v-else-if="itemsLoaded.length === 0">
                             <HistoryEmpty v-if="queryDefault" :writable="writable" class="m-2" />
-                            <b-alert v-else-if="formattedSearchError" class="m-2" variant="danger" show>
+                            <GAlert v-else-if="formattedSearchError" class="m-2" variant="danger" show>
                                 Error in filter:
                                 <a href="javascript:void(0)" @click="showAdvanced = true">
                                     {{ formattedSearchError.filter }}'{{ formattedSearchError.value }}'
                                 </a>
-                            </b-alert>
-                            <b-alert v-else class="m-2" variant="info" show>
-                                No data found for selected filter.
-                            </b-alert>
+                            </GAlert>
+                            <GAlert v-else class="m-2" variant="info" show> No data found for selected filter. </GAlert>
                         </div>
                         <ListingLayout
                             v-else
@@ -156,6 +154,8 @@ import { useHistoryStore } from "stores/historyStore";
 import { getOperatorForAlias } from "utils/filtering";
 import Vue from "vue";
 
+import { GAlert } from "@/component-library";
+
 import HistoryCounter from "./HistoryCounter";
 import HistoryDetails from "./HistoryDetails";
 import HistoryDropZone from "./HistoryDropZone";
@@ -170,6 +170,7 @@ import HistorySelectionStatus from "./HistoryOperations/SelectionStatus";
 
 export default {
     components: {
+        GAlert,
         ContentItem,
         ExpandedItems,
         HistoryCounter,

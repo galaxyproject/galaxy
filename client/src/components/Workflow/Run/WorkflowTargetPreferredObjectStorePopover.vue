@@ -1,5 +1,5 @@
 <template>
-    <b-popover :target="target" triggers="hover" placement="bottomleft">
+    <GPopover :target="target" triggers="hover" placement="bottomleft">
         <template v-slot:title>{{ title }}</template>
         <p v-if="invocationPreferredObjectStoreId">This target object store has been set at the invocation level.</p>
         <ShowSelectedObjectStore
@@ -14,13 +14,18 @@
         <div v-localize>
             Change this preference object store target by clicking on the storage button in the worklfow run header.
         </div>
-    </b-popover>
+    </GPopover>
 </template>
 
 <script>
 import showTargetPopoverMixin from "components/ObjectStore/showTargetPopoverMixin";
 
+import { GPopover } from "@/component-library";
+
 export default {
+    components: {
+        GPopover,
+    },
     mixins: [showTargetPopoverMixin],
     props: {
         invocationPreferredObjectStoreId: {

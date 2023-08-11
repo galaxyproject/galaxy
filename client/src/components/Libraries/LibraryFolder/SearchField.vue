@@ -1,20 +1,26 @@
 <template>
-    <b-input-group size="sm">
-        <b-form-input
+    <GInputGroup size="sm">
+        <GInput
             id="filterInput"
             v-model="search"
             class="mr-1"
             type="search"
             :placeholder="titleSearch"
             @keyup.enter="startSearch()" />
-    </b-input-group>
+    </GInputGroup>
 </template>
 
 <script>
 import _l from "utils/localization";
 
+import { GInput, GInputGroup } from "@/component-library";
+
 export default {
     name: "SearchField",
+    components: {
+        GInput,
+        GInputGroup,
+    },
     props: {
         typingDelay: {
             type: Number,

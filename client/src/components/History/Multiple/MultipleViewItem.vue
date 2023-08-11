@@ -19,7 +19,7 @@
             @view-collection="onViewCollection" />
         <hr class="w-100 m-2" />
         <div class="flex-row flex-grow-0">
-            <b-button
+            <GButton
                 size="sm"
                 class="my-1"
                 :disabled="sameToCurrent"
@@ -27,15 +27,15 @@
                 :title="sameToCurrent ? 'Current History' : 'Switch to this history'"
                 @click="setCurrentHistory(source.id)">
                 {{ sameToCurrent ? "Current History" : "Switch to" }}
-            </b-button>
-            <b-button
+            </GButton>
+            <GButton
                 size="sm"
                 class="my-1"
                 variant="outline-danger"
                 title="Hide this history from the list"
                 @click="unpinHistory(source.id)">
                 Hide
-            </b-button>
+            </GButton>
         </div>
     </div>
 </template>
@@ -46,10 +46,12 @@ import HistoryPanel from "components/History/CurrentHistory/HistoryPanel";
 import LoadingSpan from "components/LoadingSpan";
 import { mapActions, mapState } from "pinia";
 
+import { GButton } from "@/component-library";
 import { useHistoryStore } from "@/stores/historyStore";
 
 export default {
     components: {
+        GButton,
         HistoryPanel,
         CollectionPanel,
         LoadingSpan,

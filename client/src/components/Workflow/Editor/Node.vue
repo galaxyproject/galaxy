@@ -11,9 +11,9 @@
         @move="onMoveTo"
         @pan-by="onPanBy">
         <div class="node-header unselectable clearfix" @click="makeActive" @keyup.enter="makeActive">
-            <b-button-group class="float-right">
+            <GButtonGroup class="float-right">
                 <LoadingSpan v-if="isLoading" spinner-only />
-                <b-button
+                <GButton
                     v-if="canClone"
                     v-b-tooltip.hover
                     class="node-clone py-0"
@@ -23,8 +23,8 @@
                     title="Duplicate"
                     @click.prevent.stop="onClone">
                     <i class="fa fa-files-o" />
-                </b-button>
-                <b-button
+                </GButton>
+                <GButton
                     v-b-tooltip.hover
                     class="node-destroy py-0"
                     variant="primary"
@@ -33,8 +33,8 @@
                     title="Remove"
                     @click.prevent.stop="remove">
                     <i class="fa fa-times" />
-                </b-button>
-                <b-button
+                </GButton>
+                <GButton
                     v-if="isEnabled"
                     :id="popoverId"
                     class="node-recommendations py-0"
@@ -42,8 +42,8 @@
                     size="sm"
                     aria-label="tool recommendations">
                     <i class="fa fa-arrow-right" />
-                </b-button>
-                <b-popover
+                </GButton>
+                <GPopover
                     v-if="isEnabled"
                     :target="popoverId"
                     triggers="hover"
@@ -56,8 +56,8 @@
                             :datatypes-mapper="datatypesMapper"
                             @onCreate="onCreate" />
                     </div>
-                </b-popover>
-            </b-button-group>
+                </GPopover>
+            </GButtonGroup>
             <i :class="iconClass" />
             <span v-if="step.when" v-b-tooltip.hover title="This step is conditionally executed.">
                 <FontAwesomeIcon icon="fa-code-branch" />
@@ -69,9 +69,9 @@
             </span>
             <span class="node-title">{{ title }}</span>
         </div>
-        <b-alert v-if="!!errors" variant="danger" show class="node-error" @click="makeActive">
+        <GAlert v-if="!!errors" variant="danger" show class="node-error" @click="makeActive">
             {{ errors }}
-        </b-alert>
+        </GAlert>
         <div v-else class="node-body" @click="makeActive" @keyup.enter="makeActive">
             <NodeInput
                 v-for="(input, index) in inputs"
@@ -112,11 +112,11 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCodeBranch } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import type { UseElementBoundingReturn, UseScrollReturn, VueInstance } from "@vueuse/core";
-import BootstrapVue from "bootstrap-vue";
 import type { PropType, Ref } from "vue";
-import Vue, { computed, reactive, ref } from "vue";
+import { computed, reactive, ref } from "vue";
 
 import { getGalaxyInstance } from "@/app";
+import { GAlert, GButton, GButtonGroup, GPopover } from "@/component-library";
 import { DatatypesMapperModel } from "@/components/Datatypes/model";
 import { useNodePosition } from "@/components/Workflow/Editor/composables/useNodePosition";
 import WorkflowIcons from "@/components/Workflow/icons";
@@ -131,8 +131,6 @@ import DraggableWrapper from "@/components/Workflow/Editor/DraggablePan.vue";
 import NodeInput from "@/components/Workflow/Editor/NodeInput.vue";
 import NodeOutput from "@/components/Workflow/Editor/NodeOutput.vue";
 import Recommendations from "@/components/Workflow/Editor/Recommendations.vue";
-
-Vue.use(BootstrapVue);
 
 library.add(faCodeBranch);
 

@@ -11,7 +11,7 @@
         <div v-else-if="loaded === false">
             <!--
                 this shouldn't ever show unless the load actually fails,
-                which shouldn't happen -- just a barebones failsafe 
+                which shouldn't happen -- just a barebones failsafe
             -->
             <Heading h1>Welcome to Galaxy!</Heading>
             <p>
@@ -25,14 +25,15 @@
         </div>
     </div>
 </template>
+
 <script>
-import { BButton, BCard, BCardGroup, BCarousel, BCarouselSlide, BCol, BRow, BTab, BTabs } from "bootstrap-vue";
 import Heading from "components/Common/Heading";
 import Slides from "components/NewUserWelcome/components/Slides";
 import Subtopics from "components/NewUserWelcome/components/Subtopics";
 import Topics from "components/NewUserWelcome/components/Topics";
 import { getAppRoot } from "onload/loadConfig";
 
+import { GCard, GCol, GRow } from "@/component-library";
 import { useConfig } from "@/composables/config";
 
 import { getResource } from "./getResource";
@@ -40,15 +41,9 @@ import { getResource } from "./getResource";
 export default {
     components: {
         Heading,
-        BCard,
-        BCardGroup,
-        BTabs,
-        BTab,
-        BCarousel,
-        BCarouselSlide,
-        BButton,
-        BRow,
-        BCol,
+        GCard,
+        GCol,
+        GRow,
         Topics,
         Subtopics,
         Slides,

@@ -1,8 +1,8 @@
 <template>
     <span>
-        <BInputGroup>
+        <GInputGroup>
             <DebouncedInput v-slot="{ value: debouncedValue, input }" v-model="localFilter" :delay="debounceDelay">
-                <b-form-input
+                <GInput
                     :id="id"
                     name="query"
                     :value="debouncedValue"
@@ -14,28 +14,28 @@
                     @input="input"
                     @keyup.esc="onReset" />
             </DebouncedInput>
-            <BInputGroupAppend>
-                <BButton
+            <GInputGroupAppend>
+                <GButton
                     v-b-tooltip.hover
                     aria-haspopup="true"
                     title="Advanced Filtering Help"
                     :size="size"
                     @click="onHelp">
                     <FontAwesomeIcon icon="question" />
-                </BButton>
-                <BButton
+                </GButton>
+                <GButton
                     v-b-tooltip.hover
                     aria-haspopup="true"
                     title="Clear Filters (esc)"
                     :size="size"
                     @click="onReset">
                     <FontAwesomeIcon icon="times" />
-                </BButton>
-            </BInputGroupAppend>
-        </BInputGroup>
-        <BModal v-model="showHelp" title="Filtering Options Help" ok-only>
+                </GButton>
+            </GInputGroupAppend>
+        </GInputGroup>
+        <GModal v-model="showHelp" title="Filtering Options Help" ok-only>
             <div v-html="helpHtml"></div>
-        </BModal>
+        </GModal>
     </span>
 </template>
 
@@ -43,8 +43,9 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faQuestion, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BInputGroup, BInputGroupAppend, BModal } from "bootstrap-vue";
 import DebouncedInput from "components/DebouncedInput";
+
+import { GButton, GInput, GInputGroup, GInputGroupAppend, GModal } from "@/component-library";
 
 library.add(faTimes, faQuestion);
 
@@ -54,10 +55,11 @@ library.add(faTimes, faQuestion);
 export default {
     components: {
         DebouncedInput,
-        BInputGroup,
-        BInputGroupAppend,
-        BButton,
-        BModal,
+        GButton,
+        GInput,
+        GInputGroup,
+        GInputGroupAppend,
+        GModal,
         FontAwesomeIcon,
     },
     props: {

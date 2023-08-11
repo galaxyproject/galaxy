@@ -1,10 +1,10 @@
 <template>
     <div v-if="currentUser && history" class="d-flex flex-column h-100">
-        <b-alert v-if="showHistoryStateInfo" variant="info" show data-description="history state info">
+        <GAlert v-if="showHistoryStateInfo" variant="info" show data-description="history state info">
             {{ historyStateInfoMessage }}
-        </b-alert>
+        </GAlert>
         <div v-else class="flex-row flex-grow-0 pb-3">
-            <b-button
+            <GButton
                 v-if="userOwnsHistory"
                 size="sm"
                 variant="outline-info"
@@ -13,8 +13,8 @@
                 data-description="switch to history button"
                 @click="setCurrentHistory(history.id)">
                 Switch to this history
-            </b-button>
-            <b-button
+            </GButton>
+            <GButton
                 v-else
                 v-b-modal:copy-history-modal
                 size="sm"
@@ -22,7 +22,7 @@
                 title="Import this history"
                 data-description="import history button">
                 Import this history
-            </b-button>
+            </GButton>
         </div>
         <CollectionPanel
             v-if="selectedCollections.length && selectedCollections[0].history_id == id"
@@ -44,6 +44,7 @@
 <script>
 import { mapActions, mapState } from "pinia";
 
+import { GAlert, GButton } from "@/component-library";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
@@ -53,6 +54,8 @@ import CopyModal from "./Modals/CopyModal";
 
 export default {
     components: {
+        GAlert,
+        GButton,
         HistoryPanel,
         CollectionPanel,
         CopyModal,

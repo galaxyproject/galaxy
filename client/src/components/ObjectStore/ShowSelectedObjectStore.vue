@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, watch } from "vue";
 
+import { GAlert } from "@/component-library";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { getObjectStoreDetails } from "./services";
@@ -46,6 +47,6 @@ const loadingMessage = "Loading object store details";
         <LoadingSpan v-if="loading" :message="loadingMessage | localize" />
         <DescribeObjectStore v-else-if="objectStore != null" :what="forWhat" :storage-info="objectStore">
         </DescribeObjectStore>
-        <b-alert v-else-if="error" show variant="danger">{{ error }}</b-alert>
+        <GAlert v-else-if="error" show variant="danger">{{ error }}</GAlert>
     </div>
 </template>

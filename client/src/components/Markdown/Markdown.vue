@@ -11,7 +11,7 @@
                     size="sm"
                     title="Generate PDF">
                 </StsDownloadButton>
-                <b-button
+                <GButton
                     v-if="!readOnly"
                     v-b-tooltip.hover
                     class="float-right markdown-edit mr-2"
@@ -21,7 +21,7 @@
                     @click="$emit('onEdit')">
                     Edit
                     <FontAwesomeIcon icon="edit" />
-                </b-button>
+                </GButton>
                 <h1 class="float-right align-middle mr-2 mt-1 h-md">Galaxy {{ markdownConfig.model_class }}</h1>
                 <span class="float-left font-weight-light">
                     <h1 class="text-break align-middle">
@@ -29,17 +29,17 @@
                     </h1>
                 </span>
             </div>
-            <b-badge variant="info" class="w-100 rounded mb-3 white-space-normal">
+            <GBadge variant="info" class="w-100 rounded mb-3 white-space-normal">
                 <div class="float-left m-1 text-break">Generated with Galaxy {{ version }} on {{ time }}</div>
                 <div class="float-right m-1">Identifier: {{ markdownConfig.id }}</div>
-            </b-badge>
+            </GBadge>
             <div>
-                <b-alert v-if="markdownErrors.length > 0" variant="warning" show>
+                <GAlert v-if="markdownErrors.length > 0" variant="warning" show>
                     <div v-for="(obj, index) in markdownErrors" :key="index" class="mb-1">
                         <h2 class="h-text">{{ obj.error || "Error" }}</h2>
                         {{ obj.line }}
                     </div>
-                </b-alert>
+                </GAlert>
             </div>
             <div v-for="(obj, index) in markdownObjects" :key="index" class="markdown-components">
                 <p v-if="obj.name == 'default'" class="text-justify m-2" v-html="obj.content" />
@@ -64,11 +64,11 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faDownload, faEdit } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import BootstrapVue from "bootstrap-vue";
 import MarkdownIt from "markdown-it";
 import markdownItRegexp from "markdown-it-regexp";
 import store from "store";
-import Vue from "vue";
+
+import { GAlert, GBadge, GButton } from "@/component-library";
 
 import MarkdownContainer from "./MarkdownContainer.vue";
 import LoadingSpan from "components/LoadingSpan.vue";
@@ -86,13 +86,14 @@ const mdNewline = markdownItRegexp(/<br>/, () => {
 const md = MarkdownIt();
 md.use(mdNewline);
 
-Vue.use(BootstrapVue);
-
 library.add(faDownload, faEdit);
 
 export default {
     store: store,
     components: {
+        GBadge,
+        GAlert,
+        GButton,
         MarkdownContainer,
         FontAwesomeIcon,
         LoadingSpan,

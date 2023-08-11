@@ -1,18 +1,18 @@
 <template>
-    <BRow class="ml-3 mb-1">
+    <GRow class="ml-3 mb-1">
         <i class="pref-icon pt-1 fa fa-lg fa-hdd" />
         <div class="pref-content pr-1">
             <a
                 id="select-preferred-object-store"
                 v-b-modal.modal-select-preferred-object-store
                 class="preferred-storage"
-                href="javascript:void(0)"
-                ><b v-localize>Preferred Object Store</b></a
-            >
+                href="javascript:void(0)">
+                <b v-localize>Preferred Object Store</b>
+            </a>
             <div v-localize class="form-text text-muted">
                 Select a preferred default object store for the outputs of new jobs to be created in.
             </div>
-            <BModal
+            <GModal
                 id="modal-select-preferred-object-store"
                 ref="modal"
                 v-model="showModal"
@@ -31,25 +31,23 @@
                     :default-option-title="galaxySelectionDefaultTitle"
                     :default-option-description="galaxySelectionDefaultDescription"
                     @onSubmit="handleSubmit" />
-            </BModal>
+            </GModal>
         </div>
-    </BRow>
+    </GRow>
 </template>
 
 <script>
 import axios from "axios";
-import { BModal, BRow, VBModal } from "bootstrap-vue";
 import SelectObjectStore from "components/ObjectStore/SelectObjectStore";
 import { prependPath } from "utils/redirect";
 import { errorMessageAsString } from "utils/simple-error";
-import Vue from "vue";
 
-Vue.use(VBModal);
+import { GModal, GRow } from "@/component-library";
 
 export default {
     components: {
-        BModal,
-        BRow,
+        GModal,
+        GRow,
         SelectObjectStore,
     },
     props: {

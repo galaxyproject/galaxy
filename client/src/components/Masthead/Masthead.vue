@@ -1,11 +1,11 @@
 <script setup>
-import { BNavbar, BNavbarBrand, BNavbarNav } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { useEntryPointStore } from "stores/entryPointStore";
 import { withPrefix } from "utils/redirect";
 import { onBeforeMount, onMounted, reactive, ref, watch } from "vue";
 import { useRoute } from "vue-router/composables";
 
+import { GNavbar, GNavbarBrand, GNavbarNav, GNavItem } from "@/component-library";
 import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
 
@@ -101,9 +101,9 @@ onMounted(() => {
 </script>
 
 <template>
-    <BNavbar id="masthead" type="dark" role="navigation" aria-label="Main" class="justify-content-between">
-        <BNavbarNav>
-            <BNavbarBrand
+    <GNavbar id="masthead" type="dark" role="navigation" aria-label="Main" class="justify-content-between">
+        <GNavbarNav>
+            <GNavbarBrand
                 v-b-tooltip.hover
                 class="ml-2 mr-2"
                 title="Home"
@@ -111,12 +111,12 @@ onMounted(() => {
                 :href="withPrefix(logoUrl)">
                 <img alt="logo" :src="withPrefix(logoSrc)" />
                 <img v-if="logoSrcSecondary" alt="logo" :src="withPrefix(logoSrcSecondary)" />
-            </BNavbarBrand>
+            </GNavbarBrand>
             <span v-if="brand" class="navbar-text px-2">
                 {{ brand }}
             </span>
-        </BNavbarNav>
-        <BNavbarNav>
+        </GNavbarNav>
+        <GNavbarNav>
             <MastheadItem
                 v-for="(tab, idx) in props.tabs"
                 v-show="tab.hidden !== true"
@@ -138,14 +138,14 @@ onMounted(() => {
                 :active-tab="activeTab"
                 @open-url="emit('open-url', $event)" />
             <MastheadItem v-if="windowTab" :tab="windowTab" :toggle="windowToggle" @click="onWindowToggle" />
-            <BNavItem
+            <GNavItem
                 v-if="!isAnonymous && config.enable_notification_system && !showActivityBar"
                 id="notifications-bell">
                 <NotificationsBell tooltip-placement="bottom" />
-            </BNavItem>
-        </BNavbarNav>
+            </GNavItem>
+        </GNavbarNav>
         <QuotaMeter />
-    </BNavbar>
+    </GNavbar>
 </template>
 
 <style scoped lang="scss">

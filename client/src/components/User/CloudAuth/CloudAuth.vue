@@ -1,9 +1,9 @@
 <template>
     <section class="cloud-auth">
         <header>
-            <b-alert dismissible fade variant="warning" :show="errorMessage !== null" @dismissed="errorMessage = null">
+            <GAlert dismissible fade variant="warning" :show="errorMessage !== null" @dismissed="errorMessage = null">
                 {{ errorMessage }}
-            </b-alert>
+            </GAlert>
 
             <hgroup class="cloud-auth-title">
                 <h1 v-localize class="h-lg">Manage Cloud Authorization</h1>
@@ -50,19 +50,19 @@
 
             <transition name="fade">
                 <hgroup v-if="showFilter">
-                    <b-form-group :description="filterDescription">
-                        <b-form-input v-model="filter" type="text" placeholder="Filter" />
-                    </b-form-group>
+                    <GFormGroup :description="filterDescription">
+                        <GInput v-model="filter" type="text" placeholder="Filter" />
+                    </GFormGroup>
                 </hgroup>
             </transition>
 
-            <b-button-group class="mb-4">
+            <GButtonGroup class="mb-4">
                 <button name="createNewKey" @click="onCreate">Create New Authorization Key</button>
-            </b-button-group>
+            </GButtonGroup>
         </header>
 
         <div class="scroll-container">
-            <b-list-group>
+            <GListGroup>
                 <transition-group name="fade">
                     <CloudAuthItem
                         v-for="credential in filteredItems"
@@ -73,10 +73,10 @@
                         @save="onSave"
                         @expand="expand(credential, $event)" />
                 </transition-group>
-            </b-list-group>
+            </GListGroup>
         </div>
 
-        <b-modal
+        <GModal
             id="deleteCredentialModal"
             ref="deleteModal"
             v-model="hasDoomed"
@@ -85,23 +85,26 @@
             size="sm"
             @ok="deleteKey"
             @cancel="doomedItem = null">
-        </b-modal>
+        </GModal>
     </section>
 </template>
 
 <script>
-import BootstrapVue from "bootstrap-vue";
-import Vue from "vue";
+import { GAlert, GButtonGroup, GFormGroup, GInput, GListGroup, GModal } from "@/component-library";
 
 import CloudAuthItem from "./CloudAuthItem";
 import { Credential } from "./model";
 import svc from "./model/service";
 
-Vue.use(BootstrapVue);
-
 export default {
     components: {
         CloudAuthItem,
+        GAlert,
+        GButtonGroup,
+        GFormGroup,
+        GInput,
+        GListGroup,
+        GModal,
     },
     data() {
         return {

@@ -1,9 +1,9 @@
 <template>
     <div aria-labelledby="jobs-title">
         <h1 id="jobs-title" class="h-lg">Jobs</h1>
-        <b-alert v-if="message" :variant="status" show>
+        <GAlert v-if="message" :variant="status" show>
             {{ message }}
-        </b-alert>
+        </GAlert>
         <Heading h2 size="md" separator>Job Lock</Heading>
         <JobLock />
         <Heading h2 size="md" separator>Job Overview</Heading>
@@ -17,41 +17,40 @@
             <strong>&lt;YOUR MESSAGE&gt;</strong>
             For more information or help, report this error".
         </p>
-        <b-row>
-            <b-col class="col-sm-4">
-                <b-form-group description="Select whether or not to use the cutoff below.">
-                    <b-form-checkbox id="show-all-running" v-model="showAllRunning" switch size="lg" @change="update">
+        <GRow>
+            <GCol class="col-sm-4">
+                <GFormGroup description="Select whether or not to use the cutoff below.">
+                    <GFormCheckbox id="show-all-running" v-model="showAllRunning" switch size="lg" @change="update">
                         {{ showAllRunning ? "Showing all unfinished jobs" : "Time cutoff applied to query" }}
-                    </b-form-checkbox>
-                </b-form-group>
-                <b-form name="jobs" @submit.prevent="onRefresh">
-                    <b-form-group
+                    </GFormCheckbox>
+                </GFormGroup>
+                <GForm name="jobs" @submit.prevent="onRefresh">
+                    <GFormGroup
                         v-show="!showAllRunning"
                         id="cutoff"
                         label="Cutoff in minutes"
                         description="Display jobs that had their state updated in the given time period.">
-                        <b-input-group>
-                            <b-form-input id="cutoff" v-model="cutoffMin" type="number"> </b-form-input>
-                        </b-input-group>
-                    </b-form-group>
-                </b-form>
-                <b-form-group description="Use strings or regular expressions to search jobs.">
+                        <GInputGroup>
+                            <GInput id="cutoff" v-model="cutoffMin" type="number" />
+                        </GInputGroup>
+                    </GFormGroup>
+                </GForm>
+                <GFormGroup description="Use strings or regular expressions to search jobs.">
                     <IndexFilter v-bind="filterAttrs" id="job-search" v-model="filter" />
-                </b-form-group>
-            </b-col>
-        </b-row>
+                </GFormGroup>
+            </GCol>
+        </GRow>
         <transition name="fade">
-            <b-form v-if="unfinishedJobs.length && selectedStopJobIds.length" @submit.prevent="onStopJobs">
-                <b-form-group label="Stop Selected Jobs" description="Stop message will be displayed to the user">
-                    <b-input-group>
-                        <b-form-input id="stop-message" v-model="stopMessage" placeholder="Stop message" required>
-                        </b-form-input>
-                        <b-input-group-append>
-                            <b-btn type="submit">Submit</b-btn>
-                        </b-input-group-append>
-                    </b-input-group>
-                </b-form-group>
-            </b-form>
+            <GForm v-if="unfinishedJobs.length && selectedStopJobIds.length" @submit.prevent="onStopJobs">
+                <GFormGroup label="Stop Selected Jobs" description="Stop message will be displayed to the user">
+                    <GInputGroup>
+                        <GInput id="stop-message" v-model="stopMessage" placeholder="Stop message" required />
+                        <GInputGroupAppend>
+                            <GButton type="submit">Submit</GButton>
+                        </GInputGroupAppend>
+                    </GInputGroup>
+                </GFormGroup>
+            </GForm>
         </transition>
         <h3 class="mb-0 h-sm">Unfinished Jobs</h3>
         <JobsTable
@@ -63,17 +62,14 @@
             :loading="loading"
             :busy="busy">
             <template v-slot:head(selected)>
-                <b-form-checkbox
-                    v-model="allSelected"
-                    :indeterminate="indeterminate"
-                    @change="toggleAll"></b-form-checkbox>
+                <GFormCheckbox v-model="allSelected" :indeterminate="indeterminate" @change="toggleAll" />
             </template>
             <template v-slot:cell(selected)="data">
-                <b-form-checkbox
+                <GFormCheckbox
                     :key="data.index"
                     v-model="selectedStopJobIds"
                     :checked="allSelected"
-                    :value="data.item['id']"></b-form-checkbox>
+                    :value="data.item['id']" />
             </template>
         </JobsTable>
 
@@ -104,6 +100,19 @@ import { jobsProvider } from "components/providers/JobProvider";
 import { getAppRoot } from "onload/loadConfig";
 import JOB_STATES_MODEL from "utils/job-states-model";
 import { errorMessageAsString } from "utils/simple-error";
+
+import {
+    GAlert,
+    GButton,
+    GCol,
+    GForm,
+    GFormCheckbox,
+    GFormGroup,
+    GInput,
+    GInputGroup,
+    GInputGroupAppend,
+    GRow,
+} from "@/component-library";
 
 import { commonJobFields } from "./JobFields";
 import JobLock from "./JobLock";
@@ -140,7 +149,21 @@ returned. So <code>tool:'cat1'</code> would show only jobs from the <code>cat1</
 `;
 
 export default {
-    components: { JobLock, JobsTable, Heading },
+    components: {
+        GAlert,
+        GButton,
+        GCol,
+        GForm,
+        GFormCheckbox,
+        GFormGroup,
+        GInput,
+        GInputGroup,
+        GInputGroupAppend,
+        GRow,
+        JobLock,
+        JobsTable,
+        Heading,
+    },
     mixins: [filtersMixin],
     data() {
         return {

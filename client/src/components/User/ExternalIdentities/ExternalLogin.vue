@@ -1,15 +1,15 @@
 <template>
     <div>
-        <b-alert :show="messageShow" :variant="messageVariant">
+        <GAlert :show="messageShow" :variant="messageVariant">
             {{ messageText }}
-        </b-alert>
-        <b-form id="externalLogin">
+        </GAlert>
+        <GForm id="externalLogin">
             <!-- OIDC login-->
             <hr class="my-4" />
             <div v-if="cilogonListShow" class="cilogon">
                 <div v-if="login_page">
                     <!--Only Display if CILogon/Custos is configured-->
-                    <b-form-group label="Use existing institutional login">
+                    <GFormGroup label="Use existing institutional login">
                         <Multiselect
                             v-model="selected"
                             placeholder="Select your institution"
@@ -17,39 +17,39 @@
                             label="DisplayName"
                             track-by="EntityID">
                         </Multiselect>
-                    </b-form-group>
+                    </GFormGroup>
 
-                    <b-form-group v-if="login_page">
-                        <b-form-checkbox id="remember-idp" v-model="rememberIdp">
+                    <GFormGroup v-if="login_page">
+                        <GFormCheckbox id="remember-idp" v-model="rememberIdp">
                             Remember institution selection
-                        </b-form-checkbox>
-                    </b-form-group>
+                        </GFormCheckbox>
+                    </GFormGroup>
 
-                    <b-button
+                    <GButton
                         v-if="cilogon_enabled"
                         :disabled="loading || selected === null"
                         @click="submitCILogon('cilogon')">
                         <LoadingSpan v-if="loading" message="Signing In" />
                         <span v-else>Sign in with Institutional Credentials*</span>
-                    </b-button>
+                    </GButton>
                     <!--convert to v-else-if to allow only one or the other. if both enabled, put the one that should be default first-->
-                    <b-button
+                    <GButton
                         v-if="Object.prototype.hasOwnProperty.call(oidc_idps, 'custos')"
                         :disabled="loading || selected === null"
                         @click="submitCILogon('custos')">
                         <LoadingSpan v-if="loading" message="Signing In" />
                         <span v-else>Sign in with Custos*</span>
-                    </b-button>
+                    </GButton>
                 </div>
 
                 <div v-else>
-                    <b-button v-if="cilogon_enabled" @click="toggleCILogon('cilogon')">
+                    <GButton v-if="cilogon_enabled" @click="toggleCILogon('cilogon')">
                         Sign in with Institutional Credentials*
-                    </b-button>
+                    </GButton>
 
-                    <b-button v-if="custos_enabled" @click="toggleCILogon('custos')">Sign in with Custos*</b-button>
+                    <GButton v-if="custos_enabled" @click="toggleCILogon('custos')">Sign in with Custos*</GButton>
 
-                    <b-form-group v-if="toggle_cilogon">
+                    <GFormGroup v-if="toggle_cilogon">
                         <Multiselect
                             v-model="selected"
                             placeholder="Select your institution"
@@ -58,13 +58,13 @@
                             track-by="EntityID">
                         </Multiselect>
 
-                        <b-button
+                        <GButton
                             v-if="toggle_cilogon"
                             :disabled="loading || selected === null"
                             @click="submitCILogon(cilogonOrCustos)">
                             Login*
-                        </b-button>
-                    </b-form-group>
+                        </GButton>
+                    </GFormGroup>
                 </div>
 
                 <p class="mt-3">
@@ -79,35 +79,38 @@
 
             <div v-for="(idp_info, idp) in filtered_oidc_idps" :key="idp" class="m-1">
                 <span v-if="idp_info['icon']">
-                    <b-button variant="link" class="d-block mt-3" @click="submitOIDCLogin(idp)">
+                    <GButton variant="link" class="d-block mt-3" @click="submitOIDCLogin(idp)">
                         <img :src="idp_info['icon']" height="45" :alt="idp" />
-                    </b-button>
+                    </GButton>
                 </span>
                 <span v-else>
-                    <b-button class="d-block mt-3" @click="submitOIDCLogin(idp)">
+                    <GButton class="d-block mt-3" @click="submitOIDCLogin(idp)">
                         <i :class="oidc_idps[idp]" />
                         Sign in with
                         {{ idp.charAt(0).toUpperCase() + idp.slice(1) }}
-                    </b-button>
+                    </GButton>
                 </span>
             </div>
-        </b-form>
+        </GForm>
     </div>
 </template>
 
 <script>
 import { getGalaxyInstance } from "app";
 import axios from "axios";
-import BootstrapVue from "bootstrap-vue";
 import LoadingSpan from "components/LoadingSpan";
 import { getAppRoot } from "onload";
-import Vue from "vue";
 import Multiselect from "vue-multiselect";
 
-Vue.use(BootstrapVue);
+import { GAlert, GButton, GForm, GFormCheckbox, GFormGroup } from "@/component-library";
 
 export default {
     components: {
+        GAlert,
+        GButton,
+        GForm,
+        GFormCheckbox,
+        GFormGroup,
         Multiselect,
         LoadingSpan,
     },

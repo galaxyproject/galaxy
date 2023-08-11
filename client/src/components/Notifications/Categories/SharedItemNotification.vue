@@ -2,9 +2,9 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faExternalLinkAlt, faRetweet } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BCol, BLink, BRow } from "bootstrap-vue";
 import { computed } from "vue";
 
+import { GCol, GLink, GRow } from "@/component-library";
 import type { SharedItemNotification } from "@/components/Notifications";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 
@@ -50,30 +50,30 @@ function onClick(link: string) {
 </script>
 
 <template>
-    <BCol>
-        <BRow align-v="center">
+    <GCol>
+        <GRow align-v="center">
             <Heading size="md" :bold="!notification.seen_time" class="mb-0">
                 <FontAwesomeIcon :class="`text-${notificationVariant}`" icon="retweet" />
                 {{ sharedItemType }} shared with you by <em>{{ content.owner_name }}</em>
             </Heading>
             <NotificationActions :notification="notification" />
-        </BRow>
-        <BRow>
+        </GRow>
+        <GRow>
             <p id="notification-message" class="m-0">
                 <span>The user</span>
                 <b>{{ content.owner_name }}</b>
                 <span>shared </span>
-                <BLink
+                <GLink
                     v-b-tooltip.bottom
                     :title="`View ${content.item_type} in new tab`"
                     class="text-primary"
                     @click="onClick(content.slug)">
                     {{ content.item_name }}
                     <FontAwesomeIcon icon="external-link-alt" />
-                </BLink>
+                </GLink>
                 <em>{{ content.item_type }}</em>
                 <span> with you.</span>
             </p>
-        </BRow>
-    </BCol>
+        </GRow>
+    </GCol>
 </template>

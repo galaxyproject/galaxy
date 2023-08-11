@@ -4,34 +4,44 @@
             <h1 class="text-center my-3">{{ title | localize }}</h1>
             <h2 class="text-center my-3 h-sm">{{ intro | localize }}</h2>
         </header>
-        <b-row class="justify-content-md-center mb-3" :data-new-user-welcome-topic-title="title">
-            <b-card-group v-for="(subject, idx) in topics" :key="idx">
-                <b-card
+        <GRow class="justify-content-md-center mb-3" :data-new-user-welcome-topic-title="title">
+            <GCardGroup v-for="(subject, idx) in topics" :key="idx">
+                <GCard
                     class="text-center m-2 border-0 new-user-welcome-subtopic"
                     body-class="d-flex flex-column"
                     :data-new-user-welcome-subtopic-title="subject.title">
-                    <b-card-img
+                    <GCardImg
                         class="section-header mb-3"
                         height="50h"
                         :src="imgUrl(subject.image)"
-                        :alt="subject.alt"></b-card-img>
-                    <b-card-text class="font-weight-light">{{ subject.intro | localize }}</b-card-text>
-                    <b-button class="mt-auto" variant="info" @click="$emit('select', idx)">{{
+                        :alt="subject.alt" />
+                    <GCardText class="font-weight-light">{{ subject.intro | localize }}</GCardText>
+                    <GButton class="mt-auto" variant="info" @click="$emit('select', idx)">{{
                         subject.title | localize
-                    }}</b-button>
-                </b-card>
-            </b-card-group>
-        </b-row>
-        <b-button class="mt-auto new-user-welcome-return" variant="primary" role="link" @click="$emit('back')">
+                    }}</GButton>
+                </GCard>
+            </GCardGroup>
+        </GRow>
+        <GButton class="mt-auto new-user-welcome-return" variant="primary" role="link" @click="$emit('back')">
             <span class="fa fa-caret-left mr-1" />
             <span>Return</span>
-        </b-button>
+        </GButton>
     </div>
 </template>
 <script>
 import { getAppRoot } from "onload/loadConfig";
 
+import { GButton, GCard, GCardGroup, GCardImg, GCardText, GRow } from "@/component-library";
+
 export default {
+    components: {
+        GButton,
+        GCard,
+        GCardImg,
+        GCardGroup,
+        GCardText,
+        GRow,
+    },
     props: {
         topics: { type: Array, required: true },
         title: { type: String, required: true },

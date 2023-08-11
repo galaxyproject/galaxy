@@ -1,19 +1,24 @@
 <template>
-    <b-input-group>
-        <b-input v-model="filter" :placeholder="placeholder" />
-        <b-input-group-append>
-            <b-btn :disabled="!filter" @click="filter = ''"><i class="fa fa-times" /></b-btn>
-        </b-input-group-append>
-    </b-input-group>
+    <GInputGroup>
+        <GInput v-model="filter" :placeholder="placeholder" />
+        <GInputGroupAppend>
+            <GButton :disabled="!filter" @click="filter = ''">
+                <i class="fa fa-times" />
+            </GButton>
+        </GInputGroupAppend>
+    </GInputGroup>
 </template>
 
 <script>
-import BootstrapVue from "bootstrap-vue";
-import Vue from "vue";
-
-Vue.use(BootstrapVue);
+import { GButton, GInput, GInputGroup, GInputGroupAppend } from "@/component-library";
 
 export default {
+    components: {
+        GButton,
+        GInput,
+        GInputGroup,
+        GInputGroupAppend,
+    },
     props: {
         value: {
             type: String,

@@ -2,10 +2,10 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BCollapse } from "bootstrap-vue";
 import slugify from "slugify";
 import { computed } from "vue";
 
+import { GButton, GCollapse } from "@/component-library";
 import { useToolTrainingMaterial } from "@/composables/toolTrainingMaterial";
 import { useUid } from "@/composables/utils/uid";
 
@@ -56,20 +56,20 @@ const tutorialText = computed(() => {
             </ExternalLink>
         </p>
 
-        <BButton v-b-toggle="collapseId" class="ui-link">
+        <GButton v-b-toggle="collapseId" class="ui-link">
             <b>
                 Tutorials available in {{ trainingCategories.length }}
                 {{ trainingCategories.length > 1 ? "categories" : "category" }}
             </b>
             <FontAwesomeIcon icon="caret-down" />
-        </BButton>
-        <BCollapse :id="collapseId">
+        </GButton>
+        <GCollapse :id="collapseId">
             <div v-for="category in trainingCategories" :key="category">
-                <BButton v-b-toggle="idForCategory(category)" class="ui-link ml-3">
+                <GButton v-b-toggle="idForCategory(category)" class="ui-link ml-3">
                     {{ category }} ({{ tutorialsInCategory(category).length }})
                     <FontAwesomeIcon icon="caret-down" />
-                </BButton>
-                <BCollapse :id="idForCategory(category)">
+                </GButton>
+                <GCollapse :id="idForCategory(category)">
                     <ul class="d-flex flex-column my-1">
                         <li v-for="tutorial in tutorialsInCategory(category)" :key="tutorial.title">
                             <ExternalLink :href="tutorial.url.toString()" class="ml-2">
@@ -77,8 +77,8 @@ const tutorialText = computed(() => {
                             </ExternalLink>
                         </li>
                     </ul>
-                </BCollapse>
+                </GCollapse>
             </div>
-        </BCollapse>
+        </GCollapse>
     </div>
 </template>

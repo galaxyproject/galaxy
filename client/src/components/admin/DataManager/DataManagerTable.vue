@@ -1,41 +1,36 @@
 <template>
     <div>
-        <b-breadcrumb v-if="dataTable && !loading" id="breadcrumb" :items="breadcrumbItems" />
-        <Alert :message="message" :variant="status" />
-        <Alert v-if="viewOnly" message="Not implemented" variant="dark" />
-        <Alert v-else-if="loading" message="Waiting for data" status="info" />
-        <Alert
+        <GBreadcrumb v-if="dataTable && !loading" id="breadcrumb" :items="breadcrumbItems" />
+        <GAlert :message="message" :variant="status" />
+        <GAlert v-if="viewOnly" message="Not implemented" variant="dark" />
+        <GAlert v-else-if="loading" message="Waiting for data" status="info" />
+        <GAlert
             v-else-if="dataTable && !dataTable['data'].length"
             message="There are currently no entries in this tool data table."
             variant="primary" />
-        <b-container v-else-if="dataTable">
-            <b-row>
-                <b-col>
-                    <b-card id="data-table-card" flush>
+        <GContainer v-else-if="dataTable">
+            <GRow>
+                <GCol>
+                    <GCard id="data-table-card" flush>
                         <template v-slot:header>
-                            <b-container>
-                                <b-row align-v="center">
-                                    <b-col cols="auto">
-                                        <b-button v-b-tooltip.hover :title="buttonLabel" @click="reload()">
+                            <GContainer>
+                                <GRow align-v="center">
+                                    <GCol cols="auto">
+                                        <GButton v-b-tooltip.hover :title="buttonLabel" @click="reload()">
                                             <span class="fa fa-sync" />
-                                        </b-button>
-                                    </b-col>
-                                    <b-col>
+                                        </GButton>
+                                    </GCol>
+                                    <GCol>
                                         <b>{{ dataTableName }}</b>
-                                    </b-col>
-                                </b-row>
-                            </b-container>
+                                    </GCol>
+                                </GRow>
+                            </GContainer>
                         </template>
-                        <b-table
-                            :fields="fields(dataTable['columns'])"
-                            :items="dataTable['data']"
-                            small
-                            hover
-                            striped />
-                    </b-card>
-                </b-col>
-            </b-row>
-        </b-container>
+                        <GTable :fields="fields(dataTable['columns'])" :items="dataTable['data']" hover small striped />
+                    </GCard>
+                </GCol>
+            </GRow>
+        </GContainer>
     </div>
 </template>
 
@@ -43,11 +38,18 @@
 import axios from "axios";
 import { getAppRoot } from "onload/loadConfig";
 
-import Alert from "components/Alert.vue";
+import { GAlert, GBreadcrumb, GButton, GCard, GCol, GContainer, GRow, GTable } from "@/component-library";
 
 export default {
     components: {
-        Alert,
+        GAlert,
+        GBreadcrumb,
+        GButton,
+        GCard,
+        GCol,
+        GContainer,
+        GRow,
+        GTable,
     },
     props: {
         name: {

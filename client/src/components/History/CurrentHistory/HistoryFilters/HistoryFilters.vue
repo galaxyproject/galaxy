@@ -1,8 +1,8 @@
 <template>
     <div>
-        <b-input-group>
+        <GInputGroup>
             <DebouncedInput v-slot="{ value, input }" v-model="localFilter">
-                <b-form-input
+                <GInput
                     size="sm"
                     :class="filterText && 'font-weight-bold'"
                     :value="value"
@@ -11,8 +11,8 @@
                     @input="input"
                     @keyup.esc="updateFilter('')" />
             </DebouncedInput>
-            <b-input-group-append>
-                <b-button
+            <GInputGroupAppend>
+                <GButton
                     v-b-tooltip.hover
                     aria-haspopup="true"
                     size="sm"
@@ -24,8 +24,8 @@
                     @click="onToggle">
                     <icon v-if="showAdvanced" fixed-width icon="angle-double-up" />
                     <icon v-else fixed-width icon="angle-double-down" />
-                </b-button>
-                <b-button
+                </GButton>
+                <GButton
                     v-b-tooltip.hover
                     aria-haspopup="true"
                     size="sm"
@@ -34,9 +34,9 @@
                     data-description="clear filters"
                     @click="updateFilter('')">
                     <icon fixed-width icon="times" />
-                </b-button>
-            </b-input-group-append>
-        </b-input-group>
+                </GButton>
+            </GInputGroupAppend>
+        </GInputGroup>
         <div
             v-if="showAdvanced"
             class="mt-2"
@@ -44,87 +44,87 @@
             @keyup.enter="onSearch"
             @keyup.esc="onToggle">
             <small>Filter by name:</small>
-            <b-form-input v-model="filterSettings['name:']" size="sm" placeholder="any name" />
+            <GInput v-model="filterSettings['name:']" size="sm" placeholder="any name" />
             <small class="mt-1">Filter by extension:</small>
-            <b-form-input v-model="filterSettings['extension:']" size="sm" placeholder="any extension" />
+            <GInput v-model="filterSettings['extension:']" size="sm" placeholder="any extension" />
             <small class="mt-1">Filter by tag:</small>
-            <b-form-input v-model="filterSettings['tag:']" size="sm" placeholder="any tag" />
+            <GInput v-model="filterSettings['tag:']" size="sm" placeholder="any tag" />
             <small class="mt-1">Filter by state:</small>
-            <b-input-group>
-                <b-form-input
+            <GInputGroup>
+                <GInput
                     v-model="filterSettings['state:']"
                     v-b-tooltip.focus.v-danger="hasError('state:')"
                     :class="hasError('state:') && 'ui-input-error'"
                     size="sm"
                     placeholder="any state"
                     list="stateSelect" />
-                <b-form-datalist id="stateSelect" :options="states"></b-form-datalist>
-                <b-input-group-append>
-                    <b-button title="States Help" size="sm" @click="showHelp = true">
+                <GFormDatalist id="stateSelect" :options="states" />
+                <GInputGroupAppend>
+                    <GButton title="States Help" size="sm" @click="showHelp = true">
                         <icon icon="question" />
-                    </b-button>
-                </b-input-group-append>
+                    </GButton>
+                </GInputGroupAppend>
                 <StatesInfo :show-help.sync="showHelp" :exclude-states="excludeStates" @set-filter="onOption" />
-            </b-input-group>
+            </GInputGroup>
             <small>Filter by database:</small>
-            <b-form-input v-model="filterSettings['genome_build:']" size="sm" placeholder="any database" />
+            <GInput v-model="filterSettings['genome_build:']" size="sm" placeholder="any database" />
             <small class="mt-1">Filter by related to item index:</small>
-            <b-form-input
+            <GInput
                 v-model="filterSettings['related:']"
                 v-b-tooltip.focus.v-danger="hasError('related:')"
                 :class="hasError('related:') && 'ui-input-error'"
                 size="sm"
                 placeholder="index equals" />
             <small class="mt-1">Filter by item index:</small>
-            <b-form-group class="m-0">
-                <b-input-group>
-                    <b-form-input
+            <GFormGroup class="m-0">
+                <GInputGroup>
+                    <GInput
                         v-model="filterSettings['hid>']"
                         v-b-tooltip.focus.v-danger="hasError('hid>')"
                         :class="hasError('hid>') && 'ui-input-error'"
                         size="sm"
                         placeholder="index greater" />
-                    <b-form-input
+                    <GInput
                         v-model="filterSettings['hid<']"
                         v-b-tooltip.focus.v-danger="hasError('hid<')"
                         :class="hasError('hid<') && 'ui-input-error'"
                         size="sm"
                         placeholder="index lower" />
-                </b-input-group>
-            </b-form-group>
+                </GInputGroup>
+            </GFormGroup>
             <small class="mt-1">Filter by creation time:</small>
-            <b-form-group class="m-0">
-                <b-input-group>
-                    <b-form-input
+            <GFormGroup class="m-0">
+                <GInputGroup>
+                    <GInput
                         v-model="create_time_gt"
                         v-b-tooltip.focus.v-danger="hasError('create_time>')"
                         :class="hasError('create_time>') && 'ui-input-error'"
                         size="sm"
                         placeholder="created after" />
-                    <b-input-group-append>
-                        <b-form-datepicker v-model="create_time_gt" reset-button button-only size="sm" />
-                    </b-input-group-append>
-                    <b-form-input
+                    <GInputGroupAppend>
+                        <GFormDatepicker v-model="create_time_gt" reset-button button-only size="sm" />
+                    </GInputGroupAppend>
+                    <GInput
                         v-model="create_time_lt"
                         v-b-tooltip.focus.v-danger="hasError('create_time<')"
                         :class="hasError('create_time<') && 'ui-input-error'"
                         size="sm"
                         placeholder="created before" />
-                    <b-input-group-append>
-                        <b-form-datepicker v-model="create_time_lt" reset-button button-only size="sm" />
-                    </b-input-group-append>
-                </b-input-group>
-            </b-form-group>
+                    <GInputGroupAppend>
+                        <GFormDatepicker v-model="create_time_lt" reset-button button-only size="sm" />
+                    </GInputGroupAppend>
+                </GInputGroup>
+            </GFormGroup>
             <HistoryFiltersDefault :settings="filterSettings" @change="onOption" />
             <div class="mt-3">
-                <b-button class="mr-1" size="sm" variant="primary" description="apply filters" @click="onSearch">
+                <GButton class="mr-1" size="sm" variant="primary" description="apply filters" @click="onSearch">
                     <icon icon="search" />
                     <span>{{ "Search" | localize }}</span>
-                </b-button>
-                <b-button size="sm" @click="onToggle">
+                </GButton>
+                <GButton size="sm" @click="onToggle">
                     <icon icon="redo" />
                     <span>{{ "Cancel" | localize }}</span>
-                </b-button>
+                </GButton>
             </div>
         </div>
     </div>
@@ -136,10 +136,27 @@ import { STATES } from "components/History/Content/model/states";
 import StatesInfo from "components/History/Content/model/StatesInfo";
 import { HistoryFilters } from "components/History/HistoryFilters";
 
+import {
+    GButton,
+    GFormDatalist,
+    GFormDatepicker,
+    GFormGroup,
+    GInput,
+    GInputGroup,
+    GInputGroupAppend,
+} from "@/component-library";
+
 import HistoryFiltersDefault from "./HistoryFiltersDefault";
 
 export default {
     components: {
+        GButton,
+        GFormDatalist,
+        GFormDatepicker,
+        GFormGroup,
+        GInput,
+        GInputGroup,
+        GInputGroupAppend,
         DebouncedInput,
         HistoryFiltersDefault,
         StatesInfo,

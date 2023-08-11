@@ -8,6 +8,7 @@ import { storeToRefs } from "pinia";
 import Webhooks from "utils/webhooks";
 import { computed, ref } from "vue";
 
+import { GDropdown, GDropdownItem } from "@/component-library";
 import { useUserStore } from "@/stores/userStore";
 
 import { copyId, copyLink, downloadTool, openLink } from "../utilities";
@@ -72,7 +73,7 @@ function onLink() {
 </script>
 
 <template>
-    <b-dropdown
+    <GDropdown
         v-b-tooltip.hover
         no-caret
         right
@@ -86,26 +87,26 @@ function onLink() {
             <FontAwesomeIcon icon="fa-caret-down" />
         </template>
 
-        <b-dropdown-item @click="onCopyLink">
+        <GDropdownItem @click="onCopyLink">
             <FontAwesomeIcon icon="fa-link" /><span v-localize>Copy Link</span>
-        </b-dropdown-item>
+        </GDropdownItem>
 
-        <b-dropdown-item @click="onCopyId">
+        <GDropdownItem @click="onCopyId">
             <FontAwesomeIcon icon="far fa-copy" /><span v-localize>Copy Tool ID</span>
-        </b-dropdown-item>
+        </GDropdownItem>
 
-        <b-dropdown-item v-if="showDownload" @click="onDownload">
+        <GDropdownItem v-if="showDownload" @click="onDownload">
             <FontAwesomeIcon icon="fa-download" /><span v-localize>Download</span>
-        </b-dropdown-item>
+        </GDropdownItem>
 
         <ToolSourceMenuItem :tool-id="id" />
 
-        <b-dropdown-item v-if="showLink" @click="onLink">
+        <GDropdownItem v-if="showLink" @click="onLink">
             <FontAwesomeIcon icon="fa-external-link-alt" /><span v-localize>See in Tool Shed</span>
-        </b-dropdown-item>
+        </GDropdownItem>
 
-        <b-dropdown-item v-for="w of webhookDetails" :key="w.title" @click="w.onclick">
+        <GDropdownItem v-for="w of webhookDetails" :key="w.title" @click="w.onclick">
             <span :class="w.icon" />{{ l(w.title) }}
-        </b-dropdown-item>
-    </b-dropdown>
+        </GDropdownItem>
+    </GDropdown>
 </template>

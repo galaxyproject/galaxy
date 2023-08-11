@@ -1,18 +1,18 @@
 <template>
     <span class="workflow-storage-indicators">
-        <b-button
+        <GButton
             id="workflow-storage-indicator-primary"
             class="workflow-storage-indicator workflow-storage-indicator-primary"
             v-bind="buttonProps"
             @click="showPreferredObjectStoreModal = true">
             <span class="fa fa-hdd" />
-        </b-button>
+        </GButton>
         <WorkflowTargetPreferredObjectStorePopover
             target="workflow-storage-indicator-primary"
             :title-suffix="suffixPrimary"
             :invocation-preferred-object-store-id="selectedObjectStoreId">
         </WorkflowTargetPreferredObjectStorePopover>
-        <b-modal
+        <GModal
             v-model="showPreferredObjectStoreModal"
             title="Invocation Preferred Object Store"
             v-bind="modalProps"
@@ -20,22 +20,22 @@
             <WorkflowSelectPreferredObjectStore
                 :invocation-preferred-object-store-id="selectedObjectStoreId"
                 @updated="onUpdate" />
-        </b-modal>
-        <b-button
+        </GModal>
+        <GButton
             v-if="splitObjectStore"
             id="workflow-storage-indicator-intermediate"
             v-bind="buttonProps"
             class="workflow-storage-indicator workflow-storage-indicator-intermediate"
             @click="showIntermediatePreferredObjectStoreModal = true">
             <span class="fa fa-hdd" />
-        </b-button>
+        </GButton>
         <WorkflowTargetPreferredObjectStorePopover
             v-if="splitObjectStore"
             target="workflow-storage-indicator-intermediate"
             title-suffix=" (Intermediate Datasets)"
             :invocation-preferred-object-store-id="selectedIntermediateObjectStoreId">
         </WorkflowTargetPreferredObjectStorePopover>
-        <b-modal
+        <GModal
             v-model="showIntermediatePreferredObjectStoreModal"
             title="Invocation Preferred Object Store (Intermediate Datasets)"
             v-bind="modalProps"
@@ -43,16 +43,20 @@
             <WorkflowSelectPreferredObjectStore
                 :invocation-preferred-object-store-id="selectedIntermediateObjectStoreId"
                 @updated="onUpdateIntermediate" />
-        </b-modal>
+        </GModal>
     </span>
 </template>
 
 <script>
+import { GButton, GModal } from "@/component-library";
+
 import WorkflowSelectPreferredObjectStore from "./WorkflowSelectPreferredObjectStore";
 import WorkflowTargetPreferredObjectStorePopover from "./WorkflowTargetPreferredObjectStorePopover";
 
 export default {
     components: {
+        GButton,
+        GModal,
         WorkflowSelectPreferredObjectStore,
         WorkflowTargetPreferredObjectStorePopover,
     },

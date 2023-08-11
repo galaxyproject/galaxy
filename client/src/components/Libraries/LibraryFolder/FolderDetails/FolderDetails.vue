@@ -1,14 +1,14 @@
 <template>
     <div>
-        <b-button
+        <GButton
             v-b-modal.details-modal
             class="details-btn"
             title="Show location details"
             data-testid="loc-details-btn">
             <FontAwesomeIcon icon="info-circle" /> {{ detailsCaption }}
-        </b-button>
+        </GButton>
 
-        <b-modal
+        <GModal
             id="details-modal"
             :static="isStatic"
             :title="titleLocationDetails"
@@ -16,9 +16,9 @@
             ok-only
             @show="getDetails">
             <div>
-                <b-alert :show="hasError" variant="danger" data-testid="error-alert"> {{ error }} </b-alert>
+                <GAlert :show="hasError" variant="danger" data-testid="error-alert"> {{ error }} </GAlert>
                 <div v-if="libraryDetails">
-                    <b-table-lite
+                    <GTableLite
                         :fields="fields"
                         :items="libraryDetails"
                         striped
@@ -31,10 +31,10 @@
                                 <b>{{ libraryHeader }}</b>
                             </h2>
                         </template>
-                    </b-table-lite>
+                    </GTableLite>
                 </div>
                 <div>
-                    <b-table-lite
+                    <GTableLite
                         :fields="fields"
                         :items="folderDetails"
                         striped
@@ -53,10 +53,10 @@
                             </div>
                             <div v-else>{{ row.item.value }}</div>
                         </template>
-                    </b-table-lite>
+                    </GTableLite>
                 </div>
             </div>
-        </b-modal>
+        </GModal>
     </div>
 </template>
 
@@ -70,11 +70,17 @@ import UtcDate from "components/UtcDate";
 import { getAppRoot } from "onload/loadConfig";
 import _l from "utils/localization";
 
+import { GAlert, GButton, GModal, GTableLite } from "@/component-library";
+
 library.add(faInfoCircle);
 
 export default {
     components: {
         FontAwesomeIcon,
+        GAlert,
+        GButton,
+        GModal,
+        GTableLite,
         UtcDate,
     },
     props: {

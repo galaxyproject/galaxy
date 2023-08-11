@@ -1,27 +1,37 @@
 <template>
-    <b-form @submit.prevent="submit">
-        <b-alert v-if="!!message" :variant="variant" show>
+    <GForm @submit.prevent="submit">
+        <GAlert v-if="!!message" :variant="variant" show>
             {{ message }}
-        </b-alert>
-        <b-card header="Change your password">
-            <b-form-group v-if="expiredUser" label="Current Password">
-                <b-form-input v-model="current" type="password" />
-            </b-form-group>
-            <b-form-group label="New Password"> <b-form-input v-model="password" type="password" /> </b-form-group>
-            <b-form-group label="Confirm password"> <b-form-input v-model="confirm" type="password" /> </b-form-group>
-            <b-button type="submit">Save new password</b-button>
-        </b-card>
-    </b-form>
+        </GAlert>
+        <GCard header="Change your password">
+            <GFormGroup v-if="expiredUser" label="Current Password">
+                <GInput v-model="current" type="password" />
+            </GFormGroup>
+            <GFormGroup label="New Password">
+                <GInput v-model="password" type="password" />
+            </GFormGroup>
+            <GFormGroup label="Confirm password">
+                <GInput v-model="confirm" type="password" />
+            </GFormGroup>
+            <GButton type="submit"> Save new password </GButton>
+        </GCard>
+    </GForm>
 </template>
 <script>
 import axios from "axios";
-import BootstrapVue from "bootstrap-vue";
 import { withPrefix } from "utils/redirect";
-import Vue from "vue";
 
-Vue.use(BootstrapVue);
+import { GAlert, GButton, GCard, GForm, GFormGroup, GInput } from "@/component-library";
 
 export default {
+    components: {
+        GAlert,
+        GButton,
+        GCard,
+        GForm,
+        GFormGroup,
+        GInput,
+    },
     props: {
         token: {
             type: String,

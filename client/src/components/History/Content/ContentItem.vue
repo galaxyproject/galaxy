@@ -10,11 +10,11 @@
         <div class="p-1 cursor-pointer" draggable @dragstart="onDragStart" @dragend="onDragEnd" @click.stop="onClick">
             <div class="d-flex justify-content-between">
                 <span class="p-1 font-weight-bold" data-description="content item header info">
-                    <b-button v-if="selectable" class="selector p-0" @click.stop="$emit('update:selected', !selected)">
+                    <GButton v-if="selectable" class="selector p-0" @click.stop="$emit('update:selected', !selected)">
                         <icon v-if="selected" fixed-width size="lg" :icon="['far', 'check-square']" />
                         <icon v-else fixed-width size="lg" :icon="['far', 'square']" />
-                    </b-button>
-                    <b-button
+                    </GButton>
+                    <GButton
                         v-if="highlight == 'input'"
                         v-b-tooltip.hover
                         variant="link"
@@ -22,8 +22,8 @@
                         title="Input"
                         @click.stop="toggleHighlights">
                         <FontAwesomeIcon class="text-info" icon="arrow-circle-up" />
-                    </b-button>
-                    <b-button
+                    </GButton>
+                    <GButton
                         v-else-if="highlight == 'active'"
                         v-b-tooltip.hover
                         variant="link"
@@ -32,8 +32,8 @@
                         @click.stop="toggleHighlights"
                         @keypress="toggleHighlights">
                         <FontAwesomeIcon icon="check-circle" />
-                    </b-button>
-                    <b-button
+                    </GButton>
+                    <GButton
                         v-else-if="highlight == 'output'"
                         v-b-tooltip.hover
                         variant="link"
@@ -41,7 +41,7 @@
                         title="Output"
                         @click.stop="toggleHighlights">
                         <FontAwesomeIcon class="text-info" icon="arrow-circle-down" />
-                    </b-button>
+                    </GButton>
                     <span v-if="hasStateIcon" class="state-icon">
                         <icon fixed-width :icon="contentState.icon" :spin="contentState.spin" />
                     </span>
@@ -49,9 +49,9 @@
                     <span class="content-title name">{{ name }}</span>
                 </span>
                 <span v-if="item.purged" class="align-self-start btn-group p-1">
-                    <b-badge variant="secondary" title="This dataset has been permanently deleted">
+                    <GBadge variant="secondary" title="This dataset has been permanently deleted">
                         <icon icon="burn" /> Purged
-                    </b-badge>
+                    </GBadge>
                 </span>
                 <ContentOptions
                     v-else
@@ -87,7 +87,7 @@
             @input="onTags"
             @tag-click="onTagClick" />
         <!-- collections are not expandable, so we only need the DatasetDetails component here -->
-        <b-collapse :visible="expandDataset">
+        <GCollapse :visible="expandDataset">
             <DatasetDetails
                 v-if="expandDataset"
                 :dataset="item"
@@ -96,7 +96,7 @@
                 :item-urls="itemUrls"
                 @edit="onEdit"
                 @toggleHighlights="toggleHighlights" />
-        </b-collapse>
+        </GCollapse>
     </div>
 </template>
 
@@ -108,6 +108,7 @@ import { updateContentFields } from "components/History/model/queries";
 import StatelessTags from "components/TagsMultiselect/StatelessTags";
 import { useEntryPointStore } from "stores/entryPointStore";
 
+import { GBadge, GButton, GCollapse } from "@/component-library";
 import { clearDrag, setDrag } from "@/utils/setDrag.js";
 
 import CollectionDescription from "./Collection/CollectionDescription";
@@ -119,11 +120,14 @@ import { HIERARCHICAL_COLLECTION_JOB_STATES, STATES } from "./model/states";
 library.add(faArrowCircleUp, faArrowCircleDown, faCheckCircle);
 export default {
     components: {
+        GBadge,
+        GCollapse,
         CollectionDescription,
         ContentOptions,
         DatasetDetails,
         StatelessTags,
         FontAwesomeIcon,
+        GButton,
     },
     props: {
         writable: { type: Boolean, default: true },

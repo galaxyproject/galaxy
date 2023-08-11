@@ -1,7 +1,7 @@
 <template>
-    <b-row align-v="center">
-        <b-col>
-            <b-form-textarea
+    <GRow align-v="center">
+        <GCol>
+            <GFormTextarea
                 v-if="inputArea"
                 :id="id"
                 v-model="currentValue"
@@ -9,7 +9,7 @@
                 :readonly="readonly"
                 :placeholder="placeholder"
                 :style="style" />
-            <b-form-input
+            <GInput
                 v-else
                 :id="id"
                 v-model="currentValue"
@@ -22,12 +22,20 @@
             <datalist v-if="datalist && !inputArea" :id="`${id}-datalist`">
                 <option v-for="data in datalist" :key="data.value" :label="data.label" :value="data.value" />
             </datalist>
-        </b-col>
-    </b-row>
+        </GCol>
+    </GRow>
 </template>
 
 <script>
+import { GCol, GFormTextarea, GInput, GRow } from "@/component-library";
+
 export default {
+    components: {
+        GCol,
+        GFormTextarea,
+        GInput,
+        GRow,
+    },
     props: {
         value: {
             // String; Array for multiple

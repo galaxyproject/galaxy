@@ -4,6 +4,7 @@ import { faGlobe, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 
+import { GBadge, GButton, GButtonGroup } from "@/component-library";
 import { useUserStore } from "@/stores/userStore";
 import { withPrefix } from "@/utils/redirect";
 
@@ -29,8 +30,8 @@ function userTitle(title: string) {
             <div class="unified-panel-header-inner">
                 <nav class="d-flex justify-content-between mx-3 my-2">
                     <h2 v-localize class="m-1 h-sm">Workflows</h2>
-                    <b-button-group>
-                        <b-button
+                    <GButtonGroup>
+                        <GButton
                             v-b-tooltip.bottom.hover
                             data-description="create new workflow"
                             size="sm"
@@ -39,8 +40,8 @@ function userTitle(title: string) {
                             :disabled="isAnonymous"
                             @click="$router.push('/workflows/create')">
                             <Icon fixed-width icon="plus" />
-                        </b-button>
-                        <b-button
+                        </GButton>
+                        <GButton
                             v-b-tooltip.bottom.hover
                             data-description="import workflow"
                             size="sm"
@@ -49,8 +50,8 @@ function userTitle(title: string) {
                             :disabled="isAnonymous"
                             @click="$router.push('/workflows/import')">
                             <FontAwesomeIcon icon="upload" />
-                        </b-button>
-                        <b-button
+                        </GButton>
+                        <GButton
                             v-b-tooltip.bottom.hover
                             data-description="published workflows"
                             size="sm"
@@ -58,16 +59,16 @@ function userTitle(title: string) {
                             title="Published workflows"
                             @click="$router.push('/workflows/list_published')">
                             <FontAwesomeIcon icon="fa-globe" />
-                        </b-button>
-                    </b-button-group>
+                        </GButton>
+                    </GButtonGroup>
                 </nav>
             </div>
         </div>
         <div class="unified-panel-controls">
             <div v-if="isAnonymous">
-                <b-badge class="alert-info w-100">
+                <GBadge class="alert-info w-100">
                     Please <a :href="withPrefix('/login')">log in or register</a> to create workflows.
-                </b-badge>
+                </GBadge>
             </div>
             <WorkflowSearch v-else />
         </div>

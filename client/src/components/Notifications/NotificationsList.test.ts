@@ -45,7 +45,7 @@ describe("NotificationsList", () => {
 
         const unreadFilter = wrapper.find("#show-unread-filter");
         expect(unreadFilter.exists()).toBe(true);
-        unreadFilter.trigger("click");
+        unreadFilter.vm.$emit("click");
 
         await wrapper.vm.$nextTick();
 

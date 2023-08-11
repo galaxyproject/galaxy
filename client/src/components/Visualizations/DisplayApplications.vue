@@ -1,7 +1,7 @@
 <template>
     <div>
         <DatasetProvider :id="datasetId" v-slot="{ result: dataset }">
-            <b-alert
+            <GAlert
                 v-if="
                     (dataset && dataset.display_apps && dataset.display_apps.length > 0) ||
                     (dataset && dataset.display_types && dataset.display_types.length > 0)
@@ -15,7 +15,7 @@
                             <span class="font-weight-bold">{{ displayApp.label }}</span>
                             <span v-for="(link, linkKey) in displayApp.links" :key="linkKey">
                                 <span v-if="linkKey == 0">(</span>
-                                <b-link :href="link.href" :target="link.target">{{ link.text }}</b-link>
+                                <GLink :href="link.href" :target="link.target">{{ link.text }}</GLink>
                                 <span v-if="linkKey != displayApp.links.length - 1">, </span>
                                 <span v-else>)</span>
                             </span>
@@ -24,7 +24,7 @@
                             <span class="font-weight-bold">{{ displayType.label }}</span>
                             <span v-for="(link, linkKey) in displayType.links" :key="linkKey">
                                 <span v-if="linkKey == 0">(</span>
-                                <b-link :href="link.href" :target="link.target">{{ link.text }}</b-link>
+                                <GLink :href="link.href" :target="link.target">{{ link.text }}</GLink>
                                 <span v-if="linkKey != displayType.links.length - 1">, </span>
                                 <span v-else>)</span>
                             </span>
@@ -32,15 +32,19 @@
                     </ol>
                 </div>
                 <div>or select a visualization from below.</div>
-            </b-alert>
+            </GAlert>
         </DatasetProvider>
     </div>
 </template>
 <script>
 import { DatasetProvider } from "components/providers";
 
+import { GAlert, GLink } from "@/component-library";
+
 export default {
     components: {
+        GLink,
+        GAlert,
         DatasetProvider,
     },
     props: {

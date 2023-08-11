@@ -1,36 +1,36 @@
 <template>
     <div>
-        <b-table id="shed-search-results" striped :items="repositories" :fields="fields">
+        <GTable id="shed-search-results" :fields="fields" :items="repositories" striped>
             <template v-slot:cell(name)="row">
-                <b-link href="javascript:void(0)" role="button" class="font-weight-bold" @click="row.toggleDetails">
+                <GLink href="javascript:void(0)" role="button" class="font-weight-bold" @click="row.toggleDetails">
                     {{ row.item.name }}
-                </b-link>
+                </GLink>
                 <div>{{ row.item.description }}</div>
             </template>
             <template v-slot:row-details="row">
                 <RepositoryDetails :repo="row.item" :toolshed-url="toolshedUrl" />
             </template>
-        </b-table>
+        </GTable>
         <div v-if="noResultsFound" class="unavailable-message">No matching repositories found.</div>
         <LoadingSpan v-if="pageLoading" message="Loading repositories" />
     </div>
 </template>
 <script>
-import BootstrapVue from "bootstrap-vue";
 import LoadingSpan from "components/LoadingSpan";
-import Vue from "vue";
+
+import { GLink, GTable } from "@/component-library";
 
 import { Services } from "../services";
 
 import RepositoryDetails from "../RepositoryDetails/Index.vue";
-
-Vue.use(BootstrapVue);
 
 const READY = 0;
 const LOADING = 1;
 const COMPLETE = 2;
 export default {
     components: {
+        GLink,
+        GTable,
         LoadingSpan,
         RepositoryDetails,
     },

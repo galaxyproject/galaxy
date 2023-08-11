@@ -1,13 +1,13 @@
 <template>
     <span itemprop="creator" itemscope itemtype="https://schema.org/Organization">
         <FontAwesomeIcon ref="button" icon="building" />
-        <b-popover
+        <GPopover
             triggers="click blur"
             :placement="hoverPlacement"
             :target="$refs['button'] || 'works-lazily'"
             title="Organization">
-            <b-table striped :items="items"> </b-table>
-        </b-popover>
+            <GTable :items="items" striped />
+        </GPopover>
         <span v-if="name">
             <span itemprop="name">{{ name }}</span>
             <span v-if="email">
@@ -36,6 +36,8 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faBuilding, faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
+import { GPopover, GTable } from "@/component-library";
+
 import ThingViewerMixin from "./ThingViewerMixin";
 
 library.add(faExternalLinkAlt, faBuilding);
@@ -43,6 +45,8 @@ library.add(faExternalLinkAlt, faBuilding);
 export default {
     components: {
         FontAwesomeIcon,
+        GPopover,
+        GTable,
     },
     mixins: [ThingViewerMixin],
     props: {

@@ -2,6 +2,7 @@
 import { type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
+import { GButton, GFormGroup, GFormRadioGroup, GInput } from "@/component-library";
 import { createWorkflowQuery } from "@/components/Panels/utilities";
 import _l from "@/utils/localization";
 
@@ -37,41 +38,41 @@ function onSearch() {
     <div>
         <div description="advanced workflow filters" @keyup.enter="onSearch">
             <small class="mt-1">Filter by name:</small>
-            <b-form-input v-model="filterSettings.name" size="sm" placeholder="any name" />
+            <GInput v-model="filterSettings.name" size="sm" placeholder="any name" />
             <small class="mt-1">Filter by tag:</small>
-            <b-form-input v-model="filterSettings.tag" size="sm" placeholder="any tag" />
+            <GInput v-model="filterSettings.tag" size="sm" placeholder="any tag" />
             <small>Search published workflows:</small>
-            <b-form-group class="m-0">
-                <b-form-radio-group
+            <GFormGroup class="m-0">
+                <GFormRadioGroup
                     v-model="filterSettings.published"
                     :options="options"
                     size="sm"
                     buttons
                     description="filter published" />
-            </b-form-group>
+            </GFormGroup>
             <small>Search shared workflows:</small>
-            <b-form-group class="m-0">
-                <b-form-radio-group
+            <GFormGroup class="m-0">
+                <GFormRadioGroup
                     v-model="filterSettings.shared_with_me"
                     :options="options"
                     size="sm"
                     buttons
                     description="filter shared" />
-            </b-form-group>
+            </GFormGroup>
             <small>Search deleted workflows:</small>
-            <b-form-group class="m-0">
-                <b-form-radio-group
+            <GFormGroup class="m-0">
+                <GFormRadioGroup
                     v-model="filterSettings.deleted"
                     :options="options"
                     size="sm"
                     buttons
                     description="filter deleted" />
-            </b-form-group>
+            </GFormGroup>
             <div class="mt-3">
-                <b-button class="mr-1" size="sm" variant="primary" @click="onSearch">
+                <GButton class="mr-1" size="sm" variant="primary" @click="onSearch">
                     <icon icon="search" />
                     <span>{{ _l("Search") }}</span>
-                </b-button>
+                </GButton>
             </div>
         </div>
     </div>

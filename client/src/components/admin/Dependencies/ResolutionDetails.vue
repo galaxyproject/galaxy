@@ -2,7 +2,7 @@
     <div v-if="isContainerResolution">
         <ContainerResolutionDetails :resolution="containerResolution" />
     </div>
-    <b-card v-else>
+    <GCard v-else>
         <div class="row">
             <div class="col">
                 <span v-if="singleTool || resolution.tool_ids.length == 1">Tool</span>
@@ -64,9 +64,11 @@
                 </div>
             </span>
         </div>
-    </b-card>
+    </GCard>
 </template>
 <script>
+import { GCard } from "@/component-library";
+
 import ContainerResolutionDetails from "./ContainerResolutionDetails";
 import DependencyResolver from "./DependencyResolver";
 import Requirement from "./Requirement";
@@ -77,6 +79,7 @@ import Tools from "./Tools";
 
 export default {
     components: {
+        GCard,
         ContainerResolutionDetails,
         DependencyResolver,
         Requirement,

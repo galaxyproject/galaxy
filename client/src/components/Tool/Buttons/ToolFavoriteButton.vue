@@ -6,6 +6,7 @@ import { storeToRefs } from "pinia";
 import ariaAlert from "utils/ariaAlert";
 import { computed } from "vue";
 
+import { GButton } from "@/component-library";
 import { useUserStore } from "@/stores/userStore";
 
 library.add(fasStar, farStar);
@@ -68,8 +69,8 @@ async function onRemoveFavorite() {
 </script>
 
 <template>
-    <b-button v-b-tooltip.hover role="button" variant="link" size="sm" :title="title" @click="onToggleFavorite">
+    <GButton v-b-tooltip.hover role="button" variant="link" size="sm" :title="title" @click="onToggleFavorite">
         <icon v-if="showAddFavorite" icon="far fa-star" />
         <icon v-if="showRemoveFavorite" icon="fas fa-star" />
-    </b-button>
+    </GButton>
 </template>

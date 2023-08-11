@@ -3,28 +3,28 @@
         <h1 id="workflows-title" class="mb-3 h-lg">
             {{ title }}
         </h1>
-        <b-alert class="index-grid-message" :variant="messageVariant" :show="showMessage">{{ message }}</b-alert>
-        <b-alert class="index-grid-message" dismissible :variant="importStatus" :show="Boolean(importMessage)">
+        <GAlert class="index-grid-message" :variant="messageVariant" :show="showMessage">{{ message }}</GAlert>
+        <GAlert class="index-grid-message" dismissible :variant="importStatus" :show="Boolean(importMessage)">
             {{ importMessage }}
-        </b-alert>
-        <b-row class="mb-3">
-            <b-col cols="6" class="m-1">
+        </GAlert>
+        <GRow class="mb-3">
+            <GCol cols="6" class="m-1">
                 <IndexFilter v-bind="filterAttrs" id="workflow-search" v-model="filter" />
-            </b-col>
-            <b-col>
+            </GCol>
+            <GCol>
                 <WorkflowIndexActions :root="root" class="float-right"></WorkflowIndexActions>
-            </b-col>
-        </b-row>
-        <b-table v-model="workflowItemsModel" v-bind="{ ...defaultTableAttrs, ...indexTableAttrs }">
+            </GCol>
+        </GRow>
+        <GTable v-model="workflowItemsModel" v-bind="{ ...defaultTableAttrs, ...indexTableAttrs }">
             <template v-slot:empty>
                 <loading-span v-if="loading" message="Loading workflows" />
-                <b-alert v-else id="no-workflows" variant="info" show>
+                <GAlert v-else id="no-workflows" variant="info" show>
                     <div v-if="isFiltered">
                         No matching entries found for: <span class="font-weight-bold">{{ filter }}</span
                         >.
                     </div>
                     <div v-else>No workflows found. You may create or import new workflows.</div>
-                </b-alert>
+                </GAlert>
             </template>
             <template v-slot:cell(name)="row">
                 <WorkflowDropdown
@@ -73,16 +73,16 @@
                 <div v-else>&#8212;</div>
             </template>
             <template v-slot:row-details="data">
-                <b-card>
+                <GCard>
                     <p class="workflow-dropdown-description">{{ data.item.description }}</p>
-                </b-card>
+                </GCard>
             </template>
-        </b-table>
-        <b-pagination
+        </GTable>
+        <GPagination
             v-show="rows >= perPage"
             v-model="currentPage"
             class="gx-workflows-grid-pager"
-            v-bind="paginationAttrs"></b-pagination>
+            v-bind="paginationAttrs" />
     </div>
 </template>
 <script>
@@ -93,6 +93,8 @@ import { storedWorkflowsProvider } from "components/providers/StoredWorkflowsPro
 import UtcDate from "components/UtcDate";
 import { getAppRoot } from "onload/loadConfig";
 import _l from "utils/localization";
+
+import { GAlert, GCard, GCol, GPagination, GRow, GTable } from "@/component-library";
 
 import paginationMixin from "./paginationMixin";
 import { Services } from "./services";
@@ -166,12 +168,18 @@ const PUBLISHED_FIELDS = [NAME_FIELD, TAGS_FIELD, UPDATED_FIELD, OWNER_FIELD];
 
 export default {
     components: {
-        UtcDate,
+        GAlert,
+        GCard,
+        GCol,
+        GPagination,
+        GRow,
+        GTable,
+        SharingIndicators,
         StatelessTags,
+        UtcDate,
         WorkflowDropdown,
         WorkflowBookmark,
         WorkflowIndexActions,
-        SharingIndicators,
         WorkflowRunButton,
     },
     mixins: [paginationMixin, filtersMixin],

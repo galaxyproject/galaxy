@@ -5,6 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed, unref } from "vue";
 
+import { GLink, GModal } from "@/component-library";
 import { useUserStore } from "@/stores/userStore";
 import _l from "@/utils/localization";
 
@@ -43,7 +44,7 @@ function onDelete(page_id: string) {
 </script>
 <template>
     <div>
-        <b-link
+        <GLink
             class="page-dropdown"
             data-toggle="dropdown"
             aria-haspopup="true"
@@ -51,7 +52,7 @@ function onDelete(page_id: string) {
             aria-expanded="false">
             <FontAwesomeIcon icon="caret-down" class="fa-lg" />
             <span class="page-title">{{ props.page.title }}</span>
-        </b-link>
+        </GLink>
         <p v-if="props.page.description">{{ props.page.description }}</p>
         <div class="dropdown-menu" aria-labelledby="page-dropdown">
             <router-link :to="`/published/page?id=${props.page.id}`" class="dropdown-item dropdown-item-view">
@@ -86,14 +87,14 @@ function onDelete(page_id: string) {
                 <span class="fa fa-trash fa-fw mr-1" />
                 <span>Delete</span>
             </a>
-            <b-modal
+            <GModal
                 :id="`delete-page-modal-${props.page.id}`"
                 hide-backdrop
                 title="Confirm page deletion"
                 title-tag="h2"
                 @ok="onDelete(props.page.id)">
                 <p v-localize>Really delete the page titled: "{{ props.page.title }}"?</p>
-            </b-modal>
+            </GModal>
         </div>
     </div>
 </template>

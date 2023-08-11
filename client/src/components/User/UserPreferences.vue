@@ -1,9 +1,9 @@
 <template>
-    <b-container fluid class="p-0">
+    <GContainer fluid class="p-0">
         <h1 v-localize class="h-lg">User preferences</h1>
-        <b-alert :variant="messageVariant" :show="!!message">
+        <GAlert :variant="messageVariant" :show="!!message">
             {{ message }}
-        </b-alert>
+        </GAlert>
         <p>
             <span v-localize>You are signed in as</span>
             <strong id="user-preferences-current-email">{{ email }}</strong>
@@ -66,9 +66,9 @@
             description="Click here to show or hide the activity bar."
             badge="New!"
             @click="toggleActivityBar = !toggleActivityBar">
-            <b-collapse v-model="toggleActivityBar">
+            <GCollapse v-model="toggleActivityBar">
                 <UserActivityBarSettings />
-            </b-collapse>
+            </GCollapse>
         </UserPreferencesElement>
         <UserPreferencesElement
             v-if="hasThemes"
@@ -77,9 +77,9 @@
             description="Click here to change the user interface color theme."
             badge="New!"
             @click="toggleTheme = !toggleTheme">
-            <b-collapse v-model="toggleTheme">
+            <GCollapse v-model="toggleTheme">
                 <ThemeSelector />
-            </b-collapse>
+            </GCollapse>
         </UserPreferencesElement>
         <UserPreferencesElement
             v-if="isConfigLoaded && !config.single_user"
@@ -107,21 +107,20 @@
             title="Sign Out"
             description="Click here to sign out of all sessions."
             @click="signOut" />
-    </b-container>
+    </GContainer>
 </template>
 
 <script>
 import { getGalaxyInstance } from "app";
 import axios from "axios";
-import BootstrapVue from "bootstrap-vue";
 import { getUserPreferencesModel } from "components/User/UserPreferencesModel";
 import { mapState } from "pinia";
 import _l from "utils/localization";
 import { userLogoutAll } from "utils/logout";
 import QueryStringParsing from "utils/query-string-parsing";
 import { withPrefix } from "utils/redirect";
-import Vue from "vue";
 
+import { GAlert, GCollapse, GContainer } from "@/component-library";
 import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
 
@@ -133,10 +132,11 @@ import UserPreferredObjectStore from "./UserPreferredObjectStore";
 
 import ThemeSelector from "./ThemeSelector.vue";
 
-Vue.use(BootstrapVue);
-
 export default {
     components: {
+        GContainer,
+        GCollapse,
+        GAlert,
         UserActivityBarSettings,
         UserDeletion,
         UserPreferencesElement,

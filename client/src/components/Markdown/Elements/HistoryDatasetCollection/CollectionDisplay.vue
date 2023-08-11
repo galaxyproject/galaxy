@@ -1,8 +1,8 @@
 <template>
-    <b-card body-class="p-0">
-        <b-card-header>
+    <GCard body-class="p-0">
+        <GCardHeader>
             <span class="float-right">
-                <b-button
+                <GButton
                     v-b-tooltip.hover
                     :href="downloadUrl"
                     variant="link"
@@ -12,8 +12,8 @@
                     type="button"
                     class="py-0 px-1">
                     <span class="fa fa-download" />
-                </b-button>
-                <b-button
+                </GButton>
+                <GButton
                     v-if="vcurrentUser && currentHistoryId"
                     v-b-tooltip.hover
                     href="#"
@@ -24,23 +24,23 @@
                     class="py-0 px-1"
                     @click="onCopyCollection(currentHistoryId)">
                     <span class="fa fa-file-import" />
-                </b-button>
+                </GButton>
             </span>
             <span>
                 <span>Dataset Collection:</span>
                 <span class="font-weight-light">{{ collectionName }}</span>
             </span>
-        </b-card-header>
-        <b-card-body>
+        </GCardHeader>
+        <GCardBody>
             <LoadingSpan v-if="loading" message="Loading Collection" />
             <div v-else class="content-height">
-                <b-alert v-if="!!messageText" :variant="messageVariant" show>
+                <GAlert v-if="!!messageText" :variant="messageVariant" show>
                     {{ messageText }}
-                </b-alert>
+                </GAlert>
                 <CollectionTree :node="itemContent" :skip-head="true" />
             </div>
-        </b-card-body>
-    </b-card>
+        </GCardBody>
+    </GCard>
 </template>
 
 <script>
@@ -50,6 +50,7 @@ import { copyCollection } from "components/Markdown/services";
 import { getAppRoot } from "onload/loadConfig";
 import { mapState } from "pinia";
 
+import { GAlert, GButton, GCard, GCardBody, GCardHeader } from "@/component-library";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
@@ -57,7 +58,12 @@ import CollectionTree from "./CollectionTree";
 
 export default {
     components: {
+        GCard,
+        GCardHeader,
+        GCardBody,
         CollectionTree,
+        GAlert,
+        GButton,
         LoadingSpan,
     },
     props: {

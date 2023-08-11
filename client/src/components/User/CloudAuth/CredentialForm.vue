@@ -1,53 +1,55 @@
 <template>
-    <b-form :validated="credential.isValid">
+    <GForm :validated="credential.isValid">
         <!-- user label -->
-        <b-form-group label="Description" label-for="credentialDescription" label-cols-lg="3">
-            <b-form-input
+        <GFormGroup label="Description" label-for="credentialDescription" label-cols-lg="3">
+            <GInput
                 id="credentialDescription"
                 v-model="credential.description"
                 :state="credential.fieldValid('description')"
                 placeholder="Description (optional)"
                 trim />
-        </b-form-group>
+        </GFormGroup>
 
         <!-- google-openidconnect -->
-        <b-form-group
+        <GFormGroup
             v-if="identityProviders.length > 1"
             label="Identity Provider"
             label-for="identityProvider"
             label-cols-lg="3">
-            <b-form-select
+            <GFormSelect
                 id="identityProvider"
                 v-model="credential.authn_id"
                 :state="credential.fieldValid('authn_id')"
                 :options="identityProviders" />
-        </b-form-group>
+        </GFormGroup>
 
         <!-- aws/azure, etc -->
-        <b-form-group label="Resource Provider" label-for="resourceProvider" label-cols-lg="3">
-            <b-form-select
+        <GFormGroup label="Resource Provider" label-for="resourceProvider" label-cols-lg="3">
+            <GFormSelect
                 id="resourceProvider"
                 v-model="credential.resourceProvider"
                 :state="credential.fieldValid('provider')"
                 :options="resourceProviderOptions" />
-        </b-form-group>
+        </GFormGroup>
 
         <CredentialConfig v-model="credential.config" />
 
         <footer class="border-top">
-            <b-button variant="secondary" @click.prevent="$emit('delete', credential)"> Delete Key </b-button>
-            <b-button
+            <GButton variant="secondary" @click.prevent="$emit('delete', credential)"> Delete Key </GButton>
+            <GButton
                 aria-label="Save Key"
                 :variant="saveButtonVariant"
                 :disabled="saveButtonDisabled"
                 @click.prevent="$emit('save', credential)">
                 {{ saveButtonTitle }}
-            </b-button>
+            </GButton>
         </footer>
-    </b-form>
+    </GForm>
 </template>
 
 <script>
+import { GButton, GForm, GFormGroup, GFormSelect, GInput } from "@/component-library";
+
 import CredentialConfig from "./CredentialConfig";
 import { Credential, ResourceProviders } from "./model";
 import { getIdentityProviders } from "./model/service";
@@ -55,6 +57,11 @@ import { getIdentityProviders } from "./model/service";
 export default {
     components: {
         CredentialConfig,
+        GButton,
+        GForm,
+        GFormGroup,
+        GFormSelect,
+        GInput,
     },
     props: {
         value: { type: Credential, required: true },

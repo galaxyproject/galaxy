@@ -5,6 +5,7 @@ import { getAppRoot } from "onload";
 import { storeToRefs } from "pinia";
 import { ref, watch } from "vue";
 
+import { GModal } from "@/component-library";
 import { useUserStore } from "@/stores/userStore";
 import { wait } from "@/utils/utils";
 
@@ -89,7 +90,7 @@ defineExpose({
 </script>
 
 <template>
-    <b-modal
+    <GModal
         v-model="showModal"
         :static="options.modalStatic"
         header-class="no-separator"
@@ -110,5 +111,5 @@ defineExpose({
             :current-history-id="currentHistoryId"
             v-bind="options"
             @dismiss="dismiss" />
-    </b-modal>
+    </GModal>
 </template>

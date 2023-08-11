@@ -3,7 +3,7 @@
         <div class="h4 clearfix mb-3">
             <b>Workflow: {{ model.name }}</b>
             <ButtonSpinner id="run-workflow" class="float-right" title="Run Workflow" @onClick="onExecute" />
-            <b-dropdown
+            <GDropdown
                 v-if="showRuntimeSettings(currentUser)"
                 id="dropdown-form"
                 ref="dropdown"
@@ -14,21 +14,21 @@
                 <template v-slot:button-content>
                     <span class="fa fa-cog" />
                 </template>
-                <b-dropdown-form>
-                    <b-form-checkbox v-model="sendToNewHistory" class="workflow-run-settings-target"
-                        >Send results to a new history</b-form-checkbox
-                    >
-                    <b-form-checkbox
+                <GDropdownForm>
+                    <GFormCheckbox v-model="sendToNewHistory" class="workflow-run-settings-target">
+                        Send results to a new history
+                    </GFormCheckbox>
+                    <GFormCheckbox
                         v-if="reuseAllowed(currentUser)"
                         v-model="useCachedJobs"
-                        title="This may skip executing jobs that you have already run."
-                        >Attempt to re-use jobs with identical parameters?</b-form-checkbox
-                    >
-                    <b-form-checkbox
+                        title="This may skip executing jobs that you have already run.">
+                        Attempt to re-use jobs with identical parameters?
+                    </GFormCheckbox>
+                    <GFormCheckbox
                         v-if="isConfigLoaded && config.object_store_allows_id_selection"
-                        v-model="splitObjectStore"
-                        >Send outputs and intermediate to different object stores?</b-form-checkbox
-                    >
+                        v-model="splitObjectStore">
+                        Send outputs and intermediate to different object stores?
+                    </GFormCheckbox>
                     <WorkflowStorageConfiguration
                         v-if="isConfigLoaded && config.object_store_allows_id_selection"
                         :split-object-store="splitObjectStore"
@@ -36,8 +36,8 @@
                         :invocation-intermediate-preferred-object-store-id="preferredIntermediateObjectStoreId"
                         @updated="onStorageUpdate">
                     </WorkflowStorageConfiguration>
-                </b-dropdown-form>
-            </b-dropdown>
+                </GDropdownForm>
+            </GDropdown>
         </div>
         <FormDisplay :inputs="formInputs" @onChange="onChange" />
         <!-- Options to default one way or the other, disable if admins want, etc.. -->
@@ -53,6 +53,7 @@ import { isWorkflowInput } from "components/Workflow/constants";
 import { mapState } from "pinia";
 import { errorMessageAsString } from "utils/simple-error";
 
+import { GDropdown, GDropdownForm, GFormCheckbox } from "@/component-library";
 import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
 
@@ -63,6 +64,9 @@ export default {
     components: {
         ButtonSpinner,
         FormDisplay,
+        GDropdown,
+        GDropdownForm,
+        GFormCheckbox,
         WorkflowStorageConfiguration,
     },
     props: {

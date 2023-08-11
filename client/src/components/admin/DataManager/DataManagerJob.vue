@@ -1,57 +1,57 @@
 <template>
     <div>
-        <b-breadcrumb v-if="dataManager && jobId && !loading" id="breadcrumb" :items="breadcrumbItems" />
-        <Alert :message="message" :variant="status" />
-        <Alert v-for="(error, index) in errorMessages" :key="index" :message="error" variant="error" />
-        <Alert v-if="viewOnly" message="Not implemented" variant="dark" />
-        <Alert v-else-if="loading" message="Waiting for data" variant="info" />
-        <b-container v-else-if="dataManager">
-            <b-row>
-                <b-col>
-                    <b-card
+        <GBreadcrumb v-if="dataManager && jobId && !loading" id="breadcrumb" :items="breadcrumbItems" />
+        <GAlert :message="message" :variant="status" />
+        <GAlert v-for="(error, index) in errorMessages" :key="index" :message="error" variant="error" />
+        <GAlert v-if="viewOnly" message="Not implemented" variant="dark" />
+        <GAlert v-else-if="loading" message="Waiting for data" variant="info" />
+        <GContainer v-else-if="dataManager">
+            <GRow>
+                <GCol>
+                    <GCard
                         id="data-manager-card"
                         header-bg-variant="primary"
                         header-text-variant="white"
                         border-variant="primary"
                         class="mb-3">
                         <template v-slot:header>
-                            <b-container>
-                                <b-row align-v="center">
-                                    <b-col cols="auto">
-                                        <b-button v-b-tooltip.hover title="Rerun" :href="runUrl">
+                            <GContainer>
+                                <GRow align-v="center">
+                                    <GCol cols="auto">
+                                        <GButton v-b-tooltip.hover title="Rerun" :href="runUrl">
                                             <span class="fa fa-redo" />
-                                        </b-button>
-                                    </b-col>
-                                    <b-col>
+                                        </GButton>
+                                    </GCol>
+                                    <GCol>
                                         <b>{{ dataManager["name"] }}</b> <i>{{ dataManager["description"] }}</i>
-                                    </b-col>
-                                </b-row>
-                            </b-container>
+                                    </GCol>
+                                </GRow>
+                            </GContainer>
                         </template>
-                        <b-card v-for="(hda, i) in hdaInfo" :id="'data-card-' + i" :key="i" class="mb-4">
+                        <GCard v-for="(hda, i) in hdaInfo" :id="'data-card-' + i" :key="i" class="mb-4">
                             <template v-slot:header>
-                                <b-table :fields="fields" :items="[hda]" caption-top small stacked>
+                                <GTable :fields="fields" :items="[hda]" caption-top small stacked>
                                     <template v-slot:table-caption>
-                                        <b-container>
-                                            <b-row align-v="center">
-                                                <b-col cols="auto">
-                                                    <b-button
+                                        <GContainer>
+                                            <GRow align-v="center">
+                                                <GCol cols="auto">
+                                                    <GButton
                                                         v-b-tooltip.hover
                                                         title="View complete info"
                                                         :href="hdaInfo[i]['infoUrl']"
                                                         target="galaxy_main">
                                                         <span class="fa fa-info-circle" />
-                                                    </b-button>
-                                                </b-col>
-                                                <b-col>
+                                                    </GButton>
+                                                </GCol>
+                                                <GCol>
                                                     <b>{{ hda["name"] }}</b>
-                                                </b-col>
-                                            </b-row>
-                                        </b-container>
+                                                </GCol>
+                                            </GRow>
+                                        </GContainer>
                                     </template>
-                                </b-table>
+                                </GTable>
                             </template>
-                            <b-table
+                            <GTable
                                 v-for="(output, j) in dataManagerOutput[i]"
                                 :key="j"
                                 :fields="outputFields(output[1][0])"
@@ -63,12 +63,12 @@
                                 <template v-slot:table-caption>
                                     Data Table: <b>{{ output[0] }}</b>
                                 </template>
-                            </b-table>
-                        </b-card>
-                    </b-card>
-                </b-col>
-            </b-row>
-        </b-container>
+                            </GTable>
+                        </GCard>
+                    </GCard>
+                </GCol>
+            </GRow>
+        </GContainer>
     </div>
 </template>
 
@@ -76,11 +76,18 @@
 import axios from "axios";
 import { getAppRoot } from "onload/loadConfig";
 
-import Alert from "components/Alert.vue";
+import { GAlert, GBreadcrumb, GButton, GCard, GCol, GContainer, GRow, GTable } from "@/component-library";
 
 export default {
     components: {
-        Alert,
+        GAlert,
+        GBreadcrumb,
+        GButton,
+        GCard,
+        GCol,
+        GContainer,
+        GRow,
+        GTable,
     },
     props: {
         id: {

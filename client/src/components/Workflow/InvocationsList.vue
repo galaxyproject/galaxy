@@ -3,11 +3,11 @@
         <h1 id="invocations-title" class="mb-3 h-lg">
             {{ title }}
         </h1>
-        <b-alert v-if="headerMessage" variant="info" show>
+        <GAlert v-if="headerMessage" variant="info" show>
             {{ headerMessage }}
-        </b-alert>
-        <b-alert v-bind="alertAttrs">{{ message }}</b-alert>
-        <b-table
+        </GAlert>
+        <GAlert v-bind="alertAttrs">{{ message }}</GAlert>
+        <GTable
             v-bind="indexTableAttrs"
             v-model="invocationItemsModel"
             no-sort-reset
@@ -15,29 +15,29 @@
             class="invocations-table">
             <template v-slot:empty>
                 <loading-span v-if="loading" message="Loading workflow invocations" />
-                <b-alert v-else id="no-invocations" variant="info" show>
+                <GAlert v-else id="no-invocations" variant="info" show>
                     {{ effectiveNoInvocationsMessage }}
-                </b-alert>
+                </GAlert>
             </template>
             <template v-slot:row-details="row">
-                <b-card>
+                <GCard>
                     <small class="float-right" :data-invocation-id="row.item.id">
                         <b>Last updated: <UtcDate :date="row.item.update_time" mode="elapsed" />;</b>
-                        <b
-                            >Invocation ID: <code>{{ row.item.id }}</code></b
-                        >
+                        <b>
+                            Invocation ID: <code>{{ row.item.id }}</code>
+                        </b>
                     </small>
                     <WorkflowInvocationState :invocation-id="row.item.id" @invocation-cancelled="refresh" />
-                </b-card>
+                </GCard>
             </template>
             <template v-slot:cell(expand)="data">
-                <b-link
+                <GLink
                     v-if="!data.detailsShowing"
                     v-b-tooltip.hover.top
                     title="Show Details"
                     class="btn-sm fa fa-lg fa-chevron-down toggle-invocation-details"
                     @click.stop="swapRowDetails(data)" />
-                <b-link
+                <GLink
                     v-if="data.detailsShowing"
                     v-b-tooltip.hover.top
                     title="Hide Details"
@@ -49,9 +49,9 @@
                     v-b-tooltip.hover.top
                     :title="getStoredWorkflowNameByInstanceId(data.item.workflow_id)"
                     class="truncate">
-                    <b-link href="#" @click.stop="swapRowDetails(data)">
+                    <GLink href="#" @click.stop="swapRowDetails(data)">
                         <b>{{ getStoredWorkflowNameByInstanceId(data.item.workflow_id) }}</b>
-                    </b-link>
+                    </GLink>
                 </div>
             </template>
             <template v-slot:cell(history_id)="data">
@@ -59,9 +59,9 @@
                     v-b-tooltip.hover.top.html
                     :title="`<b>Switch to</b><br>${getHistoryNameById(data.item.history_id)}`"
                     class="truncate">
-                    <b-link id="switch-to-history" href="#" @click.stop="switchHistory(data.item.history_id)">
+                    <GLink id="switch-to-history" href="#" @click.stop="switchHistory(data.item.history_id)">
                         <b>{{ getHistoryNameById(data.item.history_id) }}</b>
-                    </b-link>
+                    </GLink>
                 </div>
             </template>
             <template v-slot:cell(create_time)="data">
@@ -76,12 +76,12 @@
                     :id="getStoredWorkflowIdByInstanceId(data.item.workflow_id)"
                     :root="root" />
             </template>
-        </b-table>
-        <b-pagination
+        </GTable>
+        <GPagination
             v-if="rows >= perPage"
             v-model="currentPage"
             class="gx-invocations-grid-pager"
-            v-bind="paginationAttrs"></b-pagination>
+            v-bind="paginationAttrs" />
     </div>
 </template>
 
@@ -92,6 +92,7 @@ import UtcDate from "components/UtcDate";
 import WorkflowInvocationState from "components/WorkflowInvocationState/WorkflowInvocationState";
 import { mapActions, mapState } from "pinia";
 
+import { GAlert, GCard, GLink, GPagination, GTable } from "@/component-library";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useWorkflowStore } from "@/stores/workflowStore";
 
@@ -101,6 +102,11 @@ import WorkflowRunButton from "./WorkflowRunButton.vue";
 
 export default {
     components: {
+        GAlert,
+        GCard,
+        GLink,
+        GPagination,
+        GTable,
         UtcDate,
         WorkflowInvocationState,
         WorkflowRunButton,

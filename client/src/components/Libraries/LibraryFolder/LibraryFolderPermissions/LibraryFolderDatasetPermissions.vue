@@ -1,9 +1,9 @@
 <template>
     <div>
-        <b-container fluid>
+        <GContainer fluid>
             <div v-if="dataset">
                 <LibraryBreadcrumb :current-id="dataset_id" :full_path="dataset.full_path" />
-                <b-button
+                <GButton
                     data-toggle="tooltip"
                     data-placement="top"
                     title="Go to Dataset Details"
@@ -12,7 +12,7 @@
                     :href="`${root}libraries/folders/${folder_id}/dataset/${dataset_id}`">
                     <FontAwesomeIcon :icon="['far', 'file']" />
                     &nbsp;Dataset Details
-                </b-button>
+                </GButton>
                 <PermissionsHeader :name="dataset.name" />
             </div>
 
@@ -59,7 +59,7 @@
                         Users without access permission <strong>cannot</strong> have other permissions on this dataset.
                         If there are no access roles set on the dataset it is considered <strong>unrestricted</strong>."
                 @input="setUserPermissionsPreferences" />
-            <b-button
+            <GButton
                 data-toggle="tooltip"
                 data-placement="top"
                 title="Save modifications"
@@ -68,8 +68,8 @@
                 @click="postPermissions">
                 <FontAwesomeIcon :icon="['far', 'save']" />
                 &nbsp;Save
-            </b-button>
-        </b-container>
+            </GButton>
+        </GContainer>
     </div>
 </template>
 
@@ -78,7 +78,6 @@ import "vue-multiselect/dist/vue-multiselect.min.css";
 
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { getGalaxyInstance } from "app";
-import BootstrapVue from "bootstrap-vue";
 import { initPermissionsIcons } from "components/Libraries/icons";
 import { extractRoles } from "components/Libraries/library-utils";
 import LibraryBreadcrumb from "components/Libraries/LibraryFolder/LibraryBreadcrumb";
@@ -90,14 +89,18 @@ import { getAppRoot } from "onload/loadConfig";
 import Vue from "vue";
 import VueObserveVisibility from "vue-observe-visibility";
 
+import { GButton, GContainer } from "@/component-library";
+
 Vue.use(VueObserveVisibility);
-Vue.use(BootstrapVue);
+
 initPermissionsIcons();
 
 export default {
     components: {
+        GContainer,
         PermissionsInputField,
         FontAwesomeIcon,
+        GButton,
         LibraryBreadcrumb,
         PermissionsHeader,
     },

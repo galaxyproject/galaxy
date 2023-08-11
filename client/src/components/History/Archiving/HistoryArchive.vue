@@ -2,10 +2,10 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCopy, faEye, faUndo } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BBadge, BButton, BButtonGroup, BListGroup, BListGroupItem, BPagination } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
+import { GAlert, GBadge, GButton, GButtonGroup, GListGroup, GListGroupItem, GPagination } from "@/component-library";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useToast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
@@ -142,39 +142,39 @@ async function onImportCopy(history: ArchivedHistorySummary) {
                 class="m-1 mb-3"
                 placeholder="Search by name"
                 @change="updateSearchQuery" />
-            <BAlert v-if="isLoading" variant="info" show>
+            <GAlert v-if="isLoading" variant="info" show>
                 <LoadingSpan v-if="isLoading" message="Loading archived histories" />
-            </BAlert>
-            <BAlert v-else-if="noHistoriesMatchingFilter" variant="info" show>
+            </GAlert>
+            <GAlert v-else-if="noHistoriesMatchingFilter" variant="info" show>
                 There are no archived histories matching your current filter: <b>{{ searchText }}</b>
-            </BAlert>
-            <BAlert v-else-if="noResults" variant="info" show>
+            </GAlert>
+            <GAlert v-else-if="noResults" variant="info" show>
                 You do not have any archived histories. You can select the 'Archive History' option from the history
                 menu to archive a history.
-            </BAlert>
-            <BListGroup v-else>
-                <BListGroupItem v-for="history in archivedHistories" :key="history.id" :data-pk="history.id">
+            </GAlert>
+            <GListGroup v-else>
+                <GListGroupItem v-for="history in archivedHistories" :key="history.id" :data-pk="history.id">
                     <div class="d-flex justify-content-between align-items-center">
                         <Heading h3 inline bold size="sm">
                             {{ history.name }}
                         </Heading>
 
                         <div class="d-flex align-items-center flex-gapx-1 badges">
-                            <BBadge
+                            <GBadge
                                 v-if="history.published"
                                 v-b-tooltip
                                 pill
                                 :title="localize('This history is public.')">
                                 {{ localize("Published") }}
-                            </BBadge>
-                            <BBadge
+                            </GBadge>
+                            <GBadge
                                 v-if="!history.purged"
                                 v-b-tooltip
                                 pill
                                 :title="localize('Amount of items in history')">
                                 {{ history.count }} {{ localize("items") }}
-                            </BBadge>
-                            <BBadge
+                            </GBadge>
+                            <GBadge
                                 v-if="history.export_record_data"
                                 v-b-tooltip
                                 pill
@@ -184,16 +184,16 @@ async function onImportCopy(history: ArchivedHistorySummary) {
                                     )
                                 ">
                                 {{ localize("Snapshot available") }}
-                            </BBadge>
-                            <BBadge v-b-tooltip pill :title="localize('Last edited/archived')">
+                            </GBadge>
+                            <GBadge v-b-tooltip pill :title="localize('Last edited/archived')">
                                 <UtcDate :date="history.update_time" mode="elapsed" />
-                            </BBadge>
+                            </GBadge>
                         </div>
                     </div>
 
                     <div class="d-flex justify-content-start align-items-center mt-1">
-                        <BButtonGroup class="actions">
-                            <BButton
+                        <GButtonGroup class="actions">
+                            <GButton
                                 v-b-tooltip
                                 :title="localize('View this history')"
                                 variant="link"
@@ -201,8 +201,8 @@ async function onImportCopy(history: ArchivedHistorySummary) {
                                 @click.stop="() => onViewHistoryInCenterPanel(history)">
                                 <FontAwesomeIcon icon="fa-eye" size="lg" />
                                 View
-                            </BButton>
-                            <BButton
+                            </GButton>
+                            <GButton
                                 v-b-tooltip
                                 :title="localize('Unarchive this history and move it back to your active histories')"
                                 variant="link"
@@ -210,9 +210,9 @@ async function onImportCopy(history: ArchivedHistorySummary) {
                                 @click.stop="() => onRestoreHistory(history)">
                                 <FontAwesomeIcon icon="fa-undo" size="lg" />
                                 Unarchive
-                            </BButton>
+                            </GButton>
 
-                            <BButton
+                            <GButton
                                 v-if="canImportCopy(history)"
                                 v-b-tooltip
                                 :title="localize('Import a new copy of this history from the associated export record')"
@@ -221,16 +221,16 @@ async function onImportCopy(history: ArchivedHistorySummary) {
                                 @click.stop="() => onImportCopy(history)">
                                 <FontAwesomeIcon icon="fa-copy" size="lg" />
                                 Import Copy
-                            </BButton>
-                        </BButtonGroup>
+                            </GButton>
+                        </GButtonGroup>
                     </div>
 
                     <p v-if="history.annotation" class="my-1">{{ history.annotation }}</p>
 
                     <StatelessTags class="my-1" :value="history.tags" :disabled="true" :max-visible-tags="10" />
-                </BListGroupItem>
-            </BListGroup>
-            <BPagination
+                </GListGroupItem>
+            </GListGroup>
+            <GPagination
                 v-if="showPagination"
                 v-model="currentPage"
                 class="mt-3"

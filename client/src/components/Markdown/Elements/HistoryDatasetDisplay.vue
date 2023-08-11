@@ -1,8 +1,8 @@
 <template>
-    <b-card body-class="p-0">
-        <b-card-header v-if="!embedded">
+    <GCard body-class="p-0">
+        <GCardHeader v-if="!embedded">
             <span class="float-right">
-                <b-button
+                <GButton
                     v-b-tooltip.hover
                     :href="downloadUrl"
                     variant="link"
@@ -12,8 +12,8 @@
                     type="button"
                     class="py-0 px-1">
                     <span class="fa fa-download" />
-                </b-button>
-                <b-button
+                </GButton>
+                <GButton
                     v-b-tooltip.hover
                     :href="importUrl"
                     role="button"
@@ -22,8 +22,8 @@
                     type="button"
                     class="py-0 px-1">
                     <span class="fa fa-file-import" />
-                </b-button>
-                <b-button
+                </GButton>
+                <GButton
                     v-if="expanded"
                     v-b-tooltip.hover
                     href="#"
@@ -34,8 +34,8 @@
                     class="py-0 px-1"
                     @click="onExpand">
                     <span class="fa fa-angle-double-up" />
-                </b-button>
-                <b-button
+                </GButton>
+                <GButton
                     v-else
                     v-b-tooltip.hover
                     href="#"
@@ -46,21 +46,21 @@
                     class="py-0 px-1"
                     @click="onExpand">
                     <span class="fa fa-angle-double-down" />
-                </b-button>
+                </GButton>
             </span>
             <span>
                 <span>Dataset:</span>
                 <span class="font-weight-light">{{ datasetName }}</span>
             </span>
-        </b-card-header>
-        <b-card-body>
+        </GCardHeader>
+        <GCardBody>
             <UrlDataProvider v-slot="{ result: itemContent, loading, error }" :url="itemUrl">
                 <UrlDataProvider v-slot="{ result: datatypesModel, loading: datatypesLoading }" :url="datatypesUrl">
                     <LoadingSpan v-if="loading" message="Loading Dataset" />
                     <LoadingSpan v-else-if="datatypesLoading" message="Loading Datatypes" />
                     <div v-else-if="error">{{ error }}</div>
                     <div v-else :class="contentClass">
-                        <b-embed
+                        <GEmbed
                             v-if="isSubTypeOfAny(datasetType, ['pdf', 'html'], datatypesModel)"
                             type="iframe"
                             aspect="16by9"
@@ -72,7 +72,7 @@
                                     :url="metaUrl">
                                     <LoadingSpan v-if="metaLoading" message="Loading Metadata" />
                                     <div v-else-if="metaError">{{ metaError }}</div>
-                                    <b-table
+                                    <GTable
                                         v-else
                                         striped
                                         hover
@@ -85,12 +85,12 @@
                                 </pre>
                         </div>
                         <div v-else>No content found.</div>
-                        <b-link v-if="itemContent.truncated" :href="itemContent.item_url"> Show More... </b-link>
+                        <GLink v-if="itemContent.truncated" :href="itemContent.item_url"> Show More... </GLink>
                     </div>
                 </UrlDataProvider>
             </UrlDataProvider>
-        </b-card-body>
-    </b-card>
+        </GCardBody>
+    </GCard>
 </template>
 
 <script>
@@ -99,8 +99,17 @@ import LoadingSpan from "components/LoadingSpan";
 import { UrlDataProvider } from "components/providers/UrlDataProvider";
 import { getAppRoot } from "onload/loadConfig";
 
+import { GButton, GCard, GCardBody, GCardHeader, GEmbed, GLink, GTable } from "@/component-library";
+
 export default {
     components: {
+        GButton,
+        GCard,
+        GCardBody,
+        GCardHeader,
+        GEmbed,
+        GLink,
+        GTable,
         LoadingSpan,
         UrlDataProvider,
     },

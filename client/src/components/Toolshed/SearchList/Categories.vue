@@ -1,30 +1,28 @@
 <template>
     <div>
         <LoadingSpan v-if="loading" message="Loading categories" />
-        <b-table v-else striped no-sort-reset :items="categories" :fields="fields">
+        <GTable v-else :fields="fields" :items="categories" no-sort-reset striped>
             <template v-slot:cell(name)="data">
-                <b-link
-                    href="javascript:void(0)"
-                    role="button"
-                    class="font-weight-bold"
-                    @click="onCategory(data.value)">
+                <GLink href="javascript:void(0)" role="button" class="font-weight-bold" @click="onCategory(data.value)">
                     {{ data.value }}
-                </b-link>
+                </GLink>
             </template>
-        </b-table>
+        </GTable>
     </div>
 </template>
 <script>
-import BootstrapVue from "bootstrap-vue";
 import LoadingSpan from "components/LoadingSpan";
-import Vue from "vue";
+
+import { GLink, GTable } from "@/component-library";
 
 import { Services } from "../services";
 
-Vue.use(BootstrapVue);
-
 export default {
-    components: { LoadingSpan },
+    components: {
+        GLink,
+        GTable,
+        LoadingSpan,
+    },
     props: {
         toolshedUrl: {
             type: String,

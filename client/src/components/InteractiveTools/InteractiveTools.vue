@@ -1,10 +1,10 @@
 <template>
     <div aria-labelledby="interactive-tools-heading">
-        <b-alert v-for="(message, index) in messages" :key="index" :show="3" variant="danger">{{ message }}</b-alert>
+        <GAlert v-for="(message, index) in messages" :key="index" :show="3" variant="danger">{{ message }}</GAlert>
         <h1 id="interactive-tools-heading" class="h-lg">Active Interactive Tools</h1>
-        <b-row class="mb-3">
-            <b-col cols="6">
-                <b-input
+        <GRow class="mb-3">
+            <GCol cols="6">
+                <GInput
                     id="interactivetool-search"
                     v-model="filter"
                     class="m-1"
@@ -12,9 +12,9 @@
                     placeholder="Search Interactive Tool"
                     autocomplete="off"
                     type="text" />
-            </b-col>
-        </b-row>
-        <b-table
+            </GCol>
+        </GRow>
+        <GTable
             id="interactive-tool-table"
             striped
             :fields="fields"
@@ -22,7 +22,7 @@
             :filter="filter"
             @filtered="filtered">
             <template v-slot:cell(checkbox)="row">
-                <b-form-checkbox :id="createId('checkbox', row.item.id)" v-model="row.item.marked" />
+                <GFormCheckbox :id="createId('checkbox', row.item.id)" v-model="row.item.marked" />
             </template>
             <template v-slot:cell(name)="row">
                 <a
@@ -32,8 +32,8 @@
                     :index="row.index"
                     :href="row.item.target"
                     target="_blank"
-                    :name="row.item.name"
-                    >{{ row.item.name }}
+                    :name="row.item.name">
+                    {{ row.item.name }}
                     <FontAwesomeIcon icon="external-link-alt" />
                 </a>
             </template>
@@ -47,20 +47,20 @@
             <template v-slot:cell(last_updated)="row">
                 <UtcDate :date="row.item.modified_time" mode="elapsed" />
             </template>
-        </b-table>
+        </GTable>
         <label v-if="isActiveToolsListEmpty">You do not have active interactive tools yet </label>
         <div v-if="showNotFound">
             No matching entries found for: <span class="font-weight-bold">{{ filter }}</span
             >.
         </div>
-        <b-button
+        <GButton
             v-if="isCheckboxMarked"
             id="stopInteractiveTool"
             v-b-tooltip.hover.bottom
             title="Terminate selected tools"
-            @click.stop="stopInteractiveToolSession()"
-            >Stop
-        </b-button>
+            @click.stop="stopInteractiveToolSession()">
+            Stop
+        </GButton>
     </div>
 </template>
 
@@ -72,6 +72,8 @@ import UtcDate from "components/UtcDate";
 import { getAppRoot } from "onload/loadConfig";
 import { mapActions, mapState } from "pinia";
 
+import { GAlert, GButton, GCol, GFormCheckbox, GInput, GRow, GTable } from "@/component-library";
+
 import { useEntryPointStore } from "../../stores/entryPointStore";
 import { Services } from "./services";
 
@@ -79,8 +81,15 @@ library.add(faExternalLinkAlt);
 
 export default {
     components: {
-        UtcDate,
         FontAwesomeIcon,
+        GAlert,
+        GButton,
+        GCol,
+        GFormCheckbox,
+        GInput,
+        GRow,
+        GTable,
+        UtcDate,
     },
     data() {
         return {

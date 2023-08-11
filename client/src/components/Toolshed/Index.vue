@@ -2,21 +2,21 @@
     <div class="overflow-auto h-100 p-1" @scroll="onScroll">
         <div v-if="error" class="alert alert-danger">{{ error }}</div>
         <div v-else>
-            <b-input-group class="mb-3">
-                <b-input
+            <GInputGroup class="mb-3">
+                <GInput
                     id="toolshed-repo-search"
                     v-model="queryInput"
                     placeholder="Search Repositories"
                     @input="delayQuery"
                     @change="setQuery"
                     @keydown.esc="setQuery()" />
-                <b-input-group-append v-b-tooltip.hover :title="titleClearSearch">
-                    <b-btn @click="setQuery()">
+                <GInputGroupAppend v-b-tooltip.hover :title="titleClearSearch">
+                    <GButton @click="setQuery()">
                         <i class="fa fa-times" />
-                    </b-btn>
-                </b-input-group-append>
-            </b-input-group>
-            <b-form-radio-group v-model="tabValue" class="mb-3" :options="tabOptions" />
+                    </GButton>
+                </GInputGroupAppend>
+            </GInputGroup>
+            <GFormRadioGroup v-model="tabValue" class="mb-3" :options="tabOptions" />
             <div v-if="tabValue">
                 <SearchList :query="query" :scrolled="scrolled" @onQuery="setQuery" @onError="setError" />
             </div>
@@ -29,13 +29,20 @@
 <script>
 import _l from "utils/localization";
 
+import { GButton, GFormRadioGroup, GInput, GInputGroup, GInputGroupAppend } from "@/component-library";
+
 import InstalledList from "./InstalledList/Index.vue";
 import SearchList from "./SearchList/Index.vue";
 
 export default {
     components: {
-        SearchList,
+        GButton,
+        GFormRadioGroup,
+        GInput,
+        GInputGroup,
+        GInputGroupAppend,
         InstalledList,
+        SearchList,
     },
     data() {
         return {

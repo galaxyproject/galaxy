@@ -22,7 +22,7 @@ describe("FormOptionalText", () => {
         await el.setChecked(false);
         expect(wrapper.emitted().input[0][0]).toEqual(null);
         await el.setChecked(true);
-        expect(wrapper.emitted().input[1][0]).toEqual("");
+        expect(wrapper.emitted().input[1][0]).toEqual(null);
     });
 
     it("should initialize with null if value does not exist", async () => {

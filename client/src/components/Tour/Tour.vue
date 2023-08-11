@@ -1,36 +1,36 @@
 <template>
     <div class="d-flex flex-column">
         <div v-if="historiesLoading">computing tour requirements...</div>
-        <b-modal
+        <GModal
             v-else-if="loginRequired(currentUser)"
             id="tour-requirement-unment"
             v-model="showRequirementDialog"
             static
             ok-only
             hide-header>
-            <b-alert show variant="danger"> You must log in to Galaxy to use this tour. </b-alert>
-        </b-modal>
-        <b-modal
+            <GAlert show variant="danger"> You must log in to Galaxy to use this tour. </GAlert>
+        </GModal>
+        <GModal
             v-else-if="adminRequired(currentUser)"
             id="tour-requirement-unment"
             v-model="showRequirementDialog"
             static
             ok-only
             hide-header>
-            <b-alert show variant="danger"> You must be an admin user to use this tour. </b-alert>
-        </b-modal>
-        <b-modal
+            <GAlert show variant="danger"> You must be an admin user to use this tour. </GAlert>
+        </GModal>
+        <GModal
             v-else-if="newHistoryRequired(currentHistory)"
             id="tour-requirement-unment"
             v-model="showRequirementDialog"
             static
             ok-only
             hide-header>
-            <b-alert show variant="danger">
+            <GAlert show variant="danger">
                 This tour is designed to run on a new history, please create a new history before running it.
                 <a @click.prevent="createNewHistory()">Click here</a> to create a new history.
-            </b-alert>
-        </b-modal>
+            </GAlert>
+        </GModal>
         <TourStep
             v-else-if="currentStep"
             :key="currentIndex"
@@ -46,6 +46,7 @@
 <script>
 import { mapActions, mapState } from "pinia";
 
+import { GAlert, GModal } from "@/component-library";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 
@@ -56,6 +57,8 @@ const playDelay = 3000;
 
 export default {
     components: {
+        GAlert,
+        GModal,
         TourStep,
     },
     props: {

@@ -2,11 +2,11 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faInfoCircle, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed } from "vue";
 import { useRouter } from "vue-router/composables";
 
+import { GButton, GCol, GRow } from "@/component-library";
 import { useMarkdown } from "@/composables/markdown";
 import { type BroadcastNotification, useBroadcastsStore } from "@/stores/broadcastsStore";
 
@@ -60,53 +60,53 @@ function onDismiss(item: BroadcastNotification) {
 
 <template>
     <div v-if="currentBroadcast">
-        <BRow
+        <GRow
             align-v="center"
             class="broadcast-banner m-0"
             :class="{ 'non-urgent': currentBroadcast.variant !== 'urgent' }">
-            <BCol cols="auto">
+            <GCol cols="auto">
                 <FontAwesomeIcon
                     class="mx-2"
                     size="2xl"
                     :class="`text-${getBroadcastVariant(currentBroadcast)}`"
                     :icon="faInfoCircle" />
-            </BCol>
-            <BCol>
-                <BRow align-v="center">
+            </GCol>
+            <GCol>
+                <GRow align-v="center">
                     <Heading size="md" bold>
                         {{ currentBroadcast.content.subject }}
                     </Heading>
-                </BRow>
-                <BRow align-v="center">
+                </GRow>
+                <GRow align-v="center">
                     <span class="broadcast-message" v-html="renderMarkdown(currentBroadcast.content.message)" />
-                </BRow>
-                <BRow>
+                </GRow>
+                <GRow>
                     <div v-if="currentBroadcast.content.action_links">
-                        <BButton
+                        <GButton
                             v-for="actionLink in currentBroadcast.content.action_links"
                             :key="actionLink.action_name"
                             :title="actionLink.action_name"
                             variant="primary"
                             @click="onActionClick(currentBroadcast, actionLink.link)">
                             {{ actionLink.action_name }}
-                        </BButton>
+                        </GButton>
                     </div>
-                </BRow>
-            </BCol>
-            <BCol cols="auto" align-self="center" class="p-0">
-                <BButton
+                </GRow>
+            </GCol>
+            <GCol cols="auto" align-self="center" class="p-0">
+                <GButton
                     id="dismiss-button"
                     variant="light"
                     class="align-items-center d-flex"
                     @click="onDismiss(currentBroadcast)">
                     <FontAwesomeIcon class="mx-1" icon="times" />
                     Dismiss
-                </BButton>
+                </GButton>
                 <div v-if="remainingBroadcastsCountText" class="text-center mt-2">
                     {{ remainingBroadcastsCountText }}...
                 </div>
-            </BCol>
-        </BRow>
+            </GCol>
+        </GRow>
     </div>
 </template>
 

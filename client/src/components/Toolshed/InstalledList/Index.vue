@@ -4,12 +4,12 @@
         <div v-else>
             <LoadingSpan v-if="loading" message="Loading installed repositories" />
             <div v-else>
-                <b-alert :variant="messageVariant" :show="showMessage">{{ message }}</b-alert>
+                <GAlert :variant="messageVariant" :show="showMessage">{{ message }}</GAlert>
                 <div class="m-1">
                     <span class="installed-message text-muted">
                         {{ repositories.length }} repositories installed on this instance.
                     </span>
-                    <b-link class="font-weight-bold" @click="toggleMonitor">
+                    <GLink class="font-weight-bold" @click="toggleMonitor">
                         <span v-if="showMonitor">
                             <span class="fa fa-angle-double-up" />
                             <span>Hide installation progress.</span>
@@ -18,10 +18,10 @@
                             <span class="fa fa-angle-double-down" />
                             <span>Show installation progress.</span>
                         </span>
-                    </b-link>
+                    </GLink>
                 </div>
                 <Monitor v-if="showMonitor" @onQuery="onQuery" />
-                <b-table
+                <GTable
                     id="repository-table"
                     striped
                     :fields="fields"
@@ -30,18 +30,18 @@
                     :filter="filter"
                     @filtered="filtered">
                     <template v-slot:cell(name)="row">
-                        <b-link href="#" role="button" class="font-weight-bold" @click="row.toggleDetails">
+                        <GLink href="#" role="button" class="font-weight-bold" @click="row.toggleDetails">
                             <div v-if="!isLatest(row.item)">
-                                <b-badge variant="danger" class="mb-2"> Newer version available! </b-badge>
+                                <GBadge variant="danger" class="mb-2"> Newer version available! </GBadge>
                             </div>
                             <div class="name">{{ row.item.name }}</div>
-                        </b-link>
+                        </GLink>
                         <div>{{ row.item.description }}</div>
                     </template>
                     <template v-slot:row-details="row">
                         <RepositoryDetails :repo="row.item" />
                     </template>
-                </b-table>
+                </GTable>
                 <div v-if="showNotFound">
                     No matching entries found for: <span class="font-weight-bold">{{ filter }}</span
                     >.
@@ -52,19 +52,21 @@
     </div>
 </template>
 <script>
-import BootstrapVue from "bootstrap-vue";
 import LoadingSpan from "components/LoadingSpan";
 import { getAppRoot } from "onload/loadConfig";
-import Vue from "vue";
+
+import { GAlert, GBadge, GLink, GTable } from "@/component-library";
 
 import { Services } from "../services";
 import RepositoryDetails from "./Details";
 import Monitor from "./Monitor";
 
-Vue.use(BootstrapVue);
-
 export default {
     components: {
+        GAlert,
+        GBadge,
+        GLink,
+        GTable,
         LoadingSpan,
         Monitor,
         RepositoryDetails,

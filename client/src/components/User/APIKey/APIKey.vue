@@ -3,6 +3,8 @@ import { getGalaxyInstance } from "app";
 import LoadingSpan from "components/LoadingSpan";
 import { ref } from "vue";
 
+import { GAlert, GButton } from "@/component-library";
+
 import APIKeyItem from "./APIKeyItem";
 import svc from "./model/service";
 
@@ -40,15 +42,15 @@ getAPIKey();
             access your account and should be treated with the same care as your login password.
         </span>
 
-        <b-alert :show="errorMessage" dismissible fade variant="warning" @dismissed="errorMessage = null">
+        <GAlert :show="errorMessage" dismissible fade variant="warning" @dismissed="errorMessage = null">
             {{ errorMessage }}
-        </b-alert>
+        </GAlert>
 
-        <b-alert v-if="loading" class="m-2" show variant="info">
+        <GAlert v-if="loading" class="m-2" show variant="info">
             <LoadingSpan message="Loading API keys" />
-        </b-alert>
+        </GAlert>
 
-        <b-button
+        <GButton
             v-else-if="!loading && !apiKey"
             :disabled="createLoading"
             class="create-button"
@@ -57,7 +59,7 @@ getAPIKey();
             <icon v-if="!createLoading" icon="plus" />
             <icon v-else icon="spinner" spin />
             <span v-localize>Create a new key</span>
-        </b-button>
+        </GButton>
 
         <div v-else-if="apiKey" class="mx-2">
             <APIKeyItem :item="apiKey" @getAPIKey="getAPIKey" />

@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { BButton, BFormCheckbox, BModal, BPagination, BTable } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
+import { GButton, GFormCheckbox, GModal, GPagination, GTable } from "@/component-library";
 import localize from "@/utils/localization";
 import { bytesToString } from "@/utils/utils";
 
@@ -198,7 +198,7 @@ defineExpose({
 </script>
 
 <template>
-    <BModal v-model="showDialog" title-tag="h2" :static="modalStatic" centered @show="onShowModal">
+    <GModal v-model="showDialog" title-tag="h2" :static="modalStatic" centered @show="onShowModal">
         <template v-slot:modal-title>
             {{ title }}
             <span class="text-primary h3">{{ totalRows }} items</span>
@@ -206,7 +206,7 @@ defineExpose({
         <div>
             {{ captionText }}
         </div>
-        <BTable
+        <GTable
             v-if="operation"
             v-model="items"
             :fields="fields"
@@ -222,36 +222,37 @@ defineExpose({
             data-test-id="review-table"
             @sort-changed="onSort">
             <template v-slot:head(selected)>
-                <BFormCheckbox
+                <GFormCheckbox
                     v-model="allSelected"
                     :indeterminate="indeterminate"
                     data-test-id="select-all-checkbox"
                     @change="toggleSelectAll" />
             </template>
             <template v-slot:cell(selected)="data">
-                <BFormCheckbox :key="data.index" v-model="selectedItems" :checked="allSelected" :value="data.item" />
+                <!-- DBTODO -- both vmodel and v-bind value? -->
+                <GFormCheckbox :key="data.index" v-model="selectedItems" :checked="allSelected" :value="data.item" />
             </template>
             <template v-slot:cell(update_time)="data">
                 <UtcDate :date="data.value" mode="elapsed" />
             </template>
-        </BTable>
+        </GTable>
         <template v-slot:modal-footer>
-            <BPagination
+            <GPagination
                 v-if="hasPages"
                 v-model="currentPage"
                 :total-rows="totalRows"
                 :per-page="MAXIMUM_ITEMS_PER_PAGE" />
-            <BButton
+            <GButton
                 v-b-modal.confirmation-modal
                 :disabled="!hasItemsSelected"
                 :variant="deleteButtonVariant"
                 class="mx-2"
                 data-test-id="delete-button">
                 {{ permanentlyDeleteText }} {{ deleteItemsText }}
-            </BButton>
+            </GButton>
         </template>
 
-        <BModal
+        <GModal
             id="confirmation-modal"
             :title="confirmationTitle"
             title-tag="h2"
@@ -262,9 +263,9 @@ defineExpose({
             centered
             @show="resetConfirmationModal"
             @ok="onConfirmCleanupSelectedItems">
-            <BFormCheckbox id="confirm-delete-checkbox" v-model="confirmChecked" data-test-id="agreement-checkbox">
+            <GFormCheckbox id="confirm-delete-checkbox" v-model="confirmChecked" data-test-id="agreement-checkbox">
                 {{ agreementText }}
-            </BFormCheckbox>
-        </BModal>
-    </BModal>
+            </GFormCheckbox>
+        </GModal>
+    </GModal>
 </template>

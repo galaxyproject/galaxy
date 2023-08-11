@@ -2,6 +2,8 @@
 import { datasetCommandsHtml, markdownGeneralHelpHtml } from "components/Markdown/help";
 import { ref } from "vue";
 
+import { GModal } from "@/component-library";
+
 const modal = ref(null);
 
 function showMarkdownHelp() {
@@ -14,7 +16,7 @@ defineExpose({
 </script>
 
 <template>
-    <b-modal ref="modal" hide-footer>
+    <GModal ref="modal" hide-footer>
         <template v-slot:modal-title>
             <h2 class="mb-0">Markdown Help</h2>
         </template>
@@ -96,5 +98,5 @@ job_parameters(job_id=33b43b4e7093c91f)
             <dt><tt>job_parameters</tt></dt>
             <dd>Embed the tool parameters for this job in the resulting document.</dd>
         </div>
-    </b-modal>
+    </GModal>
 </template>

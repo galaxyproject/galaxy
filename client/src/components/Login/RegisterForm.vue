@@ -2,69 +2,69 @@
     <div class="container">
         <div class="row justify-content-md-center">
             <div class="col col-lg-6">
-                <b-alert :show="!!registrationWarningMessage" variant="info">
+                <GAlert :show="!!registrationWarningMessage" variant="info">
                     {{ registrationWarningMessage }}
-                </b-alert>
-                <b-alert :show="!!messageText" :variant="messageVariant">
+                </GAlert>
+                <GAlert :show="!!messageText" :variant="messageVariant">
                     {{ messageText }}
-                </b-alert>
-                <b-form id="registration" @submit.prevent="submit()">
-                    <b-card no-body>
+                </GAlert>
+                <GForm id="registration" @submit.prevent="submit()">
+                    <GCard no-body>
                         <!-- OIDC and Custos enabled and prioritized: encourage users to use it instead of local registration -->
                         <span v-if="custosPreferred">
-                            <b-card-header v-b-toggle.accordion-oidc role="button">
+                            <GCardHeader v-b-toggle.accordion-oidc role="button">
                                 Register using institutional account
-                            </b-card-header>
-                            <b-collapse id="accordion-oidc" visible role="tabpanel" accordion="registration_acc">
-                                <b-card-body>
+                            </GCardHeader>
+                            <GCollapse id="accordion-oidc" visible role="tabpanel" accordion="registration_acc">
+                                <GCardBody>
                                     Create a Galaxy account using an institutional account (e.g.:Google/JHU). This will
                                     redirect you to your institutional login through Custos.
                                     <ExternalLogin :login_page="false" />
-                                </b-card-body>
-                            </b-collapse>
+                                </GCardBody>
+                            </GCollapse>
                         </span>
                         <!-- Local Galaxy Registration -->
-                        <b-card-header v-if="!custosPreferred" v-localize>Create a Galaxy account</b-card-header>
-                        <b-card-header v-else v-localize v-b-toggle.accordion-register role="button">
+                        <GCardHeader v-if="!custosPreferred" v-localize>Create a Galaxy account</GCardHeader>
+                        <GCardHeader v-else v-localize v-b-toggle.accordion-register role="button">
                             Or, register with email
-                        </b-card-header>
-                        <b-collapse
+                        </GCardHeader>
+                        <GCollapse
                             id="accordion-register"
                             :visible="!custosPreferred"
                             role="tabpanel"
                             accordion="registration_acc">
-                            <b-card-body>
-                                <b-form-group :label="labelEmailAddress" label-for="register-form-email">
-                                    <b-form-input id="register-form-email" v-model="email" name="email" type="text" />
-                                </b-form-group>
-                                <b-form-group :label="labelPassword" label-for="register-form-password">
-                                    <b-form-input
+                            <GCardBody>
+                                <GFormGroup :label="labelEmailAddress" label-for="register-form-email">
+                                    <GInput id="register-form-email" v-model="email" name="email" type="text" />
+                                </GFormGroup>
+                                <GFormGroup :label="labelPassword" label-for="register-form-password">
+                                    <GInput
                                         id="register-form-password"
                                         v-model="password"
                                         name="password"
                                         type="password" />
-                                </b-form-group>
-                                <b-form-group :label="labelConfirmPassword" label-for="register-form-confirm">
-                                    <b-form-input
+                                </GFormGroup>
+                                <GFormGroup :label="labelConfirmPassword" label-for="register-form-confirm">
+                                    <GInput
                                         id="register-form-confirm"
                                         v-model="confirm"
                                         name="confirm"
                                         type="password" />
-                                </b-form-group>
-                                <b-form-group :label="labelPublicName" label-for="register-form-username">
-                                    <b-form-input
+                                </GFormGroup>
+                                <GFormGroup :label="labelPublicName" label-for="register-form-username">
+                                    <GInput
                                         id="register-form-username"
                                         v-model="username"
                                         name="username"
                                         type="text" />
-                                    <b-form-text v-localize
-                                        >Your public name is an identifier that will be used to generate addresses for
+                                    <GFormText v-localize>
+                                        Your public name is an identifier that will be used to generate addresses for
                                         information you share publicly. Public names must be at least three characters
                                         in length and contain only lower-case letters, numbers, dots, underscores, and
                                         dashes ('.', '_', '-').
-                                    </b-form-text>
-                                </b-form-group>
-                                <b-form-group
+                                    </GFormText>
+                                </GFormGroup>
+                                <GFormGroup
                                     v-if="mailingJoinAddr && serverMailConfigured"
                                     :label="labelSubscribe"
                                     label-for="register-form-subscribe">
@@ -73,13 +73,13 @@
                                         v-model="subscribe"
                                         name="subscribe"
                                         type="checkbox" />
-                                </b-form-group>
-                                <b-button v-localize name="create" type="submit" :disabled="disableCreate"
-                                    >Create</b-button
-                                >
-                            </b-card-body>
-                        </b-collapse>
-                        <b-card-footer v-if="showLoginLink">
+                                </GFormGroup>
+                                <GButton v-localize name="create" type="submit" :disabled="disableCreate">
+                                    Create
+                                </GButton>
+                            </GCardBody>
+                        </GCollapse>
+                        <GCardFooter v-if="showLoginLink">
                             <span v-localize>Already have an account?</span>
                             <a
                                 id="login-toggle"
@@ -89,29 +89,52 @@
                                 @click.prevent="toggleLogin">
                                 Log in here.
                             </a>
-                        </b-card-footer>
-                    </b-card>
-                </b-form>
+                        </GCardFooter>
+                    </GCard>
+                </GForm>
             </div>
             <div v-if="termsUrl" class="col">
-                <b-embed type="iframe" :src="termsUrl" aspect="1by1" />
+                <GEmbed type="iframe" :src="termsUrl" aspect="1by1" />
             </div>
         </div>
     </div>
 </template>
 <script>
 import axios from "axios";
-import BootstrapVue from "bootstrap-vue";
 import ExternalLogin from "components/User/ExternalIdentities/ExternalLogin";
 import _l from "utils/localization";
 import { withPrefix } from "utils/redirect";
-import Vue from "vue";
 
-Vue.use(BootstrapVue);
+import {
+    GAlert,
+    GButton,
+    GCard,
+    GCardBody,
+    GCardFooter,
+    GCardHeader,
+    GCollapse,
+    GEmbed,
+    GForm,
+    GFormGroup,
+    GFormText,
+    GInput,
+} from "@/component-library";
 
 export default {
     components: {
         ExternalLogin,
+        GAlert,
+        GButton,
+        GCard,
+        GCardBody,
+        GCardFooter,
+        GCardHeader,
+        GCollapse,
+        GEmbed,
+        GForm,
+        GFormGroup,
+        GFormText,
+        GInput,
     },
     props: {
         enableOidc: {

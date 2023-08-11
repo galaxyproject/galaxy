@@ -1,73 +1,63 @@
 <template>
     <div>
-        <b-breadcrumb v-if="dataManager && !loading" id="breadcrumb" :items="breadcrumbItems" />
-        <Alert :message="message" :variant="status" />
-        <Alert v-if="viewOnly" message="Not implemented" variant="dark" />
-        <Alert v-else-if="loading" message="Waiting for data" variant="info" />
-        <Alert v-else-if="jobs && !jobs.length" message="There are no jobs for this data manager." variant="primary" />
+        <GBreadcrumb v-if="dataManager && !loading" id="breadcrumb" :items="breadcrumbItems" />
+        <GAlert :message="message" :variant="status" />
+        <GAlert v-if="viewOnly" message="Not implemented" variant="dark" />
+        <GAlert v-else-if="loading" message="Waiting for data" variant="info" />
+        <GAlert v-else-if="jobs && !jobs.length" message="There are no jobs for this data manager." variant="primary" />
         <div v-else-if="jobs">
-            <b-container fluid class="mb-3">
-                <b-row>
-                    <b-col md="6">
-                        <b-form-group description="Search for strings or regular expressions">
-                            <b-input-group>
-                                <b-form-input
-                                    v-model="filter"
-                                    placeholder="Type to Search"
-                                    @keyup.esc.native="filter = ''" />
-                                <b-input-group-append>
-                                    <b-btn :disabled="!filter" @click="filter = ''">Clear (esc)</b-btn>
-                                </b-input-group-append>
-                            </b-input-group>
-                        </b-form-group>
-                    </b-col>
-                </b-row>
-                <b-row>
-                    <b-col>
-                        <b-button :pressed.sync="showCommandLine" variant="outline-secondary">
+            <GContainer fluid class="mb-3">
+                <GRow>
+                    <GCol md="6">
+                        <GFormGroup description="Search for strings or regular expressions">
+                            <GInputGroup>
+                                <GInput v-model="filter" placeholder="Type to Search" @keyup.esc.native="filter = ''" />
+                                <GInputGroupAppend>
+                                    <GButton :disabled="!filter" @click="filter = ''">Clear (esc)</GButton>
+                                </GInputGroupAppend>
+                            </GInputGroup>
+                        </GFormGroup>
+                    </GCol>
+                </GRow>
+                <GRow>
+                    <GCol>
+                        <GButton :pressed.sync="showCommandLine" variant="outline-secondary">
                             {{ showCommandLine ? "Hide" : "Show" }} Command Line
-                        </b-button>
-                    </b-col>
-                </b-row>
-            </b-container>
-            <b-table
-                id="jobs-table"
-                :fields="tableFields"
-                :items="tableItems"
-                :filter="filter"
-                hover
-                responsive
-                striped>
+                        </GButton>
+                    </GCol>
+                </GRow>
+            </GContainer>
+            <GTable id="jobs-table" :fields="tableFields" :filter="filter" :items="tableItems" hover responsive striped>
                 <template v-slot:cell(actions)="row">
-                    <b-button-group>
-                        <b-button v-b-tooltip.hover title="Rerun" target="_top" :href="jobs[row.index]['runUrl']">
+                    <GButtonGroup>
+                        <GButton v-b-tooltip.hover title="Rerun" target="_top" :href="jobs[row.index]['runUrl']">
                             <span class="fa fa-redo" />
-                        </b-button>
-                        <b-button
+                        </GButton>
+                        <GButton
                             :id="'job-' + jobs[row.index]['encId']"
                             v-b-tooltip.hover
                             title="View Info"
                             :to="{ name: 'DataManagerJob', params: { id: jobs[row.index]['encId'] } }">
                             <span class="fa fa-info-circle" />
-                        </b-button>
-                        <b-button
+                        </GButton>
+                        <GButton
                             v-if="!showCommandLine"
                             :pressed.sync="row.detailsShowing"
                             @click.stop="row.toggleDetails()">
                             {{ row.detailsShowing ? "Hide" : "Show" }} Command Line
-                        </b-button>
-                    </b-button-group>
+                        </GButton>
+                    </GButtonGroup>
                 </template>
                 <template v-slot:row-details="row">
-                    <b-card>
+                    <GCard>
                         <h2 class="h-text">Command Line</h2>
                         <pre class="code"><code class="command-line">{{ row.item.commandLine }}</code></pre>
                         <template v-slot:footer>
-                            <b-button class="mt-3" @click="row.toggleDetails">Hide Info</b-button>
+                            <GButton class="mt-3" @click="row.toggleDetails">Hide Info</GButton>
                         </template>
-                    </b-card>
+                    </GCard>
                 </template>
-            </b-table>
+            </GTable>
         </div>
     </div>
 </template>
@@ -76,11 +66,37 @@
 import axios from "axios";
 import { getAppRoot } from "onload/loadConfig";
 
-import Alert from "components/Alert.vue";
+import {
+    GAlert,
+    GBreadcrumb,
+    GButton,
+    GButtonGroup,
+    GCard,
+    GCol,
+    GContainer,
+    GFormGroup,
+    GInput,
+    GInputGroup,
+    GInputGroupAppend,
+    GRow,
+    GTable,
+} from "@/component-library";
 
 export default {
     components: {
-        Alert,
+        GAlert,
+        GButton,
+        GBreadcrumb,
+        GButtonGroup,
+        GCard,
+        GCol,
+        GContainer,
+        GFormGroup,
+        GInput,
+        GInputGroup,
+        GInputGroupAppend,
+        GRow,
+        GTable,
     },
     props: {
         id: {

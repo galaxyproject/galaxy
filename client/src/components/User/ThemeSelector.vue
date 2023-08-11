@@ -1,6 +1,7 @@
 <script setup>
 import { computed, ref, watch } from "vue";
 
+import { GCard, GFormRadio, GFormRadioGroup } from "@/component-library";
 import { useConfig } from "@/composables/config";
 import { useCurrentTheme } from "@/composables/user";
 import { withPrefix } from "@/utils/redirect";
@@ -35,13 +36,9 @@ watch(
 </script>
 
 <template>
-    <b-card :show="show" class="mr-3 overflow-auto">
-        <b-form-radio-group v-model="currentValue">
-            <b-form-radio
-                v-for="(themeDetails, theme, index) in config.themes"
-                :key="theme"
-                :value="theme"
-                class="mb-2">
+    <GCard :show="show" class="mr-3 overflow-auto">
+        <GFormRadioGroup v-model="currentValue">
+            <GFormRadio v-for="(themeDetails, theme, index) in config.themes" :key="theme" :value="theme" class="mb-2">
                 <span v-if="index === 0" class="font-weight-bold mb-1"> Default Theme ({{ theme }}). </span>
                 <span v-else class="font-weight-bold mb-1">Theme: {{ theme }}</span>
                 <div :style="themeDetails" class="theme-masthead">
@@ -50,9 +47,9 @@ watch(
                     <span v-localize class="theme-hover">Hover</span>
                     <span v-localize class="theme-active">Active</span>
                 </div>
-            </b-form-radio>
-        </b-form-radio-group>
-    </b-card>
+            </GFormRadio>
+        </GFormRadioGroup>
+    </GCard>
 </template>
 
 <style lang="scss" scoped>

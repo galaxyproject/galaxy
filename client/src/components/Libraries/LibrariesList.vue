@@ -1,10 +1,10 @@
 <template>
     <div>
         <div class="form-inline d-flex align-items-center mb-2">
-            <b-button class="mr-1" title="go to first page" @click="gotoFirstPage">
+            <GButton class="mr-1" title="go to first page" @click="gotoFirstPage">
                 <FontAwesomeIcon icon="home" />
-            </b-button>
-            <b-button
+            </GButton>
+            <GButton
                 v-if="currentUser && currentUser.is_admin"
                 id="create-new-lib"
                 v-b-toggle.collapse-2
@@ -12,37 +12,37 @@
                 class="mr-1">
                 <FontAwesomeIcon icon="plus" />
                 {{ titleLibrary }}
-            </b-button>
+            </GButton>
             <SearchField :typing-delay="0" @updateSearch="searchValue($event)" />
-            <b-form-checkbox
+            <GFormCheckbox
                 v-if="currentUser && currentUser.is_admin"
                 v-localize
                 class="mr-1"
                 @input="toggle_include_deleted($event)">
                 include deleted
-            </b-form-checkbox>
-            <b-form-checkbox v-localize class="mr-1" @input="toggle_exclude_restricted($event)">
+            </GFormCheckbox>
+            <GFormCheckbox v-localize class="mr-1" @input="toggle_exclude_restricted($event)">
                 exclude restricted
-            </b-form-checkbox>
+            </GFormCheckbox>
         </div>
-        <b-collapse id="collapse-2" v-model="isNewLibFormVisible">
-            <b-card>
-                <b-form @submit.prevent="newLibrary">
-                    <b-input-group class="mb-2 new-row">
-                        <b-form-input v-model="newLibraryForm.name" required :placeholder="titleName" />
-                        <b-form-input v-model="newLibraryForm.description" required :placeholder="titleDescription" />
-                        <b-form-input v-model="newLibraryForm.synopsis" :placeholder="titleSynopsis" />
+        <GCollapse id="collapse-2" v-model="isNewLibFormVisible">
+            <GCard>
+                <GForm @submit.prevent="newLibrary">
+                    <GInputGroup class="mb-2 new-row">
+                        <GInput v-model="newLibraryForm.name" required :placeholder="titleName" />
+                        <GInput v-model="newLibraryForm.description" required :placeholder="titleDescription" />
+                        <GInput v-model="newLibraryForm.synopsis" :placeholder="titleSynopsis" />
                         <template v-slot:append>
-                            <b-button id="save_new_library" type="submit" :title="titleSave">
+                            <GButton id="save_new_library" type="submit" :title="titleSave">
                                 <FontAwesomeIcon :icon="['far', 'save']" />
                                 {{ titleSave }}
-                            </b-button>
+                            </GButton>
                         </template>
-                    </b-input-group>
-                </b-form>
-            </b-card>
-        </b-collapse>
-        <b-table
+                    </GInputGroup>
+                </GForm>
+            </GCard>
+        </GCollapse>
+        <GTable
             id="libraries_list"
             ref="libraries_list"
             no-sort-reset
@@ -66,9 +66,9 @@
                     rows="3" />
 
                 <div v-else-if="row.item.deleted && includeDeleted" class="deleted-item">{{ row.item.name }}</div>
-                <b-link v-else :to="{ path: `/libraries/folders/${row.item.root_folder_id}` }">
+                <GLink v-else :to="{ path: `/libraries/folders/${row.item.root_folder_id}` }">
                     {{ row.item.name }}
-                </b-link>
+                </GLink>
             </template>
             <template v-slot:cell(description)="{ item }">
                 <LibraryEditField
@@ -92,15 +92,15 @@
                 <FontAwesomeIcon v-if="row.item.public && !row.item.deleted" title="Public library" icon="globe" />
             </template>
             <template v-slot:cell(buttons)="row">
-                <b-button
+                <GButton
                     v-if="row.item.deleted"
                     size="sm"
                     :title="'Undelete ' + row.item.name"
                     @click="undelete(row.item)">
                     <FontAwesomeIcon icon="unlock" />
                     {{ titleUndelete }}
-                </b-button>
-                <b-button
+                </GButton>
+                <GButton
                     v-if="row.item.can_user_modify && row.item.editMode"
                     size="sm"
                     class="lib-btn permission_folder_btn"
@@ -108,8 +108,8 @@
                     @click="saveChanges(row.item)">
                     <FontAwesomeIcon :icon="['far', 'save']" />
                     {{ titleSave }}
-                </b-button>
-                <b-button
+                </GButton>
+                <GButton
                     v-if="row.item.can_user_modify && !row.item.deleted"
                     size="sm"
                     class="lib-btn edit_library_btn save_library_btn"
@@ -123,8 +123,8 @@
                         <FontAwesomeIcon :icon="['fas', 'times']" />
                         {{ titleCancel }}
                     </div>
-                </b-button>
-                <b-button
+                </GButton>
+                <GButton
                     v-if="currentUser && currentUser.is_admin && !row.item.deleted"
                     size="sm"
                     class="lib-btn permission_library_btn"
@@ -132,8 +132,8 @@
                     :to="{ path: `/libraries/${row.item.id}/permissions` }">
                     <FontAwesomeIcon icon="users" />
                     Manage
-                </b-button>
-                <b-button
+                </GButton>
+                <GButton
                     v-if="currentUser && currentUser.is_admin && row.item.editMode && !row.item.deleted"
                     size="sm"
                     class="lib-btn delete-lib-btn"
@@ -141,25 +141,24 @@
                     @click="deleteLibrary(row.item)">
                     <FontAwesomeIcon icon="trash" />
                     {{ titleDelete }}
-                </b-button>
+                </GButton>
             </template>
-        </b-table>
+        </GTable>
 
-        <b-container>
-            <b-row class="justify-content-md-center">
-                <b-col md="auto">
-                    <b-pagination
+        <GContainer>
+            <GRow class="justify-content-md-center">
+                <GCol md="auto">
+                    <GPagination
                         v-model="currentPage"
                         :total-rows="rows"
                         :per-page="perPage"
-                        aria-controls="libraries_list">
-                    </b-pagination>
-                </b-col>
-                <b-col cols="1.5">
+                        aria-controls="libraries_list" />
+                </GCol>
+                <GCol cols="1.5">
                     <table>
                         <tr>
                             <td class="m-0 p-0">
-                                <b-form-input
+                                <GInput
                                     id="paginationPerPage"
                                     v-model="perPage"
                                     class="pagination-input-field"
@@ -174,15 +173,14 @@
                             </td>
                         </tr>
                     </table>
-                </b-col>
-            </b-row>
-        </b-container>
+                </GCol>
+            </GRow>
+        </GContainer>
     </div>
 </template>
 
 <script>
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import BootstrapVue from "bootstrap-vue";
 import { initLibrariesIcons } from "components/Libraries/icons";
 import { DEFAULT_PER_PAGE, MAX_DESCRIPTION_LENGTH, onError } from "components/Libraries/library-utils";
 import LibraryEditField from "components/Libraries/LibraryEditField";
@@ -191,8 +189,22 @@ import { Toast } from "composables/toast";
 import { getAppRoot } from "onload/loadConfig";
 import { mapState } from "pinia";
 import _l from "utils/localization";
-import Vue from "vue";
 
+import {
+    GButton,
+    GCard,
+    GCol,
+    GCollapse,
+    GContainer,
+    GForm,
+    GFormCheckbox,
+    GInput,
+    GInputGroup,
+    GLink,
+    GPagination,
+    GRow,
+    GTable,
+} from "@/component-library";
 import { useUserStore } from "@/stores/userStore";
 
 import { Services } from "./services";
@@ -200,11 +212,22 @@ import { fields } from "./table-fields";
 
 initLibrariesIcons();
 
-Vue.use(BootstrapVue);
-
 export default {
     components: {
         FontAwesomeIcon,
+        GButton,
+        GCard,
+        GCol,
+        GCollapse,
+        GContainer,
+        GForm,
+        GFormCheckbox,
+        GInput,
+        GInputGroup,
+        GLink,
+        GPagination,
+        GRow,
+        GTable,
         LibraryEditField,
         SearchField,
     },

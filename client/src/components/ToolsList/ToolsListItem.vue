@@ -15,12 +15,14 @@ import ToolFavoriteButton from "components/Tool/Buttons/ToolFavoriteButton";
 import { useFormattedToolHelp } from "composables/formattedToolHelp";
 import { computed, ref } from "vue";
 
+import { GButton, GLink } from "@/component-library";
+
 library.add(faWrench, faExternalLinkAlt, faCheck, faTimes, faAngleDown, faAngleUp, faExclamationTriangle, faUser);
 
 const props = defineProps({
     id: { type: String, required: true },
     name: { type: String, required: true },
-    section: { type: String, required: true },
+    section: { type: String || null, default: null },
     description: { type: String, default: null },
     summary: { type: String, default: null },
     help: { type: String, default: null },
@@ -53,12 +55,12 @@ const formattedToolHelp = computed(() => {
                     <FontAwesomeIcon v-if="props.local" icon="fa-wrench" fixed-width />
                     <FontAwesomeIcon v-else icon="fa-external-link-alt" fixed-width />
 
-                    <b-button v-if="props.local" class="ui-link text-dark" @click="() => emit('open')">
+                    <GButton v-if="props.local" class="ui-link text-dark" @click="() => emit('open')">
                         <b>{{ props.name }}</b>
-                    </b-button>
-                    <b-button v-else class="ui-link text-dark" :href="props.link">
+                    </GButton>
+                    <GButton v-else class="ui-link text-dark" :href="props.link">
                         <b>{{ props.name }}</b>
-                    </b-button>
+                    </GButton>
                 </span>
                 <span itemprop="description">{{ props.description }}</span>
                 <span>(Galaxy Version {{ props.version }})</span>
@@ -66,26 +68,21 @@ const formattedToolHelp = computed(() => {
             <div class="d-flex align-items-start">
                 <ToolFavoriteButton :id="props.id" />
 
-                <b-button
-                    v-if="props.local"
-                    class="text-nowrap"
-                    variant="primary"
-                    size="sm"
-                    @click="() => emit('open')">
+                <GButton v-if="props.local" class="text-nowrap" variant="primary" size="sm" @click="() => emit('open')">
                     <FontAwesomeIcon icon="fa-wrench" fixed-width />
                     Open
-                </b-button>
-                <b-button v-else class="text-nowrap" variant="primary" size="sm" :href="props.link">
+                </GButton>
+                <GButton v-else class="text-nowrap" variant="primary" size="sm" :href="props.link">
                     <FontAwesomeIcon icon="fa-external-link-alt" fixed-width />
                     Open
-                </b-button>
+                </GButton>
             </div>
         </div>
 
         <div class="tool-list-item-content">
             <div class="d-flex flex-gapx-1 py-2">
                 <span v-if="props.section" class="tag info">
-                    <b>Section:</b> <b-link :to="`/tools/list?section=${props.section}`">{{ section }}</b-link>
+                    <b>Section:</b> <GLink :to="`/tools/list?section=${props.section}`">{{ section }}</GLink>
                 </span>
 
                 <span v-if="!props.local" class="tag info">
@@ -100,21 +97,21 @@ const formattedToolHelp = computed(() => {
 
                 <span v-if="props.owner" class="tag success">
                     <FontAwesomeIcon icon="fa-user" />
-                    <b>Owner:</b> <b-link :to="`/tools/list?owner=${props.owner}`">{{ props.owner }}</b-link>
+                    <b>Owner:</b> <GLink :to="`/tools/list?owner=${props.owner}`">{{ props.owner }}</GLink>
                 </span>
             </div>
 
             <div v-if="props.summary" v-html="props.summary"></div>
 
             <div v-if="props.help" class="mt-2">
-                <b-button v-if="!showHelp" class="ui-link" @click="() => (showHelp = true)">
+                <GButton v-if="!showHelp" class="ui-link" @click="() => (showHelp = true)">
                     <FontAwesomeIcon icon="fa-angle-down" />
                     Show tool help
-                </b-button>
-                <b-button v-else class="ui-link" @click="() => (showHelp = false)">
+                </GButton>
+                <GButton v-else class="ui-link" @click="() => (showHelp = false)">
                     <FontAwesomeIcon icon="fa-angle-up" />
                     Hide tool help
-                </b-button>
+                </GButton>
 
                 <div v-if="showHelp" class="mt-2" v-html="formattedToolHelp"></div>
             </div>

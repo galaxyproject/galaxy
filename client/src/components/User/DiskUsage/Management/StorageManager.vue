@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 
+import { GAlert, GCardGroup, GContainer, GLink, GRow } from "@/component-library";
 import { useConfig } from "@/composables/config";
 import localize from "@/utils/localization";
 import { wait } from "@/utils/utils";
@@ -50,43 +51,43 @@ async function onConfirmCleanupSelected(selectedItems: CleanableItem[]) {
 </script>
 
 <template>
-    <b-container fluid>
-        <b-link to="StorageDashboard">{{ localize("Back to Dashboard") }}</b-link>
+    <GContainer fluid>
+        <GLink to="StorageDashboard">{{ localize("Back to Dashboard") }}</GLink>
         <h2 class="text-center my-3">
             <b>{{ localize("Manage your account storage") }}</b> <sup class="text-beta">(Beta)</sup>
         </h2>
 
-        <b-row class="justify-content-md-center">
-            <b-alert show dismissible variant="warning">
+        <GRow class="justify-content-md-center">
+            <GAlert show dismissible variant="warning">
                 {{ localize("This feature is currently in Beta, if you find any issues please report them") }}
-                <b-link :href="issuesUrl" target="_blank">here</b-link>.
-            </b-alert>
-        </b-row>
-        <b-row class="justify-content-md-center mb-5">
-            <b-alert v-if="config.enable_quotas" show>
+                <GLink :href="issuesUrl" target="_blank">here</GLink>.
+            </GAlert>
+        </GRow>
+        <GRow class="justify-content-md-center mb-5">
+            <GAlert v-if="config.enable_quotas" show>
                 {{ localize("The storage manager only shows elements that count towards your disk quota.") }}
-                <b-link :href="config.quota_url" target="_blank">{{ localize("Learn more") }}</b-link>
-            </b-alert>
-        </b-row>
+                <GLink :href="config.quota_url" target="_blank">{{ localize("Learn more") }}</GLink>
+            </GAlert>
+        </GRow>
 
         <div id="categories-panel">
-            <b-container v-for="category in cleanupCategories" :key="category.id">
-                <b-row class="justify-content-md-center mb-2">
+            <GContainer v-for="category in cleanupCategories" :key="category.id">
+                <GRow class="justify-content-md-center mb-2">
                     <h3>
                         <b>{{ category.name }}</b>
                     </h3>
-                </b-row>
-                <b-row class="justify-content-md-center mb-5">
-                    <b-card-group deck>
+                </GRow>
+                <GRow class="justify-content-md-center mb-5">
+                    <GCardGroup deck>
                         <CleanupOperationSummary
                             v-for="operation in category.operations"
                             :key="operation.id"
                             :operation="operation"
                             :refresh-operation-id="refreshOperationId"
                             @onReviewItems="onReviewItems" />
-                    </b-card-group>
-                </b-row>
-            </b-container>
+                    </GCardGroup>
+                </GRow>
+            </GContainer>
         </div>
 
         <ReviewCleanupDialog
@@ -96,7 +97,7 @@ async function onConfirmCleanupSelected(selectedItems: CleanableItem[]) {
             @onConfirmCleanupSelectedItems="onConfirmCleanupSelected" />
 
         <CleanupResultDialog ref="resultModal" :result="cleanupResult" />
-    </b-container>
+    </GContainer>
 </template>
 
 <style lang="css" scoped>

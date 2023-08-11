@@ -26,11 +26,7 @@
 </template>
 
 <script>
-import BootstrapVue from "bootstrap-vue";
 import ariaAlert from "utils/ariaAlert";
-import Vue from "vue";
-
-Vue.use(BootstrapVue);
 
 export default {
     name: "Tool",

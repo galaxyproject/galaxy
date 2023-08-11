@@ -15,7 +15,7 @@
             @deleteFromTable="deleteFromTable"
             @setBusy="setBusy($event)"
             @newFolder="newFolder" />
-        <b-table
+        <GTable
             id="folder_list_body"
             ref="folder_content_table"
             striped
@@ -31,7 +31,7 @@
             @row-clicked="onRowClick">
             <template v-slot:empty>
                 <div v-if="isBusy" class="text-center my-2">
-                    <b-spinner class="align-middle"></b-spinner>
+                    <GSpinner class="align-middle" />
                     <strong>Loading...</strong>
                 </div>
                 <div v-else class="empty-folder-message">
@@ -78,20 +78,20 @@
                     <textarea v-else :ref="'name' + row.item.id" class="form-control" :value="row.item.name" rows="3" />
                 </div>
                 <div v-else-if="!row.item.deleted">
-                    <b-link
+                    <GLink
                         v-if="row.item.type === 'folder'"
                         :to="{ name: `LibraryFolder`, params: { folder_id: `${row.item.id}` } }">
                         {{ row.item.name }}
-                    </b-link>
+                    </GLink>
 
-                    <b-link
+                    <GLink
                         v-else
                         :to="{
                             name: `LibraryDataset`,
                             params: { folder_id: folder_id, dataset_id: `${row.item.id}` },
                         }">
                         {{ row.item.name }}
-                    </b-link>
+                    </GLink>
                 </div>
                 <!-- Deleted Item-->
                 <div v-else>
@@ -186,7 +186,7 @@
                     </button>
                 </div>
                 <div v-else>
-                    <b-button
+                    <GButton
                         v-if="row.item.can_manage && !row.item.deleted && row.item.type === 'folder'"
                         data-toggle="tooltip"
                         data-placement="top"
@@ -196,8 +196,8 @@
                         @click="toggleEditMode(row.item)">
                         <FontAwesomeIcon icon="pencil-alt" />
                         Edit
-                    </b-button>
-                    <b-button
+                    </GButton>
+                    <GButton
                         v-if="currentUser.is_admin"
                         size="sm"
                         class="lib-btn permission_lib_btn"
@@ -205,7 +205,7 @@
                         :to="{ path: `${navigateToPermission(row.item)}` }">
                         <FontAwesomeIcon icon="users" />
                         Manage
-                    </b-button>
+                    </GButton>
                     <button
                         v-if="row.item.deleted"
                         :title="'Undelete ' + row.item.name"
@@ -217,31 +217,30 @@
                     </button>
                 </div>
             </template>
-        </b-table>
+        </GTable>
         <!-- hide pagination if the table is loading-->
-        <b-container>
-            <b-row align-v="center" class="justify-content-md-center">
-                <b-col md="auto">
+        <GContainer>
+            <GRow align-v="center" class="justify-content-md-center">
+                <GCol md="auto">
                     <div v-if="isBusy">
-                        <b-spinner small type="grow"></b-spinner>
-                        <b-spinner small type="grow"></b-spinner>
-                        <b-spinner small type="grow"></b-spinner>
+                        <GSpinner small type="grow" />
+                        <GSpinner small type="grow" />
+                        <GSpinner small type="grow" />
                     </div>
-                    <b-pagination
+                    <GPagination
                         v-else
                         :value="currentPage"
                         :total-rows="total_rows"
                         :per-page="perPage"
                         aria-controls="folder_list_body"
-                        @input="changePage">
-                    </b-pagination>
-                </b-col>
+                        @input="changePage" />
+                </GCol>
 
-                <b-col cols="1.5">
+                <GCol cols="1.5">
                     <table>
                         <tr>
                             <td class="m-0 p-0">
-                                <b-form-input
+                                <GInput
                                     id="paginationPerPage"
                                     v-model="perPage"
                                     class="pagination-input-field"
@@ -253,15 +252,14 @@
                             </td>
                         </tr>
                     </table>
-                </b-col>
-            </b-row>
-        </b-container>
+                </GCol>
+            </GRow>
+        </GContainer>
     </div>
 </template>
 
 <script>
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import BootstrapVue from "bootstrap-vue";
 import { initFolderTableIcons } from "components/Libraries/icons";
 import { DEFAULT_PER_PAGE, MAX_DESCRIPTION_LENGTH } from "components/Libraries/library-utils";
 import UtcDate from "components/UtcDate";
@@ -273,6 +271,7 @@ import { mapState } from "pinia";
 import Utils from "utils/utils";
 import Vue from "vue";
 
+import { GButton, GCol, GContainer, GInput, GLink, GPagination, GRow, GSpinner, GTable } from "@/component-library";
 import { useUserStore } from "@/stores/userStore";
 
 import { Services } from "./services";
@@ -280,8 +279,6 @@ import { fields } from "./table-fields";
 import FolderTopBar from "./TopToolbar/FolderTopBar";
 
 initFolderTableIcons();
-
-Vue.use(BootstrapVue);
 
 function initialFolderState() {
     return {
@@ -296,8 +293,17 @@ function initialFolderState() {
 export default {
     components: {
         FolderTopBar,
-        UtcDate,
         FontAwesomeIcon,
+        GButton,
+        GCol,
+        GContainer,
+        GInput,
+        GLink,
+        GPagination,
+        GRow,
+        GSpinner,
+        GTable,
+        UtcDate,
     },
     beforeRouteUpdate(to, from, next) {
         this.getFolder(to.params.folder_id, to.params.page);

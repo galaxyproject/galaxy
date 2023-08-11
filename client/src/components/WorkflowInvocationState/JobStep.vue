@@ -1,9 +1,11 @@
 <template>
-    <b-card v-if="jobs">
-        <b-table small caption-top :items="jobsProvider" :fields="fields" primary-key="id" @row-clicked="toggleDetails">
+    <GCard v-if="jobs">
+        <GTable :fields="fields" :items="jobsProvider" caption-top primary-key="id" small @row-clicked="toggleDetails">
             <template v-slot:row-details="row">
                 <JobProvider :id="row.item.id" v-slot="{ item, loading }">
-                    <div v-if="loading"><b-spinner label="Loading Job..."></b-spinner></div>
+                    <div v-if="loading">
+                        <GSpinner label="Loading Job..." />
+                    </div>
                     <div v-else>
                         <JobInformation v-if="item" :job_id="item.id" />
                         <p></p>
@@ -17,25 +19,26 @@
             <template v-slot:cell(update_time)="data">
                 <UtcDate :date="data.value" mode="elapsed" />
             </template>
-        </b-table>
-    </b-card>
+        </GTable>
+    </GCard>
 </template>
 <script>
-import BootstrapVue from "bootstrap-vue";
 import JobInformation from "components/JobInformation/JobInformation";
 import JobParameters from "components/JobParameters/JobParameters";
 import { JobProvider } from "components/providers";
 import UtcDate from "components/UtcDate";
-import Vue from "vue";
 
-Vue.use(BootstrapVue);
+import { GCard, GSpinner, GTable } from "@/component-library";
 
 export default {
     components: {
-        UtcDate,
+        GCard,
+        GSpinner,
+        GTable,
         JobProvider,
         JobParameters,
         JobInformation,
+        UtcDate,
     },
     props: {
         jobs: { type: Array, required: true },

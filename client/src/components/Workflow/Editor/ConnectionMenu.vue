@@ -1,12 +1,12 @@
 <template>
-    <b-list-group id="input-choices-menu" ref="menu" role="menu" @keyup.down="increment" @keyup.up="decrement">
+    <GListGroup id="input-choices-menu" role="menu" @keyup.down="increment" @keyup.up="decrement">
         <template v-if="allElements.length === 0">
-            <b-list-group-item ref="menuItem" tabindex="0" role="menuitem">
+            <GListGroupItem ref="menuItem" tabindex="0" role="menuitem">
                 No compatible input found in workflow
-            </b-list-group-item>
+            </GListGroupItem>
         </template>
         <template v-else>
-            <b-list-group-item
+            <GListGroupItem
                 v-for="(input, index) in allElements"
                 :key="input.inputLabel + input.stepId"
                 ref="menuItem"
@@ -17,13 +17,14 @@
                 @keyup.enter="toggleConnection(input)"
                 @focus="activeElement = index">
                 {{ input.connected ? "Disconnect from" : "Connect to" }} {{ input.inputLabel }}
-            </b-list-group-item>
+            </GListGroupItem>
         </template>
-    </b-list-group>
+    </GListGroup>
 </template>
 <script setup lang="ts">
 import { computed, type ComputedRef, onMounted, ref, watch } from "vue";
 
+import { GListGroup, GListGroupItem } from "@/component-library";
 import { useFocusWithin } from "@/composables/useActiveElement";
 import { useWorkflowStores } from "@/composables/workflowStores";
 import { assertDefined } from "@/utils/assertions";

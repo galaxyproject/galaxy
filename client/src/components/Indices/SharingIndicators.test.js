@@ -4,6 +4,9 @@ import { getLocalVue } from "tests/jest/helpers";
 import SharingIndicators from "./SharingIndicators";
 
 const localVue = getLocalVue();
+const event = {
+    preventDefault: jest.fn(),
+};
 
 describe("SharingIndicators.vue", () => {
     let wrapper;
@@ -46,13 +49,13 @@ describe("SharingIndicators.vue", () => {
         });
 
         it("should fire a is:published filter on published click", async () => {
-            await wrapper.find(".sharing-indicator-published").trigger("click");
+            await wrapper.find(".sharing-indicator-published").vm.$emit("click", event);
             const emitted = wrapper.emitted("filter");
             expect(emitted[0][0]).toBe("is:published");
         });
 
         it("should fire a is:shared_with_me filter on shared click", async () => {
-            await wrapper.find(".sharing-indicator-shared").trigger("click");
+            await wrapper.find(".sharing-indicator-shared").vm.$emit("click", event);
             const emitted = wrapper.emitted("filter");
             expect(emitted[0][0]).toBe("is:shared_with_me");
         });

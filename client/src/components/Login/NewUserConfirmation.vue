@@ -2,15 +2,15 @@
     <div class="container">
         <div class="row justify-content-md-center">
             <div class="col col-lg-6">
-                <b-alert :show="!!registrationWarningMessage" variant="info">
+                <GAlert :show="!!registrationWarningMessage" variant="info">
                     {{ registrationWarningMessage }}
-                </b-alert>
-                <b-alert :show="!!messageText" :variant="messageVariant">
+                </GAlert>
+                <GAlert :show="!!messageText" :variant="messageVariant">
                     {{ messageText }}
-                </b-alert>
-                <b-form id="confirmation" @submit.prevent="submit()">
-                    <b-card no-body header="Confirm new account creation">
-                        <b-card-body>
+                </GAlert>
+                <GForm id="confirmation" @submit.prevent="submit()">
+                    <GCard no-body header="Confirm new account creation">
+                        <GCardBody>
                             <p>Looks like you are about to create a new account!</p>
                             <p>
                                 Do you already have a Galaxy account? If so, click
@@ -31,40 +31,59 @@
                                 subject to termination and data deletion on public Galaxy servers. Connect existing
                                 account now to continue to use your existing data and avoid possible loss of data.
                             </p>
-                            <b-form-group>
-                                <b-form-checkbox v-model="termsRead">
+                            <GFormGroup>
+                                <GFormCheckbox v-model="termsRead">
                                     I have read and accept these terms to create a new Galaxy account.
-                                </b-form-checkbox>
-                            </b-form-group>
-                            <b-button name="confirm" type="submit" :disabled="!termsRead" @click.prevent="submit">
+                                </GFormCheckbox>
+                            </GFormGroup>
+                            <GButton name="confirm" type="submit" :disabled="!termsRead" @click.prevent="submit">
                                 Yes, create new account
-                            </b-button>
-                            <b-button name="cancel" type="submit" @click.prevent="login">No, go back to login</b-button>
-                        </b-card-body>
-                        <b-card-footer>
+                            </GButton>
+                            <GButton name="cancel" type="submit" @click.prevent="login">No, go back to login</GButton>
+                        </GCardBody>
+                        <GCardFooter>
                             Already have an account?
                             <a id="login-toggle" href="javascript:void(0)" role="button" @click.prevent="login">
                                 Log in here.
                             </a>
-                        </b-card-footer>
-                    </b-card>
-                </b-form>
+                        </GCardFooter>
+                    </GCard>
+                </GForm>
             </div>
             <div v-if="termsUrl" class="col">
-                <b-embed type="iframe" :src="termsUrlwithRoot" aspect="1by1" />
+                <GEmbed type="iframe" :src="termsUrlwithRoot" aspect="1by1" />
             </div>
         </div>
     </div>
 </template>
 <script>
 import axios from "axios";
-import BootstrapVue from "bootstrap-vue";
 import { withPrefix } from "utils/redirect";
-import Vue from "vue";
 
-Vue.use(BootstrapVue);
+import {
+    GAlert,
+    GButton,
+    GCard,
+    GCardBody,
+    GCardFooter,
+    GEmbed,
+    GForm,
+    GFormCheckbox,
+    GFormGroup,
+} from "@/component-library";
 
 export default {
+    components: {
+        GAlert,
+        GButton,
+        GCard,
+        GCardFooter,
+        GCardBody,
+        GEmbed,
+        GForm,
+        GFormCheckbox,
+        GFormGroup,
+    },
     props: {
         registrationWarningMessage: {
             type: String,

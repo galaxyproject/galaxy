@@ -10,21 +10,21 @@
                 <span v-if="itemsLoaded.length !== 0" class="row">
                     <span v-if="filterCount" class="col d-inline-block d-flex align-items-baseline flex-gapx-1">
                         Found {{ itemsLoaded.length }} tools for
-                        <b-button id="popover-filters" class="ui-link">
+                        <GButton id="popover-filters" class="ui-link">
                             {{ filterCount }}
                             {{ filterCount === 1 ? "filter" : "filters" }}.
-                        </b-button>
-                        <b-popover target="popover-filters" triggers="hover focus" placement="bottom">
+                        </GButton>
+                        <GPopover target="popover-filters" triggers="hover focus" placement="bottom">
                             <template v-slot:title>Filters</template>
                             <div v-for="(value, filter) in filterSettings" :key="filter">
                                 <b>{{ filter }}</b
                                 >: {{ value }}
                             </div>
-                        </b-popover>
-                        <b-button variant="link" size="sm" @click.stop="showAllTools">
+                        </GPopover>
+                        <GButton variant="link" size="sm" @click.stop="showAllTools">
                             <FontAwesomeIcon icon="fa-times" />
                             Clear filters
-                        </b-button>
+                        </GButton>
                     </span>
                     <span v-else class="col d-inline-block">
                         No filters applied. Please add filters to the Advanced Tool Search in the Tool Panel.
@@ -32,12 +32,12 @@
                 </span>
             </div>
             <div ref="scrollContainer" class="overflow-auto">
-                <b-alert v-if="loading" class="m-2" variant="info" show>
+                <GAlert v-if="loading" class="m-2" variant="info" show>
                     <LoadingSpan message="Loading Advanced Search Results" />
-                </b-alert>
-                <b-alert v-else-if="!itemsLoaded || itemsLoaded.length == 0" class="m-2" variant="info" show>
+                </GAlert>
+                <GAlert v-else-if="!itemsLoaded || itemsLoaded.length == 0" class="m-2" variant="info" show>
                     No tools found for the entered filters.
-                </b-alert>
+                </GAlert>
                 <div v-else>
                     <ToolsListTable :tools="itemsLoaded" />
                 </div>
@@ -56,6 +56,8 @@ import { ToolsProvider } from "components/providers/storeProviders";
 import { useAnimationFrameScroll } from "composables/sensors/animationFrameScroll";
 import { ref } from "vue";
 
+import { GAlert, GButton, GPopover } from "@/component-library";
+
 import ScrollToTopButton from "./ScrollToTopButton";
 import ToolsListTable from "./ToolsListTable";
 
@@ -63,11 +65,14 @@ library.add(faTimes);
 
 export default {
     components: {
+        FontAwesomeIcon,
+        GAlert,
+        GButton,
+        GPopover,
         LoadingSpan,
+        ScrollToTopButton,
         ToolsListTable,
         ToolsProvider,
-        ScrollToTopButton,
-        FontAwesomeIcon,
     },
     props: {
         name: {

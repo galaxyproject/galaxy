@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref } from "vue";
 
+import { GTable } from "@/component-library";
 import { type DetailedDatatypes, useDetailedDatatypes } from "@/composables/datatypes";
 import { useFilterObjectArray } from "@/composables/filter";
 
@@ -40,7 +41,7 @@ const edamLink = (edamIRI: string) => `https://edamontology.github.io/edam-brows
             can be filtered by in the History, by expanding "search datasets".
         </p>
         <DelayedInput placeholder="filter extensions" class="mb-3" :delay="200" @change="(val) => (filter = val)" />
-        <b-table striped small sort-icon-left sort-by="extension" :items="filteredDatatypes" :fields="fields">
+        <GTable :fields="fields" :items="filteredDatatypes" small sort-by="extension" sort-icon-left striped>
             <template v-slot:cell(extension)="row">
                 <a
                     v-if="row.item.descriptionUrl"
@@ -74,7 +75,7 @@ const edamLink = (edamIRI: string) => `https://edamontology.github.io/edam-brows
                     {{ row.item.edamDataLabel }}
                 </a>
             </template>
-        </b-table>
+        </GTable>
     </div>
 </template>
 

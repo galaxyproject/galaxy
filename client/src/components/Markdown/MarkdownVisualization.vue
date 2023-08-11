@@ -7,7 +7,7 @@
             @onOk="onLabel"
             @onCancel="onCancel" />
         <DataDialog v-if="dataShow" :history="history" format="id" @onOk="onData" @onCancel="onCancel" />
-        <b-modal
+        <GModal
             v-if="formShow"
             v-model="formShow"
             modal-class="visualization-dialog-modal"
@@ -16,25 +16,24 @@
             @ok="onOk"
             @cancel="onCancel">
             <FormDisplay :inputs="formInputs" @onChange="onChange" />
-        </b-modal>
+        </GModal>
     </span>
 </template>
 
 <script>
-import BootstrapVue from "bootstrap-vue";
 import DataDialog from "components/DataDialog/DataDialog";
 import FormDisplay from "components/Form/FormDisplay";
-import Vue from "vue";
+
+import { GModal } from "@/component-library";
 
 import MarkdownSelector from "./MarkdownSelector";
-
-Vue.use(BootstrapVue);
 
 export default {
     components: {
         MarkdownSelector,
         DataDialog,
         FormDisplay,
+        GModal,
     },
     props: {
         argumentName: {

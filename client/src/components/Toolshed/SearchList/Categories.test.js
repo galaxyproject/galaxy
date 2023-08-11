@@ -1,4 +1,5 @@
 import { createLocalVue, mount } from "@vue/test-utils";
+import { GTable } from "component-library";
 
 import { Services } from "../services";
 import Categories from "./Categories";
@@ -35,6 +36,9 @@ describe("Categories", () => {
             propsData: {
                 loading: true,
                 toolshedUrl: "toolshedUrl",
+            },
+            stubs: {
+                GTable,
             },
             localVue,
         });

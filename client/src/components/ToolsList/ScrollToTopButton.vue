@@ -1,5 +1,5 @@
 <template>
-    <b-button
+    <GButton
         v-b-tooltip.noninteractive.hover
         class="back-to-top"
         :class="{ show: offset > 100 }"
@@ -7,7 +7,7 @@
         variant="info"
         @click="$emit('click')">
         <FontAwesomeIcon icon="fa-chevron-up" />
-    </b-button>
+    </GButton>
 </template>
 
 <script>
@@ -15,10 +15,12 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faChevronUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
+import { GButton } from "@/component-library";
+
 library.add(faChevronUp);
 
 export default {
-    components: { FontAwesomeIcon },
+    components: { FontAwesomeIcon, GButton },
     props: {
         offset: {
             type: Number,

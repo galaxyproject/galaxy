@@ -1,33 +1,33 @@
 <template>
     <div id="edit-attributes" class="right-content p-2" itemscope itemtype="http://schema.org/CreativeWork">
-        <b-alert :variant="messageVariant" :show="!!message">
+        <GAlert :variant="messageVariant" :show="!!message">
             {{ message }}
-        </b-alert>
+        </GAlert>
         <div id="workflow-name-area">
             <b>Name</b>
             <meta itemprop="name" :content="name" />
-            <b-input id="workflow-name" v-model="nameCurrent" @keyup="$emit('update:nameCurrent', nameCurrent)" />
+            <GInput id="workflow-name" v-model="nameCurrent" @keyup="$emit('update:nameCurrent', nameCurrent)" />
         </div>
         <div id="workflow-version-area" class="mt-2">
             <b>Version</b>
-            <b-form-select v-model="versionCurrent" @change="onVersion">
-                <b-form-select-option v-for="v in versionOptions" :key="v.version" :value="v.version">
+            <GFormSelect v-model="versionCurrent" @change="onVersion">
+                <GFormSelectOption v-for="v in versionOptions" :key="v.version" :value="v.version">
                     {{ v.label }}
-                </b-form-select-option>
-            </b-form-select>
+                </GFormSelectOption>
+            </GFormSelect>
         </div>
         <div v-if="hasParameters" id="workflow-parameters-area" class="mt-2">
             <b>Parameters</b>
-            <b-list-group>
-                <b-list-group-item v-for="[key, p] in parameters.parameters.entries()" :key="key"
-                    >{{ key + 1 }}: {{ p.name }}
-                </b-list-group-item>
-            </b-list-group>
+            <GListGroup>
+                <GListGroupItem v-for="[key, p] in parameters.parameters.entries()" :key="key">
+                    {{ key + 1 }}: {{ p.name }}
+                </GListGroupItem>
+            </GListGroup>
         </div>
         <div id="workflow-annotation-area" class="mt-2">
             <b>Annotation</b>
             <meta itemprop="description" :content="annotationCurrent" />
-            <b-textarea
+            <GFormTextarea
                 id="workflow-annotation"
                 v-model="annotationCurrent"
                 @keyup="$emit('update:annotationCurrent', annotationCurrent)" />
@@ -52,24 +52,37 @@
 </template>
 
 <script>
-import BootstrapVue from "bootstrap-vue";
 import LicenseSelector from "components/License/LicenseSelector";
 import CreatorEditor from "components/SchemaOrg/CreatorEditor";
 import StatelessTags from "components/TagsMultiselect/StatelessTags";
 import { Services } from "components/Workflow/services";
 import { format, parseISO } from "date-fns";
-import Vue from "vue";
+
+import {
+    GAlert,
+    GFormSelect,
+    GFormSelectOption,
+    GFormTextarea,
+    GInput,
+    GListGroup,
+    GListGroupItem,
+} from "@/component-library";
 
 import { UntypedParameters } from "./modules/parameters";
-
-Vue.use(BootstrapVue);
 
 export default {
     name: "Attributes",
     components: {
-        StatelessTags,
-        LicenseSelector,
         CreatorEditor,
+        GAlert,
+        GFormSelect,
+        GFormSelectOption,
+        GFormTextarea,
+        GInput,
+        GListGroup,
+        GListGroupItem,
+        LicenseSelector,
+        StatelessTags,
     },
     props: {
         id: {

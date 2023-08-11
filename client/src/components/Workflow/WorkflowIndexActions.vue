@@ -1,6 +1,6 @@
 <template>
     <span>
-        <BButton
+        <GButton
             id="workflow-create"
             v-b-tooltip.hover
             aria-haspopup="true"
@@ -10,8 +10,8 @@
             @click="navigateToCreate">
             <FontAwesomeIcon icon="plus" />
             {{ "Create" | localize }}
-        </BButton>
-        <BButton
+        </GButton>
+        <GButton
             id="workflow-import"
             v-b-tooltip.hover
             aria-haspopup="true"
@@ -21,7 +21,7 @@
             @click="navigateToImport">
             <FontAwesomeIcon icon="upload" />
             {{ "Import" | localize }}
-        </BButton>
+        </GButton>
     </span>
 </template>
 
@@ -29,17 +29,17 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faPlus, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton } from "bootstrap-vue";
 import { mapState } from "pinia";
 
+import { GButton } from "@/component-library";
 import { useUserStore } from "@/stores/userStore";
 
 library.add(faPlus, faUpload);
 
 export default {
     components: {
-        BButton,
         FontAwesomeIcon,
+        GButton,
     },
     computed: {
         ...mapState(useUserStore, ["isAnonymous"]),

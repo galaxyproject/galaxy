@@ -2,9 +2,9 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faExclamationCircle } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BCard, BCol, BFormCheckbox, BRow } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
+import { GAlert, GButton, GCard, GCol, GFormCheckbox, GRow } from "@/component-library";
 import {
     getNotificationsPreferencesFromServer,
     updateNotificationsPreferencesOnServer,
@@ -105,30 +105,30 @@ watch(
         </span>
         <span v-else v-localize class="mb-2"> You can manage push notifications preferences here. </span>
 
-        <BAlert v-if="errorMessage" show dismissible fade variant="warning" @dismissed="errorMessage = null">
+        <GAlert v-if="errorMessage" show dismissible fade variant="warning" @dismissed="errorMessage = null">
             {{ errorMessage }}
-        </BAlert>
+        </GAlert>
 
-        <BAlert v-if="loading" class="m-2" show variant="info">
+        <GAlert v-if="loading" class="m-2" show variant="info">
             <LoadingSpan message="Loading notifications preferences" />
-        </BAlert>
+        </GAlert>
 
-        <BRow v-else-if="showPreferences" class="mx-1">
-            <BCol v-for="category in categories" :key="category">
-                <BCard class="my-2 px-2">
-                    <BRow align-h="between" align-v="center">
-                        <BCol cols="auto" class="mx-2">
-                            <BRow>
+        <GRow v-else-if="showPreferences" class="mx-1">
+            <GCol v-for="category in categories" :key="category">
+                <GCard class="my-2 px-2">
+                    <GRow align-h="between" align-v="center">
+                        <GCol cols="auto" class="mx-2">
+                            <GRow>
                                 <span v-localize class="category-title">{{ capitalizeWords(category) }}</span>
-                            </BRow>
-                            <BRow v-if="categoryDescriptionMap[category]">
+                            </GRow>
+                            <GRow v-if="categoryDescriptionMap[category]">
                                 <span v-localize class="category-description">
                                     {{ categoryDescriptionMap[category] }}
                                 </span>
-                            </BRow>
-                        </BCol>
-                        <BCol cols="auto" class="p-0">
-                            <BFormCheckbox
+                            </GRow>
+                        </GCol>
+                        <GCol cols="auto" class="p-0">
+                            <GFormCheckbox
                                 v-model="notificationsPreferences[category].enabled"
                                 v-b-tooltip.hover
                                 :title="
@@ -137,42 +137,42 @@ watch(
                                         : 'Enable notifications'
                                 "
                                 switch />
-                        </BCol>
-                    </BRow>
-                    <BRow class="p-2">
-                        <BCol
+                        </GCol>
+                    </GRow>
+                    <GRow class="p-2">
+                        <GCol
                             v-for="channel in Object.keys(notificationsPreferences[category].channels)"
                             :key="channel"
                             class="d-flex align-items-center">
-                            <BFormCheckbox
+                            <GFormCheckbox
                                 v-model="notificationsPreferences[category].channels[channel]"
                                 v-localize
                                 :disabled="!notificationsPreferences[category].enabled">
                                 {{ capitalizeWords(channel) }}
-                            </BFormCheckbox>
+                            </GFormCheckbox>
                             <FontAwesomeIcon
                                 v-if="channel === 'push'"
                                 v-b-tooltip.hover="'Push notifications need to be enabled'"
                                 class="mx-2"
                                 icon="exclamation-circle" />
-                        </BCol>
-                    </BRow>
-                </BCard>
-            </BCol>
-        </BRow>
+                        </GCol>
+                    </GRow>
+                </GCard>
+            </GCol>
+        </GRow>
 
-        <BRow v-if="!loading" class="m-1" align-h="center">
-            <BCard v-if="browserSupportsPushNotifications() && !pushNotificationsGranted" class="my-2">
+        <GRow v-if="!loading" class="m-1" align-h="center">
+            <GCard v-if="browserSupportsPushNotifications() && !pushNotificationsGranted" class="my-2">
                 Allow push and tab notifications. To disable, revoke the site notification privilege in your browser.
-                <BButton
+                <GButton
                     v-b-tooltip.hover
                     class="mx-2"
                     title="Enable push notifications"
                     @click="onTogglePushNotifications">
                     Enable push notifications
-                </BButton>
-            </BCard>
-            <BAlert
+                </GButton>
+            </GCard>
+            <GAlert
                 v-else-if="browserSupportsPushNotifications() && pushNotificationsGranted"
                 show
                 variant="info"
@@ -180,18 +180,18 @@ watch(
                 <FontAwesomeIcon icon="check-circle" />
                 Push notifications are enabled. You can disable them by revoking the site notification privilege in your
                 browser.
-            </BAlert>
-            <BAlert v-else show variant="warning" class="my-2">
+            </GAlert>
+            <GAlert v-else show variant="warning" class="my-2">
                 <FontAwesomeIcon icon="exclamation-circle" />
                 Push notifications are not supported by this browser. You can still receive in-app notifications.
-            </BAlert>
-        </BRow>
+            </GAlert>
+        </GRow>
 
-        <BRow v-if="!loading && config.enable_notification_system" class="m-1" align-h="center">
+        <GRow v-if="!loading && config.enable_notification_system" class="m-1" align-h="center">
             <AsyncButton :action="updateNotificationsPreferences" icon="save" variant="primary" size="md">
                 <span v-localize>Save</span>
             </AsyncButton>
-        </BRow>
+        </GRow>
     </section>
 </template>
 

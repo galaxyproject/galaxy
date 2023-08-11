@@ -2,7 +2,7 @@
     <div>
         <!-- todo: rewrite this to send events up instead of two way prop binding -->
         <!-- eslint-disable vue/no-mutating-props-->
-        <b-table
+        <GTable
             small
             hover
             :items="items"
@@ -36,9 +36,9 @@
                         </div>
                         <div v-else @click.stop="open(data.item)">
                             <FontAwesomeIcon icon="folder" />
-                            <b-link :title="`label-${data.item.labelTitle}`">{{
-                                data.value ? data.value : "-"
-                            }}</b-link>
+                            <GLink :title="`label-${data.item.labelTitle}`">
+                                {{ data.value ? data.value : "-" }}
+                            </GLink>
                         </div>
                     </span>
                 </div>
@@ -49,11 +49,11 @@
             <template v-slot:cell(time)="data">
                 {{ data.value ? data.value : "-" }}
             </template>
-        </b-table>
+        </GTable>
         <div v-if="isBusy" class="text-center">
-            <b-spinner small type="grow"></b-spinner>
-            <b-spinner small type="grow"></b-spinner>
-            <b-spinner small type="grow"></b-spinner>
+            <GSpinner small type="grow" />
+            <GSpinner small type="grow" />
+            <GSpinner small type="grow" />
         </div>
         <div v-if="nItems === 0">
             <div v-if="filter">
@@ -62,7 +62,7 @@
             </div>
             <div v-else>No entries.</div>
         </div>
-        <b-pagination
+        <GPagination
             v-if="nItems > perPage"
             v-model="currentPage"
             class="justify-content-md-center"
@@ -76,11 +76,10 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCheckSquare, faMinusSquare, faSquare } from "@fortawesome/free-regular-svg-icons";
 import { faFolder } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import BootstrapVue from "bootstrap-vue";
 import { selectionStates } from "components/SelectionDialog/selectionStates";
-import Vue from "vue";
 
-Vue.use(BootstrapVue);
+import { GLink, GPagination, GSpinner, GTable } from "@/component-library";
+
 library.add(faCheckSquare, faSquare, faFolder, faMinusSquare);
 
 const LABEL_FIELD = { key: "label", sortable: true };
@@ -91,6 +90,10 @@ const SELECT_ICON_FIELD = { key: "select_icon", label: "", sortable: false };
 export default {
     components: {
         FontAwesomeIcon,
+        GLink,
+        GPagination,
+        GSpinner,
+        GTable,
     },
     props: {
         items: {

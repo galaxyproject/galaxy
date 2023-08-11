@@ -1,8 +1,8 @@
 <template>
-    <b-card v-if="hasContent" class="tool-footer">
+    <GCard v-if="hasContent" class="tool-footer">
         <div v-if="hasCitations" class="mb-1">
             <span v-localize class="footer-section-name">Citations</span>
-            <b-button
+            <GButton
                 v-b-tooltip.hover
                 title="Copy all citations as BibTeX"
                 style="cursor: pointer"
@@ -10,7 +10,7 @@
                 size="sm"
                 @click="copyBibtex">
                 <FontAwesomeIcon icon="copy" />
-            </b-button>
+            </GButton>
             <Citation
                 v-for="(citation, index) in citations"
                 :key="index"
@@ -68,7 +68,7 @@
             <span class="font-weight-bold">Creators:</span>
             <Creators :creators="creators" />
         </div>
-    </b-card>
+    </GCard>
 </template>
 
 <script>
@@ -81,14 +81,18 @@ import License from "components/License/License";
 import Creators from "components/SchemaOrg/Creators";
 import { copy } from "utils/clipboard";
 
+import { GButton, GCard } from "@/component-library";
+
 library.add(faQuestion, faCopy, faAngleDoubleDown, faAngleDoubleUp);
 
 export default {
     components: {
+        GCard,
         Citation,
         License,
         Creators,
         FontAwesomeIcon,
+        GButton,
     },
     props: {
         id: {

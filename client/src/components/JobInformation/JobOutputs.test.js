@@ -84,7 +84,7 @@ describe("JobInformation/JobOutputs.vue", () => {
         expect(rows.length).toBe(12);
         // ---- Click button, remaining 5 outputs should be displayed ----
         expect(wrapper.find("#paginate-btn").exists()).toEqual(true);
-        await wrapper.find("#paginate-btn").trigger("click");
+        await wrapper.find("#paginate-btn").vm.$emit("click");
         jobOutputsTable = wrapper.find("#job-outputs");
         rows = jobOutputsTable.findAll("tr");
         // should now contain a header and 15 rows (all 15 items and no button)

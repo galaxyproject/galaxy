@@ -4,6 +4,17 @@ import CopyToClipboard from "components/CopyToClipboard";
 import UtcDate from "components/UtcDate";
 import { ref } from "vue";
 
+import {
+    GButton,
+    GCard,
+    GInput,
+    GInputGroup,
+    GInputGroupAppend,
+    GInputGroupPrepend,
+    GInputGroupText,
+    GModal,
+} from "@/component-library";
+
 import svc from "./model/service";
 
 defineProps({
@@ -32,36 +43,36 @@ const deleteKey = () => {
 </script>
 
 <template>
-    <b-card title="Current API key">
+    <GCard title="Current API key">
         <div class="d-flex justify-content-between w-100">
             <div class="w-100">
-                <b-input-group
+                <GInputGroup
                     class="w-100"
                     @blur="hover = false"
                     @focus="hover = true"
                     @mouseover="hover = true"
                     @mouseleave="hover = false">
-                    <b-input-group-prepend>
-                        <b-input-group-text>
+                    <GInputGroupPrepend>
+                        <GInputGroupText>
                             <icon icon="key" />
-                        </b-input-group-text>
-                    </b-input-group-prepend>
+                        </GInputGroupText>
+                    </GInputGroupPrepend>
 
-                    <b-input
+                    <GInput
                         :type="hover ? 'text' : 'password'"
                         :value="item.key"
                         disabled
                         data-test-id="api-key-input" />
 
-                    <b-input-group-append>
-                        <b-input-group-text>
+                    <GInputGroupAppend>
+                        <GInputGroupText>
                             <CopyToClipboard message="Key was copied to clipboard" :text="item.key" title="Copy key" />
-                        </b-input-group-text>
-                        <b-button title="Delete api key" @click="toggleDeleteModal">
+                        </GInputGroupText>
+                        <GButton title="Delete api key" @click="toggleDeleteModal">
                             <icon icon="trash" />
-                        </b-button>
-                    </b-input-group-append>
-                </b-input-group>
+                        </GButton>
+                    </GInputGroupAppend>
+                </GInputGroup>
                 <span class="small text-black-50">
                     created on
                     <UtcDate class="text-black-50 small" :date="item.create_time" mode="pretty" />
@@ -69,8 +80,8 @@ const deleteKey = () => {
             </div>
         </div>
 
-        <b-modal ref="modal" title="Delete API key" size="md" @ok="deleteKey">
+        <GModal ref="modal" title="Delete API key" size="md" @ok="deleteKey">
             <p v-localize>Are you sure you want to delete this key?</p>
-        </b-modal>
-    </b-card>
+        </GModal>
+    </GCard>
 </template>

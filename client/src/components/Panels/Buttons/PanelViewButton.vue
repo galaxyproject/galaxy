@@ -1,5 +1,5 @@
 <template>
-    <b-dropdown
+    <GDropdown
         v-b-tooltip.hover.noninteractive
         right
         title="Show panel options"
@@ -15,7 +15,7 @@
             :current-panel-view="currentPanelView"
             :panel-view="defaultPanelView"
             @onSelect="updatePanelView" />
-        <b-dropdown-group v-for="group in groupedPanelViews" :id="group.type" :key="group.type">
+        <GDropdownGroup v-for="group in groupedPanelViews" :id="group.type" :key="group.type">
             <template v-slot:header>
                 <small class="font-weight-bold">{{ group.title }}</small>
             </template>
@@ -25,18 +25,20 @@
                 :current-panel-view="currentPanelView"
                 :panel-view="panelView"
                 @onSelect="updatePanelView" />
-        </b-dropdown-group>
-        <b-dropdown-divider v-if="ungroupedPanelViews.length > 0" />
+        </GDropdownGroup>
+        <GDropdownDivider v-if="ungroupedPanelViews.length > 0" />
         <PanelViewMenuItem
             v-for="(panelView, key) in ungroupedPanelViews"
             :key="key"
             :current-panel-view="currentPanelView"
             :panel-view="panelView"
             @onSelect="updatePanelView" />
-    </b-dropdown>
+    </GDropdown>
 </template>
 
 <script>
+import { GDropdown, GDropdownDivider, GDropdownGroup } from "@/component-library";
+
 import PanelViewMenuItem from "./PanelViewMenuItem";
 
 const groupsDefinitions = [
@@ -47,7 +49,12 @@ const groupsDefinitions = [
 ];
 
 export default {
-    components: { PanelViewMenuItem },
+    components: {
+        GDropdown,
+        GDropdownGroup,
+        GDropdownDivider,
+        PanelViewMenuItem,
+    },
     props: {
         panelViews: {
             type: Object,

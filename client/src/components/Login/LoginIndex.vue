@@ -25,13 +25,8 @@
     </div>
 </template>
 <script>
-import BootstrapVue from "bootstrap-vue";
-import Vue from "vue";
-
 import LoginForm from "./LoginForm";
 import RegisterForm from "./RegisterForm";
-
-Vue.use(BootstrapVue);
 
 export default {
     components: {

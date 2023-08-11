@@ -1,24 +1,24 @@
 <template>
     <UrlDataProvider v-slot="{ result: config, loading }" :url="url" @error="onError">
         <div v-if="!loading" :id="id">
-            <b-alert v-if="config.message" :variant="configMessageVariant(config)" show>
+            <GAlert v-if="config.message" :variant="configMessageVariant(config)" show>
                 {{ config.message }}
-            </b-alert>
-            <b-alert v-if="messageText" :variant="messageVariant" show>
+            </GAlert>
+            <GAlert v-if="messageText" :variant="messageVariant" show>
                 {{ messageText }}
-            </b-alert>
+            </GAlert>
             <FormCard :title="configTitle(config)" :icon="configIcon(config)">
                 <template v-slot:body>
                     <FormDisplay :inputs="config.inputs" :replace-params="replaceParams" @onChange="onChange" />
                 </template>
             </FormCard>
             <div class="mt-3">
-                <b-button id="submit" variant="primary" class="mr-1" @click="onSubmit()">
+                <GButton id="submit" variant="primary" class="mr-1" @click="onSubmit()">
                     <span :class="submitIconClass" />{{ submitTitle | l }}
-                </b-button>
-                <b-button v-if="cancelRedirect" @click="onCancel()">
+                </GButton>
+                <GButton v-if="cancelRedirect" @click="onCancel()">
                     <span class="mr-1 fa fa-times" />{{ "Cancel" | l }}
-                </b-button>
+                </GButton>
             </div>
         </div>
     </UrlDataProvider>
@@ -31,10 +31,14 @@ import { visitInputs } from "components/Form/utilities";
 import { UrlDataProvider } from "components/providers/UrlDataProvider";
 import { withPrefix } from "utils/redirect";
 
+import { GAlert, GButton } from "@/component-library";
+
 import { submitData } from "./services";
 
 export default {
     components: {
+        GAlert,
+        GButton,
         FormCard,
         FormDisplay,
         UrlDataProvider,

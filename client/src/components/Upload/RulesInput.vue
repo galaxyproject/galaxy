@@ -24,9 +24,9 @@
             <div v-if="selectionType == 'dataset'" id="upload-rule-dataset-option" class="upload-rule-option">
                 <div class="upload-rule-option-title">History dataset</div>
                 <div>
-                    <BLink v-if="selectedDatasetName == null" @click="onSelectDataset">
+                    <GLink v-if="selectedDatasetName == null" @click="onSelectDataset">
                         {{ "Select" | l }}
-                    </BLink>
+                    </GLink>
                     <span v-else>
                         {{ selectedDatasetName }} <FontAwesomeIcon icon="edit" @click="onSelectDataset" />
                     </span>
@@ -41,15 +41,15 @@
                 :disabled="selectionType != 'paste'"></textarea>
         </span>
         <template v-slot:buttons>
-            <BButton
+            <GButton
                 id="btn-close"
                 ref="btnClose"
                 class="ui-button-default"
                 :title="btnCloseTitle"
                 @click="$emit('dismiss')">
                 {{ btnCloseTitle | l }}
-            </BButton>
-            <BButton
+            </GButton>
+            <GButton
                 id="btn-build"
                 ref="btnBuild"
                 class="ui-button-default"
@@ -58,8 +58,8 @@
                 :variant="sourceContent ? 'primary' : ''"
                 @click="_eventBuild">
                 {{ btnBuildTitle | l }}
-            </BButton>
-            <BButton
+            </GButton>
+            <GButton
                 id="btn-reset"
                 ref="btnReset"
                 class="ui-button-default"
@@ -67,7 +67,7 @@
                 :disabled="!enableReset"
                 @click="_eventReset">
                 {{ btnResetTitle | l }}
-            </BButton>
+            </GButton>
         </template>
     </upload-wrapper>
 </template>
@@ -78,17 +78,22 @@ import { faEdit } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { getGalaxyInstance } from "app";
 import axios from "axios";
-import { BButton, BLink } from "bootstrap-vue";
 import UploadUtils from "components/Upload/utils";
 import { getAppRoot } from "onload/loadConfig";
 import { filesDialog } from "utils/data";
+
+import { GButton, GLink } from "@/component-library";
 
 import UploadBoxMixin from "./UploadBoxMixin";
 
 library.add(faEdit);
 
 export default {
-    components: { BLink, BButton, FontAwesomeIcon },
+    components: {
+        FontAwesomeIcon,
+        GButton,
+        GLink,
+    },
     mixins: [UploadBoxMixin],
     data() {
         return {

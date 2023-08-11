@@ -1,10 +1,10 @@
-import { shallowMount } from "@vue/test-utils";
+import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
-import { BFormCheckbox } from "bootstrap-vue";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 
+import { GFormCheckbox } from "@/component-library";
 import {
     FAILED_FILE_SOURCE_STORE_RESPONSE,
     FILE_SOURCE_STORE_RESPONSE,
@@ -35,12 +35,11 @@ const ARCHIVE_HISTORY_BTN = "#archive-history-btn";
 const CONFIRM_DELETE_CHECKBOX = "[type='checkbox']";
 
 async function mountComponentWithHistory(history: HistorySummary) {
-    const wrapper = shallowMount(HistoryArchiveExportSelector, {
+    const wrapper = mount(HistoryArchiveExportSelector, {
         propsData: { history },
         localVue,
         stubs: {
-            // Stub with the real component to be able to use setChecked
-            BFormCheckbox,
+            GFormCheckbox,
         },
     });
     await flushPromises();

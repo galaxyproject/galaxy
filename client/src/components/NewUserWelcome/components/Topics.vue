@@ -4,30 +4,40 @@
             <h1 class="text-center my-3">{{ title | localize }}</h1>
             <h2 class="text-center my-3 h-sm">{{ intro | localize }}</h2>
         </header>
-        <b-row class="justify-content-md-center mb-3">
-            <b-card-group v-for="(subject, idx) in topics" :key="idx">
-                <b-card
+        <GRow class="justify-content-md-center mb-3">
+            <GCardGroup v-for="(subject, idx) in topics" :key="idx">
+                <GCard
                     class="text-center m-2 border-0 new-user-welcome-topic"
                     :data-new-user-welcome-topic-title="subject.title"
                     body-class="d-flex flex-column">
-                    <b-card-img
+                    <GCardImg
                         class="section-header mb-3"
                         height="50h"
                         :src="imgUrl(subject.image)"
-                        :alt="subject.alt"></b-card-img>
-                    <b-card-text class="font-weight-light">{{ subject.blurb | localize }}</b-card-text>
-                    <b-button class="mt-auto" variant="info" @click="$emit('select', idx)">{{
+                        :alt="subject.alt" />
+                    <GCardText class="font-weight-light">{{ subject.blurb | localize }}</GCardText>
+                    <GButton class="mt-auto" variant="info" @click="$emit('select', idx)">{{
                         subject.title | localize
-                    }}</b-button>
-                </b-card>
-            </b-card-group>
-        </b-row>
+                    }}</GButton>
+                </GCard>
+            </GCardGroup>
+        </GRow>
     </div>
 </template>
 <script>
 import { getAppRoot } from "onload/loadConfig";
 
+import { GButton, GCard, GCardGroup, GCardImg, GCardText, GRow } from "@/component-library";
+
 export default {
+    components: {
+        GButton,
+        GCard,
+        GCardImg,
+        GCardGroup,
+        GCardText,
+        GRow,
+    },
     props: {
         topics: {
             type: Array,

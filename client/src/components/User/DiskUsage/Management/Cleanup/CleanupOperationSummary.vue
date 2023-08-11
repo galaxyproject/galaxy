@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { BAlert, BCard, BCardText, BLink } from "bootstrap-vue";
 import { computed, onMounted, ref, watchEffect } from "vue";
 
+import { GAlert, GCard, GCardText, GLink } from "@/component-library";
 import localize from "@/utils/localization";
 import { wait } from "@/utils/utils";
 
@@ -66,35 +66,35 @@ function onReviewItems() {
 </script>
 
 <template>
-    <BCard
+    <GCard
         :title="props.operation.name"
         class="operation-card mx-2"
         footer-bg-variant="white"
         footer-border-variant="white">
         <LoadingSpan v-if="loading" />
-        <BCardText v-if="!loading">
+        <GCardText v-if="!loading">
             {{ operation.description }}
-        </BCardText>
+        </GCardText>
         <template v-slot:footer>
             <div v-if="!loading">
-                <BAlert v-if="errorMessage" variant="danger" show data-test-id="error-alert">
+                <GAlert v-if="errorMessage" variant="danger" show data-test-id="error-alert">
                     <h2 class="alert-heading h-sm">Failed to retrieve details.</h2>
                     {{ errorMessage }}
-                </BAlert>
-                <BLink
+                </GAlert>
+                <GLink
                     v-else-if="summary && canClearItems"
                     href="#"
                     class="card-link"
                     data-test-id="review-link"
                     @click="onReviewItems">
                     <b>{{ localize("Review and clear") }} {{ summary.niceTotalSize }}</b>
-                </BLink>
+                </GLink>
                 <b v-else class="text-secondary" data-test-id="no-items-indicator">
                     {{ localize("No items to clear") }}
                 </b>
             </div>
         </template>
-    </BCard>
+    </GCard>
 </template>
 
 <style scoped>

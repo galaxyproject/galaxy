@@ -1,10 +1,10 @@
 <template>
     <span>
-        <b-modal v-model="modalShow" :title="title" ok-title="Continue" @ok="onOk" @cancel="onCancel">
+        <GModal v-model="modalShow" :title="title" ok-title="Continue" @ok="onOk" @cancel="onCancel">
             <div class="ml-2">
                 <h2 class="mb-3 h-text">Select {{ labelTitle }} Label:</h2>
                 <div v-if="hasLabels">
-                    <b-form-radio
+                    <GFormRadio
                         v-for="(label, index) in labels"
                         :key="index"
                         v-model="selectedValue"
@@ -12,27 +12,29 @@
                         name="labels"
                         :value="index">
                         {{ label }}
-                    </b-form-radio>
+                    </GFormRadio>
                 </div>
-                <b-alert v-else show variant="info">
+                <GAlert v-else show variant="info">
                     No labels found. Please specify labels in the Workflow Editor.
-                </b-alert>
+                </GAlert>
                 <p class="mt-3 text-muted">
                     You may add new labels by selecting a step in the workflow editor and then editing the corresponding
                     label field in the step form.
                 </p>
             </div>
-        </b-modal>
+        </GModal>
     </span>
 </template>
 
 <script>
-import BootstrapVue from "bootstrap-vue";
-import Vue from "vue";
-
-Vue.use(BootstrapVue);
+import { GAlert, GFormRadio, GModal } from "@/component-library";
 
 export default {
+    components: {
+        GAlert,
+        GFormRadio,
+        GModal,
+    },
     props: {
         labelTitle: {
             type: String,

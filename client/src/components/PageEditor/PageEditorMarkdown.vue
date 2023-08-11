@@ -1,7 +1,7 @@
 <template>
     <MarkdownEditor :title="title" :markdown-text="markdownText" :markdown-config="contentData" @onUpdate="onUpdate">
         <template v-slot:buttons>
-            <b-button
+            <GButton
                 id="save-button"
                 v-b-tooltip.hover.bottom
                 title="Save"
@@ -9,8 +9,8 @@
                 role="button"
                 @click="saveContent(false)">
                 <FontAwesomeIcon icon="save" />
-            </b-button>
-            <b-button
+            </GButton>
+            <GButton
                 id="view-button"
                 v-b-tooltip.hover.bottom
                 title="Save & View"
@@ -18,7 +18,7 @@
                 role="button"
                 @click="saveContent(true)">
                 <FontAwesomeIcon icon="eye" />
-            </b-button>
+            </GButton>
         </template>
     </MarkdownEditor>
 </template>
@@ -27,19 +27,18 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEye, faSave } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import BootstrapVue from "bootstrap-vue";
 import MarkdownEditor from "components/Markdown/MarkdownEditor";
 import { Toast } from "composables/toast";
-import Vue from "vue";
+
+import { GButton } from "@/component-library";
 
 import { save } from "./util";
-
-Vue.use(BootstrapVue);
 
 library.add(faEye, faSave);
 
 export default {
     components: {
+        GButton,
         MarkdownEditor,
         FontAwesomeIcon,
     },

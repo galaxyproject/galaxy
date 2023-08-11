@@ -1,6 +1,8 @@
 <script setup>
 import { computed } from "vue";
 
+import { GAlert, GFormRadio, GFormRadioGroup } from "@/component-library";
+
 const emit = defineEmits(["input"]);
 const props = defineProps({
     value: {
@@ -27,10 +29,10 @@ const hasOptions = computed(() => {
 </script>
 
 <template>
-    <b-form-radio-group v-if="hasOptions" v-model="currentValue" stacked>
-        <b-form-radio v-for="(option, index) in options" :key="index" :value="option[1]">
+    <GFormRadioGroup v-if="hasOptions" v-model="currentValue" stacked>
+        <GFormRadio v-for="(option, index) in options" :key="index" :value="option[1]">
             {{ option[0] }}
-        </b-form-radio>
-    </b-form-radio-group>
-    <b-alert v-else v-localize variant="warning" show> No options available. </b-alert>
+        </GFormRadio>
+    </GFormRadioGroup>
+    <GAlert v-else v-localize variant="warning" show> No options available. </GAlert>
 </template>

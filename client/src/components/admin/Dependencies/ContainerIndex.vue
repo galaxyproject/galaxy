@@ -4,69 +4,66 @@
         :loading="loading"
         loading-message="Loading container resolution information">
         <template v-slot:header>
-            <b-row class="m-1">
-                <b-form inline>
+            <GRow class="m-1">
+                <GForm inline>
                     <b>Resolution:</b>
                     <label class="mr-sm-2" for="manage-container-type">Resolve containers of type</label>
-                    <b-form-select
+                    <GFormSelect
                         id="manage-container-type"
                         v-model="containerType"
                         class="mb-2 mr-sm-2 mb-sm-0"
-                        :options="containerTypeOptions"></b-form-select>
+                        :options="containerTypeOptions" />
                     <label class="mr-sm-2" for="manage-resolver-type">using resolvers of type</label>
-                    <b-form-select
+                    <GFormSelect
                         id="manage-resolver-type"
                         v-model="resolverType"
                         class="mb-2 mr-sm-2 mb-sm-0"
-                        :options="resolverTypeOptions"></b-form-select>
-                </b-form>
-            </b-row>
-            <b-row class="m-1">
-                <b-form inline>
+                        :options="resolverTypeOptions" />
+                </GForm>
+            </GRow>
+            <GRow class="m-1">
+                <GForm inline>
                     <b>Filter:</b>
                     <label class="mr-sm-2" for="manage-filter-resolution">Resolution</label>
-                    <b-form-select
-                        id="manage-filter-resolution"
-                        v-model="filterResolution"
-                        class="mb-2 mr-sm-2 mb-sm-0">
+                    <GFormSelect id="manage-filter-resolution" v-model="filterResolution" class="mb-2 mr-sm-2 mb-sm-0">
                         <option :value="null">*any*</option>
                         <option value="unresolved">Unresolved</option>
                         <option value="resolved">Resolved</option>
-                    </b-form-select>
-                    <label v-if="filterResolution != 'unresolved'" class="mr-sm-2" for="manage-filter-container-type"
-                        >Containers of type</label
-                    >
-                    <b-form-select
+                    </GFormSelect>
+                    <label v-if="filterResolution != 'unresolved'" class="mr-sm-2" for="manage-filter-container-type">
+                        Containers of type
+                    </label>
+                    <GFormSelect
                         v-if="filterResolution != 'unresolved'"
                         id="manage-filter-container-type"
                         v-model="filterContainerType"
                         class="mb-2 mr-sm-2 mb-sm-0"
-                        :options="containerTypeOptions"></b-form-select>
-                    <label v-if="filterResolution != 'unresolved'" class="mr-sm-2" for="manage-filter-resolver-type"
-                        >Resolvers of type</label
-                    >
-                    <b-form-select
+                        :options="containerTypeOptions" />
+                    <label v-if="filterResolution != 'unresolved'" class="mr-sm-2" for="manage-filter-resolver-type">
+                        Resolvers of type
+                    </label>
+                    <GFormSelect
                         v-if="filterResolution != 'unresolved'"
                         id="manage-filter-resolver-type"
                         v-model="filterResolverType"
                         class="mb-2 mr-sm-2 mb-sm-0"
-                        :options="resolverTypeOptions"></b-form-select>
-                </b-form>
-            </b-row>
+                        :options="resolverTypeOptions" />
+                </GForm>
+            </GRow>
         </template>
         <template v-slot:actions>
-            <b-row class="m-1">
-                <b-button class="mb-2 mr-sm-2 mb-sm-0" @click="installSelected">
+            <GRow class="m-1">
+                <GButton class="mb-2 mr-sm-2 mb-sm-0" @click="installSelected">
                     <!-- v-bind:disabled="!hasSelection"  -->
                     <span class="fa fa-plus" />
                     Attempt Build
-                </b-button>
-            </b-row>
+                </GButton>
+            </GRow>
         </template>
         <template v-slot:body>
-            <b-table id="containers-table" striped :fields="fields" :items="items" @row-clicked="showRowDetails">
+            <GTable id="containers-table" :fields="fields" :items="items" striped @row-clicked="showRowDetails">
                 <template v-slot:cell(selected)="data">
-                    <b-form-checkbox v-model="data.item.selected"></b-form-checkbox>
+                    <GFormCheckbox v-model="data.item.selected" />
                 </template>
                 <template v-slot:cell(requirement)="row">
                     <requirements :requirements="row.item.requirements" />
@@ -86,27 +83,33 @@
                 <template v-slot:row-details="row">
                     <ContainerResolutionDetails :resolution="row.item" />
                 </template>
-            </b-table>
+            </GTable>
         </template>
     </dependency-index-wrapper>
 </template>
 <script>
-import BootstrapVue from "bootstrap-vue";
 import _ from "underscore";
-import Vue from "vue";
+
+import { GButton, GForm, GFormCheckbox, GFormSelect, GRow, GTable } from "@/component-library";
 
 import { getContainerResolutionToolbox, resolveContainersWithInstall } from "../AdminServices";
 import ContainerResolutionDetails from "./ContainerResolutionDetails";
 import { DESCRIPTION } from "./ContainerResolver";
 import DependencyIndexMixin from "./DependencyIndexMixin";
 
-Vue.use(BootstrapVue);
-
 const RESOLVER_TYPE_OPTIONS = _.keys(DESCRIPTION).map((resolverType) => ({ value: resolverType, text: resolverType }));
 RESOLVER_TYPE_OPTIONS.splice(0, 0, { value: null, text: "*any*" });
 
 export default {
-    components: { ContainerResolutionDetails },
+    components: {
+        ContainerResolutionDetails,
+        GButton,
+        GForm,
+        GFormCheckbox,
+        GFormSelect,
+        GRow,
+        GTable,
+    },
     mixins: [DependencyIndexMixin],
     data() {
         return {

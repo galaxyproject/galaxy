@@ -1,19 +1,19 @@
 <template>
     <div>
-        <b-card v-if="!simple" class="citation-card" header-tag="nav">
+        <GCard v-if="!simple" class="citation-card" header-tag="nav">
             <template v-slot:header>
-                <b-nav card-header tabs>
-                    <b-nav-item
+                <GNav card-header tabs>
+                    <GNavItem
                         :active="outputFormat === outputFormats.CITATION"
-                        @click="outputFormat = outputFormats.CITATION"
-                        >Citations (APA)</b-nav-item
-                    >
-                    <b-nav-item
+                        @click="outputFormat = outputFormats.CITATION">
+                        Citations (APA)
+                    </GNavItem>
+                    <GNavItem
                         :active="outputFormat === outputFormats.BIBTEX"
-                        @click="outputFormat = outputFormats.BIBTEX"
-                        >BibTeX</b-nav-item
-                    >
-                </b-nav>
+                        @click="outputFormat = outputFormats.BIBTEX">
+                        BibTeX
+                    </GNavItem>
+                </GNav>
             </template>
             <div v-if="source === 'histories'" class="infomessage">
                 <div v-html="config.citations_export_message_html"></div>
@@ -26,38 +26,34 @@
                     :citation="citation"
                     :output-format="outputFormat" />
             </div>
-        </b-card>
+        </GCard>
         <div v-else-if="citations.length">
-            <b-btn v-b-toggle="id" variant="primary">Citations</b-btn>
-            <b-collapse
+            <GButton v-b-toggle="id" variant="primary">Citations</GButton>
+            <GCollapse
                 :id="id.replace(/ /g, '_')"
                 class="mt-2"
                 @show="$emit('show')"
                 @shown="$emit('shown')"
                 @hide="$emit('hide')"
                 @hidden="$emit('hidden')">
-                <b-card>
+                <GCard>
                     <Citation
                         v-for="(citation, index) in citations"
                         :key="index"
                         class="formatted-reference"
                         :citation="citation"
                         :output-format="outputFormat" />
-                </b-card>
-            </b-collapse>
+                </GCard>
+            </GCollapse>
         </div>
     </div>
 </template>
 <script>
-import BootstrapVue from "bootstrap-vue";
-import Vue from "vue";
-
+import { GButton, GCard, GCollapse, GNav, GNavItem } from "@/component-library";
 import { useConfig } from "@/composables/config";
 
 import Citation from "./Citation";
 import { getCitations } from "./services";
-
-Vue.use(BootstrapVue);
 
 const outputFormats = Object.freeze({
     CITATION: "bibliography",
@@ -67,6 +63,11 @@ const outputFormats = Object.freeze({
 
 export default {
     components: {
+        GButton,
+        GCard,
+        GCollapse,
+        GNav,
+        GNavItem,
         Citation,
     },
     props: {

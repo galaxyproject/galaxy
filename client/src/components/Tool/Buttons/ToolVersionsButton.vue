@@ -4,7 +4,10 @@ import { faCheck, faCube, faCubes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 
+import { GDropdown, GDropdownItem } from "@/component-library";
+
 library.add(faCheck, faCubes, faCube);
+
 const props = defineProps({
     version: {
         type: String,
@@ -22,7 +25,7 @@ const availableVersions = computed(() => [...props.versions].reverse());
 </script>
 
 <template>
-    <b-dropdown
+    <GDropdown
         v-b-tooltip.hover
         no-caret
         right
@@ -35,7 +38,7 @@ const availableVersions = computed(() => [...props.versions].reverse());
         <template v-slot:button-content>
             <FontAwesomeIcon icon="fas fa-cubes" />
         </template>
-        <b-dropdown-item
+        <GDropdownItem
             v-for="v of availableVersions"
             :key="v"
             :active="v === props.version"
@@ -44,6 +47,6 @@ const availableVersions = computed(() => [...props.versions].reverse());
                 <FontAwesomeIcon icon="fas fa-cube" /> <span v-localize>Switch to</span> {{ v }}
             </span>
             <span v-else> <FontAwesomeIcon icon="fas fa-check" /> <span v-localize>Selected</span> {{ v }} </span>
-        </b-dropdown-item>
-    </b-dropdown>
+        </GDropdownItem>
+    </GDropdown>
 </template>

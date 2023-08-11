@@ -1,6 +1,6 @@
 <template>
     <div class="jobs-table-wrapper">
-        <b-table
+        <GTable
             v-model="innerValue"
             :fields="fields"
             :items="items"
@@ -18,9 +18,9 @@
             </template>
             <template v-slot:empty>
                 <LoadingSpan v-if="loading" message="Loading jobs" />
-                <b-alert v-else class="no-jobs" variant="info" show>
+                <GAlert v-else class="no-jobs" variant="info" show>
                     {{ noItemsMessage }}
-                </b-alert>
+                </GAlert>
             </template>
             <template v-slot:cell(update_time)="data">
                 <UtcDate :date="data.value" mode="elapsed" />
@@ -63,7 +63,7 @@
             <template v-for="(index, name) in $scopedSlots" v-slot:[name]="data">
                 <slot :name="name" v-bind="data"></slot>
             </template>
-        </b-table>
+        </GTable>
     </div>
 </template>
 
@@ -72,8 +72,16 @@ import JobDetails from "components/JobInformation/JobDetails";
 import LoadingSpan from "components/LoadingSpan";
 import UtcDate from "components/UtcDate";
 
+import { GAlert, GTable } from "@/component-library";
+
 export default {
-    components: { UtcDate, JobDetails, LoadingSpan },
+    components: {
+        GAlert,
+        GTable,
+        JobDetails,
+        LoadingSpan,
+        UtcDate,
+    },
     props: {
         tableCaption: {
             type: String,

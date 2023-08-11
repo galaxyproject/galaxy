@@ -1,5 +1,5 @@
 <template>
-    <b-card>
+    <GCard>
         <JobInformation :job_id="id" :include-times="true">
             <tr v-if="hasTraceback">
                 <td>Traceback</td>
@@ -26,11 +26,13 @@
         <br />
         <h2 class="h-md">Job Metrics</h2>
         <JobMetrics :job-id="id" :include-title="false" />
-    </b-card>
+    </GCard>
 </template>
 
 <script>
 import JobMetrics from "components/JobMetrics/JobMetrics";
+
+import { GCard } from "@/component-library";
 
 import JobInformation from "./JobInformation";
 
@@ -39,6 +41,7 @@ import JobParameters from "components/JobParameters/JobParameters.vue";
 
 export default {
     components: {
+        GCard,
         CodeRow,
         JobInformation,
         JobMetrics,

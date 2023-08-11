@@ -1,7 +1,7 @@
 <template>
     <div>
         <div v-if="!hasQuota" class="quota-text d-flex align-items-center">
-            <b-link
+            <GLink
                 v-b-tooltip.hover.left
                 to="/storage"
                 :disabled="isAnonymous"
@@ -9,21 +9,21 @@
                 :title="title"
                 data-description="storage dashboard link">
                 {{ usingString + " " + totalUsageString }}
-            </b-link>
+            </GLink>
         </div>
         <div v-else class="quota-meter d-flex align-items-center">
-            <b-link
+            <GLink
                 v-b-tooltip.hover.left
                 class="quota-progress"
                 :disabled="isAnonymous"
                 to="/storage"
                 :title="title"
                 data-description="storage dashboard link">
-                <b-progress :max="100">
-                    <b-progress-bar aria-label="Quota usage" :value="usage" :variant="variant" />
-                </b-progress>
+                <GProgress :max="100">
+                    <GProgressBar aria-label="Quota usage" :value="usage" :variant="variant" />
+                </GProgress>
                 <span>{{ usingString + " " + usage.toFixed(0) }}%</span>
-            </b-link>
+            </GLink>
         </div>
     </div>
 </template>
@@ -32,11 +32,17 @@
 import { mapState } from "pinia";
 import { bytesToString } from "utils/utils";
 
+import { GLink, GProgress, GProgressBar } from "@/component-library";
 import { useConfigStore } from "@/stores/configurationStore";
 import { useUserStore } from "@/stores/userStore";
 
 export default {
     name: "QuotaMeter",
+    components: {
+        GLink,
+        GProgress,
+        GProgressBar,
+    },
     data() {
         return {
             usingString: this.l("Using"),

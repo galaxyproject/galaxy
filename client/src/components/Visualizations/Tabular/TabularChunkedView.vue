@@ -4,6 +4,7 @@ import axios from "axios";
 import { parse } from "csv-parse/sync";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 
+import { GTableSimple, GTbody, GTd, GTh, GThead, GTr } from "@/component-library";
 import { getAppRoot } from "@/onload/loadConfig";
 
 interface TabularChunk {
@@ -174,26 +175,26 @@ onMounted(() => {
 <template>
     <div>
         <!-- TODO loading spinner locked to top right -->
-        <b-table-simple hover small striped>
-            <b-thead head-variant="dark">
-                <b-tr>
-                    <b-th v-for="(column, index) in columns" :key="column">{{ column || `Column ${index + 1}` }}</b-th>
-                </b-tr>
-            </b-thead>
-            <b-tbody>
-                <b-tr v-for="(row, index) in tabularData.rows" :key="index">
-                    <b-td
+        <GTableSimple hover small striped>
+            <GThead head-variant="dark">
+                <GTr>
+                    <GTh v-for="(column, index) in columns" :key="column">{{ column || `Column ${index + 1}` }}</GTh>
+                </GTr>
+            </GThead>
+            <GTbody>
+                <GTr v-for="(row, index) in tabularData.rows" :key="index">
+                    <GTd
                         v-for="(element, elementIndex) in row.slice(0, -1)"
                         :key="elementIndex"
                         :class="columnStyle[elementIndex]">
                         {{ element }}
-                    </b-td>
-                    <b-td :class="columnStyle[row.length - 1]" :colspan="1 + columns.length - row.length">
+                    </GTd>
+                    <GTd :class="columnStyle[row.length - 1]" :colspan="1 + columns.length - row.length">
                         {{ row.slice(-1)[0] }}
-                    </b-td>
-                </b-tr>
-            </b-tbody>
-        </b-table-simple>
+                    </GTd>
+                </GTr>
+            </GTbody>
+        </GTableSimple>
     </div>
 </template>
 

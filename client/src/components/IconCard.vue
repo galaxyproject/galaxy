@@ -1,20 +1,36 @@
 <template>
-    <b-card :title="title" class="mx-4 icon-card">
-        <b-container class="p-0">
-            <b-row>
-                <b-col>{{ description }}</b-col>
-                <b-col cols="auto"><i :class="icon"></i></b-col>
-            </b-row>
-        </b-container>
-        <b-button variant="primary" @click="onButtonClick">{{ buttonText }}</b-button>
-    </b-card>
+    <GCard :title="title" class="mx-4 icon-card">
+        <GContainer class="p-0">
+            <GRow>
+                <GCol>
+                    {{ description }}
+                </GCol>
+                <GCol cols="auto">
+                    <i :class="icon" />
+                </GCol>
+            </GRow>
+        </GContainer>
+        <GButton variant="primary" @click="onButtonClick">
+            {{ buttonText }}
+        </GButton>
+    </GCard>
 </template>
 
 <script>
+import { GButton, GCard, GCol, GContainer, GRow } from "@/component-library";
+
 /** A generic Card, used as a template, that displays an action button,
  * an icon (font-awesome), along with a title and description.
  * Clicking the button emits an "onButtonClick" event. */
+
 export default {
+    components: {
+        GButton,
+        GContainer,
+        GCard,
+        GRow,
+        GCol,
+    },
     props: {
         title: {
             type: String,

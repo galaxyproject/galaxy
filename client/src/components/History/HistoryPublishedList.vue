@@ -7,6 +7,8 @@ import UtcDate from "components/UtcDate";
 import Filtering, { contains, expandNameTag } from "utils/filtering";
 import { computed, ref, watch } from "vue";
 
+import { GAlert, GButton, GInput, GInputGroup, GInputGroupAppend, GPagination, GTable } from "@/component-library";
+
 import { getPublishedHistories, updateTags } from "./services";
 
 const validFilters = {
@@ -110,12 +112,12 @@ watch([filterText, sortBy, sortDesc], () => {
     <section id="published-histories" class="d-flex flex-column">
         <Heading h1>Published Histories</Heading>
 
-        <b-alert v-if="noItems" variant="info" show>No published histories found.</b-alert>
+        <GAlert v-if="noItems" variant="info" show>No published histories found.</GAlert>
 
         <div v-else>
-            <b-input-group class="mb-2">
+            <GInputGroup class="mb-2">
                 <DebouncedInput v-slot="{ value, input }" v-model="localFilter">
-                    <b-form-input
+                    <GInput
                         id="published-histories-filter"
                         size="sm"
                         :class="filterText && 'font-weight-bold'"
@@ -126,8 +128,8 @@ watch([filterText, sortBy, sortDesc], () => {
                         @input="input"
                         @keyup.esc="updateFilter('')" />
                 </DebouncedInput>
-                <b-input-group-append>
-                    <b-button
+                <GInputGroupAppend>
+                    <GButton
                         id="published-histories-advanced-filter-toggle"
                         size="sm"
                         :pressed="showAdvanced"
@@ -138,34 +140,34 @@ watch([filterText, sortBy, sortDesc], () => {
                         @click="onToggle">
                         <icon v-if="showAdvanced" icon="angle-double-up" />
                         <icon v-else icon="angle-double-down" />
-                    </b-button>
-                    <b-button
+                    </GButton>
+                    <GButton
                         size="sm"
                         aria-label="Clear filters"
                         data-description="clear filters"
                         @click="updateFilter('')">
                         <icon icon="times" />
-                    </b-button>
-                </b-input-group-append>
-            </b-input-group>
+                    </GButton>
+                </GInputGroupAppend>
+            </GInputGroup>
 
             <div v-if="showAdvanced" class="mt-2" @keyup.esc="onToggle" @keyup.enter="onSearch">
                 <small>Filter by name:</small>
-                <b-form-input
+                <GInput
                     id="published-histories-advanced-filter-name"
                     v-model="filterSettings['name:']"
                     size="sm"
                     placeholder="any name" />
                 <small class="mt-1">Filter by annotation:</small>
-                <b-form-input v-model="filterSettings['annotation:']" size="sm" placeholder="any annotation" />
+                <GInput v-model="filterSettings['annotation:']" size="sm" placeholder="any annotation" />
                 <small class="mt-1">Filter by community tag:</small>
-                <b-form-input
+                <GInput
                     id="published-histories-advanced-filter-tag"
                     v-model="filterSettings['tag:']"
                     size="sm"
                     placeholder="any community tag" />
                 <div class="mt-3">
-                    <b-button
+                    <GButton
                         id="published-histories-advanced-filter-submit"
                         class="mr-1"
                         size="sm"
@@ -174,23 +176,23 @@ watch([filterText, sortBy, sortDesc], () => {
                         @click="onSearch">
                         <icon icon="search" />
                         <span>{{ "Search" | localize }}</span>
-                    </b-button>
-                    <b-button size="sm" @click="onToggle">
+                    </GButton>
+                    <GButton size="sm" @click="onToggle">
                         <icon icon="redo" />
                         <span>{{ "Cancel" | localize }}</span>
-                    </b-button>
+                    </GButton>
                 </div>
             </div>
 
-            <b-alert v-if="noResults" variant="info" show>
+            <GAlert v-if="noResults" variant="info" show>
                 No matching entries found for: <span class="font-weight-bold">{{ filterText }}</span>
-            </b-alert>
+            </GAlert>
 
-            <b-alert v-if="loading" variant="info" show>
+            <GAlert v-if="loading" variant="info" show>
                 <LoadingSpan message="Loading published histories" />
-            </b-alert>
+            </GAlert>
 
-            <b-table
+            <GTable
                 v-if="items.length"
                 id="published-histories-table"
                 no-sort-reset
@@ -219,9 +221,9 @@ watch([filterText, sortBy, sortDesc], () => {
                 <template v-slot:cell(update_time)="data">
                     <UtcDate :date="data.value" mode="elapsed" />
                 </template>
-            </b-table>
+            </GTable>
 
-            <b-pagination
+            <GPagination
                 v-if="items.length > perPage"
                 v-model="currentPage"
                 :per-page="perPage"

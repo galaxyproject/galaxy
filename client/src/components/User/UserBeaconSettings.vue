@@ -1,10 +1,10 @@
 <template>
-    <BRow class="ml-3 mb-1">
+    <GRow class="ml-3 mb-1">
         <i class="pref-icon pt-1 fa fa-lg fa-broadcast-tower" />
         <div class="pref-content pr-1">
             <a id="beacon-settings" href="javascript:void(0)"><b v-b-modal.modal-beacon v-localize>Manage Beacon</b></a>
             <div v-localize class="form-text text-muted">Contribute variants to Beacon</div>
-            <BModal
+            <GModal
                 id="modal-beacon"
                 ref="modal"
                 size="xl"
@@ -33,30 +33,30 @@
                     initiated the query to negotiate further information exchange or data access.
                 </p>
 
-                <BAlert v-if="enabled" show>
+                <GAlert v-if="enabled" show>
                     <div class="flex-row space-between">
                         <div class="no-shrink">
                             Beacon sharing is <span class="bold">enabled</span> for your profile
                         </div>
                         <div class="fill"></div>
                         <div class="no-shrink">
-                            <BButton variant="danger" @click="optOut">Disable</BButton>
+                            <GButton variant="danger" @click="optOut">Disable</GButton>
                         </div>
                     </div>
-                </BAlert>
+                </GAlert>
 
                 <!-- Setting to show when beacon is disabled -->
-                <BAlert v-if="!enabled" show>
+                <GAlert v-if="!enabled" show>
                     <div class="flex-row space-between">
                         <div class="no-shrink">
                             Beacon sharing is currently <span class="bold">disabled</span> - no data will be shared
                         </div>
                         <div class="fill"></div>
                         <div>
-                            <BButton variant="success" @click="optIn">Enable</BButton>
+                            <GButton variant="success" @click="optIn">Enable</GButton>
                         </div>
                     </div>
-                </BAlert>
+                </GAlert>
 
                 <div v-if="enabled">
                     <p>
@@ -77,7 +77,7 @@
                         <div class="no-shrink">No beacon history found</div>
                         <div class="fill"></div>
                         <div class="no-shrink">
-                            <BButton @click="createBeaconHistory">Create Beacon History</BButton>
+                            <GButton @click="createBeaconHistory">Create Beacon History</GButton>
                         </div>
                     </div>
 
@@ -94,7 +94,7 @@
                         </div>
                         <div class="fill"></div>
                         <div class="no-shrink">
-                            <BButton @click="switchHistory(beaconHistory.id)">Switch to History</BButton>
+                            <GButton @click="switchHistory(beaconHistory.id)">Switch to History</GButton>
                         </div>
                     </div>
                 </div>
@@ -111,21 +111,26 @@
                         </li>
                     </ul>
                 </div>
-            </BModal>
+            </GModal>
         </div>
-    </BRow>
+    </GRow>
 </template>
 
 <script>
 import axios from "axios";
-import { BAlert, BButton, BModal, BRow } from "bootstrap-vue";
 import { mapActions } from "pinia";
 import { withPrefix } from "utils/redirect";
 
+import { GAlert, GButton, GModal, GRow } from "@/component-library";
 import { useHistoryStore } from "@/stores/historyStore";
 
 export default {
-    components: { BButton, BModal, BRow, BAlert },
+    components: {
+        GAlert,
+        GButton,
+        GModal,
+        GRow,
+    },
     props: {
         userId: {
             type: String,

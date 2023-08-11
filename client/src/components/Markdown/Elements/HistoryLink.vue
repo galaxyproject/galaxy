@@ -1,12 +1,12 @@
 <template>
     <div>
-        <b-link
+        <GLink
             v-if="showLink"
             data-description="history import link"
             :data-history-id="args.history_id"
-            @click="onClick"
-            >Click to Import History: {{ name }}.</b-link
-        >
+            @click="onClick">
+            Click to Import History: {{ name }}.
+        </GLink>
         <div v-if="imported" class="text-success">
             <FontAwesomeIcon icon="check" class="mr-1" />
             <span>Successfully Imported History: {{ name }}!</span>
@@ -22,15 +22,14 @@
 <script>
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
-import BootstrapVue from "bootstrap-vue";
 import { withPrefix } from "utils/redirect";
 import { errorMessageAsString } from "utils/simple-error";
-import Vue from "vue";
 
-Vue.use(BootstrapVue);
+import { GLink } from "@/component-library";
 
 export default {
     components: {
+        GLink,
         FontAwesomeIcon,
     },
     props: {

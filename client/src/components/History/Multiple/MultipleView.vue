@@ -5,6 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, type Ref, ref, watchEffect, type WatchStopHandle } from "vue";
 
+import { GAlert, GButton, GInput, GInputGroup, GInputGroupAppend } from "@/component-library";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 import localize from "@/utils/localization";
@@ -72,12 +73,12 @@ function updateFilter(newFilter: string) {
 
 <template>
     <div v-if="currentUser">
-        <b-alert v-if="loadingPinnedHistories" class="m-2" variant="info" show>
+        <GAlert v-if="loadingPinnedHistories" class="m-2" variant="info" show>
             <LoadingSpan message="Loading Histories" />
-        </b-alert>
+        </GAlert>
         <div v-else-if="histories.length" class="multi-history-panel d-flex flex-column h-100">
-            <b-input-group class="w-100">
-                <b-form-input
+            <GInputGroup class="w-100">
+                <GInput
                     v-model="filter"
                     size="sm"
                     debounce="500"
@@ -85,12 +86,12 @@ function updateFilter(newFilter: string) {
                     :placeholder="localize('search datasets in selected histories')"
                     data-description="filter text input"
                     @keyup.esc="updateFilter('')" />
-                <b-input-group-append>
-                    <b-button size="sm" data-description="show deleted filter toggle" @click="updateFilter('')">
+                <GInputGroupAppend>
+                    <GButton size="sm" data-description="show deleted filter toggle" @click="updateFilter('')">
                         <FontAwesomeIcon icon="fa-times" />
-                    </b-button>
-                </b-input-group-append>
-            </b-input-group>
+                    </GButton>
+                </GInputGroupAppend>
+            </GInputGroup>
             <MultipleViewList
                 :histories="histories"
                 :filter="filter"
@@ -98,9 +99,9 @@ function updateFilter(newFilter: string) {
                 :selected-histories="selectedHistories"
                 :show-modal.sync="showSelectModal" />
         </div>
-        <b-alert v-else class="m-2" variant="danger" show>
+        <GAlert v-else class="m-2" variant="danger" show>
             <span v-localize class="font-weight-bold">No History found.</span>
-        </b-alert>
+        </GAlert>
         <SelectorModal
             v-show="showSelectModal"
             :multiple="true"

@@ -2,6 +2,7 @@
 import axios from "axios";
 import { computed, onMounted, ref } from "vue";
 
+import { GAlert, GButton, GCard, GCardBody, GCardHeader } from "@/component-library";
 import { withPrefix } from "@/utils/redirect";
 import { isEmpty } from "@/utils/utils";
 
@@ -48,10 +49,10 @@ onMounted(async () => {
 </script>
 
 <template>
-    <b-card body-class="p-0" class="workflow-display">
-        <b-card-header v-if="!embedded">
+    <GCard body-class="p-0" class="workflow-display">
+        <GCardHeader v-if="!embedded">
             <span class="float-right">
-                <b-button
+                <GButton
                     v-b-tooltip.hover
                     :href="downloadUrl"
                     variant="link"
@@ -62,8 +63,8 @@ onMounted(async () => {
                     class="py-0 px-1"
                     data-description="workflow download">
                     <span class="fa fa-download" />
-                </b-button>
-                <b-button
+                </GButton>
+                <GButton
                     v-b-tooltip.hover
                     :href="importUrl"
                     role="button"
@@ -73,17 +74,17 @@ onMounted(async () => {
                     class="py-0 px-1"
                     data-description="workflow import">
                     <span class="fa fa-upload" />
-                </b-button>
+                </GButton>
             </span>
             <span>
                 <span>Workflow:</span>
                 <span class="font-weight-light" data-description="workflow name">{{ workflowName }}</span>
             </span>
-        </b-card-header>
-        <b-card-body>
+        </GCardHeader>
+        <GCardBody>
             <LoadingSpan v-if="loading" message="Loading Workflow" />
             <div v-else :class="!expanded && 'content-height'">
-                <b-alert v-if="!isEmpty(errorContent)" variant="danger" show>
+                <GAlert v-if="!isEmpty(errorContent)" variant="danger" show>
                     <b>Please fix the following error(s):</b>
                     <ul v-if="typeof errorContent === 'object'" class="my-2">
                         <li v-for="(errorValue, errorKey) in errorContent" :key="errorKey">
@@ -91,7 +92,7 @@ onMounted(async () => {
                         </li>
                     </ul>
                     <div v-else>{{ errorContent }}</div>
-                </b-alert>
+                </GAlert>
                 <div v-if="itemContent !== null">
                     <div v-for="step in itemContent?.steps" :key="step.order_index" class="mb-2">
                         <div>Step {{ step.order_index + 1 }}: {{ step.label }}</div>
@@ -99,8 +100,8 @@ onMounted(async () => {
                     </div>
                 </div>
             </div>
-        </b-card-body>
-    </b-card>
+        </GCardBody>
+    </GCard>
 </template>
 <style scoped>
 .content-height {

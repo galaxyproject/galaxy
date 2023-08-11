@@ -1,13 +1,13 @@
 <template>
-    <b-container>
-        <b-row>
-            <b-col>
+    <GContainer>
+        <GRow>
+            <GCol>
                 <h1 class="h-sm">Current Custom Builds</h1>
-            </b-col>
-        </b-row>
-        <b-row>
-            <b-col>
-                <b-table small show-empty class="grid" :items="customBuilds" :fields="fields">
+            </GCol>
+        </GRow>
+        <GRow>
+            <GCol>
+                <GTable :fields="fields" :items="customBuilds" class="grid" show-empty small>
                     <template v-slot:cell(action)="row">
                         <a
                             v-b-tooltip.bottom.hover
@@ -17,17 +17,17 @@
                             <i class="icon fa fa-lg fa-trash-o" />
                         </a>
                     </template>
-                </b-table>
-            </b-col>
-        </b-row>
+                </GTable>
+            </GCol>
+        </GRow>
         <template v-if="installedBuilds.length > 0">
-            <b-row class="mt-2">
-                <b-col>
+            <GRow class="mt-2">
+                <GCol>
                     <h2 class="h-sm">System Installed Builds</h2>
-                </b-col>
-            </b-row>
-            <b-row>
-                <b-col id="installed-builds" class="mb-4">
+                </GCol>
+            </GRow>
+            <GRow>
+                <GCol id="installed-builds" class="mb-4">
                     <Multiselect
                         v-model="selectedInstalledBuilds"
                         multiple
@@ -37,18 +37,18 @@
                         :searchable="false"
                         :options="installedBuilds">
                     </Multiselect>
-                </b-col>
-            </b-row>
+                </GCol>
+            </GRow>
         </template>
-        <b-row>
-            <b-col>
+        <GRow>
+            <GCol>
                 <h2 class="h-sm">Add a Custom Build</h2>
-            </b-col>
-        </b-row>
-        <b-row>
-            <b-col>
-                <b-card>
-                    <b-alert
+            </GCol>
+        </GRow>
+        <GRow>
+            <GCol>
+                <GCard>
+                    <GAlert
                         fade
                         dismissible
                         :variant="alertType"
@@ -56,57 +56,53 @@
                         @dismissed="dismissCountDown = 0"
                         @dismiss-count-down="countDownChanged">
                         {{ alertMessage }}
-                    </b-alert>
+                    </GAlert>
 
-                    <b-form @submit.prevent="save">
-                        <b-form-group label="Name" description="Specify a build name, e.g. Hamster." label-for="name">
-                            <b-form-input id="name" v-model="form.name" tour_id="name" required />
-                        </b-form-group>
-                        <b-form-group label="Key" description="Specify a build key, e.g. hamster_v1." label-for="id">
-                            <b-form-input id="id" v-model="form.id" tour_id="id" required />
-                        </b-form-group>
-                        <b-form-group label="Definition" description="Provide the data source." label-for="type">
-                            <b-form-select
-                                id="type"
-                                v-model="selectedDataSource"
-                                tour_id="type"
-                                :options="dataSources"></b-form-select>
-                        </b-form-group>
+                    <GForm @submit.prevent="save">
+                        <GFormGroup label="Name" description="Specify a build name, e.g. Hamster." label-for="name">
+                            <GInput id="name" v-model="form.name" tour_id="name" required />
+                        </GFormGroup>
+                        <GFormGroup label="Key" description="Specify a build key, e.g. hamster_v1." label-for="id">
+                            <GInput id="id" v-model="form.id" tour_id="id" required />
+                        </GFormGroup>
+                        <GFormGroup label="Definition" description="Provide the data source." label-for="type">
+                            <GFormSelect id="type" v-model="selectedDataSource" tour_id="type" :options="dataSources" />
+                        </GFormGroup>
                         <div>
-                            <b-form-group v-if="selectedDataSource === 'fasta'" label="FASTA-file">
-                                <b-form-select
+                            <GFormGroup v-if="selectedDataSource === 'fasta'" label="FASTA-file">
+                                <GFormSelect
                                     v-model="selectedFastaFile"
                                     :options="fastaFiles"
-                                    :disabled="fastaFilesSelectDisabled"></b-form-select>
-                            </b-form-group>
-                            <b-form-group v-if="selectedDataSource === 'file'" label="Len-file">
-                                <b-form-file placeholder="Choose a file..." @change="readFile" />
-                                <b-progress
+                                    :disabled="fastaFilesSelectDisabled" />
+                            </GFormGroup>
+                            <GFormGroup v-if="selectedDataSource === 'file'" label="Len-file">
+                                <GFormFile placeholder="Choose a file..." @change="readFile" />
+                                <GProgress
                                     v-show="fileLoaded !== 0"
                                     animated
                                     show-progress
                                     :value="fileLoaded"
                                     :max="maxFileSize" />
-                                <b-form-textarea v-show="form.file" :value="form.file" />
-                            </b-form-group>
-                            <b-form-group v-if="selectedDataSource === 'text'" label="Edit/Paste">
-                                <b-form-textarea id="len-file-text-area" v-model="form.text" />
-                            </b-form-group>
+                                <GFormTextarea v-show="form.file" :value="form.file" />
+                            </GFormGroup>
+                            <GFormGroup v-if="selectedDataSource === 'text'" label="Edit/Paste">
+                                <GFormTextarea id="len-file-text-area" v-model="form.text" />
+                            </GFormGroup>
                         </div>
 
-                        <b-button
+                        <GButton
                             id="save"
                             v-b-tooltip.bottom.hover
                             type="submit"
                             variant="primary"
                             title="Create new build">
                             <i class="icon fa fa-save" /> Save
-                        </b-button>
-                    </b-form>
-                </b-card>
-            </b-col>
-            <b-col>
-                <b-card v-if="selectedDataSource === 'fasta'" class="alert-info">
+                        </GButton>
+                    </GForm>
+                </GCard>
+            </GCol>
+            <GCol>
+                <GCard v-if="selectedDataSource === 'fasta'" class="alert-info">
                     <h2 class="h-sm">FASTA format</h2>
                     <p class="card-text">
                         This is a multi-fasta file from your current history that provides the genome sequences for each
@@ -122,8 +118,8 @@ GGCGGCCGCGGCGATATAGAACTACTCATTATATATA...
 
 ...</pre
                     >
-                </b-card>
-                <b-card v-else class="alert-info">
+                </GCard>
+                <GCard v-else class="alert-info">
                     <h2 class="h-sm">Length Format</h2>
                     <p class="card-text">The length format is two-column, separated by whitespace, of the form:</p>
                     <pre class="card-text">chrom/contig   length of chrom/contig</pre>
@@ -140,10 +136,10 @@ chr5    152537259</pre
                         maximum basepair of the track browser. You may either upload a .len fileof this format (Len File
                         option), or directly enter the information into the box (Len Entry option).
                     </p>
-                </b-card>
-            </b-col>
-        </b-row>
-    </b-container>
+                </GCard>
+            </GCol>
+        </GRow>
+    </GContainer>
 </template>
 
 <script>
@@ -151,14 +147,41 @@ import "vue-multiselect/dist/vue-multiselect.min.css";
 
 import { getGalaxyInstance } from "app";
 import axios from "axios";
-import BootstrapVue from "bootstrap-vue";
-import Vue from "vue";
 import Multiselect from "vue-multiselect";
 
-Vue.use(BootstrapVue);
+import {
+    GAlert,
+    GButton,
+    GCard,
+    GCol,
+    GContainer,
+    GForm,
+    GFormFile,
+    GFormGroup,
+    GFormSelect,
+    GFormTextarea,
+    GInput,
+    GProgress,
+    GRow,
+    GTable,
+} from "@/component-library";
 
 export default {
     components: {
+        GAlert,
+        GButton,
+        GCard,
+        GCol,
+        GContainer,
+        GForm,
+        GFormFile,
+        GFormGroup,
+        GFormSelect,
+        GFormTextarea,
+        GInput,
+        GProgress,
+        GRow,
+        GTable,
         Multiselect,
     },
     data() {

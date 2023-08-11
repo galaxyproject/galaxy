@@ -9,7 +9,7 @@
         :title="'Edit annotation...' | localize"
         :placeholder="'Edit annotation...' | localize">
         <DebouncedInput v-slot="inputScope" v-model="annotation" :delay="1000">
-            <b-form-textarea
+            <GFormTextarea
                 size="sm"
                 tabindex="-1"
                 rows="3"
@@ -18,19 +18,22 @@
                 :placeholder="placeholder"
                 :state="stateValidator(inputScope.value, annotation)"
                 @input="inputScope.input"
-                @blur="toggleEdit(false)"></b-form-textarea>
+                @blur="toggleEdit(false)" />
         </DebouncedInput>
     </ClickToEdit>
 </template>
 
 <script>
+import { GFormTextarea } from "@/component-library";
+
 import ClickToEdit from "./ClickToEdit";
 import DebouncedInput from "./DebouncedInput";
 
 export default {
     components: {
-        DebouncedInput,
         ClickToEdit,
+        DebouncedInput,
+        GFormTextarea,
     },
     props: {
         value: { type: String, required: false, default: "" },

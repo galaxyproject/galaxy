@@ -9,14 +9,14 @@
             {{ codeLabel }}
         </td>
         <td v-if="codeItem">
-            <b-row align-v="center">
-                <b-col cols="11">
+            <GRow align-v="center">
+                <GCol cols="11">
                     <pre :class="codeClass">{{ codeItem }}</pre>
-                </b-col>
-                <b-col class="nopadding pointer">
+                </GCol>
+                <GCol class="nopadding pointer">
                     <FontAwesomeIcon :icon="iconClass" />
-                </b-col>
-            </b-row>
+                </GCol>
+            </GRow>
         </td>
         <td v-else><i>empty</i></td>
     </tr>
@@ -26,9 +26,13 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCompressAlt, faExpandAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
+import { GCol, GRow } from "@/component-library";
+
 library.add(faCompressAlt, faExpandAlt);
 export default {
     components: {
+        GRow,
+        GCol,
         FontAwesomeIcon,
     },
     props: {

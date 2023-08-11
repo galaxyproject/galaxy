@@ -4,21 +4,23 @@ import { faListAlt } from "@fortawesome/free-regular-svg-icons";
 import { faArrowDown, faColumns, faSignInAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useInfiniteScroll } from "@vueuse/core";
-import {
-    BBadge,
-    BButton,
-    BButtonGroup,
-    BFormGroup,
-    BFormInput,
-    BListGroup,
-    BListGroupItem,
-    BModal,
-} from "bootstrap-vue";
 import isEqual from "lodash.isequal";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, onUnmounted, type PropType, type Ref, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
+import {
+    GAlert,
+    GBadge,
+    GButton,
+    GButtonGroup,
+    GFormGroup,
+    GInput,
+    GListGroup,
+    GListGroupItem,
+    GModal,
+    GOverlay,
+} from "@/component-library";
 import type { components } from "@/schema";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
@@ -68,7 +70,7 @@ const propShowModal = computed({
 const selectedHistories: Ref<{ id: string }[]> = ref([]);
 const filter = ref("");
 const busy = ref(false);
-const modal: Ref<BModal | null> = ref(null);
+const modal: Ref<any | null> = ref(null);
 const scrollableDiv: Ref<HTMLElement | null> = ref(null);
 
 const historyStore = useHistoryStore();
@@ -209,7 +211,7 @@ async function loadMore(noScroll = false) {
 
 <template>
     <div>
-        <BModal
+        <GModal
             ref="modal"
             v-model="propShowModal"
             class="history-selector-modal"
@@ -220,16 +222,16 @@ async function loadMore(noScroll = false) {
                 <Heading h2 inline size="sm">{{ localize(title) }}</Heading>
             </template>
 
-            <BFormGroup :description="localize('Filter histories')">
-                <BFormInput v-model="filter" type="search" debounce="400" :placeholder="localize('Search Filter')" />
-            </BFormGroup>
+            <GFormGroup :description="localize('Filter histories')">
+                <GInput v-model="filter" type="search" debounce="400" :placeholder="localize('Search Filter')" />
+            </GFormGroup>
 
-            <BBadge v-if="filter && !validFilter" class="alert-danger w-100">Search string too short!</BBadge>
-            <b-alert v-else-if="!busy && hasNoResults" variant="danger" show>No histories found.</b-alert>
+            <GBadge v-if="filter && !validFilter" class="alert-danger w-100">Search string too short!</GBadge>
+            <GAlert v-else-if="!busy && hasNoResults" variant="danger" show>No histories found.</GAlert>
 
             <div ref="scrollableDiv" class="history-selector-modal-list">
-                <BListGroup>
-                    <BListGroupItem
+                <GListGroup>
+                    <GListGroupItem
                         v-for="history in filtered"
                         :key="history.id"
                         :data-pk="history.id"
@@ -244,12 +246,12 @@ async function loadMore(noScroll = false) {
                             </Heading>
 
                             <div class="d-flex align-items-center flex-gapx-1">
-                                <BBadge v-b-tooltip pill :title="localize('Amount of items in history')">
+                                <GBadge v-b-tooltip pill :title="localize('Amount of items in history')">
                                     {{ history.count }} {{ localize("items") }}
-                                </BBadge>
-                                <BBadge v-if="history.update_time" v-b-tooltip pill :title="localize('Last edited')">
+                                </GBadge>
+                                <GBadge v-if="history.update_time" v-b-tooltip pill :title="localize('Last edited')">
                                     <UtcDate :date="history.update_time" mode="elapsed" />
-                                </BBadge>
+                                </GBadge>
                             </div>
                         </div>
 
@@ -265,8 +267,8 @@ async function loadMore(noScroll = false) {
                         <div
                             v-if="props.additionalOptions.length > 0"
                             class="d-flex justify-content-end align-items-center mt-1">
-                            <BButtonGroup>
-                                <BButton
+                            <GButtonGroup>
+                                <GButton
                                     v-if="props.additionalOptions.includes('set-current')"
                                     v-b-tooltip
                                     :title="localize('Set as current history')"
@@ -274,9 +276,9 @@ async function loadMore(noScroll = false) {
                                     class="p-0 px-1"
                                     @click.stop="() => setCurrentHistory(history)">
                                     <FontAwesomeIcon icon="fa-sign-in-alt" />
-                                </BButton>
+                                </GButton>
 
-                                <BButton
+                                <GButton
                                     v-if="props.additionalOptions.includes('multi')"
                                     v-b-tooltip
                                     :title="localize('Open in multi-view')"
@@ -284,9 +286,9 @@ async function loadMore(noScroll = false) {
                                     class="p-0 px-1"
                                     @click.stop="() => openInMulti(history)">
                                     <FontAwesomeIcon icon="fa-columns" />
-                                </BButton>
+                                </GButton>
 
-                                <BButton
+                                <GButton
                                     v-if="props.additionalOptions.includes('center')"
                                     v-b-tooltip
                                     :title="localize('Open in center panel')"
@@ -294,24 +296,24 @@ async function loadMore(noScroll = false) {
                                     class="p-0 px-1"
                                     @click.stop="() => setCenterPanelHistory(history)">
                                     <FontAwesomeIcon icon="far fa-list-alt" />
-                                </BButton>
-                            </BButtonGroup>
+                                </GButton>
+                            </GButtonGroup>
                         </div>
-                    </BListGroupItem>
+                    </GListGroupItem>
                     <div>
                         <div v-if="allLoaded || filter !== ''" class="list-end my-2">
                             <span v-if="filtered.length == 1">- {{ filtered.length }} history loaded -</span>
                             <span v-else-if="filtered.length > 1">- All {{ filtered.length }} histories loaded -</span>
                         </div>
-                        <b-overlay :show="busy" opacity="0.5" />
+                        <GOverlay :show="busy" opacity="0.5" />
                     </div>
-                </BListGroup>
+                </GListGroup>
             </div>
 
             <template v-slot:modal-footer>
                 <div v-if="!allLoaded" class="mr-auto">
                     <i>Loaded {{ filtered.length }} out of {{ totalHistoryCount }} histories</i>
-                    <BButton
+                    <GButton
                         v-b-tooltip.noninteractive.hover
                         class="load-more-hist-button"
                         size="sm"
@@ -319,19 +321,19 @@ async function loadMore(noScroll = false) {
                         variant="link"
                         @click="loadMore()">
                         <FontAwesomeIcon icon="fa-arrow-down" />
-                    </BButton>
+                    </GButton>
                 </div>
-                <BButton
+                <GButton
                     v-if="multiple"
                     v-localize
                     :disabled="selectedHistories.length === 0 || isEqual(selectedHistories, pinnedHistories)"
                     variant="primary"
                     @click="selectHistories">
                     Change Selected
-                </BButton>
+                </GButton>
                 <span v-else v-localize> Click a history to switch to it </span>
             </template>
-        </BModal>
+        </GModal>
     </div>
 </template>
 

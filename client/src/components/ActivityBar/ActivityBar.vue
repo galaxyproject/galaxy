@@ -4,6 +4,7 @@ import { type Ref, ref } from "vue";
 import { useRoute } from "vue-router/composables";
 import draggable from "vuedraggable";
 
+import { GNav } from "@/component-library";
 import { useConfig } from "@/composables/config";
 import { convertDropData } from "@/stores/activitySetup";
 import { type Activity, useActivityStore } from "@/stores/activityStore";
@@ -137,7 +138,7 @@ function toggleContextMenu(evt: MouseEvent) {
             @dragover.prevent="onDragOver"
             @dragenter.prevent="onDragEnter"
             @dragleave.prevent="onDragLeave">
-            <b-nav vertical class="flex-nowrap p-1 h-100 vertical-overflow">
+            <GNav vertical class="flex-nowrap p-1 h-100 vertical-overflow">
                 <draggable
                     :list="activities"
                     :class="{ 'activity-popper-disabled': isDragging }"
@@ -190,8 +191,8 @@ function toggleContextMenu(evt: MouseEvent) {
                         </div>
                     </div>
                 </draggable>
-            </b-nav>
-            <b-nav vertical class="flex-nowrap p-1">
+            </GNav>
+            <GNav vertical class="flex-nowrap p-1">
                 <NotificationItem
                     v-if="!isAnonymous && config.enable_notification_system"
                     id="activity-notifications"
@@ -208,7 +209,7 @@ function toggleContextMenu(evt: MouseEvent) {
                     tooltip="Edit preferences"
                     to="/user"
                     @click="onToggleSidebar()" />
-            </b-nav>
+            </GNav>
         </div>
         <FlexPanel v-if="isActiveSideBar('tools')" key="tools" side="left" :collapsible="false">
             <ToolBox />

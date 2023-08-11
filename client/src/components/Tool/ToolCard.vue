@@ -7,6 +7,7 @@ import { getAppRoot } from "onload/loadConfig";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
+import { GButton, GButtonGroup, GModal } from "@/component-library";
 import { useUserStore } from "@/stores/userStore";
 
 import ToolSelectPreferredObjectStore from "./ToolSelectPreferredObjectStore";
@@ -115,7 +116,7 @@ function onUpdatePreferredObjectStoreId(selectedToolPreferredObjectStoreId) {
                     <span>(Galaxy Version {{ props.version }})</span>
                 </div>
                 <div class="d-flex flex-nowrap align-items-start flex-gapx-1">
-                    <b-button-group class="tool-card-buttons">
+                    <GButtonGroup class="tool-card-buttons">
                         <ToolFavoriteButton v-if="hasUser" :id="props.id" @onSetError="onSetError" />
                         <ToolVersionsButton
                             v-if="showVersions"
@@ -126,7 +127,7 @@ function onUpdatePreferredObjectStoreId(selectedToolPreferredObjectStoreId) {
                             :id="props.id"
                             :sharable-url="props.options.sharable_url"
                             :options="props.options" />
-                        <b-button
+                        <GButton
                             v-if="allowObjectStoreSelection"
                             id="tool-storage"
                             role="button"
@@ -135,13 +136,13 @@ function onUpdatePreferredObjectStoreId(selectedToolPreferredObjectStoreId) {
                             class="float-right tool-storage"
                             @click="onShowObjectStoreSelect">
                             <span class="fa fa-hdd" />
-                        </b-button>
+                        </GButton>
                         <ToolTargetPreferredObjectStorePopover
                             v-if="allowObjectStoreSelection"
                             :tool-preferred-object-store-id="toolPreferredObjectStoreId"
                             :user="currentUser">
                         </ToolTargetPreferredObjectStorePopover>
-                        <b-modal
+                        <GModal
                             v-model="showPreferredObjectStoreModal"
                             title="Tool Execution Preferred Object Store"
                             modal-class="tool-preferred-object-store-modal"
@@ -152,8 +153,8 @@ function onUpdatePreferredObjectStoreId(selectedToolPreferredObjectStoreId) {
                                 :tool-preferred-object-store-id="toolPreferredObjectStoreId"
                                 :root="root"
                                 @updated="onUpdatePreferredObjectStoreId" />
-                        </b-modal>
-                    </b-button-group>
+                        </GModal>
+                    </GButtonGroup>
                     <slot name="header-buttons" />
                 </div>
             </div>

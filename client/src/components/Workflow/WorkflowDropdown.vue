@@ -1,6 +1,6 @@
 <template>
     <div>
-        <b-link
+        <GLink
             aria-expanded="false"
             class="workflow-dropdown font-weight-bold"
             data-toggle="dropdown"
@@ -24,7 +24,7 @@
                 :title="getWorkflowTooltip(sourceType, workflow)">
                 <Icon fixed-width icon="link" class="mr-1 workflow-external-link" />
             </span>
-        </b-link>
+        </GLink>
         <p v-if="workflow.description" class="workflow-dropdown-description">
             <TextSummary :description="workflow.description" :show-details.sync="showDetails" />
         </p>
@@ -98,6 +98,7 @@ import TextSummary from "components/Common/TextSummary";
 import { mapState } from "pinia";
 import { withPrefix } from "utils/redirect";
 
+import { GLink } from "@/component-library";
 import { useUserStore } from "@/stores/userStore";
 import { clearDrag, setDrag } from "@/utils/setDrag.js";
 
@@ -110,6 +111,7 @@ library.add(faEdit);
 
 export default {
     components: {
+        GLink,
         TextSummary,
     },
     props: {

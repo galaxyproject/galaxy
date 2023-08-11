@@ -4,41 +4,36 @@
         :loading="loading"
         loading-message="Loading tool requirement resolution information">
         <template v-slot:header>
-            <b-row class="m-1">
-                <b-form inline>
+            <GRow class="m-1">
+                <GForm inline>
                     <b>Resolution:</b>
                     <label class="mr-sm-2" for="manage-resolver-type">Using resolvers of type</label>
-                    <b-form-select
+                    <GFormSelect
                         id="manage-resolver-type"
                         v-model="resolverType"
                         class="mb-2 mr-sm-2 mb-sm-0"
-                        :options="resolverTypeOptions"></b-form-select>
-                </b-form>
-            </b-row>
-            <b-row class="m-1">
-                <b-form inline>
+                        :options="resolverTypeOptions" />
+                </GForm>
+            </GRow>
+            <GRow class="m-1">
+                <GForm inline>
                     <b>Filter:</b>
                     <label class="mr-sm-2" for="manage-filter-resolution">Resolution</label>
-                    <b-form-select
-                        id="manage-filter-resolution"
-                        v-model="filterResolution"
-                        class="mb-2 mr-sm-2 mb-sm-0">
+                    <GFormSelect id="manage-filter-resolution" v-model="filterResolution" class="mb-2 mr-sm-2 mb-sm-0">
                         <option :value="null">*any*</option>
                         <option value="unresolved">Unresolved</option>
                         <option value="resolved">Resolved</option>
-                    </b-form-select>
-                </b-form>
-            </b-row>
+                    </GFormSelect>
+                </GForm>
+            </GRow>
         </template>
         <template v-slot:body>
-            <b-table id="requirements-table" striped :fields="fields" :items="items" @row-clicked="showRowDetails">
+            <GTable id="requirements-table" :fields="fields" :items="items" striped @row-clicked="showRowDetails">
                 <template v-slot:cell(selected)="data">
-                    <b-form-checkbox
-                        v-model="data.item.selected"
-                        @change="changeToggleCheckboxState($event)"></b-form-checkbox>
+                    <GFormCheckbox v-model="data.item.selected" @change="changeToggleCheckboxState($event)" />
                 </template>
                 <template v-slot:head(selected)="">
-                    <b-form-checkbox v-model="toggleState" @change="toggleSelectAll"></b-form-checkbox>
+                    <GFormCheckbox v-model="toggleState" @change="toggleSelectAll" />
                 </template>
                 <template v-slot:cell(requirement)="row">
                     <requirements :requirements="row.item.requirements" />
@@ -55,42 +50,40 @@
                 <template v-slot:row-details="row">
                     <ResolutionDetails :resolution="row.item" />
                 </template>
-            </b-table>
+            </GTable>
         </template>
         <template v-slot:actions>
-            <b-row class="m-1">
-                <b-button class="m-1" @click="installSelected">
+            <GRow class="m-1">
+                <GButton class="m-1" @click="installSelected">
                     <span class="fa fa-plus" />
                     <!-- v-bind:disabled="!hasSelection"  -->
                     Install
-                </b-button>
-                <b-button class="m-1" @click="uninstallSelected">
+                </GButton>
+                <GButton class="m-1" @click="uninstallSelected">
                     <span class="fa fa-minus" />
                     <!-- v-bind:disabled="!hasSelection"  -->
                     Uninstall
-                </b-button>
-                <b-button v-if="!expandToolIds" class="m-1" @click="setExpandToolIds(true)">
+                </GButton>
+                <GButton v-if="!expandToolIds" class="m-1" @click="setExpandToolIds(true)">
                     <span class="fa fa-chevron-down" />
                     Expand Tools
-                </b-button>
-                <b-button v-if="expandToolIds" class="m-1" @click="setExpandToolIds(false)">
+                </GButton>
+                <GButton v-if="expandToolIds" class="m-1" @click="setExpandToolIds(false)">
                     <span class="fa fa-chevron-up" />
                     Group by Requirements
-                </b-button>
-            </b-row>
+                </GButton>
+            </GRow>
         </template>
     </dependency-index-wrapper>
 </template>
 <script>
-import BootstrapVue from "bootstrap-vue";
 import _ from "underscore";
-import Vue from "vue";
+
+import { GButton, GForm, GFormCheckbox, GFormSelect, GRow, GTable } from "@/component-library";
 
 import { getToolboxDependencies, installDependencies, uninstallDependencies } from "../AdminServices";
 import DependencyIndexMixin from "./DependencyIndexMixin";
 import ResolutionDetails from "./ResolutionDetails";
-
-Vue.use(BootstrapVue);
 
 export const RESOLVER_DESCRIPTIONS = {
     conda: "",
@@ -106,7 +99,15 @@ const RESOLVER_TYPE_OPTIONS = _.keys(RESOLVER_DESCRIPTIONS).map((resolverType) =
 RESOLVER_TYPE_OPTIONS.splice(0, 0, { value: null, text: "*any*" });
 
 export default {
-    components: { ResolutionDetails },
+    components: {
+        GButton,
+        GForm,
+        GFormCheckbox,
+        GFormSelect,
+        GRow,
+        GTable,
+        ResolutionDetails,
+    },
     mixins: [DependencyIndexMixin],
     data() {
         return {

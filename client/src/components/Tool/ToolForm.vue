@@ -1,24 +1,24 @@
 <template>
     <div v-if="currentUser && currentHistoryId">
-        <b-alert :show="messageShow" :variant="messageVariant">
+        <GAlert :show="messageShow" :variant="messageVariant">
             {{ messageText }}
-        </b-alert>
+        </GAlert>
         <LoadingSpan v-if="showLoading" message="Loading Tool" />
         <div v-if="showEntryPoints">
             <ToolEntryPoints v-for="job in entryPoints" :key="job.id" :job-id="job.id" />
         </div>
-        <b-modal v-model="showError" size="sm" :title="errorTitle | l" scrollable ok-only>
-            <b-alert v-if="errorMessage" show variant="danger">
+        <GModal v-model="showError" size="sm" :title="errorTitle | l" scrollable ok-only>
+            <GAlert v-if="errorMessage" show variant="danger">
                 {{ errorMessage }}
-            </b-alert>
-            <b-alert show variant="warning">
+            </GAlert>
+            <GAlert show variant="warning">
                 The server could not complete this request. Please verify your parameter settings, retry submission and
                 contact the Galaxy Team if this error persists. A transcript of the submitted data is shown below.
-            </b-alert>
+            </GAlert>
             <small class="text-muted">
                 <pre>{{ errorContentPretty }}</pre>
             </small>
-        </b-modal>
+        </GModal>
         <ToolRecommendation v-if="showRecommendation" :tool-id="formConfig.id" />
         <ToolCard
             v-if="showForm"
@@ -110,6 +110,7 @@ import { useHistoryItemsStore } from "stores/history/historyItemsStore";
 import { useJobStore } from "stores/jobStore";
 import { refreshContentsWrapper } from "utils/data";
 
+import { GAlert, GModal } from "@/component-library";
 import { useConfig } from "@/composables/config";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
@@ -124,6 +125,8 @@ export default {
         ButtonSpinner,
         LoadingSpan,
         FormDisplay,
+        GAlert,
+        GModal,
         ToolCard,
         FormElement,
         ToolEntryPoints,

@@ -6,6 +6,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed, type ComputedRef, type Ref, ref } from "vue";
 
+import { GAlert, GButton } from "@/component-library";
 import { type Activity, useActivityStore } from "@/stores/activityStore";
 
 import DelayedInput from "@/components/Common/DelayedInput.vue";
@@ -84,7 +85,7 @@ function onQuery(newQuery: string) {
                                 }}</span>
                             </small>
                         </span>
-                        <b-button
+                        <GButton
                             v-if="activity.mutable"
                             data-description="delete activity"
                             class="button-delete"
@@ -92,7 +93,7 @@ function onQuery(newQuery: string) {
                             variant="link"
                             @click.stop="onRemove(activity)">
                             <FontAwesomeIcon icon="fa-trash" fa-fw />
-                        </b-button>
+                        </GButton>
                     </div>
                     <small v-localize>
                         {{ activity.description || "No description available" }}
@@ -101,7 +102,7 @@ function onQuery(newQuery: string) {
             </div>
         </div>
         <div v-else class="activity-settings-content">
-            <b-alert v-localize class="py-1 px-2" show> No matching activities found. </b-alert>
+            <GAlert v-localize class="py-1 px-2" show> No matching activities found. </GAlert>
         </div>
     </div>
 </template>

@@ -1,10 +1,8 @@
 <script setup>
-import { BDropdownItem, BNavItem, BNavItemDropdown, VBPopoverPlugin, VBTooltipPlugin } from "bootstrap-vue";
 import { withPrefix } from "utils/redirect";
-import Vue, { computed, getCurrentInstance, ref } from "vue";
+import { computed, getCurrentInstance, ref } from "vue";
 
-Vue.use(VBPopoverPlugin);
-Vue.use(VBTooltipPlugin);
+import { GDropdownItem, GNavItem, GNavItemDropdown } from "@/component-library";
 
 const instance = getCurrentInstance().proxy;
 const emit = defineEmits(["click", "open-url"]);
@@ -70,7 +68,7 @@ function open(tab, event) {
 </script>
 
 <template>
-    <BNavItem
+    <GNavItem
         v-if="!menu"
         :id="tab.id"
         v-b-tooltip.hover.bottom
@@ -90,8 +88,8 @@ function open(tab, event) {
         <template v-else>
             {{ tab.title }}
         </template>
-    </BNavItem>
-    <BNavItemDropdown
+    </GNavItem>
+    <GNavItemDropdown
         v-else
         :id="tab.id"
         ref="dropdown"
@@ -108,7 +106,7 @@ function open(tab, event) {
         </template>
         <template v-for="(item, idx) in tab.menu">
             <div v-if="item.divider" :key="`divider-${idx}`" class="dropdown-divider" />
-            <BDropdownItem
+            <GDropdownItem
                 v-else-if="item.hidden !== true"
                 :key="`item-${idx}`"
                 :href="withPrefix(item.url)"
@@ -119,7 +117,7 @@ function open(tab, event) {
                 :disabled="item.disabled"
                 @click="open(item, $event)">
                 {{ item.title }}
-            </BDropdownItem>
+            </GDropdownItem>
         </template>
-    </BNavItemDropdown>
+    </GNavItemDropdown>
 </template>

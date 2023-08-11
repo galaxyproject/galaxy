@@ -6,14 +6,14 @@
                     <h2 v-if="!showAdvanced" id="toolbox-heading" v-localize class="m-1 h-sm">Tools</h2>
                     <h2 v-else id="toolbox-heading" v-localize class="m-1 h-sm">Advanced Tool Search</h2>
                     <div class="panel-header-buttons">
-                        <b-button-group>
+                        <GButtonGroup>
                             <FavoritesButton v-if="!showAdvanced" :query="query" @onFavorites="onQuery" />
                             <PanelViewButton
                                 v-if="panelViews && Object.keys(panelViews).length > 1"
                                 :panel-views="panelViews"
                                 :current-panel-view="currentPanelView"
                                 @updatePanelView="updatePanelView" />
-                        </b-button-group>
+                        </GButtonGroup>
                     </div>
                 </nav>
             </div>
@@ -32,25 +32,25 @@
             <section v-if="!showAdvanced">
                 <UploadButton />
                 <div v-if="hasResults" class="pb-2">
-                    <b-button size="sm" class="w-100" @click="onToggle">
+                    <GButton size="sm" class="w-100" @click="onToggle">
                         <span :class="buttonIcon" />
                         <span class="mr-1">{{ buttonText }}</span>
-                    </b-button>
+                    </GButton>
                 </div>
                 <div v-else-if="queryTooShort" class="pb-2">
-                    <b-badge class="alert-danger w-100">Search string too short!</b-badge>
+                    <GBadge class="alert-danger w-100">Search string too short!</GBadge>
                 </div>
                 <div v-else-if="queryFinished" class="pb-2">
-                    <b-badge class="alert-danger w-100">No results found!</b-badge>
+                    <GBadge class="alert-danger w-100">No results found!</GBadge>
                 </div>
                 <div v-if="closestTerm" class="pb-2">
-                    <b-badge class="alert-danger w-100">
+                    <GBadge class="alert-danger w-100">
                         Did you mean:
                         <i>
                             <a href="javascript:void(0)" @click="onQuery(closestTerm)">{{ closestTerm }}</a>
                         </i>
                         ?
-                    </b-badge>
+                    </GBadge>
                 </div>
             </section>
         </div>
@@ -83,6 +83,8 @@ import { useGlobalUploadModal } from "composables/globalUploadModal";
 import { getAppRoot } from "onload";
 import _l from "utils/localization";
 
+import { GBadge, GButton, GButtonGroup } from "@/component-library";
+
 import FavoritesButton from "./Buttons/FavoritesButton";
 import PanelViewButton from "./Buttons/PanelViewButton";
 import ToolSearch from "./Common/ToolSearch";
@@ -91,8 +93,11 @@ import { filterTools, filterToolSections, hasResults, hideToolsSection } from ".
 
 export default {
     components: {
+        GBadge,
         UploadButton,
         FavoritesButton,
+        GButton,
+        GButtonGroup,
         PanelViewButton,
         ToolSection,
         ToolSearch,

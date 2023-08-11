@@ -1,6 +1,6 @@
 <template>
-    <b-tabs v-if="invocation">
-        <b-tab title="Summary" active>
+    <GTabs v-if="invocation">
+        <GTab title="Summary" active>
             <WorkflowInvocationSummary
                 :invocation="invocation"
                 :index="index"
@@ -8,33 +8,35 @@
                 :invocation-scheduling-terminal="invocationSchedulingTerminal"
                 :job-states-summary="jobStatesSummary"
                 @invocation-cancelled="cancelWorkflowScheduling" />
-        </b-tab>
-        <b-tab title="Details">
+        </GTab>
+        <GTab title="Details">
             <WorkflowInvocationDetails
                 :invocation="invocation"
                 :invocation-and-job-terminal="invocationAndJobTerminal" />
-        </b-tab>
-        <!-- <b-tab title="Workflow Overview">
+        </GTab>
+        <!-- <GTab title="Workflow Overview">
             <p>TODO: Insert readonly version of workflow editor here</p>
-        </b-tab> -->
-        <b-tab title="Export">
+        </GTab> -->
+        <GTab title="Export">
             <div v-if="invocationAndJobTerminal">
                 <WorkflowInvocationExportOptions :invocation-id="invocation.id" />
             </div>
-            <b-alert v-else variant="info" show>
+            <GAlert v-else variant="info" show>
                 <LoadingSpan message="Waiting to complete invocation" />
-            </b-alert>
-        </b-tab>
-    </b-tabs>
-    <b-alert v-else variant="info" show>
+            </GAlert>
+        </GTab>
+    </GTabs>
+    <GAlert v-else variant="info" show>
         <LoadingSpan message="Loading invocation" />
-    </b-alert>
+    </GAlert>
 </template>
 <script>
 import mixin from "components/JobStates/mixin";
 import LoadingSpan from "components/LoadingSpan";
 import JOB_STATES_MODEL from "utils/job-states-model";
 import { mapActions, mapGetters } from "vuex";
+
+import { GAlert, GTab, GTabs } from "@/component-library";
 
 import { cancelWorkflowScheduling } from "./services";
 
@@ -44,6 +46,9 @@ import WorkflowInvocationSummary from "./WorkflowInvocationSummary.vue";
 
 export default {
     components: {
+        GAlert,
+        GTab,
+        GTabs,
         LoadingSpan,
         WorkflowInvocationSummary,
         WorkflowInvocationDetails,

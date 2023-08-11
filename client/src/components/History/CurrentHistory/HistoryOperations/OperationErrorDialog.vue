@@ -1,5 +1,5 @@
 <template>
-    <BModal
+    <GModal
         v-model="show"
         :title="title"
         :header-text-variant="titleVariant"
@@ -23,15 +23,15 @@
                 </li>
             </ul>
         </div>
-    </BModal>
+    </GModal>
 </template>
 
 <script>
-import { BModal } from "bootstrap-vue";
+import { GModal } from "@/component-library";
 
 export default {
     components: {
-        BModal,
+        GModal,
     },
     props: {
         operationError: { type: Object, default: null },

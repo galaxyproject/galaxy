@@ -1,22 +1,29 @@
 <template>
-    <b-breadcrumb>
-        <b-breadcrumb-item title="Return to the list of libraries" :to="{ path: `/libraries` }">
+    <GBreadcrumb>
+        <GBreadcrumbItem title="Return to the list of libraries" :to="{ path: `/libraries` }">
             Libraries
-        </b-breadcrumb-item>
+        </GBreadcrumbItem>
         <template v-for="path_item in full_path">
-            <b-breadcrumb-item
+            <GBreadcrumbItem
                 :key="path_item[0]"
                 :title="isCurrentId(path_item[0]) ? `You are here` : `Return to this folder`"
                 :active="isCurrentId(path_item[0])"
                 :to="{ path: `/libraries/folders/${path_item[0]}` }"
-                href="#"
-                >{{ path_item[1] }}</b-breadcrumb-item
-            >
+                href="#">
+                {{ path_item[1] }}
+            </GBreadcrumbItem>
         </template>
-    </b-breadcrumb>
+    </GBreadcrumb>
 </template>
+
 <script>
+import { GBreadcrumb, GBreadcrumbItem } from "@/component-library";
+
 export default {
+    components: {
+        GBreadcrumb,
+        GBreadcrumbItem,
+    },
     props: {
         full_path: {
             type: Array,

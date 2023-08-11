@@ -2,9 +2,9 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faInbox } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BCol, BRow } from "bootstrap-vue";
 import { computed } from "vue";
 
+import { GCol, GRow } from "@/component-library";
 import type { MessageNotification } from "@/components/Notifications";
 import { useMarkdown } from "@/composables/markdown";
 
@@ -32,16 +32,16 @@ const notificationVariant = computed(() => {
 </script>
 
 <template>
-    <BCol>
-        <BRow align-v="center">
+    <GCol>
+        <GRow align-v="center">
             <Heading size="md" :bold="!notification.seen_time" class="mb-0">
                 <FontAwesomeIcon :class="`text-${notificationVariant}`" icon="inbox" />
                 {{ notification.content.subject }}
             </Heading>
             <NotificationActions :notification="notification" />
-        </BRow>
-        <BRow>
+        </GRow>
+        <GRow>
             <span id="notification-message" v-html="renderMarkdown(notification.content.message)" />
-        </BRow>
-    </BCol>
+        </GRow>
+    </GCol>
 </template>

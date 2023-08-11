@@ -5,7 +5,7 @@
         <div aria-labelledby="dataset-details-heading">
             <h1 id="dataset-details-heading" class="sr-only">Dataset Details</h1>
             <LoadingSpan v-if="isDatasetLoading" />
-            <Alert v-else-if="datasetLoadingError" :message="datasetLoadingError" variant="error" />
+            <GAlert v-else-if="datasetLoadingError" :message="datasetLoadingError" variant="error" />
             <div v-else>
                 <JobDetailsProvider
                     v-if="!isDatasetLoading && dataset.creating_job !== null"
@@ -53,7 +53,7 @@
 <script>
 import { mapState } from "pinia";
 
-import Alert from "@/components/Alert";
+import { GAlert } from "@/component-library";
 import DatasetStorage from "@/components/Dataset/DatasetStorage/DatasetStorage";
 import DatasetInformation from "@/components/DatasetInformation/DatasetInformation";
 import JobDependencies from "@/components/JobDependencies/JobDependencies";
@@ -71,7 +71,7 @@ import InheritanceChain from "../InheritanceChain/InheritanceChain";
 
 export default {
     components: {
-        Alert,
+        GAlert,
         JobParameters,
         InheritanceChain,
         LoadingSpan,

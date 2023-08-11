@@ -2,6 +2,8 @@
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed, ref } from "vue";
 
+import { GFormFile } from "@/component-library";
+
 const props = defineProps({
     value: {
         required: true,
@@ -36,7 +38,7 @@ function readFile() {
 
 <template>
     <div>
-        <b-form-file v-model="file" class="mb-1" @input="readFile" />
+        <GFormFile v-model="file" class="mb-1" @input="readFile" />
         <div v-if="waiting">
             <FontAwesomeIcon icon="spinner" spin />
             Uploading File...

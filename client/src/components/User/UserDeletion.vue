@@ -1,12 +1,12 @@
 <template>
-    <b-row class="ml-3 mb-1">
+    <GRow class="ml-3 mb-1">
         <i class="pref-icon pt-1 fa fa-lg fa-radiation" />
         <div class="pref-content pr-1">
             <a id="delete-account" href="javascript:void(0)"
                 ><b v-b-modal.modal-prevent-closing v-localize>Delete Account</b></a
             >
             <div v-localize class="form-text text-muted">Delete your account on this Galaxy server.</div>
-            <b-modal
+            <GModal
                 id="modal-prevent-closing"
                 ref="modal"
                 centered
@@ -16,36 +16,42 @@
                 @hidden="resetModal"
                 @ok="handleOk">
                 <p>
-                    <b-alert variant="danger" :show="showDeleteError">{{ deleteError }}</b-alert>
+                    <GAlert variant="danger" :show="showDeleteError">{{ deleteError }}</GAlert>
                     <b>
                         This action cannot be undone. Your account will be permanently deleted, along with the data
                         contained in it.
                     </b>
                 </p>
-                <b-form ref="form" @submit.prevent="handleSubmit">
-                    <b-form-group
+                <GForm ref="form" @submit.prevent="handleSubmit">
+                    <GFormGroup
                         :state="nameState"
                         label="Enter your user email for this account as confirmation."
                         label-for="Email"
                         invalid-feedback="Incorrect email">
-                        <b-form-input id="name-input" v-model="name" :state="nameState" required></b-form-input>
-                    </b-form-group>
-                </b-form>
-            </b-modal>
+                        <GInput id="name-input" v-model="name" :state="nameState" required />
+                    </GFormGroup>
+                </GForm>
+            </GModal>
         </div>
-    </b-row>
+    </GRow>
 </template>
 
 <script>
 import axios from "axios";
-import BootstrapVue from "bootstrap-vue";
 import { userLogoutClient } from "utils/logout";
 import { withPrefix } from "utils/redirect";
-import Vue from "vue";
 
-Vue.use(BootstrapVue);
+import { GAlert, GForm, GFormGroup, GInput, GModal, GRow } from "@/component-library";
 
 export default {
+    components: {
+        GAlert,
+        GForm,
+        GFormGroup,
+        GInput,
+        GModal,
+        GRow,
+    },
     props: {
         userId: {
             type: String,

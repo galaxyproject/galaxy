@@ -1,8 +1,8 @@
 <template>
-    <b-card>
+    <GCard>
         <div class="mb-1">{{ repo.long_description }}</div>
         <div class="mb-3">
-            <b-link :href="repo.repository_url" target="_blank">Show additional details and dependencies.</b-link>
+            <GLink :href="repo.repository_url" target="_blank">Show additional details and dependencies.</GLink>
         </div>
         <div>
             <span v-if="loading">
@@ -10,11 +10,11 @@
                 <span class="loading-message">Loading repository details...</span>
             </span>
             <div v-else>
-                <b-alert v-if="error" variant="danger" show>
+                <GAlert v-if="error" variant="danger" show>
                     {{ error }}
-                </b-alert>
+                </GAlert>
                 <div v-else class="border rounded">
-                    <b-table borderless :items="repoTable" :fields="repoFields" class="text-center m-0">
+                    <GTable borderless :items="repoTable" :fields="repoFields" class="text-center m-0">
                         <template v-slot:cell(numeric_revision)="data">
                             <span class="font-weight-bold">{{ data.value }}</span>
                         </template>
@@ -43,7 +43,7 @@
                                 @onInstall="setupRepository(row.item)"
                                 @onUninstall="uninstallRepository(row.item)" />
                         </template>
-                    </b-table>
+                    </GTable>
                     <ToolPanelViewProvider v-slot="{ currentPanel }" :panel-view="`default`" :set-default="false">
                         <InstallationSettings
                             v-if="showSettings"
@@ -59,13 +59,13 @@
                 </div>
             </div>
         </div>
-    </b-card>
+    </GCard>
 </template>
-<script>
-import BootstrapVue from "bootstrap-vue";
-import ToolPanelViewProvider from "components/providers/ToolPanelViewProvider";
-import Vue from "vue";
 
+<script>
+import ToolPanelViewProvider from "components/providers/ToolPanelViewProvider";
+
+import { GAlert, GCard, GLink, GTable } from "@/component-library";
 import { useConfig } from "@/composables/config";
 
 import { Services } from "../services";
@@ -74,14 +74,16 @@ import InstallationActions from "./InstallationActions.vue";
 import InstallationSettings from "./InstallationSettings.vue";
 import RepositoryTools from "./RepositoryTools.vue";
 
-Vue.use(BootstrapVue);
-
 export default {
     components: {
-        ToolPanelViewProvider,
+        GAlert,
+        GCard,
+        GLink,
+        GTable,
         InstallationSettings,
         InstallationActions,
         RepositoryTools,
+        ToolPanelViewProvider,
     },
     props: {
         repo: {

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from "vue";
 
+import { GAlert, GButton, GButtonGroup, GCol, GPopover, GRow } from "@/component-library";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { getSelectableObjectStores } from "./services";
@@ -84,21 +85,21 @@ async function handleSubmit(preferredObjectStoreId: string) {
     <div>
         <LoadingSpan v-if="loading" :message="loadingObjectStoreInfoMessage" />
         <div v-else>
-            <b-alert v-if="error" variant="danger" class="object-store-selection-error" show>
+            <GAlert v-if="error" variant="danger" class="object-store-selection-error" show>
                 {{ error }}
-            </b-alert>
-            <b-row>
-                <b-col cols="7">
-                    <b-button-group vertical size="lg" style="width: 100%">
-                        <b-button
+            </GAlert>
+            <GRow>
+                <GCol cols="7">
+                    <GButtonGroup vertical size="lg" style="width: 100%">
+                        <GButton
                             id="no-preferred-object-store-button"
                             :variant="variant(null)"
                             class="preferred-object-store-select-button"
                             data-object-store-id="__null__"
-                            @click="handleSubmit(null)"
-                            ><i>{{ defaultOptionTitle | localize }}</i></b-button
-                        >
-                        <b-button
+                            @click="handleSubmit(null)">
+                            <i>{{ defaultOptionTitle | localize }}</i>
+                        </GButton>
+                        <GButton
                             v-for="object_store in objectStores"
                             :id="`preferred-object-store-button-${object_store.object_store_id}`"
                             :key="object_store.object_store_id"
@@ -110,22 +111,22 @@ async function handleSubmit(preferredObjectStoreId: string) {
                             <ObjectStoreBadges :badges="object_store.badges" size="lg" :more-on-hover="false" />
                             <ProvidedQuotaSourceUsageBar :object-store="object_store" :compact="true">
                             </ProvidedQuotaSourceUsageBar>
-                        </b-button>
-                    </b-button-group>
-                </b-col>
-                <b-col cols="5">
+                        </GButton>
+                    </GButtonGroup>
+                </GCol>
+                <GCol cols="5">
                     <p v-localize style="float: right">
                         {{ whyIsSelectionPreferredText }}
                     </p>
-                </b-col>
-            </b-row>
-            <b-popover target="no-preferred-object-store-button" triggers="hover" v-bind="popoverProps">
-                <template v-slot:title
-                    ><span v-localize>{{ defaultOptionTitle }}</span></template
-                >
+                </GCol>
+            </GRow>
+            <GPopover target="no-preferred-object-store-button" triggers="hover" v-bind="popoverProps">
+                <template v-slot:title>
+                    <span v-localize>{{ defaultOptionTitle }}</span>
+                </template>
                 <span v-localize>{{ defaultOptionDescription }}</span>
-            </b-popover>
-            <b-popover
+            </GPopover>
+            <GPopover
                 v-for="object_store in objectStores"
                 :key="object_store.object_store_id"
                 :target="`preferred-object-store-button-${object_store.object_store_id}`"
@@ -133,7 +134,7 @@ async function handleSubmit(preferredObjectStoreId: string) {
                 v-bind="popoverProps">
                 <template v-slot:title>{{ object_store.name }}</template>
                 <DescribeObjectStore :what="forWhat" :storage-info="object_store"> </DescribeObjectStore>
-            </b-popover>
+            </GPopover>
         </div>
     </div>
 </template>

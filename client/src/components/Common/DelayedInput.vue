@@ -1,6 +1,6 @@
 <template>
-    <b-input-group>
-        <b-input
+    <GInputGroup>
+        <GInput
             ref="toolInput"
             v-model="queryInput"
             class="search-query"
@@ -10,8 +10,8 @@
             @input="delayQuery"
             @change="setQuery"
             @keydown.esc="setQuery('')" />
-        <b-input-group-append>
-            <b-button
+        <GInputGroupAppend>
+            <GButton
                 v-if="enableAdvanced"
                 v-b-tooltip.hover.noninteractive
                 aria-haspopup="true"
@@ -23,9 +23,9 @@
                 @click="onToggle">
                 <icon v-if="showAdvanced" fixed-width icon="angle-double-up" />
                 <icon v-else fixed-width icon="angle-double-down" />
-            </b-button>
-            <b-button
-                v-b-tooltip.hover.noninteractive
+            </GButton>
+            <GButton
+                v-b-tooltip.hover
                 aria-haspopup="true"
                 class="search-clear"
                 size="sm"
@@ -34,12 +34,20 @@
                 @click="clearBox">
                 <icon v-if="loading" fixed-width icon="spinner" spin />
                 <icon v-else fixed-width icon="times" />
-            </b-button>
-        </b-input-group-append>
-    </b-input-group>
+            </GButton>
+        </GInputGroupAppend>
+    </GInputGroup>
 </template>
 <script>
+import { GButton, GInput, GInputGroup, GInputGroupAppend } from "@/component-library";
+
 export default {
+    components: {
+        GButton,
+        GInput,
+        GInputGroup,
+        GInputGroupAppend,
+    },
     props: {
         query: {
             type: String,

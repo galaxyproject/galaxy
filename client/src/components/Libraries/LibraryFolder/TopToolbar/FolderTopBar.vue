@@ -1,13 +1,13 @@
 <template>
     <div>
         <div class="form-inline d-flex align-items-center mb-2">
-            <b-button
+            <GButton
                 class="mr-1 btn btn-secondary"
                 :to="{ path: `/libraries` }"
                 data-toggle="tooltip"
                 title="Go to libraries list">
                 <FontAwesomeIcon icon="home" />
-            </b-button>
+            </GButton>
             <div>
                 <div class="form-inline">
                     <SearchField @updateSearch="updateSearch($event)"></SearchField>
@@ -101,9 +101,9 @@
                     </button>
                     <FolderDetails :id="folder_id" class="mr-1" :metadata="metadata" />
                     <div v-if="canDelete" class="form-check logged-dataset-manipulation mr-1">
-                        <b-form-checkbox :checked="includeDeleted" @change="$emit('update:includeDeleted', $event)">
+                        <GFormCheckbox :checked="includeDeleted" @change="$emit('update:includeDeleted', $event)">
                             include deleted
-                        </b-form-checkbox>
+                        </GFormCheckbox>
                     </div>
                 </div>
             </div>
@@ -118,14 +118,14 @@
 <script>
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { getGalaxyInstance } from "app";
-import BootstrapVue from "bootstrap-vue";
 import { initTopBarIcons } from "components/Libraries/icons";
 import FolderDetails from "components/Libraries/LibraryFolder/FolderDetails/FolderDetails";
 import LibraryBreadcrumb from "components/Libraries/LibraryFolder/LibraryBreadcrumb";
 import { Toast } from "composables/toast";
 import { getAppRoot } from "onload/loadConfig";
 import mod_utils from "utils/utils";
-import Vue from "vue";
+
+import { GButton, GFormCheckbox } from "@/component-library";
 
 import SearchField from "../SearchField";
 import { Services } from "../services";
@@ -137,15 +137,15 @@ import mod_import_dataset from "./import-to-history/import-dataset";
 
 initTopBarIcons();
 
-Vue.use(BootstrapVue);
-
 export default {
     name: "FolderTopBar",
     components: {
+        GFormCheckbox,
         SearchField,
         FontAwesomeIcon,
         LibraryBreadcrumb,
         FolderDetails,
+        GButton,
     },
     props: {
         folder_id: {

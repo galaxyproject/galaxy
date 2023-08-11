@@ -57,6 +57,6 @@ describe("History SelectionStatus", () => {
 
 async function expectWrapperButtonToEmitEvent(wrapper, buttonSelector, expectedEvent) {
     expect(wrapper.emitted()).not.toHaveProperty(expectedEvent);
-    await wrapper.find(buttonSelector).trigger("click");
+    await wrapper.find(buttonSelector).vm.$emit("click");
     expect(wrapper.emitted()).toHaveProperty(expectedEvent);
 }

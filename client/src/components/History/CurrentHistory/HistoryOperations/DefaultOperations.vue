@@ -1,6 +1,6 @@
 <template>
     <section>
-        <b-dropdown
+        <GDropdown
             no-caret
             size="sm"
             variant="link"
@@ -11,33 +11,33 @@
                 <span class="sr-only">History actions</span>
                 <Icon icon="cog" />
             </template>
-            <b-dropdown-text id="history-op-all-content">
+            <GDropdownText id="history-op-all-content">
                 <span v-localize>With entire history...</span>
-            </b-dropdown-text>
-            <b-dropdown-item data-description="copy datasets" @click="onCopy">
+            </GDropdownText>
+            <GDropdownItem data-description="copy datasets" @click="onCopy">
                 <span v-localize>Copy Datasets</span>
-            </b-dropdown-item>
-            <b-dropdown-item v-if="numItemsHidden" v-b-modal:show-all-hidden-content>
+            </GDropdownItem>
+            <GDropdownItem v-if="numItemsHidden" v-b-modal:show-all-hidden-content>
                 <span v-localize>Unhide All Hidden Content</span>
-            </b-dropdown-item>
-            <b-dropdown-item v-if="numItemsHidden" v-b-modal:delete-all-hidden-content>
+            </GDropdownItem>
+            <GDropdownItem v-if="numItemsHidden" v-b-modal:delete-all-hidden-content>
                 <span v-localize>Delete All Hidden Content</span>
-            </b-dropdown-item>
-            <b-dropdown-item v-if="numItemsDeleted" v-b-modal:purge-all-deleted-content>
+            </GDropdownItem>
+            <GDropdownItem v-if="numItemsDeleted" v-b-modal:purge-all-deleted-content>
                 <span v-localize>Purge All Deleted Content</span>
-            </b-dropdown-item>
-        </b-dropdown>
+            </GDropdownItem>
+        </GDropdown>
 
-        <b-modal id="show-all-hidden-content" title="Show Hidden Datasets" title-tag="h2" @ok="unhideAll">
+        <GModal id="show-all-hidden-content" title="Show Hidden Datasets" title-tag="h2" @ok="unhideAll">
             <p v-localize>Really unhide all hidden datasets?</p>
-        </b-modal>
-        <b-modal id="delete-all-hidden-content" title="Delete Hidden Datasets" title-tag="h2" @ok="deleteAllHidden">
+        </GModal>
+        <GModal id="delete-all-hidden-content" title="Delete Hidden Datasets" title-tag="h2" @ok="deleteAllHidden">
             <p v-localize>Really delete all hidden datasets?</p>
-        </b-modal>
-        <b-modal id="purge-all-deleted-content" title="Purge Deleted Datasets" title-tag="h2" @ok="purgeAllDeleted">
+        </GModal>
+        <GModal id="purge-all-deleted-content" title="Purge Deleted Datasets" title-tag="h2" @ok="purgeAllDeleted">
             <p v-localize>Really permanently delete all deleted datasets?</p>
             <p><strong v-localize class="text-danger">Warning, this operation cannot be undone.</strong></p>
-        </b-modal>
+        </GModal>
     </section>
 </template>
 
@@ -45,9 +45,17 @@
 import { deleteAllHiddenContent, purgeAllDeletedContent, unhideAllHiddenContent } from "components/History/model/crud";
 import { iframeRedirect } from "components/plugins/legacyNavigation";
 
+import { GDropdown, GDropdownItem, GDropdownText, GModal } from "@/component-library";
+
 import { usesDetailedHistoryMixin } from "../usesDetailedHistoryMixin.js";
 
 export default {
+    components: {
+        GDropdown,
+        GDropdownItem,
+        GDropdownText,
+        GModal,
+    },
     mixins: [usesDetailedHistoryMixin],
     props: {
         history: { type: Object, required: true },

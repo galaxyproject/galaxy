@@ -11,7 +11,7 @@
                     @onEdit="onEdit" />
                 <PageHtml v-else :page="page" />
             </div>
-            <b-alert v-else variant="info" show>Unsupported page format.</b-alert>
+            <GAlert v-else variant="info" show>Unsupported page format.</GAlert>
         </template>
     </Published>
 </template>
@@ -22,12 +22,14 @@ import Markdown from "components/Markdown/Markdown";
 import { withPrefix } from "utils/redirect";
 import { urlData } from "utils/url";
 
+import { GAlert } from "@/component-library";
 import { useConfig } from "@/composables/config";
 
 import PageHtml from "./PageHtml";
 
 export default {
     components: {
+        GAlert,
         Markdown,
         PageHtml,
         Published,

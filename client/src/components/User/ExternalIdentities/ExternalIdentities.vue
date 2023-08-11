@@ -1,23 +1,18 @@
 <template>
     <section class="external-id">
-        <b-alert :show="!!connectExternal" variant="info">
+        <GAlert :show="!!connectExternal" variant="info">
             You are logged in. You can now connect the Galaxy user account with the email <i>{{ userEmail }}</i
             >, to your preferred external provider.
-        </b-alert>
-        <b-alert :show="!!existingEmail" variant="warning">
+        </GAlert>
+        <GAlert :show="!!existingEmail" variant="warning">
             Note: We found a Galaxy account matching the email of this identity, <i>{{ existingEmail }}</i
             >. The active account <i>{{ userEmail }}</i> has been linked to this external identity. If you wish to link
             this identity to a different account, you will need to disconnect it from this account first.
-        </b-alert>
+        </GAlert>
         <header>
-            <b-alert
-                dismissible
-                fade
-                variant="warning"
-                :show="errorMessage !== null"
-                @dismissed="errorMessage = null"
-                >{{ errorMessage }}</b-alert
-            >
+            <GAlert dismissible fade variant="warning" :show="errorMessage !== null" @dismissed="errorMessage = null">
+                {{ errorMessage }}
+            </GAlert>
 
             <hgroup class="external-id-title">
                 <h1 class="h-lg">Manage External Identities</h1>
@@ -39,7 +34,7 @@
 
         <div v-if="items.length" class="external-subheading">
             <h2 class="h-md">Connected External Identities</h2>
-            <b-button
+            <GButton
                 v-for="item in items"
                 :key="item.email"
                 aria-label="Disconnect External Identity"
@@ -47,18 +42,18 @@
                 class="d-block mt-3"
                 @click="onDisconnect(item)">
                 Disconnect {{ item.provider.charAt(0).toUpperCase() + item.provider.slice(1) }} - {{ item.email }}
-            </b-button>
+            </GButton>
 
-            <b-modal
+            <GModal
                 id="disconnectIDModal"
                 ref="deleteModal"
                 centered
                 title="Disconnect Identity?"
                 size="sm"
                 @ok="disconnectID"
-                @cancel="doomedItem = null"></b-modal>
+                @cancel="doomedItem = null" />
 
-            <b-modal
+            <GModal
                 id="disconnectAndResetModal"
                 ref="deleteAndResetModal"
                 centered
@@ -71,16 +66,11 @@
                     party identity. If you don't know your Galaxy user password, you can reset it or contact an
                     administrator for help.
                 </p>
-            </b-modal>
+            </GModal>
 
-            <b-alert
-                dismissible
-                fade
-                variant="warning"
-                :show="errorMessage !== null"
-                @dismissed="errorMessage = null"
-                >{{ errorMessage }}</b-alert
-            >
+            <GAlert dismissible fade variant="warning" :show="errorMessage !== null" @dismissed="errorMessage = null">
+                {{ errorMessage }}
+            </GAlert>
         </div>
 
         <div v-if="enable_oidc" class="external-subheading">
@@ -92,20 +82,21 @@
 
 <script>
 import { getGalaxyInstance } from "app";
-import BootstrapVue from "bootstrap-vue";
 import { Toast } from "composables/toast";
 import { sanitize } from "dompurify";
 import { userLogout } from "utils/logout";
-import Vue from "vue";
+
+import { GAlert, GButton, GModal } from "@/component-library";
 
 import svc from "./service";
 
 import ExternalLogin from "components/User/ExternalIdentities/ExternalLogin.vue";
 
-Vue.use(BootstrapVue);
-
 export default {
     components: {
+        GAlert,
+        GButton,
+        GModal,
         ExternalLogin,
     },
     data() {

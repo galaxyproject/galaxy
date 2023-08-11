@@ -1,7 +1,7 @@
 <template>
     <FormCard :title="stepTitle" :icon="nodeIcon">
         <template v-slot:operations>
-            <b-button
+            <GButton
                 v-if="isSubworkflow"
                 v-b-tooltip.hover
                 role="button"
@@ -11,8 +11,8 @@
                 class="float-right py-0 px-1"
                 @click="onEditSubworkflow">
                 <span class="fa fa-pencil-alt" />
-            </b-button>
-            <b-button
+            </GButton>
+            <GButton
                 v-if="isSubworkflow"
                 v-b-tooltip.hover
                 role="button"
@@ -22,7 +22,7 @@
                 class="float-right py-0 px-1"
                 @click="onUpgradeSubworkflow">
                 <span class="fa fa-sync" />
-            </b-button>
+            </GButton>
         </template>
         <template v-slot:body>
             <FormElement
@@ -60,6 +60,7 @@
 <script setup lang="ts">
 import { computed, toRef } from "vue";
 
+import { GButton } from "@/component-library";
 import type { DatatypesMapperModel } from "@/components/Datatypes/model";
 import WorkflowIcons from "@/components/Workflow/icons";
 import { useWorkflowStores } from "@/composables/workflowStores";

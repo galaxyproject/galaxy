@@ -2,14 +2,14 @@
     <div class="history-import-component" aria-labelledby="history-import-heading">
         <h1 id="history-import-heading" class="h-lg">Import a history from an archive</h1>
 
-        <b-alert v-if="errorMessage" variant="danger" dismissible show @dismissed="errorMessage = null">
+        <GAlert v-if="errorMessage" variant="danger" dismissible show @dismissed="errorMessage = null">
             {{ errorMessage }}
             <JobError
                 v-if="jobError"
                 style="margin-top: 15px"
                 header="History import job ended in error"
                 :job="jobError" />
-        </b-alert>
+        </GAlert>
 
         <div v-if="initializing">
             <LoadingSpan message="Loading server configuration." />
@@ -18,58 +18,58 @@
             <LoadingSpan message="Waiting on history import job, this may take a while." />
         </div>
         <div v-else-if="complete">
-            <b-alert :show="complete" variant="success" dismissible @dismissed="complete = false">
+            <GAlert :show="complete" variant="success" dismissible @dismissed="complete = false">
                 <span class="mb-1 h-sm">Done!</span>
                 <p>History imported, check out <a :href="historyLink">your histories</a>.</p>
-            </b-alert>
+            </GAlert>
         </div>
         <div v-else>
-            <b-form @submit.prevent="submit">
-                <b-form-group v-slot="{ ariaDescribedby }" label="How would you like to specify the history archive?">
-                    <b-form-radio-group
+            <GForm @submit.prevent="submit">
+                <GFormGroup v-slot="{ ariaDescribedby }" label="How would you like to specify the history archive?">
+                    <GFormRadioGroup
                         v-model="importType"
                         :aria-describedby="ariaDescribedby"
                         name="import-type"
                         stacked>
-                        <b-form-radio value="externalUrl">
+                        <GFormRadio value="externalUrl">
                             Export URL from another Galaxy instance
                             <FontAwesomeIcon icon="external-link-alt" />
-                        </b-form-radio>
-                        <b-form-radio value="upload">
+                        </GFormRadio>
+                        <GFormRadio value="upload">
                             Upload local file from your computer
                             <FontAwesomeIcon icon="upload" />
-                        </b-form-radio>
-                        <b-form-radio v-if="hasFileSources" value="remoteFilesUri">
+                        </GFormRadio>
+                        <GFormRadio v-if="hasFileSources" value="remoteFilesUri">
                             Select a remote file (e.g. Galaxy's FTP)
                             <FontAwesomeIcon icon="folder-open" />
-                        </b-form-radio>
-                    </b-form-radio-group>
-                </b-form-group>
+                        </GFormRadio>
+                    </GFormRadioGroup>
+                </GFormGroup>
 
-                <b-form-group v-if="importType === 'externalUrl'" label="Archived History URL">
-                    <b-alert v-if="showImportUrlWarning" variant="warning" show>
+                <GFormGroup v-if="importType === 'externalUrl'" label="Archived History URL">
+                    <GAlert v-if="showImportUrlWarning" variant="warning" show>
                         It looks like you are trying to import a published history from another galaxy instance. You can
                         only import histories via an archive URL.
                         <ExternalLink
                             href="https://training.galaxyproject.org/training-material/faqs/galaxy/histories_transfer_entire_histories_from_one_galaxy_server_to_another.html">
                             Read more on the GTN
                         </ExternalLink>
-                    </b-alert>
+                    </GAlert>
 
-                    <b-form-input v-model="sourceURL" type="url" />
-                </b-form-group>
-                <b-form-group v-else-if="importType === 'upload'" label="Archived History File">
-                    <b-form-file v-model="sourceFile" />
-                </b-form-group>
-                <b-form-group v-show="importType === 'remoteFilesUri'" label="Remote File">
+                    <GInput v-model="sourceURL" type="url" />
+                </GFormGroup>
+                <GFormGroup v-else-if="importType === 'upload'" label="Archived History File">
+                    <GFormFile v-model="sourceFile" />
+                </GFormGroup>
+                <GFormGroup v-show="importType === 'remoteFilesUri'" label="Remote File">
                     <!-- using v-show so we can have a persistent ref and launch dialog on select -->
                     <FilesInput ref="filesInput" v-model="sourceRemoteFilesUri" />
-                </b-form-group>
+                </GFormGroup>
 
-                <b-button class="import-button" variant="primary" type="submit" :disabled="!importReady">
+                <GButton class="import-button" variant="primary" type="submit" :disabled="!importReady">
                     Import history
-                </b-button>
-            </b-form>
+                </GButton>
+            </GForm>
         </div>
     </div>
 </template>
@@ -80,14 +80,23 @@ import { faExternalLinkAlt, faFolderOpen, faUpload } from "@fortawesome/free-sol
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { refDebounced } from "@vueuse/core";
 import axios from "axios";
-import BootstrapVue from "bootstrap-vue";
 import JobError from "components/JobInformation/JobError";
 import { waitOnJob } from "components/JobStates/wait";
 import LoadingSpan from "components/LoadingSpan";
 import { getAppRoot } from "onload/loadConfig";
 import { errorMessageAsString } from "utils/simple-error";
-import Vue, { ref, watch } from "vue";
+import { ref, watch } from "vue";
 
+import {
+    GAlert,
+    GButton,
+    GForm,
+    GFormFile,
+    GFormGroup,
+    GFormRadio,
+    GFormRadioGroup,
+    GInput,
+} from "@/component-library";
 import { getFileSources } from "@/components/FilesDialog/services";
 
 import ExternalLink from "./ExternalLink";
@@ -97,10 +106,23 @@ import FilesInput from "components/FilesDialog/FilesInput.vue";
 library.add(faFolderOpen);
 library.add(faUpload);
 library.add(faExternalLinkAlt);
-Vue.use(BootstrapVue);
 
 export default {
-    components: { FilesInput, FontAwesomeIcon, JobError, LoadingSpan, ExternalLink },
+    components: {
+        ExternalLink,
+        FilesInput,
+        FontAwesomeIcon,
+        GAlert,
+        GButton,
+        GForm,
+        GFormFile,
+        GFormGroup,
+        GFormRadio,
+        GFormRadioGroup,
+        GInput,
+        JobError,
+        LoadingSpan,
+    },
     setup() {
         const sourceURL = ref("");
         const debouncedURL = refDebounced(sourceURL, 200);

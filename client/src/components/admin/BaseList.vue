@@ -1,44 +1,46 @@
 <template>
     <div>
-        <b-alert :show="messageVisible" :variant="messageVariant"> {{ messageText }} </b-alert>
+        <GAlert :show="messageVisible" :variant="messageVariant"> {{ messageText }} </GAlert>
         <div v-if="itemsVisible" class="card-header">
             There are {{ itemsLength }}
-            <b-button
+            <GButton
                 size="sm"
                 :disabled="busy"
                 :title="tooltipAll"
                 data-placement="bottom"
                 @click.prevent="executeAll()">
                 <span :class="icon" />
-            </b-button>
+            </GButton>
             {{ plural }} available.
         </div>
-        <b-table v-if="itemsVisible" striped no-sort-reset :fields="fields" :items="items">
+        <GTable v-if="itemsVisible" :fields="fields" :items="items" no-sort-reset striped>
             <template v-slot:cell(execute)="data">
-                <b-button
+                <GButton
                     size="sm"
                     :disabled="busy"
                     :title="tooltip"
                     data-placement="bottom"
                     @click.prevent="execute([data.item.id])">
                     <span :class="icon" />
-                </b-button>
+                </GButton>
             </template>
             <template v-slot:cell(links)="data">
                 <li v-for="link in data.item.links" :key="link.name">
                     {{ link.name }}
                 </li>
             </template>
-        </b-table>
+        </GTable>
     </div>
 </template>
 <script>
-import BootstrapVue from "bootstrap-vue";
-import Vue from "vue";
-
-Vue.use(BootstrapVue);
+import { GAlert, GButton, GTable } from "@/component-library";
 
 export default {
+    components: {
+        GAlert,
+        GButton,
+        GTable,
+    },
     props: {
         icon: {
             type: String,

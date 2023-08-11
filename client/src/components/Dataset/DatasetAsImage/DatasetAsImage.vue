@@ -1,9 +1,9 @@
 <template>
     <div>
         <div v-if="imageUrl" class="w-100 p-2">
-            <b-card nobody body-class="p-1">
-                <b-img :src="imageUrl" fluid />
-            </b-card>
+            <GCard nobody body-class="p-1">
+                <GImg :src="imageUrl" fluid />
+            </GCard>
         </div>
         <div v-else>
             <b>Image is not found</b>
@@ -15,7 +15,13 @@
 import { getAppRoot } from "onload/loadConfig";
 import { mapCacheActions } from "vuex-cache";
 
+import { GCard, GImg } from "@/component-library";
+
 export default {
+    components: {
+        GCard,
+        GImg,
+    },
     props: {
         history_dataset_id: {
             type: String,

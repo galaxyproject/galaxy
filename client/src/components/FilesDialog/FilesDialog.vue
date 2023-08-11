@@ -10,16 +10,17 @@
             <data-dialog-search v-model="filter" />
         </template>
         <template v-slot:helper>
-            <b-alert v-if="showFTPHelper" id="helper" variant="info" show>
+            <GAlert v-if="showFTPHelper" id="helper" variant="info" show>
                 This Galaxy server allows you to upload files via FTP. To upload some files, log in to the FTP server at
                 <strong>{{ ftpUploadSite }}</strong> using your Galaxy credentials. For help visit the
                 <a href="https://galaxyproject.org/ftp-upload/" target="_blank">tutorial</a>.
-                <span v-if="oidcEnabled"
-                    ><br />If you are signed-in to Galaxy using a third-party identity and you
+                <span v-if="oidcEnabled">
+                    <br />
+                    If you are signed-in to Galaxy using a third-party identity and you
                     <strong>do not have a Galaxy password</strong> please use the reset password option in the login
-                    form with your email to create a password for your account.</span
-                >
-            </b-alert>
+                    form with your email to create a password for your account.
+                </span>
+            </GAlert>
         </template>
         <template v-slot:options>
             <data-dialog-table
@@ -37,11 +38,11 @@
                 @toggleSelectAll="toggleSelectAll" />
         </template>
         <template v-slot:buttons>
-            <b-btn v-if="undoShow" id="back-btn" size="sm" class="float-left" @click="load()">
+            <GButton v-if="undoShow" id="back-btn" size="sm" class="float-left" @click="load()">
                 <FontAwesomeIcon :icon="['fas', 'caret-left']" />
                 Back
-            </b-btn>
-            <b-btn
+            </GButton>
+            <GButton
                 v-if="multiple || !fileMode"
                 id="ok-btn"
                 size="sm"
@@ -50,7 +51,7 @@
                 :disabled="(fileMode && !hasValue) || isBusy || (!fileMode && urlTracker.atRoot())"
                 @click="fileMode ? finalize() : selectLeaf(currentDirectory)">
                 {{ fileMode ? "Ok" : "Select this folder" }}
-            </b-btn>
+            </GButton>
         </template>
     </selection-dialog>
 </template>
@@ -65,6 +66,7 @@ import SelectionDialogMixin from "components/SelectionDialog/SelectionDialogMixi
 import { selectionStates } from "components/SelectionDialog/selectionStates";
 import Vue from "vue";
 
+import { GAlert, GButton } from "@/component-library";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { getGalaxyInstance } from "../../app";
@@ -74,6 +76,8 @@ import { browseRemoteFiles, getFileSources } from "./services";
 library.add(faCaretLeft);
 export default {
     components: {
+        GAlert,
+        GButton,
         FontAwesomeIcon,
     },
     mixins: [SelectionDialogMixin],

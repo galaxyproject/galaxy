@@ -1,12 +1,12 @@
 <template>
     <div>
-        <b-alert v-if="errorMessage" class="mt-2" :show="dismissCountDown" variant="info" @dismissed="resetAlert">
+        <GAlert v-if="errorMessage" class="mt-2" :show="dismissCountDown" variant="info" @dismissed="resetAlert">
             {{ errorMessage }}
-        </b-alert>
-        <b-row align-v="center">
-            <b-col :sm="isRangeValid ? defaultInputSizeWithSlider : false">
+        </GAlert>
+        <GRow align-v="center">
+            <GCol :sm="isRangeValid ? defaultInputSizeWithSlider : false">
                 <!-- regular dot and dot on numpad have different codes -->
-                <b-form-input
+                <GInput
                     v-model="currentValue"
                     :no-wheel="true"
                     :step="step"
@@ -15,16 +15,24 @@
                     @change="onInputChange"
                     @keydown.190.capture="onFloatInput"
                     @keydown.110.capture="onFloatInput" />
-            </b-col>
-            <b-col v-if="isRangeValid" class="pl-0">
-                <b-form-input v-model="currentValue" :min="min" :max="max" :step="step" type="range" />
-            </b-col>
-        </b-row>
+            </GCol>
+            <GCol v-if="isRangeValid" class="pl-0">
+                <GInput v-model="currentValue" :min="min" :max="max" :step="step" type="range" />
+            </GCol>
+        </GRow>
     </div>
 </template>
 
 <script>
+import { GAlert, GCol, GInput, GRow } from "@/component-library";
+
 export default {
+    components: {
+        GAlert,
+        GCol,
+        GInput,
+        GRow,
+    },
     props: {
         value: {
             required: true,

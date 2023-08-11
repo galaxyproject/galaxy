@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { computed, type Ref, ref, type WritableComputedRef } from "vue";
 
+import { GCard, GFormCheckbox } from "@/component-library";
 import { useUserStore } from "@/stores/userStore";
 
 const userStore = useUserStore();
@@ -23,9 +24,9 @@ const enableActivityBar: WritableComputedRef<Boolean> = computed({
 </script>
 
 <template>
-    <b-card :show="show" class="user-activity-bar-settings mr-3">
-        <b-form-checkbox v-model="enableActivityBar" switch>
+    <GCard :show="show" class="user-activity-bar-settings mr-3">
+        <GFormCheckbox v-model="enableActivityBar" switch>
             <b>Enable Activity Bar</b>
-        </b-form-checkbox>
-    </b-card>
+        </GFormCheckbox>
+    </GCard>
 </template>

@@ -1,6 +1,6 @@
 <template>
     <div>
-        <b-link
+        <GLink
             id="dataset-dropdown"
             class="workflow-dropdown font-weight-bold p-2"
             data-toggle="dropdown"
@@ -18,7 +18,7 @@
                 title="The creation of this dataset has been paused." />
             <span v-else class="dataset-icon fa fa-caret-down" />
             <span class="name">{{ getName }}</span>
-        </b-link>
+        </GLink>
         <div class="dropdown-menu" aria-labelledby="dataset-dropdown">
             <a class="dropdown-item" href="#" @click.prevent="showDataset">
                 <span class="fa fa-eye fa-fw mr-1" />
@@ -32,12 +32,12 @@
     </div>
 </template>
 <script>
-import BootstrapVue from "bootstrap-vue";
-import Vue from "vue";
-
-Vue.use(BootstrapVue);
+import { GLink } from "@/component-library";
 
 export default {
+    components: {
+        GLink,
+    },
     props: {
         item: Object,
     },

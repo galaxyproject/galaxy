@@ -2,7 +2,7 @@
     <div class="dataset-actions mb-1">
         <div class="clearfix">
             <div class="btn-group float-left">
-                <b-button
+                <GButton
                     v-if="showError"
                     class="px-1"
                     title="Error"
@@ -11,9 +11,9 @@
                     :href="reportErrorUrl"
                     @click.prevent.stop="onError">
                     <span class="fa fa-bug" />
-                </b-button>
+                </GButton>
                 <DatasetDownload v-if="showDownloads" :item="item" @on-download="onDownload" />
-                <b-button
+                <GButton
                     v-if="showDownloads"
                     class="px-1"
                     title="Copy Link"
@@ -21,8 +21,8 @@
                     variant="link"
                     @click.stop="onCopyLink">
                     <span class="fa fa-link" />
-                </b-button>
-                <b-button
+                </GButton>
+                <GButton
                     v-if="showInfo"
                     class="params-btn px-1"
                     title="Dataset Details"
@@ -31,8 +31,8 @@
                     :href="showDetailsUrl"
                     @click.prevent.stop="onInfo">
                     <span class="fa fa-info-circle" />
-                </b-button>
-                <b-button
+                </GButton>
+                <GButton
                     v-if="writable && showRerun"
                     class="rerun-btn px-1"
                     title="Run Job Again"
@@ -41,8 +41,8 @@
                     :href="rerunUrl"
                     @click.prevent.stop="onRerun">
                     <span class="fa fa-redo" />
-                </b-button>
-                <b-button
+                </GButton>
+                <GButton
                     v-if="showVisualizations"
                     class="visualize-btn px-1"
                     title="Visualize"
@@ -51,8 +51,8 @@
                     :href="visualizeUrl"
                     @click.prevent.stop="onVisualize">
                     <span class="fa fa-bar-chart-o" />
-                </b-button>
-                <b-button
+                </GButton>
+                <GButton
                     v-if="showHighlight"
                     class="highlight-btn px-1"
                     title="Show Related Items"
@@ -60,10 +60,10 @@
                     variant="link"
                     @click.stop="onHighlight">
                     <span class="fa fa-sitemap" />
-                </b-button>
-                <b-button v-if="showRerun" class="px-1" title="Help" size="sm" variant="link" @click.stop="onRerun">
+                </GButton>
+                <GButton v-if="showRerun" class="px-1" title="Help" size="sm" variant="link" @click.stop="onRerun">
                     <span class="fa fa-question" />
-                </b-button>
+                </GButton>
             </div>
         </div>
     </div>
@@ -72,6 +72,7 @@
 <script>
 import { copy as sendToClipboard } from "utils/clipboard";
 
+import { GButton } from "@/component-library";
 import { absPath, prependPath } from "@/utils/redirect";
 
 import DatasetDownload from "./DatasetDownload";
@@ -80,6 +81,7 @@ import { downloadUrlMixin } from "./mixins.js";
 export default {
     components: {
         DatasetDownload,
+        GButton,
     },
     mixins: [downloadUrlMixin],
     props: {

@@ -3,6 +3,7 @@ import { storeToRefs } from "pinia";
 import { computed, type Ref, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
+import { GAlert, GCard, GFormGroup, GInput } from "@/component-library";
 import { Toast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
 
@@ -158,7 +159,7 @@ async function importVersionFromUrl(url: string, isRunFormRedirect = false) {
 
 <template>
     <div class="workflow-import-trs-id">
-        <b-card v-if="!isAnonymous" title="GA4GH Tool Registry Server (TRS) Workflow Import">
+        <GCard v-if="!isAnonymous" title="GA4GH Tool Registry Server (TRS) Workflow Import">
             <div>
                 <b>TRS Server:</b>
                 <TrsServerSelection
@@ -167,23 +168,23 @@ async function importVersionFromUrl(url: string, isRunFormRedirect = false) {
                     @onError="onTrsSelectionError"
                     @onTrsSelection="onTrsSelection" />
             </div>
-            <b-alert v-if="isAutoImport && !hasErrorMessage" show variant="info">
+            <GAlert v-if="isAutoImport && !hasErrorMessage" show variant="info">
                 <LoadingSpan message="Loading your Workflow" />
-            </b-alert>
+            </GAlert>
             <div v-else>
                 <div class="my-3">
-                    <b-form-group label="TRS ID:" label-for="trs-id-input" label-class="font-weight-bold">
-                        <b-form-input id="trs-id-input" v-model="toolId" debounce="500" />
-                    </b-form-group>
+                    <GFormGroup label="TRS ID:" label-for="trs-id-input" label-class="font-weight-bold">
+                        <GInput id="trs-id-input" v-model="toolId" debounce="500" />
+                    </GFormGroup>
                 </div>
                 <div>
-                    <b-alert v-if="loading" show variant="info">
+                    <GAlert v-if="loading" show variant="info">
                         <LoadingSpan :message="`Loading ${toolIdTrimmed}, this may take a while - please be patient`" />
-                    </b-alert>
-                    <b-alert :show="hasErrorMessage" variant="danger">{{ errorMessage }}</b-alert>
-                    <b-alert v-if="importing" show variant="info">
+                    </GAlert>
+                    <GAlert :show="hasErrorMessage" variant="danger">{{ errorMessage }}</GAlert>
+                    <GAlert v-if="importing" show variant="info">
                         <LoadingSpan message="Importing workflow" />
-                    </b-alert>
+                    </GAlert>
                 </div>
                 <TrsTool
                     v-if="trsTool"
@@ -196,9 +197,9 @@ async function importVersionFromUrl(url: string, isRunFormRedirect = false) {
                     :query-trs-url="props.queryTrsUrl"
                     @onImport="(url) => importVersionFromUrl(url, isRun)" />
             </div>
-        </b-card>
-        <b-alert v-else class="text-center my-2" show variant="danger">
+        </GCard>
+        <GAlert v-else class="text-center my-2" show variant="danger">
             Anonymous user cannot import workflows, please register or log in
-        </b-alert>
+        </GAlert>
     </div>
 </template>

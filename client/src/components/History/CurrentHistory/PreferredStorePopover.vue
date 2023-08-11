@@ -1,5 +1,5 @@
 <template>
-    <b-popover :target="`history-storage-${historyId}`" triggers="hover" placement="bottomleft">
+    <GPopover :target="`history-storage-${historyId}`" triggers="hover" placement="bottomleft">
         <template v-slot:title>Preferred Target Object Store</template>
         <p v-if="historyPreferredObjectStoreId" class="history-preferred-object-store-inherited">
             This target object store has been set at the history level.
@@ -15,14 +15,17 @@
         <div v-localize>
             Change this preference object store target by clicking on the storage button in the history panel.
         </div>
-    </b-popover>
+    </GPopover>
 </template>
 
 <script>
 import ShowSelectedObjectStore from "components/ObjectStore/ShowSelectedObjectStore";
 
+import { GPopover } from "@/component-library";
+
 export default {
     components: {
+        GPopover,
         ShowSelectedObjectStore,
     },
     props: {

@@ -6,6 +6,7 @@ import type { Ref } from "vue";
 import { computed, ref } from "vue";
 import Multiselect from "vue-multiselect";
 
+import { GButton, GTooltip } from "@/component-library";
 import { useToast } from "@/composables/toast";
 import { useMultiselect } from "@/composables/useMultiselect";
 import { useUserTags } from "@/composables/user";
@@ -141,10 +142,10 @@ function onTagClicked(tag: string) {
             </template>
 
             <template v-slot:caret>
-                <b-button v-if="!editing" class="toggle-button" variant="link" tabindex="-1" @click="openMultiselect">
+                <GButton v-if="!editing" class="toggle-button" variant="link" tabindex="-1" @click="openMultiselect">
                     {{ props.placeholder }}
                     <FontAwesomeIcon icon="fa-tags" />
-                </b-button>
+                </GButton>
             </template>
 
             <template v-slot:option="{ option }">
@@ -179,16 +180,16 @@ function onTagClicked(tag: string) {
                     :editable="false"
                     :clickable="props.clickable"
                     @click="onTagClicked"></Tag>
-                <b-button
+                <GButton
                     v-if="slicedTags.length > 0 && !toggledOpen"
                     :id="toggleButtonId"
                     variant="link"
                     class="toggle-link"
                     @click="() => (toggledOpen = true)">
                     {{ slicedTags.length }} more...
-                </b-button>
+                </GButton>
 
-                <b-tooltip
+                <GTooltip
                     v-if="slicedTags.length > 0 && !toggledOpen"
                     :target="toggleButtonId"
                     custom-class="stateless-tags--tag-preview-tooltip"
@@ -200,7 +201,7 @@ function onTagClicked(tag: string) {
                         :editable="false"
                         :clickable="props.clickable"
                         @click="onTagClicked"></Tag>
-                </b-tooltip>
+                </GTooltip>
             </div>
         </div>
     </div>

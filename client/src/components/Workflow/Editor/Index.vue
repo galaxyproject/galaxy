@@ -13,19 +13,19 @@
             @onRefactor="onRefactor"
             @onShow="hideModal" />
         <MessagesModal :title="messageTitle" :message="messageBody" :error="messageIsError" @onHidden="resetMessage" />
-        <b-modal
+        <GModal
             v-model="showSaveAsModal"
             title="Save As a New Workflow"
             ok-title="Save"
             cancel-title="Cancel"
             @ok="doSaveAs">
-            <b-form-group label="Name">
-                <b-form-input v-model="saveAsName" />
-            </b-form-group>
-            <b-form-group label="Annotation">
-                <b-form-textarea v-model="saveAsAnnotation" />
-            </b-form-group>
-        </b-modal>
+            <GFormGroup label="Name">
+                <GInput v-model="saveAsName" />
+            </GFormGroup>
+            <GFormGroup label="Annotation">
+                <GFormTextarea v-model="saveAsAnnotation" />
+            </GFormGroup>
+        </GModal>
         <FlexPanel side="left">
             <ProviderAwareToolBoxWorkflow
                 :module-sections="moduleSections"
@@ -145,7 +145,7 @@
         :steps="steps"
         @onUpdate="onReportUpdate">
         <template v-slot:buttons>
-            <b-button
+            <GButton
                 id="workflow-canvas-button"
                 v-b-tooltip.hover.bottom
                 title="Return to Workflow"
@@ -153,7 +153,7 @@
                 role="button"
                 @click="onEdit">
                 <span class="fa fa-times" />
-            </b-button>
+            </GButton>
         </template>
     </MarkdownEditor>
 </template>
@@ -163,6 +163,7 @@ import axios from "axios";
 import { storeToRefs } from "pinia";
 import Vue, { computed, onUnmounted, ref } from "vue";
 
+import { GButton, GFormGroup, GFormTextarea, GInput, GModal } from "@/component-library";
 import { getUntypedWorkflowParameters } from "@/components/Workflow/Editor/modules/parameters";
 import { ConfirmDialog } from "@/composables/confirmDialog";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
@@ -198,6 +199,11 @@ export default {
         ProviderAwareToolBoxWorkflow,
         FormDefault,
         FormTool,
+        GButton,
+        GFormGroup,
+        GFormTextarea,
+        GInput,
+        GModal,
         WorkflowOptions,
         WorkflowAttributes,
         WorkflowLint,

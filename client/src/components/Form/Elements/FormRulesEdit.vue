@@ -8,6 +8,8 @@ import RulesDisplay from "components/RulesDisplay/RulesDisplay";
 import { getAppRoot } from "onload/loadConfig";
 import { computed, ref } from "vue";
 
+import { GButton, GModal } from "@/component-library";
+
 library.add(faEdit);
 
 const props = defineProps({
@@ -62,12 +64,12 @@ function onCancel() {
 <template>
     <div class="form-rules-edit">
         <RulesDisplay :input-rules="displayRules" />
-        <b-button title="Edit Rules" @click="onEdit">
+        <GButton title="Edit Rules" @click="onEdit">
             <FontAwesomeIcon icon="fa-edit" />
             <span>Edit</span>
-        </b-button>
+        </GButton>
 
-        <b-modal ref="modal" modal-class="ui-form-rules-edit-modal" hide-footer>
+        <GModal ref="modal" modal-class="ui-form-rules-edit-modal" hide-footer>
             <template v-slot:modal-title>
                 <h2 class="mb-0">Build Rules for Applying to Existing Collection</h2>
             </template>
@@ -79,7 +81,7 @@ function onCancel() {
                 :save-rules-fn="onSaveRules"
                 :oncancel="onCancel"
                 :oncreate="() => {}" />
-        </b-modal>
+        </GModal>
     </div>
 </template>
 

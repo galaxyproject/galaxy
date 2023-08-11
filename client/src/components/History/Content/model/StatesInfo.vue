@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
+import { GModal } from "@/component-library";
+
 import { STATES } from "./states";
 import type { HelpText, States } from "./stateTypes";
 
@@ -42,19 +44,19 @@ function onFilter(value: string) {
 </script>
 
 <template>
-    <b-modal v-model="propShowHelp" title="History Item States Help" ok-only>
+    <GModal v-model="propShowHelp" title="History Item States Help" ok-only>
         <p>Here are all available item states in Galaxy:</p>
         <p><i>(Note that the colors for each state correspond to content item state colors in the history)</i></p>
         <dl v-for="(state, key, index) in states" :key="index">
             <div :class="['alert', 'content-item', 'alert-' + state.status]" :data-state="key">
                 <dt>
-                    <a class="text-decoration-none" href="javascript:void(0)" @click="onFilter(key)"
-                        ><code>{{ key }}</code></a
-                    >
+                    <a class="text-decoration-none" href="javascript:void(0)" @click="onFilter(key)">
+                        <code>{{ key }}</code>
+                    </a>
                     <icon v-if="state.icon" :icon="state.icon" />
                 </dt>
                 <dd>{{ helpText[key] || state.text }}</dd>
             </div>
         </dl>
-    </b-modal>
+    </GModal>
 </template>

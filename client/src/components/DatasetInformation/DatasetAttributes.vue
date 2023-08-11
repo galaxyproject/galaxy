@@ -1,31 +1,31 @@
 <template>
     <div aria-labelledby="dataset-attributes-heading">
         <h1 id="dataset-attributes-heading" v-localize class="h-lg">Edit Dataset Attributes</h1>
-        <b-alert v-if="messageText" class="dataset-attributes-alert" :variant="messageVariant" show>
+        <GAlert v-if="messageText" class="dataset-attributes-alert" :variant="messageVariant" show>
             {{ messageText | l }}
-        </b-alert>
+        </GAlert>
         <DatasetAttributesProvider :id="datasetId" v-slot="{ result, loading }" @error="onError">
             <div v-if="!loading" class="mt-3">
-                <b-tabs>
-                    <b-tab v-if="!result['attribute_disable']">
+                <GTabs>
+                    <GTab v-if="!result['attribute_disable']">
                         <template v-slot:title>
                             <FontAwesomeIcon icon="bars" class="mr-1" />{{ "Attributes" | l }}
                         </template>
                         <FormDisplay :inputs="result['attribute_inputs']" @onChange="onAttribute" />
                         <div class="mt-2">
-                            <b-button
+                            <GButton
                                 id="dataset-attributes-default-save"
                                 variant="primary"
                                 class="mr-1"
                                 @click="submit('attribute', 'attributes')">
                                 <FontAwesomeIcon icon="save" class="mr-1" />{{ "Save" | l }}
-                            </b-button>
-                            <b-button v-if="!result['metadata_disable']" @click="submit('attribute', 'autodetect')">
+                            </GButton>
+                            <GButton v-if="!result['metadata_disable']" @click="submit('attribute', 'autodetect')">
                                 <FontAwesomeIcon icon="redo" class="mr-1" />{{ "Auto-detect" | l }}
-                            </b-button>
+                            </GButton>
                         </div>
-                    </b-tab>
-                    <b-tab
+                    </GTab>
+                    <GTab
                         v-if="
                             (!result['conversion_disable'] || !result['datatype_disable']) &&
                             !result['metadata_disable']
@@ -45,12 +45,12 @@
                             <div class="portlet-content">
                                 <FormDisplay :inputs="result['datatype_inputs']" @onChange="onDatatype" />
                                 <div class="mt-2">
-                                    <b-button variant="primary" class="mr-1" @click="submit('datatype', 'datatype')">
+                                    <GButton variant="primary" class="mr-1" @click="submit('datatype', 'datatype')">
                                         <FontAwesomeIcon icon="save" class="mr-1" />{{ "Save" | l }}
-                                    </b-button>
-                                    <b-button @click="submit('datatype', 'datatype_detect')">
+                                    </GButton>
+                                    <GButton @click="submit('datatype', 'datatype_detect')">
                                         <FontAwesomeIcon icon="redo" class="mr-1" />{{ "Auto-detect" | l }}
-                                    </b-button>
+                                    </GButton>
                                 </div>
                             </div>
                         </div>
@@ -66,25 +66,25 @@
                             <div class="portlet-content">
                                 <FormDisplay :inputs="result['conversion_inputs']" @onChange="onConversion" />
                                 <div class="mt-2">
-                                    <b-button variant="primary" @click="submit('conversion', 'conversion')">
+                                    <GButton variant="primary" @click="submit('conversion', 'conversion')">
                                         <FontAwesomeIcon icon="exchange-alt" class="mr-1" />{{ "Create Dataset" | l }}
-                                    </b-button>
+                                    </GButton>
                                 </div>
                             </div>
                         </div>
-                    </b-tab>
-                    <b-tab v-if="!result['permission_disable']">
+                    </GTab>
+                    <GTab v-if="!result['permission_disable']">
                         <template v-slot:title>
                             <FontAwesomeIcon icon="user" class="mr-1" />{{ "Permissions" | l }}
                         </template>
                         <FormDisplay :inputs="result['permission_inputs']" @onChange="onPermission" />
                         <div class="mt-2">
-                            <b-button variant="primary" @click="submit('permission', 'permission')">
+                            <GButton variant="primary" @click="submit('permission', 'permission')">
                                 <FontAwesomeIcon icon="save" class="mr-1" />{{ "Save" | l }}
-                            </b-button>
+                            </GButton>
                         </div>
-                    </b-tab>
-                </b-tabs>
+                    </GTab>
+                </GTabs>
             </div>
         </DatasetAttributesProvider>
     </div>
@@ -98,6 +98,8 @@ import { getGalaxyInstance } from "app";
 import FormDisplay from "components/Form/FormDisplay";
 import { DatasetAttributesProvider } from "components/providers/DatasetProvider";
 
+import { GAlert, GButton, GTab, GTabs } from "@/component-library";
+
 import { setAttributes } from "./services";
 
 library.add(faBars, faCog, faDatabase, faExchangeAlt, faRedo, faSave, faUser);
@@ -107,6 +109,10 @@ export default {
         DatasetAttributesProvider,
         FontAwesomeIcon,
         FormDisplay,
+        GAlert,
+        GButton,
+        GTab,
+        GTabs,
     },
     props: {
         datasetId: {
