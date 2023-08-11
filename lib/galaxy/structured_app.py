@@ -73,6 +73,7 @@ class BasicSharedApp(Container):
 
 
 class MinimalToolApp(Protocol):
+    is_webapp: bool
     name: str
     # Leave config as Any: in a full Galaxy app this is a GalaxyAppConfiguration object, but this is mostly dynamically
     # generated, and here we want to also allow other kinds of configuration objects (e.g. a Bunch).
