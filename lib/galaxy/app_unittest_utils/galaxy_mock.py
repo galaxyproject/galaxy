@@ -104,6 +104,7 @@ class MockApp(di.Container, GalaxyDataTestApp):
     history_manager: HistoryManager
     job_metrics: JobMetrics
     stop: bool
+    is_webapp: bool = True
 
     def __init__(self, config=None, **kwargs) -> None:
         super().__init__()

@@ -12,6 +12,8 @@ from galaxy.util.dbkeys import GenomeBuilds
 class ValidationContext:
     """Minimal App object for tool validation."""
 
+    is_webapp = True
+
     def __init__(
         self,
         app_name,
