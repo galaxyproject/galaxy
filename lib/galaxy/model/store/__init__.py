@@ -218,6 +218,9 @@ class SessionlessContext:
 
         return Bunch(find=find, get=find, filter_by=filter_by)
 
+    def get(self, model_class: Type, primary_key: Any):  # patch for SQLAlchemy 2.0 compatibility
+        return self.query(model_class).get(primary_key)
+
 
 def replace_metadata_file(
     metadata: Dict[str, Any],
