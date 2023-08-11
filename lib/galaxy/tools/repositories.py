@@ -12,6 +12,8 @@ from galaxy.util.bunch import Bunch
 class ValidationContext:
     """Minimal App object for tool validation."""
 
+    is_webapp = True
+
     def __init__(
         self,
         app_name,
