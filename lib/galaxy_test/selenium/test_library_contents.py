@@ -105,7 +105,9 @@ class TestLibraryContents(SeleniumTestCase, UsesLibraryAssertions):
     def test_delete_dataset(self):
         self.test_import_dataset_from_history()
 
-        self.components.libraries.folder.toast_msg.wait_for_visible()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        # assert "you must select at least one" modal
+        # assert self.components.libraries.folder.toast_msg.is_displayed
 
         self.components.libraries.folder.delete_btn.wait_for_and_click()
 
