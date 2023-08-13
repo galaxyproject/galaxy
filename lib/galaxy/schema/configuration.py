@@ -1034,7 +1034,7 @@ file_path, etc.). Defaults to `database/` if running Galaxy from source or
     ] = None
 
     templates_dir: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Templates Dir",
             description="""The directory containing custom templates for Galaxy, such as HTML/text email templates. Defaults to 'templates'. Default templates can be found in the Galaxy root under config/templates. These can be copied to <templates_dir> if you wish to customize them.""",
@@ -1042,7 +1042,7 @@ file_path, etc.). Defaults to `database/` if running Galaxy from source or
     ] = "templates"
 
     cache_dir: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Cache Dir",
             description="""Top level cache directory. Any other cache directories (tool_cache_data_dir,
@@ -1231,7 +1231,7 @@ Set to 0 to disable pruning.
     ] = 3600
 
     file_path: Annotated[
-        str,
+        Optional[str],
         Field(
             title="File Path",
             description="""Where dataset files are stored. It must be accessible at the same path on any cluster
@@ -1243,7 +1243,7 @@ directory exists before using 'objects' as the default.
     ] = "objects"
 
     new_file_path: Annotated[
-        str,
+        Optional[str],
         Field(
             title="New File Path",
             description="""Where temporary files are stored. It must be accessible at the same path on any cluster
@@ -1263,7 +1263,7 @@ This value is ignored if an external upload server is configured.
     ] = 107374182400
 
     tool_config_file: Annotated[
-        Any,
+        Optional[Any],
         Field(
             title="Tool Config File",
             description="""Tool config files, defines what tools are available in Galaxy.
@@ -1276,7 +1276,7 @@ files, or (for backwards compatibility) a comma-separated list of files.
     ] = "tool_conf.xml"
 
     shed_tool_config_file: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Shed Tool Config File",
             description="""Tool config file for tools installed from the Galaxy Tool Shed. Must
@@ -1293,7 +1293,7 @@ tool_config_file cannot be read.
     ] = "shed_tool_conf.xml"
 
     migrated_tools_config: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Migrated Tools Config",
             description="""This option is deprecated.
@@ -1305,7 +1305,7 @@ these scripts were previously run and such a file exists.
     ] = "migrated_tools_conf.xml"
 
     integrated_tool_panel_config: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Integrated Tool Panel Config",
             description="""File that contains the XML section and tool tags from all tool panel config
@@ -1319,7 +1319,7 @@ The value of this option will be resolved with respect to <managed_config_dir>.
     ] = "integrated_tool_panel.xml"
 
     tool_path: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Tool Path",
             description="""Default path to the directory containing the tools defined in tool_conf.xml.
@@ -1330,7 +1330,7 @@ Other tool config files must include the tool_path as an attribute in the
     ] = "tools"
 
     tool_dependency_dir: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Tool Dependency Dir",
             description="""Various dependency resolver configuration parameters will have defaults set relative
@@ -1345,7 +1345,7 @@ from the Tool Shed or in Conda will fail.
     ] = "dependencies"
 
     dependency_resolvers_config_file: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Dependency Resolvers Config File",
             description="""Specifies the path to the standalone dependency resolvers configuration file. This
@@ -1386,7 +1386,7 @@ PATH (if available) and then to <conda_prefix>/bin/conda
     ] = False
 
     conda_ensure_channels: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Conda Ensure Channels",
             description="""conda channels to enable by default
@@ -1437,7 +1437,7 @@ of extra disk space usage and extra time spent copying packages.
     ] = False
 
     local_conda_mapping_file: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Local Conda Mapping File",
             description="""Path to a file that provides a mapping from abstract packages to concrete conda packages.
@@ -1447,7 +1447,7 @@ See `config/local_conda_mapping.yml.sample` for examples.
     ] = "local_conda_mapping.yml"
 
     modules_mapping_files: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Modules Mapping Files",
             description="""Path to a file that provides a mapping from abstract packages to locally installed modules.
@@ -1498,7 +1498,7 @@ Set this to false if you prefer dependencies to be cached only when installing n
     ] = True
 
     tool_sheds_config_file: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Tool Sheds Config File",
             description="""File containing the Galaxy Tool Sheds that should be made available to
@@ -1555,7 +1555,7 @@ changes are found, modified tours are automatically reloaded. Takes the same val
     ] = "false"
 
     short_term_storage_dir: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Short Term Storage Dir",
             description="""Location of files available for a short time as downloads (short term storage).
@@ -1599,7 +1599,7 @@ Celery task configuration.
     ] = 3600
 
     file_sources_config_file: Annotated[
-        str,
+        Optional[str],
         Field(
             title="File Sources Config File",
             description="""Configured FileSource plugins.""",
@@ -1653,7 +1653,7 @@ Takes the same options that can be set in container_resolvers_config_file.
     ] = None
 
     involucro_path: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Involucro Path",
             description="""involucro is a tool used to build Docker or Singularity containers for tools from Conda
@@ -1676,7 +1676,7 @@ relevant container resolver is not used.
     ] = True
 
     mulled_channels: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Mulled Channels",
             description="""Conda channels to use when building Docker or Singularity containers using involucro.""",
@@ -1708,7 +1708,7 @@ setting for hours_between_check should be an integer between 1 and 24.
     ] = 12
 
     tool_data_table_config_path: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Tool Data Table Config Path",
             description="""XML config file that contains data table entries for the
@@ -1719,7 +1719,7 @@ administrator (.sample used if default does not exist).
     ] = "tool_data_table_conf.xml"
 
     shed_tool_data_table_config: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Shed Tool Data Table Config",
             description="""XML config file that contains additional data table entries for the
@@ -1733,7 +1733,7 @@ applied to the ToolDataTableManager at server start up.
     ] = "shed_tool_data_table_conf.xml"
 
     tool_data_path: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Tool Data Path",
             description="""Directory where data used by tools is located. See the samples in that
@@ -1777,7 +1777,7 @@ the watchdog default.
     ] = None
 
     build_sites_config_file: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Build Sites Config File",
             description="""File that defines the builds (dbkeys) available at sites used by display applications
@@ -1787,7 +1787,7 @@ and the URL to those sites.
     ] = "build_sites.yml"
 
     builds_file_path: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Builds File Path",
             description="""File containing old-style genome builds.
@@ -1798,7 +1798,7 @@ The value of this option will be resolved with respect to <tool_data_path>.
     ] = "shared/ucsc/builds.txt"
 
     len_file_path: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Len File Path",
             description="""Directory where chrom len files are kept, currently mainly used by trackster.
@@ -1809,7 +1809,7 @@ The value of this option will be resolved with respect to <tool_data_path>.
     ] = "shared/ucsc/chrom"
 
     datatypes_config_file: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Datatypes Config File",
             description="""Datatypes config file(s), defines what data (file) types are available in
@@ -1833,7 +1833,7 @@ before sniffing.
     ] = True
 
     visualization_plugins_directory: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Visualization Plugins Directory",
             description="""Visualizations config directory: where to look for individual visualization
@@ -1844,7 +1844,7 @@ path begin the path with '/'. This is a comma-separated list.
     ] = "config/plugins/visualizations"
 
     tour_config_dir: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Tour Config Dir",
             description="""Interactive tour directory: where to store interactive tour definition files.
@@ -1857,7 +1857,7 @@ comma-separated list.
     ] = "config/plugins/tours"
 
     webhooks_dir: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Webhooks Dir",
             description="""Webhooks directory: where to store webhooks - plugins to extend the Galaxy UI.
@@ -1870,7 +1870,7 @@ webhooks used to test the webhook framework.
     ] = "config/plugins/webhooks"
 
     job_working_directory: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Job Working Directory",
             description="""Each job is given a unique empty directory as its current working directory.
@@ -1883,7 +1883,7 @@ The value of this option will be resolved with respect to <data_dir>.
     ] = "jobs_directory"
 
     template_cache_path: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Template Cache Path",
             description="""Mako templates are compiled as needed and cached for reuse, this directory is
@@ -1919,7 +1919,7 @@ can run job scripts before attempting to execute or submit them.
     ] = 0.25
 
     default_job_shell: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Default Job Shell",
             description="""Set the default shell used by non-containerized jobs Galaxy-wide. This
@@ -1946,7 +1946,7 @@ using the ``tool_cache_data_dir`` setting, but can be disabled completely here.
     ] = False
 
     tool_cache_data_dir: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Tool Cache Data Dir",
             description="""Tool related caching. Fully expanded tools and metadata will be stored at this path.
@@ -1957,7 +1957,7 @@ the tool_cache_data_dir attribute.
     ] = "tool_cache"
 
     tool_search_index_dir: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Tool Search Index Dir",
             description="""Directory in which the toolbox search index is stored.""",
@@ -1995,7 +1995,7 @@ resovled via biotools_content_directory.
     ] = False
 
     biotools_service_cache_type: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Biotools Service Cache Type",
             description="""bio.tools web service request related caching. The type of beaker cache used.""",
@@ -2003,7 +2003,7 @@ resovled via biotools_content_directory.
     ] = "file"
 
     biotools_service_cache_data_dir: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Biotools Service Cache Data Dir",
             description="""bio.tools web service request related caching. The data directory to point beaker cache at.""",
@@ -2011,7 +2011,7 @@ resovled via biotools_content_directory.
     ] = "biotools/data"
 
     biotools_service_cache_lock_dir: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Biotools Service Cache Lock Dir",
             description="""bio.tools web service request related caching. The lock directory to point beaker cache at.""",
@@ -2032,7 +2032,7 @@ value of database_connection if this is not set.
     ] = None
 
     biotools_service_cache_table_name: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Biotools Service Cache Table Name",
             description="""When biotools_service_cache_type = ext:database, this is
@@ -2054,7 +2054,7 @@ bio.tools web service request related caching.
     ] = None
 
     citation_cache_type: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Citation Cache Type",
             description="""Citation related caching. Tool citations information maybe fetched from
@@ -2065,7 +2065,7 @@ parameters can be used to control the caching used to store this information.
     ] = "file"
 
     citation_cache_data_dir: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Citation Cache Data Dir",
             description="""Citation related caching. Tool citations information maybe fetched from
@@ -2076,7 +2076,7 @@ parameters can be used to control the caching used to store this information.
     ] = "citations/data"
 
     citation_cache_lock_dir: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Citation Cache Lock Dir",
             description="""Citation related caching. Tool citations information maybe fetched from
@@ -2099,7 +2099,7 @@ value of database_connection if this is not set.
     ] = None
 
     citation_cache_table_name: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Citation Cache Table Name",
             description="""When citation_cache_type = ext:database, this is
@@ -2121,7 +2121,7 @@ citation related caching.
     ] = None
 
     mulled_resolution_cache_type: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Mulled Resolution Cache Type",
             description="""Mulled resolution caching. Mulled resolution uses external APIs of quay.io, these
@@ -2131,7 +2131,7 @@ requests are caching using this and the following parameters
     ] = "file"
 
     mulled_resolution_cache_data_dir: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Mulled Resolution Cache Data Dir",
             description="""Data directory used by beaker for caching mulled resolution requests.""",
@@ -2139,7 +2139,7 @@ requests are caching using this and the following parameters
     ] = "mulled/data"
 
     mulled_resolution_cache_lock_dir: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Mulled Resolution Cache Lock Dir",
             description="""Lock directory used by beaker for caching mulled resolution requests.""",
@@ -2168,7 +2168,7 @@ value of database_connection if this is not set.
     ] = None
 
     mulled_resolution_cache_table_name: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Mulled Resolution Cache Table Name",
             description="""When mulled_resolution_cache_type = ext:database, this is
@@ -2190,7 +2190,7 @@ caching mulled resolution requests.
     ] = None
 
     object_store_config_file: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Object Store Config File",
             description="""Configuration file for the object store
@@ -2232,7 +2232,7 @@ external).
     ] = 600
 
     object_store_cache_path: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Object Store Cache Path",
             description="""Default cache path for caching object stores if cache not configured for
@@ -2309,7 +2309,7 @@ will be sent over the network encrypted).
     ] = False
 
     mailing_join_subject: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Mailing Join Subject",
             description="""The subject of the email sent to the mailing list join address. See the
@@ -2319,7 +2319,7 @@ will be sent over the network encrypted).
     ] = "Join Mailing List"
 
     mailing_join_body: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Mailing Join Body",
             description="""The body of the email sent to the mailing list join address. See the
@@ -2453,7 +2453,7 @@ A duration of 0 disables this feature.
     ] = 0
 
     display_servers: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Display Servers",
             description="""Galaxy can display data at various external browsers. These options specify
@@ -2512,7 +2512,7 @@ Galaxy by default.
     ] = None
 
     interactivetools_base_path: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Interactivetools Base Path",
             description="""Base path for interactive tools running at a subpath without a subdomain. Defaults to "/".""",
@@ -2520,7 +2520,7 @@ Galaxy by default.
     ] = "/"
 
     interactivetools_map: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Interactivetools Map",
             description="""Map for interactivetool proxy.""",
@@ -2528,7 +2528,7 @@ Galaxy by default.
     ] = "interactivetools_map.sqlite"
 
     interactivetools_prefix: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Interactivetools Prefix",
             description="""Prefix to use in the formation of the subdomain or path for interactive tools""",
@@ -2570,7 +2570,7 @@ default logo including the galaxy brand title.
     ] = True
 
     pretty_datetime_format: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Pretty Datetime Format",
             description="""Format string used when showing date and time information.
@@ -2585,7 +2585,7 @@ The string may contain:
     ] = "$locale (UTC)"
 
     trs_servers_config_file: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Trs Servers Config File",
             description="""Allow import of workflows from the TRS servers configured in
@@ -2600,7 +2600,7 @@ just Dockstore will be used.
     ] = "trs_servers_conf.yml"
 
     user_preferences_extra_conf_path: Annotated[
-        str,
+        Optional[str],
         Field(
             title="User Preferences Extra Conf Path",
             description="""Location of the configuration file containing extra user preferences.""",
@@ -2608,7 +2608,7 @@ just Dockstore will be used.
     ] = "user_preferences_extra_conf.yml"
 
     galaxy_url_prefix: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Galaxy Url Prefix",
             description="""URL prefix for Galaxy application. If Galaxy should be served under a prefix set this to
@@ -2618,7 +2618,7 @@ the desired prefix value.
     ] = "/"
 
     galaxy_infrastructure_url: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Galaxy Infrastructure Url",
             description="""URL (with schema http/https) of the Galaxy instance as accessible
@@ -2672,7 +2672,7 @@ server) to point to your own styles.
     ] = 360
 
     static_dir: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Static Dir",
             description="""Serve static content, which must be enabled if you're not serving it via a
@@ -2684,7 +2684,7 @@ server) to point to your own styles.
     ] = "static/"
 
     static_images_dir: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Static Images Dir",
             description="""Serve static content, which must be enabled if you're not serving it via a
@@ -2695,7 +2695,7 @@ server) to point to your own styles.
         ),
     ] = "static/images"
     static_favicon_dir: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Static Favicon Dir",
             description="""Serve static content, which must be enabled if you're not serving it via a
@@ -2707,7 +2707,7 @@ server) to point to your own styles.
     ] = "static/favicon.ico"
 
     static_scripts_dir: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Static Scripts Dir",
             description="""Serve static content, which must be enabled if you're not serving it via a
@@ -2719,7 +2719,7 @@ server) to point to your own styles.
     ] = "static/scripts/"
 
     static_style_dir: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Static Style Dir",
             description="""Serve static content, which must be enabled if you're not serving it via a
@@ -2731,7 +2731,7 @@ server) to point to your own styles.
     ] = "static/style"
 
     static_robots_txt: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Static Robots Txt",
             description="""Serve static content, which must be enabled if you're not serving it via a
@@ -2746,8 +2746,7 @@ server) to point to your own styles.
         int,
         Field(
             title="Display Chunk Size",
-            description="""Incremental Display Options
-""",
+            description="""Incremental Display Options""",
         ),
     ] = 65536
 
@@ -2802,7 +2801,7 @@ for details.
     ] = False
 
     x_frame_options: Annotated[
-        str,
+        Optional[str],
         Field(
             title="X Frame Options",
             description="""The following default adds a header to web request responses that
@@ -2890,7 +2889,7 @@ version. Valid values are (node, golang)
     ] = "node"
 
     dynamic_proxy_session_map: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Dynamic Proxy Session Map",
             description="""The NodeJS dynamic proxy can use an SQLite database or a JSON file for IPC,
@@ -2910,7 +2909,7 @@ the external configuration if dynamic_proxy_manage is set to false.
     ] = 8800
 
     dynamic_proxy_bind_ip: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Dynamic Proxy Bind Ip",
             description="""Set the port and IP for the dynamic proxy to bind to, this must match
@@ -2938,7 +2937,7 @@ nodejs to wrap connections in SSL).
     ] = False
 
     dynamic_proxy_prefix: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Dynamic Proxy Prefix",
             description="""Additionally, when the dynamic proxy is proxied by an upstream server, you'll
@@ -2972,7 +2971,7 @@ but the default value is probably fine.
     ] = 10
 
     dynamic_proxy_golang_docker_address: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Dynamic Proxy Golang Docker Address",
             description="""The golang proxy needs to know how to talk to your docker daemon. Currently
@@ -3004,7 +3003,7 @@ manually.
     ] = True
 
     log_destination: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Log Destination",
             description="""Log destination, defaults to special value "stdout" that logs to standard output. If set to anything else,
@@ -3015,7 +3014,7 @@ disabled.
     ] = "stdout"
 
     log_rotate_size: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Log Rotate Size",
             description="""Size of log file at which size it will be rotated as per the documentation in
@@ -3039,7 +3038,7 @@ rotation will be performed. A value of 0 (the default) means no rotation.
     ] = 0
 
     log_level: Annotated[
-        str,
+        Optional[Literal["NOTSET", "TRACE", "DEBUG", "INFO", "WARNING", "ERROR", "CRITICAL"]],
         Field(
             title="Log Level",
             description="""Verbosity of console log messages. Acceptable values can be found here:
@@ -3106,7 +3105,7 @@ configured below by enabling fluent_log.
     ] = False
 
     fluent_host: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Fluent Host",
             description="""Fluentd configuration. Various events can be logged to the fluentd instance
@@ -3138,7 +3137,7 @@ make the Galaxy instance susceptible to XSS attacks initiated by your users.
     ] = True
 
     sanitize_allowlist_file: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Sanitize Allowlist File",
             description="""Datasets created by tools listed in this file are trusted and will not have
@@ -3263,7 +3262,7 @@ SIGUSR1 (`kill -USR1`) to force a dump.
     ] = 20
 
     heartbeat_log: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Heartbeat Log",
             description="""Heartbeat log filename. Can accept the template variables {server_name} and {pid}""",
@@ -3284,7 +3283,7 @@ sentry instance under <project_name> -> Settings -> API Keys.
     ] = None
 
     sentry_event_level: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Sentry Event Level",
             description="""Determines the minimum log level that will be sent as an event to Sentry.
@@ -3343,7 +3342,7 @@ statistics between them within the same aggregator.
     ] = 8125
 
     statsd_prefix: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Statsd Prefix",
             description="""Log to statsd
@@ -3586,7 +3585,7 @@ be below 1, because an ngram match is a partial match of a search term.
     ] = 0.2
 
     tool_test_data_directories: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Tool Test Data Directories",
             description="""Set tool test data directory. The test framework sets this value to
@@ -3600,7 +3599,7 @@ instead of a Git HTTP repository.
     ] = "test-data"
 
     id_secret: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Id Secret",
             description="""Galaxy encodes various internal values when these values will be output in
@@ -3625,7 +3624,7 @@ to usernames, to become your Galaxy usernames (email addresses).
     ] = None
 
     remote_user_header: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Remote User Header",
             description="""If use_remote_user is enabled, the header that the upstream proxy provides
@@ -3638,7 +3637,7 @@ to prepend ``HTTP_`` to the header in this option, but your proxy server should
     ] = "HTTP_REMOTE_USER"
 
     remote_user_secret: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Remote User Secret",
             description="""If use_remote_user is enabled, anyone who can log in to the Galaxy host may
@@ -3763,7 +3762,7 @@ these modules may not function in the future.)
     ] = False
 
     edam_panel_views: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Edam Panel Views",
             description="""Comma-separated list of the EDAM panel views to load - choose from merged, operations, topics.
@@ -3774,7 +3773,7 @@ to override default tool panel to use an EDAM view.
     ] = "operations,topics"
 
     edam_toolbox_ontology_path: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Edam Toolbox Ontology Path",
             description="""Sets the path to EDAM ontology file - if the path doesn't exist PyPI package data will be loaded.""",
@@ -3782,7 +3781,7 @@ to override default tool panel to use an EDAM view.
     ] = "EDAM.tsv"
 
     panel_views_dir: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Panel Views Dir",
             description="""Directory to check out for toolbox tool panel views. The path is relative to the
@@ -3793,7 +3792,7 @@ comma-separated list.
     ] = "config/plugins/activities"
 
     default_workflow_export_format: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Default Workflow Export Format",
             description="""Default format for the export of workflows. Possible values are 'ga'
@@ -3871,7 +3870,7 @@ into a collection of datasets for each line in an input dataset.
     ] = False
 
     oidc_config_file: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Oidc Config File",
             description="""Sets the path to OIDC configuration file.""",
@@ -3879,7 +3878,7 @@ into a collection of datasets for each line in an input dataset.
     ] = "oidc_config.xml"
 
     oidc_backends_config_file: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Oidc Backends Config File",
             description="""Sets the path to OIDC backends configuration file.""",
@@ -3887,7 +3886,7 @@ into a collection of datasets for each line in an input dataset.
     ] = "oidc_backends_config.xml"
 
     auth_config_file: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Auth Config File",
             description="""XML config file that allows the use of different authentication providers
@@ -4006,7 +4005,7 @@ identifier (defaults to e-mail), where Galaxy will look for files.
     ] = None
 
     ftp_upload_dir_identifier: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Ftp Upload Dir Identifier",
             description="""User attribute to use as subdirectory in calculating default ftp_upload_dir
@@ -4051,7 +4050,7 @@ non-administrative users. Administrators can always see dataset paths.
     ] = False
 
     job_metrics_config_file: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Job Metrics Config File",
             description="""XML config file that contains the job metric collection configuration.""",
@@ -4085,7 +4084,7 @@ variables).
     ] = False
 
     data_manager_config_file: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Data Manager Config File",
             description="""File where Data Managers are configured (.sample used if default does not exist).""",
@@ -4093,7 +4092,7 @@ variables).
     ] = "data_manager_conf.xml"
 
     shed_data_manager_config_file: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Shed Data Manager Config File",
             description="""File where Tool Shed based Data Managers are configured. This file will be created
@@ -4329,7 +4328,7 @@ option (Linux) or -actimeo=0 (Solaris).
     ] = 0
 
     tool_evaluation_strategy: Annotated[
-        str,
+        Optional[Literal["local", "remote"]],
         Field(
             title="Tool Evaluation Strategy",
             description="""Determines which process will evaluate the tool command line. If set to "local" the tool command
@@ -4343,7 +4342,7 @@ to ``extended`` if you set this option to ``remote``.
     ] = "local"
 
     preserve_python_environment: Annotated[
-        str,
+        Optional[Literal["legacy_only", "legacy_and_local", "always"]],
         Field(
             title="Preserve Python Environment",
             description="""In the past Galaxy would preserve its Python environment when running jobs (
@@ -4361,7 +4360,7 @@ installing software into Galaxy's virtualenv for tool development).
     ] = "legacy_only"
 
     cleanup_job: Annotated[
-        str,
+        Optional[Literal["always", "onsuccess", "never"]],
         Field(
             title="Cleanup Job",
             description="""Clean up various bits of jobs left on the filesystem after completion. These
@@ -4414,7 +4413,7 @@ Example value 'sudo -E scripts/external_chown_script.py'
     ] = None
 
     real_system_username: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Real System Username",
             description="""When running DRMAA jobs as the Galaxy user
@@ -4449,7 +4448,7 @@ individually.
     ] = None
 
     markdown_export_css: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Markdown Export Css",
             description="""CSS file to apply to all Markdown exports to PDF - currently used by
@@ -4459,7 +4458,7 @@ WeasyPrint during rendering an HTML export of the document to PDF.
     ] = "markdown_export.css"
 
     markdown_export_css_pages: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Markdown Export Css Pages",
             description="""CSS file to apply to "Galaxy Page" exports to PDF. Generally prefer
@@ -4470,7 +4469,7 @@ would like to tailor different kinds of exports.
     ] = "markdown_export_pages.css"
 
     markdown_export_css_invocation_reports: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Markdown Export Css Invocation Reports",
             description="""CSS file to apply to invocation report exports to PDF. Generally prefer
@@ -4535,7 +4534,7 @@ exports.
     ] = ""
 
     job_resource_params_file: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Job Resource Params File",
             description="""Optional file containing job resource data entry fields definition.
@@ -4547,7 +4546,7 @@ walltime.
     ] = "job_resource_params_conf.xml"
 
     workflow_resource_params_file: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Workflow Resource Params File",
             description="""Similar to the above parameter, workflows can describe parameters used to
@@ -4576,7 +4575,7 @@ Sample default path 'config/workflow_resource_mapper_conf.yml.sample'
     ] = None
 
     workflow_schedulers_config_file: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Workflow Schedulers Config File",
             description="""Optional configuration file similar to `job_config_file` to specify
@@ -4632,7 +4631,7 @@ that admins may use to restrict the tool sections to display.
     ] = None
 
     user_tool_filters: Annotated[
-        str,
+        Optional[str],
         Field(
             title="User Tool Filters",
             description="""Define toolbox filters (https://galaxyproject.org/user-defined-toolbox-filters/)
@@ -4642,7 +4641,7 @@ that users may use to restrict the tools to display.
     ] = "examples:restrict_upload_to_admins, examples:restrict_encode"
 
     user_tool_section_filters: Annotated[
-        str,
+        Optional[str],
         Field(
             title="User Tool Section Filters",
             description="""Define toolbox filters (https://galaxyproject.org/user-defined-toolbox-filters/)
@@ -4652,7 +4651,7 @@ that users may use to restrict the tool sections to display.
     ] = "examples:restrict_text"
 
     user_tool_label_filters: Annotated[
-        str,
+        Optional[str],
         Field(
             title="User Tool Label Filters",
             description="""Define toolbox filters (https://galaxyproject.org/user-defined-toolbox-filters/)
@@ -4662,7 +4661,7 @@ that users may use to restrict the tool labels to display.
     ] = "examples:restrict_upload_to_admins, examples:restrict_encode"
 
     toolbox_filter_base_modules: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Toolbox Filter Base Modules",
             description="""The base module(s) that are searched for modules for toolbox filtering
@@ -4672,7 +4671,7 @@ that users may use to restrict the tool labels to display.
     ] = "galaxy.tools.filters,galaxy.tools.toolbox.filters,galaxy.tool_util.toolbox.filters"
 
     amqp_internal_connection: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Amqp Internal Connection",
             description="""Galaxy uses AMQP internally for communicating between processes. For
@@ -4731,7 +4730,7 @@ reason to disable it.
     ] = True
 
     error_report_file: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Error Report File",
             description="""Path to error reports configuration file.""",
@@ -4739,7 +4738,7 @@ reason to disable it.
     ] = "error_report.yml"
 
     tool_destinations_config_file: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Tool Destinations Config File",
             description="""Path to dynamic tool destinations configuration file.""",
@@ -4747,7 +4746,7 @@ reason to disable it.
     ] = "tool_destinations.yml"
 
     vault_config_file: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Vault Config File",
             description="""Vault config file.""",
@@ -4763,7 +4762,7 @@ reason to disable it.
     ] = True
 
     themes_config_file: Annotated[
-        str,
+        Optional[str],
         Field(
             title="Themes Config File",
             description="""Optional file containing one or more themes for galaxy. If several themes
