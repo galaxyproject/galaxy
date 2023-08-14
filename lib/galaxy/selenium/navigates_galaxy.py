@@ -2116,11 +2116,27 @@ class NavigatesGalaxy(HasDriver):
         else:
             container_elem = container_selector_or_elem
         container_elem.click()
-        text_input = container_elem.find_element(By.CSS_SELECTOR, "input[class='multiselect__input']")
-        text_input.send_keys(value)
-        self.send_enter(text_input)
-        if multiple:
-            self.send_escape(text_input)
+        try:
+            text_input = container_elem.find_element(By.CSS_SELECTOR, "input[class='multiselect__input']")
+        except Exception:
+            text_input = None
+        if text_input:
+            text_input.send_keys(value)
+            self.send_enter(text_input)
+            if multiple:
+                self.send_escape(text_input)
+        else:
+            self.sleep_for(WAIT_TYPES.UX_RENDER)
+            elems = container_elem.find_elements(By.CSS_SELECTOR, "[role='option'] .multiselect__option span")
+            discovered_options = []
+            found = False
+            for elem in elems:
+                elem_value = elem.text
+                discovered_options.append(elem_value)
+                if elem_value == value:
+                    elem.click()
+                    found = True
+            assert found, f"Failed to find specified select value [{value}] in browser options [{discovered_options}]"
 
     def select2_set_value(self, container_selector_or_elem, value, with_click=True, clear_value=False):
         # There are two hacky was to select things from the select2 widget -

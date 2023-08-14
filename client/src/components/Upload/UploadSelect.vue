@@ -25,6 +25,14 @@ const props = defineProps({
         type: String,
         default: null,
     },
+    what: {
+        type: String,
+        default: null,
+    },
+    searchable: {
+        type: Boolean,
+        default: true,
+    },
 });
 
 const emit = defineEmits(["input"]);
@@ -44,12 +52,17 @@ const currentValue = computed({
         class="upload-settings-select rounded"
         deselect-label=""
         :disabled="disabled"
+        :searchable="searchable"
         label="text"
         :options="options"
         :placeholder="placeholder"
         select-label=""
         selected-label=""
-        track-by="id" />
+        track-by="id">
+        <template
+            ><span slot="noResult" v-localize>No matching {{ what }}s found.</span></template
+        >
+    </Multiselect>
 </template>
 
 <style lang="scss">

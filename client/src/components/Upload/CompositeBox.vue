@@ -193,9 +193,15 @@ defineExpose({
                 :value="null"
                 :options="listExtensions"
                 :disabled="isRunning"
+                what="file type"
                 @input="inputExtension" />
             <span class="upload-footer-title">Reference:</span>
-            <UploadSelect :value="dbKey" :options="listDbKeys" :disabled="isRunning" @input="inputDbkey" />
+            <UploadSelect
+                what="reference"
+                :value="dbKey"
+                :options="listDbKeys"
+                :disabled="isRunning"
+                @input="inputDbkey" />
         </div>
         <div class="upload-buttons d-flex justify-content-end">
             <BButton

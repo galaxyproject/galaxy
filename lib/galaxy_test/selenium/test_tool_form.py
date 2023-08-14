@@ -374,7 +374,7 @@ class TestLoggedInToolForm(SeleniumTestCase):
     def test_run_apply_rules_tutorial(self):
         self.home()
         self.upload_rule_start()
-        self.upload_rule_set_data_type("Collection")
+        self.upload_rule_set_data_type("Collections")
         self.components.upload.rule_source_content.wait_for_and_send_keys(
             """https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-data/rules/treated1fb.txt treated_single_1
 https://raw.githubusercontent.com/jmchilton/galaxy/apply_rules_tutorials/test-data/rules/treated2fb.txt treated_paired_2
