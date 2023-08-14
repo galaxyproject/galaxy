@@ -99,16 +99,19 @@ async function onCreateExportRecord() {
     isExportDialogOpen.value = true;
 }
 
+async function doExportToFileSourceWithPrefix(exportDirectory: string, fileName: string) {
+    // Avoid name collisions if multiple different histories are exported to the
+    // same destination with the same name
+    const fileNameCompatibleUpdateTime = props.history.update_time.replace(/:/g, "-");
+    const prefixedFileName = `${fileNameCompatibleUpdateTime}_${fileName}`;
+    doExportToFileSource(exportDirectory, prefixedFileName);
+}
+
 async function doExportToFileSource(exportDirectory: string, fileName: string) {
     isExportingRecord.value = true;
     isExportDialogOpen.value = false;
-
-    // Avoid name collisions if multiple different histories are exported to the
-    // same destination with the same name
-    const prefixedFileName = `${props.history.id}_${fileName}`;
-
     try {
-        await exportToFileSource(props.history.id, exportDirectory, prefixedFileName, DEFAULT_EXPORT_PARAMS);
+        await exportToFileSource(props.history.id, exportDirectory, fileName, DEFAULT_EXPORT_PARAMS);
     } catch (error) {
         exportErrorMessage.value = "The history export request failed. Please try again later.";
     }
@@ -196,7 +199,7 @@ function onArchiveHistoryWithExport() {
         </BButton>
 
         <BModal v-model="isExportDialogOpen" title="Export history to permanent storage" size="lg" hide-footer>
-            <ExportToFileSourceForm what="history" @export="doExportToFileSource" />
+            <ExportToFileSourceForm what="history" @export="doExportToFileSourceWithPrefix" />
         </BModal>
     </div>
 </template>
