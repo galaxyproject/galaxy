@@ -131,7 +131,10 @@ from galaxy.tools.parameters.grouping import (
 from galaxy.tools.parameters.input_translation import ToolInputTranslator
 from galaxy.tools.parameters.meta import expand_meta_parameters
 from galaxy.tools.parameters.wrapped_json import json_wrap
-from galaxy.tools.test import parse_tests
+from galaxy.tools.test import (
+    parse_tests,
+    ToolTestDescription,
+)
 from galaxy.util import (
     in_directory,
     listify,
@@ -776,7 +779,6 @@ class Tool(Dictifiable):
         self.tool_source = tool_source
         self._is_workflow_compatible = None
         self.__help = None
-        self.__tests_populated = False
         try:
             self.parse(tool_source, guid=guid, dynamic=dynamic)
         except Exception as e:
@@ -1108,7 +1110,7 @@ class Tool(Dictifiable):
 
         if self.app.is_webapp:
             self.__initialize_help()
-            _ = self.tests
+            self.parse_tests()
         self.__parse_legacy_features(tool_source)
 
         # Load any tool specific options (optional)
@@ -1269,19 +1271,19 @@ class Tool(Dictifiable):
         if trackster_conf is not None:
             self.trackster_conf = TracksterConfig.parse(trackster_conf)
 
+    def parse_tests(self):
+        tests_source = self.tool_source
+        if tests_source:
+            try:
+                self.__tests = json.dumps([t.to_dict() for t in parse_tests(self, tests_source)], indent=None)
+            except Exception:
+                self.__tests = None
+                log.exception("Failed to parse tool tests for tool '%s'", self.id)
+
     @property
     def tests(self):
-        if not self.__tests_populated:
-            tests_source = self.tool_source
-            if tests_source:
-                try:
-                    self.__tests = parse_tests(self, tests_source)
-                except Exception:
-                    self.__tests = None
-                    log.exception("Failed to parse tool tests for tool '%s'", self.id)
-            else:
-                self.__tests = None
-            self.__tests_populated = True
+        if self.__tests:
+            return [ToolTestDescription(d) for d in json.loads(self.__tests)]
         return self.__tests
 
     @property
