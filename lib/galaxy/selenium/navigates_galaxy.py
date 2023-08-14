@@ -779,11 +779,11 @@ class NavigatesGalaxy(HasDriver):
 
         if ext is not None:
             self.wait_for_selector_visible(".upload-extension")
-            self.select2_set_value(".upload-extension", ext)
+            self.select_set_value(".upload-extension", ext)
 
         if genome is not None:
             self.wait_for_selector_visible(".upload-genome")
-            self.select2_set_value(".upload-genome", genome)
+            self.select_set_value(".upload-genome", genome)
 
         if deferred is not None:
             upload = self.components.upload
@@ -806,20 +806,14 @@ class NavigatesGalaxy(HasDriver):
         self.components.upload.tab(tab="composite").wait_for_and_click()
         self.upload_set_footer_extension(ext, tab_id="composite")
 
-        table = self.components.upload.composite.table().wait_for_visible()
-        source_select_buttons = table.find_elements(self.by.CSS_SELECTOR, "div.dropdown button.btn")
-        paste_buttons = table.find_elements(
-            self.by.CSS_SELECTOR, ".upload-source .dropdown-menu .dropdown-item .fa-edit"
-        )
-        textareas = table.find_elements(self.by.CSS_SELECTOR, "div.upload-text-column textarea.upload-text-content")
-
         for i in range(len(paste_content)):
-            source_select_buttons[i].click()
-            paste_buttons[i].click()
-            textareas[i].send_keys(paste_content[i])
+            self.components.upload.source_button(n=i).wait_for_and_click()
+            self.components.upload.paste_option(n=i).wait_for_and_click()
+            textarea = self.components.upload.paste_content(n=i).wait_for_visible()
+            textarea.send_keys(paste_content[i])
 
         self.upload_start(tab_id="composite")
-        self.components.upload.composite.close.wait_for_and_click()
+        self.components.upload.composite_close_button.wait_for_and_click()
 
     def upload_list(self, test_paths, name="test", ext=None, genome=None, hide_source_items=True):
         self._collection_upload_start(test_paths, ext, genome, "List")
@@ -879,19 +873,19 @@ class NavigatesGalaxy(HasDriver):
         if ext is not None:
             selector = f"div#{tab_id} .upload-footer-extension"
             self.wait_for_selector_visible(selector)
-            self.select2_set_value(selector, ext)
+            self.select_set_value(selector, ext)
 
     @retry_during_transitions
     def upload_set_footer_genome(self, genome, tab_id="regular"):
         if genome is not None:
             selector = f"div#{tab_id} .upload-footer-genome"
             self.wait_for_selector_visible(selector)
-            self.select2_set_value(selector, genome)
+            self.select_set_value(selector, genome)
 
     @retry_during_transitions
     def upload_set_collection_type(self, collection_type):
         self.wait_for_selector_visible(".upload-footer-collection-type")
-        self.select2_set_value(".upload-footer-collection-type", collection_type)
+        self.select_set_value(".upload-footer-collection-type", collection_type)
 
     def upload_start(self, tab_id="regular"):
         self.wait_for_and_click_selector(f"div#{tab_id} button#btn-start")
@@ -932,15 +926,14 @@ class NavigatesGalaxy(HasDriver):
     def upload_rule_build(self):
         self.upload_build(tab="rule-based")
 
+    def upload_rule_dataset_dialog(self):
+        upload = self.components.upload
+        upload.rule_dataset_dialog.wait_for_and_click()
+
     def upload_rule_set_data_type(self, type_description):
         upload = self.components.upload
         data_type_element = upload.rule_select_data_type.wait_for_visible()
-        self.select2_set_value(data_type_element, type_description)
-
-    def upload_rule_set_input_type(self, input_description):
-        upload = self.components.upload
-        input_type_element = upload.rule_select_input_type.wait_for_visible()
-        self.select2_set_value(input_type_element, input_description)
+        self.select_set_value(data_type_element, type_description)
 
     def upload_rule_set_dataset(self, row=1):
         upload = self.components.upload

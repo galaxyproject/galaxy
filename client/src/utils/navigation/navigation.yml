@@ -357,7 +357,7 @@ edit_collection_attributes:
     data_value:
       type: xpath
       selector: '//span[contains(text(), "${data_change}")]'
-    genome_select_search: ".database-dropdown input.multiselect__input"
+    genome_select_search: '.database-dropdown input.multiselect__input'
     datatype_select_search: '.datatype-dropdown input.multiselect__input'
     save_dbkey_btn: '.save-dbkey-edit'
     save_datatype_btn: '.save-datatype-edit'
@@ -1026,38 +1026,35 @@ gies:
     iframe: 'body iframe[seamless="seamless"]'
 
 upload:
-  composite:
-    selectors:
-      table: 'div#composite table.upload-table'
-      close: 'div#composite div.upload-buttons button'
-
   selectors:
-    tab: '#tab-title-link-${tab}'
-    ftp_add: '#btn-ftp'
-    ftp_popup: '.upload-ftp-body'
-    ftp_items: '.upload-ftp-row'
-    ftp_close: '.popover-header .popover-close'
-    row: '#upload-row-${n}'
-    settings_button: '#upload-row-${n} .upload-settings'
+    build_button: '#rule-based #btn-build'
+    close_button: '#regular #btn-close'
+    composite_close_button: '#composite #btn-close'
+    create_button: '#btn-new'
+    file_dialog: '#btn-remote-files'
+    file_dialog_ok: '.file-dialog-modal-ok'
+    file_source_selector:
+      type: xpath
+      selector: '//span[contains(@title, "${path}")]'
+    paste_option: '#upload-row-${n} .upload-source .dropdown-menu .dropdown-item .fa-edit'
     paste_content: '#upload-row-${n} .upload-text-content'
-    settings: '.upload-settings-table'
-    setting_deferred: '.upload-deferred'
-    start: '#activity-upload'
-    start_uploading: '.upload-start'
-    close: '.upload-close'
-    rule_source_content: 'textarea.upload-rule-source-content'
-    rule_select_data_type: '.rule-data-type'
-    rule_select_input_type: '.rule-select-type'
+    row: '#upload-row-${n}'
+    rule_dataset_dialog: '[data-description="rules dataset dialog"]'
     rule_dataset_selector:
       selector: '.selection-dialog-modal'
     rule_dataset_selector_row:
       selector: '.selection-dialog-modal [aria-rowindex="${rowindex}"]'
-    build_btn: '#rule-based #btn-build'
-    file_source_selector:
-      type: xpath
-      selector: '//span[contains(@title, "${path}")]'
-    file_dialog_ok: '.file-dialog-modal-ok'
-    paste_new: .upload-paste
+    rule_select_data_type: '.rule-data-type'
+    rule_source_content: 'textarea.upload-rule-source-content'
+    tab: '#tab-title-link-${tab}'
+    title: '#upload-row-${n} .upload-title'
+    settings: '.upload-settings-table'
+    settings_button: '#upload-row-${n} .upload-settings span'
+    setting_deferred: '.upload-deferred'
+    setting_space_to_tab: '.upload-space-to-tab'
+    source_button: '#upload-row-${n} .upload-source'
+    start: '#activity-upload'
+    start_button: '#btn-start'
 
 new_user_welcome:
   selectors:

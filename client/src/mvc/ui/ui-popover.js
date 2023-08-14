@@ -14,7 +14,7 @@ export default Backbone.View.extend({
             container: "body",
         });
         this.uid = Utils.uid();
-        this.$target = this.options.container;
+        this.$target = $(this.options.container);
     },
 
     /**
