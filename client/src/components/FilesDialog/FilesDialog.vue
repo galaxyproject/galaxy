@@ -70,6 +70,9 @@ const selectAllIcon = ref(selectionStates.unselected);
 const urlTracker = ref(new UrlTracker(""));
 
 const fileMode = computed(() => props.mode == "file");
+const okButtonDisabled = computed(
+    () => (fileMode.value && !hasValue.value) || isBusy.value || (!fileMode.value && urlTracker.value.atRoot())
+);
 
 /** Collects selected datasets in value array **/
 function clicked(record: RecordItem) {
@@ -392,7 +395,7 @@ onMounted(() => {
                 size="sm"
                 class="float-right ml-1 file-dialog-modal-ok"
                 variant="primary"
-                :disabled="(fileMode && !hasValue) || isBusy || (!fileMode && urlTracker.atRoot())"
+                :disabled="okButtonDisabled"
                 @click="onOk">
                 {{ fileMode ? "Ok" : "Select this folder" }}
             </BButton>
