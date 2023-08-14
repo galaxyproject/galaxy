@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { BAlert, BButton, BFormCheckbox, BModal } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
+import { RouterLink } from "vue-router";
 
 import type { ExportRecord } from "@/components/Common/models/exportRecordModel";
 import { exportToFileSource, getExportRecords } from "@/components/History/Export/services";
@@ -9,6 +10,7 @@ import { useTaskMonitor } from "@/composables/taskMonitor";
 import type { HistorySummary } from "@/stores/historyStore";
 
 import ExportRecordCard from "./ExportRecordCard.vue";
+import ExportToDOIRepositoryForm from "@/components/Common/ExportDOIForm.vue";
 import ExportToFileSourceForm from "@/components/Common/ExportForm.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
@@ -35,6 +37,10 @@ const isExportingRecord = ref(false);
 const isExportDialogOpen = ref(false);
 const isDeleteContentsConfirmed = ref(false);
 const exportErrorMessage = ref<string | null>(null);
+
+const historyName = computed(() => {
+    return props.history.name;
+});
 
 const mostUpToDateExport = computed(() => {
     return existingExports.value.find(
@@ -199,7 +205,35 @@ function onArchiveHistoryWithExport() {
         </BButton>
 
         <BModal v-model="isExportDialogOpen" title="Export history to permanent storage" size="lg" hide-footer>
-            <ExportToFileSourceForm what="history" @export="doExportToFileSourceWithPrefix" />
+            <BTabs card vertical lazy class="export-option-tabs">
+                <BTab id="to-remote-file-tab" title="To Remote File Source" active>
+                    <p>
+                        <b>Exporting to a remote file source</b> will create a compressed archive of the history
+                        contents, copy it to a remote location (e.g. an FTP server) and create an export record with
+                        this information that will be associated with the archived history. You will be able to recreate
+                        the history later by importing it from the export record.
+                    </p>
+                    <ExportToFileSourceForm what="history" @export="doExportToFileSourceWithPrefix" />
+                </BTab>
+                <BTab id="to-rdm-repository-tab" title="To RDM Repository">
+                    <p>
+                        <b>Exporting to a RDM repository</b> (e.g. Invenio RDM or Zenodo RDM) will require to create or
+                        select an existing record in the repository where the history archive will be uploaded. The
+                        export record will be associated with the archived history and you will be able to recreate the
+                        history later by importing it from the export record.
+                    </p>
+                    <p>
+                        You may need to setup your credentials for the selected repository in your
+                        <RouterLink to="/user/information" target="_blank">settings page</RouterLink> to be able to
+                        export.
+                    </p>
+                    <ExportToDOIRepositoryForm
+                        what="history"
+                        :default-filename="historyName + ' (Galaxy History)'"
+                        :default-record-name="historyName"
+                        @export="doExportToFileSource" />
+                </BTab>
+            </BTabs>
         </BModal>
     </div>
 </template>
