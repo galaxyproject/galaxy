@@ -177,14 +177,23 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
     def records_url(self) -> str:
         return f"{self.repository_url}/api/records"
 
+    @property
+    def user_records_url(self) -> str:
+        return f"{self.repository_url}/api/user/records"
+
     def to_plugin_uri(self, record_id: str, filename: Optional[str] = None) -> str:
         return f"{self.plugin.get_uri_root()}/{record_id}{f'/{filename}' if filename else ''}"
 
     def get_records(self, writeable: bool, user_context: OptionalUserContext = None) -> List[RemoteDirectory]:
-        # Only draft records owned by the user can be written to.
-        request_url = f"{self.repository_url}/api/user/records?is_published=false" if writeable else self.records_url
-        # TODO: This is limited to 25 records by default. Add pagination support?
-        response_data = self._get_response(user_context, request_url)
+        params = {}
+        request_url = self.records_url
+        if writeable:
+            # Only draft records owned by the user can be written to.
+            params["is_published"] = "false"
+            request_url = self.user_records_url
+        # TODO: Add pagination support to FileSources. This is limited to 100 records by default for now.
+        params["size"] = 100
+        response_data = self._get_response(user_context, request_url, params=params)
         return self._get_records_from_response(response_data)
 
     def get_files_in_record(
@@ -330,9 +339,9 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
         value = preferences.get(f"{self.plugin.id}|{key}", None) if preferences else None
         return value
 
-    def _get_response(self, user_context: OptionalUserContext, request_url: str) -> dict:
+    def _get_response(self, user_context: OptionalUserContext, request_url: str, params: dict = None) -> dict:
         headers = self._get_request_headers(user_context)
-        response = requests.get(request_url, headers=headers, verify=VERIFY)
+        response = requests.get(request_url, params=params, headers=headers, verify=VERIFY)
         self._ensure_response_has_expected_status_code(response, 200)
         return response.json()
 
