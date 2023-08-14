@@ -1142,6 +1142,7 @@ class Tool(Dictifiable):
         self.hidden = tool_source.parse_hidden()
         self.license = tool_source.parse_license()
         self.creator = tool_source.parse_creator()
+        self.funding = tool_source.parse_funding()
 
         self.__parse_legacy_features(tool_source)
 
@@ -2628,6 +2629,7 @@ class Tool(Dictifiable):
                 "action": action,
                 "license": self.license,
                 "creator": self.creator,
+                "funding": self.funding,
                 "method": self.method,
                 "enctype": self.enctype,
             }

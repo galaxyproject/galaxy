@@ -2211,9 +2211,9 @@ class SubworkflowStep(WorkflowStepBase):
     )
 
 
-class Creator(Model):
-    class_: str = Field(..., alias="class", title="Class", description="The class representing this creator.")
-    name: str = Field(..., title="Name", description="The name of the creator.")
+class Thing(Model):
+    class_: str = Field(..., alias="class", title="Class", description="The class representing this thing.")
+    name: str = Field(..., title="Name", description="The name of the thing.")
     address: Optional[str] = Field(
         None,
         title="Address",
@@ -2245,6 +2245,10 @@ class Creator(Model):
         None,
         title="URL",
     )
+
+
+class Creator(Thing):
+    class_: str = Field(..., alias="class", title="Class", description="The class representing this creator.")
 
 
 class Organization(Creator):
@@ -2285,6 +2289,10 @@ class Person(Creator):
         alias="jobTitle",
         title="Job Title",
     )
+
+
+class Grant(Thing):
+    class_: str = Field(..., alias="class", title="Class", description="The class representing this Grant.")
 
 
 class StoredWorkflowDetailed(StoredWorkflowSummary):

@@ -296,6 +296,13 @@ class ToolSource(metaclass=ABCMeta):
         """
         return []
 
+    def parse_funding(self):
+        """Return list of metadata relating to funding of tool development.
+
+        Result should be list of schema.org data model Grant objects.
+        """
+        return []
+
     @property
     def macro_paths(self):
         return []

@@ -1,5 +1,6 @@
 import os
 import os.path
+import re
 import shutil
 import tempfile
 from math import isinf
@@ -24,6 +25,16 @@ TOOL_XML_1 = """
             url="https://galaxyproject.org/iuc/"
             name="Galaxy IUC" />
     </creator>
+    <funding>
+        <grant
+            name="EuroScienceGateway"
+            description="EuroScienceGateway will leverage a distributed computing network across
+             13 European countries, accessible via 6 national, user-friendly web portals,
+             facilitating access to compute and storage infrastructures across Europe as well as to data,
+             tools, workflows and services that can be customized to suit researchers' needs."
+            identifier="101057388"
+            url="https://cordis.europa.eu/project/id/101057388" />
+    </funding>
     <version_command interpreter="python">bwa.py --version</version_command>
     <parallelism method="multi" split_inputs="input1" split_mode="to_size" split_size="1" merge_outputs="out_file1" />
     <command interpreter="python">bwa.py --arg1=42</command>
@@ -164,17 +175,30 @@ help:
 |
     This is HELP TEXT2!!!
 tests:
-   - inputs:
-       foo: 5
-     outputs:
-       out1: moo.txt
-   - inputs:
-       foo:
-         value: 5
-     outputs:
-       out1:
-         lines_diff: 4
-         compare: sim_size
+    - inputs:
+        foo: 5
+      outputs:
+        out1: moo.txt
+    - inputs:
+        foo:
+          value: 5
+      outputs:
+        out1:
+          lines_diff: 4
+          compare: sim_size
+creator:
+    - person:
+        givenName: Björn
+        familyName: Grüning
+        identifier: http://orcid.org/0000-0002-3079-6586
+    - organization:
+        name: Galaxy IUC
+        url: https://galaxyproject.org/iuc/
+funding:
+    - grant:
+        name: EuroScienceGateway
+        identifier: '101057388'
+        url: https://cordis.europa.eu/project/id/101057388
 """
 
 TOOL_EXPRESSION_XML_1 = """
@@ -444,6 +468,27 @@ class TestXmlLoader(BaseLoaderTestCase):
         assert creator2["class"] == "Organization"
         assert creator2["name"] == "Galaxy IUC"
 
+    def test_funding(self):
+        funding = self._tool_source.parse_funding()
+        assert len(funding) == 1
+
+        grant = funding[0]
+        assert grant["class"] == "Grant"
+        assert grant["name"] == "EuroScienceGateway"
+        assert grant["identifier"] == "101057388"
+        assert grant["url"] == "https://cordis.europa.eu/project/id/101057388"
+
+        expected_description = """EuroScienceGateway will leverage a distributed computing network across
+              13 European countries, accessible via 6 national, user-friendly web portals,
+              facilitating access to compute and storage infrastructures across Europe as well as to data,
+              tools, workflows and services that can be customized to suit researchers' needs."""
+
+        print(grant["description"])
+        expected_description = re.sub(r"[\n\t]*", "", expected_description)
+        print(expected_description)
+
+        assert grant["description"] == expected_description
+
 
 class TestYamlLoader(BaseLoaderTestCase):
     source_file_name = "bwa.yml"
@@ -587,6 +632,31 @@ class TestYamlLoader(BaseLoaderTestCase):
 
     def test_sanitize(self):
         assert self._tool_source.parse_sanitize() is True
+
+    def test_parse_creator(self):
+        creators = self._tool_source.parse_creator()
+        assert len(creators) == 2
+        assert creators[0] == {
+            "person": {
+                "givenName": "Björn",
+                "familyName": "Grüning",
+                "identifier": "http://orcid.org/0000-0002-3079-6586",
+            }
+        }
+
+        assert creators[1] == {"organization": {"name": "Galaxy IUC", "url": "https://galaxyproject.org/iuc/"}}
+
+    def test_parse_funding(self):
+        funding = self._tool_source.parse_funding()
+        assert len(funding) == 1
+
+        assert funding[0] == {
+            "grant": {
+                "name": "EuroScienceGateway",
+                "identifier": "101057388",
+                "url": "https://cordis.europa.eu/project/id/101057388",
+            }
+        }
 
 
 class TestDataSourceLoader(BaseLoaderTestCase):
