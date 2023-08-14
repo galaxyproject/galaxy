@@ -307,10 +307,7 @@ class LibraryActions:
     def _create_folder(self, trans, parent_id: int, **kwd):
         is_admin = trans.user_is_admin
         current_user_roles = trans.get_current_user_roles()
-        try:
-            parent_folder = trans.sa_session.query(trans.app.model.LibraryFolder).get(parent_id)
-        except Exception:
-            parent_folder = None
+        parent_folder = trans.sa_session.query(trans.app.model.LibraryFolder).get(parent_id)
         # Check the library which actually contains the user-supplied parent folder, not the user-supplied
         # library, which could be anything.
         self._check_access(trans, is_admin, parent_folder, current_user_roles)
