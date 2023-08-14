@@ -388,6 +388,7 @@ defineExpose({
                 :value="collectionType"
                 :disabled="isRunning"
                 :options="COLLECTION_TYPES"
+                :searchable="false"
                 placeholder="Select Type"
                 @input="updateCollectionType" />
             <span class="upload-footer-title">Type (set all):</span>
@@ -396,6 +397,7 @@ defineExpose({
                 :value="extension"
                 :disabled="isRunning"
                 :options="listExtensions"
+                what="file type"
                 placeholder="Select Type"
                 @input="updateExtension" />
             <UploadExtension :extension="extension" :list-extensions="listExtensions" />
@@ -405,6 +407,7 @@ defineExpose({
                 :value="dbKey"
                 :disabled="isRunning"
                 :options="listDbKeys"
+                what="reference"
                 placeholder="Select Reference"
                 @input="updateDbKey" />
         </div>
