@@ -161,15 +161,29 @@ class RDMFilesSource(BaseFilesSource):
         raise NotImplementedError()
 
     def parse_path(self, source_path: str, record_id_only: bool = False) -> RecordFilename:
+        """Parses the given source path and returns the record_id and filename.
+
+        The source path must have the format '/<record_id>/<file_name>'.
+        If record_id_only is True, the source path must have the format '/<record_id>' and an
+        empty filename will be returned.
+        """
+
+        def get_error_msg(details: str) -> str:
+            return f"Invalid source path: '{source_path}'. Expected format: '{expected_format}'. {details}"
+
+        expected_format = "/<record_id>"
         if not source_path.startswith("/"):
-            raise ValueError(f"Invalid source path: '{source_path}'. Must start with '/'")
+            raise ValueError(get_error_msg("Must start with '/'."))
         parts = source_path[1:].split("/", 2)
         if record_id_only:
             if len(parts) != 1:
-                raise ValueError(f"Invalid source path: '{source_path}'. Must have the format '/<record_id>'.")
+                raise ValueError(get_error_msg("Please provide the record_id only."))
             return RecordFilename(record_id=parts[0], filename="")
-        if len(parts) != 2:
-            raise ValueError(f"Invalid source path: '{source_path}'. Must have the format '/<record_id>/<file_name>'.")
+        expected_format = "/<record_id>/<file_name>"
+        if len(parts) < 2:
+            raise ValueError(get_error_msg("Please provide both the record_id and file_name."))
+        if len(parts) > 2:
+            raise ValueError(get_error_msg("Too many parts. Please provide the record_id and file_name only."))
         record_id, file_name = parts
         return RecordFilename(record_id=record_id, filename=file_name)
 
