@@ -9147,7 +9147,7 @@ class FormDefinition(Base, Dictifiable, RepresentById):
     dict_collection_visible_keys = ["id", "name"]
     dict_element_visible_keys = ["id", "name", "desc", "form_definition_current_id", "fields", "layout"]
 
-    def to_dict(self, user=None, values=None, security=None):
+    def populate(self, user=None, values=None, security=None):
         values = values or {}
         form_def = {"id": security.encode_id(self.id) if security else self.id, "name": self.name, "inputs": []}
         for field in self.fields:
