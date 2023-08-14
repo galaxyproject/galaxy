@@ -3,6 +3,8 @@ import json
 import ssl
 import urllib.request
 from typing import (
+    Any,
+    Dict,
     List,
     Optional,
 )
@@ -185,7 +187,7 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
         return f"{self.plugin.get_uri_root()}/{record_id}{f'/{filename}' if filename else ''}"
 
     def get_records(self, writeable: bool, user_context: OptionalUserContext = None) -> List[RemoteDirectory]:
-        params = {}
+        params: Dict[str, Any] = {}
         request_url = self.records_url
         if writeable:
             # Only draft records owned by the user can be written to.
@@ -268,8 +270,7 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
         file_path: str,
         user_context: OptionalUserContext = None,
     ):
-        download_file_content_url = f"{self.records_url}/{record_id}/files/{quote(filename)}/content"
-
+        download_file_content_url = self._get_download_file_url(record_id, filename, user_context)
         headers = self._get_request_headers(user_context)
         req = urllib.request.Request(download_file_content_url, headers=headers)
         with urllib.request.urlopen(req, timeout=DEFAULT_SOCKET_TIMEOUT, context=SSL_CONTEXT) as page:
@@ -277,6 +278,26 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
             return stream_to_open_named_file(
                 page, f.fileno(), file_path, source_encoding=get_charset_from_http_headers(page.headers)
             )
+
+    def _get_download_file_url(self, record_id: str, filename: str, user_context: OptionalUserContext = None):
+        """Get the URL to download a file from a record.
+
+        This method is used to download files from both published and draft records that are accessible by the user.
+        """
+        is_draft_record = self._is_draft_record(record_id, user_context)
+        download_file_content_url = f"{self.records_url}/{record_id}/files/{quote(filename)}/content"
+        if is_draft_record:
+            download_file_content_url = download_file_content_url.replace("/files/", "/draft/files/")
+        return download_file_content_url
+
+    def _is_draft_record(self, record_id: str, user_context: OptionalUserContext = None):
+        try:
+            self._get_draft_record(record_id, user_context)
+            return True
+        except Exception as e:
+            if "404" in str(e):
+                return False
+            raise e
 
     def _get_draft_record(self, record_id: str, user_context: OptionalUserContext = None):
         request_url = f"{self.records_url}/{record_id}/draft"
@@ -339,7 +360,9 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
         value = preferences.get(f"{self.plugin.id}|{key}", None) if preferences else None
         return value
 
-    def _get_response(self, user_context: OptionalUserContext, request_url: str, params: dict = None) -> dict:
+    def _get_response(
+        self, user_context: OptionalUserContext, request_url: str, params: Optional[Dict[str, Any]] = None
+    ) -> dict:
         headers = self._get_request_headers(user_context)
         response = requests.get(request_url, params=params, headers=headers, verify=VERIFY)
         self._ensure_response_has_expected_status_code(response, 200)
