@@ -10,8 +10,8 @@ import { useTaskMonitor } from "@/composables/taskMonitor";
 import type { HistorySummary } from "@/stores/historyStore";
 
 import ExportRecordCard from "./ExportRecordCard.vue";
-import ExportToDOIRepositoryForm from "@/components/Common/ExportDOIForm.vue";
 import ExportToFileSourceForm from "@/components/Common/ExportForm.vue";
+import ExportToRDMRepositoryForm from "@/components/Common/ExportRDMForm.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const {
@@ -227,7 +227,7 @@ function onArchiveHistoryWithExport() {
                         <RouterLink to="/user/information" target="_blank">settings page</RouterLink> to be able to
                         export.
                     </p>
-                    <ExportToDOIRepositoryForm
+                    <ExportToRDMRepositoryForm
                         what="history"
                         :default-filename="historyName + ' (Galaxy History)'"
                         :default-record-name="historyName"

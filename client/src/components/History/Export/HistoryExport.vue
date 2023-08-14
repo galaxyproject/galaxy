@@ -18,10 +18,10 @@ import { absPath } from "@/utils/redirect";
 import { exportToFileSource, getExportRecords, reimportHistoryFromRecord } from "./services";
 
 import ExportOptions from "./ExportOptions.vue";
-import ExportDOIForm from "components/Common/ExportDOIForm.vue";
-import ExportForm from "components/Common/ExportForm.vue";
-import ExportRecordDetails from "components/Common/ExportRecordDetails.vue";
-import ExportRecordTable from "components/Common/ExportRecordTable.vue";
+import ExportToFileSourceForm from "@/components/Common/ExportForm.vue";
+import ExportToRDMRepositoryForm from "@/components/Common/ExportRDMForm.vue";
+import ExportRecordDetails from "@/components/Common/ExportRecordDetails.vue";
+import ExportRecordTable from "@/components/Common/ExportRecordTable.vue";
 
 const {
     isRunning: isExportTaskRunning,
@@ -229,14 +229,17 @@ function updateExportParams(newParams) {
                         one of the available remote file sources here. You will be able to re-import it later as long as
                         it remains available on the remote server.
                     </p>
-                    <ExportForm what="history" :clear-input-after-export="true" @export="doExportToFileSource" />
+                    <ExportToFileSourceForm
+                        what="history"
+                        :clear-input-after-export="true"
+                        @export="doExportToFileSource" />
                 </BTab>
                 <BTab
                     v-if="hasWritableRDMFileSources"
                     id="rdm-file-source-tab"
-                    title="to DOI repository"
-                    title-link-class="tab-export-to-doi-repo">
-                    <p>You can <b>upload your history</b> to one of the available DOI repositories here.</p>
+                    title="to RDM repository"
+                    title-link-class="tab-export-to-rdm-repo">
+                    <p>You can <b>upload your history</b> to one of the available RDM repositories here.</p>
                     <p>
                         Your history export archive needs to be uploaded to an existing <i>draft</i> record. You will
                         need to create a <b>new record</b> on the repository or select an existing
@@ -249,7 +252,7 @@ function updateExportParams(newParams) {
                         public name you want to associate with your records or whether you want to publish them
                         immediately or keep them as drafts after export.
                     </BAlert>
-                    <ExportDOIForm
+                    <ExportToRDMRepositoryForm
                         what="history"
                         :default-filename="historyName + ' (Galaxy History)'"
                         :default-record-name="historyName"

@@ -28,7 +28,7 @@ const emit = defineEmits<{
 
 type ExportChoice = "existing" | "new";
 
-const includeOnlyDOICompatible: FilterFileSourcesOptions = { include: ["rdm"] };
+const includeOnlyRDMCompatible: FilterFileSourcesOptions = { include: ["rdm"] };
 
 const recordUri = ref<string>("");
 const sourceUri = ref<string>("");
@@ -72,7 +72,7 @@ function clearInputs() {
 </script>
 
 <template>
-    <div class="export-to-doi-repository">
+    <div class="export-to-rdm-repository">
         <BFormGroup id="fieldset-name" label-for="name" :description="nameDescription" class="mt-3">
             <BFormInput id="name" v-model="fileName" :placeholder="namePlaceholder" required />
         </BFormGroup>
@@ -118,7 +118,7 @@ function clearInputs() {
                         v-model="sourceUri"
                         mode="source"
                         :require-writable="true"
-                        :filter-options="includeOnlyDOICompatible" />
+                        :filter-options="includeOnlyRDMCompatible" />
                 </BFormGroup>
                 <BFormGroup
                     id="fieldset-record-name"
@@ -151,7 +151,7 @@ function clearInputs() {
                     v-model="recordUri"
                     mode="directory"
                     :require-writable="true"
-                    :filter-options="includeOnlyDOICompatible" />
+                    :filter-options="includeOnlyRDMCompatible" />
             </BFormGroup>
             <BButton
                 v-localize
