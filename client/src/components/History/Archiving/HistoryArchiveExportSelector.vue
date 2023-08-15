@@ -12,6 +12,7 @@ import type { HistorySummary } from "@/stores/historyStore";
 import ExportRecordCard from "./ExportRecordCard.vue";
 import ExportToFileSourceForm from "@/components/Common/ExportForm.vue";
 import ExportToRDMRepositoryForm from "@/components/Common/ExportRDMForm.vue";
+import ExternalLink from "@/components/ExternalLink.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const {
@@ -217,10 +218,12 @@ function onArchiveHistoryWithExport() {
                 </BTab>
                 <BTab id="to-rdm-repository-tab" title="To RDM Repository">
                     <p>
-                        <b>Exporting to a RDM repository</b> (e.g. Invenio RDM or Zenodo RDM) will require to create or
-                        select an existing record in the repository where the history archive will be uploaded. The
-                        export record will be associated with the archived history and you will be able to recreate the
-                        history later by importing it from the export record.
+                        <b>Exporting to a RDM repository</b> (e.g. any
+                        <ExternalLink href="https://inveniosoftware.org/products/rdm/"> Invenio RDM </ExternalLink>
+                        compatible repository) will require to create or select an existing record in the repository
+                        where the history archive will be uploaded. The export record will be associated with the
+                        archived history and you will be able to recreate the history later by importing it from the
+                        export record.
                     </p>
                     <p>
                         You may need to setup your credentials for the selected repository in your
