@@ -3,10 +3,14 @@ import { BButton, BCard, BFormGroup, BFormInput, BFormRadio, BFormRadioGroup } f
 import { computed, ref } from "vue";
 
 import { CreatedEntry, createRemoteEntry, FilterFileSourcesOptions } from "@/components/FilesDialog/services";
+import { useToast } from "@/composables/toast";
 import localize from "@/utils/localization";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import ExternalLink from "@/components/ExternalLink.vue";
 import FilesInput from "@/components/FilesDialog/FilesInput.vue";
+
+const toast = useToast();
 
 interface Props {
     what?: string;
@@ -58,9 +62,12 @@ function doExport() {
 }
 
 async function doCreateRecord() {
-    //TODO: handle errors
-    newEntry.value = await createRemoteEntry(sourceUri.value, recordName.value);
-    recordUri.value = newEntry.value.uri;
+    try {
+        newEntry.value = await createRemoteEntry(sourceUri.value, recordName.value);
+        recordUri.value = newEntry.value.uri;
+    } catch (e) {
+        toast.error(errorMessageAsString(e));
+    }
 }
 
 function clearInputs() {
