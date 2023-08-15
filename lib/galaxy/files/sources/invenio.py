@@ -1,6 +1,5 @@
 import datetime
 import json
-import ssl
 import urllib.request
 from typing import (
     Any,
@@ -33,13 +32,6 @@ from galaxy.util import (
     get_charset_from_http_headers,
     stream_to_open_named_file,
 )
-
-# TODO: Remove this block. Ignoring SSL errors for testing purposes.
-VERIFY = False
-SSL_CONTEXT = ssl.create_default_context()
-SSL_CONTEXT.check_hostname = False
-SSL_CONTEXT.verify_mode = ssl.CERT_NONE
-
 
 AccessStatus = Literal["public", "restricted"]
 
@@ -230,7 +222,7 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
                 "Cannot create record without authentication token. Please set your personal access token in your Galaxy preferences."
             )
 
-        response = requests.post(self.records_url, json=create_record_request, headers=headers, verify=VERIFY)
+        response = requests.post(self.records_url, json=create_record_request, headers=headers)
         self._ensure_response_has_expected_status_code(response, 201)
         record = response.json()
         return record
@@ -247,7 +239,7 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
         headers = self._get_request_headers(user_context)
 
         # Add file metadata entry
-        response = requests.post(upload_file_url, json=[{"key": filename}], headers=headers, verify=VERIFY)
+        response = requests.post(upload_file_url, json=[{"key": filename}], headers=headers)
         self._ensure_response_has_expected_status_code(response, 201)
 
         # Upload file content
@@ -256,11 +248,11 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
         upload_file_content_url = file_entry["links"]["content"]
         commit_file_upload_url = file_entry["links"]["commit"]
         with open(file_path, "rb") as file:
-            response = requests.put(upload_file_content_url, data=file, headers=headers, verify=VERIFY)
+            response = requests.put(upload_file_content_url, data=file, headers=headers)
             self._ensure_response_has_expected_status_code(response, 200)
 
         # Commit file upload
-        response = requests.post(commit_file_upload_url, headers=headers, verify=VERIFY)
+        response = requests.post(commit_file_upload_url, headers=headers)
         self._ensure_response_has_expected_status_code(response, 200)
 
     def download_file_from_record(
@@ -273,7 +265,7 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
         download_file_content_url = self._get_download_file_url(record_id, filename, user_context)
         headers = self._get_request_headers(user_context)
         req = urllib.request.Request(download_file_content_url, headers=headers)
-        with urllib.request.urlopen(req, timeout=DEFAULT_SOCKET_TIMEOUT, context=SSL_CONTEXT) as page:
+        with urllib.request.urlopen(req, timeout=DEFAULT_SOCKET_TIMEOUT) as page:
             f = open(file_path, "wb")
             return stream_to_open_named_file(
                 page, f.fileno(), file_path, source_encoding=get_charset_from_http_headers(page.headers)
@@ -364,7 +356,7 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
         self, user_context: OptionalUserContext, request_url: str, params: Optional[Dict[str, Any]] = None
     ) -> dict:
         headers = self._get_request_headers(user_context)
-        response = requests.get(request_url, params=params, headers=headers, verify=VERIFY)
+        response = requests.get(request_url, params=params, headers=headers)
         self._ensure_response_has_expected_status_code(response, 200)
         return response.json()
 
