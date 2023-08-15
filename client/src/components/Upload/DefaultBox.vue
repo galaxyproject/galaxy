@@ -217,7 +217,7 @@ function eventRemoteFiles() {
             queue.add(
                 items.map((item) => {
                     const rval = {
-                        mode: "ftp",
+                        mode: "url",
                         name: item.label,
                         size: item.size,
                         path: item.url,

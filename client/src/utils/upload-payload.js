@@ -11,85 +11,88 @@ export const URI_PREFIXES = [
     "drs://",
 ];
 
+export function isUrl(content) {
+    return URI_PREFIXES.some((prefix) => content.startsWith(prefix));
+}
+
 export function uploadPayload(items, historyId, composite = false) {
     const files = [];
     const elements = items
         .map((item) => {
             if (!item.optional || item.fileSize > 0) {
-                let src;
-                let pasteContent = null;
+                // avoid submitting default file name, server will set file name
                 let fileName = item.fileName;
                 if (fileName === DEFAULT_FILE_NAME) {
                     fileName = null;
                 }
-                const url = (item.fileUri || item.filePath || item.fileContent).trim();
+                // consolidate exclusive file content attributes
+                let urlContent = item.fileUri || item.filePath || item.fileContent;
+                if (!urlContent) {
+                    throw new Error("Content not available.");
+                }
+                urlContent = urlContent.trim();
+                // collect common element attributes
                 const elem = {
                     dbkey: item.dbKey ?? "?",
                     ext: item.extension ?? "auto",
+                    name: fileName,
                     space_to_tab: item.spaceToTab,
                     to_posix_lines: item.toPosixLines,
                     deferred: item.deferred,
                 };
-                const isUrl = URI_PREFIXES.some((prefix) => item.fileContent.startsWith(prefix));
+                // match file mode
                 switch (item.fileMode) {
                     case "new":
-                        if (isUrl) {
-                            src = "url";
+                        if (isUrl(urlContent)) {
                             /* Could be multiple URLs pasted in.
-                            TODO: eliminate backbone models,
-                            then suggest to split multiple URLs
+                            TODO: suggesting to split multiple URLs
                             across multiple uploads directly in upload modal,
                             instead of this intransparent magic. */
-                            return url.split("\n").map((splitUrl) => {
-                                return {
-                                    src: src,
-                                    url: splitUrl,
-                                    name: fileName,
-                                    ...elem,
-                                };
+                            return urlContent.split("\n").map((urlSplit) => {
+                                const urlTrim = urlSplit.trim();
+                                if (isUrl(urlTrim)) {
+                                    return {
+                                        src: "url",
+                                        url: urlTrim,
+                                        ...elem,
+                                    };
+                                } else {
+                                    throw new Error(`Invalid url: ${urlTrim}`);
+                                }
                             });
                         } else {
-                            pasteContent = item.fileContent;
-                            src = "pasted";
+                            return {
+                                src: "pasted",
+                                paste_content: item.fileContent,
+                                ...elem,
+                            };
                         }
-                        break;
-                    case "ftp":
-                        if (url.indexOf("://") >= 0) {
-                            src = "url";
+                    case "url":
+                        if (isUrl(urlContent)) {
+                            return {
+                                src: "url",
+                                url: urlContent,
+                                ...elem,
+                            };
+                        } else {
+                            throw new Error(`Invalid url: ${urlContent}.`);
                         }
-                        break;
                     case "local":
-                        src = "files";
                         files.push(item.fileData);
-                        break;
+                        return {
+                            src: "files",
+                            ...elem,
+                        };
                     default:
-                        console.error("Unknown fileMode", item);
-                }
-                if (src == "pasted") {
-                    return {
-                        src: src,
-                        paste_content: pasteContent,
-                        name: fileName,
-                        ...elem,
-                    };
-                } else if (src == "url") {
-                    return {
-                        src: src,
-                        name: fileName,
-                        url: url,
-                        ...elem,
-                    };
-                } else {
-                    return {
-                        src: src,
-                        name: fileName,
-                        ...elem,
-                    };
+                        throw new Error(`Unknown file mode: ${item.fileMode}.`);
                 }
             }
         })
         .filter((item) => item)
         .flat();
+    if (elements.length === 0) {
+        throw new Error("No valid items provided.");
+    }
     const target = {
         destination: { type: "hdas" },
         elements: elements,

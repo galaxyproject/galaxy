@@ -105,13 +105,17 @@ function eventStart() {
         model.dbKey = dbKey.value;
         model.extension = extension.value;
     });
-    uploadSubmit({
-        data: uploadPayload(uploadValues.value, props.historyId, true),
-        error: eventError,
-        progress: eventProgress,
-        success: eventSuccess,
-        isComposite: true,
-    });
+    try {
+        uploadSubmit({
+            data: uploadPayload(uploadValues.value, props.historyId, true),
+            error: eventError,
+            progress: eventProgress,
+            success: eventSuccess,
+            isComposite: true,
+        });
+    } catch (e) {
+        eventError(String(e));
+    }
 }
 
 /** Refresh success state */

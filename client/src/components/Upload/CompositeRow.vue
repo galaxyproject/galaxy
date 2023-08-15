@@ -109,7 +109,7 @@ function inputRemoteFiles() {
         (item) => {
             emit("input", props.index, {
                 fileData: null,
-                fileMode: "ftp",
+                fileMode: "url",
                 fileName: item.label,
                 filePath: item.url,
                 fileSize: item.size,
@@ -201,7 +201,7 @@ function onDrop(evt) {
                 <FontAwesomeIcon v-else icon="fa-exclamation" fixed-width />
             </div>
         </div>
-        <div v-if="info" v-localize class="upload-text-message">
+        <div v-if="info" v-localize class="upload-text-message font-weight-bold">
             {{ info }}
         </div>
         <div v-if="fileMode == 'new'">
