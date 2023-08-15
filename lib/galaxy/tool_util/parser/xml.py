@@ -5,6 +5,8 @@ import os
 import re
 import uuid
 from typing import (
+    cast,
+    Iterable,
     List,
     Optional,
 )
@@ -38,6 +40,7 @@ from .interface import (
 from .output_actions import ToolOutputActionGroup
 from .output_collection_def import dataset_collector_descriptions_from_elem
 from .output_objects import (
+    ChangeFormatModel,
     ToolExpressionOutput,
     ToolOutput,
     ToolOutputCollection,
@@ -81,6 +84,35 @@ def destroy_tree(tree):
         parent.remove(child)
 
     del tree
+
+
+def parse_change_format(change_format: Iterable[Element]) -> List[ChangeFormatModel]:
+    change_models: List[ChangeFormatModel] = []
+    for change_elem in change_format:
+        change_elem = cast(Element, change_elem)
+        for when_elem in change_elem.findall("when"):
+            when_elem = cast(Element, when_elem)
+            value: Optional[str] = when_elem.get("value", None)
+            format_: Optional[str] = when_elem.get("format", None)
+            check: Optional[str] = when_elem.get("input", None)
+            input_dataset: Optional[str] = None
+            check_attribute: Optional[str] = None
+            if check is not None:
+                if "$" not in check:
+                    check = f"${check}"
+            else:
+                input_dataset = when_elem.get("input_dataset", None)
+                check_attribute = when_elem.get("attribute", None)
+            change_models.append(
+                ChangeFormatModel(
+                    value=value,
+                    format=format_,
+                    input=check,
+                    input_dataset=input_dataset,
+                    check_attribute=check_attribute,
+                )
+            )
+    return change_models
 
 
 class XmlToolSource(ToolSource):
@@ -473,7 +505,7 @@ class XmlToolSource(ToolSource):
         elif auto_format:
             output_format = "_sniff_"
         output.format = output_format
-        output.change_format = data_elem.findall("change_format")
+        output.change_format = parse_change_format(data_elem.findall("change_format"))
         output.format_source = data_elem.get("format_source", default_format_source)
         output.default_identifier_source = data_elem.get("default_identifier_source", "None")
         output.metadata_source = data_elem.get("metadata_source", default_metadata_source)
