@@ -800,7 +800,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                     values = None
                     if info_form_id == trans.security.encode_id(f.id) and user.values:
                         values = user.values.content
-                    info_form = f.to_dict(user=user, values=values, security=trans.security)
+                    info_form = f.populate(user=user, values=values, security=trans.security)
                     info_field["test_param"]["data"].append({"label": info_form["name"], "value": info_form["id"]})
                     info_field["cases"].append({"value": info_form["id"], "inputs": info_form["inputs"]})
                 inputs.append(info_field)
