@@ -62,6 +62,27 @@ def inject_validates(inject):
     return match is not None
 
 
+def destroy_tree(tree):
+    root = tree.getroot()
+
+    node_tracker = {root: [0, None]}
+
+    for node in root.iterdescendants():
+        parent = node.getparent()
+        node_tracker[node] = [node_tracker[parent][0] + 1, parent]
+
+    node_tracker = sorted(
+        [(depth, parent, child) for child, (depth, parent) in node_tracker.items()], key=lambda x: x[0], reverse=True
+    )
+
+    for _, parent, child in node_tracker:
+        if parent is None:
+            break
+        parent.remove(child)
+
+    del tree
+
+
 class XmlToolSource(ToolSource):
     """Responsible for parsing a tool from classic Galaxy representation."""
 
@@ -80,6 +101,7 @@ class XmlToolSource(ToolSource):
         return self._string
 
     def mem_optimize(self):
+        destroy_tree(self.xml_tree)
         self.root = None
         self._xml_tree = None
 
