@@ -169,6 +169,8 @@ function onToggle(toggleAdvanced: boolean) {
             <b-form-input v-model="filterSettings['id']" size="sm" placeholder="any id" />
             <small class="mt-1">Filter by repository owner:</small>
             <b-form-input v-model="filterSettings['owner']" size="sm" placeholder="any owner" />
+            <small class="mt-1">Filter by input data type:</small>
+            <b-form-input v-model="filterSettings['inputs']" size="sm" placeholder="any datatype" />
             <small class="mt-1">Filter by help text:</small>
             <b-form-input v-model="filterSettings['help']" size="sm" placeholder="any help text" />
             <div class="mt-3">
@@ -221,6 +223,12 @@ function onToggle(toggleAdvanced: boolean) {
                                 <a href="https://toolshed.g2.bx.psu.edu/" target="_blank">ToolShed</a>
                                 , this <i>owner</i> filter allows you to search for tools from a specific ToolShed
                                 repository <b>owner</b>.
+                            </dd>
+                            <dt><code>input datatype</code></dt>
+                            <dd>
+                                Many tools can only take particular datatypes/extensions as inputs. This filter allows
+                                you to filter on a specific datatype. Example inputs:
+                                <i>"fasta"</i>, <i>"bam"</i>, <i>"vcf"</i>, <i>"bed"</i>, etc.
                             </dd>
                             <dt><code>help text</code></dt>
                             <dd>

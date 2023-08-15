@@ -54,6 +54,7 @@ describe("ToolSearch", () => {
             "[placeholder='any section']": "section-filter",
             "[placeholder='any id']": "id-filter",
             "[placeholder='any owner']": "owner-filter",
+            "[placeholder='any datatype']": "inputs-filter",
             "[placeholder='any help text']": "help-filter",
         };
 
@@ -77,6 +78,7 @@ describe("ToolSearch", () => {
             section: "section-filter",
             id: "id-filter",
             owner: "owner-filter",
+            inputs: "inputs-filter",
             help: "help-filter",
         };
         expect(mockMethod).toHaveBeenCalledWith({

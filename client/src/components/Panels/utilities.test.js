@@ -48,6 +48,7 @@ describe("test helpers in tool searching utilities", () => {
             id: "__FILTER_FAILED_DATASETS__",
             help: "downstream",
             owner: "devteam",
+            inputs: "bed",
         };
         const q = createWhooshQuery(settings, "default", []);
 
@@ -57,7 +58,7 @@ describe("test helpers in tool searching utilities", () => {
         expect(q).toContain("id_exact:(__FILTER_FAILED_DATASETS__) AND help:(downstream) AND owner:(devteam)");
         // Combined query results in:
         expect(q).toEqual(
-            "(name:(Filter) name_exact:(Filter) description:(Filter)) AND (id_exact:(__FILTER_FAILED_DATASETS__) AND help:(downstream) AND owner:(devteam) AND )"
+            "(name:(Filter) name_exact:(Filter) description:(Filter)) AND (id_exact:(__FILTER_FAILED_DATASETS__) AND help:(downstream) AND owner:(devteam) AND inputs:(bed) AND )"
         );
     });
 
