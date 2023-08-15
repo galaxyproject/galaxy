@@ -1922,11 +1922,10 @@ class ToolModule(WorkflowModule):
                     formats = ["input"]  # default to special name "input" which remove restrictions on connections
                 else:
                     formats = [tool_output.format]
-                for change_elem in tool_output.change_format:
-                    for when_elem in change_elem.findall("when"):
-                        format = when_elem.get("format", None)
-                        if format and format not in formats:
-                            formats.append(format)
+                for change_format_model in tool_output.change_format:
+                    format = change_format_model["format"]
+                    if format and format not in formats:
+                        formats.append(format)
                 if tool_output.label:
                     try:
                         params = make_dict_copy(self.state.inputs)
