@@ -40,7 +40,7 @@ describe("uploadPayload", () => {
                     dbKey: "dbKey2",
                     deferred: true,
                     extension: "extension2",
-                    fileData: "fileData",
+                    fileData: { size: 1 },
                     fileMode: "local",
                     fileName: "2",
                     spaceToTab: true,
@@ -71,7 +71,7 @@ describe("uploadPayload", () => {
         );
         expect(p).toEqual({
             auto_decompress: true,
-            files: ["fileData"],
+            files: [{ size: 1 }],
             history_id: "historyId",
             targets: [
                 {

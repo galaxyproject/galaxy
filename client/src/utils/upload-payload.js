@@ -27,7 +27,8 @@ export function uploadPayload(items, historyId, composite = false) {
                 }
                 // consolidate exclusive file content attributes
                 const urlContent = (item.fileUri || item.filePath || item.fileContent || "").trim();
-                if (!urlContent && !item.fileData) {
+                const hasFileData = item.fileData && item.fileData.size > 0;
+                if (urlContent.length === 0 && !hasFileData) {
                     throw new Error("Content not available.");
                 }
                 // collect common element attributes
