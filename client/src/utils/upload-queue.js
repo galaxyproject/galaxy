@@ -13,7 +13,7 @@ export class UploadQueue {
             success: (d, m) => {},
             warning: (d, m) => {},
             error: (d, m) => {
-                alert(m);
+                console.error(m);
             },
             complete: () => {},
             multiple: true,

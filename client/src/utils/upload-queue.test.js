@@ -1,4 +1,9 @@
+import { sendPayload } from "@/utils/upload-submit.js";
+
 import { UploadQueue } from "./upload-queue.js";
+
+jest.mock("@/utils/upload-submit.js");
+sendPayload.mockImplementation(() => jest.fn());
 
 function StubFile(name = null, size = 0, mode = "local") {
     return { name, size, mode };
@@ -56,7 +61,7 @@ describe("UploadQueue", () => {
                     fileMode: file.mode,
                     fileName: file.name,
                     fileSize: file.size,
-                    fileContent: "",
+                    fileContent: "fileContent",
                 };
             },
         });
@@ -156,5 +161,70 @@ describe("UploadQueue", () => {
         expect(nextIndex).toEqual("1");
         q.remove(nextIndex);
         expect(q._processIndex()).toBeUndefined();
+    });
+
+    test("remote file batch", () => {
+        const fileEntries = {};
+        const q = new UploadQueue({
+            historyId: "historyId",
+            announce: (index, file) => {
+                fileEntries[index] = {
+                    deferred: true,
+                    fileContent: `http://test.me.${index}`,
+                    fileMode: "url",
+                    fileName: file.name,
+                    fileSize: 100,
+                    spaceToTab: true,
+                    status: "queued",
+                    toPosixLines: false,
+                };
+            },
+            get: (index) => fileEntries[index],
+        });
+        q.add([StubFile("a"), StubFile("b"), StubFile("c")]);
+        expect(q.size).toEqual(3);
+        q.start();
+        expect(sendPayload.mock.calls[0][0]).toEqual({
+            auto_decompress: true,
+            files: [],
+            history_id: "historyId",
+            targets: [
+                {
+                    destination: { type: "hdas" },
+                    elements: [
+                        {
+                            dbkey: "?",
+                            deferred: true,
+                            ext: "auto",
+                            name: "a",
+                            space_to_tab: true,
+                            src: "url",
+                            to_posix_lines: false,
+                            url: "http://test.me.0",
+                        },
+                        {
+                            dbkey: "?",
+                            deferred: true,
+                            ext: "auto",
+                            name: "b",
+                            space_to_tab: true,
+                            src: "url",
+                            to_posix_lines: false,
+                            url: "http://test.me.1",
+                        },
+                        {
+                            dbkey: "?",
+                            deferred: true,
+                            ext: "auto",
+                            name: "c",
+                            space_to_tab: true,
+                            src: "url",
+                            to_posix_lines: false,
+                            url: "http://test.me.2",
+                        },
+                    ],
+                },
+            ],
+        });
     });
 });

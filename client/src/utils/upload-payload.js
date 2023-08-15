@@ -26,11 +26,10 @@ export function uploadPayload(items, historyId, composite = false) {
                     fileName = null;
                 }
                 // consolidate exclusive file content attributes
-                let urlContent = item.fileUri || item.filePath || item.fileContent;
-                if (!urlContent) {
+                const urlContent = (item.fileUri || item.filePath || item.fileContent || "").trim();
+                if (!urlContent && !item.fileData) {
                     throw new Error("Content not available.");
                 }
-                urlContent = urlContent.trim();
                 // collect common element attributes
                 const elem = {
                     dbkey: item.dbKey ?? "?",
