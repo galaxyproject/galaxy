@@ -60,7 +60,8 @@ class ToolApp(MinimalToolApp):
         tool_data_table_manager: ToolDataTableManager,
         file_sources: ConfiguredFileSources,
     ):
-        self.model = Bunch(context=sa_session)
+        # For backward compatibility we need both context and session attributes that point to sa_session.
+        self.model = Bunch(context=sa_session, session=sa_session)
         self.config = tool_app_config
         self.datatypes_registry = datatypes_registry
         self.object_store = object_store
