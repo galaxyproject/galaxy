@@ -81,12 +81,14 @@ function clearInputs() {
 <template>
     <div class="export-to-rdm-repository">
         <BFormGroup id="fieldset-name" label-for="name" :description="nameDescription" class="mt-3">
-            <BFormInput id="name" v-model="fileName" :placeholder="namePlaceholder" required />
+            <BFormInput id="file-name-input" v-model="fileName" :placeholder="namePlaceholder" required />
         </BFormGroup>
 
         <BFormRadioGroup v-model="exportChoice" class="export-radio-group">
-            <BFormRadio v-localize name="exportChoice" value="new"> Export to new record </BFormRadio>
-            <BFormRadio v-localize name="exportChoice" value="existing"> Export to existing draft record </BFormRadio>
+            <BFormRadio id="radio-new" v-localize name="exportChoice" value="new"> Export to new record </BFormRadio>
+            <BFormRadio id="radio-existing" v-localize name="exportChoice" value="existing">
+                Export to existing draft record
+            </BFormRadio>
         </BFormRadioGroup>
 
         <div v-if="exportChoice === 'new'">
@@ -105,6 +107,7 @@ function clearInputs() {
                     </p>
                     <p v-localize>Please use the button below to upload the exported {{ props.what }} to the record.</p>
                     <BButton
+                        id="export-button-new-record"
                         v-localize
                         class="export-button"
                         variant="primary"
@@ -116,12 +119,12 @@ function clearInputs() {
             </div>
             <div v-else>
                 <BFormGroup
-                    id="fieldset-record"
+                    id="fieldset-record-new"
                     label-for="source-selector"
                     :description="repositoryRecordDescription"
                     class="mt-3">
                     <FilesInput
-                        id="repository-selector"
+                        id="source-selector"
                         v-model="sourceUri"
                         mode="source"
                         :require-writable="true"
@@ -132,14 +135,18 @@ function clearInputs() {
                     label-for="record-name"
                     :description="recordNameDescription"
                     class="mt-3">
-                    <BFormInput id="record-name" v-model="recordName" :placeholder="recordNamePlaceholder" required />
+                    <BFormInput
+                        id="record-name-input"
+                        v-model="recordName"
+                        :placeholder="recordNamePlaceholder"
+                        required />
                 </BFormGroup>
                 <p v-localize>
                     You need to create the new record in a repository before exporting the {{ props.what }} to it.
                 </p>
                 <BButton
+                    id="create-record-button"
                     v-localize
-                    class="export-button"
                     variant="primary"
                     :disabled="!canCreateRecord"
                     @click.prevent="doCreateRecord">
@@ -149,7 +156,7 @@ function clearInputs() {
         </div>
         <div v-else>
             <BFormGroup
-                id="fieldset-record"
+                id="fieldset-record-existing"
                 label-for="existing-record-selector"
                 :description="repositoryRecordDescription"
                 class="mt-3">
@@ -161,6 +168,7 @@ function clearInputs() {
                     :filter-options="includeOnlyRDMCompatible" />
             </BFormGroup>
             <BButton
+                id="export-button-existing-record"
                 v-localize
                 class="export-button"
                 variant="primary"
