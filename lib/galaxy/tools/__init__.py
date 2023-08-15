@@ -79,6 +79,7 @@ from galaxy.tool_util.toolbox import (
     ToolSection,
 )
 from galaxy.tool_util.toolbox.views.sources import StaticToolBoxViewSources
+from galaxy.tool_util.verify.interactor import ToolTestDescription
 from galaxy.tool_util.verify.test_data import TestDataNotFoundError
 from galaxy.tool_util.version import (
     LegacyVersion,
@@ -131,10 +132,7 @@ from galaxy.tools.parameters.grouping import (
 from galaxy.tools.parameters.input_translation import ToolInputTranslator
 from galaxy.tools.parameters.meta import expand_meta_parameters
 from galaxy.tools.parameters.wrapped_json import json_wrap
-from galaxy.tools.test import (
-    parse_tests,
-    ToolTestDescription,
-)
+from galaxy.tools.test import parse_tests
 from galaxy.util import (
     in_directory,
     listify,
@@ -779,6 +777,7 @@ class Tool(Dictifiable):
         self.tool_source = tool_source
         self._is_workflow_compatible = None
         self.__help = None
+        self.__tests: Optional[str] = None
         try:
             self.parse(tool_source, guid=guid, dynamic=dynamic)
         except Exception as e:
