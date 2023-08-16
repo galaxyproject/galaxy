@@ -283,16 +283,16 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
         return download_file_content_url
 
     def _is_draft_record(self, record_id: str, user_context: OptionalUserContext = None):
-        try:
-            self._get_draft_record(record_id, user_context)
-            return True
-        except Exception as e:
-            if "404" in str(e):
-                return False
-            raise e
+        request_url = self._get_draft_record_url(record_id)
+        headers = self._get_request_headers(user_context)
+        response = requests.get(request_url, headers=headers)
+        return response.status_code == 200
+
+    def _get_draft_record_url(self, record_id: str):
+        return f"{self.records_url}/{record_id}/draft"
 
     def _get_draft_record(self, record_id: str, user_context: OptionalUserContext = None):
-        request_url = f"{self.records_url}/{record_id}/draft"
+        request_url = self._get_draft_record_url(record_id)
         draft_record = self._get_response(user_context, request_url)
         return draft_record
 
