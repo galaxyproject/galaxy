@@ -1,6 +1,4 @@
-/** Batch mode variations */
-export const BATCH = { DISABLED: "disabled", ENABLED: "enabled", LINKED: "linked" };
-
+/** Data input variations interface */
 interface VariantInterface {
     batch: string;
     icon: string;
@@ -10,7 +8,13 @@ interface VariantInterface {
     tooltip: string;
 }
 
-/** List of available content selectors options */
+/** Batch mode variations */
+export const BATCH = { DISABLED: "disabled", ENABLED: "enabled", LINKED: "linked" };
+
+/** Data source variations */
+export const SOURCE = { DATASET: "hda", COLLECTION: "hdca" };
+
+/** List of available data input variations */
 export const VARIANTS: Record<string, Array<VariantInterface>> = {
     data: [
         {
