@@ -1102,12 +1102,12 @@ class Tool(Dictifiable):
         self.hidden = tool_source.parse_hidden()
         self.license = tool_source.parse_license()
         self.creator = tool_source.parse_creator()
-        self.raw_help = tool_source.parse_help()
         self.parse_inputs(self.tool_source)
         self.parse_outputs(self.tool_source)
+        self.raw_help = None
 
         if self.app.is_webapp:
-            self.__initialize_help()
+            self.raw_help = self.__get_help_with_images(tool_source.parse_help())
             self.parse_tests()
         self.__parse_legacy_features(tool_source)
 
@@ -1425,15 +1425,6 @@ class Tool(Dictifiable):
                 self.input_required = True
                 break
 
-    def parse_help(self):
-        """
-        Parse the help text for the tool. Formatted in reStructuredText, but
-        stored as Mako to allow for dynamic image paths.
-        This implementation supports multiple pages.
-        """
-        # TODO: Allow raw HTML or an external link.
-        self.__initialize_help()
-
     def parse_outputs(self, tool_source):
         """
         Parse <outputs> elements and fill in self.outputs (keyed by name)
@@ -1650,8 +1641,17 @@ class Tool(Dictifiable):
             )
 
     @property
-    def help(self):
-        return self.__help
+    def help(self) -> Template:
+        try:
+            return Template(
+                rst_to_html(self.raw_help),
+                input_encoding="utf-8",
+                default_filters=["decode.utf8"],
+                encoding_errors="replace",
+            )
+        except Exception:
+            log.info("Exception while parsing help for tool with id '%s'", self.id)
+            return Template("", input_encoding="utf-8")
 
     @property
     def biotools_reference(self) -> Optional[str]:
@@ -1661,11 +1661,11 @@ class Tool(Dictifiable):
         """
         return biotools_reference(self.xrefs)
 
-    def __initialize_help(self):
-        help_text = self.raw_help or ""
+    def __get_help_with_images(self, raw_help: Optional[str]):
+        help_text = raw_help or ""
         try:
             if help_text.find(".. image:: ") >= 0 and (self.tool_shed_repository or self.repository_id):
-                help_text = set_image_paths(
+                return set_image_paths(
                     self.app,
                     help_text,
                     encoded_repository_id=self.repository_id,
@@ -1677,16 +1677,7 @@ class Tool(Dictifiable):
             log.exception(
                 "Exception in parse_help, so images may not be properly displayed for tool with id '%s'", self.id
             )
-        try:
-            self.__help = Template(
-                rst_to_html(help_text),
-                input_encoding="utf-8",
-                default_filters=["decode.utf8"],
-                encoding_errors="replace",
-            )
-        except Exception:
-            self.__help = Template("", input_encoding="utf-8")
-            log.exception("Exception while parsing help for tool with id '%s'", self.id)
+        return help_text
 
     def find_output_def(self, name):
         # name is JobToOutputDatasetAssociation name.
