@@ -1,5 +1,5 @@
 /** Batch mode variations */
-export const Batch = { DISABLED: "disabled", ENABLED: "enabled", LINKED: "linked" };
+export const BATCH = { DISABLED: "disabled", ENABLED: "enabled", LINKED: "linked" };
 
 interface VariantInterface {
     batch: string;
@@ -11,7 +11,7 @@ interface VariantInterface {
 }
 
 /** List of available content selectors options */
-export const Variants: Record<string, Array<VariantInterface>> = {
+export const VARIANTS: Record<string, Array<VariantInterface>> = {
     data: [
         {
             src: "hda",
@@ -19,21 +19,21 @@ export const Variants: Record<string, Array<VariantInterface>> = {
             tooltip: "Single dataset",
             library: true,
             multiple: false,
-            batch: Batch.DISABLED,
+            batch: BATCH.DISABLED,
         },
         {
             src: "hda",
             icon: "fa-copy",
             tooltip: "Multiple datasets",
             multiple: true,
-            batch: Batch.LINKED,
+            batch: BATCH.LINKED,
         },
         {
             src: "hdca",
             icon: "fa-folder",
             tooltip: "Dataset collection",
             multiple: false,
-            batch: Batch.LINKED,
+            batch: BATCH.LINKED,
         },
     ],
     data_multiple: [
@@ -42,14 +42,14 @@ export const Variants: Record<string, Array<VariantInterface>> = {
             icon: "fa-copy",
             tooltip: "Multiple datasets",
             multiple: true,
-            batch: Batch.DISABLED,
+            batch: BATCH.DISABLED,
         },
         {
             src: "hdca",
             icon: "fa-folder",
             tooltip: "Dataset collections",
             multiple: true,
-            batch: Batch.DISABLED,
+            batch: BATCH.DISABLED,
         },
     ],
     data_collection: [
@@ -58,7 +58,7 @@ export const Variants: Record<string, Array<VariantInterface>> = {
             icon: "fa-folder",
             tooltip: "Dataset collection",
             multiple: false,
-            batch: Batch.DISABLED,
+            batch: BATCH.DISABLED,
         },
     ],
     workflow_data: [
@@ -67,7 +67,7 @@ export const Variants: Record<string, Array<VariantInterface>> = {
             icon: "fa-file",
             tooltip: "Single dataset",
             multiple: false,
-            batch: Batch.DISABLED,
+            batch: BATCH.DISABLED,
         },
     ],
     workflow_data_multiple: [
@@ -76,7 +76,7 @@ export const Variants: Record<string, Array<VariantInterface>> = {
             icon: "fa-copy",
             tooltip: "Multiple datasets",
             multiple: true,
-            batch: Batch.DISABLED,
+            batch: BATCH.DISABLED,
         },
     ],
     workflow_data_collection: [
@@ -85,7 +85,7 @@ export const Variants: Record<string, Array<VariantInterface>> = {
             icon: "fa-folder",
             tooltip: "Dataset collection",
             multiple: false,
-            batch: Batch.DISABLED,
+            batch: BATCH.DISABLED,
         },
     ],
     module_data: [
@@ -94,14 +94,14 @@ export const Variants: Record<string, Array<VariantInterface>> = {
             icon: "fa-file",
             tooltip: "Single dataset",
             multiple: false,
-            batch: Batch.DISABLED,
+            batch: BATCH.DISABLED,
         },
         {
             src: "hda",
             icon: "fa-copy",
             tooltip: "Multiple datasets",
             multiple: true,
-            batch: Batch.ENABLED,
+            batch: BATCH.ENABLED,
         },
     ],
     module_data_collection: [
@@ -110,14 +110,14 @@ export const Variants: Record<string, Array<VariantInterface>> = {
             icon: "fa-folder",
             tooltip: "Dataset collection",
             multiple: false,
-            batch: Batch.DISABLED,
+            batch: BATCH.DISABLED,
         },
         {
             src: "hdca",
             icon: "fa-folder",
             tooltip: "Multiple collections",
             multiple: true,
-            batch: Batch.ENABLED,
+            batch: BATCH.ENABLED,
         },
     ],
 };
