@@ -1,10 +1,16 @@
 <script setup lang="ts">
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faCopy, faFile, faFolder } from "@fortawesome/free-regular-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BFormRadio, BFormRadioGroup } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import type { DataOption, DataValue } from "./types";
 import { Variants } from "./variants";
 
 import FormDataSelect from "./FormDataSelect.vue";
+
+library.add(faCopy, faFile, faFolder);
 
 interface DataOptions {
     hda: Array<DataOption>;
@@ -66,11 +72,11 @@ const variants = computed(() => {
 
 <template>
     <div class="d-flex">
-        <b-form-radio-group v-model="currentField" buttons>
-            <b-form-radio v-for="(v, index) in variants" :key="index" :value="index">
-                <span :class="`fa ${v.icon}`" />
-            </b-form-radio>
-        </b-form-radio-group>
+        <BFormRadioGroup v-model="currentField" buttons class="align-self-start mr-2">
+            <BFormRadio v-for="(v, index) in variants" :key="index" :value="index">
+                <FontAwesomeIcon :icon="['far', v.icon]" />
+            </BFormRadio>
+        </BFormRadioGroup>
         <FormDataSelect
             v-if="currentVariant"
             v-model="currentValue"
