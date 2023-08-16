@@ -233,5 +233,9 @@ class AdminConfigSerializer(ConfigSerializer):
                 "user_library_import_dir": _defaults_to(None),
                 "allow_library_path_paste": _defaults_to(False),
                 "allow_user_deletion": _defaults_to(False),
+                "tool_shed_urls": self._serialize_tool_shed_urls,
             }
         )
+
+    def _serialize_tool_shed_urls(self, item: Any, key: str, **context):
+        return list(self.app.tool_shed_registry.tool_sheds.values()) if self.app.tool_shed_registry else []
