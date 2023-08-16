@@ -13,7 +13,7 @@ export class UploadQueue {
             success: (d, m) => {},
             warning: (d, m) => {},
             error: (d, m) => {
-                alert(m);
+                console.error(m);
             },
             complete: () => {},
             multiple: true,
@@ -69,7 +69,7 @@ export class UploadQueue {
     start() {
         if (!this.isRunning) {
             this.isRunning = true;
-            this._processFtp();
+            this._processUrls();
             this._process();
         }
     }
@@ -91,38 +91,51 @@ export class UploadQueue {
         }
         // Return index to first item in queue (in FIFO order).
         const index = this._processIndex();
-        // Collect upload request data
-        const data = uploadPayload([this.opts.get(index)], this.opts.historyId);
-        // Remove item from queue
-        this.remove(index);
-        // Initiate upload request
-        this._processSubmit(index, data);
+        try {
+            // Remove item from queue
+            this.remove(index);
+            // Collect upload request data
+            const data = uploadPayload([this.opts.get(index)], this.opts.historyId);
+            // Initiate upload request
+            this._processSubmit(index, data);
+        } catch (e) {
+            // Parse error message for failed upload item
+            this.opts.error(index, String(e));
+            // Continue queue
+            this._process();
+        }
     }
 
     // Submit remote files as single batch request
-    _processFtp() {
+    _processUrls() {
         const list = [];
         for (const index of this.queue.keys()) {
             const model = this.opts.get(index);
-            if (model.status === "queued" && model.fileMode === "ftp") {
+            if (model.status === "queued" && model.fileMode === "url") {
                 list.push({ index, ...model });
                 this.remove(index);
             }
         }
         if (list.length > 0) {
-            const data = uploadPayload(list, this.opts.historyId);
-            sendPayload(data, {
-                success: (message) => {
-                    list.forEach((model) => {
-                        this.opts.success(model.index, message);
-                    });
-                },
-                error: (message) => {
-                    list.forEach((model) => {
-                        this.opts.error(model.index, message);
-                    });
-                },
-            });
+            try {
+                const data = uploadPayload(list, this.opts.historyId);
+                sendPayload(data, {
+                    success: (message) => {
+                        list.forEach((model) => {
+                            this.opts.success(model.index, message);
+                        });
+                    },
+                    error: (message) => {
+                        list.forEach((model) => {
+                            this.opts.error(model.index, message);
+                        });
+                    },
+                });
+            } catch (e) {
+                list.forEach((model) => {
+                    this.opts.error(model.index, String(e));
+                });
+            }
         }
     }
 
