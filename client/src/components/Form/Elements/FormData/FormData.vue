@@ -7,22 +7,17 @@ import { BFormCheckbox, BFormRadio, BFormRadioGroup } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
 import type { DataOption, DataValue } from "./types";
-import { BATCH, VARIANTS } from "./variants";
+import { BATCH, SOURCE, VARIANTS } from "./variants";
 
 import FormSelect from "@/components/Form/Elements/FormSelect.vue";
 
 library.add(faCopy, faExclamation, faFile, faFolder, faLink, faUnlink);
 
-interface DataOptions {
-    hda: Array<DataOption>;
-    hdca: Array<DataOption>;
-}
-
 const props = withDefaults(
     defineProps<{
         multiple?: boolean;
         optional?: boolean;
-        options: DataOptions;
+        options: Record<string, Array<DataOption>>;
         value?: DataValue;
         extensions?: Array<string>;
         type?: string;
@@ -48,8 +43,17 @@ const currentField = ref(0);
 
 const currentValue = computed({
     get: () => {
-        console.log("in", props.value.values);
-        return props.value.values;
+        const value: Array<DataOption> = [];
+        props.value.values.forEach((v) => {
+            const sourceOptions = props.options[v.src];
+            if (sourceOptions) {
+                const foundEntry = sourceOptions.find((entry) => entry.id === v.id);
+                if (foundEntry) {
+                    value.push(foundEntry);
+                }
+            }
+        });
+        return value;
     },
     set: (val) => {
         console.log("out", val);
