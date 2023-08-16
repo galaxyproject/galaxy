@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { computed } from "vue";
+import { computed, ref } from "vue";
 
 import type { DataOption, DataValue } from "./types";
 import { Variants } from "./variants";
@@ -35,6 +35,8 @@ const props = withDefaults(
 
 const $emit = defineEmits(["input"]);
 
+const currentField = ref(0);
+
 const currentValue = computed({
     get: () => {
         console.log("in", props.value.values);
@@ -46,6 +48,14 @@ const currentValue = computed({
     },
 });
 
+const currentVariant = computed(() => {
+    if (variants.value && currentField.value < variants.value.length) {
+        return variants.value[currentField.value];
+    } else {
+        return null;
+    }
+});
+
 const variants = computed(() => {
     const flavorKey = props.flavor ? `${props.flavor}_` : "";
     const multipleKey = props.multiple ? `_${props.multiple}` : "";
@@ -55,13 +65,18 @@ const variants = computed(() => {
 </script>
 
 <template>
-    <div>
-        <div v-for="(v, index) of variants" :key="index">
-            <FormDataSelect
-                v-model="currentValue"
-                :multiple="v.multiple"
-                :optional="optional"
-                :options="options[v.src]" />
-        </div>
+    <div class="d-flex">
+        <b-form-radio-group v-model="currentField" buttons>
+            <b-form-radio v-for="(v, index) in variants" :key="index" :value="index">
+                <span :class="`fa ${v.icon}`" />
+            </b-form-radio>
+        </b-form-radio-group>
+        <FormDataSelect
+            v-if="currentVariant"
+            v-model="currentValue"
+            class="w-100"
+            :multiple="variants[currentField].multiple"
+            :optional="optional"
+            :options="options[variants[currentField].src]" />
     </div>
 </template>
