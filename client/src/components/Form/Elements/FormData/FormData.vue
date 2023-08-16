@@ -44,20 +44,38 @@ const currentField = ref(0);
 const currentValue = computed({
     get: () => {
         const value: Array<DataOption> = [];
-        props.value.values.forEach((v) => {
-            const sourceOptions = props.options[v.src];
-            if (sourceOptions) {
-                const foundEntry = sourceOptions.find((entry) => entry.id === v.id);
-                if (foundEntry) {
-                    value.push(foundEntry);
+        if (props.value) {
+            console.log("get", props.value);
+            props.value.values.forEach((v) => {
+                const sourceOptions = props.options[v.src];
+                if (sourceOptions) {
+                    const foundEntry = sourceOptions.find((entry) => entry.id === v.id);
+                    if (foundEntry) {
+                        value.push(foundEntry);
+                    }
                 }
-            }
-        });
-        return value;
+            });
+            return value;
+        } else {
+            return null;
+        }
     },
     set: (val) => {
-        console.log("out", val);
-        $emit("input", val);
+        const batchMode = currentVariant.value && currentVariant.value.batch;
+        if (val) {
+            const values = Array.isArray(val) ? val : [val];
+            $emit("input", {
+                batch: batchMode !== BATCH.DISABLED,
+                product: batchMode === BATCH.ENABLED && !currentBatch.value,
+                values: values.map((entry) => ({
+                    id: entry.id,
+                    src: entry.src,
+                    map_over_type: entry.map_over_type,
+                })),
+            });
+        } else {
+            $emit("input", null);
+        }
     },
 });
 
