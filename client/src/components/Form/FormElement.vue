@@ -275,8 +275,8 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
                 :multiple="attrs.multiple" />
             <FormData
                 v-else-if="['data', 'data_collection'].includes(props.type)"
-                v-model="currentValue"
                 :id="id"
+                v-model="currentValue"
                 :extension="attrs.extension"
                 :flavor="attrs.flavor"
                 :multiple="attrs.multiple"

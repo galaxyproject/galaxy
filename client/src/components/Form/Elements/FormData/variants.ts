@@ -1,13 +1,22 @@
 /** Batch mode variations */
 export const Batch = { DISABLED: "disabled", ENABLED: "enabled", LINKED: "linked" };
 
+interface VariantInterface {
+    batch: string;
+    icon: string;
+    library?: boolean;
+    multiple: boolean;
+    src: string;
+    tooltip: string;
+}
+
 /** List of available content selectors options */
-export const Configurations = {
+export const Variants: Record<string, Array<VariantInterface>> = {
     data: [
         {
             src: "hda",
             icon: "fa-file-o",
-            tooltip: _l("Single dataset"),
+            tooltip: "Single dataset",
             library: true,
             multiple: false,
             batch: Batch.DISABLED,
@@ -15,14 +24,14 @@ export const Configurations = {
         {
             src: "hda",
             icon: "fa-files-o",
-            tooltip: _l("Multiple datasets"),
+            tooltip: "Multiple datasets",
             multiple: true,
             batch: Batch.LINKED,
         },
         {
             src: "hdca",
             icon: "fa-folder-o",
-            tooltip: _l("Dataset collection"),
+            tooltip: "Dataset collection",
             multiple: false,
             batch: Batch.LINKED,
         },
@@ -31,14 +40,14 @@ export const Configurations = {
         {
             src: "hda",
             icon: "fa-files-o",
-            tooltip: _l("Multiple datasets"),
+            tooltip: "Multiple datasets",
             multiple: true,
             batch: Batch.DISABLED,
         },
         {
             src: "hdca",
             icon: "fa-folder-o",
-            tooltip: _l("Dataset collections"),
+            tooltip: "Dataset collections",
             multiple: true,
             batch: Batch.DISABLED,
         },
@@ -47,7 +56,7 @@ export const Configurations = {
         {
             src: "hdca",
             icon: "fa-folder-o",
-            tooltip: _l("Dataset collection"),
+            tooltip: "Dataset collection",
             multiple: false,
             batch: Batch.DISABLED,
         },
@@ -56,7 +65,7 @@ export const Configurations = {
         {
             src: "hda",
             icon: "fa-file-o",
-            tooltip: _l("Single dataset"),
+            tooltip: "Single dataset",
             multiple: false,
             batch: Batch.DISABLED,
         },
@@ -65,7 +74,7 @@ export const Configurations = {
         {
             src: "hda",
             icon: "fa-files-o",
-            tooltip: _l("Multiple datasets"),
+            tooltip: "Multiple datasets",
             multiple: true,
             batch: Batch.DISABLED,
         },
@@ -74,7 +83,7 @@ export const Configurations = {
         {
             src: "hdca",
             icon: "fa-folder-o",
-            tooltip: _l("Dataset collection"),
+            tooltip: "Dataset collection",
             multiple: false,
             batch: Batch.DISABLED,
         },
@@ -83,14 +92,14 @@ export const Configurations = {
         {
             src: "hda",
             icon: "fa-file-o",
-            tooltip: _l("Single dataset"),
+            tooltip: "Single dataset",
             multiple: false,
             batch: Batch.DISABLED,
         },
         {
             src: "hda",
             icon: "fa-files-o",
-            tooltip: _l("Multiple datasets"),
+            tooltip: "Multiple datasets",
             multiple: true,
             batch: Batch.ENABLED,
         },
@@ -99,14 +108,14 @@ export const Configurations = {
         {
             src: "hdca",
             icon: "fa-folder-o",
-            tooltip: _l("Dataset collection"),
+            tooltip: "Dataset collection",
             multiple: false,
             batch: Batch.DISABLED,
         },
         {
             src: "hdca",
             icon: "fa-folder",
-            tooltip: _l("Multiple collections"),
+            tooltip: "Multiple collections",
             multiple: true,
             batch: Batch.ENABLED,
         },
