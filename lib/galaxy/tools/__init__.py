@@ -701,7 +701,6 @@ class Tool(Dictifiable):
     tool_type_local = False
     dict_collection_visible_keys = ["id", "name", "version", "description", "labels"]
     __help: Optional[Template]
-    __help_by_page: List[str]
     job_search: "JobSearch"
     version: str
 
@@ -1688,36 +1687,6 @@ class Tool(Dictifiable):
         except Exception:
             self.__help = Template("", input_encoding="utf-8")
             log.exception("Exception while parsing help for tool with id '%s'", self.id)
-
-        # Handle deprecated multi-page help text in XML case.
-        self.__help_by_page = []
-        tool_source = self.tool_source
-        if isinstance(tool_source, XmlToolSource):
-            help_elem = tool_source.root.find("help")
-            help_header = help_text
-            help_pages = help_elem is not None and help_elem.findall("page")
-            # Multiple help page case
-            help_footer = ""
-            if help_pages:
-                for help_page in help_pages:
-                    self.__help_by_page.append(help_page.text)
-                    help_footer = help_footer + help_page.tail
-            # Each page has to rendered all-together because of backreferences allowed by rst
-            try:
-                self.__help_by_page = [
-                    Template(
-                        rst_to_html(help_header + x + help_footer),
-                        input_encoding="utf-8",
-                        default_filters=["decode.utf8"],
-                        encoding_errors="replace",
-                    )
-                    for x in self.__help_by_page
-                ]
-            except Exception:
-                log.exception("Exception while parsing multi-page help for tool with id '%s'", self.id)
-            # Pad out help pages to match npages ... could this be done better?
-            while len(self.__help_by_page) < self.npages:
-                self.__help_by_page.append(self.__help)
 
     def find_output_def(self, name):
         # name is JobToOutputDatasetAssociation name.
