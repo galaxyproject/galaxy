@@ -1,9 +1,15 @@
 <script setup lang="ts">
 import { computed } from "vue";
-import FormSelect from "./FormDataSelect.vue";
-import type { DataOption, DataOptions, DataValue } from "./types";
 
-const $emit = defineEmits(["input"]);
+import type { DataOption, DataValue } from "./types";
+import { Variants } from "./variants";
+
+import FormDataSelect from "./FormDataSelect.vue";
+
+interface DataOptions {
+    hda: Array<DataOption>;
+    hdca: Array<DataOption>;
+}
 
 const props = withDefaults(
     defineProps<{
@@ -27,6 +33,8 @@ const props = withDefaults(
     }
 );
 
+const $emit = defineEmits(["input"]);
+
 const currentValue = computed({
     get: () => {
         console.log("in", props.value.values);
@@ -37,8 +45,23 @@ const currentValue = computed({
         $emit("input", val);
     },
 });
+
+const variants = computed(() => {
+    const flavorKey = props.flavor ? `${props.flavor}_` : "";
+    const multipleKey = props.multiple ? `_${props.multiple}` : "";
+    const variantKey = `${flavorKey}${props.type}${multipleKey}`;
+    return Variants[variantKey];
+});
 </script>
 
 <template>
-    <form-select v-model="currentValue" :multiple="multiple" :optional="optional" :options="options.hda" />
+    <div>
+        <div v-for="(v, index) of variants" :key="index">
+            <FormDataSelect
+                v-model="currentValue"
+                :multiple="v.multiple"
+                :optional="optional"
+                :options="options[v.src]" />
+        </div>
+    </div>
 </template>

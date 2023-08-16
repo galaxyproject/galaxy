@@ -7,11 +7,6 @@ export interface DataOption {
     tags: Array<string>;
 }
 
-export interface DataOptions {
-    hda: Array<DataOption>;
-    hdca: Array<DataOption>;
-}
-
 export interface DataValue {
     values: Array<DataOption>;
 }
