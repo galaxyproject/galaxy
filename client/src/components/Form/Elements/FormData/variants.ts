@@ -15,7 +15,7 @@ export const Variants: Record<string, Array<VariantInterface>> = {
     data: [
         {
             src: "hda",
-            icon: "fa-file-o",
+            icon: "fa-file",
             tooltip: "Single dataset",
             library: true,
             multiple: false,
@@ -23,14 +23,14 @@ export const Variants: Record<string, Array<VariantInterface>> = {
         },
         {
             src: "hda",
-            icon: "fa-files-o",
+            icon: "fa-copy",
             tooltip: "Multiple datasets",
             multiple: true,
             batch: Batch.LINKED,
         },
         {
             src: "hdca",
-            icon: "fa-folder-o",
+            icon: "fa-folder",
             tooltip: "Dataset collection",
             multiple: false,
             batch: Batch.LINKED,
@@ -39,14 +39,14 @@ export const Variants: Record<string, Array<VariantInterface>> = {
     data_multiple: [
         {
             src: "hda",
-            icon: "fa-files-o",
+            icon: "fa-copy",
             tooltip: "Multiple datasets",
             multiple: true,
             batch: Batch.DISABLED,
         },
         {
             src: "hdca",
-            icon: "fa-folder-o",
+            icon: "fa-folder",
             tooltip: "Dataset collections",
             multiple: true,
             batch: Batch.DISABLED,
@@ -55,7 +55,7 @@ export const Variants: Record<string, Array<VariantInterface>> = {
     data_collection: [
         {
             src: "hdca",
-            icon: "fa-folder-o",
+            icon: "fa-folder",
             tooltip: "Dataset collection",
             multiple: false,
             batch: Batch.DISABLED,
@@ -64,7 +64,7 @@ export const Variants: Record<string, Array<VariantInterface>> = {
     workflow_data: [
         {
             src: "hda",
-            icon: "fa-file-o",
+            icon: "fa-file",
             tooltip: "Single dataset",
             multiple: false,
             batch: Batch.DISABLED,
@@ -73,7 +73,7 @@ export const Variants: Record<string, Array<VariantInterface>> = {
     workflow_data_multiple: [
         {
             src: "hda",
-            icon: "fa-files-o",
+            icon: "fa-copy",
             tooltip: "Multiple datasets",
             multiple: true,
             batch: Batch.DISABLED,
@@ -82,7 +82,7 @@ export const Variants: Record<string, Array<VariantInterface>> = {
     workflow_data_collection: [
         {
             src: "hdca",
-            icon: "fa-folder-o",
+            icon: "fa-folder",
             tooltip: "Dataset collection",
             multiple: false,
             batch: Batch.DISABLED,
@@ -91,14 +91,14 @@ export const Variants: Record<string, Array<VariantInterface>> = {
     module_data: [
         {
             src: "hda",
-            icon: "fa-file-o",
+            icon: "fa-file",
             tooltip: "Single dataset",
             multiple: false,
             batch: Batch.DISABLED,
         },
         {
             src: "hda",
-            icon: "fa-files-o",
+            icon: "fa-copy",
             tooltip: "Multiple datasets",
             multiple: true,
             batch: Batch.ENABLED,
@@ -107,7 +107,7 @@ export const Variants: Record<string, Array<VariantInterface>> = {
     module_data_collection: [
         {
             src: "hdca",
-            icon: "fa-folder-o",
+            icon: "fa-folder",
             tooltip: "Dataset collection",
             multiple: false,
             batch: Batch.DISABLED,
