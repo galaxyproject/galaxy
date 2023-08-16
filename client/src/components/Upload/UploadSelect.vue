@@ -33,6 +33,10 @@ const props = defineProps({
         type: Boolean,
         default: true,
     },
+    warn: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 const emit = defineEmits(["input"]);
@@ -59,9 +63,10 @@ const currentValue = computed({
         select-label=""
         selected-label=""
         track-by="id">
-        <template
-            ><span slot="noResult" v-localize>No matching {{ what }}s found.</span></template
-        >
+        <span slot="noResult" v-localize>No matching {{ what }}s found.</span>
+        <span slot="singleLabel" slot-scope="{ option }" :class="{ 'selection-warning': warn }">
+            {{ option.text }}
+        </span>
     </Multiselect>
 </template>
 
@@ -71,6 +76,9 @@ const currentValue = computed({
     display: inline-block;
     min-height: unset;
     width: 150px;
+    .selection-warning {
+        color: $brand-warning;
+    }
     .multiselect__content-wrapper {
         .multiselect__content {
             width: inherit;

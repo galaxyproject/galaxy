@@ -74,6 +74,7 @@ async function loadUploadDatatypes() {
             description: datatypes[key].description,
             description_url: datatypes[key].description_url,
             composite_files: datatypes[key].composite_files,
+            upload_warning: datatypes[key].upload_warning,
         });
     }
     listExtensions.sort((a, b) => {

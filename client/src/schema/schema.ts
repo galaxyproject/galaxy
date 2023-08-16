@@ -3631,6 +3631,11 @@ export interface components {
              * @example bed
              */
             extension: string;
+            /**
+             * Upload warning
+             * @description End-user information regarding potential pitfalls with this upload type.
+             */
+            upload_warning?: string;
         };
         /** DatatypeEDAMDetails */
         DatatypeEDAMDetails: {

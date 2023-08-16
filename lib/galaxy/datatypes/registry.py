@@ -250,6 +250,14 @@ class Registry:
                         datatype_class.is_subclass = make_subclass
                         description = elem.get("description", None)
                         description_url = elem.get("description_url", None)
+
+                        # process as a list, in the future handle grabbing extensions here
+                        upload_warning_els = elem.findall("upload_warning")
+                        upload_warning_template = None
+                        for upload_warning_el in upload_warning_els:
+                            if upload_warning_template is not None:
+                                raise NotImplementedError("Multiple upload_warnings not implemented")
+                            upload_warning_template = Template(upload_warning_el.text)
                         datatype_instance = datatype_class()
                         self.datatypes_by_extension[extension] = datatype_instance
                         if mimetype is None:
@@ -303,6 +311,7 @@ class Registry:
                             "extension": extension,
                             "description": description,
                             "description_url": description_url,
+                            "upload_warning": upload_warning(upload_warning_template),
                         }
                         composite_files = datatype_instance.get_composite_files()
                         if composite_files:
@@ -353,6 +362,7 @@ class Registry:
                                     "extension": compressed_extension,
                                     "description": description,
                                     "description_url": description_url,
+                                    "upload_warning": upload_warning(upload_warning_template, auto_compressed_type),
                                 }
                             )
                             if auto_compressed_type == "gz":
@@ -963,6 +973,13 @@ class Registry:
         for unpicklable in unpickleable_attributes:
             state[unpicklable] = []
         return state
+
+
+def upload_warning(template: Optional[Template], auto_compressed_type: Optional[str] = None) -> Optional[str]:
+    if template is None:
+        return None
+    template_args = {"auto_compressed_type": "" if auto_compressed_type is None else f".{auto_compressed_type}"}
+    return template.safe_substitute(template_args)
 
 
 def example_datatype_registry_for_sample(sniff_compressed_dynamic_datatypes_default=True):
