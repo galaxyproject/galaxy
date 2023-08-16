@@ -9,7 +9,7 @@ import { computed, ref } from "vue";
 import type { DataOption, DataValue } from "./types";
 import { BATCH, VARIANTS } from "./variants";
 
-import FormDataSelect from "./FormDataSelect.vue";
+import FormSelect from "@/components/Form/Elements/FormSelect.vue";
 
 library.add(faCopy, faExclamation, faFile, faFolder, faLink, faUnlink);
 
@@ -81,7 +81,7 @@ const variant = computed(() => {
                     <FontAwesomeIcon :icon="['far', v.icon]" />
                 </BFormRadio>
             </BFormRadioGroup>
-            <FormDataSelect
+            <FormSelect
                 v-if="currentVariant"
                 v-model="currentValue"
                 class="w-100"
