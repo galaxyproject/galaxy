@@ -76,7 +76,7 @@ const variant = computed(() => {
 <template>
     <div>
         <div class="d-flex">
-            <BFormRadioGroup v-model="currentField" buttons class="align-self-start mr-2">
+            <BFormRadioGroup v-if="variant.length > 1" v-model="currentField" buttons class="align-self-start mr-2">
                 <BFormRadio v-for="(v, index) in variant" :key="index" :value="index">
                     <FontAwesomeIcon :icon="['far', v.icon]" />
                 </BFormRadio>
