@@ -2,14 +2,13 @@
 import { computed, type ComputedRef, onMounted, watch } from "vue";
 import Multiselect from "vue-multiselect";
 
-import { type DataOption, type DataValue, isDataOption } from "@/components/Form/Elements/FormData/types";
+import { type DataOption } from "@/components/Form/Elements/FormData/types";
 import { useMultiselect } from "@/composables/useMultiselect";
 import { uid } from "@/utils/utils";
 
 const { ariaExpanded, onOpen, onClose } = useMultiselect();
 
-type SelectBasic = string | number | null;
-type SelectValue = DataOption | SelectBasic;
+type SelectValue = DataOption | string | number | null;
 
 interface SelectOption {
     label: string;
@@ -21,7 +20,7 @@ const props = withDefaults(
         id?: string;
         multiple?: boolean;
         optional?: boolean;
-        options: Array<DataOption> | Array<[string, SelectBasic]>;
+        options: Array<SelectOption>;
         value?: Array<SelectValue> | string | number;
     }>(),
     {
@@ -35,9 +34,6 @@ const props = withDefaults(
 const emit = defineEmits<{
     (e: "input", value: SelectValue | Array<SelectValue>): void;
 }>();
-
-/** Store options which need to be preserved **/
-const keepOptions: Record<string, SelectOption> = {};
 
 /**
  * Determine dom wrapper class
@@ -54,48 +50,10 @@ const deselectLabel: ComputedRef<string> = computed(() => {
 });
 
 /**
- * Translates input options for consumption by the
- * select component into an array of objects
- */
-const formattedOptions: ComputedRef<Array<SelectOption>> = computed(() => {
-    const keepSet = new Set();
-    const result: Array<SelectOption> = props.options.map((option) => {
-        if (isDataOption(option)) {
-            const newOption: SelectOption = {
-                label: `${option.hid}: ${option.name}`,
-                value: option || null,
-            };
-            if (option.keep) {
-                keepOptions[option.id] = newOption;
-                keepSet.add(option.id);
-            }
-            return newOption;
-        } else {
-            return {
-                label: option[0],
-                value: option[1],
-            };
-        }
-    });
-    Object.entries(keepOptions).forEach(([key, value]) => {
-        if (!keepSet.has(key)) {
-            result.unshift(value);
-        }
-    });
-    if (props.optional && !props.multiple) {
-        result.unshift({
-            label: "Nothing selected",
-            value: null,
-        });
-    }
-    return result;
-});
-
-/**
  * Tracks if the select field has options
  */
 const hasOptions: ComputedRef<Boolean> = computed(() => {
-    return formattedOptions.value.length > 0;
+    return props.options.length > 0;
 });
 
 /**
@@ -103,7 +61,7 @@ const hasOptions: ComputedRef<Boolean> = computed(() => {
  */
 const initialValue: ComputedRef<SelectValue> = computed(() => {
     if (props.value === null && !props.optional && hasOptions.value) {
-        const v = formattedOptions.value[0];
+        const v = props.options[0];
         if (v) {
             return v.value;
         }
@@ -129,7 +87,7 @@ const selectedValues: ComputedRef<Array<SelectValue>> = computed(() => {
  * Tracks current value and emits changes
  */
 const currentValue = computed({
-    get: () => formattedOptions.value.filter((option: SelectOption) => selectedValues.value.includes(option.value)),
+    get: () => props.options.filter((option: SelectOption) => selectedValues.value.includes(option.value)),
     set: (val: Array<SelectOption> | SelectOption): void => {
         if (Array.isArray(val)) {
             if (val.length > 0) {
@@ -181,7 +139,7 @@ onMounted(() => {
         :deselect-label="deselectLabel"
         label="label"
         :multiple="multiple"
-        :options="formattedOptions"
+        :options="props.options"
         placeholder="Select value"
         :selected-label="selectedLabel"
         select-label="Click to select"

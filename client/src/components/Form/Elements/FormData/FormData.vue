@@ -6,12 +6,24 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BFormCheckbox, BFormRadio, BFormRadioGroup } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
-import type { DataOption, DataValue } from "./types";
+import type { DataOption } from "./types";
 import { BATCH, SOURCE, VARIANTS } from "./variants";
 
 import FormSelect from "@/components/Form/Elements/FormSelect.vue";
 
 library.add(faCopy, faExclamation, faFile, faFolder, faLink, faUnlink);
+
+interface DataValue {
+    values: Array<DataOption>;
+}
+
+interface SelectOption {
+    label: string;
+    value: DataOption | null;
+}
+
+/** Store options which need to be preserved **/
+const keepOptions: Record<string, SelectOption> = {};
 
 const props = withDefaults(
     defineProps<{
@@ -40,6 +52,16 @@ const $emit = defineEmits(["input"]);
 const currentBatch = ref(true);
 
 const currentField = ref(0);
+
+const currentOptions = computed(() => {
+    if (currentSource.value && currentSource.value in props.options) {
+        return (props.options && props.options[currentSource.value]) || [];
+    } else {
+        return [];
+    }
+});
+
+const currentSource = computed(() => (currentVariant.value && currentVariant.value.src) || null);
 
 const currentValue = computed({
     get: () => {
@@ -86,6 +108,33 @@ const currentVariant = computed(() => {
     }
 });
 
+const formattedOptions = computed(() => {
+    const keepSet = new Set();
+    const result: Array<SelectOption> = currentOptions.value.map((option) => {
+        const newOption = {
+            label: `${option.hid}: ${option.name}`,
+            value: option || null,
+        };
+        if (option.keep) {
+            keepOptions[option.id] = newOption;
+            keepSet.add(option.id);
+        }
+        return newOption;
+    });
+    Object.entries(keepOptions).forEach(([key, option]) => {
+        if (!keepSet.has(key)) {
+            result.unshift(option);
+        }
+    });
+    if (props.optional && !props.multiple) {
+        result.unshift({
+            label: "Nothing selected",
+            value: null,
+        });
+    }
+    return result;
+});
+
 const variant = computed(() => {
     const flavorKey = props.flavor ? `${props.flavor}_` : "";
     const multipleKey = props.multiple ? `_${props.multiple}` : "";
@@ -108,7 +157,7 @@ const variant = computed(() => {
                 class="w-100"
                 :multiple="currentVariant.multiple"
                 :optional="optional"
-                :options="options[currentVariant.src]" />
+                :options="formattedOptions" />
         </div>
         <div v-if="currentVariant.batch !== BATCH.DISABLED">
             <BFormCheckbox

@@ -1,9 +1,9 @@
 <script setup>
 import { computed } from "vue";
 
-import FormCheck from "./FormCheck";
-import FormRadio from "./FormRadio";
-import FormSelect from "./FormSelect";
+import FormCheck from "./FormCheck.vue";
+import FormRadio from "./FormRadio.vue";
+import FormSelect from "./FormSelect.vue";
 
 const $emit = defineEmits(["input"]);
 const props = defineProps({
@@ -54,10 +54,28 @@ const currentOptions = computed(() => {
     }
     return [];
 });
+
+/**
+ * Translates input options for consumption by the
+ * select component into an array of objects
+ */
+const selectOptions = computed(() => {
+    const result = currentOptions.value.map((option) => ({
+        label: option[0],
+        value: option[1],
+    }));
+    if (props.optional && !props.multiple) {
+        result.unshift({
+            label: "Nothing selected",
+            value: null,
+        });
+    }
+    return result;
+});
 </script>
 
 <template>
     <FormCheck v-if="display === 'checkboxes'" v-model="currentValue" :options="currentOptions" />
     <FormRadio v-else-if="display === 'radio'" v-model="currentValue" :options="currentOptions" />
-    <FormSelect v-else v-model="currentValue" :multiple="multiple" :optional="optional" :options="currentOptions" />
+    <FormSelect v-else v-model="currentValue" :multiple="multiple" :optional="optional" :options="selectOptions" />
 </template>
