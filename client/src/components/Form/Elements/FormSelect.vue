@@ -2,13 +2,14 @@
 import { computed, type ComputedRef, onMounted, watch } from "vue";
 import Multiselect from "vue-multiselect";
 
+import { type DataOption, type DataValue, isDataOption } from "@/components/Form/Elements/FormData/types";
 import { useMultiselect } from "@/composables/useMultiselect";
 import { uid } from "@/utils/utils";
 
-import type { DataOption, DataValue } from "./FormData/types";
-
-type SelectValue = DataOption | string | number | null;
 const { ariaExpanded, onOpen, onClose } = useMultiselect();
+
+type SelectBasic = string | number | null;
+type SelectValue = DataOption | SelectBasic;
 
 interface SelectOption {
     label: string;
@@ -20,8 +21,8 @@ const props = withDefaults(
         id?: string;
         multiple?: boolean;
         optional?: boolean;
-        options: Array<DataOption> | Array<[string, SelectValue]>;
-        value?: Array<DataOption> | Array<SelectValue> | string | number;
+        options: Array<DataOption> | Array<[string, SelectBasic]>;
+        value?: Array<SelectValue> | string | number;
     }>(),
     {
         id: `form-select-${uid()}`,
@@ -55,11 +56,17 @@ const deselectLabel: ComputedRef<string> = computed(() => {
  */
 const formattedOptions: ComputedRef<Array<SelectOption>> = computed(() => {
     const result: Array<SelectOption> = props.options.map((option) => {
-        const hasName = "name" in option;
-        return {
-            label: hasName ? option.name : option[0],
-            value: hasName ? option : option[1],
-        };
+        if (isDataOption(option)) {
+            return {
+                label: `${option.hid}: ${option.name}`,
+                value: option,
+            };
+        } else {
+            return {
+                label: option[0],
+                value: option[1],
+            };
+        }
     });
     if (props.optional && !props.multiple) {
         result.unshift({
