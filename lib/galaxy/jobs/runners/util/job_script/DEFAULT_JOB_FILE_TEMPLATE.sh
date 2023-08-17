@@ -4,9 +4,13 @@ $headers
 
 _galaxy_setup_environment() {
     local _use_framework_galaxy="$1"
-    _GALAXY_JOB_DIR="$working_directory"
-    _GALAXY_JOB_HOME_DIR="$home_directory"
-    _GALAXY_JOB_TMP_DIR=$tmp_dir_creation_statement
+
+    if [ -z "$_GALAXY_JOB_TMP_DIR" ]; then
+        _GALAXY_JOB_DIR="$working_directory"
+        _GALAXY_JOB_HOME_DIR="$home_directory"
+        _GALAXY_JOB_TMP_DIR=$tmp_dir_creation_statement
+    fi
+
     $env_setup_commands
     if [ "$GALAXY_LIB" != "None" -a "$_use_framework_galaxy" = "True" ]; then
         if [ -n "$PYTHONPATH" ]; then
