@@ -87,9 +87,7 @@ export default {
             return collection && collection.name;
         },
         itemUrl() {
-            const collectionId = this.args.history_dataset_collection_id;
-            const collection = this.collections[collectionId];
-            return collection.url;
+            return `${getAppRoot()}api/dataset_collections/${this.args.history_dataset_collection_id}`;
         },
         downloadUrl() {
             return `${getAppRoot()}api/dataset_collections/${this.args.history_dataset_collection_id}/download`;
