@@ -35,6 +35,10 @@ class Repository(BaseModel):
     create_time: str
 
 
+class RepositoryRevisionReadmes(BaseModel):
+    __root__: Dict[str, str]
+
+
 class CreateUserRequest(BaseModel):
     username: str
     email: str

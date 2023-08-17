@@ -52,6 +52,8 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         assert not only_revision.malicious
 
     def test_index_simple(self):
+        # Logic and typing is pretty different if given a tool id to search for - this should
+        # be tested or dropped in v2.
         populator = self.populator
         repo = populator.setup_column_maker_repo(prefix="repoforindex")
         repository_id = repo.id

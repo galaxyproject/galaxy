@@ -35,6 +35,7 @@ from galaxy.web.form_builder import (
 from galaxy.web.legacy_framework import grids
 from galaxy.webapps.base.controller import BaseUIController
 from tool_shed.dependencies.repository import relation_builder
+from tool_shed.managers.repositories import readmes
 from tool_shed.metadata import repository_metadata_manager
 from tool_shed.tools import (
     tool_validator,
@@ -1182,16 +1183,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         changeset_revision = kwd.get("changeset_revision", None)
         if repository_name is not None and repository_owner is not None and changeset_revision is not None:
             repository = repository_util.get_repository_by_name_and_owner(trans.app, repository_name, repository_owner)
-            if repository:
-                repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(
-                    trans.app, trans.security.encode_id(repository.id), changeset_revision
-                )
-                if repository_metadata:
-                    metadata = repository_metadata.metadata
-                    if metadata:
-                        return readme_util.build_readme_files_dict(
-                            trans.app, repository, changeset_revision, repository_metadata.metadata
-                        )
+            return readmes(trans.app, repository, changeset_revision)
         return {}
 
     @web.json
