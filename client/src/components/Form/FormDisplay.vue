@@ -165,6 +165,7 @@ export default {
             });
         },
         onChangeForm() {
+            this.formInputs = JSON.parse(JSON.stringify(this.formInputs));
             this.onChange(true);
         },
         onCloneInputs() {
