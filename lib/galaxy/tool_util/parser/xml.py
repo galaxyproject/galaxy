@@ -1214,21 +1214,16 @@ class XmlInputSource(InputSource):
         >>> xis.parse_static_options()
         [('a', 'a', True), ('b', 'b', False)]
         """
-        static_options = list()
+
+        deduplicated_static_options = {}
+
         elem = self.input_elem
         for option in elem.findall("option"):
             value = option.get("value")
             text = option.text or value
             selected = string_as_bool(option.get("selected", False))
-            present = False
-            for i, o in enumerate(static_options):
-                if o[1] == value:
-                    present = True
-                    static_options[i] = (text, value, selected)
-                    break
-            if not present:
-                static_options.append((text, value, selected))
-        return static_options
+            deduplicated_static_options[value] = (text, value, selected)
+        return list(deduplicated_static_options.values())
 
     def parse_optional(self, default=None):
         """Return boolean indicating whether parameter is optional."""
