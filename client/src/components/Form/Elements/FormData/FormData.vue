@@ -55,13 +55,13 @@ const currentField = ref(0);
 
 const currentOptions = computed(() => {
     if (currentSource.value && currentSource.value in props.options) {
-        return (props.options && props.options[currentSource.value]) || [];
+        return props.options[currentSource.value] || [];
     } else {
         return [];
     }
 });
 
-const currentSource = computed(() => (currentVariant.value && currentVariant.value.src) || null);
+const currentSource = computed(() => currentVariant.value && currentVariant.value.src);
 
 const currentValue = computed({
     get: () => {

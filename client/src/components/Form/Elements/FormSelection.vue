@@ -43,28 +43,15 @@ const currentValue = computed({
 
 /** Provides formatted select options. */
 const currentOptions = computed(() => {
+    let result = [];
     const data = props.data;
     const options = props.options;
     if (options && options.length > 0) {
-        return options;
+        result = options.map((option) => ({ label: option[0], value: option[1] }));
     } else if (data && data.length > 0) {
-        return data.map((option) => {
-            return [option.label, option.value];
-        });
+        result = data;
     }
-    return [];
-});
-
-/**
- * Translates input options for consumption by the
- * select component into an array of objects
- */
-const selectOptions = computed(() => {
-    const result = currentOptions.value.map((option) => ({
-        label: option[0],
-        value: option[1],
-    }));
-    if (props.optional && !props.multiple) {
+    if (!props.display && !props.multiple && props.optional) {
         result.unshift({
             label: "Nothing selected",
             value: null,
@@ -77,5 +64,5 @@ const selectOptions = computed(() => {
 <template>
     <FormCheck v-if="display === 'checkboxes'" v-model="currentValue" :options="currentOptions" />
     <FormRadio v-else-if="display === 'radio'" v-model="currentValue" :options="currentOptions" />
-    <FormSelect v-else v-model="currentValue" :multiple="multiple" :optional="optional" :options="selectOptions" />
+    <FormSelect v-else v-model="currentValue" :multiple="multiple" :optional="optional" :options="currentOptions" />
 </template>
