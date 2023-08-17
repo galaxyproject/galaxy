@@ -237,5 +237,5 @@ class AdminConfigSerializer(ConfigSerializer):
             }
         )
 
-    def _serialize_tool_shed_urls(self, item: Any, key: str, **context):
+    def _serialize_tool_shed_urls(self, item: Any, key: str, **context) -> List[str]:
         return list(self.app.tool_shed_registry.tool_sheds.values()) if self.app.tool_shed_registry else []
