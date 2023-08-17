@@ -11,3 +11,7 @@ export interface DataOption {
 export interface DataValue {
     values: Array<DataOption>;
 }
+
+export function isDataOption(obj: unknown): obj is DataOption {
+    return obj instanceof Object && "hid" in obj && "name" in obj;
+}

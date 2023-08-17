@@ -45,7 +45,6 @@ const currentValue = computed({
     get: () => {
         const value: Array<DataOption> = [];
         if (props.value) {
-            console.log("get", props.value);
             props.value.values.forEach((v) => {
                 const sourceOptions = props.options[v.src];
                 if (sourceOptions) {
