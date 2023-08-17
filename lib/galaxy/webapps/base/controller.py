@@ -300,9 +300,6 @@ class JSAppLauncher(BaseUIController):
             "enable_webhooks": True if trans.app.webhooks_registry.webhooks else False,
             "message_box_visible": trans.app.config.message_box_visible,
             "show_inactivity_warning": trans.app.config.user_activation_on and trans.user and not trans.user.active,
-            "tool_shed_urls": list(trans.app.tool_shed_registry.tool_sheds.values())
-            if trans.app.tool_shed_registry
-            else [],
             "tool_dynamic_configs": list(trans.app.toolbox.dynamic_conf_filenames()),
         }
 
