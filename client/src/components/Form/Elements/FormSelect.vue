@@ -36,6 +36,9 @@ const emit = defineEmits<{
     (e: "input", value: SelectValue | Array<SelectValue>): void;
 }>();
 
+/** Store options which need to be preserved **/
+const keepOptions: Record<string, SelectOption> = {};
+
 /**
  * Determine dom wrapper class
  */
@@ -55,17 +58,28 @@ const deselectLabel: ComputedRef<string> = computed(() => {
  * select component into an array of objects
  */
 const formattedOptions: ComputedRef<Array<SelectOption>> = computed(() => {
+    const keepSet = new Set();
     const result: Array<SelectOption> = props.options.map((option) => {
         if (isDataOption(option)) {
-            return {
+            const newOption: SelectOption = {
                 label: `${option.hid}: ${option.name}`,
-                value: option,
+                value: option || null,
             };
+            if (option.keep) {
+                keepOptions[option.id] = newOption;
+                keepSet.add(option.id);
+            }
+            return newOption;
         } else {
             return {
                 label: option[0],
                 value: option[1],
             };
+        }
+    });
+    Object.entries(keepOptions).forEach(([key, value]) => {
+        if (!keepSet.has(key)) {
+            result.unshift(value);
         }
     });
     if (props.optional && !props.multiple) {
