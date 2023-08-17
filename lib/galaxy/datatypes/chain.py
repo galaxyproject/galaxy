@@ -1,5 +1,5 @@
 """
-Chain class
+Genome browser chain format class
 """
 
 import logging
