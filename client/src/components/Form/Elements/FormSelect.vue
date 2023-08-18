@@ -79,9 +79,7 @@ const selectedLabel: ComputedRef<string> = computed(() => {
 /**
  * Tracks selected values
  */
-const selectedValues: ComputedRef<Array<SelectValue>> = computed(() => {
-    return Array.isArray(props.value) ? props.value : [props.value];
-});
+const selectedValues = computed(() => (Array.isArray(props.value) ? props.value : [props.value]));
 
 /**
  * Tracks current value and emits changes
