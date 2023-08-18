@@ -4,6 +4,7 @@
 """
 import os
 import shlex
+import sys
 from typing import (
     List,
     Optional,
@@ -26,7 +27,7 @@ DEFAULT_NET = None
 DEFAULT_MEMORY = None
 DEFAULT_VOLUMES_FROM = None
 DEFAULT_AUTO_REMOVE = True
-DEFAULT_SET_USER = "$UID"
+DEFAULT_SET_USER = None if sys.platform == "darwin" else "$UID"
 DEFAULT_RUN_EXTRA_ARGUMENTS = None
 
 
@@ -106,7 +107,7 @@ def build_docker_run_command(
     sudo: bool = DEFAULT_SUDO,
     sudo_cmd: str = DEFAULT_SUDO_COMMAND,
     auto_rm: bool = DEFAULT_AUTO_REMOVE,
-    set_user: str = DEFAULT_SET_USER,
+    set_user: Optional[str] = DEFAULT_SET_USER,
     host: Optional[str] = DEFAULT_HOST,
     guest_ports: Union[bool, List[str]] = False,
     container_name: Optional[str] = None,
