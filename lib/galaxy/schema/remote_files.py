@@ -38,36 +38,36 @@ class RemoteFilesDisableMode(str, Enum):
 
 class FilesSourcePlugin(Model):
     id: str = Field(
-        Required,
+        ...,
         title="ID",
         description="The `FilesSource` plugin identifier",
         example="_import",
     )
     type: str = Field(
-        Required,
+        ...,
         title="Type",
         description="The type of the plugin.",
         example="gximport",
     )
     label: str = Field(
-        Required,
+        ...,
         title="Label",
         description="The display label for this plugin.",
         example="Library Import Directory",
     )
     doc: str = Field(
-        Required,
+        ...,
         title="Documentation",
         description="Documentation or extended description for this plugin.",
         example="Galaxy's library import directory",
     )
     browsable: bool = Field(
-        Required,
+        ...,
         title="Browsable",
         description="Whether this file source plugin can list items.",
     )
     writable: bool = Field(
-        Required,
+        ...,
         title="Writeable",
         description="Whether this files source plugin allows write access.",
         example=False,
@@ -87,7 +87,7 @@ class FilesSourcePlugin(Model):
 class BrowsableFilesSourcePlugin(FilesSourcePlugin):
     browsable: Literal[True]
     uri_root: str = Field(
-        Required,
+        ...,
         title="URI root",
         description="The URI root used by this type of plugin.",
         example="gximport://",
@@ -114,23 +114,23 @@ class FilesSourcePluginList(RootModel):
 
 
 class RemoteEntry(Model):
-    name: str = Field(Required, title="Name", description="The name of the entry.")
-    uri: str = Field(Required, title="URI", description="The URI of the entry.")
-    path: str = Field(Required, title="Path", description="The path of the entry.")
+    name: str = Field(..., title="Name", description="The name of the entry.")
+    uri: str = Field(..., title="URI", description="The URI of the entry.")
+    path: str = Field(..., title="Path", description="The path of the entry.")
 
 
 class RemoteDirectory(RemoteEntry):
-    class_: Literal["Directory"] = Field(Required, alias="class", const=True)
+    class_: Literal["Directory"] = Field(..., alias="class", const=True)
 
 
 class RemoteFile(RemoteEntry):
-    class_: Literal["File"] = Field(Required, alias="class", const=True)
-    size: int = Field(Required, title="Size", description="The size of the file in bytes.")
-    ctime: str = Field(Required, title="Creation time", description="The creation time of the file.")
+    class_: Literal["File"] = Field(..., alias="class", const=True)
+    size: int = Field(..., title="Size", description="The size of the file in bytes.")
+    ctime: str = Field(..., title="Creation time", description="The creation time of the file.")
 
 
-class ListJstreeResponse(Model):
-    __root__: List[Any] = Field(
+class ListJstreeResponse(RootModel):
+    root: List[Any] = Field(
         default=[],
         title="List of files",
         description="List of files in Jstree format.",
@@ -144,8 +144,8 @@ AnyRemoteEntry = Annotated[
 ]
 
 
-class ListUriResponse(Model):
-    __root__: List[AnyRemoteEntry] = Field(
+class ListUriResponse(RootModel):
+    root: List[AnyRemoteEntry] = Field(
         default=[],
         title="List of remote entries",
         description="List of directories and files.",
