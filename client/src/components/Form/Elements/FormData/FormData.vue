@@ -116,13 +116,14 @@ const formattedOptions = computed(() => {
             value: option || null,
         };
         if (option.keep) {
-            keepOptions[option.id] = newOption;
-            keepSet.add(option.id);
+            const keepKey = `${option.id}_${option.src}`;
+            keepOptions[keepKey] = newOption;
+            keepSet.add(keepKey);
         }
         return newOption;
     });
     Object.entries(keepOptions).forEach(([key, option]) => {
-        if (!keepSet.has(key)) {
+        if (!keepSet.has(key) && option.value?.src === currentSource.value) {
             result.unshift(option);
         }
     });
