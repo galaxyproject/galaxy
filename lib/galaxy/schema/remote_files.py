@@ -111,11 +111,11 @@ class RemoteEntry(Model):
 
 
 class RemoteDirectory(RemoteEntry):
-    class_: Literal["Directory"] = Field(..., alias="class", const=True)
+    class_: Literal["Directory"] = Field(..., alias="class")
 
 
 class RemoteFile(RemoteEntry):
-    class_: Literal["File"] = Field(..., alias="class", const=True)
+    class_: Literal["File"] = Field(..., alias="class")
     size: int = Field(..., title="Size", description="The size of the file in bytes.")
     ctime: str = Field(..., title="Creation time", description="The creation time of the file.")
 
