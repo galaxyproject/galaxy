@@ -1,6 +1,7 @@
 from datetime import datetime
 from enum import Enum
 from typing import (
+    Any,
     Dict,
     List,
     Optional,
@@ -182,9 +183,7 @@ class NotificationResponse(Model):
     publication_time: datetime = NotificationPublicationTimeField
     expiration_time: Optional[datetime] = NotificationExpirationTimeField
     content: AnyNotificationContent
-    # TODO[pydantic]: The following keys were removed: `getter_dict`.
-    # Check https://docs.pydantic.dev/dev-v2/migration/#changes-to-config for more information.
-    model_config = ConfigDict(from_attributes=True, getter_dict=NotificationGetter)
+    model_config = ConfigDict(from_attributes=True)
 
 
 class UserNotificationResponse(NotificationResponse):
