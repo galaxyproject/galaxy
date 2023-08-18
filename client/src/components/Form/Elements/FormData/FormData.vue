@@ -66,7 +66,9 @@ const currentValue = computed({
         const value: Array<DataOption> = [];
         if (props.value) {
             for (const v of props.value.values) {
-                const foundEntry = formattedOptions.value.find((entry) => entry.value?.id === v.id);
+                const foundEntry = formattedOptions.value.find(
+                    (entry) => entry.value && entry.value.id === v.id && entry.value.src === v.src
+                );
                 if (foundEntry && foundEntry.value) {
                     value.push(foundEntry.value);
                     if (!currentVariant.value?.multiple) {
@@ -74,10 +76,11 @@ const currentValue = computed({
                     }
                 }
             }
-            return value;
-        } else {
-            return null;
+            if (value.length > 0) {
+                return value;
+            }
         }
+        return null;
     },
     set: (val) => {
         setValue(val);
