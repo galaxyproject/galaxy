@@ -171,7 +171,12 @@ watch(
     <div>
         <div class="d-flex">
             <BFormRadioGroup v-if="variant.length > 1" v-model="currentField" buttons class="align-self-start mr-2">
-                <BFormRadio v-for="(v, index) in variant" :key="index" :value="index">
+                <BFormRadio
+                    v-for="(v, index) in variant"
+                    v-b-tooltip.hover.bottom
+                    :key="index"
+                    :title="v.tooltip"
+                    :value="index">
                     <FontAwesomeIcon :icon="['far', v.icon]" />
                 </BFormRadio>
             </BFormRadioGroup>
