@@ -186,7 +186,7 @@ def _process_raw_inputs(
                 if not value.type == "text":
                     param_value = _split_if_str(param_value)
                 if isinstance(value, galaxy.tools.parameters.basic.DataToolParameter):
-                    if param_value is None and location:
+                    if location and value.multiple:
                         # We get the input/s from the location which can be a list of urls separated by commas
                         locations = _split_if_str(location)
                         param_value = []
