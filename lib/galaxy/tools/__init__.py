@@ -1282,7 +1282,7 @@ class Tool(Dictifiable):
     def tests(self):
         if self.__tests:
             return [ToolTestDescription(d) for d in json.loads(self.__tests)]
-        return self.__tests
+        return None
 
     @property
     def _repository_dir(self):
