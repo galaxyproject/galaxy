@@ -1,7 +1,7 @@
 export interface DataOption {
     id: string;
     keep: boolean;
-    hid: string;
+    hid: number;
     map_over_type?: string;
     name: string;
     src: string;
