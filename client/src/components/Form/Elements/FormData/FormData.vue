@@ -4,7 +4,9 @@ import { faCopy, faFile, faFolder } from "@fortawesome/free-regular-svg-icons";
 import { faExclamation, faLink, faUnlink } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BFormCheckbox, BFormRadio, BFormRadioGroup } from "bootstrap-vue";
-import { computed, ref, watch } from "vue";
+import { computed, type Ref, ref, watch } from "vue";
+
+import { type EventData, useEventStore } from "@/stores/eventStore";
 
 import type { DataOption } from "./types";
 import { BATCH, SOURCE, VARIANTS } from "./variants";
@@ -42,6 +44,8 @@ const props = withDefaults(
     }
 );
 
+const eventStore = useEventStore();
+
 const $emit = defineEmits(["input"]);
 
 // Determines wether values should be processed as linked or unlinked
@@ -49,6 +53,13 @@ const currentBatch = ref(true);
 
 // Indicates which of the select field from the set of variants is currently shown
 const currentField = ref(0);
+
+// Field highlighting status
+const currentHighlighting = ref(false);
+
+// Drag/Drop related values
+const dragData: Ref<EventData | null> = ref(null);
+const dragTarget: Ref<EventTarget | null> = ref(null);
 
 /** Store options which need to be preserved **/
 const keepOptions: Record<string, SelectOption> = {};
@@ -158,6 +169,38 @@ const variant = computed(() => {
 });
 
 /**
+ * Drag/Drop event handlers
+ */
+function onDragEnter(evt: MouseEvent) {
+    const eventData = eventStore.getDragData();
+    if (eventData) {
+        dragTarget.value = evt.target;
+        dragData.value = eventData;
+    }
+}
+
+function onDragLeave(evt: MouseEvent) {
+    if (dragTarget.value === evt.target) {
+        currentHighlighting.value = false;
+    }
+}
+
+function onDragOver() {
+    if (dragData.value !== null) {
+        currentHighlighting.value = true;
+    }
+}
+
+/**
+ * Insert the dragged item into the activities list
+ */
+function onDrop(evt: MouseEvent) {
+    console.log("DROPPED", dragData.value);
+    currentHighlighting.value = false;
+    dragData.value = null;
+}
+
+/**
  * Processes and submits values from the select field
  */
 function setValue(val: Array<DataOption> | DataOption | null) {
@@ -190,13 +233,18 @@ watch(
 </script>
 
 <template>
-    <div>
+    <div
+        :class="{ 'ui-dragover': currentHighlighting }"
+        @dragenter.prevent="onDragEnter"
+        @dragleave.prevent="onDragLeave"
+        @dragover.prevent="onDragOver"
+        @drop.prevent="onDrop">
         <div class="d-flex">
             <BFormRadioGroup v-if="variant.length > 1" v-model="currentField" buttons class="align-self-start mr-2">
                 <BFormRadio
                     v-for="(v, index) in variant"
-                    v-b-tooltip.hover.bottom
                     :key="index"
+                    v-b-tooltip.hover.bottom
                     :title="v.tooltip"
                     :value="index">
                     <FontAwesomeIcon :icon="['far', v.icon]" />
