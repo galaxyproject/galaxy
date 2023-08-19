@@ -21,12 +21,14 @@ const props = withDefaults(
         multiple?: boolean;
         optional?: boolean;
         options: Array<SelectOption>;
+        placeholder?: string;
         value?: Array<SelectValue> | string | number;
     }>(),
     {
         id: `form-select-${uid()}`,
         multiple: false,
         optional: false,
+        placeholder: "Select value",
         value: null,
     }
 );
@@ -138,7 +140,7 @@ onMounted(() => {
         label="label"
         :multiple="multiple"
         :options="props.options"
-        placeholder="Select value"
+        :placeholder="placeholder"
         :selected-label="selectedLabel"
         select-label="Click to select"
         track-by="value"

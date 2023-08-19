@@ -143,6 +143,11 @@ const formattedOptions = computed(() => {
 });
 
 /**
+ * Provides placeholder label for select field
+ */
+const placeholder = computed(() => (currentSource.value === "hda" ? "dataset" : "dataset collection"));
+
+/**
  * Provides the array of available variants associated with a specific form data type
  */
 const variant = computed(() => {
@@ -203,7 +208,8 @@ watch(
                 class="w-100"
                 :multiple="currentVariant.multiple"
                 :optional="optional"
-                :options="formattedOptions" />
+                :options="formattedOptions"
+                :placeholder="`Select a ${placeholder}`" />
         </div>
         <div v-if="currentVariant.batch !== BATCH.DISABLED">
             <BFormCheckbox
