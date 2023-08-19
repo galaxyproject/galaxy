@@ -104,6 +104,7 @@ const currentVariant = computed(() => {
 const formattedOptions = computed(() => {
     const keepSet = new Set();
     if (currentSource.value && currentSource.value in props.options) {
+        // Map incoming values to available options
         const options = props.options[currentSource.value] || [];
         const result: Array<SelectOption> = options.map((option) => {
             const newOption = {
@@ -117,9 +118,20 @@ const formattedOptions = computed(() => {
             }
             return newOption;
         });
+        // Populate keep-options from cache
         Object.entries(keepOptions).forEach(([key, option]) => {
             if (!keepSet.has(key) && option.value?.src === currentSource.value) {
                 result.unshift(option);
+            }
+        });
+        // Sort entries by hid (might be unnecessary)
+        result.sort((a, b) => {
+            const aHid = a.value && a.value.hid;
+            const bHid = b.value && b.value.hid;
+            if (aHid && bHid) {
+                return bHid - aHid;
+            } else {
+                return 0;
             }
         });
         return result;
