@@ -55,7 +55,7 @@ const currentBatch = ref(true);
 const currentField = ref(0);
 
 // Field highlighting status
-const currentHighlighting = ref(false);
+const currentHighlighting: Ref<string | null> = ref(null);
 
 // Drag/Drop related values
 const dragData: Ref<EventData | null> = ref(null);
@@ -169,6 +169,15 @@ const variant = computed(() => {
 });
 
 /**
+ * Clears highlighting with delay
+ */
+function clearHighlighting(timeout = 1000) {
+    setTimeout(() => {
+        currentHighlighting.value = null;
+    }, timeout);
+}
+
+/**
  * Drag/Drop event handlers
  */
 function onDragEnter(evt: MouseEvent) {
@@ -181,13 +190,13 @@ function onDragEnter(evt: MouseEvent) {
 
 function onDragLeave(evt: MouseEvent) {
     if (dragTarget.value === evt.target) {
-        currentHighlighting.value = false;
+        currentHighlighting.value = null;
     }
 }
 
 function onDragOver() {
     if (dragData.value !== null) {
-        currentHighlighting.value = true;
+        currentHighlighting.value = "warning";
     }
 }
 
@@ -196,8 +205,9 @@ function onDragOver() {
  */
 function onDrop(evt: MouseEvent) {
     console.log("DROPPED", dragData.value);
-    currentHighlighting.value = false;
+    currentHighlighting.value = "success";
     dragData.value = null;
+    clearHighlighting();
 }
 
 /**
@@ -234,7 +244,7 @@ watch(
 
 <template>
     <div
-        :class="{ 'ui-dragover': currentHighlighting }"
+        :class="currentHighlighting && `ui-dragover-${currentHighlighting}`"
         @dragenter.prevent="onDragEnter"
         @dragleave.prevent="onDragLeave"
         @dragover.prevent="onDragOver"
