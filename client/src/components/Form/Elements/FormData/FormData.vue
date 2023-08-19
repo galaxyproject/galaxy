@@ -113,8 +113,10 @@ const formattedOptions = computed(() => {
             };
             if (option.keep) {
                 const keepKey = `${option.id}_${option.src}`;
-                keepOptions[keepKey] = newOption;
-                keepSet.add(keepKey);
+                if (!(keepKey in keepOptions)) {
+                    keepOptions[keepKey] = newOption;
+                    keepSet.add(keepKey);
+                }
             }
             return newOption;
         });
@@ -124,7 +126,7 @@ const formattedOptions = computed(() => {
                 result.unshift(option);
             }
         });
-        // Sort entries by hid (might be unnecessary)
+        // Sort entries by hid
         result.sort((a, b) => {
             const aHid = a.value && a.value.hid;
             const bHid = b.value && b.value.hid;
