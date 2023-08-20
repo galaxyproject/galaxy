@@ -3,9 +3,10 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCopy, faFile, faFolder } from "@fortawesome/free-regular-svg-icons";
 import { faExclamation, faLink, faUnlink } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BFormCheckbox, BFormRadio, BFormRadioGroup } from "bootstrap-vue";
+import { BButton, BButtonGroup, BFormCheckbox } from "bootstrap-vue";
 import { computed, type Ref, ref, watch } from "vue";
 
+import { getGalaxyInstance } from "@/app";
 import { type EventData, useEventStore } from "@/stores/eventStore";
 
 import type { DataOption } from "./types";
@@ -167,6 +168,26 @@ const variant = computed(() => {
 });
 
 /**
+ * Open file dialog
+ */
+function onBrowse() {
+    if (currentVariant.value) {
+        const Galaxy = getGalaxyInstance();
+        Galaxy.data.dialog(
+            (response: Record<string, unknown>) => {
+                handleIncoming(response, false);
+            },
+            {
+                multiple: currentVariant.value.multiple,
+                library: !!currentVariant.value.library,
+                format: null,
+                allowUpload: true,
+            }
+        );
+    }
+}
+
+/**
  * Clears highlighting with delay
  */
 function clearHighlighting(timeout = 1000) {
@@ -305,16 +326,20 @@ watch(
         @dragover.prevent="onDragOver"
         @drop.prevent="onDrop">
         <div class="d-flex">
-            <BFormRadioGroup v-if="variant.length > 1" v-model="currentField" buttons class="align-self-start mr-2">
-                <BFormRadio
+            <BButtonGroup v-if="variant.length > 1" buttons class="align-self-start mr-2">
+                <BButton
                     v-for="(v, index) in variant"
                     :key="index"
                     v-b-tooltip.hover.bottom
+                    :pressed="currentField === index"
                     :title="v.tooltip"
-                    :value="index">
+                    @click="currentField = index">
                     <FontAwesomeIcon :icon="['far', v.icon]" />
-                </BFormRadio>
-            </BFormRadioGroup>
+                </BButton>
+                <BButton v-b-tooltip.hover.bottom title="Browse or Upload Datasets" @click="onBrowse">
+                    <span class="font-weight-bold">...</span>
+                </BButton>
+            </BButtonGroup>
             <FormSelect
                 v-if="currentVariant"
                 v-model="currentValue"
