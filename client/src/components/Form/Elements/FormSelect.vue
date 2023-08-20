@@ -18,6 +18,7 @@ interface SelectOption {
 const props = withDefaults(
     defineProps<{
         id?: string;
+        disabled?: boolean;
         multiple?: boolean;
         optional?: boolean;
         options: Array<SelectOption>;
@@ -26,6 +27,7 @@ const props = withDefaults(
     }>(),
     {
         id: `form-select-${uid()}`,
+        disabled: false,
         multiple: false,
         optional: false,
         placeholder: "Select value",
@@ -136,6 +138,7 @@ onMounted(() => {
         :aria-expanded="ariaExpanded"
         :class="['form-select', cls]"
         :close-on-select="!multiple"
+        :disabled="disabled"
         :deselect-label="deselectLabel"
         label="label"
         :multiple="multiple"
