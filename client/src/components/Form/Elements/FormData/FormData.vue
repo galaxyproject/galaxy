@@ -168,26 +168,6 @@ const variant = computed(() => {
 });
 
 /**
- * Open file dialog
- */
-function onBrowse() {
-    if (currentVariant.value) {
-        const Galaxy = getGalaxyInstance();
-        Galaxy.data.dialog(
-            (response: Record<string, unknown>) => {
-                handleIncoming(response, false);
-            },
-            {
-                multiple: currentVariant.value.multiple,
-                library: !!currentVariant.value.library,
-                format: null,
-                allowUpload: true,
-            }
-        );
-    }
-}
-
-/**
  * Clears highlighting with delay
  */
 function clearHighlighting(timeout = 1000) {
@@ -248,6 +228,27 @@ function handleIncoming(incoming: Record<string, unknown>, partial = true) {
                 }
             }
         }
+    }
+}
+
+/**
+ * Open file dialog
+ */
+function onBrowse() {
+    if (variant.value) {
+        const library = variant.value.find((v) => v.library);
+        const multiple = variant.value.find((v) => v.multiple);
+        getGalaxyInstance().data.dialog(
+            (response: Record<string, unknown>) => {
+                handleIncoming(response, false);
+            },
+            {
+                allowUpload: true,
+                format: null,
+                library,
+                multiple,
+            }
+        );
     }
 }
 
