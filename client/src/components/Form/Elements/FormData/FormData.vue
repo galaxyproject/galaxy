@@ -4,7 +4,7 @@ import { faCopy, faFile, faFolder } from "@fortawesome/free-regular-svg-icons";
 import { faExclamation, faLink, faUnlink } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BButtonGroup, BFormCheckbox } from "bootstrap-vue";
-import { computed, type Ref, ref, watch } from "vue";
+import Vue, { computed, onMounted, type Ref, ref, watch } from "vue";
 
 import { getGalaxyInstance } from "@/app";
 import { type EventData, useEventStore } from "@/stores/eventStore";
@@ -45,6 +45,8 @@ const props = withDefaults(
     }
 );
 
+const eventHub = new Vue();
+
 const eventStore = useEventStore();
 
 const $emit = defineEmits(["input"]);
@@ -78,7 +80,7 @@ const currentSource = computed(() => currentVariant.value && currentVariant.valu
  */
 const currentValue = computed({
     get: () => {
-        waiting.value = false;
+        eventHub.$emit("waiting", false);
         const value: Array<DataOption> = [];
         if (props.value) {
             for (const v of props.value.values) {
@@ -99,7 +101,7 @@ const currentValue = computed({
         return null;
     },
     set: (val) => {
-        waiting.value = true;
+        eventHub.$emit("waiting", true);
         setValue(val);
     },
 });
@@ -313,6 +315,12 @@ function setValue(val: Array<DataOption> | DataOption | null) {
         $emit("input", null);
     }
 }
+
+onMounted(() => {
+    eventHub.$on("waiting", (value: boolean) => {
+        waiting.value = value;
+    });
+});
 
 /**
  * Watch and set current value if user switches to a different select field
