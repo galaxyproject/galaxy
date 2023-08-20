@@ -10,7 +10,7 @@ import { getGalaxyInstance } from "@/app";
 import { type EventData, useEventStore } from "@/stores/eventStore";
 
 import type { DataOption } from "./types";
-import { BATCH, VARIANTS } from "./variants";
+import { BATCH, SOURCE, VARIANTS } from "./variants";
 
 import FormSelect from "@/components/Form/Elements/FormSelect.vue";
 
@@ -52,7 +52,7 @@ const eventStore = useEventStore();
 const $emit = defineEmits(["input"]);
 
 // Determines wether values should be processed as linked or unlinked
-const currentBatch = ref(true);
+const currentLinked = ref(true);
 
 // Indicates which of the select field from the set of variants is currently shown
 const currentField = ref(0);
@@ -69,6 +69,11 @@ const keepOptions: Ref<Record<string, SelectOption>> = ref({});
 
 /** Displays a wait indicator between setting a value and receiving an update */
 const waiting = ref(false);
+
+/**
+ * Determine wether the file dialog can be used or not
+ */
+const canBrowse = computed(() => variant.value && !!variant.value.find((v) => v.src === SOURCE.DATASET));
 
 /**
  * Provides the currently shown source type
@@ -165,14 +170,14 @@ const formattedOptions = computed(() => {
 /**
  * Provides placeholder label for select field
  */
-const placeholder = computed(() => (currentSource.value === "hda" ? "dataset" : "dataset collection"));
+const placeholder = computed(() => (currentSource.value === SOURCE.DATASET ? "dataset" : "dataset collection"));
 
 /**
  * Provides the array of available variants associated with a specific form data type
  */
 const variant = computed(() => {
     const flavorKey = props.flavor ? `${props.flavor}_` : "";
-    const multipleKey = props.multiple ? `_${props.multiple}` : "";
+    const multipleKey = props.multiple ? `_multiple` : "";
     const variantKey = `${flavorKey}${props.type}${multipleKey}`;
     return VARIANTS[variantKey];
 });
@@ -198,7 +203,7 @@ function handleIncoming(incoming: Record<string, unknown>, partial = true) {
                 const newHid = v.hid;
                 const newId = v.id;
                 const newName = v.name ? v.name : newId;
-                const newSrc = v.history_content_type === "dataset_collection" ? "hdca" : "hda";
+                const newSrc = v.history_content_type === "dataset_collection" ? SOURCE.COLLECTION : SOURCE.DATASET;
                 const newValue = {
                     id: newId,
                     src: newSrc,
@@ -302,9 +307,10 @@ function setValue(val: Array<DataOption> | DataOption | null) {
     const batchMode = currentVariant.value && currentVariant.value.batch;
     if (val) {
         const values = Array.isArray(val) ? val : [val];
+        const hasMapOverType = values.find((entry) => !!entry.map_over_type);
         $emit("input", {
-            batch: batchMode !== BATCH.DISABLED,
-            product: batchMode === BATCH.ENABLED && !currentBatch.value,
+            batch: batchMode !== BATCH.DISABLED || hasMapOverType,
+            product: batchMode === BATCH.ENABLED && !currentLinked.value,
             values: values.map((entry) => ({
                 id: entry.id,
                 src: entry.src,
@@ -351,7 +357,7 @@ watch(
                     @click="currentField = index">
                     <FontAwesomeIcon :icon="['far', v.icon]" />
                 </BButton>
-                <BButton v-b-tooltip.hover.bottom title="Browse or Upload Datasets" @click="onBrowse">
+                <BButton v-if="canBrowse" v-b-tooltip.hover.bottom title="Browse or Upload Datasets" @click="onBrowse">
                     <FontAwesomeIcon v-if="waiting" icon="fa-spinner" spin />
                     <span v-else class="font-weight-bold">...</span>
                 </BButton>
@@ -368,10 +374,10 @@ watch(
         <div v-if="currentVariant.batch !== BATCH.DISABLED">
             <BFormCheckbox
                 v-if="currentVariant.batch === BATCH.ENABLED"
-                v-model="currentBatch"
+                v-model="currentLinked"
                 class="no-highlight my-2"
                 switch>
-                <div v-if="currentBatch">
+                <div v-if="currentLinked">
                     <FontAwesomeIcon icon="fa-link" />
                     <b v-localize class="mr-1">Linked:</b>
                     <span v-localize>Datasets will be run in matched order with other datasets.</span>
