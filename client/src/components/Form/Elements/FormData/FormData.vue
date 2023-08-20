@@ -127,7 +127,10 @@ const formattedOptions = computed(() => {
                 const keepKey = `${option.id}_${option.src}`;
                 keepOptions.value[keepKey] = newOption;
             } else {
-                result.push(newOption);
+                const accepted = !props.tag || option.tags.includes(props.tag);
+                if (accepted) {
+                    result.push(newOption);
+                }
             }
         });
         // Populate keep-options from cache
