@@ -62,7 +62,7 @@ const dragData: Ref<EventData | null> = ref(null);
 const dragTarget: Ref<EventTarget | null> = ref(null);
 
 /** Store options which need to be preserved **/
-const keepOptions: Record<string, SelectOption> = {};
+const keepOptions: Ref<Record<string, SelectOption>> = ref({});
 
 /**
  * Provides the currently shown source type
@@ -113,27 +113,25 @@ const currentVariant = computed(() => {
  * Converts and populates options for the shown select field
  */
 const formattedOptions = computed(() => {
-    const keepSet = new Set();
     if (currentSource.value && currentSource.value in props.options) {
         // Map incoming values to available options
         const options = props.options[currentSource.value] || [];
-        const result: Array<SelectOption> = options.map((option) => {
+        const result: Array<SelectOption> = [];
+        options.forEach((option) => {
             const newOption = {
                 label: `${option.hid}: ${option.name}`,
                 value: option || null,
             };
             if (option.keep) {
                 const keepKey = `${option.id}_${option.src}`;
-                if (!(keepKey in keepOptions)) {
-                    keepOptions[keepKey] = newOption;
-                    keepSet.add(keepKey);
-                }
+                keepOptions.value[keepKey] = newOption;
+            } else {
+                result.push(newOption);
             }
-            return newOption;
         });
         // Populate keep-options from cache
-        Object.entries(keepOptions).forEach(([key, option]) => {
-            if (!keepSet.has(key) && option.value?.src === currentSource.value) {
+        Object.entries(keepOptions.value).forEach(([key, option]) => {
+            if (option.value?.src === currentSource.value) {
                 result.unshift(option);
             }
         });
@@ -177,6 +175,61 @@ function clearHighlighting(timeout = 1000) {
     }, timeout);
 }
 
+/** Add values from drag/drop or data dialog sources */
+function handleIncoming(incoming: Record<string, unknown>, partial = true) {
+    if (incoming) {
+        const values = Array.isArray(incoming) ? incoming : [incoming];
+        if (values.length > 0) {
+            const incomingValues: Array<DataOption> = [];
+            values.forEach((v) => {
+                // Map incoming objects to data option values
+                v.id = v.element_id || v.id;
+                const newHid = v.hid;
+                const newId = v.id;
+                const newName = v.name ? v.name : newId;
+                const newSrc = v.history_content_type === "dataset_collection" ? "hdca" : "hda";
+                const newValue = {
+                    id: newId,
+                    src: newSrc,
+                    hid: newHid,
+                    name: newName,
+                    keep: true,
+                    tags: [],
+                };
+                // Verify that new value has corresponding option
+                const keepKey = `${newId}_${newSrc}`;
+                const existingOptions = props.options && props.options[newSrc];
+                const foundOption = existingOptions && existingOptions.find((option) => option.id === newId);
+                if (!foundOption && !(keepKey in keepOptions.value)) {
+                    keepOptions.value[keepKey] = { label: `${newHid || "Selected"}: ${newName}`, value: newValue };
+                }
+                // Add new value to list
+                incomingValues.push(newValue);
+            });
+            if (incomingValues.length > 0 && incomingValues[0]) {
+                // Set new value
+                const config = currentVariant.value;
+                const firstValue = incomingValues[0];
+                const firstId = firstValue.id;
+                const firstSrc = firstValue.src;
+                if (config && config.src == firstSrc && partial) {
+                    if (config.multiple) {
+                        const newValues = currentValue.value ? currentValue.value.slice() : [];
+                        incomingValues.forEach((v) => {
+                            newValues.push(v);
+                        });
+                        currentValue.value = newValues;
+                    } else {
+                        currentValue.value = [firstValue];
+                    }
+                } else {
+                    currentValue.value = incomingValues;
+                }
+            }
+        }
+    }
+}
+
 /**
  * Drag/Drop event handlers
  */
@@ -204,10 +257,12 @@ function onDragOver() {
  * Insert the dragged item into the activities list
  */
 function onDrop(evt: MouseEvent) {
-    console.log("DROPPED", dragData.value);
-    currentHighlighting.value = "success";
-    dragData.value = null;
-    clearHighlighting();
+    if (dragData.value) {
+        handleIncoming(dragData.value);
+        currentHighlighting.value = "success";
+        dragData.value = null;
+        clearHighlighting();
+    }
 }
 
 /**
