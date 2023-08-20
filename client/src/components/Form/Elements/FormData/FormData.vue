@@ -10,7 +10,7 @@ import { getGalaxyInstance } from "@/app";
 import { type EventData, useEventStore } from "@/stores/eventStore";
 
 import type { DataOption } from "./types";
-import { BATCH, SOURCE, VARIANTS } from "./variants";
+import { BATCH, VARIANTS } from "./variants";
 
 import FormSelect from "@/components/Form/Elements/FormSelect.vue";
 
@@ -211,9 +211,7 @@ function handleIncoming(incoming: Record<string, unknown>, partial = true) {
                 // Set new value
                 const config = currentVariant.value;
                 const firstValue = incomingValues[0];
-                const firstId = firstValue.id;
-                const firstSrc = firstValue.src;
-                if (config && config.src == firstSrc && partial) {
+                if (config && config.src == firstValue.src && partial) {
                     if (config.multiple) {
                         const newValues = currentValue.value ? currentValue.value.slice() : [];
                         incomingValues.forEach((v) => {
