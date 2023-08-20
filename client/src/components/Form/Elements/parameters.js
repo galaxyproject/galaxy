@@ -5,7 +5,6 @@ import { getGalaxyInstance } from "app";
 import Backbone from "backbone";
 import DataPicker from "mvc/ui/ui-data-picker";
 import Ui from "mvc/ui/ui-misc";
-import SelectContent from "mvc/ui/ui-select-content";
 import SelectFtp from "mvc/ui/ui-select-ftp";
 import SelectLibrary from "mvc/ui/ui-select-library";
 import Utils from "utils/utils";
@@ -17,8 +16,6 @@ export default Backbone.View.extend({
         select: "_fieldSelect",
         data_column: "_fieldSelect",
         genomebuild: "_fieldSelect",
-        data: "_fieldData",
-        data_collection: "_fieldData",
         group_tag: "_fieldSelect",
         library_data: "_fieldLibrary",
         ftpfile: "_fieldFtp",
@@ -45,21 +42,6 @@ export default Backbone.View.extend({
         this.field.value(input_def.value);
         this.setElement(input_def.el || "<div/>");
         this.$el.append(this.field.$el);
-    },
-
-    /** Data input field */
-    _fieldData: function (input_def) {
-        return new SelectContent.View({
-            id: input_def.id,
-            extensions: input_def.extensions,
-            optional: input_def.optional,
-            multiple: input_def.multiple,
-            type: input_def.type,
-            flavor: input_def.flavor,
-            data: input_def.options,
-            tag: input_def.tag,
-            onchange: input_def.onchange,
-        });
     },
 
     /** Select/Checkbox/Radio options field */
