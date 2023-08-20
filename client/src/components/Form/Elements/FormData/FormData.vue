@@ -65,6 +65,9 @@ const dragTarget: Ref<EventTarget | null> = ref(null);
 /** Store options which need to be preserved **/
 const keepOptions: Ref<Record<string, SelectOption>> = ref({});
 
+/** Displays a wait indicator between setting a value and receiving an update */
+const waiting = ref(false);
+
 /**
  * Provides the currently shown source type
  */
@@ -75,6 +78,7 @@ const currentSource = computed(() => currentVariant.value && currentVariant.valu
  */
 const currentValue = computed({
     get: () => {
+        waiting.value = false;
         const value: Array<DataOption> = [];
         if (props.value) {
             for (const v of props.value.values) {
@@ -95,6 +99,7 @@ const currentValue = computed({
         return null;
     },
     set: (val) => {
+        waiting.value = true;
         setValue(val);
     },
 });
@@ -237,8 +242,8 @@ function handleIncoming(incoming: Record<string, unknown>, partial = true) {
  */
 function onBrowse() {
     if (variant.value) {
-        const library = variant.value.find((v) => v.library);
-        const multiple = variant.value.find((v) => v.multiple);
+        const library = !!variant.value.find((v) => v.library);
+        const multiple = !!variant.value.find((v) => v.multiple);
         getGalaxyInstance().data.dialog(
             (response: Record<string, unknown>) => {
                 handleIncoming(response, false);
@@ -339,7 +344,8 @@ watch(
                     <FontAwesomeIcon :icon="['far', v.icon]" />
                 </BButton>
                 <BButton v-b-tooltip.hover.bottom title="Browse or Upload Datasets" @click="onBrowse">
-                    <span class="font-weight-bold">...</span>
+                    <FontAwesomeIcon v-if="waiting" icon="fa-spinner" spin />
+                    <span v-else class="font-weight-bold">...</span>
                 </BButton>
             </BButtonGroup>
             <FormSelect
