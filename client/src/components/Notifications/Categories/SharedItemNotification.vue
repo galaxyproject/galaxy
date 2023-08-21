@@ -8,6 +8,7 @@ import { useNotificationsStore } from "@/stores/notificationsStore";
 import { faExternalLinkAlt, faRetweet } from "@fortawesome/free-solid-svg-icons";
 import NotificationActions from "@/components/Notifications/NotificationActions.vue";
 import type { SharedItemNotification } from "@/components/Notifications";
+import { absPath } from "@/utils/redirect";
 
 library.add(faExternalLinkAlt, faRetweet);
 
@@ -41,9 +42,12 @@ const notificationVariant = computed(() => {
     }
 });
 
-function onClick(link: string) {
+const sharedItemUrl = computed(() => {
+    return absPath(content.value.slug);
+});
+
+function markNotificationAsSeen() {
     notificationsStore.updateNotification(props.notification, { seen: true });
-    window.open(link, "_blank");
 }
 </script>
 
@@ -65,7 +69,9 @@ function onClick(link: string) {
                     v-b-tooltip.bottom
                     :title="`View ${content.item_type} in new tab`"
                     class="text-primary"
-                    @click="onClick(content.slug)">
+                    :href="sharedItemUrl"
+                    target="_blank"
+                    @click="markNotificationAsSeen()">
                     {{ content.item_name }}
                     <FontAwesomeIcon icon="external-link-alt" />
                 </b-link>
