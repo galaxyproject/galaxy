@@ -45,7 +45,7 @@ const props = withDefaults(
     }
 );
 
-const eventHub = new Vue();
+const eventBus = new Vue();
 
 const eventStore = useEventStore();
 
@@ -85,7 +85,7 @@ const currentSource = computed(() => currentVariant.value && currentVariant.valu
  */
 const currentValue = computed({
     get: () => {
-        eventHub.$emit("waiting", false);
+        eventBus.$emit("waiting", false);
         const value: Array<DataOption> = [];
         if (props.value) {
             for (const v of props.value.values) {
@@ -106,7 +106,7 @@ const currentValue = computed({
         return null;
     },
     set: (val) => {
-        eventHub.$emit("waiting", true);
+        eventBus.$emit("waiting", true);
         setValue(val);
     },
 });
@@ -308,6 +308,17 @@ function setValue(val: Array<DataOption> | DataOption | null) {
     if (val) {
         const values = Array.isArray(val) ? val : [val];
         const hasMapOverType = values.find((entry) => !!entry.map_over_type);
+        // Match field type
+        if (currentVariant.value && variant.value && values.length > 0 && values[0]) {
+            const multiple = values.length > 1;
+            const src = values[0].src;
+            // Only match field type if source differs from current field
+            if (src !== currentVariant.value.src) {
+                const filteredVariant = variant.value.findIndex((v) => v.multiple === multiple && v.src === src);
+                currentField.value = Math.max(filteredVariant, 0);
+            }
+        }
+        // Emit new value
         $emit("input", {
             batch: batchMode !== BATCH.DISABLED || hasMapOverType,
             product: batchMode === BATCH.ENABLED && !currentLinked.value,
@@ -323,7 +334,7 @@ function setValue(val: Array<DataOption> | DataOption | null) {
 }
 
 onMounted(() => {
-    eventHub.$on("waiting", (value: boolean) => {
+    eventBus.$on("waiting", (value: boolean) => {
         waiting.value = value;
     });
 });
