@@ -2272,7 +2272,7 @@ class DataToolParameter(BaseDataToolParameter):
             # For consistency, should these just always be in the dict?
             d["min"] = self.min
             d["max"] = self.max
-        d["options"] = {"hda": [], "hdca": []}
+        d["options"] = {"dce": [], "hda": [], "hdca": []}
         d["tag"] = self.tag
 
         # return dictionary without options if context is unavailable
@@ -2300,16 +2300,11 @@ class DataToolParameter(BaseDataToolParameter):
             return list.append(value)
 
         def append_dce(dce):
-            if dce.hda:
-                # well this isn't good, but what's the alternative ?
-                # we should be precise about what we're (re-)running here.
-                key = "hda"
-            else:
-                key = "hdca"
-            d["options"][key].append(
+            d["options"]["dce"].append(
                 {
                     "id": trans.security.encode_id(dce.id),
                     "name": dce.element_identifier,
+                    "hda": dce.hda,
                     "src": "dce",
                     "tags": [],
                     "keep": True,

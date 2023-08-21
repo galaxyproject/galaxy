@@ -256,6 +256,20 @@ function handleIncoming(incoming: Record<string, unknown>, partial = true) {
 }
 
 /**
+ * Matches entries to available options
+ */
+function matchName(entry: DataOption) {
+    if ("src" in entry && entry.src) {
+        const options = props.options[entry.src] || [];
+        const option = options.find((v) => v.id === entry.id && v.src === entry.src);
+        if (option) {
+            return option.name;
+        }
+    }
+    return entry.id;
+}
+
+/**
  * Open file dialog
  */
 function onBrowse() {
@@ -368,9 +382,10 @@ watch(
         @dragleave.prevent="onDragLeave"
         @dragover.prevent="onDragOver"
         @drop.prevent="onDrop">
-        <b-alert v-if="isDCE" variant="info" show>
-            <div v-for="v of props.value.values" :key="v.id">
-                {{ v }}
+        <b-alert v-if="isDCE" variant="info" dismissible show @dismissed="currentValue = null">
+            <span v-localize class="font-weight-bold">Using the following datasets (dismiss to reset):</span>
+            <div v-for="(v, vIndex) of props.value.values" :key="vIndex">
+                <span class="form-data-entry-label ml-2">{{ vIndex + 1 }}. {{ matchName(v) || v.id }}</span>
             </div>
         </b-alert>
         <div v-else>
