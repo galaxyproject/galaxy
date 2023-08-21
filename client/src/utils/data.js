@@ -1,13 +1,14 @@
 import { getGalaxyInstance } from "app";
 import axios from "axios";
 import { FilesDialog } from "components/FilesDialog";
-import { uploadModelsToPayload } from "components/Upload/helpers";
 import { useGlobalUploadModal } from "composables/globalUploadModal";
 import $ from "jquery";
 import { getAppRoot } from "onload/loadConfig";
 import { rewatchHistory } from "store/historyStore/model/watchHistory";
-import { submitUpload } from "utils/uploadbox";
 import Vue from "vue";
+
+import { uploadPayload } from "@/utils/upload-payload.js";
+import { uploadSubmit } from "@/utils/upload-submit.js";
 
 import DataDialog from "components/DataDialog/DataDialog.vue";
 import DatasetCollectionDialog from "components/SelectionDialog/DatasetCollectionDialog.vue";
@@ -95,8 +96,7 @@ export function create(options) {
         return options.history_id;
     }
     getHistory().then((history_id) => {
-        submitUpload({
-            url: `${getAppRoot()}api/tools/fetch`,
+        uploadSubmit({
             success: (response) => {
                 refreshContentsWrapper();
                 if (options.success) {
@@ -105,7 +105,7 @@ export function create(options) {
             },
             error: options.error,
             data: {
-                payload: uploadModelsToPayload([options], history_id),
+                payload: uploadPayload([options], history_id),
             },
         });
     });

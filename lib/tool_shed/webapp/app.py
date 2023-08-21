@@ -18,6 +18,7 @@ from galaxy.app import (
 from galaxy.config import configure_logging
 from galaxy.managers.api_keys import ApiKeyManager
 from galaxy.managers.citations import CitationsManager
+from galaxy.managers.dbkeys import GenomeBuilds
 from galaxy.managers.users import UserManager
 from galaxy.model.base import SharedModelMapping
 from galaxy.model.tags import CommunityTagHandler
@@ -27,7 +28,6 @@ from galaxy.quota import (
 )
 from galaxy.security import idencoding
 from galaxy.structured_app import BasicSharedApp
-from galaxy.util.dbkeys import GenomeBuilds
 from galaxy.web_stack import application_stack_instance
 from tool_shed.grids.repository_grid_filter_manager import RepositoryGridFilterManager
 from tool_shed.structured_app import ToolShedApp
@@ -80,7 +80,7 @@ class UniverseApplication(ToolShedApp, SentryClientMixin, HaltableContainer):
         self._register_singleton(SharedModelMapping, model)
         self._register_singleton(mapping.ToolShedModelMapping, model)
         self._register_singleton(scoped_session, self.model.context)
-        self.user_manager = self._register_singleton(UserManager, UserManager)
+        self.user_manager = self._register_singleton(UserManager, UserManager(self, app_type="tool_shed"))
         self.api_keys_manager = self._register_singleton(ApiKeyManager)
         # initialize the Tool Shed tag handler.
         self.tag_handler = CommunityTagHandler(self)

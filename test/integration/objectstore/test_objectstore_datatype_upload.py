@@ -126,7 +126,7 @@ class BaseObjectstoreUploadTest(UploadTestDatatypeDataTestCase):
         cls.object_stores_parent = temp_directory
         cls.object_store_config_path = os.path.join(temp_directory, "object_store_conf.xml")
         config["metadata_strategy"] = "extended"
-        config["outpus_to_working_dir"] = True
+        config["outputs_to_working_directory"] = True
         config["retry_metadata_internally"] = False
         config["object_store_store_by"] = "uuid"
         with open(cls.object_store_config_path, "w") as f:

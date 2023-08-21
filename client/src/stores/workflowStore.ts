@@ -5,7 +5,8 @@ import { computed, ref, set } from "vue";
 import { getAppRoot } from "@/onload/loadConfig";
 import type { Steps } from "@/stores/workflowStepStore";
 
-interface Workflow {
+export interface Workflow {
+    name: string;
     [index: string]: any;
     steps: Steps;
 }

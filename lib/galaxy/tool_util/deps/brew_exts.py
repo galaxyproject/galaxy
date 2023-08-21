@@ -160,14 +160,14 @@ class CommandLineException(Exception):
         self.stdout = stdout
         self.stderr = stderr
         self.message = (
-            "Failed to execute command-line {}, stderr was:\n"
+            f"Failed to execute command-line {command}, stderr was:\n"
             "-------->>begin stderr<<--------\n"
-            "{}\n"
+            f"{stderr}\n"
             "-------->>end stderr<<--------\n"
             "-------->>begin stdout<<--------\n"
-            "{}\n"
+            f"{stdout}\n"
             "-------->>end stdout<<--------\n"
-        ).format(command, stderr, stdout)
+        )
 
     def __str__(self):
         return self.message

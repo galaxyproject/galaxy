@@ -22,12 +22,12 @@ from galaxy.files.uris import (
     stream_to_file,
     validate_non_local,
 )
+from galaxy.managers.context import ProvidesUserContext
 from galaxy.model import (
     FormDefinition,
     LibraryDataset,
     LibraryFolder,
     Role,
-    tags,
 )
 from galaxy.model.base import transaction
 from galaxy.util import is_url
@@ -261,8 +261,10 @@ def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, tag_h
     return ldda
 
 
-def new_upload(trans, cntrller, uploaded_dataset, library_bunch=None, history=None, state=None, tag_list=None):
-    tag_handler = tags.GalaxyTagHandlerSession(trans.sa_session)
+def new_upload(
+    trans: ProvidesUserContext, cntrller, uploaded_dataset, library_bunch=None, history=None, state=None, tag_list=None
+):
+    tag_handler = trans.tag_handler
     if library_bunch:
         upload_target_dataset_instance = __new_library_upload(
             trans, cntrller, uploaded_dataset, library_bunch, tag_handler, state

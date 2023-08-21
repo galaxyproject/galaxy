@@ -35,7 +35,6 @@ from galaxy.model import (
     ExtendedMetadataIndex,
     HistoryDatasetAssociation,
     LibraryDatasetDatasetAssociation,
-    tags,
 )
 from galaxy.model.base import transaction
 from galaxy.model.item_attrs import UsesAnnotations
@@ -301,9 +300,6 @@ class JSAppLauncher(BaseUIController):
             "enable_webhooks": True if trans.app.webhooks_registry.webhooks else False,
             "message_box_visible": trans.app.config.message_box_visible,
             "show_inactivity_warning": trans.app.config.user_activation_on and trans.user and not trans.user.active,
-            "tool_shed_urls": list(trans.app.tool_shed_registry.tool_sheds.values())
-            if trans.app.tool_shed_registry
-            else [],
             "tool_dynamic_configs": list(trans.app.toolbox.dynamic_conf_filenames()),
         }
 
@@ -1389,9 +1385,6 @@ class SharableMixin:
 
 
 class UsesTagsMixin(SharableItemSecurityMixin):
-    def get_tag_handler(self, trans) -> tags.GalaxyTagHandler:
-        return trans.app.tag_handler
-
     def _get_user_tags(self, trans, item_class_name, id):
         user = trans.user
         tagged_item = self._get_tagged_item(trans, item_class_name, id)
@@ -1407,7 +1400,7 @@ class UsesTagsMixin(SharableItemSecurityMixin):
         """Remove a tag from an item."""
         user = trans.user
         tagged_item = self._get_tagged_item(trans, item_class_name, id)
-        deleted = tagged_item and self.get_tag_handler(trans).remove_item_tag(trans, user, tagged_item, tag_name)
+        deleted = tagged_item and trans.tag_handler.remove_item_tag(user, tagged_item, tag_name)
         with transaction(trans.sa_session):
             trans.sa_session.commit()
         return deleted
@@ -1415,7 +1408,7 @@ class UsesTagsMixin(SharableItemSecurityMixin):
     def _apply_item_tag(self, trans, item_class_name, id, tag_name, tag_value=None):
         user = trans.user
         tagged_item = self._get_tagged_item(trans, item_class_name, id)
-        tag_assoc = self.get_tag_handler(trans).apply_item_tag(user, tagged_item, tag_name, tag_value)
+        tag_assoc = trans.tag_handler.apply_item_tag(user, tagged_item, tag_name, tag_value)
         with transaction(trans.sa_session):
             trans.sa_session.commit()
         return tag_assoc
@@ -1424,11 +1417,10 @@ class UsesTagsMixin(SharableItemSecurityMixin):
         user = trans.user
         tagged_item = self._get_tagged_item(trans, item_class_name, id)
         log.debug(f"In get_item_tag_assoc with tagged_item {tagged_item}")
-        return self.get_tag_handler(trans)._get_item_tag_assoc(user, tagged_item, tag_name)
+        return trans.tag_handler._get_item_tag_assoc(user, tagged_item, tag_name)
 
     def set_tags_from_list(self, trans, item, new_tags_list, user=None):
-        tag_handler = tags.GalaxyTagHandler(trans.app.model.context)
-        return tag_handler.set_tags_from_list(user, item, new_tags_list)
+        return trans.tag_handler.set_tags_from_list(user, item, new_tags_list)
 
     def get_user_tags_used(self, trans, user=None):
         """
@@ -1444,7 +1436,7 @@ class UsesTagsMixin(SharableItemSecurityMixin):
             return []
 
         # get all the taggable model TagAssociations
-        tag_models = [v.tag_assoc_class for v in trans.app.tag_handler.item_tag_assoc_info.values()]
+        tag_models = [v.tag_assoc_class for v in trans.tag_handler.item_tag_assoc_info.values()]
         # create a union of subqueries for each for this user - getting only the tname and user_value
         all_tags_query = None
         for tag_model in tag_models:

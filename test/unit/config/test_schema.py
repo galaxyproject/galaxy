@@ -60,10 +60,10 @@ def test_schema_is_loaded(monkeypatch):
     assert schema.defaults["property5"] is None
     assert schema.defaults["property6"] is None
 
-    assert type(schema.defaults["property1"]) is str
-    assert type(schema.defaults["property2"]) is int
-    assert type(schema.defaults["property3"]) is float
-    assert type(schema.defaults["property4"]) is bool
+    assert isinstance(schema.defaults["property1"], str)
+    assert isinstance(schema.defaults["property2"], int)
+    assert isinstance(schema.defaults["property3"], float)
+    assert isinstance(schema.defaults["property4"], bool)
 
     assert len(schema.reloadable_options) == 2
     assert "property2" in schema.reloadable_options

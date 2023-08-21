@@ -1,35 +1,30 @@
 <script setup>
 import { useConfig } from "composables/config";
 import { useUserHistories } from "composables/userHistories";
-import { getAppRoot } from "onload";
 import { storeToRefs } from "pinia";
 import { ref, watch } from "vue";
 
 import { useUserStore } from "@/stores/userStore";
 import { wait } from "@/utils/utils";
 
-import UploadModalContent from "./UploadModalContent";
+import UploadContainer from "./UploadContainer.vue";
 
 const { currentUser } = storeToRefs(useUserStore());
 const { currentHistoryId } = useUserHistories(currentUser);
 
-const { config, isLoaded } = useConfig();
+const { config, isConfigLoaded } = useConfig();
 
 function getDefaultOptions() {
     const baseOptions = {
         title: "Upload from Disk or Web",
         modalStatic: true,
         callback: null,
-        multiple: true,
-        selectable: false,
-        uploadPath: "",
         immediateUpload: false,
         immediateFiles: null,
     };
 
-    const configOptions = isLoaded.value
+    const configOptions = isConfigLoaded.value
         ? {
-              uploadPath: config.value.nginx_upload_path ?? `${getAppRoot()}api/tools`,
               chunkUploadSize: config.value.chunk_upload_size,
               fileSourcesConfigured: config.value.file_sources_configured,
               ftpUploadSite: config.value.ftp_upload_site,
@@ -37,7 +32,6 @@ function getDefaultOptions() {
               defaultExtension: config.value.default_extension,
           }
         : {};
-
     return { ...baseOptions, ...configOptions };
 }
 
@@ -49,24 +43,26 @@ function dismiss(result) {
     if (result && options.value.callback) {
         options.value.callback(result);
     }
-
     showModal.value = false;
 }
 
 async function open(overrideOptions) {
     const newOptions = overrideOptions ?? {};
-
     options.value = { ...getDefaultOptions(), ...newOptions };
-
     if (options.value.callback) {
         options.value.hasCallback = true;
     }
-
     showModal.value = true;
     await wait(100);
-
     if (options.value.immediateUpload) {
         content.value.immediateUpload(options.value.immediateFiles);
+    }
+}
+
+function setIframeEvents(disableEvents) {
+    const element = document.getElementById("galaxy_main");
+    if (element) {
+        element.style["pointer-events"] = disableEvents ? "none" : "auto";
     }
 }
 
@@ -74,14 +70,6 @@ watch(
     () => showModal.value,
     (modalShown) => setIframeEvents(modalShown)
 );
-
-function setIframeEvents(disableEvents) {
-    const element = document.getElementById("galaxy_main");
-
-    if (element) {
-        element.style["pointer-events"] = disableEvents ? "none" : "auto";
-    }
-}
 
 defineExpose({
     open,
@@ -101,8 +89,7 @@ defineExpose({
         <template v-slot:modal-header>
             <h2 class="title h-sm" tabindex="0">{{ options.title }}</h2>
         </template>
-
-        <UploadModalContent
+        <UploadContainer
             v-if="currentHistoryId"
             ref="content"
             :key="showModal"
@@ -112,3 +99,14 @@ defineExpose({
             @dismiss="dismiss" />
     </b-modal>
 </template>
+
+<style>
+.upload-dialog {
+    width: 900px;
+}
+
+.upload-dialog-body {
+    height: 500px;
+    overflow: hidden;
+}
+</style>

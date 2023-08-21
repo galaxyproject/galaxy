@@ -12,7 +12,7 @@ import mountTarget from "./ActivityBar.vue";
 jest.mock("composables/config");
 useConfig.mockReturnValue({
     config: {},
-    isLoaded: true,
+    isConfigLoaded: true,
 });
 
 jest.mock("vue-router/composables", () => ({

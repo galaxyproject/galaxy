@@ -138,8 +138,9 @@ $ui-margin-horizontal-large: $margin-v * 2;
         }
         .portlet-operations {
             button {
-                @extend .ml-1;
-                @extend .py-0;
+                margin-left: 0.25rem;
+                padding-top: 0;
+                padding-bottom: 0;
             }
         }
     }
@@ -171,7 +172,11 @@ $ui-margin-horizontal-large: $margin-v * 2;
     @extend .mb-2;
     border: none;
     border-left: solid 3px $portlet-bg-color;
-    border-radius: $border-radius-large;
+    border-radius: $border-radius-large $border-radius-large $border-radius-large 0;
+    &:focus-within {
+        border-left: solid 3px $portlet-focus-color;
+    }
+
     .portlet-header:first-child {
         @extend .rounded-0;
         @extend .p-2;
@@ -439,4 +444,19 @@ $ui-margin-horizontal-large: $margin-v * 2;
 
 .overflow-x-hidden {
     overflow-x: hidden !important;
+}
+
+// TODO: move this to component library, once that exists
+.inline-icon-button {
+    border: none;
+    background-color: transparent;
+    color: $brand-primary;
+    display: inline;
+
+    padding: 0 0.1rem;
+
+    &:hover {
+        background-color: $brand-primary;
+        color: $brand-light;
+    }
 }

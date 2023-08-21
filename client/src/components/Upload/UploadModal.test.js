@@ -2,18 +2,25 @@ import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import { createPinia } from "pinia";
-import { configStore } from "store/configStore";
 import { useHistoryStore } from "stores/historyStore";
 import { useUserStore } from "stores/userStore";
-import { getLocalVue, mockModule } from "tests/jest/helpers";
-import Vuex from "vuex";
+import { getLocalVue } from "tests/jest/helpers";
 
-import { getDatatypes, getGenomes } from "./services";
-import UploadModal from "./UploadModal";
-import UploadModalContent from "./UploadModalContent";
+import { getDatatypes, getDbKeys } from "./services";
+
+import UploadContainer from "./UploadContainer.vue";
+import UploadModal from "./UploadModal.vue";
 
 jest.mock("app");
 jest.mock("./services");
+jest.mock("@/schema");
+
+jest.mock("@/composables/config", () => ({
+    useConfig: jest.fn(() => ({
+        config: {},
+        isConfigLoaded: true,
+    })),
+}));
 
 const fastaResponse = {
     description_url: "https://wiki.galaxyproject.org/Learn/Datatypes#Fasta",
@@ -30,20 +37,11 @@ const genomesResponse = [
 ];
 
 getDatatypes.mockReturnValue({ data: [fastaResponse] });
-getGenomes.mockReturnValue({ data: genomesResponse });
+getDbKeys.mockReturnValue({ data: genomesResponse });
 
 const propsData = {
     chunkUploadSize: 1024,
-    uploadPath: "/api/tools",
     fileSourcesConfigured: true,
-};
-
-const createStore = () => {
-    return new Vuex.Store({
-        modules: {
-            config: mockModule(configStore, { config: {} }),
-        },
-    });
 };
 
 describe("UploadModal.vue", () => {
@@ -58,11 +56,8 @@ describe("UploadModal.vue", () => {
 
         const localVue = getLocalVue();
         const pinia = createPinia();
-        const store = createStore();
 
         wrapper = mount(UploadModal, {
-            store,
-            provide: { store },
             propsData,
             localVue,
             stubs: {
@@ -91,14 +86,13 @@ describe("UploadModal.vue", () => {
     });
 
     it("should load with correct defaults", async () => {
-        const contentWrapper = wrapper.findComponent(UploadModalContent);
+        const contentWrapper = wrapper.findComponent(UploadContainer);
         expect(contentWrapper.vm.auto.id).toBe("auto");
         expect(contentWrapper.vm.datatypesDisableAuto).toBe(false);
     });
 
     it("should fetch datatypes and parse them", async () => {
-        // lists are one layer deeper now, it won't matter after refactoring
-        const contentWrapper = wrapper.findComponent(UploadModalContent);
+        const contentWrapper = wrapper.findComponent(UploadContainer);
         expect(contentWrapper.exists()).toBe(true);
         expect(contentWrapper.vm.listExtensions.length).toBe(2);
         expect(contentWrapper.vm.listExtensions[0].id).toBe("auto");
@@ -106,8 +100,7 @@ describe("UploadModal.vue", () => {
     });
 
     it("should fetch genomes and parse them", async () => {
-        // lists are one yaer deeper now, it won't matter after refactoring
-        const contentWrapper = wrapper.findComponent(UploadModalContent);
-        expect(contentWrapper.vm.listGenomes.length).toBe(3);
+        const contentWrapper = wrapper.findComponent(UploadContainer);
+        expect(contentWrapper.vm.listDbKeys.length).toBe(3);
     });
 });

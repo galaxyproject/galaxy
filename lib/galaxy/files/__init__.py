@@ -1,25 +1,31 @@
 import logging
 import os
-from collections import (
-    defaultdict,
-    namedtuple,
-)
+from collections import defaultdict
 from typing import (
     Any,
     Dict,
     List,
+    NamedTuple,
     Optional,
     Set,
 )
 
 from galaxy import exceptions
+from galaxy.files.sources import BaseFilesSource
 from galaxy.util import plugin_config
 from galaxy.util.dictifiable import Dictifiable
 
 log = logging.getLogger(__name__)
 
-FileSourcePath = namedtuple("FileSourcePath", ["file_source", "path"])
-FileSourceScore = namedtuple("FileSourceScore", ["file_source", "score"])
+
+class FileSourcePath(NamedTuple):
+    file_source: BaseFilesSource
+    path: str
+
+
+class FileSourceScore(NamedTuple):
+    file_source: BaseFilesSource
+    score: int
 
 
 class NoMatchingFileSource(Exception):

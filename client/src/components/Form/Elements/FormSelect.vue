@@ -3,6 +3,7 @@ import { computed, type ComputedRef, onMounted, watch } from "vue";
 import Multiselect from "vue-multiselect";
 
 import { useMultiselect } from "@/composables/useMultiselect";
+import { uid } from "@/utils/utils";
 
 type SelectValue = string | number | null;
 const { ariaExpanded, onOpen, onClose } = useMultiselect();
@@ -14,12 +15,14 @@ interface SelectOption {
 
 const props = withDefaults(
     defineProps<{
+        id?: string;
         multiple?: boolean;
         optional?: boolean;
         options: Array<[string, SelectValue]>;
         value?: Array<SelectValue> | string | number;
     }>(),
     {
+        id: `form-select-${uid()}`,
         multiple: false,
         optional: false,
         value: null,
@@ -143,6 +146,7 @@ onMounted(() => {
 <template>
     <Multiselect
         v-if="hasOptions"
+        :id="id"
         v-model="currentValue"
         :allow-empty="true"
         :class="['form-select', cls]"

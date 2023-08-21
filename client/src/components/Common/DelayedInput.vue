@@ -13,7 +13,7 @@
         <b-input-group-append>
             <b-button
                 v-if="enableAdvanced"
-                v-b-tooltip.hover
+                v-b-tooltip.hover.noninteractive
                 aria-haspopup="true"
                 size="sm"
                 :pressed="showAdvanced"
@@ -25,7 +25,7 @@
                 <icon v-else fixed-width icon="angle-double-down" />
             </b-button>
             <b-button
-                v-b-tooltip.hover
+                v-b-tooltip.hover.noninteractive
                 aria-haspopup="true"
                 class="search-clear"
                 size="sm"

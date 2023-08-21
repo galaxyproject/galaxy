@@ -86,7 +86,7 @@ class CloudManager(sharable.SharableModelManager):
             if len(missing_credentials) > 0:
                 raise RequestParameterMissingException(
                     "The following required key(s) are missing from the provided "
-                    "credentials object: {}".format(missing_credentials)
+                    f"credentials object: {missing_credentials}"
                 )
             session_token = credentials.get("SessionToken")
             config = {"aws_access_key": access, "aws_secret_key": secret, "aws_session_token": session_token}
@@ -107,7 +107,7 @@ class CloudManager(sharable.SharableModelManager):
             if len(missing_credentials) > 0:
                 raise RequestParameterMissingException(
                     "The following required key(s) are missing from the provided "
-                    "credentials object: {}".format(missing_credentials)
+                    f"credentials object: {missing_credentials}"
                 )
 
             config = {
@@ -145,7 +145,7 @@ class CloudManager(sharable.SharableModelManager):
             if len(missing_credentials) > 0:
                 raise RequestParameterMissingException(
                     "The following required key(s) are missing from the provided "
-                    "credentials object: {}".format(missing_credentials)
+                    f"credentials object: {missing_credentials}"
                 )
             config = {
                 "os_username": username,
@@ -161,8 +161,8 @@ class CloudManager(sharable.SharableModelManager):
             connection = CloudProviderFactory().create_provider(ProviderList.GCP, config)
         else:
             raise RequestParameterInvalidException(
-                "Unrecognized provider '{}'; the following are the supported "
-                "providers: {}.".format(provider, SUPPORTED_PROVIDERS.keys())
+                f"Unrecognized provider '{provider}'; the following are the supported "
+                f"providers: {SUPPORTED_PROVIDERS.keys()}."
             )
 
         # The authorization-assertion mechanism of Cloudbridge assumes a user has an elevated privileges,

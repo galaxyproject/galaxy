@@ -39,12 +39,12 @@ steps:
         https://raw.githubusercontent.com/bgruening/galaxytools/adf077b912ddebd97b07b947b855cdd2862ed8ef/tools/statistics/test-data/anderson.tabular
 
     - title: "Start the upload"
-      element: "#btn-start"
+      component: upload.start_button
       intro: "Upload the data into your Galaxy history."
       postclick: true
 
     - title: "Close upload/download manager"
-      element: "#btn-close"
+      component: upload.close_button
       intro: "Close the upload manager with this button or with a click outside of the manager window."
       postclick: true
 

@@ -12,6 +12,7 @@ from galaxy.datatypes.registry import Registry
 from galaxy.files import ConfiguredFileSources
 from galaxy.job_execution.compute_environment import SharedComputeEnvironment
 from galaxy.job_execution.setup import JobIO
+from galaxy.managers.dbkeys import GenomeBuilds
 from galaxy.metadata.set_metadata import (
     get_metadata_params,
     get_object_store,
@@ -30,7 +31,6 @@ from galaxy.tools.data import (
     ToolDataTableManager,
 )
 from galaxy.util.bunch import Bunch
-from galaxy.util.dbkeys import GenomeBuilds
 
 
 class ToolAppConfig(NamedTuple):

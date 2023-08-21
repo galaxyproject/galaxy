@@ -8,13 +8,13 @@ from .test_extended_metadata import (
 
 
 class ExtendedMetadataOutputsToWorkingDirIntegrationInstance(ExtendedMetadataIntegrationInstance):
-    """Describe a Galaxy test instance with metadata_strategy set to extended and outputs_to_working_dir set."""
+    """Describe a Galaxy test instance with metadata_strategy set to extended and outputs_to_working_directory set."""
 
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         config["metadata_strategy"] = "extended"
         config["object_store_store_by"] = "uuid"
-        config["outpus_to_working_dir"] = True
+        config["outputs_to_working_directory"] = True
         config["retry_metadata_internally"] = False
 
 

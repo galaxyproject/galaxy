@@ -544,7 +544,7 @@ def pretty_print_time_interval(time=False, precise=False, utc=False):
         now = datetime.utcnow()
     else:
         now = datetime.now()
-    if type(time) is int:
+    if isinstance(time, (int, float)):
         diff = now - datetime.fromtimestamp(time)
     elif isinstance(time, datetime):
         diff = now - time

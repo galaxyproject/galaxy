@@ -17,7 +17,7 @@ steps:
       postclick: true
 
     - title: "'Upload' Your Data"
-      component: upload.paste_new
+      component: upload.create_button
       intro: Copy and paste data directly into Galaxy or include URLs that lead to your data
       preclick: true
 
@@ -38,16 +38,16 @@ steps:
       postclick: true
 
     - title: Close Settings
-      element: .popover-close
+      element: .popper-close
       postclick: true
 
     - title: Start Upload
-      component: upload.start_uploading
+      component: upload.start_button
       intro: Click the start button to begin the process of 'uploading' your deferred dataset.
       postclick: true
 
     - title: Close Upload
-      component: upload.close
+      component: upload.close_button
       intro: Hit the close button to close the upload dialog.
       postclick: true
 

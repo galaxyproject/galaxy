@@ -269,7 +269,7 @@ steps:
         tool_node = editor.node._(label="tool_exec")
         tool_input = tool_node.input_terminal(name="inttest")
         self.hover_over(tool_input.wait_for_visible())
-        editor.connector_destroy_callout.wait_for_and_click()
+        tool_node.connector_destroy_callout(name="inttest").wait_for_and_click()
         self.assert_not_connected("input_int#output", "tool_exec#inttest")
         self.screenshot("workflow_editor_parameter_connection_destroyed")
 
@@ -352,9 +352,9 @@ steps:
         cat_node = editor.node._(label="first_cat")
         cat_input = cat_node.input_terminal(name="input1")
         self.hover_over(cat_input.wait_for_visible())
-        editor.connector_destroy_callout.wait_for_visible()
+        cat_node.connector_destroy_callout(name="input1").wait_for_visible()
         self.screenshot("workflow_editor_connection_callout")
-        editor.connector_destroy_callout.wait_for_and_click()
+        cat_node.connector_destroy_callout(name="input1").wait_for_and_click()
         self.assert_not_connected("input1#output", "first_cat#input1")
         self.screenshot("workflow_editor_connection_destroyed")
 
@@ -1181,7 +1181,7 @@ steps:
         sink_node = editor.node._(label=sink_node_label)
         sink_input = sink_node.input_terminal(name=sink_input_name).wait_for_visible()
         self.hover_over(sink_input)
-        editor.connector_destroy_callout.wait_for_and_click()
+        sink_node.connector_destroy_callout(name=sink_input_name).wait_for_and_click()
 
     def assert_input_mapped(self, sink):
         editor = self.components.workflow_editor

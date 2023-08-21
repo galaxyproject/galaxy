@@ -183,7 +183,7 @@ class LibraryContentsController(
             rval["parent_library_id"] = trans.security.encode_id(rval["parent_library_id"])
 
             tag_manager = tags.GalaxyTagHandler(trans.sa_session)
-            rval["tags"] = tag_manager.get_tags_str(content.library_dataset_dataset_association.tags)
+            rval["tags"] = tag_manager.get_tags_list(content.library_dataset_dataset_association.tags)
         return rval
 
     @expose_api
@@ -371,9 +371,9 @@ class LibraryContentsController(
                 trans, folder_id=folder.id, replace_dataset=replace_dataset, **kwd
             )
             if created_outputs_dict:
-                if type(created_outputs_dict) == str:
+                if isinstance(created_outputs_dict, str):
                     return 400, created_outputs_dict
-                elif type(created_outputs_dict) == tuple:
+                elif isinstance(created_outputs_dict, tuple):
                     return created_outputs_dict[0], created_outputs_dict[1]
                 return 200, created_outputs_dict
             else:

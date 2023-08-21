@@ -1,6 +1,6 @@
 import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
-import { PiniaVuePlugin } from "pinia";
+import { PiniaVuePlugin, setActivePinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
@@ -88,6 +88,9 @@ describe("Lint", () => {
     let stepStore;
 
     beforeEach(() => {
+        const pinia = createTestingPinia({ stubActions: false });
+        setActivePinia(pinia);
+
         wrapper = mount(Lint, {
             propsData: {
                 untypedParameters: getUntypedWorkflowParameters(steps),
@@ -98,9 +101,11 @@ describe("Lint", () => {
                 datatypesMapper: testDatatypesMapper,
             },
             localVue,
-            pinia: createTestingPinia({ stubActions: false }),
+            pinia,
+            provide: { workflowId: "mock-workflow" },
         });
-        stepStore = useWorkflowStepStore();
+
+        stepStore = useWorkflowStepStore("mock-workflow");
         Object.values(steps).map((step) => stepStore.addStep(step));
     });
 
@@ -131,7 +136,7 @@ describe("Lint", () => {
     });
 
     it("should fire refactor event to extract untyped parameter and remove unlabeled workflows", async () => {
-        wrapper.vm.onRefactor();
+        await wrapper.find(".refactor-button").trigger("click");
         expect(wrapper.emitted().onRefactor.length).toBe(1);
         const actions = wrapper.emitted().onRefactor[0][0];
         expect(actions.length).toBe(2);
@@ -139,9 +144,10 @@ describe("Lint", () => {
         expect(actions[0].name).toBe("untyped_parameter");
         expect(actions[1].action_type).toBe("remove_unlabeled_workflow_outputs");
     });
+
     it("should include connect input action when input disconnected", async () => {
         stepStore.removeStep(0);
-        wrapper.vm.onRefactor();
+        await wrapper.find(".refactor-button").trigger("click");
         expect(wrapper.emitted().onRefactor.length).toBe(1);
         const actions = wrapper.emitted().onRefactor[0][0];
         expect(actions.length).toBe(3);

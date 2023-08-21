@@ -12,7 +12,7 @@ import ExternalLink from "@/components/ExternalLink.vue";
 import License from "@/components/License/License.vue";
 import UtcDate from "@/components/UtcDate.vue";
 
-const { config, isLoaded } = useConfig();
+const { config, isConfigLoaded } = useConfig();
 
 const clientBuildDate = __buildTimestamp__ || new Date().toISOString();
 const apiDocsLink = `${getAppRoot()}api/docs`;
@@ -27,7 +27,7 @@ const versionUserDocumentationUrl = computed(() => {
 </script>
 
 <template>
-    <div v-if="isLoaded" class="about-galaxy">
+    <div v-if="isConfigLoaded" class="about-galaxy">
         <Heading h1 :icon="['gxd', 'galaxyLogo']" size="xl">About This Galaxy</Heading>
         <div>
             <!-- Galaxy version (detailed), with a link to the release notes -->

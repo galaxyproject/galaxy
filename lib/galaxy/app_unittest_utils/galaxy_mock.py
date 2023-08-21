@@ -22,6 +22,7 @@ from galaxy.config_watchers import ConfigWatchers
 from galaxy.job_metrics import JobMetrics
 from galaxy.jobs.manager import NoopManager
 from galaxy.managers.collections import DatasetCollectionManager
+from galaxy.managers.dbkeys import GenomeBuilds
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.histories import HistoryManager
 from galaxy.managers.jobs import JobSearch
@@ -51,7 +52,6 @@ from galaxy.tools.cache import ToolCache
 from galaxy.tools.data import ToolDataTableManager
 from galaxy.util import StructuredExecutionTimer
 from galaxy.util.bunch import Bunch
-from galaxy.util.dbkeys import GenomeBuilds
 from galaxy.web.short_term_storage import (
     ShortTermStorageAllocator,
     ShortTermStorageConfiguration,
@@ -227,7 +227,6 @@ class MockAppConfig(GalaxyDataTestConfig, CommonConfigurationMixin):
 
         # set by MockDir
         self.enable_tool_document_cache = False
-        self.tool_cache_data_dir = os.path.join(self.root, "tool_cache")
         self.delay_tool_initialization = True
         self.external_chown_script = None
         self.check_job_script_integrity = False
@@ -293,8 +292,12 @@ class MockTrans:
         self.security = self.app.security
         self.history = history
 
-        self.request: Any = Bunch(headers={}, body=None)
+        self.request: Any = Bunch(headers={}, body=None, host="request.host")
         self.response: Any = Bunch(headers={}, set_content_type=lambda i: None)
+
+    @property
+    def tag_handler(self):
+        return self.app.tag_handler
 
     def check_csrf_token(self, payload):
         pass

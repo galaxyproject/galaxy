@@ -8,8 +8,9 @@
     <tool file="param_text_option.xml" />
     <tool file="column_param.xml" />
   </section>
-  <tool file="ucsc_tablebrowser.xml" />
-  <tool file="test_data_source.xml" />
+  <tool file="output_format_input.xml"/>
+  <tool file="ucsc_tablebrowser.xml"/>
+  <tool file="test_data_source.xml"/>
   <tool file="simple_constructs.xml" />
   <tool file="color_param.xml" />
   <tool file="inheritance_simple.xml" />
@@ -217,6 +218,7 @@
   <tool file="python_environment_problem.xml" />
   <tool file="config_vars.xml" />
   <tool file="expect_num_outputs.xml" />
+  <tool file="text_repeat.xml" />
 
   <tool file="multiple_versions_v01.xml" />
   <tool file="multiple_versions_v01galaxy6.xml" />
