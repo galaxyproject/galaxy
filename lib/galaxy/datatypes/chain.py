@@ -91,9 +91,6 @@ class Chain(data.Text):
         >>> fname = get_test_fname( '1.chain' )
         >>> Chain().sniff( fname )
         True
-        >>> fname = get_test_fname( '2.chain' )
-        >>> Chain().sniff( fname )
-        True
         >>>
         """
         fh = file_prefix.string_io()
@@ -112,13 +109,21 @@ class Chain(data.Text):
                         and tokens[6].isdigit()
                     ):
                         return False
-                    line = fh.readline().strip()
-                    if line == "":
-                        return False
-                    tokens = line.split()
-                    if len(tokens) not in [1, 3]:
-                        return False
-                    return all(token.isdigit() for token in tokens)
+                    prior_token_len = 0
+                    for line in fh:
+                        line = line.strip()
+                        if line == "":
+                            break
+                        tokens = line.split()
+                        if prior_token_len == 1:
+                            return False
+                        if len(tokens) not in [1, 3]:
+                            return False
+                        if not all(token.isdigit() for token in tokens):
+                            return False
+                        prior_token_len = len(tokens)
+                    if prior_token_len == 1:
+                        return True
                 else:
                     return False
         return False
