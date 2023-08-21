@@ -12,7 +12,7 @@ interface VariantInterface {
 export const BATCH = { DISABLED: "disabled", ENABLED: "enabled", LINKED: "linked" };
 
 /** Data source variations */
-export const SOURCE = { DATASET: "hda", COLLECTION: "hdca" };
+export const SOURCE = { DATASET: "hda", COLLECTION: "hdca", COLLECTION_ELEMENT: "dce" };
 
 /** List of available data input variations */
 export const VARIANTS: Record<string, Array<VariantInterface>> = {

@@ -168,6 +168,17 @@ const formattedOptions = computed(() => {
 });
 
 /**
+ * Dataset collection elements should be treated as plain values.
+ */
+const isDCE = computed(() => {
+    if (props.value) {
+        return props.value.values.findIndex((v) => v.src !== SOURCE.COLLECTION_ELEMENT) === -1;
+    } else {
+        return false;
+    }
+});
+
+/**
  * Provides placeholder label for select field
  */
 const placeholder = computed(() => (currentSource.value === SOURCE.DATASET ? "dataset" : "dataset collection"));
@@ -357,53 +368,64 @@ watch(
         @dragleave.prevent="onDragLeave"
         @dragover.prevent="onDragOver"
         @drop.prevent="onDrop">
-        <div class="d-flex">
-            <BButtonGroup v-if="variant.length > 1" buttons class="align-self-start mr-2">
-                <BButton
-                    v-for="(v, index) in variant"
-                    :key="index"
-                    v-b-tooltip.hover.bottom
-                    :pressed="currentField === index"
-                    :title="v.tooltip"
-                    @click="currentField = index">
-                    <FontAwesomeIcon :icon="['far', v.icon]" />
-                </BButton>
-                <BButton v-if="canBrowse" v-b-tooltip.hover.bottom title="Browse or Upload Datasets" @click="onBrowse">
-                    <FontAwesomeIcon v-if="waiting" icon="fa-spinner" spin />
-                    <span v-else class="font-weight-bold">...</span>
-                </BButton>
-            </BButtonGroup>
-            <FormSelect
-                v-if="currentVariant"
-                v-model="currentValue"
-                class="w-100"
-                :multiple="currentVariant.multiple"
-                :optional="optional"
-                :options="formattedOptions"
-                :placeholder="`Select a ${placeholder}`" />
-        </div>
-        <div v-if="currentVariant.batch !== BATCH.DISABLED">
-            <BFormCheckbox
-                v-if="currentVariant.batch === BATCH.ENABLED"
-                v-model="currentLinked"
-                class="no-highlight my-2"
-                switch>
-                <div v-if="currentLinked">
-                    <FontAwesomeIcon icon="fa-link" />
-                    <b v-localize class="mr-1">Linked:</b>
-                    <span v-localize>Datasets will be run in matched order with other datasets.</span>
+        <b-alert v-if="isDCE" variant="info" show>
+            <div v-for="v of props.value.values" :key="v.id">
+                {{ v }}
+            </div>
+        </b-alert>
+        <div v-else>
+            <div class="d-flex">
+                <BButtonGroup v-if="variant.length > 1" buttons class="align-self-start mr-2">
+                    <BButton
+                        v-for="(v, index) in variant"
+                        :key="index"
+                        v-b-tooltip.hover.bottom
+                        :pressed="currentField === index"
+                        :title="v.tooltip"
+                        @click="currentField = index">
+                        <FontAwesomeIcon :icon="['far', v.icon]" />
+                    </BButton>
+                    <BButton
+                        v-if="canBrowse"
+                        v-b-tooltip.hover.bottom
+                        title="Browse or Upload Datasets"
+                        @click="onBrowse">
+                        <FontAwesomeIcon v-if="waiting" icon="fa-spinner" spin />
+                        <span v-else class="font-weight-bold">...</span>
+                    </BButton>
+                </BButtonGroup>
+                <FormSelect
+                    v-if="currentVariant"
+                    v-model="currentValue"
+                    class="w-100"
+                    :multiple="currentVariant.multiple"
+                    :optional="optional"
+                    :options="formattedOptions"
+                    :placeholder="`Select a ${placeholder}`" />
+            </div>
+            <div v-if="currentVariant.batch !== BATCH.DISABLED">
+                <BFormCheckbox
+                    v-if="currentVariant.batch === BATCH.ENABLED"
+                    v-model="currentLinked"
+                    class="no-highlight my-2"
+                    switch>
+                    <div v-if="currentLinked">
+                        <FontAwesomeIcon icon="fa-link" />
+                        <b v-localize class="mr-1">Linked:</b>
+                        <span v-localize>Datasets will be run in matched order with other datasets.</span>
+                    </div>
+                    <span v-else>
+                        <FontAwesomeIcon icon="fa-unlink" />
+                        <b v-localize class="mr-1">Unlinked:</b>
+                        <span v-localize>Dataset will be run against *all* other datasets.</span>
+                    </span>
+                </BFormCheckbox>
+                <div class="text-info my-2">
+                    <FontAwesomeIcon icon="fa-exclamation" />
+                    <span v-localize class="ml-1">
+                        This is a batch mode input field. Individual jobs will be triggered for each dataset.
+                    </span>
                 </div>
-                <span v-else>
-                    <FontAwesomeIcon icon="fa-unlink" />
-                    <b v-localize class="mr-1">Unlinked:</b>
-                    <span v-localize>Dataset will be run against *all* other datasets.</span>
-                </span>
-            </BFormCheckbox>
-            <div class="text-info my-2">
-                <FontAwesomeIcon icon="fa-exclamation" />
-                <span v-localize class="ml-1">
-                    This is a batch mode input field. Individual jobs will be triggered for each dataset.
-                </span>
             </div>
         </div>
     </div>
