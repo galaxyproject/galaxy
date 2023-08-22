@@ -271,15 +271,23 @@ function handleIncoming(incoming: Record<string, unknown>, partial = true) {
 /**
  * Matches entries to available options
  */
-function matchName(entry: DataOption) {
+function matchOption(entry: DataOption) {
     if ("src" in entry && entry.src) {
         const options = props.options[entry.src] || [];
         const option = options.find((v) => v.id === entry.id && v.src === entry.src);
         if (option) {
-            return option.name;
+            return option;
         }
     }
-    return entry.id;
+    return null;
+}
+
+/**
+ * Matches entry name from available options
+ */
+function matchName(entry: DataOption) {
+    const option = matchOption(entry);
+    return option?.name || entry.id;
 }
 
 /**
@@ -342,30 +350,53 @@ function onDrop(evt: MouseEvent) {
  * Processes and submits values from the select field
  */
 function setValue(val: Array<DataOption> | DataOption | null) {
-    const batchMode = currentVariant.value && currentVariant.value.batch;
     if (val) {
         const values = Array.isArray(val) ? val : [val];
-        const hasMapOverType = values.find((entry) => !!entry.map_over_type);
-        // Match field type
-        if (currentVariant.value && variant.value && values.length > 0 && values[0]) {
+        if (variant.value && values.length > 0 && values[0]) {
             const multiple = values.length > 1;
-            const src = values[0].src;
-            // Only match field type if source differs from current field
-            if (src !== currentVariant.value.src) {
-                const filteredVariant = variant.value.findIndex((v) => v.multiple === multiple && v.src === src);
-                currentField.value = Math.max(filteredVariant, 0);
+
+            // Determine source to match variant and identify batch mode
+            let hasMapOverType: string | null = null;
+            let src: string | null = null;
+            if (isDCE.value) {
+                const option = matchOption(values[0]);
+                if (option) {
+                    hasMapOverType = option.map_over_type || null;
+                    src = option.hda ? "hda" : "hdca";
+                }
+            } else {
+                hasMapOverType = values[0].map_over_type || null;
+                src = values[0].src;
             }
+
+            // identify matching variant
+            const filteredVariant = variant.value.findIndex((v) => v.multiple === multiple && v.src === src);
+
+            // determine batch mode
+            let batch: string | null = null;
+            if (isDCE.value && variant.value[filteredVariant]) {
+                batch = variant.value[filteredVariant]?.batch || null;
+            } else {
+                // Switch to another field type if source differs from current field
+                if (currentVariant.value) {
+                    if (src !== currentVariant.value.src) {
+                        currentField.value = Math.max(filteredVariant, 0);
+                    }
+                }
+                batch = (currentVariant.value && currentVariant.value.batch) || null;
+            }
+
+            // Emit new value
+            $emit("input", {
+                batch: batch !== BATCH.DISABLED || !!hasMapOverType,
+                product: batch === BATCH.ENABLED && !currentLinked.value,
+                values: values.map((entry) => ({
+                    id: entry.id,
+                    src: entry.src,
+                    map_over_type: entry.map_over_type,
+                })),
+            });
         }
-        // Emit new value
-        $emit("input", {
-            batch: batchMode !== BATCH.DISABLED || !!hasMapOverType,
-            product: batchMode === BATCH.ENABLED && !currentLinked.value,
-            values: values.map((entry) => ({
-                id: entry.id,
-                src: entry.src,
-                map_over_type: entry.map_over_type,
-            })),
-        });
     } else {
         $emit("input", null);
     }
@@ -375,7 +406,11 @@ onMounted(() => {
     eventBus.$on("waiting", (value: boolean) => {
         waiting.value = value;
     });
-    !isDCE.value && setValue(currentValue.value);
+    if (isDCE.value && props.value && props.value.values) {
+        setValue(props.value.values);
+    } else {
+        setValue(currentValue.value);
+    }
 });
 
 /**
