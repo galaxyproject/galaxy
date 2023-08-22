@@ -51,7 +51,7 @@ export const VARIANTS: Record<string, Array<VariantInterface>> = {
         {
             src: "hdca",
             icon: "fa-folder",
-            tooltip: "Dataset collections",
+            tooltip: "Dataset collection",
             multiple: true,
             batch: BATCH.DISABLED,
         },
