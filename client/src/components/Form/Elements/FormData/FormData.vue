@@ -167,6 +167,13 @@ const formattedOptions = computed(() => {
                 return 0;
             }
         });
+        // Add optional entry
+        if (!currentVariant.value?.multiple && props.optional) {
+            result.unshift({
+                label: "Nothing selected",
+                value: null,
+            });
+        }
         return result;
     } else {
         return [];
