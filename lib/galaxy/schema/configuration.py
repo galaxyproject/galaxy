@@ -23,7 +23,11 @@ WatchToolOptions = Union[bool, Literal["false", "true", "auto", "polling"]]
 
 
 class ComputedGalaxyConfig(Model):
-    """Contains Galaxy configuration options computed at runtime."""
+    """Contains Galaxy configuration options computed at runtime.
+
+    These values are used to generate the OpenAPI schema and are excluded from the YAML schema
+    of the configuration file.
+    """
 
     lims_doc_url: Annotated[
         Optional[str],
@@ -179,6 +183,15 @@ class AdminOnlyComputedGalaxyConfig(ComputedGalaxyConfig):
     """Contains Galaxy configuration options computed at runtime exposed to admins only."""
 
     is_admin_user: Annotated[Literal[True], IsAdminUserField] = True
+
+    tool_shed_urls: Annotated[
+        List[str],
+        Field(
+            title="Tool Shed Urls",
+            description="""List of Tool Shed URLs to search for tools. This is a list of
+fully qualified URLs (e.g., https://toolshed.g2.bx.psu.edu/).""",
+        ),
+    ] = []
 
 
 class UserOnlyComputedGalaxyConfig(ComputedGalaxyConfig):
