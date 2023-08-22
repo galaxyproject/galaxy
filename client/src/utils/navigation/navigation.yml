@@ -646,7 +646,7 @@ workflow_run:
   selectors:
     warning: ".ui-form-composite .alert-warning"
     input_div: "[step-label='${label}']"
-    input_data_div: "[step-label='${label}'] .select2-container"
+    input_data_div: "[step-label='${label}'] .multiselect"
     # TODO: put step labels in the DOM ideally
     subworkflow_step_icon: ".portlet-title-icon.fa-sitemap"
     run_workflow: "#run-workflow"
