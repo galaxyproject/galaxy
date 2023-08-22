@@ -8,14 +8,68 @@ June 2023 Galaxy Release (v 23.1)
 Highlights
 ===========================================================
 
-**Feature1**
-  Feature description.
+Carbon Emissions Reporting!
+---------------------------
 
-**Feature2**
-  Feature description.
+Stay on top of your carbon emissions contributions by enabling our new reporting
+feature! Initial implementation of carbon emissions reporting has now been added
+to the job information page. Monitor your carbon footprint in real-time and
+become inspired to better your relationship with the environment! Currently,
+this feature assumes global average values for carbon intensity and power usage
+effectiveness.
 
-**Feature3**
-  Feature description.
+History Archival Feature!
+-------------------------
+Your history menu now has a new option move a history out of your active history
+and into an archive! When archiving a history, you will be presented with two
+options: one to “Keep the Storage Space” and one to “Free the Storage Space”
+taken up by the history. Keeping the storage space will keep the contents of the
+history where they are, allowing them to be restored at any moment, but will
+prevent the UI from allowing certain operations on the history. Freeing the
+storage space will prompt you to package and export the history to a permanent
+remote source as a backup snapshot, and then purge the history and its contents
+to free up storage space. There will be a simple list, titles Archived
+Histories, for you to explore your archived histories and restore and reimport
+them, as needed!
+
+Galaxy Notification System!
+---------------------------
+The previous Galaxy notification system has been overhauled to support more
+complex scenarios and features! As users, you will now have more control of your
+notifications, including the option to subscribe/unsubscribe from certain times
+of notifications. The new notification system will also support notification
+broadcasting, allowing the Galaxy team to send server-wide announcements, such
+as User Agreement updates and server maintenance notifications.
+
+Power User Features
+===================
+
+Attention long time Galaxy users! Are you looking to enhance your skills? Check
+out these new features to take your Galaxy skills to the next level!
+
+Visualize HDF5 Datasets!
+------------------------
+
+Users can now visualize their HDF5 datasets directly in Galaxy, thanks to the
+integration of the h5web visualizer (https://h5web.panosc.eu/)!
+
+Create New Activity Bar Items!
+------------------------------
+
+The new option to create activity bar items allows users to drag items,
+including datasets and workflows, from the UI directly into the activity bar
+component! In addition, the context menu has been augmented, now allowing to
+search activities.
+
+Invocations Related to a History!
+---------------------------------
+
+Users now have the option to see invocations related to a specific history in
+Galaxy!
+
+Before:
+
+After:
 
 
 New Visualizations
