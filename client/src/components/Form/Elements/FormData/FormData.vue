@@ -362,7 +362,7 @@ onMounted(() => {
     eventBus.$on("waiting", (value: boolean) => {
         waiting.value = value;
     });
-    setValue(currentValue.value);
+    !isDCE.value && setValue(currentValue.value);
 });
 
 /**
