@@ -345,7 +345,7 @@ function setValue(val: Array<DataOption> | DataOption | null) {
         }
         // Emit new value
         $emit("input", {
-            batch: batchMode !== BATCH.DISABLED || hasMapOverType,
+            batch: batchMode !== BATCH.DISABLED || !!hasMapOverType,
             product: batchMode === BATCH.ENABLED && !currentLinked.value,
             values: values.map((entry) => ({
                 id: entry.id,
@@ -362,6 +362,7 @@ onMounted(() => {
     eventBus.$on("waiting", (value: boolean) => {
         waiting.value = value;
     });
+    setValue(currentValue.value);
 });
 
 /**
