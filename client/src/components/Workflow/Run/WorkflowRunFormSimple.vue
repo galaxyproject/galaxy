@@ -15,20 +15,20 @@
                     <span class="fa fa-cog" />
                 </template>
                 <b-dropdown-form>
-                    <b-form-checkbox v-model="sendToNewHistory" class="workflow-run-settings-target"
-                        >Send results to a new history</b-form-checkbox
-                    >
+                    <b-form-checkbox v-model="sendToNewHistory" class="workflow-run-settings-target">
+                        Send results to a new history
+                    </b-form-checkbox>
                     <b-form-checkbox
                         v-if="reuseAllowed(currentUser)"
                         v-model="useCachedJobs"
-                        title="This may skip executing jobs that you have already run."
-                        >Attempt to re-use jobs with identical parameters?</b-form-checkbox
-                    >
+                        title="This may skip executing jobs that you have already run.">
+                        Attempt to re-use jobs with identical parameters?
+                    </b-form-checkbox>
                     <b-form-checkbox
                         v-if="isConfigLoaded && config.object_store_allows_id_selection"
-                        v-model="splitObjectStore"
-                        >Send outputs and intermediate to different object stores?</b-form-checkbox
-                    >
+                        v-model="splitObjectStore">
+                        Send outputs and intermediate to different object stores?
+                    </b-form-checkbox>
                     <WorkflowStorageConfiguration
                         v-if="isConfigLoaded && config.object_store_allows_id_selection"
                         :split-object-store="splitObjectStore"
@@ -109,18 +109,21 @@ export default {
             });
             // Add actual input modules.
             this.model.steps.forEach((step, i) => {
-                if (!isWorkflowInput(step.step_type)) {
-                    return;
+                if (isWorkflowInput(step.step_type)) {
+                    const stepName = new String(step.step_index);
+                    const stepLabel = step.step_label || new String(step.step_index + 1);
+                    const help = step.annotation;
+                    const longFormInput = step.inputs[0];
+                    const stepAsInput = Object.assign({}, longFormInput, {
+                        name: stepName,
+                        help: help,
+                        label: stepLabel,
+                    });
+                    // disable collection mapping...
+                    stepAsInput.flavor = "module";
+                    inputs.push(stepAsInput);
+                    this.inputTypes[stepName] = step.step_type;
                 }
-                const stepName = new String(step.step_index);
-                const stepLabel = step.step_label || new String(step.step_index + 1);
-                const help = step.annotation;
-                const longFormInput = step.inputs[0];
-                const stepAsInput = Object.assign({}, longFormInput, { name: stepName, help: help, label: stepLabel });
-                // disable collection mapping...
-                stepAsInput.flavor = "module";
-                inputs.push(stepAsInput);
-                this.inputTypes[stepName] = step.step_type;
             });
             return inputs;
         },
