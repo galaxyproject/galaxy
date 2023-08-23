@@ -1,7 +1,6 @@
 /**
     This class creates input elements. New input parameter types should be added to the types dictionary.
 */
-import { getGalaxyInstance } from "app";
 import Backbone from "backbone";
 import DataPicker from "mvc/ui/ui-data-picker";
 import Ui from "mvc/ui/ui-misc";
@@ -13,10 +12,6 @@ import Utils from "utils/utils";
 export default Backbone.View.extend({
     /** Available parameter types */
     types: {
-        select: "_fieldSelect",
-        data_column: "_fieldSelect",
-        genomebuild: "_fieldSelect",
-        group_tag: "_fieldSelect",
         library_data: "_fieldLibrary",
         ftpfile: "_fieldFtp",
         rules: "_fieldRulesEdit",
@@ -33,7 +28,7 @@ export default Backbone.View.extend({
         var fieldClass = this.types[input_def.type];
         this.field = typeof this[fieldClass] === "function" ? this[fieldClass].call(this, input_def) : null;
         if (!this.field) {
-            this.field = input_def.options ? this._fieldSelect(input_def) : this._fieldText(input_def);
+            this.field = this._fieldText(input_def);
             console.debug("form-parameters::_addRow()", `Auto matched field type (${input_def.type}).`);
         }
         if (input_def.value === undefined) {
@@ -42,54 +37,6 @@ export default Backbone.View.extend({
         this.field.value(input_def.value);
         this.setElement(input_def.el || "<div/>");
         this.$el.append(this.field.$el);
-    },
-
-    /** Select/Checkbox/Radio options field */
-    _fieldSelect: function (input_def) {
-        // show text field e.g. in workflow editor
-        if (input_def.is_workflow) {
-            return this._fieldText(input_def);
-        }
-        // customize properties
-        if (input_def.type == "data_column") {
-            input_def.error_text = "Missing columns in referenced dataset.";
-        }
-
-        // pick selection display
-        var classes = {
-            checkboxes: Ui.Checkbox,
-            radio: Ui.Radio,
-            radiobutton: Ui.RadioButton,
-        };
-        var SelectClass = classes[input_def.display] || Ui.Select;
-        // use Select2 fields or regular select fields in workflow launch form?
-        // check select_type_workflow_threshold option
-        const Galaxy = getGalaxyInstance();
-        var searchable = true;
-        if (input_def.flavor == "workflow") {
-            if (Galaxy.config.select_type_workflow_threshold == -1) {
-                searchable = false;
-            } else if (Galaxy.config.select_type_workflow_threshold == 0) {
-                searchable = true;
-            } else if (Galaxy.config.select_type_workflow_threshold < input_def.options.length) {
-                searchable = false;
-            }
-        }
-        return new Ui.TextSelect({
-            id: input_def.id,
-            data: input_def.data,
-            options: input_def.options,
-            display: input_def.display,
-            error_text: input_def.error_text || "No options available",
-            readonly: input_def.readonly,
-            multiple: input_def.multiple,
-            optional: input_def.optional,
-            onchange: input_def.onchange,
-            individual: input_def.individual,
-            searchable: searchable,
-            textable: input_def.textable,
-            SelectClass: SelectClass,
-        });
     },
 
     /** Text input field */
