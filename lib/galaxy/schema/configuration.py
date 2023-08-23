@@ -1977,16 +1977,6 @@ the tool_cache_data_dir attribute.
         ),
     ] = "tool_search_index"
 
-    delay_tool_initialization: Annotated[
-        bool,
-        Field(
-            title="Delay Tool Initialization",
-            description="""Set this to true to delay parsing of tool inputs and outputs until they are needed.
-This results in faster startup times but uses more memory when using forked Galaxy processes.
-""",
-        ),
-    ] = False
-
     biotools_content_directory: Annotated[
         Optional[str],
         Field(
