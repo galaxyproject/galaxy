@@ -200,7 +200,7 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
         error_input1 = self.components.tool_form.parameter_error(parameter="input1").wait_for_visible()
         error_col = self.components.tool_form.parameter_error(parameter="col").wait_for_visible()
         error_col_names = self.components.tool_form.parameter_error(parameter="col_names").wait_for_visible()
-        assert error_input1.text == "parameter 'input1': specify a dataset of the required format / build for parameter"
+        assert error_input1.text == "Please provide a value for this option."
         assert error_col.text == "parameter 'col': requires a value, but no legal values defined"
         assert error_col_names.text == "parameter 'col_names': requires a value, but no legal values defined"
         # validate warnings when inputs are restored
