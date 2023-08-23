@@ -2169,6 +2169,7 @@ export interface components {
             prefer_custos_login?: boolean;
             /**
              * Python Version
+             * @deprecated
              * @description The Python version used by Galaxy as a tuple of integers [mayor, minor].
              */
             python: number[];
@@ -2231,6 +2232,7 @@ export interface components {
             server_mail_configured?: boolean;
             /**
              * Server Start Time
+             * @deprecated
              * @description The time when the Galaxy server was started (seconds since Epoch).
              */
             server_startttime: number;
@@ -2313,6 +2315,13 @@ export interface components {
              * @default https://github.com/galaxyproject/galaxy-test-data/raw/master/tool_recommendation_model_v_0.2.hdf5
              */
             tool_recommendation_model_path?: string;
+            /**
+             * Tool Shed Urls
+             * @description List of Tool Shed URLs to search for tools. This is a list of
+             * fully qualified URLs (e.g., https://toolshed.g2.bx.psu.edu/).
+             * @default []
+             */
+            tool_shed_urls?: string[];
             /**
              * Tool Training Recommendations
              * @description Displays a link to training material, if any includes the current tool.
@@ -10292,6 +10301,7 @@ export interface components {
             prefer_custos_login?: boolean;
             /**
              * Python Version
+             * @deprecated
              * @description The Python version used by Galaxy as a tuple of integers [mayor, minor].
              */
             python: number[];
@@ -10354,6 +10364,7 @@ export interface components {
             server_mail_configured?: boolean;
             /**
              * Server Start Time
+             * @deprecated
              * @description The time when the Galaxy server was started (seconds since Epoch).
              */
             server_startttime: number;
