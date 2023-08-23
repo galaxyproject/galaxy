@@ -425,7 +425,7 @@ onMounted(() => {
  * Watch and set current value if user switches to a different select field
  */
 watch(
-    () => currentVariant.value,
+    () => [currentLinked.value, currentVariant.value],
     () => {
         setValue(currentValue.value);
     }
@@ -480,11 +480,11 @@ watch(
                     v-model="currentLinked"
                     class="no-highlight my-2"
                     switch>
-                    <div v-if="currentLinked">
+                    <span v-if="currentLinked">
                         <FontAwesomeIcon icon="fa-link" />
                         <b v-localize class="mr-1">Linked:</b>
                         <span v-localize>Datasets will be run in matched order with other datasets.</span>
-                    </div>
+                    </span>
                     <span v-else>
                         <FontAwesomeIcon icon="fa-unlink" />
                         <b v-localize class="mr-1">Unlinked:</b>
