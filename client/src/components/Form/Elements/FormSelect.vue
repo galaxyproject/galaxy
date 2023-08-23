@@ -141,5 +141,5 @@ onMounted(() => {
         track-by="value"
         @open="onOpen"
         @close="onClose" />
-    <b-alert v-else v-localize variant="warning" show> No options available. </b-alert>
+    <b-alert v-else v-localize class="w-100" variant="warning" show> No options available. </b-alert>
 </template>
