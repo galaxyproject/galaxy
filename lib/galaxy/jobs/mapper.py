@@ -63,7 +63,7 @@ class JobRunnerMapper:
             module_name = job_config.dynamic_params["rules_module"]
             self.rules_module = importlib.import_module(module_name)
 
-    def __invoke_expand_function(self, expand_function, destination):
+    def __invoke_expand_function(self, expand_function, destination, resource_params_from_job_state=True):
         function_arg_names = getfullargspec(expand_function).args
         app = self.job_wrapper.app
         possible_args = {
@@ -110,7 +110,9 @@ class JobRunnerMapper:
             elif require_db and arg in db_param_mapping:
                 actual_args[arg] = db_param_mapping[arg]
             elif arg == "resource_params":
-                actual_args["resource_params"] = self.job_wrapper.get_resource_parameters(job)
+                actual_args["resource_params"] = (
+                    self.job_wrapper.get_resource_parameters(job) if resource_params_from_job_state else {}
+                )
             elif arg == "workflow_invocation_uuid":
                 param_values = job.raw_param_dict()
                 workflow_invocation_uuid = param_values.get("__workflow_invocation_uuid__", None)
@@ -203,7 +205,23 @@ class JobRunnerMapper:
         return self.__handle_rule(expand_function, destination)
 
     def __handle_rule(self, rule_function, destination):
-        job_destination = self.__invoke_expand_function(rule_function, destination)
+        try:
+            job_destination = self.__invoke_expand_function(rule_function, destination)
+        except Exception as e:
+            # Rules have varying quality and don't raise a consistent set of standard exceptions.
+            # so ... if we get an error here let's try again without resource params encoded
+            # in the job state. They're evil anyway.
+            try:
+                job_destination = self.__invoke_expand_function(
+                    rule_function, destination, resource_params_from_job_state=False
+                )
+            except Exception:
+                # raise original exception, dropping resource param from job state didn't help.
+                raise e
+            else:
+                log.warning(
+                    f"Ignored user-specified invalid resource parameter request because it failed with {str(e)}"
+                )
         if not isinstance(job_destination, galaxy.jobs.JobDestination):
             job_destination_rep = str(job_destination)  # Should be either id or url
             if "://" in job_destination_rep:
@@ -220,11 +238,16 @@ class JobRunnerMapper:
         if raw_job_destination is None:
             raw_job_destination = self.job_wrapper.tool.get_job_destination(params)
         if raw_job_destination.runner == DYNAMIC_RUNNER_NAME:
-            job_destination = self.__handle_dynamic_job_destination(raw_job_destination)
-            log.debug("(%s) Mapped job to destination id: %s", self.job_wrapper.job_id, job_destination.id)
-            # Recursively handle chained dynamic destinations
-            if job_destination.runner == DYNAMIC_RUNNER_NAME:
-                return self.__determine_job_destination(params, raw_job_destination=job_destination)
+            try:
+                job_destination = self.__handle_dynamic_job_destination(raw_job_destination)
+                log.debug("(%s) Mapped job to destination id: %s", self.job_wrapper.job_id, job_destination.id)
+                # Recursively handle chained dynamic destinations
+                if job_destination.runner == DYNAMIC_RUNNER_NAME:
+                    return self.__determine_job_destination(params, raw_job_destination=job_destination)
+            except AssertionError:
+                if params and "job_resource" in params:
+                    params = params.copy()
+                    del params["job_resource"]
         else:
             job_destination = raw_job_destination
             log.debug("(%s) Mapped job to destination id: %s", self.job_wrapper.job_id, job_destination.id)
