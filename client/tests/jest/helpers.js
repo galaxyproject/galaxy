@@ -15,6 +15,12 @@ import { PiniaVuePlugin } from "pinia";
 
 const defaultComparator = (a, b) => a == b;
 
+export function dispatchEvent(wrapper, type, props = {}) {
+    const event = new Event(type, { bubbles: true });
+    Object.assign(event, props);
+    wrapper.element.dispatchEvent(event);
+}
+
 export function findViaNavigation(wrapper, component) {
     return wrapper.find(component.selector);
 }

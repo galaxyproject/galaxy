@@ -1,15 +1,20 @@
 import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
 import { PiniaVuePlugin } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
+import { dispatchEvent, getLocalVue } from "tests/jest/helpers";
+
+import { useEventStore } from "@/stores/eventStore";
 
 import MountTarget from "./FormData.vue";
 
 const localVue = getLocalVue();
 localVue.use(PiniaVuePlugin);
 
+let eventStore;
+
 function createTarget(propsData) {
     const pinia = createTestingPinia({ stubActions: false });
+    eventStore = useEventStore();
     return mount(MountTarget, {
         localVue,
         propsData,
@@ -195,5 +200,28 @@ describe("FormData", () => {
             ],
         };
         expect(wrapper.emitted().input[0][0]).toEqual(value_0);
+    });
+
+    it("dropping values", async () => {
+        const wrapper = createTarget({
+            value: null,
+            options: defaultOptions,
+        });
+        eventStore.setDragData({ id: "hdca4", history_content_type: "dataset_collection" });
+        dispatchEvent(wrapper, "dragenter");
+        dispatchEvent(wrapper, "drop");
+        expect(wrapper.emitted().input[1][0]).toEqual({
+            batch: true,
+            product: false,
+            values: [{ id: "hdca4", map_over_type: null, src: "hdca" }],
+        });
+        eventStore.setDragData({ id: "hda2", history_content_type: "dataset" });
+        dispatchEvent(wrapper, "dragenter");
+        dispatchEvent(wrapper, "drop");
+        expect(wrapper.emitted().input[2][0]).toEqual({
+            batch: false,
+            product: false,
+            values: [{ id: "hda2", map_over_type: null, src: "hda" }],
+        });
     });
 });
