@@ -309,9 +309,9 @@ function matchValues(entries: Array<DataOption>) {
  * Open file dialog
  */
 function onBrowse() {
-    if (variant.value) {
-        const library = !!variant.value.find((v) => v.library);
-        const multiple = !!variant.value.find((v) => v.multiple);
+    if (currentVariant.value) {
+        const library = currentVariant.value.library;
+        const multiple = currentVariant.value.multiple;
         getGalaxyInstance().data.dialog(
             (response: Record<string, unknown>) => {
                 handleIncoming(response, false);
@@ -349,10 +349,7 @@ function onDragOver() {
     }
 }
 
-/**
- * Insert the dragged item into the activities list
- */
-function onDrop(evt: MouseEvent) {
+function onDrop() {
     if (dragData.value) {
         handleIncoming(dragData.value);
         currentHighlighting.value = "success";
@@ -472,7 +469,6 @@ watch(
                 <FormSelect
                     v-if="currentVariant"
                     v-model="currentValue"
-                    class="w-100"
                     :multiple="currentVariant.multiple"
                     :optional="optional"
                     :options="formattedOptions"
