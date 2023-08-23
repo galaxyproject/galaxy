@@ -224,4 +224,39 @@ describe("FormData", () => {
             values: [{ id: "hda2", map_over_type: null, src: "hda" }],
         });
     });
+
+    it("linked and unlinked batch mode handling", async () => {
+        const wrapper = createTarget({
+            value: null,
+            flavor: "module",
+            options: defaultOptions,
+        });
+        expect(wrapper.emitted().input[0][0]).toEqual({
+            batch: false,
+            product: false,
+            values: [{ id: "hda3", map_over_type: null, src: "hda" }],
+        });
+        const noCheckLinked = wrapper.find("input[type='checkbox']");
+        expect(noCheckLinked.exists()).toBeFalsy();
+        await wrapper.find("[title='Multiple datasets'").trigger("click");
+        expect(wrapper.emitted().input[1][0]).toEqual({
+            batch: true,
+            product: false,
+            values: [{ id: "hda3", map_over_type: null, src: "hda" }],
+        });
+        const checkLinked = wrapper.find("input[type='checkbox']");
+        expect(wrapper.find(".custom-switch span").text()).toBe(
+            "Linked: Datasets will be run in matched order with other datasets."
+        );
+        expect(checkLinked.element.checked).toBeTruthy();
+        await checkLinked.setChecked(false);
+        expect(wrapper.find(".custom-switch span").text()).toBe(
+            "Unlinked: Dataset will be run against *all* other datasets."
+        );
+        expect(wrapper.emitted().input[2][0]).toEqual({
+            batch: true,
+            product: true,
+            values: [{ id: "hda3", map_over_type: null, src: "hda" }],
+        });
+    });
 });
