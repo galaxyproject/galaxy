@@ -40,13 +40,6 @@ const emit = defineEmits<{
 }>();
 
 /**
- * Determine dom wrapper class
- */
-const cls: ComputedRef<string> = computed(() => {
-    return props.multiple ? "form-select-multiple" : "form-select-single";
-});
-
-/**
  * Configure deselect label
  */
 const deselectLabel: ComputedRef<string> = computed(() => {
@@ -136,7 +129,6 @@ onMounted(() => {
         v-model="currentValue"
         :allow-empty="multiple && optional"
         :aria-expanded="ariaExpanded"
-        :class="['form-select', cls]"
         :close-on-select="!multiple"
         :disabled="disabled"
         :deselect-label="deselectLabel"
