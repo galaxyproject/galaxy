@@ -1087,7 +1087,7 @@ https://docs.sqlalchemy.org/en/14/core/engines.html?highlight=create_engine#sqla
     ] = None
 
     database_engine_option_pool_size: Annotated[
-        int,
+        Optional[int],
         Field(
             title="Database Engine Option Pool Size",
             description="""If the server logs errors about not having enough database pool connections,
@@ -1096,7 +1096,7 @@ you will want to increase these values, or consider running more Galaxy processe
     ] = 5
 
     database_engine_option_max_overflow: Annotated[
-        int,
+        Optional[int],
         Field(
             title="Database Engine Option Max Overflow",
             description="""If the server logs errors about not having enough database pool connections,
@@ -1105,7 +1105,7 @@ you will want to increase these values, or consider running more Galaxy processe
     ] = 10
 
     database_engine_option_pool_recycle: Annotated[
-        int,
+        Optional[int],
         Field(
             title="Database Engine Option Pool Recycle",
             description="""If using MySQL and the server logs the error "MySQL server has gone away",
@@ -1114,7 +1114,7 @@ you will want to set this to some positive value (7200 should work).""",
     ] = -1
 
     database_engine_option_server_side_cursors: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Database Engine Option Server Side Cursors",
             description="""If large database query results are causing memory or response time issues in
@@ -1125,7 +1125,7 @@ only available for PostgreSQL and is highly recommended.
     ] = False
 
     database_query_profiling_proxy: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Database Query Profiling Proxy",
             description="""Log all database transactions, can be useful for debugging and performance
@@ -1147,7 +1147,7 @@ documentation is included here for completeness.
     ] = None
 
     database_log_query_counts: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Database Log Query Counts",
             description="""Log number of SQL queries executed and total time spent dispatching SQL statements for
@@ -1161,7 +1161,7 @@ sql_debug middleware and adding sql_debug=1 to a request string.
     ] = False
 
     slow_query_log_threshold: Annotated[
-        float,
+        Optional[float],
         Field(
             title="Slow Query Log Threshold",
             description="""Slow query logging. Queries slower than the threshold indicated below will
@@ -1172,7 +1172,7 @@ this to .005 to log all queries taking longer than 5 milliseconds.
     ] = 0.0
 
     enable_per_request_sql_debugging: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Enable Per Request Sql Debugging",
             description="""Enables a per request sql debugging option. If this is set to true,
@@ -1200,7 +1200,7 @@ Defaults to the value of the 'database_connection' option.
     ] = None
 
     database_auto_migrate: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Database Auto Migrate",
             description="""Setting the following option to true will cause Galaxy to automatically
@@ -1210,7 +1210,7 @@ migrate the database forward after updates. This is not recommended for producti
     ] = False
 
     database_wait: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Database Wait",
             description="""Wait for database to become available instead of failing immediately.""",
@@ -1218,7 +1218,7 @@ migrate the database forward after updates. This is not recommended for producti
     ] = False
 
     database_wait_attempts: Annotated[
-        int,
+        Optional[int],
         Field(
             title="Database Wait Attempts",
             description="""Number of attempts before failing if database_wait is enabled.""",
@@ -1226,7 +1226,7 @@ migrate the database forward after updates. This is not recommended for producti
     ] = 60
 
     database_wait_sleep: Annotated[
-        float,
+        Optional[float],
         Field(
             title="Database Wait Sleep",
             description="""Time to sleep between attempts if database_wait is enabled (in seconds).""",
@@ -1234,7 +1234,7 @@ migrate the database forward after updates. This is not recommended for producti
     ] = 1.0
 
     history_audit_table_prune_interval: Annotated[
-        int,
+        Optional[int],
         Field(
             title="History Audit Table Prune Interval",
             description="""Time (in seconds) between attempts to remove old rows from the history_audit database table.
@@ -1266,7 +1266,7 @@ nodes that will run Galaxy jobs, unless using Pulsar.
     ] = "tmp"
 
     maximum_upload_file_size: Annotated[
-        int,
+        Optional[int],
         Field(
             title="Maximum Upload File Size",
             description="""Maximum size of uploadable files, specified in bytes (default: 100GB).
@@ -1391,7 +1391,7 @@ PATH (if available) and then to <conda_prefix>/bin/conda
     ] = None
 
     conda_debug: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Conda Debug",
             description="""Pass debug flag to conda commands.""",
@@ -1409,7 +1409,7 @@ PATH (if available) and then to <conda_prefix>/bin/conda
     ] = "conda-forge,bioconda,defaults"
 
     conda_use_local: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Conda Use Local",
             description="""Use locally-built conda packages.""",
@@ -1417,7 +1417,7 @@ PATH (if available) and then to <conda_prefix>/bin/conda
     ] = False
 
     conda_auto_install: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Conda Auto Install",
             description="""Set to true to instruct Galaxy to look for and install missing tool
@@ -1427,7 +1427,7 @@ dependencies before each job runs.
     ] = False
 
     conda_auto_init: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Conda Auto Init",
             description="""Set to true to instruct Galaxy to install Conda from the web automatically
@@ -1437,7 +1437,7 @@ if it cannot find a local copy and conda_exec is not configured.
     ] = True
 
     conda_copy_dependencies: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Conda Copy Dependencies",
             description="""You must set this to true if conda_prefix and job_working_directory are not on the same
@@ -1470,7 +1470,7 @@ See `config/environment_modules_mapping.yml.sample` for examples.
     ] = "environment_modules_mapping.yml"
 
     use_cached_dependency_manager: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Use Cached Dependency Manager",
             description="""Certain dependency resolvers (namely Conda) take a considerable amount of
@@ -1500,7 +1500,7 @@ Sample default '<tool_dependency_dir>/_cache'
     ] = None
 
     precache_dependencies: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Precache Dependencies",
             description="""By default, when using a cached dependency manager, the dependencies are cached
@@ -1582,7 +1582,7 @@ framework and should not require such external tooling.
     ] = "short_term_web_storage"
 
     short_term_storage_default_duration: Annotated[
-        int,
+        Optional[int],
         Field(
             title="Short Term Storage Default Duration",
             description="""Default duration before short term web storage files will be cleaned up by Galaxy
@@ -1592,7 +1592,7 @@ tasks (in seconds). The default duration is 1 day.
     ] = 86400
 
     short_term_storage_maximum_duration: Annotated[
-        int,
+        Optional[int],
         Field(
             title="Short Term Storage Maximum Duration",
             description="""The maximum duration short term storage files can hosted before they will be marked for
@@ -1602,7 +1602,7 @@ clean up. The default setting of 0 indicates no limit here.
     ] = 0
 
     short_term_storage_cleanup_interval: Annotated[
-        int,
+        Optional[int],
         Field(
             title="Short Term Storage Cleanup Interval",
             description="""How many seconds between instances of short term storage being cleaned up in default
@@ -1628,7 +1628,7 @@ Celery task configuration.
     ] = None
 
     enable_mulled_containers: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Enable Mulled Containers",
             description="""Enable Galaxy to fetch containers registered with quay.io generated
@@ -1679,7 +1679,7 @@ involucro_auto_init is set to false.
     ] = "involucro"
 
     involucro_auto_init: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Involucro Auto Init",
             description="""Install involucro as needed to build Docker or Singularity containers for tools. Ignored if
@@ -1697,7 +1697,7 @@ relevant container resolver is not used.
     ] = "conda-forge,bioconda"
 
     enable_tool_shed_check: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Enable Tool Shed Check",
             description="""Enable automatic polling of relative tool sheds to see if any updates
@@ -1709,7 +1709,7 @@ setting for hours_between_check should be an integer between 1 and 24.
     ] = False
 
     hours_between_check: Annotated[
-        int,
+        Optional[int],
         Field(
             title="Hours Between Check",
             description="""Enable automatic polling of relative tool sheds to see if any updates
@@ -1834,7 +1834,7 @@ so limit sniffer definitions to one file).
     ] = "datatypes_conf.xml"
 
     sniff_compressed_dynamic_datatypes_default: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Sniff Compressed Dynamic Datatypes Default",
             description="""Enable sniffing of compressed datatypes. This can be configured/overridden
@@ -1906,7 +1906,7 @@ used for the cache
     ] = "compiled_templates"
 
     check_job_script_integrity: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Check Job Script Integrity",
             description="""Set to false to disable various checks Galaxy will do to ensure it
@@ -1916,7 +1916,7 @@ can run job scripts before attempting to execute or submit them.
     ] = True
 
     check_job_script_integrity_count: Annotated[
-        int,
+        Optional[int],
         Field(
             title="Check Job Script Integrity Count",
             description="""Number of checks to execute if check_job_script_integrity is enabled.""",
@@ -1924,7 +1924,7 @@ can run job scripts before attempting to execute or submit them.
     ] = 35
 
     check_job_script_integrity_sleep: Annotated[
-        float,
+        Optional[float],
         Field(
             title="Check Job Script Integrity Sleep",
             description="""Time to sleep between checks if check_job_script_integrity is enabled (in seconds).""",
@@ -1946,7 +1946,7 @@ portability tool authors should assume generated commands run in sh.
     ] = "/bin/bash"
 
     enable_tool_document_cache: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Enable Tool Document Cache",
             description="""Whether to enable the tool document cache. This cache stores
@@ -1988,7 +1988,7 @@ https://github.com/bio-tools/content/) to resolve bio.tools data for tool metada
     ] = None
 
     biotools_use_api: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Biotools Use Api",
             description="""Set this to true to attempt to resolve bio.tools metadata for tools for tool not
@@ -2150,11 +2150,10 @@ requests are caching using this and the following parameters
     ] = "mulled/locks"
 
     mulled_resolution_cache_expire: Annotated[
-        int,
+        Optional[int],
         Field(
             title="Mulled Resolution Cache Expire",
-            description="""Seconds until the beaker cache is considered old and a new value is created.
-""",
+            description="""Seconds until the beaker cache is considered old and a new value is created.""",
         ),
     ] = 3600
 
@@ -2203,7 +2202,7 @@ If this is set and exists, it overrides any other objectstore settings.
     ] = "object_store_conf.xml"
 
     object_store_cache_monitor_driver: Annotated[
-        Literal["auto", "external", "celery", "inprocess"],
+        Optional[Literal["auto", "external", "celery", "inprocess"]],
         Field(
             title="Object Store Cache Monitor Driver",
             description="""Specify where cache monitoring is driven for caching object stores
@@ -2222,7 +2221,7 @@ cache paths).
     ] = "auto"
 
     object_store_cache_monitor_interval: Annotated[
-        int,
+        Optional[int],
         Field(
             title="Object Store Cache Monitor Interval",
             description="""For object store cache monitoring done by Galaxy, this is the interval between
@@ -2245,7 +2244,7 @@ that object store entry.
     ] = "object_store_cache"
 
     object_store_cache_size: Annotated[
-        int,
+        Optional[int],
         Field(
             title="Object Store Cache Size",
             description="""Default cache size for caching object stores if cache not configured for
@@ -2304,7 +2303,7 @@ will be sent over the network encrypted).
     ] = None
 
     smtp_ssl: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Smtp Ssl",
             description="""If your SMTP server requires SSL from the beginning of the connection""",
@@ -2410,7 +2409,7 @@ The value of this option will be resolved with respect to <config_dir>.
     ] = None
 
     user_activation_on: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="User Activation On",
             description="""User account activation feature global flag. If set to false, the rest of
@@ -2422,7 +2421,7 @@ The activation is also not working in case the SMTP server is not defined.
     ] = False
 
     activation_grace_period: Annotated[
-        int,
+        Optional[int],
         Field(
             title="Activation Grace Period",
             description="""Activation grace period (in hours). Activation is not forced (login is not
@@ -2433,7 +2432,7 @@ jobs. Enter 0 to disable grace period.
     ] = 3
 
     password_expiration_period: Annotated[
-        int,
+        Optional[int],
         Field(
             title="Password Expiration Period",
             description="""Password expiration period (in days). Users are required to change their
@@ -2445,7 +2444,7 @@ password expiration.
     ] = 0
 
     session_duration: Annotated[
-        int,
+        Optional[int],
         Field(
             title="Session Duration",
             description="""Galaxy Session Timeout
@@ -2480,7 +2479,7 @@ them).
     ] = "hgw1.cse.ucsc.edu,hgw2.cse.ucsc.edu,hgw3.cse.ucsc.edu,hgw4.cse.ucsc.edu,hgw5.cse.ucsc.edu,hgw6.cse.ucsc.edu,hgw7.cse.ucsc.edu,hgw8.cse.ucsc.edu,lowepub.cse.ucsc.edu"
 
     enable_old_display_applications: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Enable Old Display Applications",
             description="""Set this to false to disable the old-style display applications that
@@ -2497,7 +2496,7 @@ Galaxy user to access said site.
     ] = True
 
     interactivetools_upstream_proxy: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Interactivetools Upstream Proxy",
             description="""Set this to false to redirect users of Interactive tools directly to the Interactive tools proxy. `interactivetools_upstream_proxy` should only be set to false in development.""",
@@ -2539,7 +2538,7 @@ Galaxy by default.
     ] = "interactivetool"
 
     interactivetools_shorten_url: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Interactivetools Shorten Url",
             description="""Shorten the uuid portion of the subdomain or path for interactive tools.
@@ -2550,7 +2549,7 @@ subdomain under 63 chars
     ] = False
 
     retry_interactivetool_metadata_internally: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Retry Interactivetool Metadata Internally",
             description="""Galaxy Interactive Tools (GxITs) can be stopped from within the Galaxy
@@ -2563,7 +2562,7 @@ internally (in the Galaxy job handler process). The default is is the value of
     ] = True
 
     display_galaxy_brand: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Display Galaxy Brand",
             description="""This option has been deprecated, use the `logo_src` instead to change the
@@ -2636,7 +2635,7 @@ can reach this URL.
     ] = "http://localhost:8080"
 
     galaxy_infrastructure_web_port: Annotated[
-        int,
+        Optional[int],
         Field(
             title="Galaxy Infrastructure Web Port",
             description="""If the above URL cannot be determined ahead of time in dynamic environments
@@ -2651,7 +2650,7 @@ to the webapp.
     ] = 8080
 
     static_enabled: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Static Enabled",
             description="""Serve static content, which must be enabled if you're not serving it via a
@@ -2663,7 +2662,7 @@ server) to point to your own styles.
     ] = True
 
     static_cache_time: Annotated[
-        int,
+        Optional[int],
         Field(
             title="Static Cache Time",
             description="""Serve static content, which must be enabled if you're not serving it via a
@@ -2746,7 +2745,7 @@ server) to point to your own styles.
     ] = "static/robots.txt"
 
     display_chunk_size: Annotated[
-        int,
+        Optional[int],
         Field(
             title="Display Chunk Size",
             description="""Incremental Display Options""",
@@ -2754,7 +2753,7 @@ server) to point to your own styles.
     ] = 65536
 
     apache_xsendfile: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Apache Xsendfile",
             description="""For help on configuring the Advanced proxy features, see:
@@ -2778,7 +2777,7 @@ with access to Galaxy's data files (see documentation linked above).
     ] = None
 
     upstream_gzip: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Upstream Gzip",
             description="""If using compression in the upstream proxy server, use this option to disable
@@ -2790,7 +2789,7 @@ to the proxy's compressable mimetypes.
     ] = False
 
     upstream_mod_zip: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Upstream Mod Zip",
             description="""If using the mod-zip module in nginx, use this option to assemble
@@ -2867,7 +2866,7 @@ Defaults to new_file_path if not set.
     ] = None
 
     dynamic_proxy_manage: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Dynamic Proxy Manage",
             description="""Have Galaxy manage dynamic proxy component for routing requests to other
@@ -2881,7 +2880,7 @@ launch the proxy if it is actually going to be used (e.g. for Jupyter).
     ] = True
 
     dynamic_proxy: Annotated[
-        Literal["node", "golang"],
+        Optional[Literal["node", "golang"]],
         Field(
             title="Dynamic Proxy",
             description="""As of 16.04 Galaxy supports multiple proxy types. The original NodeJS
@@ -2902,7 +2901,7 @@ set that here.
     ] = "session_map.sqlite"
 
     dynamic_proxy_bind_port: Annotated[
-        int,
+        Optional[int],
         Field(
             title="Dynamic Proxy Bind Port",
             description="""Set the port and IP for the dynamic proxy to bind to, this must match
@@ -2922,7 +2921,7 @@ the external configuration if dynamic_proxy_manage is set to false.
     ] = "0.0.0.0"
 
     dynamic_proxy_debug: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Dynamic Proxy Debug",
             description="""Enable verbose debugging of Galaxy-managed dynamic proxy.""",
@@ -2930,7 +2929,7 @@ the external configuration if dynamic_proxy_manage is set to false.
     ] = False
 
     dynamic_proxy_external_proxy: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Dynamic Proxy External Proxy",
             description="""The dynamic proxy is proxied by an external proxy (e.g. apache frontend to
@@ -2952,7 +2951,7 @@ https://FQDN/galaxy-prefix/gie_proxy for proxying
     ] = "gie_proxy"
 
     dynamic_proxy_golang_noaccess: Annotated[
-        int,
+        Optional[int],
         Field(
             title="Dynamic Proxy Golang Noaccess",
             description="""This attribute governs the minimum length of time between consecutive HTTP/WS
@@ -2963,7 +2962,7 @@ inactive and kills it.
     ] = 60
 
     dynamic_proxy_golang_clean_interval: Annotated[
-        int,
+        Optional[int],
         Field(
             title="Dynamic Proxy Golang Clean Interval",
             description="""In order to kill containers, the golang proxy has to check at some interval
@@ -2996,7 +2995,7 @@ manually.
     ] = None
 
     auto_configure_logging: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Auto Configure Logging",
             description="""If true, Galaxy will attempt to configure a simple root logger if a
@@ -3029,7 +3028,7 @@ rotation. Size can be a number of bytes or a human-friendly representation like 
     ] = "0"
 
     log_rotate_count: Annotated[
-        int,
+        Optional[int],
         Field(
             title="Log Rotate Count",
             description="""Number of log file backups to keep, per the documentation in
@@ -3063,7 +3062,7 @@ https://docs.galaxyproject.org/en/master/admin/config_logging.html
     ] = None
 
     database_engine_option_echo: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Database Engine Option Echo",
             description="""Print database operations to the server log (warning, quite verbose!).""",
@@ -3071,7 +3070,7 @@ https://docs.galaxyproject.org/en/master/admin/config_logging.html
     ] = False
 
     database_engine_option_echo_pool: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Database Engine Option Echo Pool",
             description="""Print database pool operations to the server log (warning, quite verbose!).""",
@@ -3079,7 +3078,7 @@ https://docs.galaxyproject.org/en/master/admin/config_logging.html
     ] = False
 
     log_events: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Log Events",
             description="""Turn on logging of application events and some user events to the database.""",
@@ -3087,7 +3086,7 @@ https://docs.galaxyproject.org/en/master/admin/config_logging.html
     ] = False
 
     log_actions: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Log Actions",
             description="""Turn on logging of user actions to the database. Actions currently logged
@@ -3098,7 +3097,7 @@ log_events and log_actions functionality will eventually be merged.
     ] = False
 
     fluent_log: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Fluent Log",
             description="""Fluentd configuration. Various events can be logged to the fluentd instance
@@ -3118,7 +3117,7 @@ configured below by enabling fluent_log.
     ] = "localhost"
 
     fluent_port: Annotated[
-        int,
+        Optional[int],
         Field(
             title="Fluent Port",
             description="""Fluentd configuration. Various events can be logged to the fluentd instance
@@ -3128,7 +3127,7 @@ configured below by enabling fluent_log.
     ] = 24224
 
     sanitize_all_html: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Sanitize All Html",
             description="""Sanitize all HTML tool output. By default, all tool output served as
@@ -3153,7 +3152,7 @@ The value of this option will be resolved with respect to <managed_config_dir>.
     ] = "sanitize_allowlist.txt"
 
     serve_xss_vulnerable_mimetypes: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Serve Xss Vulnerable Mimetypes",
             description="""By default Galaxy will serve non-HTML tool output that may potentially
@@ -3179,7 +3178,7 @@ See: https://developer.mozilla.org/en-US/docs/Web/HTTP/CORS
     ] = None
 
     trust_jupyter_notebook_conversion: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Trust Jupyter Notebook Conversion",
             description="""Set to true to use Jupyter nbconvert to build HTML from Jupyter
@@ -3192,7 +3191,7 @@ available and on Galaxy's PATH, to do this run
     ] = False
 
     debug: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Debug",
             description="""Debug enables access to various config options useful for development
@@ -3204,7 +3203,7 @@ to remain on disk after the job is complete.
     ] = False
 
     use_lint: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Use Lint",
             description="""Check for WSGI compliance.""",
@@ -3212,7 +3211,7 @@ to remain on disk after the job is complete.
     ] = False
 
     use_profile: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Use Profile",
             description="""Run the Python profiler on each request.""",
@@ -3220,7 +3219,7 @@ to remain on disk after the job is complete.
     ] = False
 
     use_printdebug: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Use Printdebug",
             description="""Intercept print statements and show them on the returned page.""",
@@ -3228,7 +3227,7 @@ to remain on disk after the job is complete.
     ] = True
 
     monitor_thread_join_timeout: Annotated[
-        int,
+        Optional[int],
         Field(
             title="Monitor Thread Join Timeout",
             description="""When stopping Galaxy cleanly, how much time to give various monitoring/polling
@@ -3243,7 +3242,7 @@ Galaxy Admin Documentation for more.
     ] = 30
 
     use_heartbeat: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Use Heartbeat",
             description="""Write thread status periodically to 'heartbeat.log', (careful, uses disk
@@ -3254,7 +3253,7 @@ lot of CPU.
     ] = False
 
     heartbeat_interval: Annotated[
-        int,
+        Optional[int],
         Field(
             title="Heartbeat Interval",
             description="""Control the period (in seconds) between dumps. Use -1 to disable. Regardless
@@ -3296,7 +3295,7 @@ Possible values are DEBUG, INFO, WARNING, ERROR or CRITICAL.
     ] = "ERROR"
 
     sentry_traces_sample_rate: Annotated[
-        float,
+        Optional[float],
         Field(
             title="Sentry Traces Sample Rate",
             description="""Set to a number between 0 and 1. With this option set, every transaction created
@@ -3331,7 +3330,7 @@ statistics between them within the same aggregator.
     ] = None
 
     statsd_port: Annotated[
-        int,
+        Optional[int],
         Field(
             title="Statsd Port",
             description="""Log to statsd
@@ -3359,7 +3358,7 @@ statistics between them within the same aggregator.
     ] = "galaxy"
 
     statsd_influxdb: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Statsd Influxdb",
             description="""If you are using telegraf to collect these metrics and then sending
@@ -3371,7 +3370,7 @@ prefix with a tag path set to the page url
     ] = False
 
     statsd_mock_calls: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Statsd Mock Calls",
             description="""Mock out statsd client calls - only used by testing infrastructure really.
@@ -3381,7 +3380,7 @@ Do not set this in production environments.
     ] = False
 
     user_library_import_dir_auto_creation: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="User Library Import Dir Auto Creation",
             description="""If user_library_import_dir is set, this option will auto create a library
@@ -3405,7 +3404,7 @@ create symlinks to them).
     ] = None
 
     user_library_import_check_permissions: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="User Library Import Check Permissions",
             description="""In conjunction or alternatively, Galaxy can restrict user library imports to
@@ -3416,7 +3415,7 @@ For this to work, the username has to match the username on the filesystem.
     ] = False
 
     allow_path_paste: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Allow Path Paste",
             description="""Allow admins to paste filesystem paths during upload. For libraries this
@@ -3444,7 +3443,7 @@ format with commas. Available formats are currently 'zip', 'gz', and 'bz2'.
     ] = None
 
     tool_name_boost: Annotated[
-        float,
+        Optional[float],
         Field(
             title="Tool Name Boost",
             description="""In tool search, a query match against a tool's name text will receive
@@ -3454,7 +3453,7 @@ this score multiplier.
     ] = 20.0
 
     tool_name_exact_multiplier: Annotated[
-        float,
+        Optional[float],
         Field(
             title="Tool Name Exact Multiplier",
             description="""If a search query matches a tool name exactly, the score will be
@@ -3464,7 +3463,7 @@ multiplied by this factor.
     ] = 10.0
 
     tool_id_boost: Annotated[
-        float,
+        Optional[float],
         Field(
             title="Tool Id Boost",
             description="""In tool search, a query match against a tool's ID text will receive
@@ -3475,7 +3474,7 @@ in order to be counted as a match.
     ] = 20.0
 
     tool_section_boost: Annotated[
-        float,
+        Optional[float],
         Field(
             title="Tool Section Boost",
             description="""In tool search, a query match against a tool's section text will
@@ -3485,7 +3484,7 @@ receive this score multiplier.
     ] = 3.0
 
     tool_description_boost: Annotated[
-        float,
+        Optional[float],
         Field(
             title="Tool Description Boost",
             description="""In tool search, a query match against a tool's description text will
@@ -3495,7 +3494,7 @@ receive this score multiplier.
     ] = 8.0
 
     tool_label_boost: Annotated[
-        float,
+        Optional[float],
         Field(
             title="Tool Label Boost",
             description="""In tool search, a query match against a tool's label text will
@@ -3505,7 +3504,7 @@ receive this score multiplier.
     ] = 1.0
 
     tool_stub_boost: Annotated[
-        float,
+        Optional[float],
         Field(
             title="Tool Stub Boost",
             description="""A stub is parsed from the GUID as "owner/repo/tool_id".
@@ -3516,7 +3515,7 @@ this score multiplier.
     ] = 2.0
 
     tool_help_boost: Annotated[
-        float,
+        Optional[float],
         Field(
             title="Tool Help Boost",
             description="""In tool search, a query match against a tool's help text will receive
@@ -3526,7 +3525,7 @@ this score multiplier.
     ] = 1.0
 
     tool_help_bm25f_k1: Annotated[
-        float,
+        Optional[float],
         Field(
             title="Tool Help Bm25F K1",
             description="""The lower this parameter, the greater the diminishing reward for
@@ -3539,7 +3538,7 @@ occurrence and little reward thereafter.
     ] = 0.5
 
     tool_search_limit: Annotated[
-        int,
+        Optional[int],
         Field(
             title="Tool Search Limit",
             description="""Limits the number of results in toolbox search. Use to set the
@@ -3549,7 +3548,7 @@ maximum number of tool search results to display.
     ] = 20
 
     tool_enable_ngram_search: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Tool Enable Ngram Search",
             description="""Disabling this will prevent partial matches on tool names.
@@ -3562,7 +3561,7 @@ also match query substrings e.g. "genome" will match "genomics" or
     ] = True
 
     tool_ngram_minsize: Annotated[
-        int,
+        Optional[int],
         Field(
             title="Tool Ngram Minsize",
             description="""Set minimum character length of ngrams""",
@@ -3570,7 +3569,7 @@ also match query substrings e.g. "genome" will match "genomics" or
     ] = 3
 
     tool_ngram_maxsize: Annotated[
-        int,
+        Optional[int],
         Field(
             title="Tool Ngram Maxsize",
             description="""Set maximum character length of ngrams""",
@@ -3578,7 +3577,7 @@ also match query substrings e.g. "genome" will match "genomics" or
     ] = 4
 
     tool_ngram_factor: Annotated[
-        float,
+        Optional[float],
         Field(
             title="Tool Ngram Factor",
             description="""Ngram matched scores will be multiplied by this factor. Should always
@@ -3654,7 +3653,7 @@ below.
     ] = "USING THE DEFAULT IS NOT SECURE!"
 
     normalize_remote_user_email: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Normalize Remote User Email",
             description="""If your proxy and/or authentication source does not normalize e-mail
@@ -3678,7 +3677,7 @@ libraries, and more. For more information, see:
     ] = None
 
     show_user_prepopulate_form: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Show User Prepopulate Form",
             description="""When using LDAP for authentication, allow administrators to pre-populate users
@@ -3688,7 +3687,7 @@ using an additional form on 'Create new user'
     ] = False
 
     new_user_dataset_access_role_default_private: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="New User Dataset Access Role Default Private",
             description="""By default, users' data will be public, but setting this to true will cause
@@ -3700,7 +3699,7 @@ public.
     ] = False
 
     expose_user_name: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Expose User Name",
             description="""Expose user list. Setting this to true will expose the user list to
@@ -3732,7 +3731,7 @@ It should be a comma-separated list of IP addresses or IP address/mask, e.g.
     ] = None
 
     enable_beta_gdpr: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Enable Beta Gdpr",
             description="""Enables GDPR Compliance mode. This makes several changes to the way
@@ -3754,7 +3753,7 @@ admin documentation.
     ] = False
 
     enable_beta_workflow_modules: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Enable Beta Workflow Modules",
             description="""Enable beta workflow modules that should not yet be considered part of Galaxy's
@@ -3805,7 +3804,7 @@ or 'format2'.
     ] = "ga"
 
     parallelize_workflow_scheduling_within_histories: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Parallelize Workflow Scheduling Within Histories",
             description="""If multiple job handlers are enabled, allow Galaxy to schedule workflow invocations
@@ -3816,7 +3815,7 @@ less predictable order of workflow datasets within in histories.
     ] = False
 
     maximum_workflow_invocation_duration: Annotated[
-        int,
+        Optional[int],
         Field(
             title="Maximum Workflow Invocation Duration",
             description="""This is the maximum amount of time a workflow invocation may stay in an active
@@ -3827,7 +3826,7 @@ invocation to schedule indefinitely. The default corresponds to 1 month.
     ] = 2678400
 
     maximum_workflow_jobs_per_scheduling_iteration: Annotated[
-        int,
+        Optional[int],
         Field(
             title="Maximum Workflow Jobs Per Scheduling Iteration",
             description="""Specify a maximum number of jobs that any given workflow scheduling iteration can create.
@@ -3841,7 +3840,7 @@ Set to -1 to disable any such maximum.
     ] = 1000
 
     flush_per_n_datasets: Annotated[
-        int,
+        Optional[int],
         Field(
             title="Flush Per N Datasets",
             description="""Maximum number of datasets to create before flushing created datasets to database.
@@ -3853,7 +3852,7 @@ more memory. Set to -1 to disable creating datasets in batches.
     ] = 1000
 
     max_discovered_files: Annotated[
-        int,
+        Optional[int],
         Field(
             title="Max Discovered Files",
             description="""Set this to a positive integer value to limit the number of datasets that can be discovered by
@@ -3865,7 +3864,7 @@ into a collection of datasets for each line in an input dataset.
     ] = 10000
 
     history_local_serial_workflow_scheduling: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="History Local Serial Workflow Scheduling",
             description="""Force serial scheduling of workflows within the context of a particular history""",
@@ -3987,7 +3986,7 @@ and https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-disco
     ] = None
 
     enable_tool_tags: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Enable Tool Tags",
             description="""Enable tool tags (associating tools with tags). This has its own option
@@ -4032,7 +4031,7 @@ Defaults to '${ftp_upload_dir}/${ftp_upload_dir_identifier}'.
     ] = None
 
     ftp_upload_purge: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Ftp Upload Purge",
             description="""Set to false to prevent Galaxy from deleting uploaded FTP files
@@ -4042,7 +4041,7 @@ as it imports them.
     ] = True
 
     expose_dataset_path: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Expose Dataset Path",
             description="""This option allows users to see the full path of datasets via the "View
@@ -4061,7 +4060,7 @@ non-administrative users. Administrators can always see dataset paths.
     ] = "job_metrics_conf.xml"
 
     expose_potentially_sensitive_job_metrics: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Expose Potentially Sensitive Job Metrics",
             description="""This option allows users to see the job metrics (except for environment
@@ -4071,7 +4070,7 @@ variables).
     ] = False
 
     enable_legacy_sample_tracking_api: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Enable Legacy Sample Tracking Api",
             description="""Enable the API for sample tracking""",
@@ -4079,7 +4078,7 @@ variables).
     ] = False
 
     enable_data_manager_user_view: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Enable Data Manager User View",
             description="""Allow non-admin users to view available Data Manager options.""",
@@ -4190,7 +4189,7 @@ failing jobs are just failed outright.
     ] = None
 
     track_jobs_in_database: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Track Jobs In Database",
             description="""This option is deprecated, use the `mem-self` handler assignment option in the
@@ -4200,7 +4199,7 @@ job configuration instead.
     ] = True
 
     use_tasked_jobs: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Use Tasked Jobs",
             description="""This enables splitting of jobs into tasks, if specified by the particular tool
@@ -4211,7 +4210,7 @@ This is a new feature and not recommended for production servers yet.
     ] = False
 
     local_task_queue_workers: Annotated[
-        int,
+        Optional[int],
         Field(
             title="Local Task Queue Workers",
             description="""This enables splitting of jobs into tasks, if specified by the particular tool
@@ -4222,7 +4221,7 @@ This is a new feature and not recommended for production servers yet.
     ] = 2
 
     job_handler_monitor_sleep: Annotated[
-        float,
+        Optional[float],
         Field(
             title="Job Handler Monitor Sleep",
             description="""Each Galaxy job handler process runs one thread responsible for discovering jobs and
@@ -4235,7 +4234,7 @@ Float values are allowed.
     ] = 1.0
 
     job_runner_monitor_sleep: Annotated[
-        float,
+        Optional[float],
         Field(
             title="Job Runner Monitor Sleep",
             description="""Each Galaxy job handler process runs one thread per job runner plugin responsible for
@@ -4248,7 +4247,7 @@ usage of handler processes. Float values are allowed.
     ] = 1.0
 
     workflow_monitor_sleep: Annotated[
-        float,
+        Optional[float],
         Field(
             title="Workflow Monitor Sleep",
             description="""Each Galaxy workflow handler process runs one thread responsible for
@@ -4261,7 +4260,7 @@ usage of handler processes. Float values are allowed.
     ] = 1.0
 
     metadata_strategy: Annotated[
-        Literal["directory", "extended", "directory_celery", "extended_celery", "legacy"],
+        Optional[Literal["directory", "extended", "directory_celery", "extended_celery", "legacy"]],
         Field(
             title="Metadata Strategy",
             description="""Determines how metadata will be set. Valid values are `directory`, `extended`,
@@ -4277,7 +4276,7 @@ will be set within a celery task.
     ] = "directory"
 
     retry_metadata_internally: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Retry Metadata Internally",
             description="""Although it is fairly reliable, setting metadata can occasionally fail. In
@@ -4290,7 +4289,7 @@ option to retry externally, or set metadata manually (when possible).
     ] = True
 
     max_metadata_value_size: Annotated[
-        int,
+        Optional[int],
         Field(
             title="Max Metadata Value Size",
             description="""Very large metadata values can cause Galaxy crashes. This will allow
@@ -4303,7 +4302,7 @@ a reasonable size.
     ] = 5242880
 
     outputs_to_working_directory: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Outputs To Working Directory",
             description="""This option will override tool output paths to write outputs to the job
@@ -4318,7 +4317,7 @@ user than the galaxy user).
     ] = False
 
     retry_job_output_collection: Annotated[
-        int,
+        Optional[int],
         Field(
             title="Retry Job Output Collection",
             description="""If your network filesystem's caching prevents the Galaxy server from seeing
@@ -4588,7 +4587,7 @@ which Galaxy processes should schedule workflows.
     ] = "workflow_schedulers_conf.xml"
 
     cache_user_job_count: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Cache User Job Count",
             description="""If using job concurrency limits (configured in job_config_file), several
@@ -4692,7 +4691,7 @@ will automatically create and use a separate sqlite database located in your
     ] = "sqlalchemy+sqlite:///./database/control.sqlite?isolation_level=IMMEDIATE"
 
     celery_conf: Annotated[
-        Any,
+        Optional[Any],
         Field(
             title="Celery Conf",
             description="""Configuration options passed to Celery.
@@ -4712,7 +4711,7 @@ For details, see Celery documentation at https://docs.celeryq.dev/en/stable/user
     ] = {"task_routes": {"galaxy.fetch_data": "galaxy.external", "galaxy.set_job_metadata": "galaxy.external"}}
 
     celery_user_rate_limit: Annotated[
-        float,
+        Optional[float],
         Field(
             title="Celery User Rate Limit",
             description="""If set to a non-0 value, upper limit on number of
@@ -4722,7 +4721,7 @@ tasks that can be executed per user per second.
     ] = 0.0
 
     use_pbkdf2: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Use Pbkdf2",
             description="""Allow disabling pbkdf2 hashing of passwords for legacy situations.
@@ -4757,7 +4756,7 @@ reason to disable it.
     ] = "vault_conf.yml"
 
     display_builtin_converters: Annotated[
-        bool,
+        Optional[bool],
         Field(
             title="Display Builtin Converters",
             description="""Display built-in converters in the tool panel.""",
@@ -4775,7 +4774,7 @@ are defined, users can choose their preferred theme in the client.
     ] = "themes_conf.yml"
 
     expired_notifications_cleanup_interval: Annotated[
-        int,
+        Optional[int],
         Field(
             title="Expired Notifications Cleanup Interval",
             description="""The interval in seconds between attempts to delete all expired notifications from the database (every 24 hours by default). Runs in a Celery task.""",
