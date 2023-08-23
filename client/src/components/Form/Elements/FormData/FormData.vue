@@ -185,7 +185,7 @@ const formattedOptions = computed(() => {
  * Dataset collection elements should be treated as plain values.
  */
 const isDCE = computed(() => {
-    if (props.value) {
+    if (props.value && props.value.values.length > 0) {
         return props.value.values.findIndex((v) => v.src !== SOURCE.COLLECTION_ELEMENT) === -1;
     } else {
         return false;
@@ -354,37 +354,33 @@ function setValue(val: Array<DataOption> | DataOption | null) {
     if (val) {
         const values = Array.isArray(val) ? val : [val];
         if (variant.value && values.length > 0 && values[0]) {
-            const multiple = values.length > 1;
+            const hasMapOverType = values.find((v) => !!v.map_over_type);
+            const isMultiple = values.length > 1;
 
-            // Determine source to match variant and identify batch mode
-            let hasMapOverType: string | null = null;
-            let src: string | null = null;
+            // Determine source representation
+            let sourceType: string | null = null;
             if (isDCE.value) {
-                const option = matchOption(values[0]);
-                if (option) {
-                    hasMapOverType = option.map_over_type || null;
-                    src = option.hda ? "hda" : "hdca";
-                }
+                sourceType = values[0].hda ? SOURCE.DATASET : SOURCE.COLLECTION;
             } else {
-                hasMapOverType = values[0].map_over_type || null;
-                src = values[0].src;
+                sourceType = values[0].src;
             }
 
-            // identify matching variant
-            const filteredVariant = variant.value.findIndex((v) => v.multiple === multiple && v.src === src);
+            // Identify matching variant
+            const variantIndex = variant.value.findIndex((v) => v.multiple === isMultiple && v.src === sourceType);
 
-            // determine batch mode
-            let batch: string | null = null;
-            if (isDCE.value && variant.value[filteredVariant]) {
-                batch = variant.value[filteredVariant]?.batch || null;
-            } else {
-                // Switch to another field type if source differs from current field
-                if (currentVariant.value) {
-                    if (src !== currentVariant.value.src) {
-                        currentField.value = Math.max(filteredVariant, 0);
+            // Determine batch mode
+            let batch: string = BATCH.DISABLED;
+            if (variantIndex >= 0) {
+                const variantDetails = variant.value[variantIndex];
+                if (isDCE.value && variantDetails && variantDetails.batch) {
+                    batch = variantDetails.batch;
+                } else {
+                    // Switch to another field type if source differs from current field
+                    if (currentVariant.value && currentVariant.value.src !== sourceType) {
+                        currentField.value = variantIndex;
                     }
+                    batch = (currentVariant.value && currentVariant.value.batch) || BATCH.DISABLED;
                 }
-                batch = (currentVariant.value && currentVariant.value.batch) || null;
             }
 
             // Emit new value
@@ -408,7 +404,14 @@ onMounted(() => {
         waiting.value = value;
     });
     if (isDCE.value && props.value && props.value.values) {
-        setValue(props.value.values);
+        const dceValues: Array<DataOption> = [];
+        props.value.values.forEach((val) => {
+            const matchedVal = matchOption(val);
+            if (matchedVal) {
+                dceValues.push(matchedVal);
+            }
+        });
+        setValue(dceValues);
     } else {
         setValue(currentValue.value);
     }

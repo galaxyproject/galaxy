@@ -21,6 +21,11 @@ function createTarget(propsData) {
 }
 
 const defaultOptions = {
+    dce: [
+        { id: "dce1", name: "dceName1", src: "dce", hda: true },
+        { id: "dce2", name: "dceName2", src: "dce" },
+        { id: "dce3", name: "dceName3", src: "dce", map_over_type: "mapOverType" },
+    ],
     hda: [
         { id: "hda1", hid: 1, name: "hdaName1", src: "hda" },
         { id: "hda2", hid: 2, name: "hdaName2", src: "hda" },
@@ -131,5 +136,40 @@ describe("FormData", () => {
         await wrapper.setProps({ value: value_2 });
         expect(wrapper.emitted().input.length).toBe(3);
         expect(wrapper.emitted().input[2][0]).toEqual(null);
+    });
+
+    it("dataset collection as hda", async () => {
+        const wrapper = createTarget({
+            value: { values: [{ id: "dce1", src: "dce" }] },
+            options: defaultOptions,
+        });
+        const value_0 = { batch: false, product: false, values: [{ id: "dce1", map_over_type: null, src: "dce" }] };
+        expect(wrapper.emitted().input[0][0]).toEqual(value_0);
+        expect(wrapper.emitted().input.length).toEqual(1);
+        const message = wrapper.findAll(".form-data-entry-label");
+        expect(message.length).toBe(1);
+        expect(message.at(0).text()).toBe("1. dceName1");
+    });
+
+    it("dataset collection as hdca", async () => {
+        const wrapper = createTarget({
+            value: { values: [{ id: "dce2", src: "dce" }] },
+            options: defaultOptions,
+        });
+        const value_0 = { batch: true, product: false, values: [{ id: "dce2", map_over_type: null, src: "dce" }] };
+        expect(wrapper.emitted().input[0][0]).toEqual(value_0);
+    });
+
+    it("dataset collection as hdca with map_over_type", async () => {
+        const wrapper = createTarget({
+            value: { values: [{ id: "dce3", src: "dce" }] },
+            options: defaultOptions,
+        });
+        const value_0 = {
+            batch: true,
+            product: false,
+            values: [{ id: "dce3", map_over_type: "mapOverType", src: "dce" }],
+        };
+        expect(wrapper.emitted().input[0][0]).toEqual(value_0);
     });
 });
