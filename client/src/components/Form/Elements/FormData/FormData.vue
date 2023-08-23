@@ -101,12 +101,13 @@ const currentValue = computed({
             }
             if (value.length > 0) {
                 return value;
-            } else if (!props.optional && formattedOptions.value.length > 0) {
-                const firstEntry = formattedOptions.value && formattedOptions.value[0];
-                if (firstEntry && firstEntry.value) {
-                    value.push(firstEntry.value);
-                    return value;
-                }
+            }
+        }
+        if (!props.optional && formattedOptions.value.length > 0) {
+            const firstEntry = formattedOptions.value && formattedOptions.value[0];
+            if (firstEntry && firstEntry.value) {
+                value.push(firstEntry.value);
+                return value;
             }
         }
         return null;
@@ -393,7 +394,7 @@ function setValue(val: Array<DataOption> | DataOption | null) {
                 values: values.map((entry) => ({
                     id: entry.id,
                     src: entry.src,
-                    map_over_type: entry.map_over_type,
+                    map_over_type: entry.map_over_type || null,
                 })),
             });
         }
