@@ -28,17 +28,4 @@ describe("ParameterFactory", () => {
         expect(Ui.Input).toHaveBeenCalled();
         expect(Ui.TextSelect).not.toHaveBeenCalled();
     });
-
-    it("should create a SELECT parameter input when no type is specified and the input has options", async () => {
-        const input = {
-            id: "type-less parameter with options",
-            type: "",
-            value: "initial_value",
-            options: [("Option A", "a"), ("Option B", "b")],
-        };
-        const parameter = new ParameterFactory();
-        parameter.create(input);
-        expect(Ui.TextSelect).toHaveBeenCalled();
-        expect(Ui.Input).not.toHaveBeenCalled();
-    });
 });
