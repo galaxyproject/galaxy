@@ -2,6 +2,7 @@ import logging
 import os
 import os.path
 from typing import (
+    Iterable,
     List,
     Tuple,
     Union,
@@ -23,13 +24,13 @@ from galaxy.util import (
 log = logging.getLogger(__name__)
 
 
-def parse_tests(tool, tests_source):
+def parse_tests(tool, tests_source) -> Iterable[ToolTestDescription]:
     """
     Build ToolTestDescription objects for each "<test>" elements and
     return default interactor (if any).
     """
     raw_tests_dict = tests_source.parse_tests_to_dict()
-    tests = []
+    tests: List[ToolTestDescription] = []
     for i, raw_test_dict in enumerate(raw_tests_dict.get("tests", [])):
         test = description_from_tool_object(tool, i, raw_test_dict)
         tests.append(test)
