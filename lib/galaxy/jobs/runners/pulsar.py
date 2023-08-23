@@ -37,7 +37,10 @@ from pulsar.client import (
 from pulsar.client.staging import DEFAULT_DYNAMIC_COLLECTION_PATTERN
 
 from galaxy import model
-from galaxy.job_execution.compute_environment import ComputeEnvironment
+from galaxy.job_execution.compute_environment import (
+    ComputeEnvironment,
+    dataset_path_to_extra_path,
+)
 from galaxy.jobs import JobDestination
 from galaxy.jobs.command_factory import build_command
 from galaxy.jobs.runners import (
@@ -1104,15 +1107,13 @@ class PulsarComputeEnvironment(ComputeEnvironment):
 
     def input_extra_files_rewrite(self, dataset):
         input_path_rewrite = self.input_path_rewrite(dataset)
-        base_input_path = input_path_rewrite[0 : -len(".dat")]
-        remote_extra_files_path_rewrite = f"{base_input_path}_files"
+        remote_extra_files_path_rewrite = dataset_path_to_extra_path(input_path_rewrite)
         self.path_rewrites_input_extra[dataset.extra_files_path] = remote_extra_files_path_rewrite
         return remote_extra_files_path_rewrite
 
     def output_extra_files_rewrite(self, dataset):
         output_path_rewrite = self.output_path_rewrite(dataset)
-        base_output_path = output_path_rewrite[0 : -len(".dat")]
-        remote_extra_files_path_rewrite = f"{base_output_path}_files"
+        remote_extra_files_path_rewrite = dataset_path_to_extra_path(output_path_rewrite)
         return remote_extra_files_path_rewrite
 
     def input_metadata_rewrite(self, dataset, metadata_val):

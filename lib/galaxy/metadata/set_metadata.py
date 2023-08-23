@@ -29,6 +29,7 @@ import galaxy.datatypes.registry
 import galaxy.model.mapping
 from galaxy.datatypes import sniff
 from galaxy.datatypes.data import validate
+from galaxy.job_execution.compute_environment import dataset_path_to_extra_path
 from galaxy.job_execution.output_collect import (
     collect_dynamic_outputs,
     collect_extra_files,
@@ -391,26 +392,25 @@ def set_metadata_portable(
                     # Only set external filename if we're dealing with files in job working directory.
                     # Fixes link_data_only uploads
                     dataset.dataset.external_filename = external_filename
-                    store_by = output_dict.get("object_store_store_by", "id")
-                    extra_files_dir_name = f"dataset_{getattr(dataset.dataset, store_by)}_files"
-                    files_path = os.path.abspath(
-                        os.path.join(tool_job_working_directory, "working", extra_files_dir_name)
-                    )
-                    if os.path.exists(files_path):
-                        dataset.dataset.external_extra_files_path = files_path
-                    else:
-                        # could be pulsar, stores extra files in outputs directory
-                        pulsar_extra_files_path = os.path.join(
-                            tool_job_working_directory, "outputs", extra_files_dir_name
+                    # We derive extra_files_dir_name from external_filename, because OutputsToWorkingDirectoryPathRewriter
+                    # always rewrites the path to include the uuid, even if store_by is set to id, and the extra files
+                    # rewrite is derived from the dataset path (since https://github.com/galaxyproject/galaxy/pull/16541).
+                    extra_files_dir_name = os.path.basename(dataset_path_to_extra_path(external_filename))
+                    # TODO: all extra file outputs should be stored in outputs, but keep fallback for running jobs. Remove in 23.2.
+                    for output_location in ("outputs", "working"):
+                        files_path = os.path.abspath(
+                            os.path.join(tool_job_working_directory, output_location, extra_files_dir_name)
                         )
-                        if os.path.exists(pulsar_extra_files_path):
-                            dataset.dataset.external_extra_files_path = pulsar_extra_files_path
-                        elif dataset_filename_override and not object_store:
-                            # pulsar, no remote metadata and no extended metadata
+                        if os.path.exists(files_path):
+                            dataset.dataset.external_extra_files_path = files_path
+                            break
+                    else:
+                        # extra files dir didn't exist in working or outputs directory
+                        if dataset_filename_override and not object_store:
+                            # not extended metadata (so no object store) and outputs_to_working_directory off
                             dataset.dataset.external_extra_files_path = os.path.join(
                                 os.path.dirname(dataset_filename_override), extra_files_dir_name
                             )
-
             file_dict = tool_provided_metadata.get_dataset_meta(output_name, dataset.dataset.id, dataset.dataset.uuid)
             if "ext" in file_dict:
                 dataset.extension = file_dict["ext"]
