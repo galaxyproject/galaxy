@@ -101,6 +101,7 @@ Please use the `helpsite_url` option instead.""",
     server_startttime: Annotated[
         int,
         Field(
+            deprecated=True,  # TODO: This option seems to be unused in the codebase (?)
             title="Server Start Time",
             description="""The time when the Galaxy server was started (seconds since Epoch).""",
         ),
@@ -117,6 +118,7 @@ Please use the `helpsite_url` option instead.""",
     python: Annotated[
         List[int],
         Field(
+            deprecated=True,  # TODO: This option seems to be unused in the codebase (?)
             title="Python Version",
             description="""The Python version used by Galaxy as a tuple of integers [mayor, minor].""",
         ),
@@ -1308,6 +1310,7 @@ tool_config_file cannot be read.
     migrated_tools_config: Annotated[
         Optional[str],
         Field(
+            deprecated=True,
             title="Migrated Tools Config",
             description="""This option is deprecated.
 In previous releases this file was maintained by tool migration scripts that are no
@@ -2564,6 +2567,7 @@ internally (in the Galaxy job handler process). The default is is the value of
     display_galaxy_brand: Annotated[
         Optional[bool],
         Field(
+            deprecated=True,
             title="Display Galaxy Brand",
             description="""This option has been deprecated, use the `logo_src` instead to change the
 default logo including the galaxy brand title.
@@ -4191,6 +4195,7 @@ failing jobs are just failed outright.
     track_jobs_in_database: Annotated[
         Optional[bool],
         Field(
+            deprecated=True,
             title="Track Jobs In Database",
             description="""This option is deprecated, use the `mem-self` handler assignment option in the
 job configuration instead.
