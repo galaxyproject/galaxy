@@ -277,6 +277,17 @@ function handleIncoming(incoming: Record<string, unknown>, partial = true) {
 }
 
 /**
+ * Set initial value
+ */
+function initialValue() {
+    if ((isLDDA.value || isDCE.value) && props.value && props.value.values) {
+        setValue(matchValues(props.value.values));
+    } else {
+        setValue(currentValue.value);
+    }
+}
+
+/**
  * Matches entries to available options
  */
 function matchOption(entry: DataOption) {
@@ -425,20 +436,16 @@ onMounted(() => {
     eventBus.$on("waiting", (value: boolean) => {
         waiting.value = value;
     });
-    if ((isLDDA.value || isDCE.value) && props.value && props.value.values) {
-        setValue(matchValues(props.value.values));
-    } else {
-        setValue(currentValue.value);
-    }
+    initialValue();
 });
 
 /**
  * Watch and set current value if user switches to a different select field
  */
 watch(
-    () => [currentLinked.value, currentVariant.value],
+    () => [props.options, currentLinked.value, currentVariant.value],
     () => {
-        setValue(currentValue.value);
+        initialValue();
     }
 );
 </script>
