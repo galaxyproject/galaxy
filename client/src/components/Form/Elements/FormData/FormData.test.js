@@ -149,9 +149,12 @@ describe("FormData", () => {
         const message = wrapper.findAll(".form-data-entry-label");
         expect(message.length).toBe(1);
         expect(message.at(0).text()).toBe("1. dceName1");
+        const closeButton = wrapper.find(".alert .close");
+        await closeButton.trigger("click");
+        expect(wrapper.emitted().input[1][0]).toEqual(null);
     });
 
-    it("dataset collection as hdca", async () => {
+    it("dataset collection as hdca without map_over_type", async () => {
         const wrapper = createTarget({
             value: { values: [{ id: "dce2", src: "dce" }] },
             options: defaultOptions,
@@ -169,6 +172,27 @@ describe("FormData", () => {
             batch: true,
             product: false,
             values: [{ id: "dce3", map_over_type: "mapOverType", src: "dce" }],
+        };
+        expect(wrapper.emitted().input[0][0]).toEqual(value_0);
+    });
+
+    it("multiple dataset collection values with varying map_over_type", async () => {
+        const wrapper = createTarget({
+            value: {
+                values: [
+                    { id: "dce2", src: "dce" },
+                    { id: "dce3", src: "dce" },
+                ],
+            },
+            options: defaultOptions,
+        });
+        const value_0 = {
+            batch: true,
+            product: false,
+            values: [
+                { id: "dce2", map_over_type: null, src: "dce" },
+                { id: "dce3", map_over_type: "mapOverType", src: "dce" },
+            ],
         };
         expect(wrapper.emitted().input[0][0]).toEqual(value_0);
     });

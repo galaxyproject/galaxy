@@ -292,6 +292,20 @@ function matchName(entry: DataOption) {
 }
 
 /**
+ * Matches an array of values to available options
+ */
+function matchValues(entries: Array<DataOption>) {
+    const values: Array<DataOption> = [];
+    entries.forEach((val) => {
+        const option = matchOption(val);
+        if (option) {
+            values.push(option);
+        }
+    });
+    return values;
+}
+
+/**
  * Open file dialog
  */
 function onBrowse() {
@@ -404,14 +418,7 @@ onMounted(() => {
         waiting.value = value;
     });
     if (isDCE.value && props.value && props.value.values) {
-        const dceValues: Array<DataOption> = [];
-        props.value.values.forEach((val) => {
-            const matchedVal = matchOption(val);
-            if (matchedVal) {
-                dceValues.push(matchedVal);
-            }
-        });
-        setValue(dceValues);
+        setValue(matchValues(props.value.values));
     } else {
         setValue(currentValue.value);
     }
