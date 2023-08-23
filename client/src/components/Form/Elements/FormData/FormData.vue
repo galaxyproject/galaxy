@@ -191,7 +191,13 @@ const isDCE = computed(() => {
         return false;
     }
 });
-
+const isLDDA = computed(() => {
+    if (props.value && props.value.values.length > 0) {
+        return props.value.values.findIndex((v) => v.src !== SOURCE.LIBRARY_DATASET) === -1;
+    } else {
+        return false;
+    }
+});
 /**
  * Provides placeholder label for select field
  */
@@ -228,7 +234,8 @@ function handleIncoming(incoming: Record<string, unknown>, partial = true) {
                 const newHid = v.hid;
                 const newId = v.id;
                 const newName = v.name ? v.name : newId;
-                const newSrc = v.history_content_type === "dataset_collection" ? SOURCE.COLLECTION : SOURCE.DATASET;
+                const newSrc =
+                    v.src || (v.history_content_type === "dataset_collection" ? SOURCE.COLLECTION : SOURCE.DATASET);
                 const newValue = {
                     id: newId,
                     src: newSrc,
@@ -288,7 +295,9 @@ function matchOption(entry: DataOption) {
  */
 function matchName(entry: DataOption) {
     const option = matchOption(entry);
-    return option?.name || entry.id;
+    const name = option?.name || entry.id;
+    const src = option?.src || "unknown";
+    return `${name} (${src})`;
 }
 
 /**
@@ -310,8 +319,8 @@ function matchValues(entries: Array<DataOption>) {
  */
 function onBrowse() {
     if (currentVariant.value) {
-        const library = currentVariant.value.library;
-        const multiple = currentVariant.value.multiple;
+        const library = !!currentVariant.value.library;
+        const multiple = !!currentVariant.value.multiple;
         getGalaxyInstance().data.dialog(
             (response: Record<string, unknown>) => {
                 handleIncoming(response, false);
@@ -372,6 +381,8 @@ function setValue(val: Array<DataOption> | DataOption | null) {
             let sourceType: string | null = null;
             if (isDCE.value) {
                 sourceType = values[0].hda ? SOURCE.DATASET : SOURCE.COLLECTION;
+            } else if (isLDDA.value) {
+                sourceType = SOURCE.DATASET;
             } else {
                 sourceType = values[0].src;
             }
@@ -383,7 +394,7 @@ function setValue(val: Array<DataOption> | DataOption | null) {
             let batch: string = BATCH.DISABLED;
             if (variantIndex >= 0) {
                 const variantDetails = variant.value[variantIndex];
-                if (isDCE.value && variantDetails && variantDetails.batch) {
+                if ((isLDDA.value || isDCE.value) && variantDetails && variantDetails.batch) {
                     batch = variantDetails.batch;
                 } else {
                     // Switch to another field type if source differs from current field
@@ -414,7 +425,7 @@ onMounted(() => {
     eventBus.$on("waiting", (value: boolean) => {
         waiting.value = value;
     });
-    if (isDCE.value && props.value && props.value.values) {
+    if ((isLDDA.value || isDCE.value) && props.value && props.value.values) {
         setValue(matchValues(props.value.values));
     } else {
         setValue(currentValue.value);
@@ -439,10 +450,10 @@ watch(
         @dragleave.prevent="onDragLeave"
         @dragover.prevent="onDragOver"
         @drop.prevent="onDrop">
-        <b-alert v-if="isDCE" variant="info" dismissible show @dismissed="currentValue = null">
+        <b-alert v-if="isDCE || isLDDA" variant="info" dismissible show @dismissed="$emit('input', null)">
             <span v-localize class="font-weight-bold">Using the following datasets (dismiss to reset):</span>
             <div v-for="(v, vIndex) of props.value.values" :key="vIndex">
-                <span class="form-data-entry-label ml-2">{{ vIndex + 1 }}. {{ matchName(v) || v.id }}</span>
+                <span class="form-data-entry-label ml-2">{{ vIndex + 1 }}. {{ matchName(v) }}</span>
             </div>
         </b-alert>
         <div v-else>
