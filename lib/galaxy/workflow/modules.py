@@ -122,6 +122,71 @@ class ConditionalStepWhen(BooleanToolParameter):
     pass
 
 
+def to_cwl(value, hda_references, step):
+    element_identifier = None
+    if isinstance(value, model.DatasetCollectionElement) and value.hda:
+        element_identifier = value.element_identifier
+        value = value.hda
+    if isinstance(value, model.HistoryDatasetAssociation):
+        # I think the following two checks are needed but they may
+        # not be needed.
+        if not value.dataset.in_ready_state():
+            why = "dataset [%s] is needed for valueFrom expression and is non-ready" % value.id
+            raise DelayedWorkflowEvaluation(why=why)
+        if not value.is_ok:
+            raise FailWorkflowEvaluation(
+                why=InvocationFailureDatasetFailed(
+                    reason=FailureReason.dataset_failed, hda_id=value.id, workflow_step_id=step.id
+                )
+            )
+        if value.ext == "expression.json":
+            with open(value.file_name) as f:
+                # OUR safe_loads won't work, will not load numbers, etc...
+                return json.load(f)
+        else:
+            hda_references.append(value)
+            properties = {
+                "class": "File",
+                "location": "step_input://%d" % len(hda_references),
+            }
+            set_basename_and_derived_properties(
+                properties, value.dataset.created_from_basename or element_identifier or value.name
+            )
+            return properties
+    elif hasattr(value, "collection"):
+        collection = value.collection
+        if collection.collection_type == "list":
+            return [to_cwl(dce, hda_references=hda_references, step=step) for dce in collection.dataset_elements]
+        else:
+            # Could be record or nested lists
+            rval = {}
+            for element in collection.elements:
+                rval[element.element_identifier] = to_cwl(
+                    element.element_object, hda_references=hda_references, step=step
+                )
+            return rval
+    elif isinstance(value, list):
+        return [to_cwl(v, hda_references=hda_references, step=step) for v in value]
+    else:
+        return value
+
+
+def from_cwl(value, hda_references, progress):
+    # TODO: turn actual files into HDAs here ... somehow I suppose. Things with
+    # file:// locations for instance.
+    if isinstance(value, dict) and "class" in value and "location" in value:
+        if value["class"] == "File":
+            # This is going to re-file -> HDA this each iteration I think, not a good
+            # implementation.
+            return progress.raw_to_galaxy(value)
+        assert value["location"].startswith("step_input://"), "Invalid location %s" % value
+        return hda_references[int(value["location"][len("step_input://") :]) - 1]
+    elif isinstance(value, dict):
+        raise NotImplementedError()
+    else:
+        return value
+
+
 def evaluate_value_from_expressions(progress, step, execution_state, extra_step_state):
     when_expression = step.when_expression
     value_from_expressions = {}
@@ -135,73 +200,14 @@ def evaluate_value_from_expressions(progress, step, execution_state, extra_step_
     if not value_from_expressions and when_expression is None:
         return {}
 
-    hda_references = []
-
-    def to_cwl(value):
-        element_identifier = None
-        if isinstance(value, model.DatasetCollectionElement) and value.hda:
-            element_identifier = value.element_identifier
-            value = value.hda
-        if isinstance(value, model.HistoryDatasetAssociation):
-            # I think the following two checks are needed but they may
-            # not be needed.
-            if not value.dataset.in_ready_state():
-                why = "dataset [%s] is needed for valueFrom expression and is non-ready" % value.id
-                raise DelayedWorkflowEvaluation(why=why)
-            if not value.is_ok:
-                raise FailWorkflowEvaluation(
-                    why=InvocationFailureDatasetFailed(
-                        reason=FailureReason.dataset_failed, hda_id=value.id, workflow_step_id=step.id
-                    )
-                )
-            if value.ext == "expression.json":
-                with open(value.file_name) as f:
-                    # OUR safe_loads won't work, will not load numbers, etc...
-                    return json.load(f)
-            else:
-                hda_references.append(value)
-                properties = {
-                    "class": "File",
-                    "location": "step_input://%d" % len(hda_references),
-                }
-                set_basename_and_derived_properties(
-                    properties, value.dataset.created_from_basename or element_identifier or value.name
-                )
-                return properties
-        elif hasattr(value, "collection"):
-            collection = value.collection
-            if collection.collection_type == "list":
-                return [to_cwl(dce) for dce in collection.dataset_elements]
-            else:
-                # Could be record or nested lists
-                rval = {}
-                for element in collection.elements:
-                    rval[element.element_identifier] = to_cwl(element.element_object)
-                return rval
-        else:
-            return value
-
-    def from_cwl(value):
-        # TODO: turn actual files into HDAs here ... somehow I suppose. Things with
-        # file:// locations for instance.
-        if isinstance(value, dict) and "class" in value and "location" in value:
-            if value["class"] == "File":
-                # This is going to re-file -> HDA this each iteration I think, not a good
-                # implementation.
-                return progress.raw_to_galaxy(value)
-            assert value["location"].startswith("step_input://"), "Invalid location %s" % value
-            return hda_references[int(value["location"][len("step_input://") :]) - 1]
-        elif isinstance(value, dict):
-            raise NotImplementedError()
-        else:
-            return value
+    hda_references: List[model.HistoryDatasetAssociation] = []
 
     step_state = {}
     for key, value in extra_step_state.items():
-        step_state[key] = to_cwl(value)
+        step_state[key] = to_cwl(value, hda_references=hda_references, step=step)
     if execution_state:
         for key, value in execution_state.inputs.items():
-            step_state[key] = to_cwl(value)
+            step_state[key] = to_cwl(value, hda_references=hda_references, step=step)
 
     if when_expression is not None:
         if when_expression == "${inputs.when}":
@@ -229,7 +235,7 @@ def evaluate_value_from_expressions(progress, step, execution_state, extra_step_
                     reason=FailureReason.expression_evaluation_failed, workflow_step_id=step.id
                 )
             )
-        when_value = from_cwl(as_cwl_value)
+        when_value = from_cwl(as_cwl_value, hda_references=hda_references, progress=progress)
         if not isinstance(when_value, bool):
             raise FailWorkflowEvaluation(
                 InvocationFailureWhenNotBoolean(

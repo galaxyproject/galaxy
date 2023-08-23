@@ -7,6 +7,7 @@ import { computed } from "vue";
 
 import type { SharedItemNotification } from "@/components/Notifications";
 import { useNotificationsStore } from "@/stores/notificationsStore";
+import { absPath } from "@/utils/redirect";
 
 import Heading from "@/components/Common/Heading.vue";
 import NotificationActions from "@/components/Notifications/NotificationActions.vue";
@@ -43,9 +44,12 @@ const notificationVariant = computed(() => {
     }
 });
 
-function onClick(link: string) {
+const sharedItemUrl = computed(() => {
+    return absPath(content.value.slug);
+});
+
+function markNotificationAsSeen() {
     notificationsStore.updateNotification(props.notification, { seen: true });
-    window.open(link, "_blank");
 }
 </script>
 
@@ -67,7 +71,9 @@ function onClick(link: string) {
                     v-b-tooltip.bottom
                     :title="`View ${content.item_type} in new tab`"
                     class="text-primary"
-                    @click="onClick(content.slug)">
+                    :href="sharedItemUrl"
+                    target="_blank"
+                    @click="markNotificationAsSeen()">
                     {{ content.item_name }}
                     <FontAwesomeIcon icon="external-link-alt" />
                 </BLink>
