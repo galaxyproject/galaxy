@@ -153,7 +153,7 @@ describe("FormData", () => {
         expect(wrapper.emitted().input.length).toEqual(1);
         const message = wrapper.findAll(".form-data-entry-label");
         expect(message.length).toBe(1);
-        expect(message.at(0).text()).toBe("1. dceName1");
+        expect(message.at(0).text()).toBe("1. dceName1 (dce)");
         const closeButton = wrapper.find(".alert .close");
         await closeButton.trigger("click");
         expect(wrapper.emitted().input[1][0]).toEqual(null);

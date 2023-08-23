@@ -2137,6 +2137,9 @@ class DataToolParameter(BaseDataToolParameter):
         elif isinstance(value, (HistoryDatasetAssociation, LibraryDatasetDatasetAssociation)):
             rval.append(value)
         elif isinstance(value, dict) and "src" in value and "id" in value:
+            if value["src"] == "ldda":
+                decoded_id = trans.security.decode_id(value["id"])
+                rval.append(trans.sa_session.query(LibraryDatasetDatasetAssociation).get(decoded_id))
             if value["src"] == "hda":
                 decoded_id = trans.security.decode_id(value["id"])
                 rval.append(trans.sa_session.query(HistoryDatasetAssociation).get(decoded_id))
@@ -2272,7 +2275,7 @@ class DataToolParameter(BaseDataToolParameter):
             # For consistency, should these just always be in the dict?
             d["min"] = self.min
             d["max"] = self.max
-        d["options"] = {"dce": [], "hda": [], "hdca": []}
+        d["options"] = {"dce": [], "ldda": [], "hda": [], "hdca": []}
         d["tag"] = self.tag
 
         # return dictionary without options if context is unavailable
@@ -2311,10 +2314,26 @@ class DataToolParameter(BaseDataToolParameter):
                 }
             )
 
+        def append_ldda(ldda):
+            d["options"]["ldda"].append(
+                {
+                    "id": trans.security.encode_id(ldda.id),
+                    "name": ldda.name,
+                    "src": "ldda",
+                    "tags": [],
+                    "keep": True,
+                }
+            )
+
         # append DCE
         if isinstance(other_values.get(self.name), DatasetCollectionElement):
             dce = other_values[self.name]
             append_dce(dce)
+
+        # append LDDA
+        if isinstance(other_values.get(self.name), LibraryDatasetDatasetAssociation):
+            ldda = other_values[self.name]
+            append_ldda(ldda)
 
         # add datasets
         hda_list = util.listify(other_values.get(self.name))
@@ -2337,6 +2356,8 @@ class DataToolParameter(BaseDataToolParameter):
                 append(d["options"]["hda"], hda, f"({hda_state}) {hda.name}", "hda", True)
             elif isinstance(hda, DatasetCollectionElement):
                 append_dce(hda)
+            elif isinstance(hda, LibraryDatasetDatasetAssociation):
+                append_ldda(hda)
 
         # add dataset collections
         dataset_collection_matcher = dataset_matcher_factory.dataset_collection_matcher(dataset_matcher)
