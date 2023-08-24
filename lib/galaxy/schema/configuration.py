@@ -241,6 +241,7 @@ class ExposableGalaxyConfig(Model):
     brand: Annotated[
         Optional[str],
         Field(
+            per_host=True,
             title="Brand",
             description="""Append "{brand}" text to the masthead.""",
         ),
@@ -249,6 +250,7 @@ class ExposableGalaxyConfig(Model):
     logo_url: Annotated[
         Optional[str],
         Field(
+            per_host=True,
             title="Logo Url",
             description="""The URL linked by the "Galaxy/brand" text.""",
         ),
@@ -257,6 +259,7 @@ class ExposableGalaxyConfig(Model):
     logo_src: Annotated[
         Optional[str],
         Field(
+            per_host=True,
             title="Logo Src",
             description="""The brand image source.""",
         ),
@@ -265,6 +268,7 @@ class ExposableGalaxyConfig(Model):
     logo_src_secondary: Annotated[
         Optional[str],
         Field(
+            per_host=True,
             title="Logo Src Secondary",
             description="""The custom brand image source.""",
         ),
@@ -273,6 +277,7 @@ class ExposableGalaxyConfig(Model):
     terms_url: Annotated[
         Optional[str],
         Field(
+            per_host=True,
             title="Terms Url",
             description="""The URL linked by the "Terms and Conditions" link in the "Help" menu, as well
 as on the user registration and login forms and in the activation emails.""",
@@ -282,6 +287,7 @@ as on the user registration and login forms and in the activation emails.""",
     wiki_url: Annotated[
         str,
         Field(
+            per_host=True,
             title="Wiki Url",
             description="""The URL linked by the "Community Hub" link in the "Help" menu.""",
         ),
@@ -290,6 +296,7 @@ as on the user registration and login forms and in the activation emails.""",
     screencasts_url: Annotated[
         str,
         Field(
+            per_host=True,
             title="Screencasts Url",
             description="""The URL linked by the "Videos" link in the "Help" menu.""",
         ),
@@ -298,6 +305,7 @@ as on the user registration and login forms and in the activation emails.""",
     citation_url: Annotated[
         str,
         Field(
+            per_host=True,
             title="Citation Url",
             description="""The URL linked by the "How to Cite Galaxy" link in the "Help" menu.""",
         ),
@@ -314,6 +322,7 @@ as on the user registration and login forms and in the activation emails.""",
     support_url: Annotated[
         str,
         Field(
+            per_host=True,
             title="Support Url",
             description="""The URL linked by the "Support" link in the "Help" menu.""",
         ),
@@ -330,6 +339,7 @@ as on the user registration and login forms and in the activation emails.""",
     helpsite_url: Annotated[
         str,
         Field(
+            per_host=True,
             title="Helpsite Url",
             description="""The URL linked by the "Galaxy Help" link in the "Help" menu.""",
         ),
@@ -588,6 +598,7 @@ available for Python 2.7 is 0.42).""",
     simplified_workflow_run_ui: Annotated[
         Literal["off", "prefer"],
         Field(
+            per_host=True,
             title="Simplified Workflow Run Ui",
             description="""If set to 'off' by default, always use the traditional workflow form that renders
 all steps in the GUI and serializes the tool state of all steps during
@@ -602,6 +613,7 @@ only render simplified workflows.""",
     simplified_workflow_run_ui_target_history: Annotated[
         Literal["current", "new", "prefer_current", "prefer_new"],
         Field(
+            per_host=True,
             title="Simplified Workflow Run Ui Target History",
             description="""When the simplified workflow run form is rendered, should the invocation outputs
 be sent to the 'current' history or a 'new' history. If the user should be presented
@@ -616,6 +628,7 @@ of Galaxy for years) - this corresponds to the setting 'prefer_current'.
     simplified_workflow_run_ui_job_cache: Annotated[
         Literal["on", "off"],
         Field(
+            per_host=True,
             title="Simplified Workflow Run Ui Job Cache",
             description="""When the simplified workflow run form is rendered, should the invocation use job
 caching. This isn't a boolean so an option for 'show-selection' can be added later.""",
@@ -645,6 +658,7 @@ in bytes (default: 10MB).
     ftp_upload_site: Annotated[
         Optional[str],
         Field(
+            per_host=True,
             title="Ftp Upload Site",
             description="""Enable Galaxy's "Upload via FTP" interface.
 You'll need to install and configure an FTP server (we've used ProFTPd since it can use Galaxy's
@@ -784,6 +798,7 @@ If no message specified the warning box will not be shown.""",
     welcome_url: Annotated[
         str,
         Field(
+            per_host=True,
             title="Welcome Url",
             description="""The URL of the page to display in Galaxy's middle pane when loaded. This can
 be an absolute or relative URL.""",
@@ -2568,6 +2583,7 @@ internally (in the Galaxy job handler process). The default is is the value of
         Optional[bool],
         Field(
             deprecated=True,
+            per_host=True,
             title="Display Galaxy Brand",
             description="""This option has been deprecated, use the `logo_src` instead to change the
 default logo including the galaxy brand title.
@@ -2680,6 +2696,7 @@ server) to point to your own styles.
     static_dir: Annotated[
         Optional[str],
         Field(
+            per_host=True,
             title="Static Dir",
             description="""Serve static content, which must be enabled if you're not serving it via a
 proxy server. These options should be self explanatory and so are not
@@ -2692,6 +2709,7 @@ server) to point to your own styles.
     static_images_dir: Annotated[
         Optional[str],
         Field(
+            per_host=True,
             title="Static Images Dir",
             description="""Serve static content, which must be enabled if you're not serving it via a
 proxy server. These options should be self explanatory and so are not
@@ -2700,9 +2718,11 @@ server) to point to your own styles.
 """,
         ),
     ] = "static/images"
+
     static_favicon_dir: Annotated[
         Optional[str],
         Field(
+            per_host=True,
             title="Static Favicon Dir",
             description="""Serve static content, which must be enabled if you're not serving it via a
 proxy server. These options should be self explanatory and so are not
@@ -2715,6 +2735,7 @@ server) to point to your own styles.
     static_scripts_dir: Annotated[
         Optional[str],
         Field(
+            per_host=True,
             title="Static Scripts Dir",
             description="""Serve static content, which must be enabled if you're not serving it via a
 proxy server. These options should be self explanatory and so are not
@@ -2727,6 +2748,7 @@ server) to point to your own styles.
     static_style_dir: Annotated[
         Optional[str],
         Field(
+            per_host=True,
             title="Static Style Dir",
             description="""Serve static content, which must be enabled if you're not serving it via a
 proxy server. These options should be self explanatory and so are not
@@ -2739,6 +2761,7 @@ server) to point to your own styles.
     static_robots_txt: Annotated[
         Optional[str],
         Field(
+            per_host=True,
             title="Static Robots Txt",
             description="""Serve static content, which must be enabled if you're not serving it via a
 proxy server. These options should be self explanatory and so are not
@@ -4771,6 +4794,7 @@ reason to disable it.
     themes_config_file: Annotated[
         Optional[str],
         Field(
+            per_host=True,
             title="Themes Config File",
             description="""Optional file containing one or more themes for galaxy. If several themes
 are defined, users can choose their preferred theme in the client.
