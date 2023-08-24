@@ -57,7 +57,7 @@ from whoosh.scoring import (
 from whoosh.writing import AsyncWriter
 
 from galaxy.config import GalaxyAppConfiguration
-from galaxy.tools.parameters.basic import DataToolParameter
+from galaxy.tools.parameters.basic import BaseDataToolParameter
 from galaxy.util import ExecutionTimer
 from galaxy.web.framework.helpers import to_unicode
 
@@ -310,9 +310,12 @@ class ToolPanelViewSearch:
         else:
             add_doc_kwds["stub"] = to_unicode(id)
         if tool.inputs:
-            data_tool_params = [value for value in tool.inputs.values() if isinstance(value, DataToolParameter)]
-            inputs = list({ext for param in data_tool_params for ext in param.extensions})
-            add_doc_kwds["inputs"] = to_unicode(" ".join(inputs))
+            input_extensions = set()
+            for tool_input in tool.inputs.values():
+                if isinstance(tool_input, BaseDataToolParameter):
+                    for extension in tool_input.extensions:
+                        input_extensions.add(extension)
+            add_doc_kwds["inputs"] = to_unicode(" ".join(input_extensions))
         if tool.labels:
             add_doc_kwds["labels"] = to_unicode(" ".join(tool.labels))
         if index_help:
