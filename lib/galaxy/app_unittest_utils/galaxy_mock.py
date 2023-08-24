@@ -293,7 +293,7 @@ class MockTrans:
         self.security = self.app.security
         self.history = history
 
-        self.request: Any = Bunch(headers={}, body=None, host="request.host")
+        self.request: Any = Bunch(headers={}, is_body_readable=False, host="request.host")
         self.response: Any = Bunch(headers={}, set_content_type=lambda i: None)
 
     @property

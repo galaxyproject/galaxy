@@ -209,6 +209,9 @@ class MockObjectStore:
     def exists(self, *args, **kwargs):
         return True
 
+    def construct_path(self, *args, **kwds):
+        return self.working_directory
+
     def get_filename(self, *args, **kwds):
         if kwds.get("base_dir", "") == "job_work":
             return self.working_directory

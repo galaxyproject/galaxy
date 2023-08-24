@@ -36,6 +36,7 @@ test_tools = integration_util.integration_tool_runner(
         "tool_provided_metadata_9",
         "simple_constructs_y",
         "composite_output",
+        "composite_output_tests",
         "detect_errors",
     ]
 )

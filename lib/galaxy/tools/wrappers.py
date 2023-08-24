@@ -19,7 +19,6 @@ from typing import (
     Union,
 )
 
-from galaxy import exceptions
 from galaxy.model import (
     DatasetCollection,
     DatasetCollectionElement,
@@ -475,34 +474,14 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
         if self.false_path is not None and key == "file_name":
             # Path to dataset was rewritten for this job.
             return self.false_path
-        elif key == "extra_files_path":
+        elif key in ("extra_files_path", "files_path"):
+            if not self.compute_environment:
+                # Only happens in WrappedParameters context, refactor!
+                return self.unsanitized.extra_files_path
             if self.__io_type == "input":
-                path_rewrite = self.compute_environment and self.compute_environment.input_extra_files_rewrite(
-                    self.unsanitized
-                )
+                return self.compute_environment.input_extra_files_rewrite(self.unsanitized)
             else:
-                path_rewrite = self.compute_environment and self.compute_environment.output_extra_files_rewrite(
-                    self.unsanitized
-                )
-            if path_rewrite:
-                return path_rewrite
-            else:
-                try:
-                    # Assume it is an output and that this wrapper
-                    # will be set with correct "files_path" for this
-                    # job.
-                    return self.files_path
-                except AttributeError:
-                    # Otherwise, we have an input - delegate to model and
-                    # object store to find the static location of this
-                    # directory.
-                    try:
-                        return self.unsanitized.extra_files_path
-                    except exceptions.ObjectNotFound:
-                        # NestedObjectstore raises an error here
-                        # instead of just returning a non-existent
-                        # path like DiskObjectStore.
-                        raise
+                return self.compute_environment.output_extra_files_rewrite(self.unsanitized)
         elif key == "serialize":
             return self.serialize
         else:
