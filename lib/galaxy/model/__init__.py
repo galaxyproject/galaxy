@@ -3574,7 +3574,9 @@ class Dataset(Base, StorableObject, Serializable):
         if not getattr(self, "external_extra_files_path", None):
             if self.object_store.exists(self, dir_only=True, extra_dir=self._extra_files_rel_path):
                 return self.object_store.get_filename(self, dir_only=True, extra_dir=self._extra_files_rel_path)
-            return ""
+            return self.object_store.construct_path(
+                self, dir_only=True, extra_dir=self._extra_files_rel_path, in_cache=True
+            )
         else:
             return os.path.abspath(self.external_extra_files_path)
 

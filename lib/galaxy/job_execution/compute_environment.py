@@ -12,6 +12,11 @@ from galaxy.job_execution.setup import JobIO
 from galaxy.model import Job
 
 
+def dataset_path_to_extra_path(path: str) -> str:
+    base_path = path[0 : -len(".dat")]
+    return f"{base_path}_files"
+
+
 class ComputeEnvironment(metaclass=ABCMeta):
     """Definition of the job as it will be run on the (potentially) remote
     compute server.
@@ -121,20 +126,18 @@ class SharedComputeEnvironment(SimpleComputeEnvironment, ComputeEnvironment):
         return self.job_io.get_output_fnames()
 
     def input_path_rewrite(self, dataset):
-        return self.job_io.get_input_path(dataset).false_path
+        return str(self.job_io.get_input_path(dataset))
 
     def output_path_rewrite(self, dataset):
-        dataset_path = self.job_io.get_output_path(dataset)
-        if hasattr(dataset_path, "false_path"):
-            return dataset_path.false_path
-        else:
-            return dataset_path
+        return str(self.job_io.get_output_path(dataset))
 
     def input_extra_files_rewrite(self, dataset):
-        return None
+        input_path_rewrite = self.input_path_rewrite(dataset)
+        return dataset_path_to_extra_path(input_path_rewrite)
 
     def output_extra_files_rewrite(self, dataset):
-        return None
+        output_path_rewrite = self.output_path_rewrite(dataset)
+        return dataset_path_to_extra_path(output_path_rewrite)
 
     def input_metadata_rewrite(self, dataset, metadata_value):
         return None

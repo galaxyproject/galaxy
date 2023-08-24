@@ -719,8 +719,14 @@ def default_exit_code_file(files_dir, id_tag):
 
 
 def collect_extra_files(object_store, dataset, job_working_directory):
+    # TODO: should this use compute_environment to determine the extra files path ?
     file_name = dataset.dataset.extra_files_path_name_from(object_store)
-    temp_file_path = os.path.join(job_working_directory, "working", file_name)
+    output_location = "outputs"
+    temp_file_path = os.path.join(job_working_directory, output_location, file_name)
+    if not os.path.exists(temp_file_path):
+        # Fall back to working dir, remove in 23.2
+        output_location = "working"
+        temp_file_path = os.path.join(job_working_directory, output_location, file_name)
     extra_dir = None
     try:
         # This skips creation of directories - object store
@@ -728,7 +734,7 @@ def collect_extra_files(object_store, dataset, job_working_directory):
         # not be created in the object store at all, which might be a
         # problem.
         for root, _dirs, files in os.walk(temp_file_path):
-            extra_dir = root.replace(os.path.join(job_working_directory, "working"), "", 1).lstrip(os.path.sep)
+            extra_dir = root.replace(os.path.join(job_working_directory, output_location), "", 1).lstrip(os.path.sep)
             for f in files:
                 object_store.update_from_file(
                     dataset.dataset,
