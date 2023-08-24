@@ -719,7 +719,7 @@ class NavigatesGalaxy(HasDriver):
             ui_logged_out = self.components.masthead.logged_out_only.is_displayed
             if ui_logged_out:
                 dom_message = (
-                    "Element a.loggedout-only is present in DOM, indicating Login or Register button still in masthead."
+                    "Element a.loggedout-only is present in DOM, indicating Log in or Register button still in masthead."
                 )
             else:
                 dom_message = "Element a.loggedout-only is *not* present in DOM."

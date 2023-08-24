@@ -54,7 +54,7 @@ define({
 
     Register: "Registro",
 
-    "Login or Register": "Iniciar sesión o Registrarse",
+    "Log in or Register": "Iniciar sesión o Registrarse",
     "Subscribe to mailing list": false,
     "Already have an account?": false,
     "Log in here.": false,
