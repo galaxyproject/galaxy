@@ -282,7 +282,7 @@ class MockTrans:
         self.security = self.app.security
         self.history = history
 
-        self.request: Any = Bunch(headers={}, body=None)
+        self.request: Any = Bunch(headers={}, is_body_readable=False)
         self.response: Any = Bunch(headers={}, set_content_type=lambda i: None)
 
     def check_csrf_token(self, payload):
