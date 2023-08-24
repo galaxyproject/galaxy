@@ -19,6 +19,12 @@ from typing_extensions import (
 
 from galaxy.schema.schema import Model
 
+CONFIG_DIR = "config_dir"
+DATA_DIR = "data_dir"
+MANAGED_CONFIG_DIR = "managed_config_dir"
+CACHE_DIR = "cache_dir"
+TOOL_DEPENDENCY_DIR = "tool_dependency_dir"
+
 WatchToolOptions = Union[bool, Literal["false", "true", "auto", "polling"]]
 
 
@@ -386,6 +392,7 @@ If it is enabled and set to true, please enable 'tool_recommendation_model_path'
     admin_tool_recommendations_path: Annotated[
         str,
         Field(
+            path_resolves_to=CONFIG_DIR,
             title="Admin Tool Recommendations Path",
             description="""Set path to the additional tool preferences from Galaxy admins.
 It has two blocks. One for listing deprecated tools which will be removed from the recommendations and
@@ -751,6 +758,7 @@ https://en.wikipedia.org/wiki/Power_usage_effectiveness
     message_box_visible: Annotated[
         bool,
         Field(
+            reloadable=True,
             title="Message Box Visible",
             description="""Show a message box under the masthead.""",
         ),
@@ -759,6 +767,7 @@ https://en.wikipedia.org/wiki/Power_usage_effectiveness
     message_box_content: Annotated[
         Optional[str],
         Field(
+            reloadable=True,
             title="Message Box Content",
             description="""Show a message box under the masthead.""",
         ),
@@ -767,6 +776,7 @@ https://en.wikipedia.org/wiki/Power_usage_effectiveness
     message_box_class: Annotated[
         Literal["info", "warning", "error", "done"],
         Field(
+            reloadable=True,
             title="Message Box Class",
             description="""Class of the message box under the masthead.
 Possible values are: 'info' (the default), 'warning', 'error', 'done'.""",
@@ -798,6 +808,7 @@ If no message specified the warning box will not be shown.""",
     welcome_url: Annotated[
         str,
         Field(
+            reloadable=True,
             per_host=True,
             title="Welcome Url",
             description="""The URL of the page to display in Galaxy's middle pane when loaded. This can
@@ -839,6 +850,7 @@ use any other positive number as threshold (above threshold: regular select fiel
     toolbox_auto_sort: Annotated[
         bool,
         Field(
+            reloadable=True,
             title="Toolbox Auto Sort",
             description="""If true, the toolbox will be sorted by tool id when the toolbox is loaded.
 This is useful for ensuring that tools are always displayed in the same
@@ -1066,6 +1078,7 @@ file_path, etc.). Defaults to `database/` if running Galaxy from source or
     templates_dir: Annotated[
         Optional[str],
         Field(
+            path_resolves_to=CONFIG_DIR,
             title="Templates Dir",
             description="""The directory containing custom templates for Galaxy, such as HTML/text email templates. Defaults to 'templates'. Default templates can be found in the Galaxy root under config/templates. These can be copied to <templates_dir> if you wish to customize them.""",
         ),
@@ -1074,6 +1087,7 @@ file_path, etc.). Defaults to `database/` if running Galaxy from source or
     cache_dir: Annotated[
         Optional[str],
         Field(
+            path_resolves_to=DATA_DIR,
             title="Cache Dir",
             description="""Top level cache directory. Any other cache directories (tool_cache_data_dir,
 template_cache_path, etc.) should be subdirectories.""",
@@ -1263,6 +1277,7 @@ Set to 0 to disable pruning.
     file_path: Annotated[
         Optional[str],
         Field(
+            path_resolves_to=DATA_DIR,
             title="File Path",
             description="""Where dataset files are stored. It must be accessible at the same path on any cluster
 nodes that will run Galaxy jobs, unless using Pulsar. The default value has been changed
@@ -1275,6 +1290,7 @@ directory exists before using 'objects' as the default.
     new_file_path: Annotated[
         Optional[str],
         Field(
+            path_resolves_to=DATA_DIR,
             title="New File Path",
             description="""Where temporary files are stored. It must be accessible at the same path on any cluster
 nodes that will run Galaxy jobs, unless using Pulsar.
@@ -1295,6 +1311,7 @@ This value is ignored if an external upload server is configured.
     tool_config_file: Annotated[
         Optional[Any],
         Field(
+            path_resolves_to=CONFIG_DIR,
             title="Tool Config File",
             description="""Tool config files, defines what tools are available in Galaxy.
 Tools can be locally developed or installed from Galaxy tool sheds.
@@ -1308,6 +1325,7 @@ files, or (for backwards compatibility) a comma-separated list of files.
     shed_tool_config_file: Annotated[
         Optional[str],
         Field(
+            path_resolves_to=MANAGED_CONFIG_DIR,
             title="Shed Tool Config File",
             description="""Tool config file for tools installed from the Galaxy Tool Shed. Must
 be writable by Galaxy and generally should not be edited by hand. In
@@ -1325,6 +1343,7 @@ tool_config_file cannot be read.
     migrated_tools_config: Annotated[
         Optional[str],
         Field(
+            path_resolves_to=MANAGED_CONFIG_DIR,
             deprecated=True,
             title="Migrated Tools Config",
             description="""This option is deprecated.
@@ -1363,6 +1382,7 @@ Other tool config files must include the tool_path as an attribute in the
     tool_dependency_dir: Annotated[
         Optional[str],
         Field(
+            path_resolves_to=DATA_DIR,
             title="Tool Dependency Dir",
             description="""Various dependency resolver configuration parameters will have defaults set relative
 to this path, such as the default conda prefix, default Galaxy packages path, legacy
@@ -1378,6 +1398,7 @@ from the Tool Shed or in Conda will fail.
     dependency_resolvers_config_file: Annotated[
         Optional[str],
         Field(
+            path_resolves_to=CONFIG_DIR,
             title="Dependency Resolvers Config File",
             description="""Specifies the path to the standalone dependency resolvers configuration file. This
 configuration can now be specified directly in the Galaxy configuration, see the
@@ -1470,6 +1491,7 @@ of extra disk space usage and extra time spent copying packages.
     local_conda_mapping_file: Annotated[
         Optional[str],
         Field(
+            path_resolves_to=CONFIG_DIR,
             title="Local Conda Mapping File",
             description="""Path to a file that provides a mapping from abstract packages to concrete conda packages.
 See `config/local_conda_mapping.yml.sample` for examples.
@@ -1480,6 +1502,7 @@ See `config/local_conda_mapping.yml.sample` for examples.
     modules_mapping_files: Annotated[
         Optional[str],
         Field(
+            path_resolves_to=CONFIG_DIR,
             title="Modules Mapping Files",
             description="""Path to a file that provides a mapping from abstract packages to locally installed modules.
 See `config/environment_modules_mapping.yml.sample` for examples.
@@ -1531,6 +1554,7 @@ Set this to false if you prefer dependencies to be cached only when installing n
     tool_sheds_config_file: Annotated[
         Optional[str],
         Field(
+            path_resolves_to=CONFIG_DIR,
             title="Tool Sheds Config File",
             description="""File containing the Galaxy Tool Sheds that should be made available to
 install from in the admin interface (.sample used if default does not exist).
@@ -1588,6 +1612,7 @@ changes are found, modified tours are automatically reloaded. Takes the same val
     short_term_storage_dir: Annotated[
         Optional[str],
         Field(
+            path_resolves_to=CACHE_DIR,
             title="Short Term Storage Dir",
             description="""Location of files available for a short time as downloads (short term storage).
 This directory is exclusively used for serving dynamically generated downloadable
@@ -1632,6 +1657,7 @@ Celery task configuration.
     file_sources_config_file: Annotated[
         Optional[str],
         Field(
+            path_resolves_to=CONFIG_DIR,
             title="File Sources Config File",
             description="""Configured FileSource plugins.""",
         ),
@@ -1686,6 +1712,7 @@ Takes the same options that can be set in container_resolvers_config_file.
     involucro_path: Annotated[
         Optional[str],
         Field(
+            path_resolves_to=TOOL_DEPENDENCY_DIR,
             title="Involucro Path",
             description="""involucro is a tool used to build Docker or Singularity containers for tools from Conda
 dependencies referenced in tools as `requirement` s. The following path is
@@ -1741,6 +1768,7 @@ setting for hours_between_check should be an integer between 1 and 24.
     tool_data_table_config_path: Annotated[
         Optional[str],
         Field(
+            path_resolves_to=CONFIG_DIR,
             title="Tool Data Table Config Path",
             description="""XML config file that contains data table entries for the
 ToolDataTableManager. This file is manually # maintained by the Galaxy
@@ -1752,6 +1780,7 @@ administrator (.sample used if default does not exist).
     shed_tool_data_table_config: Annotated[
         Optional[str],
         Field(
+            path_resolves_to=MANAGED_CONFIG_DIR,
             title="Shed Tool Data Table Config",
             description="""XML config file that contains additional data table entries for the
 ToolDataTableManager. This file is automatically generated based on the
@@ -1810,6 +1839,7 @@ the watchdog default.
     build_sites_config_file: Annotated[
         Optional[str],
         Field(
+            path_resolves_to=CONFIG_DIR,
             title="Build Sites Config File",
             description="""File that defines the builds (dbkeys) available at sites used by display applications
 and the URL to those sites.
@@ -1842,6 +1872,7 @@ The value of this option will be resolved with respect to <tool_data_path>.
     datatypes_config_file: Annotated[
         Optional[str],
         Field(
+            path_resolves_to=CONFIG_DIR,
             title="Datatypes Config File",
             description="""Datatypes config file(s), defines what data (file) types are available in
 Galaxy (.sample is used if default does not exist). If a datatype appears in
@@ -1916,6 +1947,7 @@ The value of this option will be resolved with respect to <data_dir>.
     template_cache_path: Annotated[
         Optional[str],
         Field(
+            path_resolves_to=CACHE_DIR,
             title="Template Cache Path",
             description="""Mako templates are compiled as needed and cached for reuse, this directory is
 used for the cache
@@ -1990,6 +2022,7 @@ the tool_cache_data_dir attribute.
     tool_search_index_dir: Annotated[
         Optional[str],
         Field(
+            path_resolves_to=DATA_DIR,
             title="Tool Search Index Dir",
             description="""Directory in which the toolbox search index is stored.""",
         ),
@@ -2026,6 +2059,7 @@ resovled via biotools_content_directory.
     biotools_service_cache_data_dir: Annotated[
         Optional[str],
         Field(
+            path_resolves_to=CACHE_DIR,
             title="Biotools Service Cache Data Dir",
             description="""bio.tools web service request related caching. The data directory to point beaker cache at.""",
         ),
@@ -2034,6 +2068,7 @@ resovled via biotools_content_directory.
     biotools_service_cache_lock_dir: Annotated[
         Optional[str],
         Field(
+            path_resolves_to=CACHE_DIR,
             title="Biotools Service Cache Lock Dir",
             description="""bio.tools web service request related caching. The lock directory to point beaker cache at.""",
         ),
@@ -2088,6 +2123,7 @@ parameters can be used to control the caching used to store this information.
     citation_cache_data_dir: Annotated[
         Optional[str],
         Field(
+            path_resolves_to=CACHE_DIR,
             title="Citation Cache Data Dir",
             description="""Citation related caching. Tool citations information maybe fetched from
 external sources such as https://doi.org/ by Galaxy - the following
@@ -2099,6 +2135,7 @@ parameters can be used to control the caching used to store this information.
     citation_cache_lock_dir: Annotated[
         Optional[str],
         Field(
+            path_resolves_to=CACHE_DIR,
             title="Citation Cache Lock Dir",
             description="""Citation related caching. Tool citations information maybe fetched from
 external sources such as https://doi.org/ by Galaxy - the following
@@ -2154,6 +2191,7 @@ requests are caching using this and the following parameters
     mulled_resolution_cache_data_dir: Annotated[
         Optional[str],
         Field(
+            path_resolves_to=CACHE_DIR,
             title="Mulled Resolution Cache Data Dir",
             description="""Data directory used by beaker for caching mulled resolution requests.""",
         ),
@@ -2162,6 +2200,7 @@ requests are caching using this and the following parameters
     mulled_resolution_cache_lock_dir: Annotated[
         Optional[str],
         Field(
+            path_resolves_to=CACHE_DIR,
             title="Mulled Resolution Cache Lock Dir",
             description="""Lock directory used by beaker for caching mulled resolution requests.""",
         ),
@@ -2212,6 +2251,7 @@ caching mulled resolution requests.
     object_store_config_file: Annotated[
         Optional[str],
         Field(
+            path_resolves_to=CONFIG_DIR,
             title="Object Store Config File",
             description="""Configuration file for the object store
 If this is set and exists, it overrides any other objectstore settings.
@@ -2254,6 +2294,7 @@ external).
     object_store_cache_path: Annotated[
         Optional[str],
         Field(
+            path_resolves_to=CACHE_DIR,
             title="Object Store Cache Path",
             description="""Default cache path for caching object stores if cache not configured for
 that object store entry.
@@ -2542,6 +2583,7 @@ Galaxy by default.
     interactivetools_map: Annotated[
         Optional[str],
         Field(
+            path_resolves_to=DATA_DIR,
             title="Interactivetools Map",
             description="""Map for interactivetool proxy.""",
         ),
@@ -2609,6 +2651,7 @@ The string may contain:
     trs_servers_config_file: Annotated[
         Optional[str],
         Field(
+            path_resolves_to=CONFIG_DIR,
             title="Trs Servers Config File",
             description="""Allow import of workflows from the TRS servers configured in
 the specified YAML or JSON file. The file should be a list with
@@ -2624,6 +2667,7 @@ just Dockstore will be used.
     user_preferences_extra_conf_path: Annotated[
         Optional[str],
         Field(
+            path_resolves_to=CONFIG_DIR,
             title="User Preferences Extra Conf Path",
             description="""Location of the configuration file containing extra user preferences.""",
         ),
@@ -2920,6 +2964,7 @@ version. Valid values are (node, golang)
     dynamic_proxy_session_map: Annotated[
         Optional[str],
         Field(
+            path_resolves_to=DATA_DIR,
             title="Dynamic Proxy Session Map",
             description="""The NodeJS dynamic proxy can use an SQLite database or a JSON file for IPC,
 set that here.
@@ -3080,6 +3125,7 @@ A custom debug level of "TRACE" is available for even more verbosity.
     logging: Annotated[
         Optional[Dict[str, Any]],
         Field(
+            allowempty=True,
             title="Logging",
             description="""Controls where and how the server logs messages. If set, overrides all settings in the log_* configuration
 options. Configuration is described in the documentation at:
@@ -3472,6 +3518,7 @@ format with commas. Available formats are currently 'zip', 'gz', and 'bz2'.
     tool_name_boost: Annotated[
         Optional[float],
         Field(
+            reloadable=True,
             title="Tool Name Boost",
             description="""In tool search, a query match against a tool's name text will receive
 this score multiplier.
@@ -3482,6 +3529,7 @@ this score multiplier.
     tool_name_exact_multiplier: Annotated[
         Optional[float],
         Field(
+            reloadable=True,
             title="Tool Name Exact Multiplier",
             description="""If a search query matches a tool name exactly, the score will be
 multiplied by this factor.
@@ -3492,6 +3540,7 @@ multiplied by this factor.
     tool_id_boost: Annotated[
         Optional[float],
         Field(
+            reloadable=True,
             title="Tool Id Boost",
             description="""In tool search, a query match against a tool's ID text will receive
 this score multiplier. The query must be an exact match against ID
@@ -3503,6 +3552,7 @@ in order to be counted as a match.
     tool_section_boost: Annotated[
         Optional[float],
         Field(
+            reloadable=True,
             title="Tool Section Boost",
             description="""In tool search, a query match against a tool's section text will
 receive this score multiplier.
@@ -3513,6 +3563,7 @@ receive this score multiplier.
     tool_description_boost: Annotated[
         Optional[float],
         Field(
+            reloadable=True,
             title="Tool Description Boost",
             description="""In tool search, a query match against a tool's description text will
 receive this score multiplier.
@@ -3523,6 +3574,7 @@ receive this score multiplier.
     tool_label_boost: Annotated[
         Optional[float],
         Field(
+            reloadable=True,
             title="Tool Label Boost",
             description="""In tool search, a query match against a tool's label text will
 receive this score multiplier.
@@ -3533,6 +3585,7 @@ receive this score multiplier.
     tool_stub_boost: Annotated[
         Optional[float],
         Field(
+            reloadable=True,
             title="Tool Stub Boost",
             description="""A stub is parsed from the GUID as "owner/repo/tool_id".
 In tool search, a query match against a tool's stub text will receive
@@ -3544,6 +3597,7 @@ this score multiplier.
     tool_help_boost: Annotated[
         Optional[float],
         Field(
+            reloadable=True,
             title="Tool Help Boost",
             description="""In tool search, a query match against a tool's help text will receive
 this score multiplier.
@@ -3554,6 +3608,7 @@ this score multiplier.
     tool_help_bm25f_k1: Annotated[
         Optional[float],
         Field(
+            reloadable=True,
             title="Tool Help Bm25F K1",
             description="""The lower this parameter, the greater the diminishing reward for
 term frequency in the help text. A higher K1 increases the level
@@ -3567,6 +3622,7 @@ occurrence and little reward thereafter.
     tool_search_limit: Annotated[
         Optional[int],
         Field(
+            reloadable=True,
             title="Tool Search Limit",
             description="""Limits the number of results in toolbox search. Use to set the
 maximum number of tool search results to display.
@@ -3577,6 +3633,7 @@ maximum number of tool search results to display.
     tool_enable_ngram_search: Annotated[
         Optional[bool],
         Field(
+            reloadable=True,
             title="Tool Enable Ngram Search",
             description="""Disabling this will prevent partial matches on tool names.
 Enable/disable Ngram-search for tools. It makes tool
@@ -3590,6 +3647,7 @@ also match query substrings e.g. "genome" will match "genomics" or
     tool_ngram_minsize: Annotated[
         Optional[int],
         Field(
+            reloadable=True,
             title="Tool Ngram Minsize",
             description="""Set minimum character length of ngrams""",
         ),
@@ -3598,6 +3656,7 @@ also match query substrings e.g. "genome" will match "genomics" or
     tool_ngram_maxsize: Annotated[
         Optional[int],
         Field(
+            reloadable=True,
             title="Tool Ngram Maxsize",
             description="""Set maximum character length of ngrams""",
         ),
@@ -3606,6 +3665,7 @@ also match query substrings e.g. "genome" will match "genomics" or
     tool_ngram_factor: Annotated[
         Optional[float],
         Field(
+            reloadable=True,
             title="Tool Ngram Factor",
             description="""Ngram matched scores will be multiplied by this factor. Should always
 be below 1, because an ngram match is a partial match of a search term.
@@ -3693,6 +3753,7 @@ to true to force these to lower case.
     admin_users: Annotated[
         Optional[str],
         Field(
+            reloadable=True,
             title="Admin Users",
             description="""Administrative users - set this to a comma-separated list of valid Galaxy
 users (email addresses). These users will have access to the Admin section
@@ -3804,6 +3865,7 @@ to override default tool panel to use an EDAM view.
     edam_toolbox_ontology_path: Annotated[
         Optional[str],
         Field(
+            path_resolves_to=DATA_DIR,
             title="Edam Toolbox Ontology Path",
             description="""Sets the path to EDAM ontology file - if the path doesn't exist PyPI package data will be loaded.""",
         ),
@@ -3901,6 +3963,7 @@ into a collection of datasets for each line in an input dataset.
     oidc_config_file: Annotated[
         Optional[str],
         Field(
+            path_resolves_to=CONFIG_DIR,
             title="Oidc Config File",
             description="""Sets the path to OIDC configuration file.""",
         ),
@@ -3909,6 +3972,7 @@ into a collection of datasets for each line in an input dataset.
     oidc_backends_config_file: Annotated[
         Optional[str],
         Field(
+            path_resolves_to=CONFIG_DIR,
             title="Oidc Backends Config File",
             description="""Sets the path to OIDC backends configuration file.""",
         ),
@@ -3917,6 +3981,7 @@ into a collection of datasets for each line in an input dataset.
     auth_config_file: Annotated[
         Optional[str],
         Field(
+            path_resolves_to=CONFIG_DIR,
             title="Auth Config File",
             description="""XML config file that allows the use of different authentication providers
 (e.g. LDAP) instead or in addition to local authentication (.sample is used
@@ -3938,6 +4003,7 @@ other users.
     bootstrap_admin_api_key: Annotated[
         Optional[str],
         Field(
+            deprecated_alias="master_api_key",
             title="Bootstrap Admin Api Key",
             description="""API key that allows performing some admin actions without actually
 having a real admin user in the database and config.
@@ -4081,6 +4147,7 @@ non-administrative users. Administrators can always see dataset paths.
     job_metrics_config_file: Annotated[
         Optional[str],
         Field(
+            path_resolves_to=CONFIG_DIR,
             title="Job Metrics Config File",
             description="""XML config file that contains the job metric collection configuration.""",
         ),
@@ -4115,6 +4182,7 @@ variables).
     data_manager_config_file: Annotated[
         Optional[str],
         Field(
+            path_resolves_to=CONFIG_DIR,
             title="Data Manager Config File",
             description="""File where Data Managers are configured (.sample used if default does not exist).""",
         ),
@@ -4123,6 +4191,7 @@ variables).
     shed_data_manager_config_file: Annotated[
         Optional[str],
         Field(
+            path_resolves_to=MANAGED_CONFIG_DIR,
             title="Shed Data Manager Config File",
             description="""File where Tool Shed based Data Managers are configured. This file will be created
 automatically upon data manager installation.
@@ -4143,6 +4212,7 @@ automatically upon data manager installation.
     job_config_file: Annotated[
         Optional[str],
         Field(
+            path_resolves_to=CONFIG_DIR,
             title="Job Config File",
             description="""To increase performance of job execution and the web interface, you can
 separate Galaxy into multiple processes. There are more than one way to do
@@ -4392,6 +4462,7 @@ installing software into Galaxy's virtualenv for tool development).
     cleanup_job: Annotated[
         Optional[Literal["always", "onsuccess", "never"]],
         Field(
+            reloadable=True,
             title="Cleanup Job",
             description="""Clean up various bits of jobs left on the filesystem after completion. These
 bits include the job working directory, external metadata temporary files,
@@ -4480,6 +4551,7 @@ individually.
     markdown_export_css: Annotated[
         Optional[str],
         Field(
+            path_resolves_to=CONFIG_DIR,
             title="Markdown Export Css",
             description="""CSS file to apply to all Markdown exports to PDF - currently used by
 WeasyPrint during rendering an HTML export of the document to PDF.
@@ -4490,6 +4562,7 @@ WeasyPrint during rendering an HTML export of the document to PDF.
     markdown_export_css_pages: Annotated[
         Optional[str],
         Field(
+            path_resolves_to=CONFIG_DIR,
             title="Markdown Export Css Pages",
             description="""CSS file to apply to "Galaxy Page" exports to PDF. Generally prefer
 markdown_export_css, but this is here for deployments that
@@ -4501,6 +4574,7 @@ would like to tailor different kinds of exports.
     markdown_export_css_invocation_reports: Annotated[
         Optional[str],
         Field(
+            path_resolves_to=CONFIG_DIR,
             title="Markdown Export Css Invocation Reports",
             description="""CSS file to apply to invocation report exports to PDF. Generally prefer
 markdown_export_css, but this is here for deployments that
@@ -4566,6 +4640,7 @@ exports.
     job_resource_params_file: Annotated[
         Optional[str],
         Field(
+            path_resolves_to=CONFIG_DIR,
             title="Job Resource Params File",
             description="""Optional file containing job resource data entry fields definition.
 These fields will be presented to users in the tool forms and allow them to
@@ -4578,6 +4653,7 @@ walltime.
     workflow_resource_params_file: Annotated[
         Optional[str],
         Field(
+            path_resolves_to=CONFIG_DIR,
             title="Workflow Resource Params File",
             description="""Similar to the above parameter, workflows can describe parameters used to
 influence scheduling of jobs within the workflow. This requires both a description
@@ -4607,6 +4683,7 @@ Sample default path 'config/workflow_resource_mapper_conf.yml.sample'
     workflow_schedulers_config_file: Annotated[
         Optional[str],
         Field(
+            path_resolves_to=CONFIG_DIR,
             title="Workflow Schedulers Config File",
             description="""Optional configuration file similar to `job_config_file` to specify
 which Galaxy processes should schedule workflows.
@@ -4762,6 +4839,7 @@ reason to disable it.
     error_report_file: Annotated[
         Optional[str],
         Field(
+            path_resolves_to=CONFIG_DIR,
             title="Error Report File",
             description="""Path to error reports configuration file.""",
         ),
@@ -4770,6 +4848,7 @@ reason to disable it.
     tool_destinations_config_file: Annotated[
         Optional[str],
         Field(
+            path_resolves_to=CONFIG_DIR,
             title="Tool Destinations Config File",
             description="""Path to dynamic tool destinations configuration file.""",
         ),
@@ -4778,6 +4857,7 @@ reason to disable it.
     vault_config_file: Annotated[
         Optional[str],
         Field(
+            path_resolves_to=CONFIG_DIR,
             title="Vault Config File",
             description="""Vault config file.""",
         ),
@@ -4794,6 +4874,8 @@ reason to disable it.
     themes_config_file: Annotated[
         Optional[str],
         Field(
+            resolves_to="themes",
+            path_resolves_to=CONFIG_DIR,
             per_host=True,
             title="Themes Config File",
             description="""Optional file containing one or more themes for galaxy. If several themes
