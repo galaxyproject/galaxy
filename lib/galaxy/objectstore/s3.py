@@ -47,6 +47,21 @@ log = logging.getLogger(__name__)
 logging.getLogger("boto").setLevel(logging.INFO)  # Otherwise boto is quite noisy
 
 
+def download_directory(bucket, remote_folder, local_path):
+    # List objects in the specified S3 folder
+    objects = bucket.list(prefix=remote_folder)
+
+    for obj in objects:
+        remote_file_path = obj.key
+        local_file_path = os.path.join(local_path, os.path.relpath(remote_file_path, remote_folder))
+
+        # Create directories if they don't exist
+        os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
+
+        # Download the file
+        obj.get_contents_to_filename(local_file_path)
+
+
 def parse_config_xml(config_xml):
     try:
         a_xml = config_xml.findall("auth")[0]
@@ -720,7 +735,8 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
             return cache_path
         # Check if the file exists in persistent storage and, if it does, pull it into cache
         elif self._exists(obj, **kwargs):
-            if dir_only:  # Directories do not get pulled into cache
+            if dir_only:
+                download_directory(self._bucket, rel_path, cache_path)
                 return cache_path
             else:
                 if self._pull_into_cache(rel_path):
