@@ -53,11 +53,6 @@ export TMP
 export TEMP
 export TMPDIR
 
-echo "_GALAXY_JOB_TMP_DIR $_GALAXY_JOB_TMP_DIR" >> outputs/tmp 
-echo "TMP $TMP" >> outputs/tmp
-echo "TEMP $TEMP" >> outputs/tmp 
-echo "TMPDIR $TMPDIR" >> outputs/tmp 
-
 GALAXY_PYTHON=`command -v python`
 cd $working_directory
 $memory_statement
