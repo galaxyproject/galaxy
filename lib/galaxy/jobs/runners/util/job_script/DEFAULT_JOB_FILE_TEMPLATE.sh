@@ -39,6 +39,29 @@ GALAXY_LIB="$galaxy_lib"
 _galaxy_setup_environment "$PRESERVE_GALAXY_ENVIRONMENT"
 export _GALAXY_JOB_HOME_DIR
 export _GALAXY_JOB_TMP_DIR
+
+TEMP="${TEMP:-$TMP}"
+TMPDIR="${TMPDIR:-$TMP}"
+
+TMP="${TMP:-$TEMP}"
+TMPDIR="${TMPDIR:-$TEMP}"
+
+TMP="${TMP:-$TMPDIR}"
+TEMP="${TEMP:-$TMPDIR}"
+
+TMP="${TMP:-_GALAXY_JOB_TMP_DIR}"
+TEMP="${TEMP:-_GALAXY_JOB_TMP_DIR}"
+TMPDIR="${TMPDIR:-_GALAXY_JOB_TMP_DIR}"
+
+export TMP
+export TEMP
+export TMPDIR
+
+echo "_GALAXY_JOB_TMP_DIR $_GALAXY_JOB_TMP_DIR" >> outputs/tmp 
+echo "TMP $TMP" >> outputs/tmp
+echo "TEMP $TEMP" >> outputs/tmp 
+echo "TMPDIR $TMPDIR" >> outputs/tmp 
+
 GALAXY_PYTHON=`command -v python`
 cd $working_directory
 $memory_statement
