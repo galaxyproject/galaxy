@@ -33,6 +33,7 @@ class TestDataBundlesIntegration(BaseSwiftObjectStoreIntegrationTestCase, DataMa
             history_id, to_ext="data_manager_json", type="bytes"
         )
         temp_directory = decompress_bytes_to_directory(content)
+        assert os.path.exists(os.path.join(temp_directory, "newvalue.txt"))
         uri = f"file://{os.path.normpath(temp_directory)}"
         data = {
             "source": {
