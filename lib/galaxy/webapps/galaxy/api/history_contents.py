@@ -787,7 +787,7 @@ class FastAPIHistoryContents:
     def update_typed(
         self,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: str = "",
+        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
         id: DecodedDatabaseIdField = HistoryItemIDPathParam,
         type: HistoryContentType = ContentTypePathParam,
         serialization_params: SerializationParams = Depends(query_serialization_params),
