@@ -80,6 +80,11 @@ export default {
             this.setQuery(queryNew);
         },
     },
+    created() {
+        if (this.query) {
+            this.setQuery(this.query);
+        }
+    },
     methods: {
         clearTimer() {
             if (this.queryTimer) {

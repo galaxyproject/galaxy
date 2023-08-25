@@ -240,7 +240,7 @@ async function loadMore(noScroll = false) {
             <BBadge v-if="filter && !validFilter" class="alert-danger w-100">Search string too short!</BBadge>
             <b-alert v-else-if="!busy && hasNoResults" variant="danger" show>No histories found.</b-alert>
 
-            <div ref="scrollableDiv" class="history-selector-modal-list">
+            <div v-show="!showAdvanced" ref="scrollableDiv" class="history-selector-modal-list">
                 <BListGroup>
                     <BListGroupItem
                         v-for="history in filtered"

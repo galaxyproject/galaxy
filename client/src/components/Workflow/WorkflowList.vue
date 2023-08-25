@@ -9,18 +9,32 @@
         </b-alert>
         <b-row class="mb-3">
             <b-col cols="6" class="m-1">
-                <IndexFilter v-bind="filterAttrs" id="workflow-search" v-model="filter" />
+                <FilterMenu
+                    name="Workflows"
+                    placeholder="search workflows"
+                    :filter-class="filterClass"
+                    :filter-text.sync="filterText"
+                    :loading="loading"
+                    :show-advanced.sync="showAdvanced"
+                    has-help>
+                    <template v-slot:menu-help-text>
+                        <div v-html="helpHtml"></div>
+                    </template>
+                </FilterMenu>
             </b-col>
             <b-col>
                 <WorkflowIndexActions :root="root" class="float-right"></WorkflowIndexActions>
             </b-col>
         </b-row>
-        <b-table v-model="workflowItemsModel" v-bind="{ ...defaultTableAttrs, ...indexTableAttrs }">
+        <b-table
+            v-show="!showAdvanced"
+            v-model="workflowItemsModel"
+            v-bind="{ ...defaultTableAttrs, ...indexTableAttrs }">
             <template v-slot:empty>
                 <loading-span v-if="loading" message="Loading workflows" />
                 <b-alert v-else id="no-workflows" variant="info" show>
-                    <div v-if="isFiltered">
-                        No matching entries found for: <span class="font-weight-bold">{{ filter }}</span
+                    <div v-if="filterText !== ''">
+                        No matching entries found for: <span class="font-weight-bold">{{ filterText }}</span
                         >.
                     </div>
                     <div v-else>No workflows found. You may create or import new workflows.</div>
@@ -44,13 +58,13 @@
                     :value="row.item.tags"
                     :disabled="row.item.deleted || published"
                     @input="(tags) => onTags(tags, row.index)"
-                    @tag-click="onTagClick" />
+                    @tag-click="(tag) => applyFilter('tag', tag, true)" />
             </template>
             <template v-slot:cell(published)="row">
                 <SharingIndicators
                     v-if="!row.item.deleted"
                     :object="row.item"
-                    @filter="(filter) => appendFilter(filter, true)" />
+                    @filter="(filter) => applyFilter(filter, true)" />
                 <div v-else>&#8212;</div>
             </template>
             <template v-slot:cell(show_in_tool_panel)="row">
@@ -64,9 +78,9 @@
                 <UtcDate :date="data.value" mode="elapsed" />
             </template>
             <template v-slot:cell(owner)="data">
-                <a class="workflow-filter-link-owner" href="#" @click="appendTagFilter('user', data.value)">{{
-                    data.value
-                }}</a>
+                <a class="workflow-filter-link-owner" href="#" @click="applyFilter('user', data.value, true)">
+                    {{ data.value }}
+                </a>
             </template>
             <template v-slot:cell(execute)="row">
                 <WorkflowRunButton v-if="!row.item.deleted" :id="row.item.id" :root="root" />
@@ -79,7 +93,7 @@
             </template>
         </b-table>
         <b-pagination
-            v-show="rows >= perPage"
+            v-show="!showAdvanced && rows >= perPage"
             v-model="currentPage"
             class="gx-workflows-grid-pager"
             v-bind="paginationAttrs"></b-pagination>
@@ -87,7 +101,6 @@
 </template>
 <script>
 import { getGalaxyInstance } from "app";
-import filtersMixin from "components/Indices/filtersMixin";
 import SharingIndicators from "components/Indices/SharingIndicators";
 import { storedWorkflowsProvider } from "components/providers/StoredWorkflowsProvider";
 import UtcDate from "components/UtcDate";
@@ -98,55 +111,12 @@ import paginationMixin from "./paginationMixin";
 import { Services } from "./services";
 import WorkflowBookmark from "./WorkflowBookmark";
 import WorkflowDropdown from "./WorkflowDropdown";
+import { helpHtml, PublishedWorkflowFilters, WorkflowFilters } from "./WorkflowFilters";
 import WorkflowIndexActions from "./WorkflowIndexActions";
 
 import WorkflowRunButton from "./WorkflowRunButton.vue";
+import FilterMenu from "@/components/Common/FilterMenu.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
-
-const helpHtml = `<div>
-    <p>This input can be used to filter the workflows displayed.</p>
-
-    <p>
-        Text entered here will be searched against workflow names and workflow
-        tags. Additionally, advanced filtering tags can be used to refine the
-        search more precisely. Filtering tags are of the form
-        <code>&lt;tag_name&gt;:&lt;tag_value&gt;</code> or
-        <code>&lt;tag_name&gt;:'&lt;tag_value&gt;'</code>. For instance to
-        search just for RNAseq in the workflow name,
-        <code>name:rnsseq</code> can be used. Notice by default the search is
-        not case-sensitive. If the quoted version of tag is used, the search is
-        case sensitive and only full matches will be returned. So
-        <code>name:'RNAseq'</code> would show only workflows named exactly
-        <code>RNAseq</code>.
-    </p>
-
-    <p>The available filtering tags are:</p>
-    <dl>
-        <dt><code>name</code></dt>
-        <dd>
-            Shows workflows with the given sequence of characters in their names.
-        </dd>
-        <dt><code>tag</code></dt>
-        <dd>
-            Shows workflows with the given workflow tag. You may also click
-            on a tag to filter on that tag directly.
-        </dd>
-        <dt><code>is:published</code></dt>
-        <dd>
-            Shows published workflows.
-        </dd>
-        <dt><code>is:importable</code></dt>
-        <dd>
-            Shows importable workflows (this also means they are URL generated).
-        </dd>
-        <dt><code>is:shared_with_me</code></dt>
-        <dd>
-            Shows workflows shared by another user directly with you.
-        </dd>
-        <dt><code>is:deleted</code></dt>
-        <dd>Shows deleted workflows.</dd>
-    </dl>
-</div>`;
 
 const NAME_FIELD = { key: "name", label: _l("Name"), sortable: true };
 const TAGS_FIELD = { key: "tags", label: _l("Tags"), sortable: false, thStyle: { width: "20%" } };
@@ -166,6 +136,7 @@ const PUBLISHED_FIELDS = [NAME_FIELD, TAGS_FIELD, UPDATED_FIELD, OWNER_FIELD];
 
 export default {
     components: {
+        FilterMenu,
         UtcDate,
         StatelessTags,
         WorkflowDropdown,
@@ -174,7 +145,7 @@ export default {
         SharingIndicators,
         WorkflowRunButton,
     },
-    mixins: [paginationMixin, filtersMixin],
+    mixins: [paginationMixin],
     props: {
         inputDebounceDelay: {
             type: Number,
@@ -201,22 +172,32 @@ export default {
     },
     data() {
         const fields = this.published ? PUBLISHED_FIELDS : PERSONAL_FIELDS;
-        const implicitFilter = this.published ? "is:published" : null;
+        const filterClass = this.published ? PublishedWorkflowFilters : WorkflowFilters;
         return {
             tableId: "workflow-table",
             fields: fields,
+            filterClass: filterClass,
+            filterText: this.query,
             titleSearch: "search workflows",
             workflowItemsModel: [],
             helpHtml: helpHtml,
             perPage: this.rowsPerPage(this.defaultPerPage || 20),
             dataProvider: storedWorkflowsProvider,
-            implicitFilter: implicitFilter,
-            defaultTableAttrs: { "sort-by": "update_time", "sort-desc": true, "no-sort-reset": "", fields: fields },
+            defaultTableAttrs: {
+                "sort-by": "update_time",
+                "sort-desc": true,
+                "no-sort-reset": "",
+                fields: fields,
+            },
+            showAdvanced: false,
         };
     },
     computed: {
         dataProviderParameters() {
-            const extraParams = { search: this.normalizeTag(this.effectiveFilter), skip_step_counts: true };
+            const extraParams = {
+                search: this.filterClass.getFilterText(this.filters, true),
+                skip_step_counts: true,
+            };
             if (this.published) {
                 extraParams.show_published = true;
                 extraParams.show_shared = false;
@@ -226,18 +207,22 @@ export default {
         title() {
             return this.published ? `Published Workflows` : `Workflows`;
         },
+        filters() {
+            return Object.fromEntries(this.filterClass.getFiltersForText(this.filterText));
+        },
     },
     watch: {
-        filter(val) {
+        filterText(val) {
             this.refresh();
+            // clear out the query param if the filter text is cleared
+            if (val == "" && val !== this.query) {
+                this.$router.push("/workflows/list");
+            }
         },
     },
     created() {
         this.root = getAppRoot();
         this.services = new Services();
-        if (this.query) {
-            this.filter = this.query;
-        }
     },
     methods: {
         decorateData(item) {
@@ -282,9 +267,6 @@ export default {
                 });
             this.$emit("input", workflow.tags);
         },
-        onTagClick: function (tag) {
-            this.appendTagFilter("tag", tag);
-        },
         onAdd: function (workflow) {
             if (this.currentPage == 1) {
                 this.refresh();
@@ -301,8 +283,12 @@ export default {
         onRestore: function (id) {
             this.refresh();
         },
-        normalizeTag: function (tag) {
-            return tag.replace(/(tag:')#/g, "$1name:");
+        applyFilter: function (filter, value, quoted = false) {
+            if (quoted) {
+                this.filterText = this.filterClass.setFilterValue(this.filterText, filter, `'${value}'`);
+            } else {
+                this.filterText = this.filterClass.setFilterValue(this.filterText, filter, value);
+            }
         },
     },
 };

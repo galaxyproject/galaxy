@@ -7,6 +7,7 @@ import { type Alias, getOperatorForAlias } from "@/utils/filtering";
 
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 import FilterMenuBoolean from "@/components/Common/FilterMenuBoolean.vue";
+import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
 interface BackendFilterError {
     err_msg: string;
@@ -26,6 +27,8 @@ const props = withDefaults(
         name?: string;
         /** A placeholder for the main search input */
         placeholder?: string;
+        /** The delay (in ms) before the main filter is applied */
+        debounceDelay?: number;
         /** The `Filtering` class to use */
         filterClass: Filtering<any>;
         /** The current filter text in the main field */
@@ -46,6 +49,7 @@ const props = withDefaults(
     {
         name: "Menu",
         placeholder: "search for items",
+        debounceDelay: 500,
         filterText: "",
         menuType: "linked",
         showAdvanced: false,
@@ -82,7 +86,8 @@ const showHelp = ref(false);
 
 /**
  * Reactively storing and getting all filters from validFilters which are `.type == Date`
- * (This was done to make the datepickers store values in the `filters` object)
+ * and .type == 'MultiTags'
+ * (This was done to make the datepickers and tags store values in the `filters` object)
  */
 const dateFilters: Ref<{ [key: string]: string }> = ref({});
 const dateKeys = Object.keys(validFilters.value).filter((key) => validFilters.value[key]?.type == Date);
@@ -90,6 +95,15 @@ dateKeys.forEach((key: string) => {
     if (validFilters.value[key]?.isRangeInput) {
         dateKeys.push(key + "_lt");
         dateKeys.push(key + "_gt");
+    }
+});
+const multiTagFilters: Ref<{ [key: string]: Ref<string[]> }> = ref({});
+const multiTagKeys = Object.keys(validFilters.value).filter((key) => validFilters.value[key]?.type == "MultiTags");
+multiTagKeys.forEach((key: string) => {
+    if (filters.value[key] !== undefined) {
+        multiTagFilters.value[key] = ref(filters.value[key] as string[]);
+    } else {
+        multiTagFilters.value[key] = ref([]);
     }
 });
 watch(
@@ -100,6 +114,13 @@ watch(
                 dateFilters.value[key] = newFilters[key] as string;
             } else {
                 delete dateFilters.value[key];
+            }
+        });
+        multiTagKeys.forEach((key: string) => {
+            if (newFilters[key]) {
+                (multiTagFilters.value[key] as Ref<string[]>).value = newFilters[key];
+            } else {
+                (multiTagFilters.value[key] as Ref<string[]>).value = [];
             }
         });
     }
@@ -149,12 +170,19 @@ function onSearch() {
     Object.keys(dateFilters.value).forEach((key) => {
         onOption(key, dateFilters.value[key]);
     });
+    Object.keys(multiTagFilters.value).forEach((key) => {
+        onOption(key, (multiTagFilters.value[key] as Ref<string[]>).value);
+    });
     const newFilterText = props.filterClass.getFilterText(filters.value);
     if (props.menuType !== "linked") {
         emit("on-search", filters.value, newFilterText);
     } else {
         updateFilterText(newFilterText);
     }
+}
+
+function onTags(filter: string, tags: string[]) {
+    (multiTagFilters.value[filter] as Ref<string[]>).value = tags;
 }
 
 function onToggle() {
@@ -173,7 +201,7 @@ function updateFilterText(newFilterText: string) {
             v-show="props.menuType == 'linked' || (props.menuType == 'separate' && !props.showAdvanced)"
             :class="props.filterText && 'font-weight-bold'"
             :query="props.filterText"
-            :delay="400"
+            :delay="props.debounceDelay"
             :loading="props.loading"
             :show-advanced="props.showAdvanced"
             enable-advanced
@@ -187,7 +215,6 @@ function updateFilterText(newFilterText: string) {
             aria-haspopup="true"
             size="sm"
             :pressed="props.showAdvanced"
-            :variant="props.showAdvanced ? 'info' : 'secondary'"
             :title="`Toggle Advanced Search`"
             data-description="reset query"
             @click="onToggle">
@@ -270,6 +297,16 @@ function updateFilterText(newFilterText: string) {
                                     size="sm" />
                             </b-input-group-append>
                             <!--------------------------------------------------------------------->
+                        </b-input-group>
+                    </span>
+
+                    <!-- is a MultiTags filter -->
+                    <span v-else-if="validFilters[filter]?.type == 'MultiTags'">
+                        <small>Filter by {{ validFilters[filter]?.placeholder }}:</small>
+                        <b-input-group>
+                            <StatelessTags
+                                :value="multiTagFilters[filter]?.value"
+                                @input="(tags) => onTags(filter, tags)" />
                         </b-input-group>
                     </span>
 

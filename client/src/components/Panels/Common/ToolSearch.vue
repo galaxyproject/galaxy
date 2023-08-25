@@ -158,6 +158,7 @@ function onAdvancedSearch(filters: any, filterText?: string) {
             :class="!propShowAdvanced && 'mb-3'"
             name="Tool Search"
             :placeholder="props.placeholder"
+            :debounce-delay="200"
             :filter-class="ToolFilters"
             :filter-text.sync="localFilterText"
             has-help
@@ -218,7 +219,7 @@ function onAdvancedSearch(filters: any, filterText?: string) {
             v-else
             class="mb-3"
             :query="props.query"
-            :delay="100"
+            :delay="200"
             :loading="queryPending"
             :placeholder="placeholder"
             @change="checkQuery" />

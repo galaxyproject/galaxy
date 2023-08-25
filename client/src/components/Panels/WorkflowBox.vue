@@ -5,8 +5,8 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 import { useRouter } from "vue-router/composables";
 
+import { helpHtml, WorkflowFilters } from "@/components/Workflow/WorkflowFilters";
 import { useUserStore } from "@/stores/userStore";
-import Filtering, { contains, type Converter, equals, toBool, type ValidFilter } from "@/utils/filtering";
 import { withPrefix } from "@/utils/redirect";
 
 import FilterMenu from "@/components/Common/FilterMenu.vue";
@@ -16,45 +16,9 @@ const router = useRouter();
 // @ts-ignore bad library types
 library.add(faUpload, faGlobe);
 
-const validFilters: Record<string, ValidFilter<string | boolean>> = {
-    name: { placeholder: "name", type: String, handler: contains("name"), menuItem: true },
-    tag: { placeholder: "tag", type: String, handler: contains("tag"), menuItem: true },
-    published: {
-        placeholder: "Filter on published workflows",
-        type: Boolean,
-        boolType: "is",
-        handler: equals("published", "published", toBool as Converter<string | boolean>),
-        menuItem: true,
-    },
-    importable: {
-        placeholder: "Filter on importable workflows",
-        type: Boolean,
-        boolType: "is",
-        handler: equals("importable", "importable", toBool as Converter<string | boolean>),
-        menuItem: true,
-    },
-    shared_with_me: {
-        placeholder: "Filter on workflows shared with me",
-        type: Boolean,
-        boolType: "is",
-        handler: equals("shared_with_me", "shared_with_me", toBool as Converter<string | boolean>),
-        menuItem: true,
-    },
-    deleted: {
-        placeholder: "Filter on deleted workflows",
-        type: Boolean,
-        boolType: "is",
-        handler: equals("deleted", "deleted", toBool as Converter<string | boolean>),
-        menuItem: true,
-    },
-};
-
-const WorkflowFilters: Filtering<string | boolean> = new Filtering(validFilters, undefined, false);
-
 const isAnonymous = computed(() => useUserStore().isAnonymous);
 
-function onSearch(filters: Record<string, string | boolean>, filterText?: string) {
-    const query = filterText;
+function onSearch(filters: Record<string, string | boolean>, query?: string) {
     const path = "/workflows/list";
     const routerParams = query ? { path, query: { query } } : { path };
     router.push(routerParams);
@@ -123,36 +87,7 @@ function userTitle(title: string) {
                 menu-type="standalone"
                 @on-search="onSearch">
                 <template v-slot:menu-help-text>
-                    <div>
-                        <p>This menu can be used to filter workflows in <code>workflows/list</code>.</p>
-
-                        <p>
-                            Filters entered here will be searched against workflow names and workflow tags, along with
-                            the provided checkbox filters. Notice by default the search is not case-sensitive. If the
-                            quoted version of tag is used, the search is case sensitive and only full matches will be
-                            returned. So <code>name:'RNAseq'</code> would show only workflows named exactly
-                            <code>RNAseq</code>.
-                        </p>
-
-                        <p>The available filtering tags are:</p>
-                        <dl>
-                            <dt><code>name</code></dt>
-                            <dd>Shows workflows with the given sequence of characters in their names.</dd>
-                            <dt><code>tag</code></dt>
-                            <dd>
-                                Shows workflows with the given workflow tag. You may also click on a tag to filter on
-                                that tag directly.
-                            </dd>
-                            <dt><code>is:published</code></dt>
-                            <dd>Shows published workflows.</dd>
-                            <dt><code>is:importable</code></dt>
-                            <dd>Shows importable workflows (this also means they are URL generated).</dd>
-                            <dt><code>is:shared_with_me</code></dt>
-                            <dd>Shows workflows shared by another user directly with you.</dd>
-                            <dt><code>is:deleted</code></dt>
-                            <dd>Shows deleted workflows.</dd>
-                        </dl>
-                    </div>
+                    <div v-html="helpHtml"></div>
                 </template>
             </FilterMenu>
         </div>

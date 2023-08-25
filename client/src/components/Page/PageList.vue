@@ -52,7 +52,7 @@
             </template>
             <template v-slot:cell(sharing)="row">
                 <span v-if="row.item.published || row.item.shared || row.item.importable">
-                    <SharingIndicators :object="row.item" @filter="(filter) => appendFilter(filter, true)" />
+                    <SharingIndicators :object="row.item" @filter="(filter) => appendFilter(`is:${filter}`, true)" />
                     <CopyToClipboard
                         :title="'Copy URL' | localize"
                         :text="copyUrl(row.item)"

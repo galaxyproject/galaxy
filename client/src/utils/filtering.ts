@@ -9,7 +9,7 @@
  * Comparison aliases are allowed converting e.g. '>' to '-gt' and '<' to '-lt'.
  */
 
-import { omit } from "lodash";
+import { isEqual, omit } from "lodash";
 import type { DefineComponent } from "vue";
 
 export type Converter<T> = (value: T) => T;
@@ -40,7 +40,7 @@ export type ValidFilter<T> = {
     /** The `FilterMenu` input field/tooltip/label placeholder */
     placeholder?: string;
     /** The data type of the `FilterMenu` input field */
-    type?: typeof String | typeof Number | typeof Boolean | typeof Date;
+    type?: typeof String | typeof Number | typeof Boolean | typeof Date | "MultiTags";
     /** If type: Boolean:
      * - booleanType: 'default' creates: `filter:true|false|any`
      * - booleanType: 'is' creates: `is:filter`
@@ -106,6 +106,22 @@ export function expandNameTag<T>(value: T): string {
         value = value.replace(/^#/, "name:") as T;
     }
     return toLower(value);
+}
+
+/** Converts name tags starting with "#" to "'name:...'"; forces quotation marks
+ * and **is also case-sensitive**
+ * @param value
+ * @returns Lowercase value with 'name:' replaced with '#'
+ */
+export function expandNameTagWithQuotes<T>(value: T): string {
+    if (value && typeof value === "string") {
+        if (value.startsWith("'#") && value.endsWith("'")) {
+            value = value.replace(/^'#/g, "'name:") as T;
+        } else if (value.startsWith("#")) {
+            value = `'name:${value.slice(1)}'` as T;
+        }
+    }
+    return value as string;
 }
 
 /** Converts string alias to string operator, e.g.: 'gt' to '>'
@@ -290,26 +306,29 @@ export default class Filtering<T> {
         );
     }
 
-    /** Build a text filter from filters {filter: "value", ...}
+    /** Build a text filter from filters {filter: "value", ...} => "filter:value"
      * @param filters Object containing filters
+     * @param backendFormatted If true, returns a string formatted for the backend
      * @returns Parsed filter text string
      * */
-    getFilterText(filters: Record<string, T>): string {
-        filters = this.getValidFilters(filters);
+    getFilterText(filters: Record<string, T>, backendFormatted = false): string {
+        filters = this.getValidFilters(filters, backendFormatted);
         const hasDefaults = this.containsDefaults(filters);
 
         let newFilterText = "";
         Object.entries(filters).forEach(([key, value]) => {
             // this is a default filter, skip it if ALL default filters have default values
-            const skipDefault = hasDefaults && this.defaultFilters[key] !== undefined;
+            const skipDefault = !backendFormatted && hasDefaults && this.defaultFilters[key] !== undefined;
             if (!skipDefault && value !== null && value !== undefined && value !== "") {
                 if (newFilterText) {
                     newFilterText += " ";
                 }
-                if (this.validFilters[key]?.type == Boolean && this.validFilters[key]?.boolType == "is") {
+                if (this.validFilters[key]?.type === Boolean && this.validFilters[key]?.boolType === "is") {
                     if (value === true) {
                         newFilterText += `is:${key}`;
                     }
+                } else if (this.validFilters[key]?.type == "MultiTags" && Array.isArray(value)) {
+                    newFilterText += `${value.map((v) => `${this.toAliasKey(key)}${v}`).join(" ")}`;
                 } else if (this.quoteStrings && String(value).includes(" ")) {
                     newFilterText += `${this.toAliasKey(key)}'${value}'`;
                 } else {
@@ -337,7 +356,9 @@ export default class Filtering<T> {
      * @returns Filters as 2D array of of [field, value] pairs
      * */
     getFiltersForText(filterText: string, removeAny = true): [string, T][] {
-        const pairSplitRE = /[^\s'"]+(?:['"][^'"]*['"][^\s'"]*)*|(?:['"][^'"]*['"][^\s'"]*)+/g;
+        const pairSplitRE = this.quoteStrings
+            ? /[^\s'"]+(?:['"][^'"]*['"][^\s'"]*)*|(?:['"][^'"]*['"][^\s'"]*)+/g
+            : /(\S+):(.*?)(?=\s+\S+:|$)/g;
         const matches = filterText.match(pairSplitRE);
         let result: Record<string, T> = {};
         let hasMatches = false;
@@ -358,9 +379,27 @@ export default class Filtering<T> {
                     }
                     // replaces dashes with underscores in query field names
                     const normalizedField = field?.split("-").join("_");
-                    if (normalizedField && this.validFilters[normalizedField]) {
+                    if (
+                        normalizedField &&
+                        this.validFilters[normalizedField] &&
+                        this.validFilters[normalizedField]?.boolType !== "is"
+                    ) {
                         // removes quotation and applies lower-case to filter value
-                        result[normalizedField] = toLowerNoQuotes(value) as T;
+                        const newVal = this.quoteStrings ? (toLowerNoQuotes(value) as T) : (value as T);
+                        // if the field is a MultiTags field, we need to push each value to an array
+                        if (this.validFilters[normalizedField]?.type === "MultiTags") {
+                            if (result[normalizedField] === undefined) {
+                                result[normalizedField] = [newVal] as T;
+                            } else {
+                                (result[normalizedField] as T[]).push(newVal);
+                            }
+                        } else {
+                            result[normalizedField] = newVal;
+                        }
+                        hasMatches = true;
+                    } else if (value && field === "is" && elg === ":" && this.validFilters[value]?.boolType === "is") {
+                        // handle `is:filter` syntax
+                        result[value] = true as T;
                         hasMatches = true;
                     }
                 }
@@ -412,14 +451,24 @@ export default class Filtering<T> {
     /** Takes a filters object and returns a new object with only valid filters
      *
      * @param filters A filters object (e.g.: {hid: "3", name: "test", invalid: "x"}})
+     * @param backendFormatted default: `false` Whether to convert the values to backend format
      * @returns valid filters object (e.g.: {hid: "3", name: "test"}})
      */
-    getValidFilters(filters: Record<string, T>) {
+    getValidFilters(filters: Record<string, T>, backendFormatted = false) {
         const validFilters: Record<string, T> = {};
         Object.entries(filters).forEach(([key, value]) => {
-            const validValue = this.getConvertedValue(key, value);
-            if (validValue !== undefined) {
-                validFilters[key] = validValue;
+            if (Array.isArray(value)) {
+                const validValues = value
+                    .map((v) => this.getConvertedValue(key, v, backendFormatted))
+                    .filter((v) => v !== undefined);
+                if (validValues.length > 0) {
+                    validFilters[key] = validValues as T;
+                }
+            } else {
+                const validValue = this.getConvertedValue(key, value, backendFormatted);
+                if (validValue !== undefined) {
+                    validFilters[key] = validValue;
+                }
             }
         });
         return validFilters;
@@ -481,13 +530,15 @@ export default class Filtering<T> {
      * @returns converted value if there is a converter, else `filterValue`
      */
     getConvertedValue(filterName: string, filterValue: T, backendFormatted = false): T | undefined {
-        if (this.validFilters[filterName]) {
+        if (this.validFilters[filterName] && !Array.isArray(filterValue)) {
             const { converter } = this.validFilters[filterName]?.handler as HandlerReturn<T>;
             if (converter) {
                 if (converter == toBool && filterValue == "any") {
                     return filterValue;
-                } else if (!backendFormatted && (converter == expandNameTag || converter == toDate)) {
+                } else if (!backendFormatted && ([expandNameTag, toDate] as Converter<T>[]).includes(converter)) {
                     return toLower(filterValue) as T;
+                } else if (!backendFormatted && converter == expandNameTagWithQuotes) {
+                    return (filterValue as string).startsWith("#") ? (`'${filterValue}'` as T) : filterValue;
                 }
                 return converter(filterValue);
             } else {
@@ -519,7 +570,13 @@ export default class Filtering<T> {
         const filters = Object.fromEntries(this.getFiltersForText(filterText));
         let filterVal = filters[filterName];
         const defaultFilterValue = this.defaultFilters[filterName];
-        if (filterVal !== undefined) {
+        // if filterVal is an array, convert each value
+        if (Array.isArray(filterVal)) {
+            filterVal = filterVal
+                .map((v) => this.getConvertedValue(filterName, v, backendFormatted))
+                .filter((v) => v !== undefined) as T;
+            return filterVal;
+        } else if (filterVal !== undefined) {
             filterVal = this.getConvertedValue(filterName, filterVal, backendFormatted);
             return filterVal;
         } else if (defaultFilterValue !== undefined && typeof defaultFilterValue == "boolean") {
@@ -544,12 +601,32 @@ export default class Filtering<T> {
     setFilterValue(filterText: string, newFilter: string, newVal: T) {
         let updatedText = "";
         const oldVal = this.getFilterValue(filterText, newFilter);
-        const convVal = this.getConvertedValue(newFilter, newVal);
-        if (convVal == undefined) {
+        let convVal = this.getConvertedValue(newFilter, newVal) as T;
+        if (convVal == undefined && !Array.isArray(newVal)) {
             return filterText;
         }
+        // for MultiTags filter
+        if (this.validFilters[newFilter]?.type === "MultiTags" || Array.isArray(oldVal)) {
+            // if newVal is an array, convert each value, else put already converted val in array
+            let valuesToAdd = Array.isArray(newVal)
+                ? newVal.map((v) => this.getConvertedValue(newFilter, v)).filter((v) => v !== undefined)
+                : [convVal];
+            // if oldVal is an array, convert new value(s), and only add ones that aren't already in oldVal
+            if (Array.isArray(oldVal)) {
+                const updatedArr = [...oldVal] as T[];
+                (valuesToAdd as T[]).forEach((value) => {
+                    if (!oldVal.includes(value)) {
+                        updatedArr.push(value);
+                    } else {
+                        updatedArr.splice(updatedArr.indexOf(value), 1);
+                    }
+                });
+                valuesToAdd = updatedArr.length !== 0 ? updatedArr : oldVal;
+            }
+            convVal = valuesToAdd as T;
+        }
         const settings = { [newFilter]: convVal };
-        if (oldVal == convVal) {
+        if (isEqual(oldVal, convVal) || oldVal == convVal) {
             updatedText = this.applyFiltersToText(settings, filterText, true);
         } else {
             updatedText = this.applyFiltersToText(settings, filterText);
@@ -567,11 +644,14 @@ export default class Filtering<T> {
             if (!(key in this.validFilters)) {
                 console.error(`Invalid filter ${key}`);
             } else {
-                const filterAttribute = this.validFilters[key]!.handler.attribute;
-                const filterHandler = this.validFilters[key]!.handler.handler;
-                const itemValue = item[filterAttribute];
-                if (itemValue === undefined || !filterHandler(itemValue, filterValue)) {
-                    return false;
+                const validFilter = this.validFilters[key];
+                if (validFilter) {
+                    const filterAttribute = validFilter.handler.attribute;
+                    const filterHandler = validFilter.handler.handler;
+                    const itemValue = item[filterAttribute];
+                    if (itemValue === undefined || !filterHandler(itemValue, filterValue)) {
+                        return false;
+                    }
                 }
             }
         }
