@@ -914,7 +914,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self.galaxy_data_manager_data_path = self.galaxy_data_manager_data_path or self.tool_data_path
         self.tool_secret = kwargs.get("tool_secret", "")
         self.metadata_strategy = kwargs.get("metadata_strategy", "directory")
-        self.use_remote_user = self.use_remote_user or self.single_user
+        self.use_remote_user = self.use_remote_user or bool(self.single_user)
         self.fetch_url_allowlist_ips = [
             ipaddress.ip_network(unicodify(ip.strip()))  # If it has a slash, assume 127.0.0.1/24 notation
             if "/" in ip

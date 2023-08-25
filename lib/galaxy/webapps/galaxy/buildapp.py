@@ -1201,7 +1201,7 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
     # protects Galaxy from improperly configured authentication in the
     # upstream server
     single_user = conf.get("single_user", None)
-    use_remote_user = asbool(conf.get("use_remote_user", False)) or single_user
+    use_remote_user = asbool(conf.get("use_remote_user", False)) or bool(single_user)
     if use_remote_user:
         from galaxy.web.framework.middleware.remoteuser import RemoteUser
 
