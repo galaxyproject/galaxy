@@ -41,6 +41,7 @@ from galaxy.config import (
     TOOL_SHED_CONFIG_SCHEMA_PATH,
 )
 from galaxy.config.schema import AppSchema
+from galaxy.schema.configuration import FullGalaxyConfig
 from galaxy.util import safe_makedirs
 from galaxy.util.properties import (
     nice_config_parser,
@@ -524,68 +525,14 @@ def _get_option_desc(option: Dict[str, Any]) -> str:
     return desc
 
 
-def _generate_api_models(args: Namespace, app_desc: App) -> None:
-    """Generates Pydantic models for the Galaxy configuration API."""
+def _generate_schema(args: Namespace, app_desc: App) -> None:
+    """Generates the configuration YAML schema from the Pydantic model."""
     if app_desc.app_name != "galaxy":
-        raise Exception("Only Galaxy is supported for API model generation")
-    schema = app_desc.schema
-    f = StringIO()
-    file_header = """
-\"\"\"Contains models for Galaxy configuration options.
-
-These models are used to generate the OpenAPI and Configuration YAML schema for the Galaxy configuration.
-\"\"\"
-
-from typing import (
-    Any,
-    Dict,
-    List,
-)
-
-from pydantic import Field
-from typing_extensions import Annotated
-
-from galaxy.schema.schema import Model
-
-
-class GalaxyConfigModel(Model):
-    \"\"\"Contains Galaxy configuration values.\"\"\"
-"""
-    f.write(file_header)
-
-    for key, value in schema.app_schema.items():
-        field_type = _get_schema_type(value)
-        default = _get_field_default(value, field_type)
-        title = key.replace("_", " ").title()
-        desc = value.get("desc")
-        description = desc.replace("\\", "\\\\") if desc else None
-        field = f'{key}: Annotated[{field_type}, Field(title="{title}", description="""{description}""",)]'
-        if default is not None:
-            field += f" = {default}"
-        f.write(f"    {field}\n")
-
-    destination = os.path.join(args.galaxy_root, "lib", "galaxy", "schema", "configuration.py")
-    _write_to_file(args, f, destination)
-
-
-def _get_field_default(value, field_type):
-    default = None if "default" not in value else value["default"]
-    if default is not None:
-        if field_type == "str" or isinstance(default, str):
-            default = f"'{default}'" if '"' in default else f'"{default}"'
-    return default
-
-
-def _get_schema_type(value):
-    field_type = value.get("type", "str")
-    if field_type == "seq":
-        field_type = "List[Any]"
-    elif field_type == "any":
-        field_type = "Any"
-    elif field_type == "map":
-        # TODO: handle map types by creating a sub-model with the mapping
-        field_type = "Dict[str, Any]"
-    return field_type
+        raise Exception("Only Galaxy is supported for configuration schema generation")
+    galaxy_config_schema = FullGalaxyConfig.schema()
+    target_path = app_desc.schema_path + ".test.yml"
+    with open(target_path, "w") as f:
+        yaml.dump(galaxy_config_schema, f)
 
 
 ACTIONS: Dict[str, Callable] = {
@@ -594,7 +541,7 @@ ACTIONS: Dict[str, Callable] = {
     "validate": _validate,
     "lint": _lint,
     "build_rst": _to_rst,
-    "generate_api_models": _generate_api_models,
+    "generate_schema": _generate_schema,
 }
 
 
