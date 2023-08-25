@@ -10621,7 +10621,7 @@ export interface operations {
             header?: {
                 "run-as"?: string;
             };
-            /** @description The ID of the History. */
+            /** @description History ID or any string. */
             /** @description The ID of the item (`HDA`/`HDCA`) contained in the history. */
             path: {
                 history_id: string;

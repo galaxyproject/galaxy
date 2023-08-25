@@ -824,7 +824,7 @@ class FastAPIHistoryContents:
         self,
         response: Response,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: str = "",
+        history_id: str = Path(..., description="History ID or any string."),
         id: DecodedDatabaseIdField = HistoryItemIDPathParam,
         type: HistoryContentType = ContentTypePathParam,
         serialization_params: SerializationParams = Depends(query_serialization_params),
