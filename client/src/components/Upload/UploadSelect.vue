@@ -25,6 +25,18 @@ const props = defineProps({
         type: String,
         default: null,
     },
+    what: {
+        type: String,
+        default: null,
+    },
+    searchable: {
+        type: Boolean,
+        default: true,
+    },
+    warn: {
+        type: Boolean,
+        default: false,
+    },
 });
 
 const emit = defineEmits(["input"]);
@@ -44,12 +56,18 @@ const currentValue = computed({
         class="upload-settings-select rounded"
         deselect-label=""
         :disabled="disabled"
+        :searchable="searchable"
         label="text"
         :options="options"
         :placeholder="placeholder"
         select-label=""
         selected-label=""
-        track-by="id" />
+        track-by="id">
+        <span slot="noResult" v-localize>No matching {{ what }}s found.</span>
+        <span slot="singleLabel" slot-scope="{ option }" :class="{ 'selection-warning': warn }">
+            {{ option.text }}
+        </span>
+    </Multiselect>
 </template>
 
 <style lang="scss">
@@ -58,6 +76,9 @@ const currentValue = computed({
     display: inline-block;
     min-height: unset;
     width: 150px;
+    .selection-warning {
+        color: $brand-warning;
+    }
     .multiselect__content-wrapper {
         .multiselect__content {
             width: inherit;

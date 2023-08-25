@@ -129,6 +129,7 @@ function removeUpload() {
                 :disabled="isDisabled"
                 :options="listExtensions"
                 placeholder="Select Type"
+                what="file type"
                 @input="inputExtension" />
             <UploadExtension v-if="listExtensions !== null" :extension="extension" :list-extensions="listExtensions" />
             <UploadSelect
@@ -138,6 +139,7 @@ function removeUpload() {
                 :disabled="isDisabled"
                 :options="listDbKeys"
                 placeholder="Select Reference"
+                what="reference"
                 @input="inputDbKey" />
             <UploadSettings
                 class="upload-settings"
