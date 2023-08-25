@@ -210,7 +210,10 @@ client-production: client-node-deps ## Rebuild client-side artifacts for a produ
 client-production-maps: client-node-deps ## Rebuild client-side artifacts for a production deployment with sourcemaps.
 	$(IN_VENV) cd client && $(NODE_ENV) yarn run build-production-maps
 
-client-format: client-node-deps ## Reformat client code
+client-lint-autofix: client-node-deps ## Automatically fix linting errors in client code
+	$(IN_VENV) cd client && yarn run eslint --quiet --fix
+
+client-format: client-node-deps client-lint-autofix ## Reformat client code, ensures autofixes are applied first
 	$(IN_VENV) cd client && yarn run format
 
 client-dev-server: client-node-deps ## Starts a webpack dev server for client development (HMR enabled)
