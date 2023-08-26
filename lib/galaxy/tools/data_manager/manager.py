@@ -236,9 +236,9 @@ class DataManager:
     def write_bundle(
         self,
         out_data: Dict[str, OutputDataset],
-    ) -> None:
+    ):
         tool_data_tables = self.data_managers.app.tool_data_tables
-        tool_data_tables.write_bundle(
+        return tool_data_tables.write_bundle(
             out_data,
             self.processor_description,
             self.repo_info,

@@ -527,7 +527,7 @@ def write_job_metadata(tool_job_working_directory, job_metadata, set_meta, tool_
         new_dataset = Dataset(id=-i, external_filename=new_dataset_filename)
         extra_files = file_dict.get("extra_files", None)
         if extra_files is not None:
-            new_dataset._extra_files_path = os.path.join(tool_job_working_directory, "working", extra_files)
+            new_dataset._extra_files_path = os.path.join(tool_job_working_directory, "outputs", extra_files)
         new_dataset.state = new_dataset.states.OK
         new_dataset_instance = HistoryDatasetAssociation(
             id=-i, dataset=new_dataset, extension=file_dict.get("ext", "data")

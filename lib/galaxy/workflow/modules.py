@@ -497,8 +497,11 @@ class WorkflowModule:
 
         progress.set_step_outputs(invocation_step, outputs, already_persisted=True)
 
-    def get_replacement_parameters(self, step):
-        """Return a list of replacement parameters."""
+    def get_informal_replacement_parameters(self, step) -> List[str]:
+        """Return a list of informal replacement parameters.
+
+        If replacement is handled via formal workflow inputs - do not include it in this list.
+        """
 
         return []
 
@@ -832,14 +835,22 @@ class SubWorkflowModule(WorkflowModule):
 
         return inputs
 
-    def get_replacement_parameters(self, step):
+    def get_informal_replacement_parameters(self, step) -> List[str]:
         """Return a list of replacement parameters."""
         replacement_parameters = set()
+
+        formal_parameters = set()
+        for step in self.subworkflow.input_steps:
+            if step.label:
+                formal_parameters.add(step.label)
+
         for subworkflow_step in self.subworkflow.steps:
             module = subworkflow_step.module
             assert module
-            for replacement_parameter in module.get_replacement_parameters(subworkflow_step):
-                replacement_parameters.add(replacement_parameter)
+
+            for replacement_parameter in module.get_informal_replacement_parameters(subworkflow_step):
+                if replacement_parameter not in formal_parameters:
+                    replacement_parameters.add(replacement_parameter)
 
         return list(replacement_parameters)
 
@@ -2255,7 +2266,9 @@ class ToolModule(WorkflowModule):
                 invocation_step=invocation_step,
                 max_num_jobs=max_num_jobs,
                 validate_outputs=validate_outputs,
-                job_callback=lambda job: self._handle_post_job_actions(step, job, progress.replacement_dict),
+                job_callback=lambda job: self._handle_post_job_actions(
+                    step, job, progress.effective_replacement_dict()
+                ),
                 completed_jobs=completed_jobs,
                 workflow_resource_parameters=resource_parameters,
             )
@@ -2279,7 +2292,9 @@ class ToolModule(WorkflowModule):
             step_inputs = mapping_params.param_template
             step_inputs.update(collection_info.collections)
 
-            self._handle_mapped_over_post_job_actions(step, step_inputs, step_outputs, progress.replacement_dict)
+            self._handle_mapped_over_post_job_actions(
+                step, step_inputs, step_outputs, progress.effective_replacement_dict()
+            )
         if execution_tracker.execution_errors:
             # TODO: formalize into InvocationFailure ?
             message = f"Failed to create {len(execution_tracker.execution_errors)} job(s) for workflow step {step.order_index + 1}: {str(execution_tracker.execution_errors[0])}"
@@ -2341,7 +2356,7 @@ class ToolModule(WorkflowModule):
             action_arguments = None
         return PostJobAction(value["action_type"], step, output_name, action_arguments)
 
-    def get_replacement_parameters(self, step):
+    def get_informal_replacement_parameters(self, step) -> List[str]:
         """Return a list of replacement parameters."""
         replacement_parameters = set()
         for pja in step.post_job_actions:
