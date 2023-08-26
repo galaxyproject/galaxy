@@ -732,18 +732,19 @@ def collect_extra_files(object_store, dataset, job_working_directory):
         # Fall back to working dir, remove in 23.2
         output_location = "working"
         temp_file_path = os.path.join(job_working_directory, output_location, file_name)
-    extra_dir = None
+    if not os.path.exists(temp_file_path):
+        # no outputs to working directory, but may still need to push form cache to backend
+        temp_file_path = dataset.extra_files_path
     try:
         # This skips creation of directories - object store
         # automatically creates them.  However, empty directories will
         # not be created in the object store at all, which might be a
         # problem.
         for root, _dirs, files in os.walk(temp_file_path):
-            extra_dir = root.replace(os.path.join(job_working_directory, output_location), "", 1).lstrip(os.path.sep)
             for f in files:
                 object_store.update_from_file(
                     dataset.dataset,
-                    extra_dir=extra_dir,
+                    extra_dir=os.path.normpath(os.path.join(file_name, os.path.relpath(root, temp_file_path))),
                     alt_name=f,
                     file_name=os.path.join(root, f),
                     create=True,
