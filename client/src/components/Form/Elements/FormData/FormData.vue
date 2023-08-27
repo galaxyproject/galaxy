@@ -86,31 +86,7 @@ const currentSource = computed(() => currentVariant.value && currentVariant.valu
 const currentValue = computed({
     get: () => {
         eventBus.$emit("waiting", false);
-        const value: Array<DataOption> = [];
-        if (props.value) {
-            for (const v of props.value.values) {
-                const foundEntry = formattedOptions.value.find(
-                    (entry) => entry.value && entry.value.id === v.id && entry.value.src === v.src
-                );
-                if (foundEntry && foundEntry.value) {
-                    value.push(foundEntry.value);
-                    if (!currentVariant.value?.multiple) {
-                        break;
-                    }
-                }
-            }
-            if (value.length > 0) {
-                return value;
-            }
-        }
-        if (!props.optional && formattedOptions.value.length > 0) {
-            const firstEntry = formattedOptions.value && formattedOptions.value[0];
-            if (firstEntry && firstEntry.value) {
-                value.push(firstEntry.value);
-                return value;
-            }
-        }
-        return null;
+        return getValue();
     },
     set: (val) => {
         eventBus.$emit("waiting", true);
@@ -368,7 +344,38 @@ function onDrop() {
 }
 
 /**
- * Processes and submits values from the select field
+ * Parse incoming value for select field
+ */
+function getValue() {
+    const value: Array<DataOption> = [];
+    if (props.value) {
+        for (const v of props.value.values) {
+            const foundEntry = formattedOptions.value.find(
+                (entry) => entry.value && entry.value.id === v.id && entry.value.src === v.src
+            );
+            if (foundEntry && foundEntry.value) {
+                value.push(foundEntry.value);
+                if (!currentVariant.value?.multiple) {
+                    break;
+                }
+            }
+        }
+        if (value.length > 0) {
+            return value;
+        }
+    }
+    if (!props.optional && formattedOptions.value.length > 0) {
+        const firstEntry = formattedOptions.value && formattedOptions.value[0];
+        if (firstEntry && firstEntry.value) {
+            value.push(firstEntry.value);
+            return value;
+        }
+    }
+    return null;
+}
+
+/**
+ * Process and emit value for select field
  */
 function setValue(val: Array<DataOption> | DataOption | null) {
     if (val) {
