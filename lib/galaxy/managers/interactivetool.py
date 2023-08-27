@@ -167,7 +167,10 @@ class InteractiveToolManager:
                 tool_port=entry["port"],
                 entry_url=entry["url"],
                 name=entry["name"],
+                label=entry["label"],
                 requires_domain=entry["requires_domain"],
+                requires_path_in_url=entry["requires_path_in_url"],
+                requires_path_in_header_named=entry["requires_path_in_header_named"],
                 short_token=self.app.config.interactivetools_shorten_url,
             )
             self.sa_session.add(ep)
