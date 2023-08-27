@@ -308,7 +308,6 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         self.user_manager = app[UserManager]
         self.session_manager = app[GalaxySessionManager]
         super().__init__(environ)
-        self.expunge_all()
         config = self.app.config
         self.debug = asbool(config.get("debug", False))
         x_frame_options = getattr(config, "x_frame_options", None)
