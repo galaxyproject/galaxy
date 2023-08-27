@@ -277,17 +277,6 @@ function handleIncoming(incoming: Record<string, unknown>, partial = true) {
 }
 
 /**
- * Set initial value
- */
-function initialValue() {
-    if ((isLDDA.value || isDCE.value) && props.value && props.value.values) {
-        setValue(matchValues(props.value.values));
-    } else {
-        setValue(currentValue.value);
-    }
-}
-
-/**
  * Matches entries to available options
  */
 function matchOption(entry: DataOption) {
@@ -436,7 +425,11 @@ onMounted(() => {
     eventBus.$on("waiting", (value: boolean) => {
         waiting.value = value;
     });
-    initialValue();
+    if (props.value && props.value.values) {
+        setValue(matchValues(props.value.values));
+    } else {
+        setValue(currentValue.value);
+    }
 });
 
 /**
@@ -445,7 +438,9 @@ onMounted(() => {
 watch(
     () => [props.options, currentLinked.value, currentVariant.value],
     () => {
-        initialValue();
+        if (!isLDDA.value && !isDCE.value) {
+            setValue(currentValue.value);
+        }
     }
 );
 </script>
