@@ -259,12 +259,7 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
                 normalize_remote_user_email=conf.get("normalize_remote_user_email", False),
             ),
         )
-    # The recursive middleware allows for including requests in other
-    # requests or forwarding of requests, all on the server side.
-    if asbool(conf.get("use_recursive", True)):
-        from paste import recursive
 
-        app = wrap_if_allowed(app, stack, recursive.RecursiveMiddleware, args=(conf,))
     # Transaction logging (apache access.log style)
     if asbool(conf.get("use_translogger", True)):
         from paste.translogger import TransLogger
