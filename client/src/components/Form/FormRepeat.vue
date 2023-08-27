@@ -4,8 +4,6 @@ import { faCaretDown, faCaretUp, faPlus, faTrashAlt } from "@fortawesome/free-so
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { defineAsyncComponent, nextTick, type PropType } from "vue";
 
-import { useKeyedObjects } from "@/composables/keyedObjects";
-
 import FormCard from "./FormCard.vue";
 
 const FormNode = defineAsyncComponent(() => import("./FormInputs.vue"));
@@ -84,8 +82,6 @@ function getButtonId(index: number, direction: "up" | "down") {
     const prefix = getPrefix(index);
     return `${prefix}_${direction}`;
 }
-
-const { keyObject } = useKeyedObjects();
 </script>
 
 <template>
@@ -97,7 +93,7 @@ const { keyObject } = useKeyedObjects();
 
         <FormCard
             v-for="(cache, cacheId) in props.input.cache"
-            :key="keyObject(cache)"
+            :key="cacheId"
             data-description="repeat block"
             class="card"
             :title="getTitle(cacheId)">
