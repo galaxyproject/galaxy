@@ -50,7 +50,9 @@ async function onAddFavorite() {
         emit("onSetError", null);
         ariaAlert("added to favorites");
     } catch {
-        emit("onSetError", `Failed to add '${props.id}' to favorites.`);
+        emit("onSetError", {
+            message: `Failed to add '${props.id}' to favorites.`,
+        });
         ariaAlert("failed to add to favorites");
     }
 }
@@ -61,7 +63,9 @@ async function onRemoveFavorite() {
         emit("onSetError", null);
         ariaAlert("removed from favorites");
     } catch {
-        emit("onSetError", `Failed to remove '${props.id}' from favorites.`);
+        emit("onSetError", {
+            message: `Failed to remove '${props.id}' from favorites.`,
+        });
         ariaAlert("failed to remove from favorites");
     }
 }

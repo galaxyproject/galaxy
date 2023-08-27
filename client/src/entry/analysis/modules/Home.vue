@@ -1,6 +1,6 @@
 <template>
     <div>
-        <ToolForm v-if="isTool && !isUpload" v-bind="toolParams" />
+        <ToolPanel v-if="isTool && !isUpload" v-bind="toolParams" />
         <WorkflowRun v-else-if="isWorkflow" v-bind="workflowParams" />
         <div v-else-if="isController" :src="controllerParams" />
         <CenterFrame v-else src="/welcome" />
@@ -8,7 +8,7 @@
 </template>
 
 <script>
-import ToolForm from "components/Tool/ToolForm";
+import ToolPanel from "components/Tool/ToolPanel";
 import WorkflowRun from "components/Workflow/Run/WorkflowRun";
 import decodeUriComponent from "decode-uri-component";
 import CenterFrame from "entry/analysis/modules/CenterFrame";
@@ -16,7 +16,7 @@ import CenterFrame from "entry/analysis/modules/CenterFrame";
 export default {
     components: {
         CenterFrame,
-        ToolForm,
+        ToolPanel,
         WorkflowRun,
     },
     props: {
