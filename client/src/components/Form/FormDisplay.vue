@@ -201,7 +201,7 @@ export default {
                 }
             }
         },
-        getOffsetTop(element, padding = 150) {
+        getOffsetTop(element, padding = 200) {
             let offsetTop = 0;
             while (element) {
                 offsetTop += element.offsetTop;
@@ -219,7 +219,7 @@ export default {
                     if (element) {
                         const centerPanel = document.querySelector("#center");
                         if (centerPanel) {
-                            centerPanel.scrollTo(0, this.getOffsetTop(element) - 50);
+                            centerPanel.scrollTo(0, this.getOffsetTop(element));
                         }
                     }
                 }
