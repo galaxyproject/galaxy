@@ -388,7 +388,9 @@ function setValue(val: Array<DataOption> | DataOption | null) {
             }
 
             // Identify matching variant
-            const variantIndex = variant.value.findIndex((v) => v.multiple === isMultiple && v.src === sourceType);
+            const variantIndex = variant.value.findIndex(
+                (v) => (!isMultiple || v.multiple === isMultiple) && v.src === sourceType
+            );
 
             // Determine batch mode
             let batch: string = BATCH.DISABLED;
