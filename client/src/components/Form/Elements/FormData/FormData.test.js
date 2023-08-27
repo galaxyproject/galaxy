@@ -259,4 +259,28 @@ describe("FormData", () => {
             values: [{ id: "hda3", map_over_type: null, src: "hda" }],
         });
     });
+
+    it("match variation on initial value", async () => {
+        const wrapper = createTarget({
+            value: {
+                values: [{ id: "hdca4", src: "hdca" }],
+            },
+            multiple: true,
+            options: defaultOptions,
+        });
+        await wrapper.vm.$nextTick();
+        const options = wrapper.find(".btn-group").findAll("button");
+        expect(options.length).toBe(3);
+        expect(options.at(1).classes()).toContain("active");
+        expect(options.at(1).attributes("title")).toBe("Dataset collection");
+        expect(wrapper.emitted().input[1][0]).toEqual({
+            batch: false,
+            product: false,
+            values: [{ id: "hdca4", map_over_type: null, src: "hdca" }],
+        });
+        expect(wrapper.emitted().input.length).toEqual(2);
+        const selectedValues = wrapper.findAll(SELECTED_VALUE);
+        expect(selectedValues.length).toBe(1);
+        expect(selectedValues.at(0).text()).toBe("4: hdcaName4");
+    });
 });
