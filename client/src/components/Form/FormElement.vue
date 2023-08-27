@@ -33,7 +33,6 @@ interface FormElementProps {
     help?: string;
     error?: string;
     warning?: string;
-    backbonejs?: boolean;
     disabled?: boolean;
     attributes?: FormParameterAttributes;
     collapsedEnableText?: string;
@@ -50,7 +49,6 @@ interface FormElementProps {
 const props = withDefaults(defineProps<FormElementProps>(), {
     id: "identifier",
     refreshOnChange: false,
-    backbonejs: false,
     disabled: false,
     collapsedEnableText: "Enable",
     collapsedDisableText: "Disable",
@@ -295,11 +293,11 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
             <FormUpload v-else-if="props.type === 'upload'" v-model="currentValue" />
             <FormRulesEdit v-else-if="props.type == 'rules'" v-model="currentValue" :target="attrs.target" />
             <FormParameter
-                v-else-if="backbonejs"
+                v-else-if="['data_dialog', 'ftpfile', 'library_data'].includes(props.type)"
                 :id="props.id"
                 v-model="currentValue"
                 :data-label="props.title"
-                :type="props.type ?? (attrs.options ? 'select' : 'text')"
+                :type="props.type"
                 :attributes="attrs" />
             <FormTags
                 v-else-if="props.type === 'tags'"

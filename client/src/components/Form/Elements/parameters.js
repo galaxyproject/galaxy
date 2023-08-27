@@ -3,10 +3,8 @@
 */
 import Backbone from "backbone";
 import DataPicker from "mvc/ui/ui-data-picker";
-import Ui from "mvc/ui/ui-misc";
 import SelectFtp from "mvc/ui/ui-select-ftp";
 import SelectLibrary from "mvc/ui/ui-select-library";
-import Utils from "utils/utils";
 
 // create form view
 export default Backbone.View.extend({
@@ -14,7 +12,6 @@ export default Backbone.View.extend({
     types: {
         library_data: "_fieldLibrary",
         ftpfile: "_fieldFtp",
-        rules: "_fieldRulesEdit",
         data_dialog: "_fieldDialog",
     },
 
@@ -27,56 +24,12 @@ export default Backbone.View.extend({
     create: function (input_def) {
         var fieldClass = this.types[input_def.type];
         this.field = typeof this[fieldClass] === "function" ? this[fieldClass].call(this, input_def) : null;
-        if (!this.field) {
-            this.field = this._fieldText(input_def);
-            console.debug("form-parameters::_addRow()", `Auto matched field type (${input_def.type}).`);
-        }
         if (input_def.value === undefined) {
             input_def.value = null;
         }
         this.field.value(input_def.value);
         this.setElement(input_def.el || "<div/>");
         this.$el.append(this.field.$el);
-    },
-
-    /** Text input field */
-    _fieldText: function (input_def) {
-        // field replaces e.g. a select field
-        const inputClass = input_def.optional && input_def.type === "select" ? Ui.NullableText : Ui.Input;
-        if (
-            ["SelectTagParameter", "ColumnListParameter"].includes(input_def.model_class) ||
-            (input_def.options && input_def.data)
-        ) {
-            input_def.area = input_def.multiple;
-            if (Utils.isEmpty(input_def.value)) {
-                input_def.value = null;
-            } else {
-                if (Array.isArray(input_def.value)) {
-                    var str_value = "";
-                    for (var i in input_def.value) {
-                        str_value += String(input_def.value[i]);
-                        if (!input_def.multiple) {
-                            break;
-                        }
-                        str_value += "\n";
-                    }
-                    input_def.value = str_value;
-                }
-            }
-        }
-        // create input element
-        return new inputClass({
-            id: input_def.id,
-            type: input_def.type,
-            area: input_def.area,
-            readonly: input_def.readonly,
-            color: input_def.color,
-            style: input_def.style,
-            placeholder: input_def.placeholder,
-            datalist: input_def.datalist,
-            onchange: input_def.onchange,
-            value: input_def.value,
-        });
     },
 
     /** Data dialog picker field */
