@@ -3,38 +3,24 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
 import { ref } from "vue";
 
-const loading = ref(false);
+interface Props {
+    icon: string | object;
+    title?: string;
+    disabled?: boolean;
+    loadingTitle?: string;
+    size?: "sm" | "md" | "lg";
+    action: () => Promise<void>;
+    variant?: "primary" | "secondary" | "success" | "danger" | "warning" | "info" | "light" | "dark" | "link";
+}
 
-const props = defineProps({
-    icon: {
-        type: String,
-        required: true,
-    },
-    title: {
-        type: String,
-        required: false,
-        default: "",
-    },
-    action: {
-        type: Function,
-        required: true,
-    },
-    size: {
-        type: String,
-        required: false,
-        default: "md",
-    },
-    variant: {
-        type: String,
-        required: false,
-        default: "link",
-    },
-    disabled: {
-        type: Boolean,
-        required: false,
-        default: false,
-    },
+const props = withDefaults(defineProps<Props>(), {
+    title: "",
+    size: "md",
+    variant: "link",
+    loadingTitle: "Loading...",
 });
+
+const loading = ref(false);
 
 async function onClick() {
     loading.value = true;
@@ -51,7 +37,7 @@ async function onClick() {
         :variant="variant"
         :disabled="loading || disabled"
         @click="onClick">
-        <span v-if="loading" class="loading-icon fa fa-spinner fa-spin" title="loading"></span>
+        <span v-if="loading" class="loading-icon fa fa-spinner fa-spin" :title="loadingTitle" />
         <FontAwesomeIcon v-else :icon="props.icon" @click="onClick" />
         <slot></slot>
     </BButton>
