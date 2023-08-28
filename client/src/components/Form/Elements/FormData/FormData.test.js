@@ -154,9 +154,15 @@ describe("FormData", () => {
         const message = wrapper.findAll(".form-data-entry-label");
         expect(message.length).toBe(1);
         expect(message.at(0).text()).toBe("1. dceName1 (dce)");
+        expect(wrapper.find(".btn-group").exists()).toBeFalsy();
         const closeButton = wrapper.find(".alert .close");
         await closeButton.trigger("click");
         expect(wrapper.emitted().input[1][0]).toEqual(null);
+        expect(wrapper.find(".alert").exists()).toBeFalsy();
+        await wrapper.setProps({ value: null });
+        const options = wrapper.find(".btn-group").findAll("button");
+        expect(options.length).toBe(4);
+        expect(wrapper.emitted().input.length).toEqual(2);
     });
 
     it("dataset collection as hdca without map_over_type", async () => {
@@ -273,14 +279,25 @@ describe("FormData", () => {
         expect(options.length).toBe(3);
         expect(options.at(1).classes()).toContain("active");
         expect(options.at(1).attributes("title")).toBe("Dataset collection");
-        expect(wrapper.emitted().input[1][0]).toEqual({
-            batch: false,
-            product: false,
-            values: [{ id: "hdca4", map_over_type: null, src: "hdca" }],
-        });
+        for (const i of [0, 1]) {
+            expect(wrapper.emitted().input[i][0]).toEqual({
+                batch: false,
+                product: false,
+                values: [{ id: "hdca4", map_over_type: null, src: "hdca" }],
+            });
+        }
         expect(wrapper.emitted().input.length).toEqual(2);
         const selectedValues = wrapper.findAll(SELECTED_VALUE);
         expect(selectedValues.length).toBe(1);
         expect(selectedValues.at(0).text()).toBe("4: hdcaName4");
+        await wrapper.find("[title='Multiple datasets'").trigger("click");
+        expect(options.at(0).classes()).toContain("active");
+        expect(wrapper.emitted().input[2][0]).toEqual({
+            batch: false,
+            product: false,
+            values: [{ id: "hda3", map_over_type: null, src: "hda" }],
+        });
+        const newSelectedValues = wrapper.findAll(SELECTED_VALUE);
+        expect(newSelectedValues.at(0).text()).toBe("3: hdaName3");
     });
 });
