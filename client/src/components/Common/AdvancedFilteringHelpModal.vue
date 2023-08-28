@@ -25,7 +25,12 @@ defineEmits<{
 </script>
 
 <template>
-    <BModal :visible="visible" :title="`Filtering Options Help - ${title}`" ok-only @ok="() => $emit('close')">
+    <BModal
+        :visible="visible"
+        :title="`Filtering Options Help - ${title}`"
+        ok-only
+        @ok="() => $emit('close')"
+        @hide="() => $emit('close')">
         <div>
             <p>This input can be used to filter the {{ title }} displayed.</p>
 
