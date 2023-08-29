@@ -46,6 +46,7 @@ import TrsSearch from "components/Workflow/Import/TrsSearch";
 import InvocationReport from "components/Workflow/InvocationReport";
 import StoredWorkflowInvocations from "components/Workflow/StoredWorkflowInvocations";
 import UserInvocations from "components/Workflow/UserInvocations";
+import WorkflowCreate from "components/Workflow/WorkflowCreate";
 import WorkflowExport from "components/Workflow/WorkflowExport";
 import WorkflowImport from "components/Workflow/WorkflowImport";
 import WorkflowList from "components/Workflow/WorkflowList";
@@ -499,7 +500,7 @@ export function getRouter(Galaxy) {
                         component: NewUserWelcome,
                     },
                     {
-                        path: "workflows/create",
+                        path: "workflows/create_old",
                         component: FormGeneric,
                         props: {
                             url: "/workflow/create",
@@ -509,6 +510,11 @@ export function getRouter(Galaxy) {
                             submitIcon: "fa-check",
                             cancelRedirect: "/workflows/list",
                         },
+                    },
+                    {
+                        path: "workflows/create",
+                        component: WorkflowCreate,
+                        redirect: redirectAnon(),
                     },
                     {
                         path: "workflows/export",
@@ -533,20 +539,26 @@ export function getRouter(Galaxy) {
                         }),
                     },
                     {
-                        path: "workflows/list_published",
-                        component: WorkflowList,
-                        props: (route) => ({
-                            published: true,
-                        }),
-                    },
-                    {
                         path: "workflows/list",
                         component: WorkflowList,
                         redirect: redirectAnon(),
+                    },
+                    {
+                        path: "workflows/list_published",
+                        component: WorkflowList,
+                        redirect: redirectAnon(),
                         props: (route) => ({
-                            importMessage: route.query["message"],
-                            importStatus: route.query["status"],
-                            query: route.query["query"],
+                            activeList: "published",
+                            query: { ...route.query },
+                        }),
+                    },
+                    {
+                        path: "workflows/list_shared_with_me",
+                        component: WorkflowList,
+                        redirect: redirectAnon(),
+                        props: (route) => ({
+                            activeList: "shared_with_me",
+                            query: { ...route.query },
                         }),
                     },
                     {
