@@ -35,7 +35,9 @@ describe("Notifications categories", () => {
         notification.content.message = "This is a **markdown** message to test _rendering_";
 
         const wrapper = await mountComponent(MessageNotification, {
-            notification,
+            options: {
+                notification,
+            },
         });
 
         expect(wrapper.find("#notification-message").html()).toContain(
