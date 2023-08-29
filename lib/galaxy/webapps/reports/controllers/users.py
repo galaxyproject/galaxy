@@ -164,8 +164,9 @@ class Users(BaseUIController, ReportQueryBuilder):
             .filter(galaxy.model.User.table.c.deleted == false())
             .order_by(galaxy.model.User.table.c.email)
         ):
-            if user.galaxy_sessions:
-                last_galaxy_session = user.galaxy_sessions[0]
+            current_galaxy_session = user.current_galaxy_session
+            if current_galaxy_session:
+                last_galaxy_session = current_galaxy_session
                 if last_galaxy_session.update_time < cutoff_time:
                     users.append((user.email, last_galaxy_session.update_time.strftime("%Y-%m-%d")))
             else:

@@ -834,7 +834,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         history = None
         set_permissions = False
         try:
-            users_last_session = user.galaxy_sessions[0]
+            users_last_session = user.current_galaxy_session
         except Exception:
             users_last_session = None
         if (
