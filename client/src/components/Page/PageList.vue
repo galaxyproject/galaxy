@@ -177,9 +177,9 @@ export default {
     computed: {
         dataProviderParameters() {
             const extraParams = { search: this.effectiveFilter };
-            if (this.published) {
-                extraParams.show_published = true;
-                extraParams.show_shared = false;
+            if (!this.published) {
+                extraParams.show_published = false;
+                extraParams.show_shared = true;
             }
             return extraParams;
         },
