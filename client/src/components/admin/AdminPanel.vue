@@ -81,7 +81,7 @@ export default {
                         },
                         {
                             id: "admin-link-notifications",
-                            title: "Notifications",
+                            title: "Notifications and Broadcasts",
                             route: "/admin/notifications",
                         },
                     ],
