@@ -151,7 +151,10 @@ loadBroadcastsList();
                     </Heading>
 
                     <BRow align-h="end" align-v="center" no-gutters>
-                        <UtcDate class="mr-2" :date="broadcast.create_time" mode="elapsed" />
+                        <span>
+                            created
+                            <UtcDate class="mr-2" :date="broadcast.create_time" mode="elapsed" />
+                        </span>
 
                         <BInputGroup v-if="!broadcastExpired(broadcast)">
                             <BButton
@@ -176,7 +179,7 @@ loadBroadcastsList();
                 </BRow>
 
                 <BRow align-v="center" align-h="between" no-gutters>
-                    <BCol>
+                    <BCol cols="auto">
                         <BRow align-v="center" no-gutters>
                             <span
                                 :class="broadcastExpired(broadcast) ? 'expired-broadcast' : ''"
