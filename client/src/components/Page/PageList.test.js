@@ -30,6 +30,8 @@ describe("PgeList.vue", () => {
         offset: 0,
         sort_by: "update_time",
         sort_desc: true,
+        show_published: false,
+        show_shared: true,
     };
     const publishedGridApiParams = {
         ...personalGridApiParams,

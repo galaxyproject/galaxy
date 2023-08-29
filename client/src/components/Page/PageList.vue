@@ -176,10 +176,14 @@ export default {
     },
     computed: {
         dataProviderParameters() {
-            const extraParams = { search: this.effectiveFilter };
-            if (!this.published) {
-                extraParams.show_published = false;
-                extraParams.show_shared = true;
+            const extraParams = {
+                search: this.effectiveFilter,
+                show_published: false,
+                show_shared: true,
+            };
+            if (this.published) {
+                extraParams.show_published = true;
+                extraParams.show_shared = false;
             }
             return extraParams;
         },
