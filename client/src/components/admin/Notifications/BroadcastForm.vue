@@ -130,7 +130,7 @@ if (props.id) {
 
 <template>
     <div>
-        <Heading> {{ title }} </Heading>
+        <Heading h1 separator inline class="flex-grow-1"> {{ title }} </Heading>
 
         <BAlert v-if="loading" show>
             <LoadingSpan message="Loading broadcast" />

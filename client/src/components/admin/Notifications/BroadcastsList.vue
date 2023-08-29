@@ -10,6 +10,7 @@ import {
     faTrash,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BAlert, BButton, BCol, BInputGroup, BRow } from "bootstrap-vue";
 import { ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -32,7 +33,8 @@ const router = useRouter();
 const { confirm } = useConfirmDialog();
 const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });
 
-const loadingBroadcasts = ref(false);
+const overlay = ref(false);
+const loading = ref(false);
 const broadcasts = ref<BroadcastNotificationResponse[]>([]);
 
 const broadcastExpired = (item: BroadcastNotification) =>
@@ -59,7 +61,7 @@ async function deleteBroadcast(item: BroadcastNotification) {
     const confirmed = await confirm("Are you sure you want to delete this broadcast?", "Delete broadcast");
     if (confirmed) {
         await updateBroadcast(item.id, { expiration_time: new Date().toISOString().slice(0, 23) });
-        await loadBroadcastsList();
+        await loadBroadcastsList(true);
         Toast.info("Broadcast marked as expired and will be removed from the database");
     }
 }
@@ -91,11 +93,20 @@ function onActionClick(item: BroadcastNotification, link: string) {
     }
 }
 
-async function loadBroadcastsList() {
-    loadingBroadcasts.value = true;
-    broadcasts.value = await loadBroadcasts();
-    broadcasts.value.sort((a, b) => new Date(b.create_time).getTime() - new Date(a.create_time).getTime());
-    loadingBroadcasts.value = false;
+async function loadBroadcastsList(overlayLoading = false) {
+    if (overlayLoading) {
+        overlay.value = true;
+    } else {
+        loading.value = true;
+    }
+
+    try {
+        broadcasts.value = await loadBroadcasts();
+        broadcasts.value.sort((a, b) => new Date(b.create_time).getTime() - new Date(a.create_time).getTime());
+    } finally {
+        loading.value = false;
+        overlay.value = false;
+    }
 }
 
 loadBroadcastsList();
@@ -103,9 +114,27 @@ loadBroadcastsList();
 
 <template>
     <div>
-        <Heading size="md" class="mb-2"> Broadcasts list </Heading>
+        <Heading h2 class="mb-2"> Broadcasts list </Heading>
 
-        <BAlert v-if="loadingBroadcasts" variant="info" show>
+        <div class="list-operations mb-2">
+            <BRow class="align-items-center" no-gutters>
+                <BCol>
+                    <BRow align-h="end" align-v="center" no-gutters>
+                        <BButton
+                            v-b-tooltip.hover
+                            size="sm"
+                            :disabled="loading || overlay"
+                            variant="outline-primary"
+                            title="Refresh broadcasts"
+                            @click="loadBroadcastsList">
+                            <FontAwesomeIcon :icon="faRedo" />
+                        </BButton>
+                    </BRow>
+                </BCol>
+            </BRow>
+        </div>
+
+        <BAlert v-if="loading" variant="info" show>
             <LoadingSpan message="Loading broadcasts" />
         </BAlert>
 
@@ -113,32 +142,17 @@ loadBroadcastsList();
             No broadcasts to show. Use the button above to create a new broadcast.
         </BAlert>
 
-        <div v-else class="mx-1">
-            <BCard class="mb-2">
-                <BRow class="align-items-center" no-gutters>
-                    <BCol>
-                        <BRow align-h="end" align-v="center">
-                            <BButton
-                                v-b-tooltip.hover
-                                size="sm"
-                                variant="outline-primary"
-                                title="Refresh broadcasts"
-                                @click="loadBroadcastsList">
-                                <FontAwesomeIcon :icon="faRedo" />
-                            </BButton>
-                        </BRow>
-                    </BCol>
-                </BRow>
-            </BCard>
-
-            <BCard v-for="broadcast in broadcasts" :key="broadcast.id" class="mb-2">
-                <BRow align-v="center" align-h="between" class="mb-0 mx-0">
+        <BOverlay v-else :show="overlay" rounded="sm">
+            <div v-for="broadcast in broadcasts" :key="broadcast.id" class="broadcast-card mb-2">
+                <BRow align-v="center" align-h="between" no-gutters>
                     <Heading size="md" class="mb-0" :class="broadcastExpired(broadcast) ? 'expired-broadcast' : ''">
                         <FontAwesomeIcon :class="`text-${getBroadcastVariant(broadcast)}`" :icon="faInfoCircle" />
                         {{ broadcast.content.subject }}
                     </Heading>
-                    <BRow align-h="end" align-v="center">
-                        <UtcDate class="mx-2" :date="broadcast.create_time" mode="elapsed" />
+
+                    <BRow align-h="end" align-v="center" no-gutters>
+                        <UtcDate class="mr-2" :date="broadcast.create_time" mode="elapsed" />
+
                         <BInputGroup v-if="!broadcastExpired(broadcast)">
                             <BButton
                                 id="edit-broadcast-button"
@@ -148,6 +162,7 @@ loadBroadcastsList();
                                 @click="onEditClick(broadcast)">
                                 <FontAwesomeIcon :icon="faEdit" />
                             </BButton>
+
                             <BButton
                                 id="delete-button"
                                 v-b-tooltip.hover
@@ -160,19 +175,19 @@ loadBroadcastsList();
                     </BRow>
                 </BRow>
 
-                <BRow align-v="center" align-h="between" class="mx-0">
+                <BRow align-v="center" align-h="between" no-gutters>
                     <BCol>
-                        <BRow align-v="center">
+                        <BRow align-v="center" no-gutters>
                             <span
-                                class="broadcast-message"
                                 :class="broadcastExpired(broadcast) ? 'expired-broadcast' : ''"
                                 v-html="renderMarkdown(broadcast.content.message)" />
                         </BRow>
-                        <BRow>
+
+                        <BRow no-gutters>
                             <BButton
                                 v-for="actionLink in broadcast.content.action_links"
                                 :key="actionLink.action_name"
-                                class="mx-1"
+                                class="mr-1"
                                 :title="actionLink.action_name"
                                 variant="primary"
                                 @click="onActionClick(broadcast, actionLink.link)">
@@ -180,15 +195,17 @@ loadBroadcastsList();
                             </BButton>
                         </BRow>
                     </BCol>
+
                     <BCol>
-                        <BRow align-v="center" align-h="end">
+                        <BRow align-v="center" align-h="end" no-gutters>
                             <FontAwesomeIcon
                                 :icon="broadcastPublished(broadcast) ? faBroadcastTower : faClock"
                                 :class="broadcastPublished(broadcast) ? 'published' : 'scheduled'"
                                 class="mx-1" />
                             {{ getBroadcastPublicity(broadcast) }}
                         </BRow>
-                        <BRow align-v="center" align-h="end">
+
+                        <BRow align-v="center" align-h="end" no-gutters>
                             <FontAwesomeIcon
                                 variant="danger"
                                 :icon="broadcastExpired(broadcast) ? faTrash : faHourglassHalf"
@@ -198,30 +215,43 @@ loadBroadcastsList();
                         </BRow>
                     </BCol>
                 </BRow>
-            </BCard>
-        </div>
+            </div>
+        </BOverlay>
     </div>
 </template>
 
 <style scoped lang="scss">
 @import "scss/theme/blue.scss";
-.expired-broadcast {
-    text-decoration: line-through;
+
+.list-operations {
+    border-radius: 0.5rem;
+    border: 1px solid $gray-400;
+    padding: 0.5rem;
 }
 
-.published {
-    color: $brand-primary;
-}
+.broadcast-card {
+    border-radius: 0.25rem;
+    border: 1px solid $gray-300;
+    padding: 1rem;
 
-.scheduled {
-    color: $brand-warning;
-}
+    .expired-broadcast {
+        text-decoration: line-through;
+    }
 
-.expires {
-    color: $brand-info;
-}
+    .published {
+        color: $brand-primary;
+    }
 
-.expired {
-    color: $brand-danger;
+    .scheduled {
+        color: $brand-warning;
+    }
+
+    .expires {
+        color: $brand-info;
+    }
+
+    .expired {
+        color: $brand-danger;
+    }
 }
 </style>

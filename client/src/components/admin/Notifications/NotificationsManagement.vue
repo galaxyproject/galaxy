@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BButton } from "bootstrap-vue";
 import { useRouter } from "vue-router/composables";
 
 import BroadcastsList from "@/components/admin/Notifications/BroadcastsList.vue";
@@ -19,12 +20,16 @@ function goToCreateNewBroadcast() {
 <template>
     <div aria-labelledby="notifications-managements">
         <div class="d-flex justify-content-between">
-            <Heading id="notifications-title">Notifications and Broadcasts</Heading>
+            <Heading id="notifications-title" h1 separator inline class="flex-grow-1">
+                Notifications and Broadcasts
+            </Heading>
+
             <div>
                 <BButton class="mb-2" variant="outline-primary" @click="goToCreateNewNotification">
                     <FontAwesomeIcon icon="plus" />
                     Send new notification
                 </BButton>
+
                 <BButton class="mb-2" variant="outline-primary" @click="goToCreateNewBroadcast">
                     <FontAwesomeIcon icon="plus" />
                     Create new broadcast

@@ -124,7 +124,7 @@ async function sendNewNotification() {
 
 <template>
     <div>
-        <Heading> New Notification </Heading>
+        <Heading h1 separator inline class="flex-grow-1"> New Notification </Heading>
 
         <BAlert v-if="loading" show>
             <LoadingSpan message="Loading notification" />
