@@ -28,7 +28,7 @@ function updateDate(newDate: string) {
     const matches = newDate.match(/(\d{4})-(\d{2})-(\d{2})/);
 
     if (matches?.length && matches.length >= 4) {
-        const [_, year, month, day] = matches as Tuple<4, string>;
+        const [_v, year, month, day] = matches as Tuple<4, string>;
 
         const date = new Date(props.value);
 
@@ -48,7 +48,7 @@ function updateTime(newTime: string) {
     const matches = newTime.match(/(\d{2}):(\d{2})/);
 
     if (matches?.length && matches.length >= 3) {
-        const [_, hours, minutes] = matches as Tuple<3, string>;
+        const [_v, hours, minutes] = matches as Tuple<3, string>;
 
         const date = new Date(props.value);
 
