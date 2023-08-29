@@ -42,6 +42,7 @@ class ToolApp(GalaxyDataTestApp):
     name = "galaxy"
     biotools_metadata_source = None
     job_search = None
+    is_webapp = True
 
 
 @pytest.fixture
