@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BCard, BCol, BFormGroup, BRow } from "bootstrap-vue";
 import { computed, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
@@ -18,6 +21,8 @@ import FormElement from "@/components/Form/FormElement.vue";
 import GDateTime from "@/components/GDateTime.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import MessageNotification from "@/components/Notifications/Categories/MessageNotification.vue";
+
+library.add(faInfoCircle);
 
 type SelectOption = [string, string];
 type NotificationCreateData = components["schemas"]["NotificationCreateData"];
@@ -219,6 +224,14 @@ async function sendNewNotification() {
             <BCard class="my-2">
                 <MessageNotification :options="{ notification: notificationData.notification, previewMode: true }" />
             </BCard>
+
+            <BAlert show variant="info">
+                <FontAwesomeIcon class="mr-2" :icon="faInfoCircle" />
+                <span v-localize>
+                    Once you send the notification, it will be sent to all the recipients and cannot be edited or
+                    deleted.
+                </span>
+            </BAlert>
 
             <BRow class="m-2" align-h="center">
                 <AsyncButton
