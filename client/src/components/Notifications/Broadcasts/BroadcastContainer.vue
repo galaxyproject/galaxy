@@ -3,6 +3,8 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faInfoCircle, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BCol, BRow } from "bootstrap-vue";
+import { storeToRefs } from "pinia";
+import { computed } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { useMarkdown } from "@/composables/markdown";
@@ -31,7 +33,13 @@ const props = defineProps<{
 
 const router = useRouter();
 const broadcastsStore = useBroadcastsStore();
+const { activeBroadcasts } = storeToRefs(broadcastsStore);
 const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });
+
+const remainingBroadcastsCountText = computed(() => {
+    const count = activeBroadcasts.value.length - 1;
+    return count > 0 ? `${count} more` : "";
+});
 
 function getBroadcastVariant(item: { variant: string }) {
     switch (item.variant) {
@@ -42,60 +50,78 @@ function getBroadcastVariant(item: { variant: string }) {
     }
 }
 
-function onActionClick(link: string) {
+function onActionClick(item: BroadcastNotification, link: string) {
     if (link.startsWith("/")) {
         router.push(link);
     } else {
         window.open(link, "_blank");
     }
+
+    if (!props.options.previewMode) {
+        onDismiss(item);
+    }
+}
+
+function onDismiss(item: BroadcastNotification) {
+    broadcastsStore.dismissBroadcast(item);
 }
 </script>
 
 <template>
     <BRow
         align-v="center"
-        class="broadcast-banner m-0"
+        class="broadcast-banner"
         :class="{
             'non-urgent': props.options.broadcast.variant !== 'urgent',
             'fixed-position': !props.options.previewMode,
-        }">
+        }"
+        no-gutters>
         <BCol cols="auto">
             <FontAwesomeIcon
                 class="mx-2"
-                fade
                 size="2xl"
                 :class="`text-${getBroadcastVariant(props.options.broadcast)}`"
                 :icon="faInfoCircle" />
         </BCol>
+
         <BCol>
-            <BRow align-v="center">
+            <BRow align-v="center" no-gutters>
                 <Heading size="md" bold>
                     {{ props.options.broadcast.content.subject }}
                 </Heading>
             </BRow>
-            <BRow align-v="center">
+
+            <BRow align-v="center" no-gutters>
                 <span class="broadcast-message" v-html="renderMarkdown(props.options.broadcast.content.message)" />
             </BRow>
-            <BRow>
-                <BButton
-                    v-for="actionLink in props.options.broadcast.content.action_links"
-                    :key="actionLink.action_name"
-                    class="mx-1"
-                    :title="actionLink.action_name"
-                    variant="primary"
-                    @click="onActionClick(actionLink.link)">
-                    {{ actionLink.action_name }}
-                </BButton>
+
+            <BRow no-gutters>
+                <div v-if="props.options.broadcast.content.action_links">
+                    <BButton
+                        v-for="actionLink in props.options.broadcast.content.action_links"
+                        :key="actionLink.action_name"
+                        class="mx-1"
+                        :title="actionLink.action_name"
+                        variant="primary"
+                        @click="onActionClick(props.options.broadcast, actionLink.link)">
+                        {{ actionLink.action_name }}
+                    </BButton>
+                </div>
             </BRow>
         </BCol>
+
         <BCol v-if="!props.options.previewMode" cols="auto" align-self="center" class="p-0">
             <BButton
                 variant="light"
                 class="align-items-center d-flex"
                 @click="broadcastsStore.dismissBroadcast(props.options.broadcast)">
-                <FontAwesomeIcon class="mx-1" icon="times" />
+                <FontAwesomeIcon class="mx-1" :icon="faTimes" />
                 Dismiss
             </BButton>
+
+            <div v-if="remainingBroadcastsCountText" class="text-center mt-2">
+                {{ remainingBroadcastsCountText }}...
+            </div>
         </BCol>
     </BRow>
 </template>

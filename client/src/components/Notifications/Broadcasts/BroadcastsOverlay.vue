@@ -21,6 +21,6 @@ function getNextActiveBroadcast(): BroadcastNotification | undefined {
 
 <template>
     <div v-if="currentBroadcast">
-        <BroadcastContainer :options="{ currentBroadcast }" />
+        <BroadcastContainer :options="{ broadcast: currentBroadcast }" />
     </div>
 </template>
