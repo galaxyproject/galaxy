@@ -17,6 +17,10 @@ const showCreateModal = ref(false);
 function navigateToImport() {
     router.push("/workflows/import");
 }
+
+function navigateToOldCreate() {
+    router.push("/workflows/create_old");
+}
 </script>
 
 <template>
@@ -26,8 +30,9 @@ function navigateToImport() {
                 v-b-tooltip.hover
                 size="sm"
                 title="Create new workflow"
-                variant="secondary"
-                @click="showCreateModal = !showCreateModal">
+                variant="outline-primary"
+                @click="navigateToOldCreate">
+                <!-- @click="showCreateModal = !showCreateModal"> -->
                 <FontAwesomeIcon :icon="faPlus" />
                 Create
             </BButton>
@@ -36,7 +41,7 @@ function navigateToImport() {
                 v-b-tooltip.hover
                 size="sm"
                 title="Import workflow from URL or file"
-                variant="secondary"
+                variant="outline-primary"
                 @click="navigateToImport">
                 <FontAwesomeIcon :icon="faUpload" />
                 Import
