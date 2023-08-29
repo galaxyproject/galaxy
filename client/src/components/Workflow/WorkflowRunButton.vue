@@ -9,6 +9,7 @@ library.add(faPlay);
 
 interface Props {
     id: string;
+    full?: boolean;
 }
 
 const props = defineProps<Props>();
@@ -30,5 +31,6 @@ function ExecuteWorkflow() {
         size="sm"
         @click.stop="ExecuteWorkflow">
         <FontAwesomeIcon :icon="faPlay" />
+        <span v-if="full">Run</span>
     </BButton>
 </template>
