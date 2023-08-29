@@ -9,6 +9,7 @@ import {
     faShareAlt,
     faStar,
     faTrash,
+    faTrashRestore,
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
@@ -16,14 +17,19 @@ import { storeToRefs } from "pinia";
 import { computed } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { copyWorkflow, deleteWorkflow, updateWorkflow } from "@/components/Workflow/workflows.services";
+import {
+    copyWorkflow,
+    deleteWorkflow,
+    undeleteWorkflow,
+    updateWorkflow,
+} from "@/components/Workflow/workflows.services";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { Toast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
 
 import AsyncButton from "@/components/Common/AsyncButton.vue";
 
-library.add(faCopy, faDownload, faEye, faFileExport, faShareAlt, farStar, faStar, faTrash);
+library.add(faCopy, faDownload, faEye, faFileExport, faShareAlt, farStar, faStar, faTrash, faTrashRestore);
 
 interface Props {
     workflow: any;
@@ -92,6 +98,16 @@ async function onDelete() {
         Toast.info("Workflow deleted");
     }
 }
+
+async function onRestore() {
+    const confirmed = await confirm("Are you sure you want to restore this workflow?", "Restore workflow");
+
+    if (confirmed) {
+        await undeleteWorkflow(props.workflow.id);
+        emit("refreshList", true);
+        Toast.info("Workflow restored");
+    }
+}
 </script>
 
 <template>
@@ -150,6 +166,18 @@ async function onDelete() {
             title="Share workflow"
             @click="onShare">
             <FontAwesomeIcon :icon="faShareAlt" />
+        </BButton>
+
+        <BButton
+            v-if="workflow.deleted"
+            id="restore-button"
+            v-b-tooltip.top
+            :class="{ 'mouse-out': !props.showControls }"
+            variant="link"
+            :size="buttonSize"
+            title="Restore workflow"
+            @click="onRestore">
+            <FontAwesomeIcon :icon="faTrashRestore" />
         </BButton>
 
         <BButton
