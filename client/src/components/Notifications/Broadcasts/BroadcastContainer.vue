@@ -112,6 +112,7 @@ function onDismiss(item: BroadcastNotification) {
 
         <BCol v-if="!props.options.previewMode" cols="auto" align-self="center" class="p-0">
             <BButton
+                id="dismiss-button"
                 variant="light"
                 class="align-items-center d-flex"
                 @click="broadcastsStore.dismissBroadcast(props.options.broadcast)">
