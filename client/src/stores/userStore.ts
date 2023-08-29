@@ -19,10 +19,12 @@ export interface User extends QuotaUsageResponse {
     tags_used: string[];
     isAnonymous: false;
     is_admin?: boolean;
+    username: string;
 }
 
 export interface AnonymousUser {
     isAnonymous: true;
+    username: string;
     is_admin?: false;
 }
 
@@ -33,7 +35,11 @@ interface Preferences {
     favorites: { tools: string[] };
 }
 
+type ListViewMode = "grid" | "list";
+
 export const useUserStore = defineStore("userStore", () => {
+    const preferredListViewMode = useUserLocalStorage("user-store-preferred-list-view-mode", "grid");
+
     const currentUser = ref<User | AnonymousUser | null>(null);
     const currentPreferences = ref<Preferences | null>(null);
 
@@ -126,6 +132,10 @@ export const useUserStore = defineStore("userStore", () => {
         }
     }
 
+    function setPreferredListViewMode(view: ListViewMode) {
+        preferredListViewMode.value = view;
+    }
+
     function toggleActivityBar() {
         showActivityBar.value = !showActivityBar.value;
     }
@@ -146,9 +156,11 @@ export const useUserStore = defineStore("userStore", () => {
         currentFavorites,
         showActivityBar,
         toggledSideBar,
+        preferredListViewMode,
         loadUser,
         setCurrentUser,
         setCurrentTheme,
+        setPreferredListViewMode,
         addFavoriteTool,
         removeFavoriteTool,
         toggleActivityBar,
