@@ -1,5 +1,6 @@
-"""The module describes the ``sentry`` error plugin plugin."""
+"""The module describes the ``sentry`` error plugin."""
 import logging
+from typing import Dict
 
 try:
     import sentry_sdk
@@ -13,19 +14,7 @@ from . import ErrorPlugin
 log = logging.getLogger(__name__)
 
 SENTRY_SDK_IMPORT_MESSAGE = "The Python sentry-sdk package is required to use this feature, please install it"
-ERROR_TEMPLATE = """Galaxy Job Error: {tool_id} v{tool_version}
-
-Command Line:
-{command_line}
-
-Stderr:
-{stderr}
-
-Stdout:
-{stdout}
-
-The user provided the following information:
-{message}"""
+ERROR_TEMPLATE = "Galaxy Job Error: {tool_name}"
 
 
 class SentryPlugin(ErrorPlugin):
@@ -41,8 +30,18 @@ class SentryPlugin(ErrorPlugin):
         assert sentry_sdk, SENTRY_SDK_IMPORT_MESSAGE
 
     def submit_report(self, dataset, job, tool, **kwargs):
-        """Submit the error report to sentry"""
-        extra = {
+        """Submit the error report to Sentry."""
+        tool_name = (
+            job.tool_id
+            if not job.tool_id.endswith(f"/{job.tool_version}")
+            else job.tool_id[: -len(job.tool_version) - 1]
+        )  # strip the tool's version from its long id
+
+        # Add contexts to the report.
+        contexts: Dict[str, dict] = dict()
+
+        # - "job" context
+        contexts["job"] = {
             "info": job.info,
             "id": job.id,
             "command_line": job.command_line,
@@ -56,23 +55,8 @@ class SentryPlugin(ErrorPlugin):
             "tool_version": job.tool_version,
             "tool_xml": tool.config_file if tool else None,
         }
-        if self.redact_user_details_in_bugreport:
-            extra["email"] = "redacted"
-        else:
-            if "email" in kwargs:
-                extra["email"] = kwargs["email"]
 
-        # User submitted message
-        extra["message"] = kwargs.get("message", "")
-
-        # Construct the error message to send to sentry. The first line
-        # will be the issue title, everything after that becomes the
-        # "message"
-        error_message = ERROR_TEMPLATE.format(**extra)
-
-        # Update context with user information in a sentry-specific manner
-        context = {}
-
+        # - "request" context
         # Getting the url allows us to link to the dataset info page in case
         # anything is missing from this report.
         try:
@@ -85,32 +69,58 @@ class SentryPlugin(ErrorPlugin):
         except AttributeError:
             # The above does not work when handlers are separate from the web handlers
             url = None
+        contexts["request"] = {"url": url}
 
+        # - "feedback" context
+        # The User Feedback API https://docs.sentry.io/api/projects/submit-user-feedback/ would be a better approach for
+        # this.
+        if "message" in kwargs:
+            contexts["feedback"] = {
+                "message": kwargs["message"],
+            }
+
+        for name, context in contexts.items():
+            sentry_sdk.set_context(name, context)
+
+        # Add user information to the report.
         user = job.get_user()
-        if self.redact_user_details_in_bugreport:
-            if user:
-                # Opaque identifier
-                context["user"] = {"id": user.id}
-        else:
-            if user:
-                # User information here also places email links + allows seeing
-                # a list of affected users in the tags/filtering.
-                context["user"] = {
-                    "name": user.username,
+        sentry_user = {
+            "id": user.id if user else None,
+            # TODO: What about anonymous users?
+        }
+        if user and not self.redact_user_details_in_bugreport:
+            sentry_user.update(
+                {
+                    "username": user.username,
                     "email": user.email,
                 }
+            )
+        sentry_sdk.set_user(sentry_user)
 
-        context["request"] = {"url": url}
+        # Add tags to the report.
+        tags = {
+            "tool": job.tool_id,
+            "tool.name": tool_name,
+            "tool.version": job.tool_version,
+            "feedback": "yes" if "message" in kwargs else "no",
+        }
+        for name, value in tags.items():
+            sentry_sdk.set_tag(name, value)
 
-        for key, value in context.items():
-            sentry_sdk.set_context(key, value)
-        sentry_sdk.set_context("job", extra)
-        sentry_sdk.set_tag("tool_id", job.tool_id)
-        sentry_sdk.set_tag("tool_version", job.tool_version)
+        # Construct the error message to send to sentry. The first line
+        # will be the issue title, everything after that becomes the
+        # "message".
+        error_message = ERROR_TEMPLATE.format(
+            tool_name=tool_name,
+        )
 
-        # Send the message, using message because
+        # Send the report as an error.
+        sentry_sdk.set_level("error")
+
+        # Send the report.
         response = sentry_sdk.capture_message(error_message)
-        return (f"Submitted bug report to Sentry. Your guru meditation number is {response}", "success")
+
+        return f"Submitted bug report to Sentry. Your guru meditation number is {response}", "success"
 
 
 __all__ = ("SentryPlugin",)
