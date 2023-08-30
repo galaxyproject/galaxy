@@ -7,6 +7,7 @@
             size="sm"
             autocomplete="off"
             :placeholder="placeholder"
+            data-description="filter text input"
             @input="delayQuery"
             @change="setQuery"
             @keydown.esc="setQuery('')" />

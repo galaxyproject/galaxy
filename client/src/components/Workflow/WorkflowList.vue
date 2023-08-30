@@ -10,13 +10,14 @@
         <b-row class="mb-3">
             <b-col cols="6" class="m-1">
                 <FilterMenu
-                    name="Workflows"
-                    placeholder="search workflows"
+                    :name="title"
+                    :placeholder="titleSearch"
                     :filter-class="filterClass"
                     :filter-text.sync="filterText"
                     :loading="loading"
                     :show-advanced.sync="showAdvanced"
-                    has-help>
+                    has-help
+                    @on-backend-filter="onSearch">
                     <template v-slot:menu-help-text>
                         <div v-html="helpHtml"></div>
                     </template>
@@ -26,10 +27,7 @@
                 <WorkflowIndexActions :root="root" class="float-right"></WorkflowIndexActions>
             </b-col>
         </b-row>
-        <b-table
-            v-show="!showAdvanced"
-            v-model="workflowItemsModel"
-            v-bind="{ ...defaultTableAttrs, ...indexTableAttrs }">
+        <b-table v-model="workflowItemsModel" v-bind="{ ...defaultTableAttrs, ...indexTableAttrs }">
             <template v-slot:empty>
                 <loading-span v-if="loading" message="Loading workflows" />
                 <b-alert v-else id="no-workflows" variant="info" show>
@@ -93,7 +91,7 @@
             </template>
         </b-table>
         <b-pagination
-            v-show="!showAdvanced && rows >= perPage"
+            v-show="rows >= perPage"
             v-model="currentPage"
             class="gx-workflows-grid-pager"
             v-bind="paginationAttrs"></b-pagination>
@@ -178,7 +176,8 @@ export default {
             fields: fields,
             filterClass: filterClass,
             filterText: this.query,
-            titleSearch: "search workflows",
+            searchQuery: this.published ? "is:published" : this.query,
+            titleSearch: _l("search workflows"),
             workflowItemsModel: [],
             helpHtml: helpHtml,
             perPage: this.rowsPerPage(this.defaultPerPage || 20),
@@ -195,7 +194,7 @@ export default {
     computed: {
         dataProviderParameters() {
             const extraParams = {
-                search: this.filterClass.getFilterText(this.filters, true),
+                search: this.searchQuery,
                 skip_step_counts: true,
             };
             if (this.published) {
@@ -205,19 +204,7 @@ export default {
             return extraParams;
         },
         title() {
-            return this.published ? `Published Workflows` : `Workflows`;
-        },
-        filters() {
-            return Object.fromEntries(this.filterClass.getFiltersForText(this.filterText));
-        },
-    },
-    watch: {
-        filterText(val) {
-            this.refresh();
-            // clear out the query param if the filter text is cleared
-            if (val == "" && val !== this.query) {
-                this.$router.push("/workflows/list");
-            }
+            return this.published ? _l(`Published Workflows`) : _l(`Workflows`);
         },
     },
     created() {
@@ -283,7 +270,15 @@ export default {
         onRestore: function (id) {
             this.refresh();
         },
-        applyFilter: function (filter, value, quoted = false) {
+        onSearch(searchQuery) {
+            this.searchQuery = searchQuery;
+            // clear out the query param if the filter text is cleared
+            if (searchQuery == "" && searchQuery !== this.query) {
+                this.$router.push("/workflows/list");
+            }
+            this.refresh();
+        },
+        applyFilter(filter, value, quoted = false) {
             if (quoted) {
                 this.filterText = this.filterClass.setFilterValue(this.filterText, filter, `'${value}'`);
             } else {

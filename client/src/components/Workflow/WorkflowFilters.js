@@ -47,8 +47,14 @@ export const helpHtml = `<div>
 
 const validFilters = {
     name: { placeholder: "name", type: String, handler: contains("name"), menuItem: true },
+    user: {
+        placeholder: "owner",
+        type: String,
+        handler: contains("user"),
+        menuItem: false,
+    },
     tag: {
-        placeholder: "tag",
+        placeholder: "tag(s)",
         type: "MultiTags",
         handler: contains("tag", "tag", expandNameTagWithQuotes),
         menuItem: true,
@@ -83,20 +89,27 @@ const validFilters = {
     },
 };
 
-export const WorkflowFilters = new Filtering(validFilters, undefined, false);
+export const WorkflowFilters = new Filtering(validFilters, undefined, false, false);
 
 const validPublishedFilters = {
     ...validFilters,
-    user: { placeholder: "owner", type: String, handler: contains("user"), menuItem: true },
+    user: {
+        ...validFilters.user,
+        menuItem: true,
+    },
     published: {
-        type: Boolean,
-        boolType: "is",
-        handler: equals("published", "published", toBool),
+        ...validFilters.published,
         default: true,
+        menuItem: false,
+    },
+    shared_with_me: {
+        ...validFilters.shared_with_me,
+        menuItem: false,
     },
     importable: {
+        ...validFilters.importable,
         menuItem: false,
     },
 };
 
-export const PublishedWorkflowFilters = new Filtering(validPublishedFilters, undefined, false);
+export const PublishedWorkflowFilters = new Filtering(validPublishedFilters, undefined, false, false);

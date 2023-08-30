@@ -1,7 +1,6 @@
 import "jest-location-mock";
 
 import { mount } from "@vue/test-utils";
-import DelayedInput from "components/Common/DelayedInput";
 import { getLocalVue } from "tests/jest/helpers";
 import VueRouter from "vue-router";
 
@@ -29,10 +28,10 @@ describe("ToolSearch", () => {
         const $router = wrapper.vm.$router;
 
         expect(wrapper.find("[data-description='toggle advanced search']").exists()).toBe(false);
-        expect(wrapper.find("[description='advanced tool filters']").exists()).toBe(false);
+        expect(wrapper.find("[description='advanced filters']").exists()).toBe(false);
         await wrapper.setProps({ enableAdvanced: true, showAdvanced: true });
-        expect(wrapper.find("[data-description='toggle advanced search']").exists()).toBe(true);
-        expect(wrapper.find("[description='advanced tool filters']").exists()).toBe(true);
+        expect(wrapper.find("[data-description='wide toggle advanced search']").exists()).toBe(true);
+        expect(wrapper.find("[data-description='advanced filters']").exists()).toBe(true);
 
         // Test: changing panel view should change search by section field to search by ontology
         expect(wrapper.find("[placeholder='any section']").exists()).toBe(true);
@@ -48,19 +47,17 @@ describe("ToolSearch", () => {
         expect(wrapper.emitted()["update:show-advanced"].length - 1).toBeFalsy();
 
         // Add filters to fields
-        await wrapper.setProps({ showAdvanced: true });
+        await wrapper.find("[data-description='toggle advanced search']").trigger("click");
+        // await wrapper.setProps({ showAdvanced: true });
         const filterInputs = {
-            name: "name-filter",
+            "[placeholder='any name']": "name-filter",
             "[placeholder='any section']": "section-filter",
             "[placeholder='any id']": "id-filter",
-            "[placeholder='any owner']": "owner-filter",
+            "[placeholder='any repository owner']": "owner-filter",
             "[placeholder='any help text']": "help-filter",
         };
 
-        // Add name filter (comes from DelayedInput emitting the query prop)
-        wrapper.findComponent(DelayedInput).vm.$emit("change", filterInputs["name"]);
-
-        // Now add remaining filters (other than name) in the advanced menu
+        // Now add all filters in the advanced menu
         Object.entries(filterInputs).forEach(([selector, value]) => {
             const filterInput = wrapper.find(selector);
             if (filterInput.vm && filterInput.props().type == "text") {
@@ -71,7 +68,7 @@ describe("ToolSearch", () => {
         // Test: we route to the list with filters
         const mockMethod = jest.fn();
         $router.push = mockMethod;
-        wrapper.find(".filter-search-btn").trigger("click");
+        wrapper.find("[data-description='apply filters']").trigger("click");
         const filterSettings = {
             name: "name-filter",
             section: "section-filter",

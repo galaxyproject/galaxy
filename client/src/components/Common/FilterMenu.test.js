@@ -42,20 +42,20 @@ const validTestFilters = {
     },
     /** A ranged number filter */
     number: { placeholder: "index", type: Number, handler: equals("number"), isRangeInput: true, menuItem: true },
-    /** A radio filter */
-    radio: {
-        placeholder: "Radio Option",
-        type: "Radio",
-        options: options,
-        handler: equals("radio", "radio", toBool),
+    /** A boolean filter with default boolType */
+    bool_def: {
+        placeholder: "Filter by option (any/yes/no)",
+        type: Boolean,
+        handler: equals("bool_def", "bool_def", toBool),
         menuItem: true,
     },
-    /** A boolean filter */
-    bool: {
-        placeholder: "Boolean Select",
+    /** A boolean filter with is:filter boolType */
+    bool_is: {
+        placeholder: "Filter by option (yes/no)",
         type: Boolean,
-        handler: equals("bool", "bool", toBool),
+        handler: equals("bool_is", "bool_is", toBool),
         menuItem: true,
+        boolType: "is",
     },
     /** A valid filter, just not included in menu */
     not_included: { handler: contains("not_included"), menuItem: false },
@@ -162,8 +162,8 @@ describe("FilterMenu", () => {
         const indexLtInput = wrapper.find("[placeholder='index lower']");
         indexGtInput.setValue("1234");
         indexLtInput.setValue("5678");
-        // radio filter
-        const radioBtnGrp = wrapper.find("[data-description='filter radio']").findAll(".btn-secondary");
+        // default bool filter
+        const radioBtnGrp = wrapper.find("[data-description='filter bool_def']").findAll(".btn-secondary");
         expect(radioBtnGrp.length).toBe(options.length);
         for (let i = 0; i < options.length; i++) {
             expect(radioBtnGrp.at(i).text()).toBe(options[i].text);
@@ -172,12 +172,12 @@ describe("FilterMenu", () => {
         }
         await radioBtnGrp.at(1).find("input").setChecked(); // click "Yes"
         // boolean filter
-        const boolBtnGrp = wrapper.find("[data-description='filter bool']").findAll(".btn-secondary");
+        const boolBtnGrp = wrapper.find("[data-description='filter bool_is']").findAll(".btn-secondary");
         expect(boolBtnGrp.length).toBe(2);
         expect(boolBtnGrp.at(0).text()).toBe("Yes");
         expect(boolBtnGrp.at(0).props().value).toBe(true);
         expect(boolBtnGrp.at(1).text()).toBe("No");
-        expect(boolBtnGrp.at(1).props().value).toBe(false);
+        expect(boolBtnGrp.at(1).props().value).toBe("any");
         await boolBtnGrp.at(1).find("input").setChecked(); // click "No"
 
         // perform search
@@ -186,7 +186,7 @@ describe("FilterMenu", () => {
             false,
             "create_time>'January 1, 2022' create_time<'January 1, 2023' " +
                 "filter_key:item-filter has_help:has-help-filter list_item:1234 " +
-                "number>1234 number<5678 name:name-filter radio:true bool:false",
+                "number>1234 number<5678 name:name-filter radio:true bool_def:true",
             TestFilters
         );
     });
@@ -210,12 +210,12 @@ describe("FilterMenu", () => {
         await expectCorrectEmits(false, "name:'sample name'", TestFilters);
 
         // Test: clearing the filterText
-        const clearButton = wrapper.find("[data-description='clear filters']");
+        const clearButton = wrapper.find("[data-description='reset query']");
         await clearButton.trigger("click");
         await expectCorrectEmits(false, "", TestFilters);
 
         // Test: toggling view back in
-        const toggleButton = wrapper.find("[data-description='show advanced filter toggle']");
+        const toggleButton = wrapper.find("[data-description='toggle advanced search']");
         await toggleButton.trigger("click");
         await expectCorrectEmits(true, "", TestFilters);
 
@@ -262,7 +262,7 @@ describe("FilterMenu", () => {
 
         // -------- Testing visible filter now:  ---------
 
-        const toggleButton = wrapper.find("[data-description='show advanced filter toggle']");
+        const toggleButton = wrapper.find("[data-description='toggle advanced search']");
         await toggleButton.trigger("click");
         await expectCorrectEmits(true, "visible:true", HistoryFilters);
         const visibleFilterBtnGrp = wrapper.find("[data-description='filter visible']");

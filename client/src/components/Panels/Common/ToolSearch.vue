@@ -146,7 +146,7 @@ function post(message: object) {
     searchWorker.value?.postMessage(message);
 }
 
-function onAdvancedSearch(filters: any, filterText?: string) {
+function onAdvancedSearch(filters: any) {
     router.push({ path: "/tools/list", query: filters });
 }
 </script>
@@ -156,7 +156,7 @@ function onAdvancedSearch(filters: any, filterText?: string) {
         <FilterMenu
             v-if="props.enableAdvanced"
             :class="!propShowAdvanced && 'mb-3'"
-            name="Tool Search"
+            name="Tools"
             :placeholder="props.placeholder"
             :debounce-delay="200"
             :filter-class="ToolFilters"

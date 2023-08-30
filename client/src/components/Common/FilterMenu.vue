@@ -59,8 +59,9 @@ const props = withDefaults(
 
 const emit = defineEmits<{
     (e: "update:filter-text", filter: string): void;
+    (e: "on-backend-filter", filter: string): void;
     (e: "update:show-advanced", showAdvanced: boolean): void;
-    (e: "on-search", filters: Record<string, string | boolean>, filterText?: string): void;
+    (e: "on-search", filters: Record<string, string | boolean>, filterText?: string, backendFilter?: string): void;
 }>();
 
 const validFilters = computed(() => props.filterClass.validFilters);
@@ -164,9 +165,6 @@ function onOption(filter: string, value: any) {
 }
 
 function onSearch() {
-    if (props.menuType === "linked") {
-        onToggle();
-    }
     Object.keys(dateFilters.value).forEach((key) => {
         onOption(key, dateFilters.value[key]);
     });
@@ -174,10 +172,12 @@ function onSearch() {
         onOption(key, (multiTagFilters.value[key] as Ref<string[]>).value);
     });
     const newFilterText = props.filterClass.getFilterText(filters.value);
+    const newBackendFilter = props.filterClass.getFilterText(filters.value, true);
     if (props.menuType !== "linked") {
-        emit("on-search", filters.value, newFilterText);
+        emit("on-search", filters.value, newFilterText, newBackendFilter);
     } else {
         updateFilterText(newFilterText);
+        onToggle();
     }
 }
 
@@ -192,6 +192,25 @@ function onToggle() {
 function updateFilterText(newFilterText: string) {
     emit("update:filter-text", newFilterText);
 }
+
+// as the filterText changes, emit a backend-filter that can be used as a query
+watch(
+    () => props.filterText,
+    (newFilterText: string) => {
+        const defaultBackendFilter = props.filterClass.getFilterText(props.filterClass.defaultFilters, true);
+        const currentBackendFilter = props.filterClass.getFilterText(filters.value, true);
+
+        const backendFilter =
+            defaultBackendFilter === currentBackendFilter
+                ? `${
+                      defaultBackendFilter && !newFilterText.includes(defaultBackendFilter)
+                          ? defaultBackendFilter + " "
+                          : ""
+                  }` + newFilterText
+                : props.filterClass.getFilterText(filters.value, true);
+        emit("on-backend-filter", backendFilter);
+    }
+);
 </script>
 
 <template>
@@ -215,8 +234,8 @@ function updateFilterText(newFilterText: string) {
             aria-haspopup="true"
             size="sm"
             :pressed="props.showAdvanced"
-            :title="`Toggle Advanced Search`"
-            data-description="reset query"
+            title="Toggle Advanced Search"
+            data-description="wide toggle advanced search"
             @click="onToggle">
             <icon fixed-width icon="angle-double-up" />
         </b-button>
@@ -306,6 +325,7 @@ function updateFilterText(newFilterText: string) {
                         <b-input-group>
                             <StatelessTags
                                 :value="multiTagFilters[filter]?.value"
+                                :placeholder="`any ${validFilters[filter]?.placeholder}`"
                                 @input="(tags) => onTags(filter, tags)" />
                         </b-input-group>
                     </span>

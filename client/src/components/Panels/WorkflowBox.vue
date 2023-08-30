@@ -18,7 +18,7 @@ library.add(faUpload, faGlobe);
 
 const isAnonymous = computed(() => useUserStore().isAnonymous);
 
-function onSearch(filters: Record<string, string | boolean>, query?: string) {
+function onSearch(filters: Record<string, string | boolean>, filterText?: string, query?: string) {
     const path = "/workflows/list";
     const routerParams = query ? { path, query: { query } } : { path };
     router.push(routerParams);

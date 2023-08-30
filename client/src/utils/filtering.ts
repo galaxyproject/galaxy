@@ -213,22 +213,36 @@ export function compare<T>(attribute: string, variant: string, converter?: Conve
     };
 }
 
+/**
+ * Class for filtering (menus). Handles user input as one string filterText
+ * or multiple filters (e.g. 'name:foo type:bar'), with appropriate functions.
+ * @param validFilters: Record of valid filters with their handlers,
+ *                      and FilterMenu properties (if menuItem = true)
+ * @param validAliases: Array of valid aliases for filters
+ * @param quoteStrings: Whether to auto quote filter strings in the query
+ * @param nameMatching: Whether to apply name filter for unspecified filterText
+ *                      (e.g. filterText = 'foo' -> 'name:foo')
+ * @returns Filtering object
+ * */
 export default class Filtering<T> {
     validFilters: Record<string, ValidFilter<T>>;
     validAliases: Array<[string, string]>;
     defaultFilters: Record<string, T>;
     quoteStrings: boolean;
+    nameMatching: boolean;
 
     constructor(
         validFilters: Record<string, ValidFilter<T>>,
         validAliases?: Array<[string, string]>,
-        quoteStrings = true
+        quoteStrings = true,
+        nameMatching = true
     ) {
         this.validFilters = validFilters;
         this.validAliases = validAliases || defaultValidAliases;
         this.quoteStrings = quoteStrings;
-        // Add `name` filter if not present
-        if (this.validFilters["name"] === undefined) {
+        this.nameMatching = nameMatching;
+        // If (default) we are nameMatching, add `name` filter if not present
+        if (this.nameMatching && this.validFilters["name"] === undefined) {
             this.validFilters["name"] = {
                 handler: contains("name"),
                 menuItem: false,
@@ -244,15 +258,18 @@ export default class Filtering<T> {
     addRangedFiltersIfNotPresent() {
         Object.entries(this.validFilters).forEach(([key, filter]) => {
             if (filter.isRangeInput) {
+                const { converter } = filter.handler as HandlerReturn<T>;
                 if (this.validFilters[`${key}_gt`] === undefined) {
                     this.validFilters[`${key}_gt`] = {
-                        handler: compare(key, "gt"),
+                        ...filter,
+                        handler: compare(key, "gt", converter),
                         menuItem: false,
                     };
                 }
                 if (this.validFilters[`${key}_lt`] === undefined) {
                     this.validFilters[`${key}_lt`] = {
-                        handler: compare(key, "lt"),
+                        ...filter,
+                        handler: compare(key, "lt", converter),
                         menuItem: false,
                     };
                 }
@@ -319,7 +336,7 @@ export default class Filtering<T> {
         Object.entries(filters).forEach(([key, value]) => {
             // this is a default filter, skip it if ALL default filters have default values
             const skipDefault = !backendFormatted && hasDefaults && this.defaultFilters[key] !== undefined;
-            if (!skipDefault && value !== null && value !== undefined && value !== "") {
+            if (!skipDefault) {
                 if (newFilterText) {
                     newFilterText += " ";
                 }
@@ -327,7 +344,7 @@ export default class Filtering<T> {
                     if (value === true) {
                         newFilterText += `is:${key}`;
                     }
-                } else if (this.validFilters[key]?.type == "MultiTags" && Array.isArray(value)) {
+                } else if (this.validFilters[key]?.type == "MultiTags" && Array.isArray(value) && value.length > 0) {
                     newFilterText += `${value.map((v) => `${this.toAliasKey(key)}${v}`).join(" ")}`;
                 } else if (this.quoteStrings && String(value).includes(" ")) {
                     newFilterText += `${this.toAliasKey(key)}'${value}'`;
@@ -339,7 +356,11 @@ export default class Filtering<T> {
         // enforce `filter:any` for any default *boolean* filters missing in filters object
         if (!hasDefaults && this.defaultFilters !== undefined) {
             Object.entries(this.defaultFilters).forEach(([key, value]) => {
-                if (filters[key] == undefined && typeof value === "boolean") {
+                if (
+                    filters[key] == undefined &&
+                    typeof value === "boolean" &&
+                    this.validFilters[key]?.boolType !== "is"
+                ) {
                     if (newFilterText) {
                         newFilterText += " ";
                     }
@@ -406,7 +427,7 @@ export default class Filtering<T> {
             });
         }
         // assume name matching if no filter key has been matched
-        if (!hasMatches && filterText.length > 0) {
+        if (this.nameMatching && !hasMatches && filterText.length > 0) {
             result["name"] = filterText as T;
         }
         // check if any default filter keys have been used in the filter text
@@ -457,7 +478,7 @@ export default class Filtering<T> {
     getValidFilters(filters: Record<string, T>, backendFormatted = false) {
         const validFilters: Record<string, T> = {};
         Object.entries(filters).forEach(([key, value]) => {
-            if (Array.isArray(value)) {
+            if (this.validFilters[key]?.type === "MultiTags" && Array.isArray(value)) {
                 const validValues = value
                     .map((v) => this.getConvertedValue(key, v, backendFormatted))
                     .filter((v) => v !== undefined);
@@ -530,7 +551,13 @@ export default class Filtering<T> {
      * @returns converted value if there is a converter, else `filterValue`
      */
     getConvertedValue(filterName: string, filterValue: T, backendFormatted = false): T | undefined {
-        if (this.validFilters[filterName] && !Array.isArray(filterValue)) {
+        if (
+            this.validFilters[filterName] &&
+            !Array.isArray(filterValue) &&
+            filterValue !== null &&
+            filterValue !== undefined &&
+            filterValue !== ""
+        ) {
             const { converter } = this.validFilters[filterName]?.handler as HandlerReturn<T>;
             if (converter) {
                 if (converter == toBool && filterValue == "any") {

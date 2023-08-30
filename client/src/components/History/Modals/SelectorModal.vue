@@ -230,7 +230,7 @@ async function loadMore(noScroll = false) {
                 <FilterMenu
                     ref="filterMenuRef"
                     name="Histories"
-                    placeholder="search datasets"
+                    placeholder="search histories"
                     :filter-class="HistoriesFilters"
                     :filter-text.sync="filter"
                     :loading="busy"
