@@ -7,7 +7,6 @@ from typing import (
 )
 
 from pydantic import (
-    Extra,
     Field,
     Required,
 )
@@ -49,12 +48,6 @@ class FilesSourcePlugin(Model):
         description="The type of the plugin.",
         example="gximport",
     )
-    uri_root: str = Field(
-        Required,
-        title="URI root",
-        description="The URI root used by this type of plugin.",
-        example="gximport://",
-    )
     label: str = Field(
         Required,
         title="Label",
@@ -66,6 +59,11 @@ class FilesSourcePlugin(Model):
         title="Documentation",
         description="Documentation or extended description for this plugin.",
         example="Galaxy's library import directory",
+    )
+    browsable: bool = Field(
+        Required,
+        title="Browsable",
+        description="Whether this file source plugin can list items.",
     )
     writable: bool = Field(
         Required,
@@ -84,15 +82,19 @@ class FilesSourcePlugin(Model):
         description="Only users belonging to the groups specified here can access this files source.",
     )
 
-    class Config:
-        # This allows additional fields (that are not validated)
-        # to be serialized/deserealized. This allows to have
-        # different fields depending on the plugin type
-        extra = Extra.allow
+
+class BrowsableFilesSourcePlugin(FilesSourcePlugin):
+    browsable: Literal[True]
+    uri_root: str = Field(
+        Required,
+        title="URI root",
+        description="The URI root used by this type of plugin.",
+        example="gximport://",
+    )
 
 
 class FilesSourcePluginList(Model):
-    __root__: List[FilesSourcePlugin] = Field(
+    __root__: List[Union[BrowsableFilesSourcePlugin, FilesSourcePlugin]] = Field(
         default=[],
         title="List of files source plugins",
         example=[
@@ -149,3 +151,37 @@ class ListUriResponse(Model):
 
 
 AnyRemoteFilesListResponse = Union[ListUriResponse, ListJstreeResponse]
+
+
+class CreateEntryPayload(Model):
+    target: str = Field(
+        Required,
+        title="Target",
+        description="The target file source to create the entry in.",
+    )
+    name: str = Field(
+        Required,
+        title="Name",
+        description="The name of the entry to create.",
+        example="my_new_entry",
+    )
+
+
+class CreatedEntryResponse(Model):
+    name: str = Field(
+        Required,
+        title="Name",
+        description="The name of the created entry.",
+        example="my_new_entry",
+    )
+    uri: str = Field(
+        Required,
+        title="URI",
+        description="The URI of the created entry.",
+        example="gxfiles://my_new_entry",
+    )
+    external_link: Optional[str] = Field(
+        default=None,
+        title="External link",
+        description="An optional external link to the created entry if available.",
+    )

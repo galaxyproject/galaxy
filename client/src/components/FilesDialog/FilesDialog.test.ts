@@ -1,5 +1,4 @@
 import { createLocalVue, shallowMount, Wrapper } from "@vue/test-utils";
-import BootstrapVue, { BButton } from "bootstrap-vue";
 import flushPromises from "flush-promises";
 
 import { selectionStates } from "@/components/SelectionDialog/selectionStates";
@@ -39,10 +38,7 @@ jest.mock("@/composables/config", () => ({
 interface RemoteFilesParams {
     target: string;
     recursive: boolean;
-}
-
-interface RemoteFilesResponse {
-    data?: RemoteFilesList;
+    writeable?: boolean;
 }
 
 interface RowElement extends BaseRecordItem, Element {
@@ -50,40 +46,36 @@ interface RowElement extends BaseRecordItem, Element {
 }
 
 function paramsToKey(params: RemoteFilesParams) {
+    params.writeable = false;
     return JSON.stringify(params);
 }
 
-const mockedOkApiRoutesMap = new Map<string, RemoteFilesResponse>([
-    [paramsToKey({ target: "gxfiles://pdb-gzip", recursive: false }), { data: pdbResponse }],
-    [paramsToKey({ target: "gxfiles://pdb-gzip/directory1", recursive: false }), { data: directory1Response }],
-    [paramsToKey({ target: "gxfiles://pdb-gzip/directory1", recursive: true }), { data: directory1RecursiveResponse }],
-    [paramsToKey({ target: "gxfiles://pdb-gzip/directory2", recursive: true }), { data: directory2RecursiveResponse }],
-    [
-        paramsToKey({ target: "gxfiles://pdb-gzip/directory1/subdirectory1", recursive: false }),
-        { data: subsubdirectoryResponse },
-    ],
+const mockedOkApiRoutesMap = new Map<string, RemoteFilesList>([
+    [paramsToKey({ target: "gxfiles://pdb-gzip", recursive: false }), pdbResponse],
+    [paramsToKey({ target: "gxfiles://pdb-gzip/directory1", recursive: false }), directory1Response],
+    [paramsToKey({ target: "gxfiles://pdb-gzip/directory1", recursive: true }), directory1RecursiveResponse],
+    [paramsToKey({ target: "gxfiles://pdb-gzip/directory2", recursive: true }), directory2RecursiveResponse],
+    [paramsToKey({ target: "gxfiles://pdb-gzip/directory1/subdirectory1", recursive: false }), subsubdirectoryResponse],
 ]);
 
-const mockedErrorApiRoutesMap = new Map<string, RemoteFilesResponse>([
-    [paramsToKey({ target: "gxfiles://empty-dir", recursive: false }), {}],
+const mockedErrorApiRoutesMap = new Map<string, RemoteFilesList>([
+    [paramsToKey({ target: "gxfiles://empty-dir", recursive: false }), []],
 ]);
 
-function getMockResponse(param: RemoteFilesParams) {
+function getMockedBrowseResponse(param: RemoteFilesParams) {
     const responseKey = paramsToKey(param);
     if (mockedErrorApiRoutesMap.has(responseKey)) {
         throw Error(someErrorText);
     }
-    return mockedOkApiRoutesMap.get(responseKey);
+    const result = mockedOkApiRoutesMap.get(responseKey);
+    return { data: result };
 }
 
 const initComponent = async (props: { multiple: boolean; mode?: string }) => {
     const localVue = createLocalVue();
 
-    localVue.use(BootstrapVue);
-    localVue.component("BBtnStub", BButton);
-
     mockFetcher.path("/api/remote_files/plugins").method("get").mock({ data: rootResponse });
-    mockFetcher.path("/api/remote_files").method("get").mock(getMockResponse);
+    mockFetcher.path("/api/remote_files").method("get").mock(getMockedBrowseResponse);
 
     const wrapper = shallowMount(FilesDialog, {
         localVue,
@@ -365,7 +357,7 @@ class Utils {
     }
 
     getRenderedRows(): RowElement[] {
-        return this.getTable().vm.items as RowElement[];
+        return this.getTable().props("items") as RowElement[];
     }
 
     expectAllRenderedItemsSelected() {

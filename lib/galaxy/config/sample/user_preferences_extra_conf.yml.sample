@@ -94,3 +94,20 @@ preferences:
               label: Password
               type:  password
               required: False
+
+    invenio:
+        description: Your Invenio RDM Integration Settings
+        inputs:
+            - name: token
+              label: Personal Token to upload files to Invenio RDM
+              type: secret
+              store: vault # Requires setting up vault_config_file in your galaxy.yml
+              required: False
+            - name: public_name
+              label: Creator name to associate with new records (formatted as "Last name, First name"). If left blank "Anonymous Galaxy User" will be used.
+              type: text
+              required: False
+            - name: public_records
+              label: Whether to make draft records publicly available or restricted.
+              type: boolean
+              required: False

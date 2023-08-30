@@ -2,6 +2,7 @@
 import { BButton, BCol, BFormGroup, BFormInput, BRow } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
+import { FilterFileSourcesOptions } from "@/components/FilesDialog/services";
 import localize from "@/utils/localization";
 
 import FilesInput from "@/components/FilesDialog/FilesInput.vue";
@@ -19,6 +20,8 @@ const props = withDefaults(defineProps<Props>(), {
 const emit = defineEmits<{
     (e: "export", directory: string, name: string): void;
 }>();
+
+const defaultExportFilterOptions: FilterFileSourcesOptions = { exclude: ["rdm"] };
 
 const directory = ref<string>("");
 const name = ref<string>("");
@@ -43,7 +46,12 @@ const doExport = () => {
 <template>
     <div class="export-to-remote-file">
         <BFormGroup id="fieldset-directory" label-for="directory" :description="directoryDescription" class="mt-3">
-            <FilesInput id="directory" v-model="directory" mode="directory" :require-writable="true" />
+            <FilesInput
+                id="directory"
+                v-model="directory"
+                mode="directory"
+                :require-writable="true"
+                :filter-options="defaultExportFilterOptions" />
         </BFormGroup>
         <BFormGroup id="fieldset-name" label-for="name" :description="nameDescription" class="mt-3">
             <BFormInput id="name" v-model="name" :placeholder="namePlaceholder" required />

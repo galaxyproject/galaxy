@@ -13,6 +13,7 @@ from . import (
     BaseFilesSource,
     FilesSourceOptions,
     FilesSourceProperties,
+    PluginKind,
 )
 
 log = logging.getLogger(__name__)
@@ -26,6 +27,7 @@ class DRSFilesSourceProperties(FilesSourceProperties, total=False):
 
 class DRSFilesSource(BaseFilesSource):
     plugin_type = "drs"
+    plugin_kind = PluginKind.drs
 
     def __init__(self, **kwd: Unpack[FilesSourceProperties]):
         kwds: FilesSourceProperties = dict(

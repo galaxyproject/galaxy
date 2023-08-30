@@ -12,7 +12,14 @@ import { useConfig } from "@/composables/config";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import { DirectoryRecord, Model, RecordItem } from "./model";
-import { browseRemoteFiles, FilesSourcePlugin, getFileSources, RemoteEntry } from "./services";
+import {
+    BrowsableFilesSourcePlugin,
+    browseRemoteFiles,
+    FileSourceBrowsingMode,
+    FilterFileSourcesOptions,
+    getFileSources,
+    RemoteEntry,
+} from "./services";
 
 import DataDialogSearch from "@/components/SelectionDialog/DataDialogSearch.vue";
 import DataDialogTable from "@/components/SelectionDialog/DataDialogTable.vue";
@@ -21,9 +28,15 @@ import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
 library.add(faCaretLeft);
 
 interface FilesDialogProps {
+    /** Whether to allow multiple selections */
     multiple?: boolean;
-    mode?: "file" | "directory";
+    /** Browsing mode to define the selection behavior */
+    mode?: FileSourceBrowsingMode;
+    /** Whether to show only writable sources */
     requireWritable?: boolean;
+    /** Options to filter the file sources */
+    filterOptions?: FilterFileSourcesOptions;
+    /** Callback function to be called passing the results when selection is complete */
     callback?: (files: any) => void;
 }
 
@@ -31,6 +44,7 @@ const props = withDefaults(defineProps<FilesDialogProps>(), {
     multiple: false,
     mode: "file",
     requireWritable: false,
+    filterOptions: undefined,
     callback: () => {},
 });
 
@@ -56,6 +70,9 @@ const selectAllIcon = ref(selectionStates.unselected);
 const urlTracker = ref(new UrlTracker(""));
 
 const fileMode = computed(() => props.mode == "file");
+const okButtonDisabled = computed(
+    () => (fileMode.value && !hasValue.value) || isBusy.value || (!fileMode.value && urlTracker.value.atRoot())
+);
 
 /** Collects selected datasets in value array **/
 function clicked(record: RecordItem) {
@@ -204,7 +221,7 @@ function load(record?: DirectoryRecord) {
     undoShow.value = !urlTracker.value.atRoot();
     if (urlTracker.value.atRoot() || errorMessage.value) {
         errorMessage.value = undefined;
-        getFileSources()
+        getFileSources(props.filterOptions)
             .then((results) => {
                 const convertedItems = results
                     .filter((item) => !props.requireWritable || item.writable)
@@ -222,7 +239,15 @@ function load(record?: DirectoryRecord) {
         if (!currentDirectory.value) {
             return;
         }
-        browseRemoteFiles(currentDirectory.value?.url)
+        if (props.mode === "source") {
+            // In source mode, only show sources, not contents
+            items.value = [];
+            optionsShow.value = true;
+            showTime.value = false;
+            showDetails.value = false;
+            return;
+        }
+        browseRemoteFiles(currentDirectory.value?.url, false, props.requireWritable)
             .then((results) => {
                 items.value = filterByMode(results).map(entryToRecord);
                 formatRows();
@@ -258,7 +283,7 @@ function entryToRecord(entry: RemoteEntry): RecordItem {
     return result;
 }
 
-function fileSourcePluginToRecord(plugin: FilesSourcePlugin): RecordItem {
+function fileSourcePluginToRecord(plugin: BrowsableFilesSourcePlugin): RecordItem {
     const result = {
         id: plugin.id,
         label: plugin.label,
@@ -370,7 +395,7 @@ onMounted(() => {
                 size="sm"
                 class="float-right ml-1 file-dialog-modal-ok"
                 variant="primary"
-                :disabled="(fileMode && !hasValue) || isBusy || (!fileMode && urlTracker.atRoot())"
+                :disabled="okButtonDisabled"
                 @click="onOk">
                 {{ fileMode ? "Ok" : "Select this folder" }}
             </BButton>

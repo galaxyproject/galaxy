@@ -11,7 +11,10 @@ from typing import (
 )
 
 from galaxy import exceptions
-from galaxy.files.sources import BaseFilesSource
+from galaxy.files.sources import (
+    BaseFilesSource,
+    PluginKind,
+)
 from galaxy.util import plugin_config
 from galaxy.util.dictifiable import Dictifiable
 
@@ -165,10 +168,16 @@ class ConfiguredFileSources:
         for_serialization: bool = False,
         user_context: Optional["FileSourceDictifiable"] = None,
         browsable_only: Optional[bool] = False,
+        include_kind: Optional[Set[PluginKind]] = None,
+        exclude_kind: Optional[Set[PluginKind]] = None,
     ) -> List[Dict[str, Any]]:
         rval = []
         for file_source in self._file_sources:
             if not file_source.user_has_access(user_context):
+                continue
+            if include_kind and file_source.plugin_kind not in include_kind:
+                continue
+            if exclude_kind and file_source.plugin_kind in exclude_kind:
                 continue
             if browsable_only and not file_source.get_browsable():
                 continue

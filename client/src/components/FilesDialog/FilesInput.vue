@@ -4,10 +4,13 @@ import { computed } from "vue";
 
 import { filesDialog } from "@/utils/data";
 
+import { FileSourceBrowsingMode, FilterFileSourcesOptions } from "./services";
+
 interface Props {
     value: string;
-    mode?: "file" | "directory";
+    mode?: FileSourceBrowsingMode;
     requireWritable?: boolean;
+    filterOptions?: FilterFileSourcesOptions;
 }
 
 interface SelectableFile {
@@ -17,6 +20,7 @@ interface SelectableFile {
 const props = withDefaults(defineProps<Props>(), {
     mode: "file",
     requireWritable: false,
+    filterOptions: undefined,
 });
 
 const emit = defineEmits<{
@@ -36,6 +40,7 @@ const selectFile = () => {
     const dialogProps = {
         mode: props.mode,
         requireWritable: props.requireWritable,
+        filterOptions: props.filterOptions,
     };
     filesDialog((selected: SelectableFile) => {
         currentValue.value = selected?.url;
