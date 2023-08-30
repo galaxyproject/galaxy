@@ -197,4 +197,28 @@ Please mind `http` and `https`.
         <api_url> ... </api_url>
     </provider>
 
+
+    <provider name="wlcg">
+      <url>https://wlcg.cloud.cnaf.infn.it/login</url>
+      <client_id> ... </client_id>
+      <client_secret> ... </client_secret>
+      <redirect_uri>http://localhost:8080/authnz/wlcg/callback</redirect_uri>
+      <!-- Create a WLCG IAM client at https://wlcg.cloud.cnaf.infn.it/login
+	   Sign in with x509 certificate or CERN SSO
+	   Scopes need to be: offline_access, openid, profile, wlcg
+	   Grant types: authorization_code, refresh_token
+	   Add the correct redirect uri
+
+	   Otherwise keep defaults. 
+
+	   Replace client_id, client_secret and redirect_uri with actual values. 
+	   Example value of redirect_uri: 
+	   https://yourgalaxy.com/authnz/wlcg/callback 
+
+           A token from The WLCG IAM can be used to submit jobs to an ARC distributed computing endpoint 
+	   if the ARC endpoint is configured to allow it. 
+      -->
+    </provider>
+    
+
 </OIDC>
