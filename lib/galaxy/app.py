@@ -84,6 +84,7 @@ from galaxy.objectstore import (
 )
 from galaxy.queue_worker import (
     GalaxyQueueWorker,
+    reload_toolbox,
     send_local_control_task,
 )
 from galaxy.quota import (
@@ -746,6 +747,10 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         # Start web stack message handling
         self.application_stack.register_postfork_function(self.application_stack.start)
         self.application_stack.register_postfork_function(self.queue_worker.bind_and_start)
+        # Reload toolbox to pick up changes to toolbox made after master was ready
+        self.application_stack.register_postfork_function(
+            lambda: reload_toolbox(self, save_integrated_tool_panel=False), post_fork_only=True
+        )
         # Delay toolbox index until after startup
         self.application_stack.register_postfork_function(
             lambda: send_local_control_task(self, "rebuild_toolbox_search_index")
