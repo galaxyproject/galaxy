@@ -203,6 +203,8 @@ Please mind `http` and `https`.
       <client_id> ... </client_id>
       <client_secret> ... </client_secret>
       <redirect_uri>http://localhost:8080/authnz/wlcg/callback</redirect_uri>
+      <icon>https://wlcg-docs.web.cern.ch/outreach/logos/WLCG-Logo-HI-res/WLCG-Logo-Comp2L-B-Hi.png</icon>
+      
       <!-- Create a WLCG IAM client at https://wlcg.cloud.cnaf.infn.it/login
 	   Sign in with x509 certificate or CERN SSO
 	   Scopes need to be: offline_access, openid, profile, wlcg
