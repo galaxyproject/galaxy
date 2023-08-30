@@ -30,6 +30,8 @@ from galaxy.model.base import transaction
 from galaxy.util import DEFAULT_SOCKET_TIMEOUT
 from . import IdentityProvider
 
+log = logging.getLogger(__name__)
+
 # key: a component name which PSA requests.
 # value: is the name of a class associated with that key.
 DEFAULTS = {"STRATEGY": "Strategy", "STORAGE": "Storage"}
@@ -170,9 +172,14 @@ class PSAAuthnz(IdentityProvider):
         if not user_authnz_token or not user_authnz_token.extra_data:
             return False
         # refresh tokens if they reached their half lifetime
-        if int(user_authnz_token.extra_data["auth_time"]) + int(user_authnz_token.extra_data["expires"]) / 2 <= int(
-            time.time()
-        ):
+        if "expires" in user_authnz_token.extra_data:
+            expires = user_authnz_token.extra_data["expires"]
+        elif "expires_in" in user_authnz_token.extra_data:
+            expires = user_authnz_token.extra_data["expires_in"]
+        else:
+            log.debug("No `expires` or `expires_in` key found in token extra data, cannot refresh")
+            return False
+        if int(user_authnz_token.extra_data["auth_time"]) + int(expires) / 2 <= int(time.time()):
             on_the_fly_config(trans.sa_session)
             if self.config["provider"] == "azure":
                 self.refresh_azure(user_authnz_token)
