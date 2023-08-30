@@ -95,9 +95,10 @@ async function createOrUpdateBroadcast() {
             await createBroadcast(broadcastData.value);
             Toast.success("Broadcast created");
         }
-        router.push("/admin/notifications/");
     } catch (error: any) {
         Toast.error(error.err_msg);
+    } finally {
+        router.push("/admin/notifications");
     }
 }
 
@@ -137,7 +138,7 @@ if (props.id) {
         </BAlert>
 
         <div v-else>
-            <BAlert v-if="props.id && broadcastPublished" variant="warning" show>
+            <BAlert v-if="props.id && broadcastPublished" id="broadcast-published-warning" variant="warning" show>
                 This broadcast has already been published. Some users may have already seen it and changing it now will
                 not affect them.
             </BAlert>
@@ -179,7 +180,7 @@ if (props.id) {
                 <BRow v-for="(actionLink, index) in broadcastData.content.action_links" :key="index" class="my-2">
                     <BCol cols="auto">
                         <BFormInput
-                            :id="`broadcast-action-link-name-${{ index }}`"
+                            :id="`broadcast-action-link-name-${index}`"
                             v-model="actionLink.action_name"
                             type="text"
                             placeholder="Enter action name"
@@ -187,7 +188,7 @@ if (props.id) {
                     </BCol>
                     <BCol>
                         <BFormInput
-                            :id="`broadcast-action-link-link-${{ index }}`"
+                            :id="`broadcast-action-link-link-${index}`"
                             v-model="actionLink.link"
                             type="url"
                             placeholder="Enter action link"
@@ -195,7 +196,7 @@ if (props.id) {
                     </BCol>
                     <BCol cols="auto">
                         <BButton
-                            :id="`delete-action-link-${{ index }}}`"
+                            :id="`delete-action-link-${index}}`"
                             v-b-tooltip.hover.bottom
                             title="Delete action link"
                             variant="error-outline"
@@ -251,6 +252,7 @@ if (props.id) {
 
             <BRow class="m-2" align-h="center">
                 <AsyncButton
+                    id="broadcast-submit"
                     icon="save"
                     :title="!requiredFieldsFilled ? 'Please fill all required fields' : ''"
                     variant="primary"
