@@ -391,7 +391,7 @@ function setValue(val: Array<DataOption> | DataOption | null) {
             // Determine source representation
             let sourceType: string | null = null;
             if (isDCE.value) {
-                sourceType = values[0].hda ? SOURCE.DATASET : SOURCE.COLLECTION;
+                sourceType = values[0].is_dataset ? SOURCE.DATASET : SOURCE.COLLECTION;
             } else if (isLDDA.value) {
                 sourceType = SOURCE.DATASET;
             } else {

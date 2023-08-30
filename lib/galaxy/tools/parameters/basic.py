@@ -2307,7 +2307,7 @@ class DataToolParameter(BaseDataToolParameter):
                 {
                     "id": trans.security.encode_id(dce.id),
                     "name": dce.element_identifier,
-                    "hda": dce.hda,
+                    "is_dataset": dce.hda is not None,
                     "src": "dce",
                     "tags": [],
                     "keep": True,

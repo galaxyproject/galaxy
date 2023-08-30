@@ -1,8 +1,8 @@
 export interface DataOption {
     id: string;
+    is_dataset?: boolean;
     keep: boolean;
     hid: number;
-    hda?: boolean;
     map_over_type?: string;
     name: string;
     src: string;

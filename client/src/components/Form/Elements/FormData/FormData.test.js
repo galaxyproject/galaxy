@@ -27,7 +27,7 @@ function createTarget(propsData) {
 
 const defaultOptions = {
     dce: [
-        { id: "dce1", name: "dceName1", src: "dce", hda: true },
+        { id: "dce1", name: "dceName1", src: "dce", is_dataset: true },
         { id: "dce2", name: "dceName2", src: "dce" },
         { id: "dce3", name: "dceName3", src: "dce", map_over_type: "mapOverType" },
     ],
