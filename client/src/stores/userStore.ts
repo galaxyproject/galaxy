@@ -61,8 +61,15 @@ export const useUserStore = defineStore("userStore", () => {
         if (!loadPromise) {
             loadPromise = getCurrentUser()
                 .then(async (user) => {
-                    currentUser.value = { ...user, isAnonymous: !user.email };
-                    currentPreferences.value = user?.preferences ?? null;
+                    const historyStore = useHistoryStore();
+                    if ('email' in user) {
+                        currentUser.value = { ...user, isAnonymous: false };
+                        currentPreferences.value = user.preferences;
+                    }
+                    else {
+                        currentUser.value = { isAnonymous: true };
+                        currentPreferences.value = null;
+                    }
                     // TODO: This is a hack to get around the fact that the API returns a string
                     if (currentPreferences.value?.favorites) {
                         currentPreferences.value.favorites = JSON.parse(user?.preferences?.favorites ?? { tools: [] });
