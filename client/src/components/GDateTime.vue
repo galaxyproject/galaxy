@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import { BFormInput, BInputGroup } from "bootstrap-vue";
 import { Tuple } from "types/utilityTypes";
 import { computed } from "vue";
 
@@ -24,6 +25,7 @@ const time = computed(() => {
 
     return `${hours}:${minutes}`;
 });
+
 function updateDate(newDate: string) {
     const matches = newDate.match(/(\d{4})-(\d{2})-(\d{2})/);
 
@@ -64,6 +66,6 @@ function updateTime(newTime: string) {
 <template>
     <BInputGroup>
         <BFormInput :value="date" type="date" @input="updateDate" />
-        <BFormInput :value="time" type="time" @change="updateTime" />
+        <BFormInput :value="time" type="time" @input="updateTime" />
     </BInputGroup>
 </template>
