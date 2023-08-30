@@ -1076,7 +1076,7 @@ steps:
         self.workflow_editor_destroy_connection("filter#how|filter_source")
         self.assert_node_output_is("filter#output_filtered", "list")
 
-    def assert_node_output_is(self, label: str, output_type: str, map_over_type: Optional[str] = None):
+    def assert_node_output_is(self, label: str, output_type: str, subcollection_type: Optional[str] = None):
         editor = self.components.workflow_editor
         node_label, output_name = label.split("#")
         node = editor.node._(label=node_label)
@@ -1085,18 +1085,18 @@ steps:
         self.hover_over(output_element)
         element = self.components._.tooltip_inner.wait_for_present()
         assert f"output is {output_type}" in element.text, element.text
-        if map_over_type is None:
+        if subcollection_type is None:
             assert "mapped-over" not in element.text
         else:
             fragment = " and mapped-over to produce a "
-            if map_over_type == "list:paired":
+            if subcollection_type == "list:paired":
                 fragment += "list of pairs dataset collection"
-            elif map_over_type == "list:list":
+            elif subcollection_type == "list:list":
                 fragment += "list of lists dataset collection"
-            elif map_over_type.count(":") > 1:
-                fragment += f"dataset collection with {map_over_type.count(':') + 1} levels of nesting"
+            elif subcollection_type.count(":") > 1:
+                fragment += f"dataset collection with {subcollection_type.count(':') + 1} levels of nesting"
             else:
-                fragment += f"{map_over_type}"
+                fragment += f"{subcollection_type}"
             assert fragment in element.text
         self.click_center()
 

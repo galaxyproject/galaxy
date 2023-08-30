@@ -2299,7 +2299,7 @@ class DataToolParameter(BaseDataToolParameter):
                 "keep": keep,
             }
             if subcollection_type:
-                value["map_over_type"] = subcollection_type
+                value["subcollection_type"] = subcollection_type
             return list.append(value)
 
         def append_dce(dce):
@@ -2519,7 +2519,7 @@ class DataCollectionToolParameter(BaseDataToolParameter):
         # append DCE
         if isinstance(other_values.get(self.name), DatasetCollectionElement):
             dce = other_values[self.name]
-            d["options"]["hdca"].append(
+            d["options"]["dce"].append(
                 {
                     "id": trans.security.encode_id(dce.id),
                     "hid": -1,
@@ -2553,11 +2553,11 @@ class DataCollectionToolParameter(BaseDataToolParameter):
             d["options"]["hdca"].append(
                 {
                     "id": trans.security.encode_id(hdca.id),
+                    "subcollection_type": subcollection_type,
                     "hid": hdca.hid,
                     "name": name,
                     "src": "hdca",
                     "tags": [t.user_tname if not t.value else f"{t.user_tname}:{t.value}" for t in hdca.tags],
-                    "map_over_type": subcollection_type,
                 }
             )
 

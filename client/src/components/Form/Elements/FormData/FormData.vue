@@ -206,7 +206,6 @@ function handleIncoming(incoming: Record<string, unknown>, partial = true) {
             const incomingValues: Array<DataOption> = [];
             values.forEach((v) => {
                 // Map incoming objects to data option values
-                v.id = v.element_id || v.id;
                 const newHid = v.hid;
                 const newId = v.id;
                 const newName = v.name ? v.name : newId;
@@ -381,7 +380,7 @@ function setValue(val: Array<DataOption> | DataOption | null) {
     if (val) {
         const values = Array.isArray(val) ? val : [val];
         if (variant.value && values.length > 0 && values[0]) {
-            const hasMapOverType = values.find((v) => !!v.map_over_type);
+            const hasSubcollectionType = values.find((v) => !!v.subcollection_type);
             const isMultiple = values.length > 1;
 
             // Determine source representation
@@ -403,25 +402,27 @@ function setValue(val: Array<DataOption> | DataOption | null) {
             let batch: string = BATCH.DISABLED;
             if (variantIndex >= 0) {
                 const variantDetails = variant.value[variantIndex];
-                if ((isLDDA.value || isDCE.value) && variantDetails && variantDetails.batch) {
-                    batch = variantDetails.batch;
-                } else {
-                    // Switch to another field type if source differs from current field
-                    if (currentVariant.value && currentVariant.value.src !== sourceType) {
-                        currentField.value = variantIndex;
+                if (variantDetails) {
+                    if ((isLDDA.value || isDCE.value) && variantDetails.batch) {
+                        batch = variantDetails.batch;
+                    } else {
+                        // Switch to another field type if source differs from current field
+                        if (currentVariant.value && currentVariant.value.src !== sourceType) {
+                            currentField.value = variantIndex;
+                        }
+                        batch = (currentVariant.value && currentVariant.value.batch) || BATCH.DISABLED;
                     }
-                    batch = (currentVariant.value && currentVariant.value.batch) || BATCH.DISABLED;
                 }
             }
 
             // Emit new value
             $emit("input", {
-                batch: batch !== BATCH.DISABLED || !!hasMapOverType,
+                batch: batch !== BATCH.DISABLED || !!hasSubcollectionType,
                 product: batch === BATCH.ENABLED && !currentLinked.value,
                 values: values.map((entry) => ({
                     id: entry.id,
                     src: entry.src,
-                    map_over_type: entry.map_over_type || null,
+                    subcollection_type: entry.subcollection_type || null,
                 })),
             });
         }
