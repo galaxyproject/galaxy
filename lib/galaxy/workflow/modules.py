@@ -2302,6 +2302,13 @@ class ToolModule(WorkflowModule):
             self._handle_mapped_over_post_job_actions(
                 step, step_inputs, step_outputs, progress.effective_replacement_dict()
             )
+            if progress.when_values == [False] and not progress.subworkflow_collection_info:
+                # Step skipped entirely. We hide the output to avoid confusion.
+                # Could be revisited if we have a nice visual way to say these are skipped ?
+                for output in step_outputs.values():
+                    if isinstance(output, (model.HistoryDatasetAssociation, model.HistoryDatasetCollectionAssociation)):
+                        output.visible = False
+
         if execution_tracker.execution_errors:
             # TODO: formalize into InvocationFailure ?
             message = f"Failed to create {len(execution_tracker.execution_errors)} job(s) for workflow step {step.order_index + 1}: {str(execution_tracker.execution_errors[0])}"
