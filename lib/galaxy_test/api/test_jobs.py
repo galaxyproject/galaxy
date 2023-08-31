@@ -907,7 +907,9 @@ steps:
         assert first_element["element_type"] == "dataset_collection"
         assert first_element["element_identifier"] == "test0"
         assert first_element["model_class"] == "DatasetCollectionElement"
-        inputs = {"input1": {"batch": True, "values": [{"src": "hdca", "id": list_list_id, "subcollection_type": "list"}]}}
+        inputs = {
+            "input1": {"batch": True, "values": [{"src": "hdca", "id": list_list_id, "subcollection_type": "list"}]}
+        }
         run_response = self._run(
             history_id=history_id,
             tool_id="identifier_collection",

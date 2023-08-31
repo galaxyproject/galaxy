@@ -343,6 +343,19 @@ function onDrop() {
 }
 
 /**
+ * Determine source type of a given value
+ */
+function getSourceType(val: DataOption) {
+    if (isDCE.value) {
+        return val.is_dataset ? SOURCE.DATASET : SOURCE.COLLECTION;
+    } else if (isLDDA.value) {
+        return SOURCE.DATASET;
+    } else {
+        return val.src;
+    }
+}
+
+/**
  * Parse incoming value for select field
  */
 function getValue() {
@@ -383,15 +396,8 @@ function setValue(val: Array<DataOption> | DataOption | null) {
             const hasSubcollectionType = values.find((v) => !!v.subcollection_type);
             const isMultiple = values.length > 1;
 
-            // Determine source representation
-            let sourceType: string | null = null;
-            if (isDCE.value) {
-                sourceType = values[0].is_dataset ? SOURCE.DATASET : SOURCE.COLLECTION;
-            } else if (isLDDA.value) {
-                sourceType = SOURCE.DATASET;
-            } else {
-                sourceType = values[0].src;
-            }
+            // Determine source representation (uses only the initial value)
+            const sourceType = getSourceType(values[0]);
 
             // Identify matching variant
             const variantIndex = variant.value.findIndex(
