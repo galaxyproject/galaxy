@@ -923,6 +923,9 @@ def __parse_param_elem(param_elem, i=0):
     else:
         value = None
 
+    if value is None and attrib.get("location", None) is not None:
+        value = os.path.basename(attrib["location"])
+
     children_elem = param_elem
     if children_elem is not None:
         # At this time, we can assume having children only

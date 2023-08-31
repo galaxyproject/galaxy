@@ -306,7 +306,6 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         self.user_manager = app[UserManager]
         self.session_manager = app[GalaxySessionManager]
         super().__init__(environ)
-        self.expunge_all()
         config = self.app.config
         self.debug = asbool(config.get("debug", False))
         x_frame_options = getattr(config, "x_frame_options", None)
@@ -784,7 +783,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         history = None
         set_permissions = False
         try:
-            users_last_session = user.galaxy_sessions[0]
+            users_last_session = user.current_galaxy_session
         except Exception:
             users_last_session = None
         if (

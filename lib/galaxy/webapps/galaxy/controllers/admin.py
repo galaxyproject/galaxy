@@ -77,7 +77,7 @@ class UserListGrid(grids.Grid):
     class LastLoginColumn(grids.GridColumn):
         def get_value(self, trans, grid, user):
             if user.galaxy_sessions:
-                return self.format(user.galaxy_sessions[0].update_time)
+                return self.format(user.current_galaxy_session.update_time)
             return "never"
 
         def sort(self, trans, query, ascending, column_name=None):

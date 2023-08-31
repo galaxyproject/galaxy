@@ -159,17 +159,6 @@ class ProvidesAppContext:
         """
         return self.app.model.session
 
-    def expunge_all(self):
-        """Expunge all the objects in Galaxy's SQLAlchemy sessions."""
-        app = self.app
-        context = app.model.context
-        context.expunge_all()
-        # This is a bit hacky, should refctor this. Maybe refactor to app -> expunge_all()
-        if hasattr(app, "install_model"):
-            install_model = app.install_model
-            if install_model != app.model:
-                install_model.context.expunge_all()
-
     def get_toolbox(self):
         """Returns the application toolbox.
 
