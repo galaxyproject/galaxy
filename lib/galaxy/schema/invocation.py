@@ -53,7 +53,10 @@ class StepOrderIndexGetter(GetterDict):
         if key == "workflow_step_id":
             return self._obj.workflow_step.order_index
         elif key == "dependent_workflow_step_id":
-            return self._obj.dependent_workflow_step.order_index
+            if self._obj.dependent_workflow_step_id:
+                return self._obj.dependent_workflow_step.order_index
+            else:
+                return default
 
         return super().get(key, default)
 
