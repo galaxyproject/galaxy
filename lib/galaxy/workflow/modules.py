@@ -512,8 +512,15 @@ class WorkflowModule:
         collections_to_match = self._find_collections_to_match(progress, step, all_inputs)
         # Have implicit collections...
         collection_info = self.trans.app.dataset_collection_manager.match_collections(collections_to_match)
-        if collection_info and progress.subworkflow_collection_info:
-            collection_info.when_values = progress.subworkflow_collection_info.when_values
+        if collection_info:
+            if progress.subworkflow_collection_info:
+                # We've mapped over a subworkflow. Slices of the invocation might be conditional
+                # and progress.subworkflow_collection_info.when_values holds the appropriate when_values
+                collection_info.when_values = progress.subworkflow_collection_info.when_values
+            else:
+                # The invocation is not mapped over, but it might still be conditional.
+                # Multiplication and linking should be handled by slice_collection()
+                collection_info.when_values = progress.when_values
         return collection_info or progress.subworkflow_collection_info
 
     def _find_collections_to_match(self, progress, step, all_inputs):
