@@ -24,20 +24,19 @@ export async function updateNotification(id: string, notification: UserNotificat
 }
 
 const getRolesReq = fetcher.path("/api/roles").method("get").create();
-type RoleModelResponse = components["schemas"]["RoleModelResponse"];
-export async function getRoles(): Promise<RoleModelResponse[]> {
+export async function getRoles() {
     const { data } = await getRolesReq({});
+    return data;
+}
+
+const getUsersReq = fetcher.path("/api/users").method("get").create();
+export async function getUsers() {
+    const { data } = await getUsersReq({});
     return data;
 }
 
 type GroupModel = components["schemas"]["GroupModel"];
 export async function getGroups(): Promise<GroupModel[]> {
     const { data } = await axios.get("/api/groups");
-    return data;
-}
-
-type UserModel = components["schemas"]["UserModel"];
-export async function getUsers(): Promise<UserModel[]> {
-    const { data } = await axios.get("/api/users");
     return data;
 }
