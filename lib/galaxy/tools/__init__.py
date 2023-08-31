@@ -3108,10 +3108,10 @@ class DataManagerTool(OutputParameterJSONTool):
             pass
         elif data_manager_mode == "bundle":
             for bundle_path, dataset in data_manager.write_bundle(out_data).items():
-                dataset = cast(model.HistoryDatasetAssociation, dataset)
-                dataset.dataset.object_store.update_from_file(
-                    dataset.dataset,
-                    extra_dir=dataset.dataset.extra_files_path_name,
+                hda = cast(model.HistoryDatasetAssociation, dataset)
+                hda.dataset.object_store.update_from_file(
+                    hda.dataset,
+                    extra_dir=hda.dataset.extra_files_path_name,
                     file_name=bundle_path,
                     alt_name=os.path.basename(bundle_path),
                     create=True,

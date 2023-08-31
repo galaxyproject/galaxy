@@ -1,6 +1,7 @@
 import threading
 from typing import (
     Any,
+    Dict,
     Generic,
     List,
     Optional,
@@ -15,7 +16,10 @@ from galaxy.model.base import ModelMapping
 from galaxy.model.tool_shed_install import HasToolBox
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.tool_shed.cache import ToolShedRepositoryCache
-from galaxy.tool_util.data import ToolDataTableManager
+from galaxy.tool_util.data import (
+    OutputDataset,
+    ToolDataTableManager,
+)
 from galaxy.tool_util.toolbox.base import AbstractToolBox
 
 if TYPE_CHECKING:
@@ -29,7 +33,7 @@ class DataManagerInterface(Protocol):
     def process_result(self, out_data):
         ...
 
-    def write_bundle(self, out) -> None:
+    def write_bundle(self, out: Dict[str, OutputDataset]) -> Dict[str, OutputDataset]:
         ...
 
 
