@@ -235,6 +235,7 @@ async function sendNewNotification() {
 
             <BRow class="m-2" align-h="center">
                 <AsyncButton
+                    id="notification-submit"
                     icon="save"
                     :title="!requiredFieldsFilled ? 'Please fill all required fields' : ''"
                     variant="primary"
