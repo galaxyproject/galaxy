@@ -2,6 +2,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BAlert, BButton, BCol, BNav, BNavItem, BOverlay } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
 import { loadWorkflows } from "@/components/Workflow/workflows.services";
@@ -212,30 +213,46 @@ watch([filterText, sortBy, sortDesc, showDeleted], () => {
             No workflows found matching: <span class="font-weight-bold">{{ filterText }}</span>
         </BAlert>
 
-        <BOverlay v-else :show="overlay" rounded="sm" class="cards-list mt-2">
-            <BCol v-for="workflow in workflows" :key="workflow.id" :cols="view === 'grid' ? 4 : 12" class="mb-2 px-0">
-                <WorkflowCard
-                    :class="view === 'grid' ? 'grid-view h-100 ' : ''"
-                    :workflow="workflow"
-                    :published-view="published"
-                    :grid-view="view === 'grid'"
-                    @refreshList="load"
-                    @tagClick="onTagClick" />
-            </BCol>
+        <BOverlay
+            v-else
+            :show="overlay"
+            rounded="sm"
+            class="cards-list mt-2"
+            :class="view === 'grid' ? 'd-flex flex-wrap' : ''">
+            <WorkflowCard
+                v-for="workflow in workflows"
+                :key="workflow.id"
+                :class="view === 'grid' ? 'grid-view ' : ''"
+                :workflow="workflow"
+                :published-view="published"
+                :grid-view="view === 'grid'"
+                @refreshList="load"
+                @tagClick="onTagClick" />
         </BOverlay>
     </div>
 </template>
 
 <style scoped lang="scss">
 .workflows-list {
-    .cards-list {
-        display: flex;
-        flex-flow: wrap;
+    container-type: inline-size;
+    overflow: auto;
 
+    .grid-view {
+        width: calc(100% / 3);
+        display: inline-grid;
+    }
+
+    @container (max-width: 1200px) {
         .grid-view {
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
+            width: calc(100% / 2);
+            display: inline-grid;
+        }
+    }
+
+    @container (max-width: 576px) {
+        .grid-view {
+            width: 100%;
+            display: inline-grid;
         }
     }
 }

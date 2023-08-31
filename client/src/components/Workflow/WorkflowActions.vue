@@ -51,7 +51,6 @@ const userStore = useUserStore();
 const { confirm } = useConfirmDialog();
 const { isAnonymous } = storeToRefs(useUserStore());
 
-const isGridView = computed(() => userStore.preferredListViewMode === "grid");
 const downloadUrl = computed(() => {
     return `/api/workflows/${props.workflow.id}/download?format=json-download`;
 });
@@ -111,7 +110,7 @@ async function onRestore() {
 </script>
 
 <template>
-    <div v-if="!isGridView">
+    <div class="workflow-actions d-flex align-items-baseline flex-wrap justify-content-end">
         <AsyncButton
             v-if="!shared && !workflow.deleted"
             id="delete-button"
@@ -212,7 +211,9 @@ async function onRestore() {
 </template>
 
 <style scoped lang="scss">
-.mouse-out {
-    opacity: 0.5;
+.workflow-actions {
+    .mouse-out {
+        opacity: 0.5;
+    }
 }
 </style>
