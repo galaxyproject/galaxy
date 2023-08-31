@@ -23,7 +23,10 @@ from galaxy.tool_shed.galaxy_install.client import (
     InstallationTarget,
 )
 from galaxy.tool_shed.util.repository_util import get_installed_repository
-from galaxy.tool_util.data import ToolDataTableManager
+from galaxy.tool_util.data import (
+    OutputDataset,
+    ToolDataTableManager,
+)
 from galaxy.tool_util.loader_directory import looks_like_a_tool
 from galaxy.tool_util.toolbox.base import (
     AbstractToolBox,
@@ -134,8 +137,8 @@ class DummyDataManager(DataManagerInterface):
     def process_result(self, out_data):
         return None
 
-    def write_bundle(self, out) -> None:
-        return None
+    def write_bundle(self, out) -> Dict[str, OutputDataset]:
+        return {}
 
 
 class StandaloneDataManagers(DataManagersInterface):
