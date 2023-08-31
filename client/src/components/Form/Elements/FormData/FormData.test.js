@@ -164,9 +164,9 @@ describe("FormData", () => {
         };
         expect(wrapper.emitted().input[0][0]).toEqual(value_0);
         expect(wrapper.emitted().input.length).toEqual(1);
-        const message = wrapper.findAll(".form-data-entry-label");
+        const message = wrapper.findAll("[data-description='form data label']");
         expect(message.length).toBe(1);
-        expect(message.at(0).text()).toBe("1. dceName1 (dce)");
+        expect(message.at(0).text()).toBe("1. dceName1 (as dataset)");
         expect(wrapper.find(".btn-group").exists()).toBeFalsy();
         const closeButton = wrapper.find(".alert .close");
         await closeButton.trigger("click");
@@ -198,6 +198,12 @@ describe("FormData", () => {
             values: [{ id: "dce3", subcollection_type: "subcollectionType", src: "dce" }],
         };
         expect(wrapper.emitted().input[0][0]).toEqual(value_0);
+        const message = wrapper.findAll("[data-description='form data label']");
+        expect(message.length).toBe(1);
+        expect(message.at(0).text()).toBe("1. dceName3 (as dataset collection)");
+        const messageSubcollection = wrapper.findAll("[data-description='form data collection type']");
+        expect(messageSubcollection.length).toBe(1);
+        expect(messageSubcollection.at(0).text()).toBe("Batch mode input with collection type: subcollectionType.");
     });
 
     it("dataset collection element as hdca mapped to non-batch field", async () => {

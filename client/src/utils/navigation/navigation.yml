@@ -558,7 +558,7 @@ tool_form:
     parameter_data_input_single: 'div.ui-form-element[id="form-element-${parameter}"] button[title="Single dataset"]'
     parameter_data_input_collection: 'div.ui-form-element[id="form-element-${parameter}"] button[title="Dataset collection"]'
     parameter_data_select: 'div.ui-form-element[id="form-element-${parameter}"] .multiselect'
-    parameter_data_entry_label: 'div.ui-form-element[id="form-element-${parameter}"] .form-data-entry-label'
+    parameter_data_entry_label: 'div.ui-form-element[id="form-element-${parameter}"] [data-description="form data label"]'
 
     repeat_insert: '[data-description="repeat insert"]'
     repeat_move_up: '#${parameter}_up'

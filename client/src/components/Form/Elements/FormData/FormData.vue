@@ -71,14 +71,14 @@ const keepOptions: Ref<Record<string, SelectOption>> = ref({});
 const waiting = ref(false);
 
 /**
- * Determine wether the file dialog can be used or not
+ * Determine whether the file dialog can be used or not
  */
 const canBrowse = computed(() => variant.value && !!variant.value.find((v) => v.src === SOURCE.DATASET));
 
 /**
  * Provides the currently shown source type
  */
-const currentSource = computed(() => currentVariant.value && currentVariant.value.src);
+const currentSource = computed(() => (currentVariant.value ? currentVariant.value.src : null));
 
 /**
  * Interface between incoming input value and select field value
@@ -177,7 +177,7 @@ const isLDDA = computed(() => {
 /**
  * Provides placeholder label for select field
  */
-const placeholder = computed(() => (currentSource.value === SOURCE.DATASET ? "dataset" : "dataset collection"));
+const placeholder = computed(() => getSourceLabel(currentSource.value));
 
 /**
  * Provides the array of available variants associated with a specific form data type
@@ -252,38 +252,17 @@ function handleIncoming(incoming: Record<string, unknown>, partial = true) {
 }
 
 /**
- * Matches entries to available options
- */
-function matchOption(entry: DataOption) {
-    if ("src" in entry && entry.src) {
-        const options = props.options[entry.src] || [];
-        const option = options.find((v) => v.id === entry.id && v.src === entry.src);
-        if (option) {
-            return option;
-        }
-    }
-    return null;
-}
-
-/**
- * Matches entry name from available options
- */
-function matchName(entry: DataOption) {
-    const option = matchOption(entry);
-    const name = option?.name || entry.id;
-    const src = option?.src || "unknown";
-    return `${name} (${src})`;
-}
-
-/**
  * Matches an array of values to available options
  */
 function matchValues(entries: Array<DataOption>) {
     const values: Array<DataOption> = [];
-    entries.forEach((val) => {
-        const option = matchOption(val);
-        if (option) {
-            values.push(option);
+    entries.forEach((entry) => {
+        if ("src" in entry && entry.src) {
+            const options = props.options[entry.src] || [];
+            const option = options.find((v) => v.id === entry.id && v.src === entry.src);
+            if (option) {
+                values.push({ ...option, name: option.name || entry.id });
+            }
         }
     });
     return values;
@@ -340,6 +319,13 @@ function onDrop() {
         dragData.value = null;
         clearHighlighting();
     }
+}
+
+/**
+ * Return user-friendly data source label
+ */
+function getSourceLabel(src: string | null) {
+    return src === SOURCE.DATASET ? "dataset" : "dataset collection";
 }
 
 /**
@@ -470,8 +456,15 @@ watch(
         @drop.prevent="onDrop">
         <b-alert v-if="isDCE || isLDDA" variant="info" dismissible show @dismissed="$emit('input', null)">
             <span v-localize class="font-weight-bold">Using the following datasets (dismiss to reset):</span>
-            <div v-for="(v, vIndex) of props.value.values" :key="vIndex">
-                <span class="form-data-entry-label ml-2">{{ vIndex + 1 }}. {{ matchName(v) }}</span>
+            <div v-for="(v, vIndex) of matchValues(props.value.values)" :key="vIndex">
+                <span class="ml-2" data-description="form data label">
+                    <span>{{ vIndex + 1 }}.</span>
+                    <span>{{ v.name }}</span>
+                    <span>(as {{ getSourceLabel(getSourceType(v)) }})</span>
+                </span>
+                <small v-if="v.subcollection_type" class="ml-2" data-description="form data collection type">
+                    Batch mode input with collection type: {{ v.subcollection_type }}.
+                </small>
             </div>
         </b-alert>
         <div v-else>
