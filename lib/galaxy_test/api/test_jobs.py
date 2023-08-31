@@ -841,14 +841,14 @@ steps:
         list_id_a = self.__history_with_ok_collection(collection_type="list:pair", history_id=history_id)
         inputs = json.dumps(
             {
-                "f1": {"batch": True, "values": [{"src": "hdca", "id": list_id_a, "map_over_type": "paired"}]},
+                "f1": {"batch": True, "values": [{"src": "hdca", "id": list_id_a, "subcollection_type": "paired"}]},
             }
         )
         self._job_search(tool_id="collection_paired_test", history_id=history_id, inputs=inputs)
 
     def _get_simple_rerun_params(self, history_id, private=False):
         list_id_a = self.__history_with_ok_collection(collection_type="list:pair", history_id=history_id)
-        inputs = {"f1": {"batch": True, "values": [{"src": "hdca", "id": list_id_a, "map_over_type": "paired"}]}}
+        inputs = {"f1": {"batch": True, "values": [{"src": "hdca", "id": list_id_a, "subcollection_type": "paired"}]}}
         run_response = self._run(
             history_id=history_id,
             tool_id="collection_paired_test",
@@ -907,7 +907,7 @@ steps:
         assert first_element["element_type"] == "dataset_collection"
         assert first_element["element_identifier"] == "test0"
         assert first_element["model_class"] == "DatasetCollectionElement"
-        inputs = {"input1": {"batch": True, "values": [{"src": "hdca", "id": list_list_id, "map_over_type": "list"}]}}
+        inputs = {"input1": {"batch": True, "values": [{"src": "hdca", "id": list_list_id, "subcollection_type": "list"}]}}
         run_response = self._run(
             history_id=history_id,
             tool_id="identifier_collection",
