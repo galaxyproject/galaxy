@@ -253,13 +253,17 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             # datatype changing
             datatype_options = [(ext_name, ext_id) for ext_id, ext_name in ldatatypes]
             datatype_disable = len(datatype_options) == 0
+            datatype_input_default_value = None
+            current_datatype = trans.app.datatypes_registry.datatypes_by_extension.get(data.ext)
+            if current_datatype and current_datatype.is_datatype_change_allowed():
+                datatype_input_default_value = data.ext
             datatype_inputs = [
                 {
                     "type": "select",
                     "name": "datatype",
                     "label": "New Type",
                     "options": datatype_options,
-                    "value": [ext_id for ext_id, ext_name in ldatatypes if ext_id == data.ext],
+                    "value": datatype_input_default_value,
                     "help": "This will change the datatype of the existing dataset but not modify its contents. Use this if Galaxy has incorrectly guessed the type of your dataset.",
                 }
             ]
