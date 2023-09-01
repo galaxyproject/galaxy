@@ -7,7 +7,7 @@ import { computed, ref, watch } from "vue";
 
 import { fromSimple } from "@/components/Workflow/Editor/modules/model";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
-import { useRouteQueryBool } from "@/composables/route";
+import { useRouteQueryBool, useRouteQueryNumber } from "@/composables/route";
 import { usePanels } from "@/composables/usePanels";
 import { provideScopedWorkflowStores } from "@/composables/workflowStores";
 import { useUserStore } from "@/stores/userStore";
@@ -49,7 +49,13 @@ const { datatypesMapper } = useDatatypesMapper();
 
 const { stateStore } = provideScopedWorkflowStores(props.id);
 
-stateStore.setScale(0.75);
+const defaultScale = useRouteQueryNumber("zoom", 0.75);
+
+watch(
+    () => defaultScale.value,
+    () => stateStore.setScale(defaultScale.value),
+    { immediate: true }
+);
 
 watch(
     () => props.id,
@@ -108,6 +114,13 @@ const embedded = useRouteQueryBool("embed");
 const showButtons = useRouteQueryBool("buttons", true);
 const showAbout = useRouteQueryBool("about", true);
 const showHeading = useRouteQueryBool("heading", true);
+const initialX = useRouteQueryNumber("initialX", -20);
+const initialY = useRouteQueryNumber("initialY", -20);
+
+const initialPosition = computed(() => ({
+    x: -initialX.value * defaultScale.value,
+    y: -initialY.value * defaultScale.value,
+}));
 
 const viewUrl = computed(() => withPrefix(`/published/workflow?id=${props.id}`));
 </script>
@@ -192,6 +205,7 @@ const viewUrl = computed(() => withPrefix(`/published/workflow?id=${props.id}`))
                             v-if="workflow && datatypesMapper"
                             :steps="workflow.steps"
                             :datatypes-mapper="datatypesMapper"
+                            :initial-position="initialPosition"
                             readonly />
                     </b-card>
                 </div>

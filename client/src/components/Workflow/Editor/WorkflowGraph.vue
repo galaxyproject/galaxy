@@ -85,6 +85,7 @@ const props = defineProps({
     highlightId: { type: Number as PropType<number | null>, default: null },
     scrollToId: { type: Number as PropType<number | null>, default: null },
     readonly: { type: Boolean, default: false },
+    initialPosition: { type: Object as PropType<{ x: number; y: number }>, default: () => ({ x: 50, y: 20 }) },
 });
 
 const { stateStore, stepStore } = useWorkflowStores();
@@ -93,10 +94,14 @@ const canvas: Ref<HTMLElement | null> = ref(null);
 
 const elementBounding = useElementBounding(canvas, { windowResize: false, windowScroll: false });
 const scroll = useScroll(canvas);
-const { transform, panBy, setZoom, moveTo } = useD3Zoom(scale.value, minZoom, maxZoom, canvas, scroll, {
-    x: 50,
-    y: 20,
-});
+const { transform, panBy, setZoom, moveTo } = useD3Zoom(
+    scale.value,
+    minZoom,
+    maxZoom,
+    canvas,
+    scroll,
+    props.initialPosition
+);
 const { viewportBoundingBox } = useViewportBoundingBox(elementBounding, scale, transform);
 
 const isDragging = ref(false);

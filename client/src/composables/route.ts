@@ -13,3 +13,16 @@ export function useRouteQueryBool(
         return p in route.query ? route.query[p] === "true" : resolveUnref(defaultValue);
     });
 }
+
+export function useRouteQueryNumber(parameter: MaybeComputedRef<string>, defaultValue: MaybeComputedRef<number> = 1) {
+    const route = useRoute();
+    return computed(() => {
+        const p = resolveUnref(parameter);
+        if (p in route.query) {
+            const v = route.query[p];
+            return typeof v === "string" ? parseFloat(v) : resolveUnref(defaultValue);
+        } else {
+            return resolveUnref(defaultValue);
+        }
+    });
+}
