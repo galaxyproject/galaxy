@@ -1,14 +1,11 @@
 <template>
     <div>
-        <h1 class="h-lg">
+        <Heading h1 size="lg" separator>
             Share or Publish {{ modelClass }} <span v-if="ready">`{{ item.title }}`</span>
-        </h1>
-        <div v-for="error in errors" :key="error">
-            <b-alert show variant="danger" dismissible @dismissed="errors = errors.filter((e) => e !== error)">
-                <ErrorMessage :message="error" :root="root()"> </ErrorMessage>
-            </b-alert>
-        </div>
-        <br />
+        </Heading>
+
+        <ErrorMessages :messages="errors" @dismissed="onErrorDismissed"></ErrorMessages>
+
         <div v-if="!hasUsername">
             <div>To make a {{ modelClass }} accessible via link or publish it, you must create a public username:</div>
             <form class="form-group" @submit.prevent="setUsername()">
@@ -17,32 +14,25 @@
             <b-button type="submit" variant="primary" @click="setUsername()">Set Username</b-button>
         </div>
         <div v-else-if="ready">
-            <b-form-checkbox v-model="item.importable" switch class="make-accessible" @change="onImportable">
-                Make {{ modelClass }} accessible
-            </b-form-checkbox>
-            <b-form-checkbox
-                v-if="item.importable"
-                v-model="item.published"
-                class="make-publishable"
-                switch
-                @change="onPublish">
-                Make {{ modelClass }} publicly available in
-                <a :href="published_url" target="_top">Published {{ pluralName }}</a>
-            </b-form-checkbox>
-            <br />
-            <div v-if="item.importable">
+            <div class="mb-3">
+                <b-form-checkbox v-model="item.importable" switch class="make-accessible" @change="onImportable">
+                    Make {{ modelClass }} accessible
+                </b-form-checkbox>
+                <b-form-checkbox
+                    v-if="item.importable"
+                    v-model="item.published"
+                    class="make-publishable"
+                    switch
+                    @change="onPublish">
+                    Make {{ modelClass }} publicly available in
+                    <a :href="published_url" target="_top">Published {{ pluralName }}</a>
+                </b-form-checkbox>
+            </div>
+
+            <div v-if="item.importable" class="mb-4">
                 <div>This {{ modelClass }} is currently {{ itemStatus }}.</div>
                 <p>Anyone can view and import this {{ modelClass }} by visiting the following URL:</p>
                 <blockquote>
-                    <b-button v-b-tooltip.hover title="Edit URL" variant="link" size="sm" @click="onEdit">
-                        <FontAwesomeIcon icon="edit" />
-                    </b-button>
-                    <b-button id="tooltip-clipboard" variant="link" size="sm" @click="onCopy" @mouseout="onCopyOut">
-                        <FontAwesomeIcon :icon="['far', 'copy']" />
-                    </b-button>
-                    <b-tooltip target="tooltip-clipboard" triggers="hover">
-                        {{ tooltipClipboard }}
-                    </b-tooltip>
                     <a v-if="showUrl" id="item-url" :href="itemUrl" target="_top" class="ml-2">
                         url:
                         {{ itemUrl }}
@@ -51,13 +41,34 @@
                         slug:
                         {{ itemUrlParts[0] }}<SlugInput class="ml-1" :slug="itemUrlParts[1]" @onChange="onChange" />
                     </span>
+                    <b-button
+                        id="tooltip-clipboard"
+                        v-b-tooltip.hover
+                        variant="link"
+                        size="md"
+                        class="inline-icon-button"
+                        :title="tooltipClipboard"
+                        @click="onCopy"
+                        @mouseout="onCopyOut"
+                        @blur="onCopyOut">
+                        <FontAwesomeIcon :icon="['far', 'copy']" fixed-width />
+                    </b-button>
+                    <b-button
+                        v-b-tooltip.hover
+                        class="inline-icon-button"
+                        title="Edit URL"
+                        variant="link"
+                        size="md"
+                        @click="onEdit">
+                        <FontAwesomeIcon icon="edit" fixed-width />
+                    </b-button>
                 </blockquote>
             </div>
-            <div v-else>
+            <div v-else class="mb-4">
                 Access to this {{ modelClass }} is currently restricted so that only you and the users listed below can
                 access it. Note that sharing a History will also allow access to all of its datasets.
             </div>
-            <br />
+
             <b-card no-body>
                 <b-button
                     v-b-toggle.accordion-1
@@ -268,13 +279,15 @@ import { getAppRoot } from "onload/loadConfig";
 import { mapState } from "pinia";
 import { copy } from "utils/clipboard";
 import { errorMessageAsString } from "utils/simple-error";
-import Vue from "vue";
+import Vue, { ref } from "vue";
 import Multiselect from "vue-multiselect";
 
 import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
 
-import ErrorMessage from "./ErrorMessage";
+import ErrorMessages from "./ErrorMessages";
+
+import Heading from "../Common/Heading.vue";
 
 Vue.use(BootstrapVue);
 library.add(faCopy, faEdit, faUserPlus, faUserSlash, faCaretDown, faCaretUp);
@@ -287,10 +300,11 @@ const defaultExtra = () => {
 };
 export default {
     components: {
-        ErrorMessage,
+        ErrorMessages,
         FontAwesomeIcon,
         SlugInput,
         Multiselect,
+        Heading,
     },
     props: {
         id: {
@@ -308,7 +322,14 @@ export default {
     },
     setup() {
         const { config, isConfigLoaded } = useConfig(true);
-        return { config, isConfigLoaded };
+
+        const errors = ref([]);
+
+        function onErrorDismissed(index) {
+            errors.value.splice(index, 1);
+        }
+
+        return { config, isConfigLoaded, onErrorDismissed, errors };
     },
     data() {
         const Galaxy = getGalaxyInstance();
@@ -321,7 +342,6 @@ export default {
             threeCharactersEntered: true,
             hasUsername: Galaxy.user.get("username"),
             newUsername: "",
-            errors: [],
             multiselectValues: {
                 sharingCandidates: [],
                 userOptions: [],
