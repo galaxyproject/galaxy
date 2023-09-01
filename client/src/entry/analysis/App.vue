@@ -56,7 +56,8 @@ import Modal from "mvc/ui/ui-modal";
 import { getAppRoot } from "onload";
 import { storeToRefs } from "pinia";
 import { withPrefix } from "utils/redirect";
-import { ref } from "vue";
+import { computed, ref, watch } from "vue";
+import { useRoute } from "vue-router/composables";
 
 import { useHistoryStore } from "@/stores/historyStore";
 import { useNotificationsStore } from "@/stores/notificationsStore";
@@ -83,8 +84,6 @@ export default {
         const { currentTheme } = storeToRefs(userStore);
         const { currentHistory } = storeToRefs(useHistoryStore());
 
-        userStore.loadUser();
-
         const toastRef = ref(null);
         setToastComponentRef(toastRef);
 
@@ -94,7 +93,33 @@ export default {
         const uploadModal = ref(null);
         setGlobalUploadModal(uploadModal);
 
-        return { toastRef, confirmDialogRef, uploadModal, currentTheme, currentHistory };
+        const route = useRoute();
+        const embedded = computed(() => "embed" in route.query && route.query.embed === "true");
+        const showBroadcasts = computed(() => !embedded.value);
+        const showAlerts = computed(() => !embedded.value);
+
+        watch(
+            () => embedded.value,
+            () => {
+                if (embedded.value) {
+                    userStore.$reset();
+                } else {
+                    userStore.loadUser();
+                }
+            },
+            { immediate: true }
+        );
+
+        return {
+            toastRef,
+            confirmDialogRef,
+            uploadModal,
+            currentTheme,
+            currentHistory,
+            embedded,
+            showBroadcasts,
+            showAlerts,
+        };
     },
     data() {
         return {
@@ -109,6 +134,10 @@ export default {
             return fetchMenu(this.config);
         },
         showMasthead() {
+            if (this.embedded) {
+                return false;
+            }
+
             const masthead = this.$route.query.hide_masthead;
             if (masthead !== undefined) {
                 return masthead.toLowerCase() != "true";
@@ -116,6 +145,10 @@ export default {
             return true;
         },
         theme() {
+            if (this.embedded) {
+                return null;
+            }
+
             const themeKeys = Object.keys(this.config.themes);
             if (themeKeys.length > 0) {
                 const foundTheme = themeKeys.includes(this.currentTheme);

@@ -37,6 +37,12 @@ export const useUserStore = defineStore("userStore", () => {
 
     let loadPromise: Promise<void> | null = null;
 
+    function $reset() {
+        currentUser.value = null;
+        currentPreferences.value = null;
+        loadPromise = null;
+    }
+
     const isAnonymous = computed(() => {
         return !("email" in (currentUser.value || []));
     });
@@ -117,6 +123,7 @@ export const useUserStore = defineStore("userStore", () => {
     function toggleActivityBar() {
         showActivityBar.value = !showActivityBar.value;
     }
+
     function toggleSideBar(currentOpen = "") {
         toggledSideBar.value = toggledSideBar.value === currentOpen ? "" : currentOpen;
     }
@@ -136,5 +143,6 @@ export const useUserStore = defineStore("userStore", () => {
         removeFavoriteTool,
         toggleActivityBar,
         toggleSideBar,
+        $reset,
     };
 });
