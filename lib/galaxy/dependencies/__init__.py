@@ -10,8 +10,8 @@ from os.path import (
     join,
 )
 
-import pkg_resources
 import yaml
+from dparse import parse
 
 from galaxy.util import (
     asbool,
@@ -173,8 +173,10 @@ class ConditionalDependencies:
 
     def get_conditional_requirements(self):
         crfile = join(dirname(__file__), "conditional-requirements.txt")
-        for req in pkg_resources.parse_requirements(open(crfile).readlines()):
-            self.conditional_reqs.append(req)
+        with open(crfile) as fh:
+            dependency_file = parse(fh.read(), file_type="requirements.txt")
+            for dep in dependency_file.dependencies:
+                self.conditional_reqs.append(dep)
 
     def check(self, name):
         try:
@@ -307,7 +309,7 @@ def optional(config_file=None):
         return []
     rval = []
     conditional = ConditionalDependencies(config_file)
-    for opt in conditional.conditional_reqs:
-        if conditional.check(opt.key):
-            rval.append(str(opt))
+    for dependency in conditional.conditional_reqs:
+        if conditional.check(dependency.name):
+            rval.append(dependency.line)
     return rval
