@@ -13,7 +13,7 @@
                 :window-tab="windowTab"
                 @open-url="openUrl" />
             <Alert
-                v-if="config.message_box_visible && config.message_box_content"
+                v-if="showAlerts && config.message_box_visible && config.message_box_content"
                 id="messagebox"
                 class="rounded-0 m-0 p-2"
                 :variant="config.message_box_class || 'info'">
@@ -22,7 +22,7 @@
                 <span v-html="config.message_box_content"></span>
             </Alert>
             <Alert
-                v-if="config.show_inactivity_warning && config.inactivity_box_content"
+                v-if="showAlerts && config.show_inactivity_warning && config.inactivity_box_content"
                 id="inactivebox"
                 class="rounded-0 m-0 p-2"
                 variant="warning">
@@ -38,7 +38,7 @@
         <Toast ref="toastRef" />
         <ConfirmDialog ref="confirmDialogRef" />
         <UploadModal ref="uploadModal" />
-        <BroadcastsOverlay />
+        <BroadcastsOverlay v-if="showBroadcasts" />
         <DragGhost />
     </div>
 </template>
@@ -57,8 +57,8 @@ import { getAppRoot } from "onload";
 import { storeToRefs } from "pinia";
 import { withPrefix } from "utils/redirect";
 import { computed, ref, watch } from "vue";
-import { useRoute } from "vue-router/composables";
 
+import { useRouteQueryBool } from "@/composables/route";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 import { useUserStore } from "@/stores/userStore";
@@ -93,8 +93,7 @@ export default {
         const uploadModal = ref(null);
         setGlobalUploadModal(uploadModal);
 
-        const route = useRoute();
-        const embedded = computed(() => "embed" in route.query && route.query.embed === "true");
+        const embedded = useRouteQueryBool("embed");
         const showBroadcasts = computed(() => !embedded.value);
         const showAlerts = computed(() => !embedded.value);
 

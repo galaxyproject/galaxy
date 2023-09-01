@@ -7,6 +7,7 @@ import { computed, ref, watch } from "vue";
 
 import { fromSimple } from "@/components/Workflow/Editor/modules/model";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
+import { useRouteQueryBool } from "@/composables/route";
 import { usePanels } from "@/composables/usePanels";
 import { provideScopedWorkflowStores } from "@/composables/workflowStores";
 import { useUserStore } from "@/stores/userStore";
@@ -102,12 +103,19 @@ function logInTitle(title: string) {
         return title;
     }
 }
+
+const embedded = useRouteQueryBool("embed");
+const showButtons = useRouteQueryBool("buttons", true);
+const showAbout = useRouteQueryBool("about", true);
+const showHeading = useRouteQueryBool("heading", true);
+
+const viewUrl = computed(() => withPrefix(`/published/workflow?id=${props.id}`));
 </script>
 
 <template>
     <div id="columns" class="d-flex">
-        <ActivityBar v-if="showActivityBar" />
-        <FlexPanel v-if="showToolbox" side="left">
+        <ActivityBar v-if="!embedded && showActivityBar" />
+        <FlexPanel v-if="!embedded && showToolbox" side="left">
             <ToolPanel />
         </FlexPanel>
 
@@ -128,21 +136,27 @@ function logInTitle(title: string) {
             </div>
             <div v-else-if="workflowInfo" class="published-workflow">
                 <div class="workflow-preview d-flex flex-column">
-                    <span class="d-flex w-100 flex-gapx-1 flex-wrap justify-content-center align-items-center mb-2">
-                        <Heading h1 separator inline size="xl" class="flex-grow-1 mb-0">Workflow Preview</Heading>
+                    <span
+                        v-if="showHeading || showButtons"
+                        class="d-flex w-100 flex-gapx-1 flex-wrap justify-content-end align-items-center mb-2">
+                        <Heading v-if="showHeading" h1 separator inline size="xl" class="flex-grow-1 mb-0">
+                            <span v-if="showAbout"> Workflow Preview </span>
+                            <span v-else> {{ workflowInfo.name }} </span>
+                        </Heading>
 
-                        <span>
+                        <span v-if="showButtons">
                             <b-button :to="downloadUrl" title="Download Workflow" variant="secondary" size="md">
                                 <FontAwesomeIcon icon="fa-download" />
                                 Download
                             </b-button>
 
                             <b-button
+                                v-if="!embedded"
                                 :href="importUrl"
                                 :disabled="userStore.isAnonymous"
                                 :title="logInTitle('Import Workflow')"
                                 data-description="workflow import"
-                                target="blank"
+                                target="_blank"
                                 variant="secondary"
                                 size="md">
                                 <FontAwesomeIcon icon="fa-edit" />
@@ -150,6 +164,7 @@ function logInTitle(title: string) {
                             </b-button>
 
                             <b-button
+                                v-if="!embedded"
                                 :to="runUrl"
                                 :disabled="userStore.isAnonymous"
                                 :title="logInTitle('Run Workflow')"
@@ -157,6 +172,17 @@ function logInTitle(title: string) {
                                 size="md">
                                 <FontAwesomeIcon icon="fa-play" />
                                 Run
+                            </b-button>
+
+                            <b-button
+                                v-if="embedded"
+                                :href="viewUrl"
+                                target="blank"
+                                variant="primary"
+                                size="md"
+                                class="view-button font-weight-bold">
+                                <FontAwesomeIcon :icon="['gxd', 'galaxyLogo']" />
+                                View In Galaxy
                             </b-button>
                         </span>
                     </span>
@@ -170,13 +196,18 @@ function logInTitle(title: string) {
                     </b-card>
                 </div>
 
-                <WorkflowInformation v-if="workflowInfo" :workflow-info="workflowInfo" />
+                <WorkflowInformation
+                    v-if="showAbout && workflowInfo"
+                    :workflow-info="workflowInfo"
+                    :embedded="embedded" />
             </div>
         </div>
     </div>
 </template>
 
 <style scoped lang="scss">
+@import "theme/blue.scss";
+
 .published-workflow {
     display: flex;
     flex-grow: 1;
@@ -209,5 +240,10 @@ function logInTitle(title: string) {
             height: unset;
         }
     }
+}
+
+.view-button {
+    --fa-secondary-color: #{$brand-toggle};
+    --fa-secondary-opacity: 1;
 }
 </style>
