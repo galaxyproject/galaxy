@@ -167,6 +167,8 @@ describe("FormData", () => {
         const message = wrapper.findAll("[data-description='form data label']");
         expect(message.length).toBe(1);
         expect(message.at(0).text()).toBe("1. dceName1 (as dataset)");
+        const messageBatch = wrapper.find("[data-description='form data batch label']");
+        expect(messageBatch.exists()).toBeFalsy();
         expect(wrapper.find(".btn-group").exists()).toBeFalsy();
         const closeButton = wrapper.find(".alert .close");
         await closeButton.trigger("click");
@@ -185,6 +187,8 @@ describe("FormData", () => {
         });
         const value_0 = { batch: true, product: false, values: [{ id: "dce2", subcollection_type: null, src: "dce" }] };
         expect(wrapper.emitted().input[0][0]).toEqual(value_0);
+        const messageBatch = wrapper.find("[data-description='form data batch label']");
+        expect(messageBatch.text()).toBe("This data input will be submitted in batch mode.");
     });
 
     it("dataset collection element as hdca mapped to batch field", async () => {

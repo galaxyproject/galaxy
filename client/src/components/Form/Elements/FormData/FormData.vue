@@ -176,6 +176,25 @@ const isLDDA = computed(() => {
 });
 
 /**
+ * Determines if matched values are to be submitted in batch mode
+ */
+const matchedBatchMode = computed(() => {
+    const values = matchedValues.value;
+    if (variant.value && values.length > 0 && values[0]) {
+        const hasSubcollectionType = values.find((v) => !!v.subcollection_type);
+        const isMultiple = values.length > 1;
+        const sourceType = getSourceType(values[0]);
+        const variantDetails = variant.value.find(
+            (v) => (!isMultiple || v.multiple === isMultiple) && v.src === sourceType
+        );
+        if (variantDetails) {
+            return variantDetails.batch !== BATCH.DISABLED || !!hasSubcollectionType;
+        }
+    }
+    return false;
+});
+
+/**
  * Matches an array of values to available options
  */
 const matchedValues = computed(() => {
@@ -459,6 +478,10 @@ watch(
         @drop.prevent="onDrop">
         <b-alert v-if="isDCE || isLDDA" variant="info" dismissible show @dismissed="$emit('input', null)">
             <span v-localize class="font-weight-bold">Using the following datasets (dismiss to reset):</span>
+            <div v-if="matchedBatchMode" data-description="form data batch label">
+                <FontAwesomeIcon icon="fa-exclamation" />
+                <span v-localize class="ml-1"> This data input will be submitted in batch mode. </span>
+            </div>
             <div v-for="(v, vIndex) of matchedValues" :key="vIndex">
                 <div class="ml-2" data-description="form data label">
                     <span>{{ vIndex + 1 }}.</span>
