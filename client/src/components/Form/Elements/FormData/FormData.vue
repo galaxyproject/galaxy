@@ -90,7 +90,7 @@ const currentValue = computed({
     },
     set: (val) => {
         eventBus.$emit("waiting", true);
-        setValue(val);
+        $emit("input", createValue(val));
     },
 });
 
@@ -174,6 +174,26 @@ const isLDDA = computed(() => {
         return false;
     }
 });
+
+/**
+ * Matches an array of values to available options
+ */
+const matchedValues = computed(() => {
+    const values: Array<DataOption> = [];
+    if (props.value && props.value.values.length > 0) {
+        props.value.values.forEach((entry) => {
+            if ("src" in entry && entry.src) {
+                const options = props.options[entry.src] || [];
+                const option = options.find((v) => v.id === entry.id && v.src === entry.src);
+                if (option) {
+                    values.push({ ...option, name: option.name || entry.id });
+                }
+            }
+        });
+    }
+    return values;
+});
+
 /**
  * Provides placeholder label for select field
  */
@@ -196,6 +216,108 @@ function clearHighlighting(timeout = 1000) {
     setTimeout(() => {
         currentHighlighting.value = null;
     }, timeout);
+}
+
+/**
+ * Create final input element value
+ */
+function createValue(val: Array<DataOption> | DataOption | null) {
+    if (val) {
+        const values = Array.isArray(val) ? val : [val];
+        if (variant.value && values.length > 0 && values[0]) {
+            const hasSubcollectionType = values.find((v) => !!v.subcollection_type);
+            const isMultiple = values.length > 1;
+
+            // Determine source representation (uses only the initial value)
+            const sourceType = getSourceType(values[0]);
+
+            // Identify matching variant
+            const variantIndex = variant.value.findIndex(
+                (v) => (!isMultiple || v.multiple === isMultiple) && v.src === sourceType
+            );
+
+            // Determine batch mode
+            let batch: string = BATCH.DISABLED;
+            if (variantIndex >= 0) {
+                const variantDetails = variant.value[variantIndex];
+                if (variantDetails) {
+                    if ((isLDDA.value || isDCE.value) && variantDetails.batch) {
+                        batch = variantDetails.batch;
+                    } else {
+                        // Switch to another field type if source differs from current field
+                        if (currentVariant.value && currentVariant.value.src !== sourceType) {
+                            currentField.value = variantIndex;
+                        }
+                        batch = (currentVariant.value && currentVariant.value.batch) || BATCH.DISABLED;
+                    }
+                }
+            }
+
+            // Emit new value
+            return {
+                batch: batch !== BATCH.DISABLED || !!hasSubcollectionType,
+                product: batch === BATCH.ENABLED && !currentLinked.value,
+                values: values.map((entry) => ({
+                    id: entry.id,
+                    src: entry.src,
+                    subcollection_type: entry.subcollection_type || null,
+                })),
+            };
+        }
+    } else {
+        return null;
+    }
+}
+
+/**
+ * Return user-friendly data source label
+ */
+function getSourceLabel(src: string | null) {
+    return src === SOURCE.DATASET ? "dataset" : "dataset collection";
+}
+
+/**
+ * Determine source type of a given value
+ */
+function getSourceType(val: DataOption) {
+    if (isDCE.value) {
+        return val.is_dataset ? SOURCE.DATASET : SOURCE.COLLECTION;
+    } else if (isLDDA.value) {
+        return SOURCE.DATASET;
+    } else {
+        return val.src;
+    }
+}
+
+/**
+ * Parse incoming value for select field
+ */
+function getValue() {
+    const value: Array<DataOption> = [];
+    if (props.value) {
+        for (const v of props.value.values) {
+            const foundEntry = formattedOptions.value.find(
+                (entry) => entry.value && entry.value.id === v.id && entry.value.src === v.src
+            );
+            if (foundEntry && foundEntry.value) {
+                value.push(foundEntry.value);
+                if (!currentVariant.value?.multiple) {
+                    break;
+                }
+            }
+        }
+        if (value.length > 0) {
+            return value;
+        }
+    }
+    if (!props.optional && formattedOptions.value.length > 0) {
+        const firstEntry = formattedOptions.value && formattedOptions.value[0];
+        if (firstEntry && firstEntry.value) {
+            value.push(firstEntry.value);
+            return value;
+        }
+    }
+    return null;
 }
 
 /** Add values from drag/drop or data dialog sources */
@@ -252,23 +374,6 @@ function handleIncoming(incoming: Record<string, unknown>, partial = true) {
 }
 
 /**
- * Matches an array of values to available options
- */
-function matchValues(entries: Array<DataOption>) {
-    const values: Array<DataOption> = [];
-    entries.forEach((entry) => {
-        if ("src" in entry && entry.src) {
-            const options = props.options[entry.src] || [];
-            const option = options.find((v) => v.id === entry.id && v.src === entry.src);
-            if (option) {
-                values.push({ ...option, name: option.name || entry.id });
-            }
-        }
-    });
-    return values;
-}
-
-/**
  * Open file dialog
  */
 function onBrowse() {
@@ -321,116 +426,14 @@ function onDrop() {
     }
 }
 
-/**
- * Return user-friendly data source label
- */
-function getSourceLabel(src: string | null) {
-    return src === SOURCE.DATASET ? "dataset" : "dataset collection";
-}
-
-/**
- * Determine source type of a given value
- */
-function getSourceType(val: DataOption) {
-    if (isDCE.value) {
-        return val.is_dataset ? SOURCE.DATASET : SOURCE.COLLECTION;
-    } else if (isLDDA.value) {
-        return SOURCE.DATASET;
-    } else {
-        return val.src;
-    }
-}
-
-/**
- * Parse incoming value for select field
- */
-function getValue() {
-    const value: Array<DataOption> = [];
-    if (props.value) {
-        for (const v of props.value.values) {
-            const foundEntry = formattedOptions.value.find(
-                (entry) => entry.value && entry.value.id === v.id && entry.value.src === v.src
-            );
-            if (foundEntry && foundEntry.value) {
-                value.push(foundEntry.value);
-                if (!currentVariant.value?.multiple) {
-                    break;
-                }
-            }
-        }
-        if (value.length > 0) {
-            return value;
-        }
-    }
-    if (!props.optional && formattedOptions.value.length > 0) {
-        const firstEntry = formattedOptions.value && formattedOptions.value[0];
-        if (firstEntry && firstEntry.value) {
-            value.push(firstEntry.value);
-            return value;
-        }
-    }
-    return null;
-}
-
-/**
- * Process and emit value for select field
- */
-function setValue(val: Array<DataOption> | DataOption | null) {
-    if (val) {
-        const values = Array.isArray(val) ? val : [val];
-        if (variant.value && values.length > 0 && values[0]) {
-            const hasSubcollectionType = values.find((v) => !!v.subcollection_type);
-            const isMultiple = values.length > 1;
-
-            // Determine source representation (uses only the initial value)
-            const sourceType = getSourceType(values[0]);
-
-            // Identify matching variant
-            const variantIndex = variant.value.findIndex(
-                (v) => (!isMultiple || v.multiple === isMultiple) && v.src === sourceType
-            );
-
-            // Determine batch mode
-            let batch: string = BATCH.DISABLED;
-            if (variantIndex >= 0) {
-                const variantDetails = variant.value[variantIndex];
-                if (variantDetails) {
-                    if ((isLDDA.value || isDCE.value) && variantDetails.batch) {
-                        batch = variantDetails.batch;
-                    } else {
-                        // Switch to another field type if source differs from current field
-                        if (currentVariant.value && currentVariant.value.src !== sourceType) {
-                            currentField.value = variantIndex;
-                        }
-                        batch = (currentVariant.value && currentVariant.value.batch) || BATCH.DISABLED;
-                    }
-                }
-            }
-
-            // Emit new value
-            $emit("input", {
-                batch: batch !== BATCH.DISABLED || !!hasSubcollectionType,
-                product: batch === BATCH.ENABLED && !currentLinked.value,
-                values: values.map((entry) => ({
-                    id: entry.id,
-                    src: entry.src,
-                    subcollection_type: entry.subcollection_type || null,
-                })),
-            });
-        }
-    } else {
-        $emit("input", null);
-    }
-}
-
 onMounted(() => {
     eventBus.$on("waiting", (value: boolean) => {
         waiting.value = value;
     });
     if (props.value && props.value.values) {
-        setValue(matchValues(props.value.values));
+        $emit("input", createValue(matchedValues.value));
     } else {
-        setValue(currentValue.value);
+        $emit("input", createValue(currentValue.value));
     }
 });
 
@@ -441,7 +444,7 @@ watch(
     () => [props.options, currentLinked.value, currentVariant.value],
     () => {
         if (!isLDDA.value && !isDCE.value) {
-            setValue(currentValue.value);
+            $emit("input", createValue(currentValue.value));
         }
     }
 );
@@ -456,12 +459,12 @@ watch(
         @drop.prevent="onDrop">
         <b-alert v-if="isDCE || isLDDA" variant="info" dismissible show @dismissed="$emit('input', null)">
             <span v-localize class="font-weight-bold">Using the following datasets (dismiss to reset):</span>
-            <div v-for="(v, vIndex) of matchValues(props.value.values)" :key="vIndex">
-                <span class="ml-2" data-description="form data label">
+            <div v-for="(v, vIndex) of matchedValues" :key="vIndex">
+                <div class="ml-2" data-description="form data label">
                     <span>{{ vIndex + 1 }}.</span>
                     <span>{{ v.name }}</span>
                     <span>(as {{ getSourceLabel(getSourceType(v)) }})</span>
-                </span>
+                </div>
                 <small v-if="v.subcollection_type" class="ml-2" data-description="form data collection type">
                     Batch mode input with collection type: {{ v.subcollection_type }}.
                 </small>

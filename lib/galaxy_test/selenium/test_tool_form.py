@@ -242,8 +242,8 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
         self.sleep_for(self.wait_types.UX_RENDER)
         self.hda_click_primary_action_button(1, "rerun")
         self.sleep_for(self.wait_types.UX_RENDER)
-        entry_label = self.components.tool_form.parameter_data_entry_label(parameter="input1").wait_for_visible()
-        assert entry_label.text == "1. test0 (as dataset collection)"
+        data_label = self.components.tool_form.parameter_data_label(parameter="input1").wait_for_visible()
+        assert data_label.text == "1. test0 (as dataset collection)"
         self.tool_form_execute()
         self.components.history_panel.collection_view.back_to_history.wait_for_and_click()
         self.history_panel_wait_for_hid_ok(9)
