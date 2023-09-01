@@ -19,10 +19,8 @@ const helpText = computed({
             <!-- <div v-for="item in helpText" :key="item.id" class="helpModeText">
                 <a class="helpModeText-link" :href="item.href">{{ item }}</a>
             </div> -->
-            HELP TEXT DISPLAYED HERE <br>
+            HELP TEXT DISPLAYED HERE <br />
             {{ helpText }}
         </div>
     </div>
 </template>
-
-
