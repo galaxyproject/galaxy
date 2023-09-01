@@ -3,9 +3,11 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BCol, BNav, BNavItem, BOverlay } from "bootstrap-vue";
-import { computed, ref, watch } from "vue";
+import { computed, type Ref, ref, watch } from "vue";
 
 import { loadWorkflows } from "@/components/Workflow/workflows.services";
+import { useAnimationFrameResizeObserver } from "@/composables/sensors/animationFrameResizeObserver";
+import { useAnimationFrameScroll } from "@/composables/sensors/animationFrameScroll";
 import { Toast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
 import { contains, equals, expandNameTag, toBool } from "@/utils/filtering";
@@ -74,9 +76,16 @@ const offset = ref(0);
 const loading = ref(true);
 const overlay = ref(false);
 const showDeleted = ref(false);
+const isScrollable = ref(false);
 const listHeader = ref<any>(null);
 const workflows = ref<WorkflowsList>([]);
 const advancedFiltering = ref<any>(null);
+const scrollContainer: Ref<HTMLElement | null> = ref(null);
+
+const { arrived } = useAnimationFrameScroll(scrollContainer);
+useAnimationFrameResizeObserver(scrollContainer, ({ clientSize, scrollSize }) => {
+    isScrollable.value = scrollSize.height >= clientSize.height + 1;
+});
 
 const searchPlaceHolder = computed(() => {
     let placeHolder = "Search my workflows";
@@ -94,6 +103,7 @@ const searchPlaceHolder = computed(() => {
 
 const filters = computed(() => advancedFiltering.value.filters);
 const published = computed(() => props.activeList === "published");
+const scrolledTop = computed(() => !isScrollable.value || arrived.top);
 const sharedWithMe = computed(() => props.activeList === "shared_with_me");
 const view = computed(() => (userStore.preferredListViewMode as ListView) || "grid");
 const sortDesc = computed(() => (listHeader.value && listHeader.value.sortDesc) || true);
@@ -157,8 +167,8 @@ watch([filterText, sortBy, sortDesc, showDeleted], () => {
 </script>
 
 <template>
-    <div id="workflows-list" class="workflows-list">
-        <div id="workflows-list-header" class="mb-2">
+    <div id="workflows-list" ref="scrollContainer" class="workflows-list">
+        <div id="workflows-list-header" class="workflows-list-header mb-2" :class="{ 'scrolled-top': scrolledTop }">
             <div class="d-flex">
                 <Heading h1 separator inline size="xl" class="flex-grow-1 mb-2">Workflows</Heading>
 
@@ -236,6 +246,38 @@ watch([filterText, sortBy, sortDesc, showDeleted], () => {
 .workflows-list {
     container-type: inline-size;
     overflow: auto;
+
+    .workflows-list-header {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        background-color: white;
+
+        &:after {
+            position: absolute;
+            content: "";
+            opacity: 0;
+            z-index: 10;
+            width: 100%;
+            height: 20px;
+            bottom: -25px;
+            pointer-events: none;
+            border-radius: 0.5rem;
+            transition: opacity 0.4s;
+            background-repeat: no-repeat;
+        }
+
+        &:after {
+            right: 0;
+            background-image: linear-gradient(to bottom, rgba(3, 0, 48, 0.1), rgba(3, 0, 48, 0.02), rgba(3, 0, 48, 0));
+        }
+
+        &:not(.scrolled-top) {
+            &:after {
+                opacity: 1;
+            }
+        }
+    }
 
     .grid-view {
         width: calc(100% / 3);
