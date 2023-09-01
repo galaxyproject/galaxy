@@ -512,8 +512,15 @@ class WorkflowModule:
         collections_to_match = self._find_collections_to_match(progress, step, all_inputs)
         # Have implicit collections...
         collection_info = self.trans.app.dataset_collection_manager.match_collections(collections_to_match)
-        if collection_info and progress.subworkflow_collection_info:
-            collection_info.when_values = progress.subworkflow_collection_info.when_values
+        if collection_info:
+            if progress.subworkflow_collection_info:
+                # We've mapped over a subworkflow. Slices of the invocation might be conditional
+                # and progress.subworkflow_collection_info.when_values holds the appropriate when_values
+                collection_info.when_values = progress.subworkflow_collection_info.when_values
+            else:
+                # The invocation is not mapped over, but it might still be conditional.
+                # Multiplication and linking should be handled by slice_collection()
+                collection_info.when_values = progress.when_values
         return collection_info or progress.subworkflow_collection_info
 
     def _find_collections_to_match(self, progress, step, all_inputs):
@@ -2295,6 +2302,13 @@ class ToolModule(WorkflowModule):
             self._handle_mapped_over_post_job_actions(
                 step, step_inputs, step_outputs, progress.effective_replacement_dict()
             )
+            if progress.when_values == [False] and not progress.subworkflow_collection_info:
+                # Step skipped entirely. We hide the output to avoid confusion.
+                # Could be revisited if we have a nice visual way to say these are skipped ?
+                for output in step_outputs.values():
+                    if isinstance(output, (model.HistoryDatasetAssociation, model.HistoryDatasetCollectionAssociation)):
+                        output.visible = False
+
         if execution_tracker.execution_errors:
             # TODO: formalize into InvocationFailure ?
             message = f"Failed to create {len(execution_tracker.execution_errors)} job(s) for workflow step {step.order_index + 1}: {str(execution_tracker.execution_errors[0])}"
