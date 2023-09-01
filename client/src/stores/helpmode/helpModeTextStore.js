@@ -3,7 +3,7 @@ import { defineStore } from "pinia";
 export const useHelpModeTextStore = defineStore("helpModeTextStore", {
     state: () => {
         return {
-            helpmodetext: [],
+            helpmodetext: "I'm a help mode item",
         };
     },
 
