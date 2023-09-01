@@ -195,18 +195,18 @@ class TestWorkflowManagement(SeleniumTestCase, TestsGalaxyPagers, UsesWorkflowAs
         self.workflow_index_add_advanced_tag_filter(["mytag"])
         self._assert_showing_n_workflows(1)
         curr_value = self.workflow_index_get_current_filter()
-        assert curr_value == f"name:searchforthis tag:mytag", curr_value
+        assert curr_value == "name:searchforthis tag:mytag", curr_value
 
         # clear filter
         self.components.workflows.clear_filter.wait_for_and_click()
         curr_value = self.workflow_index_get_current_filter()
-        assert curr_value == f"", curr_value
+        assert curr_value == "", curr_value
 
         self.components.workflows.advanced_search_toggle.wait_for_and_click()
         # search by 2 tags, one of which is not present
         self.workflow_index_add_advanced_tag_filter(["mytag", "DNEtag"])
         curr_value = self.workflow_index_get_current_filter()
-        assert curr_value == f"tag:mytag tag:DNEtag", curr_value
+        assert curr_value == "tag:mytag tag:DNEtag", curr_value
         self._assert_showing_n_workflows(0)
 
     @selenium_test
