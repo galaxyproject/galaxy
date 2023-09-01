@@ -13,16 +13,18 @@ import {
 
 type QuotaUsageResponse = components["schemas"]["UserQuotaUsage"];
 
-interface User extends QuotaUsageResponse {
+export interface User extends QuotaUsageResponse {
     id: string;
     email: string;
     tags_used: string[];
     isAnonymous: false;
 }
 
-interface AnonymousUser {
+export interface AnonymousUser {
     isAnonymous: true;
 }
+
+export type GenericUser = User | AnonymousUser;
 
 interface Preferences {
     theme: string;
@@ -30,10 +32,12 @@ interface Preferences {
 }
 
 export const useUserStore = defineStore("userStore", () => {
-    const toggledSideBar = useUserLocalStorage("user-store-toggled-side-bar", "tools");
-    const showActivityBar = useUserLocalStorage("user-store-show-activity-bar", false);
     const currentUser = ref<User | AnonymousUser | null>(null);
     const currentPreferences = ref<Preferences | null>(null);
+
+    // explicitly pass current User, because userStore might not exist yet
+    const toggledSideBar = useUserLocalStorage("user-store-toggled-side-bar", "tools", currentUser);
+    const showActivityBar = useUserLocalStorage("user-store-show-activity-bar", false, currentUser);
 
     let loadPromise: Promise<void> | null = null;
 
