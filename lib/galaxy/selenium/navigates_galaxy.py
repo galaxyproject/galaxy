@@ -17,6 +17,7 @@ from typing import (
     Any,
     cast,
     Dict,
+    List,
     NamedTuple,
     Optional,
     Union,
@@ -1380,7 +1381,13 @@ class NavigatesGalaxy(HasDriver):
         return columns[column_index].text
 
     def workflow_index_click_search(self):
-        return self.wait_for_and_click_selector('[data-description="filter text input"]')
+        return self.wait_for_and_click_selector(
+            '.workflows-list input.search-query[data-description="filter text input"]'
+        )
+
+    def workflow_index_get_current_filter(self):
+        filter_element = self.components.workflows.search_box.wait_for_and_click()
+        return filter_element.get_attribute("value")
 
     def workflow_index_search_for(self, search_term=None):
         return self._inline_search_for(
@@ -1388,6 +1395,14 @@ class NavigatesGalaxy(HasDriver):
             search_term,
             escape_to_clear=True,
         )
+
+    def workflow_index_add_advanced_tag_filter(self, tags: List[str]):
+        for tag in tags:
+            tag_display = self.components.workflows.advanced_search_tag_input
+            if tag_display.is_absent:
+                self.components.workflows.advanced_search_toggle.wait_for_and_click()
+            tag_display.wait_for_and_click()
+            self.tagging_add([tag])
 
     def workflow_index_click_import(self):
         return self.components.workflows.import_button.wait_for_and_click()

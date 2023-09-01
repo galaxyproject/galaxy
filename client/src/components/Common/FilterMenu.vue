@@ -322,7 +322,7 @@ watch(
                     <!-- is a MultiTags filter -->
                     <span v-else-if="validFilters[filter]?.type == 'MultiTags'">
                         <small>Filter by {{ validFilters[filter]?.placeholder }}:</small>
-                        <b-input-group>
+                        <b-input-group :id="`${identifier}-advanced-filter-${filter}`">
                             <StatelessTags
                                 :value="multiTagFilters[filter]?.value"
                                 :placeholder="`any ${validFilters[filter]?.placeholder}`"

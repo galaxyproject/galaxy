@@ -182,6 +182,34 @@ class TestWorkflowManagement(SeleniumTestCase, TestsGalaxyPagers, UsesWorkflowAs
         self.screenshot("workflow_manage_search_name_alias")
 
     @selenium_test
+    def test_index_advanced_search(self):
+        self.workflow_index_open()
+        self._workflow_import_from_url()
+        self.workflow_index_rename("searchforthis")
+        self._assert_showing_n_workflows(1)
+
+        self.workflow_index_add_tag("mytag")
+        self.components.workflows.advanced_search_toggle.wait_for_and_click()
+        # search by tag and name
+        self.components.workflows.advanced_search_name_input.wait_for_and_send_keys("searchforthis")
+        self.workflow_index_add_advanced_tag_filter(["mytag"])
+        self._assert_showing_n_workflows(1)
+        curr_value = self.workflow_index_get_current_filter()
+        assert curr_value == f"name:searchforthis tag:mytag", curr_value
+
+        # clear filter
+        self.components.workflows.clear_filter.wait_for_and_click()
+        curr_value = self.workflow_index_get_current_filter()
+        assert curr_value == f"", curr_value
+
+        self.components.workflows.advanced_search_toggle.wait_for_and_click()
+        # search by 2 tags, one of which is not present
+        self.workflow_index_add_advanced_tag_filter(["mytag", "DNEtag"])
+        curr_value = self.workflow_index_get_current_filter()
+        assert curr_value == f"tag:mytag tag:DNEtag", curr_value
+        self._assert_showing_n_workflows(0)
+
+    @selenium_test
     def test_workflow_delete(self):
         self.workflow_index_open()
         self._workflow_import_from_url()
