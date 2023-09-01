@@ -182,13 +182,16 @@ const matchedBatchMode = computed(() => {
     const values = matchedValues.value;
     if (variant.value && values.length > 0 && values[0]) {
         const hasSubcollectionType = values.find((v) => !!v.subcollection_type);
+        if (hasSubcollectionType) {
+            return true;
+        }
         const isMultiple = values.length > 1;
         const sourceType = getSourceType(values[0]);
         const variantDetails = variant.value.find(
             (v) => (!isMultiple || v.multiple === isMultiple) && v.src === sourceType
         );
         if (variantDetails) {
-            return variantDetails.batch !== BATCH.DISABLED || !!hasSubcollectionType;
+            return variantDetails.batch !== BATCH.DISABLED;
         }
     }
     return false;
