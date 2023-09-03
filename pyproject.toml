@@ -23,8 +23,13 @@ repository = "https://github.com/galaxyproject/galaxy/"
 documentation = "https://docs.galaxyproject.org/"
 
 [[tool.poetry.source]]
+name = "PyPI"
+priority = "default"
+
+[[tool.poetry.source]]
 name = "galaxyproject"
 url = "https://wheels.galaxyproject.org/simple"
+priority = "primary"
 
 [tool.poetry.dependencies]
 a2wsgi = "*"
@@ -151,6 +156,22 @@ testfixtures = "*"
 tuspy = "*"
 twill = "*"
 watchdog = "*"
+
+[tool.poetry.group.typecheck.dependencies]
+mypy = "*"
+pydantic = "<2"  # for pydantic.mypy plugin
+types-bleach = "*"
+types-boto = "*"
+types-contextvars = "*"
+types-dataclasses = "*"
+types-docutils = "*"
+types-Markdown = "*"
+types-paramiko = "*"
+types-pkg-resources = "*"
+types-python-dateutil = "*"
+types-PyYAML = "*"
+types-requests = "*"
+types-six = "*"
 
 [tool.ruff]
 select = ["E", "F", "B", "UP"]

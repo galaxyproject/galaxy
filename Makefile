@@ -139,7 +139,7 @@ release-bootstrap-history: ## bootstrap history for a new release
 update-lint-requirements:
 	./lib/galaxy/dependencies/update_lint_requirements.sh
 
-update-dependencies: update-lint-requirements ## update pinned and dev dependencies
+update-dependencies: update-lint-requirements ## update pinned, dev and typecheck dependencies
 	$(IN_VENV) ./lib/galaxy/dependencies/update.sh
 
 $(CWL_TARGETS):
