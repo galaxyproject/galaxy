@@ -59,6 +59,11 @@ log = get_logger(__name__)
 
 
 @lru_cache()
+def setup_data_table_manager(app):
+    app._configure_tool_data_tables(from_shed_config=False)
+
+
+@lru_cache()
 def cached_create_tool_from_representation(app, raw_tool_source):
     return create_tool_from_representation(
         app=app, raw_tool_source=raw_tool_source, tool_dir="", tool_source_class="XmlToolSource"
@@ -369,6 +374,7 @@ def compute_dataset_hash(
 
 @galaxy_task(action="import a data bundle")
 def import_data_bundle(
+    app: MinimalManagerApp,
     hda_manager: HDAManager,
     ldda_manager: LDDAManager,
     tool_data_import_manager: ToolDataImportManager,
@@ -378,6 +384,7 @@ def import_data_bundle(
     id: Optional[int] = None,
     tool_data_file_path: Optional[str] = None,
 ):
+    setup_data_table_manager(app)
     if src == "uri":
         assert uri
         tool_data_import_manager.import_data_bundle_by_uri(config, uri, tool_data_file_path=tool_data_file_path)
