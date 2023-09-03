@@ -34,6 +34,7 @@ from galaxy.managers.model_stores import ModelStoreManager
 from galaxy.managers.tool_data import ToolDataImportManager
 from galaxy.metadata.set_metadata import set_metadata_portable
 from galaxy.model.scoped_session import galaxy_scoped_session
+from galaxy.queue_worker import GalaxyQueueWorker
 from galaxy.schema.tasks import (
     ComputeDatasetHashTaskRequest,
     GenerateHistoryContentDownload,
@@ -396,6 +397,8 @@ def import_data_bundle(
         else:
             dataset = ldda_manager.by_id(id)
         tool_data_import_manager.import_data_bundle_by_dataset(config, dataset, tool_data_file_path=tool_data_file_path)
+    queue_worker = GalaxyQueueWorker(app)
+    queue_worker.send_control_task("reload_tool_data_tables")
 
 
 @galaxy_task(action="pruning history audit table")
