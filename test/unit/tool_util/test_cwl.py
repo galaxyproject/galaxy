@@ -392,12 +392,12 @@ def test_cwl_strict_parsing():
     md5sum_non_strict_path = _cwl_tool_path("v1.0_custom/md5sum_non_strict.cwl")
     threw_exception = False
     try:
-        get_tool_source(md5sum_non_strict_path).tool_proxy
+        get_tool_source(md5sum_non_strict_path).tool_proxy  # noqa: B018
     except Exception:
         threw_exception = True
 
     assert threw_exception
-    get_tool_source(md5sum_non_strict_path, strict_cwl_validation=False).tool_proxy
+    get_tool_source(md5sum_non_strict_path, strict_cwl_validation=False).tool_proxy  # noqa: B018
 
 
 def test_load_proxy_bwa_mem():
