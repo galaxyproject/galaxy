@@ -46,45 +46,39 @@ defineExpose({
 </script>
 
 <template>
-    <BRow align-content="center" no-gutters>
-        <BCol class="align-items-center" no-gutters>
-            <BRow align-content="center" no-gutters>
-                <BCol>
-                    Sortby:
-                    <BButtonGroup>
-                        <BButton
-                            id="sortby-name"
-                            v-b-tooltip.hover
-                            size="sm"
-                            :title="sortDesc ? 'Sort by name ascending' : 'Sort by name descending'"
-                            :pressed="sortBy === 'name'"
-                            variant="outline-primary"
-                            @click="onSort('name')">
-                            <FontAwesomeIcon v-show="sortBy === 'name'" :icon="sortDesc ? faAngleDown : faAngleUp" />
-                            Name
-                        </BButton>
+    <div class="list-header">
+        <div class="list-header-sort">
+            Sort by:
+            <BButtonGroup>
+                <BButton
+                    id="sortby-name"
+                    v-b-tooltip.hover
+                    size="sm"
+                    :title="sortDesc ? 'Sort by name ascending' : 'Sort by name descending'"
+                    :pressed="sortBy === 'name'"
+                    variant="outline-primary"
+                    @click="onSort('name')">
+                    <FontAwesomeIcon v-show="sortBy === 'name'" :icon="sortDesc ? faAngleDown : faAngleUp" />
+                    Name
+                </BButton>
 
-                        <BButton
-                            id="sortby-update-time"
-                            v-b-tooltip.hover
-                            size="sm"
-                            :title="sortDesc ? 'Sort by update time ascending' : 'Sort by update time descending'"
-                            :pressed="sortBy === 'update_time'"
-                            variant="outline-primary"
-                            @click="onSort('update_time')">
-                            <FontAwesomeIcon
-                                v-show="sortBy === 'update_time'"
-                                :icon="sortDesc ? faAngleDown : faAngleUp" />
-                            Update time
-                        </BButton>
-                    </BButtonGroup>
-                </BCol>
+                <BButton
+                    id="sortby-update-time"
+                    v-b-tooltip.hover
+                    size="sm"
+                    :title="sortDesc ? 'Sort by update time ascending' : 'Sort by update time descending'"
+                    :pressed="sortBy === 'update_time'"
+                    variant="outline-primary"
+                    @click="onSort('update_time')">
+                    <FontAwesomeIcon v-show="sortBy === 'update_time'" :icon="sortDesc ? faAngleDown : faAngleUp" />
+                    Update time
+                </BButton>
+            </BButtonGroup>
 
-                <slot name="extra-filter" />
-            </BRow>
-        </BCol>
+            <slot name="extra-filter" />
+        </div>
 
-        <BCol v-if="showViewToggle" class="text-right">
+        <div v-if="showViewToggle">
             Display:
             <BButtonGroup>
                 <BButton
@@ -109,6 +103,20 @@ defineExpose({
                     <FontAwesomeIcon :icon="faBars" />
                 </BButton>
             </BButtonGroup>
-        </BCol>
-    </BRow>
+        </div>
+    </div>
 </template>
+
+<style scoped lang="scss">
+.list-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+
+    .list-header-sort {
+        display: flex;
+        gap: 0.25rem;
+        align-items: center;
+    }
+}
+</style>
