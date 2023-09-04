@@ -2,8 +2,9 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BCol, BNav, BNavItem, BOverlay } from "bootstrap-vue";
-import { computed, type Ref, ref, watch } from "vue";
+import { BAlert, BButton, BNav, BNavItem, BOverlay } from "bootstrap-vue";
+import { computed, onMounted, type Ref, ref, watch } from "vue";
+import { useRouter } from "vue-router/composables";
 
 import { loadWorkflows } from "@/components/Workflow/workflows.services";
 import { useAnimationFrameResizeObserver } from "@/composables/sensors/animationFrameResizeObserver";
@@ -32,16 +33,8 @@ const filterOptions = [
             "Shows workflows with the given workflow tag. You may also click on a tag to filter on that tag directly.",
     },
     {
-        filter: "is:published",
-        description: "Shows published workflows.",
-    },
-    {
         filter: "is:importable",
         description: "Shows importable workflows (this also means they have URL generated).",
-    },
-    {
-        filter: "is:shared_with_me",
-        description: "Shows workflows shared by another user directly with you.",
     },
     {
         filter: "is:deleted",
@@ -60,6 +53,7 @@ const props = withDefaults(defineProps<Props>(), {
     activeList: "my",
 });
 
+const router = useRouter();
 const userStore = useUserStore();
 
 const validFilters = {
@@ -75,7 +69,6 @@ const limit = ref(50);
 const offset = ref(0);
 const loading = ref(true);
 const overlay = ref(false);
-const showDeleted = ref(false);
 const isScrollable = ref(false);
 const listHeader = ref<any>(null);
 const workflows = ref<WorkflowsList>([]);
@@ -105,12 +98,13 @@ const filters = computed(() => advancedFiltering.value.filters);
 const published = computed(() => props.activeList === "published");
 const scrolledTop = computed(() => !isScrollable.value || arrived.top);
 const sharedWithMe = computed(() => props.activeList === "shared_with_me");
+const showDeleted = computed(() => filterText.value.includes("is:deleted"));
 const view = computed(() => (userStore.preferredListViewMode as ListView) || "grid");
-const sortDesc = computed(() => (listHeader.value && listHeader.value.sortDesc) || true);
+const sortDesc = computed(() => (listHeader.value && listHeader.value.sortDesc) ?? true);
 const sortBy = computed(() => (listHeader.value && listHeader.value.sortBy) || "update_time");
 const filterText = computed(() => advancedFiltering.value && advancedFiltering.value.filterText);
-const noItems = computed(() => !loading.value && workflows.value.length === 0 && !filterText.value);
-const noResults = computed(() => !loading.value && workflows.value.length === 0 && filterText.value);
+const noItems = computed(() => !loading.value && !overlay.value && workflows.value.length === 0 && !filterText.value);
+const noResults = computed(() => !loading.value && !overlay.value && workflows.value.length === 0 && filterText.value);
 
 function updateFilter(newVal: string) {
     advancedFiltering.value.updateFilter(newVal.trim());
@@ -137,10 +131,6 @@ async function load(overlayLoading = false) {
         search += " is:shared_with_me";
     }
 
-    if (showDeleted.value) {
-        search += " is:deleted";
-    }
-
     try {
         workflows.value = await loadWorkflows({
             sortBy: sortBy.value,
@@ -159,10 +149,24 @@ async function load(overlayLoading = false) {
     }
 }
 
-load();
+function onToggleDeleted() {
+    if (!showDeleted.value) {
+        updateFilter(`${filterText.value} is:deleted`);
+    } else {
+        updateFilter(filterText.value.replace("is:deleted", "").trim());
+    }
+}
 
-watch([filterText, sortBy, sortDesc, showDeleted], () => {
+watch([filterText, sortBy, sortDesc], () => {
     load(true);
+});
+
+onMounted(() => {
+    if (router.currentRoute.query.owner) {
+        advancedFiltering.value.updateFilter(`${filterText.value} user:${router.currentRoute.query.owner}`.trim());
+    }
+
+    load();
 });
 </script>
 
@@ -193,20 +197,20 @@ watch([filterText, sortBy, sortDesc, showDeleted], () => {
 
             <ListHeader ref="listHeader" show-view-toggle>
                 <template v-slot:extra-filter>
-                    <BCol v-if="activeList === 'my'">
+                    <div v-if="activeList === 'my'">
                         Filter:
                         <BButton
                             id="show-deleted"
                             v-b-tooltip.hover
                             size="sm"
-                            :title="showDeleted ? 'Show deleted workflows' : 'Hide deleted workflows'"
+                            :title="!showDeleted ? 'Show deleted workflows' : 'Hide deleted workflows'"
                             :pressed="showDeleted"
                             variant="outline-primary"
-                            @click="showDeleted = !showDeleted">
+                            @click="onToggleDeleted">
                             <FontAwesomeIcon :icon="faTrash" />
                             Show deleted
                         </BButton>
-                    </BCol>
+                    </div>
                 </template>
             </ListHeader>
         </div>
@@ -215,11 +219,11 @@ watch([filterText, sortBy, sortDesc, showDeleted], () => {
             <LoadingSpan />
         </BAlert>
 
-        <BAlert v-else-if="!loading && noItems" variant="info" show>
+        <BAlert v-else-if="!loading && !overlay && noItems" variant="info" show>
             No workflows found. You may create or import new workflows using the buttons above.
         </BAlert>
 
-        <BAlert v-else-if="!loading && noResults" variant="info" show>
+        <BAlert v-else-if="!loading && !overlay && noResults" variant="info" show>
             No workflows found matching: <span class="font-weight-bold">{{ filterText }}</span>
         </BAlert>
 
@@ -250,7 +254,7 @@ watch([filterText, sortBy, sortDesc, showDeleted], () => {
     .workflows-list-header {
         position: sticky;
         top: 0;
-        z-index: 1;
+        z-index: 100;
         background-color: white;
 
         &:after {
@@ -277,6 +281,10 @@ watch([filterText, sortBy, sortDesc, showDeleted], () => {
                 opacity: 1;
             }
         }
+    }
+
+    .cards-list {
+        min-height: 100px;
     }
 
     .grid-view {
