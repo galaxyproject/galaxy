@@ -25,7 +25,7 @@ function onInvocations() {
 </script>
 
 <template>
-    <div class="d-flex align-items-center flex-gapx-1">
+    <div class="workflow-invocations-count d-flex align-items-center flex-gapx-1">
         <BBadge
             v-b-tooltip.hover
             pill
@@ -34,8 +34,13 @@ function onInvocations() {
             variant="secondary"
             @click="onInvocations">
             <FontAwesomeIcon :icon="faSitemap" />
-            <span v-if="workflow.run_count > 0"> workflow runs: {{ workflow.run_count }} </span>
-            <span v-else> workflow never run </span>
+            <span v-if="workflow.run_count > 0">
+                <span class="compact-view">workflow runs:</span>
+                {{ workflow.run_count }}
+            </span>
+            <span v-else>
+                <span class="compact-view">workflow never run</span>
+            </span>
         </BBadge>
 
         <BBadge v-if="workflow.last_run_time" v-b-tooltip.hover pill :title="localize('Last run')" variant="primary">
@@ -46,3 +51,11 @@ function onInvocations() {
         </BBadge>
     </div>
 </template>
+
+<style scoped lang="scss">
+@container (max-width: 376px) {
+    .compact-view {
+        display: none;
+    }
+}
+</style>
