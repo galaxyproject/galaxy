@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { type AxiosError } from "axios";
-import { BAlert, BCard, BCol, BContainer, BRow } from "bootstrap-vue";
+import { BAlert, BCard } from "bootstrap-vue";
 import { ref, watch } from "vue";
 
 import { fromSimple } from "@/components/Workflow/Editor/modules/model";
@@ -15,7 +15,6 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 import WorkflowGraph from "@/components/Workflow/Editor/WorkflowGraph.vue";
 import WorkflowInformation from "@/components/Workflow/Published/WorkflowInformation.vue";
 import WorkflowActions from "@/components/Workflow/WorkflowActions.vue";
-import WorkflowIndicators from "@/components/Workflow/WorkflowIndicators.vue";
 import WorkflowRunButton from "@/components/Workflow/WorkflowRunButton.vue";
 
 const props = defineProps<{
@@ -79,74 +78,77 @@ watch(
 </script>
 
 <template>
-    <BContainer class="d-flex">
-        <BRow v-if="loading" class="w-100" no-gutters>
+    <div class="workflow-quick-view">
+        <div v-if="loading" class="w-100">
             <BAlert class="w-100" show variant="info">
                 <LoadingSpan message="Loading workflow preview" />
             </BAlert>
-        </BRow>
+        </div>
 
-        <BRow v-else class="flex-grow-1" no-gutters>
-            <BRow class="w-100" no-gutters>
-                <span class="d-flex w-100 flex-gapx-1 flex-wrap justify-content-center align-items-center mb-2">
+        <div v-else class="workflow-preview-container">
+            <div class="w-100">
+                <span class="d-flex mb-2">
                     <Heading h1 separator inline size="xl" class="flex-grow-1 mb-0"> Workflow Preview </Heading>
 
-                    <WorkflowActions :workflow="workflowInfo" :button-size="'md'" show-controls />
+                    <WorkflowActions :workflow="workflowInfo" button-size="md" show-controls />
 
                     <WorkflowRunButton :id="props.id" full />
                 </span>
-            </BRow>
+            </div>
 
-            <BRow class="w-100">
-                <BCol v-if="errored" class="m-3 w-100 overflow-auto d-flex flex-column">
-                    <Heading h2 separator size="xl"> Failed to load workflow </Heading>
-
+            <div class="d-flex w-100">
+                <div v-if="errored" class="w-100">
                     <BAlert v-if="errorMessage" show variant="danger">
+                        Failed to load workflow:
                         {{ errorMessage }}
                     </BAlert>
 
                     <BAlert v-else show variant="danger"> Unknown Error </BAlert>
-                </BCol>
+                </div>
 
-                <BCol v-else-if="!loading && workflowInfo" cols="8" class="published-workflow">
-                    <div class="workflow-preview d-flex flex-column">
-                        <BCard class="workflow-graph">
-                            <WorkflowGraph
-                                v-if="workflow && datatypesMapper"
-                                :steps="workflow.steps"
-                                :datatypes-mapper="datatypesMapper"
-                                readonly />
-                        </BCard>
-                    </div>
-                </BCol>
+                <div v-else-if="!loading && workflowInfo" class="workflow-preview d-flex flex-column">
+                    <BCard class="workflow-graph">
+                        <WorkflowGraph
+                            v-if="workflow && datatypesMapper"
+                            :steps="workflow.steps"
+                            :datatypes-mapper="datatypesMapper"
+                            readonly />
+                    </BCard>
+                </div>
 
-                <BCol v-if="!loading && workflowInfo" class="pl-2" cols="4">
+                <div v-if="!loading && !errored && workflowInfo" class="pl-2">
                     <WorkflowInformation :workflow-info="workflowInfo" />
-                </BCol>
-            </BRow>
-        </BRow>
-    </BContainer>
+                </div>
+            </div>
+        </div>
+    </div>
 </template>
 
 <style scoped lang="scss">
-.published-workflow {
-    display: flex;
-    flex-grow: 1;
-    gap: 1rem;
-    height: 100%;
+.workflow-quick-view {
+    .workflow-preview-container {
+        display: flex;
+        flex-wrap: wrap;
+        width: 100%;
+    }
 
     .workflow-preview {
         flex-grow: 1;
+
+        display: flex;
+        flex-grow: 1;
+        gap: 1rem;
+        height: 100%;
 
         .workflow-graph {
             flex-grow: 1;
             min-width: 500px;
         }
-    }
 
-    &:deep(.workflow-information) {
-        max-width: 500px;
-        height: 100%;
+        &:deep(.workflow-information) {
+            max-width: 500px;
+            height: 100%;
+        }
     }
 
     @media only screen and (max-width: 1100px) {
