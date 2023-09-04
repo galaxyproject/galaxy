@@ -33,8 +33,34 @@ library.add(faCopy, faDownload, faEye, faFileExport, faShareAlt, farStar, faStar
 
 interface Props {
     workflow: any;
+    menu?: boolean;
+    published?: boolean;
     showControls: boolean;
     buttonSize?: "sm" | "md" | "lg";
+}
+
+type BaseAction = {
+    if?: boolean;
+    id: string;
+    title: string;
+    tooltip: string;
+    icon: any;
+    href?: string;
+    size: "sm" | "md" | "lg";
+    component: "async" | "button";
+    variant: "primary" | "secondary" | "success" | "danger" | "warning" | "info" | "light" | "dark" | "link";
+    onClick?: () => Promise<void> | void;
+};
+
+interface AAction extends BaseAction {
+    component: "async";
+    action: () => Promise<void>;
+}
+
+interface BAction extends BaseAction {
+    component: "button";
+    href?: string;
+    onClick?: () => Promise<void> | void;
 }
 
 const props = withDefaults(defineProps<Props>(), {
@@ -107,111 +133,170 @@ async function onRestore() {
         Toast.info("Workflow restored");
     }
 }
+
+const actions: (AAction | BAction)[] = [
+    {
+        if: !shared.value && !props.workflow.deleted,
+        id: "delete-button",
+        component: "button",
+        title: "Delete workflow",
+        tooltip: "Delete workflow",
+        icon: faTrash,
+        size: props.buttonSize,
+        variant: "link",
+        onClick: () => onDelete(),
+    },
+    {
+        if: !isAnonymous.value && !props.workflow.deleted,
+        id: "copy-button",
+        component: "button",
+        title: "Copy workflow",
+        tooltip: "Copy workflow",
+        icon: faCopy,
+        size: props.buttonSize,
+        variant: "link",
+        onClick: () => onCopy(),
+    },
+    {
+        if: !props.workflow.deleted,
+        id: "export-button",
+        component: "button",
+        title: "Export workflow",
+        tooltip: "Export workflow",
+        icon: faFileExport,
+        size: props.buttonSize,
+        variant: "link",
+        onClick: () => onExport(),
+    },
+    {
+        if: !props.workflow.deleted,
+        id: "download-button",
+        component: "button",
+        title: "Download workflow",
+        tooltip: "Download workflow",
+        href: downloadUrl.value,
+        icon: faDownload,
+        size: props.buttonSize,
+        variant: "link",
+    },
+    {
+        if: !shared.value && !props.workflow.deleted,
+        id: "share-button",
+        component: "button",
+        title: "Share workflow",
+        tooltip: "Share workflow",
+        icon: faShareAlt,
+        size: props.buttonSize,
+        variant: "link",
+        onClick: () => onShare(),
+    },
+    {
+        if: props.workflow.deleted,
+        id: "restore-button",
+        component: "button",
+        title: "Restore workflow",
+        tooltip: "Restore workflow",
+        icon: faTrashRestore,
+        size: props.buttonSize,
+        variant: "link",
+        onClick: () => onRestore(),
+    },
+    {
+        if: !props.published && props.workflow.show_in_tool_panel,
+        id: "remove-bookmark-button",
+        component: "async",
+        title: "Remove bookmark",
+        tooltip: "Remove bookmark",
+        icon: faStar,
+        size: props.buttonSize,
+        variant: "link",
+        action: () => onToggleBookmark(false),
+    },
+    {
+        if: !props.published && !props.workflow.show_in_tool_panel,
+        id: "add-bookmark-button",
+        component: "async",
+        title: "Add bookmark",
+        tooltip: "Add a bookmark. This workflow will appear in the left tool panel.",
+        icon: farStar,
+        size: props.buttonSize,
+        variant: "link",
+        action: () => onToggleBookmark(true),
+    },
+    {
+        if: true,
+        id: "view-button",
+        component: "button",
+        title: "View workflow",
+        tooltip: "View workflow",
+        icon: faEye,
+        size: props.buttonSize,
+        variant: "link",
+        onClick: () => emit("toggleShowPreview", true),
+    },
+];
 </script>
 
 <template>
-    <div class="workflow-actions d-flex align-items-baseline flex-wrap justify-content-end">
-        <AsyncButton
-            v-if="!shared && !workflow.deleted"
-            id="delete-button"
+    <div class="workflow-actions">
+        <BDropdown
+            v-if="menu"
+            id="workflow-actions-dropdown"
             v-b-tooltip.top
-            :class="{ 'mouse-out': !props.showControls }"
-            :size="buttonSize"
-            title="Delete workflow"
-            :icon="faTrash"
-            :action="() => onDelete()" />
+            right
+            class="show-in-card"
+            title="Workflow actions"
+            variant="link">
+            <BDropdownItem
+                v-for="action in actions.filter((a) => a.if)"
+                :id="action.id"
+                :key="action.id"
+                :href="action.href ?? undefined"
+                :title="action.tooltip"
+                @click="action.component === 'button' ? action.onClick?.() : action.action()">
+                <FontAwesomeIcon :icon="action.icon" />
+                <span class="ml-1">{{ action.title }}</span>
+            </BDropdownItem>
+        </BDropdown>
 
-        <AsyncButton
-            v-if="!isAnonymous && !workflow.deleted"
-            id="copy-button"
-            v-b-tooltip.top
-            :class="{ 'mouse-out': !props.showControls }"
-            :size="buttonSize"
-            title="Copy workflow"
-            :icon="faCopy"
-            :action="() => onCopy()" />
+        <div v-else class="d-flex">
+            <div v-for="action in actions" :key="action.id">
+                <AsyncButton
+                    v-if="action.if && action.component === 'async'"
+                    :id="action.id"
+                    v-b-tooltip.hover
+                    :class="{ 'mouse-out': !showControls }"
+                    :variant="action.variant"
+                    :size="action.size"
+                    :title="action.tooltip"
+                    :icon="action.icon"
+                    :action="action.action" />
 
-        <BButton
-            v-if="!shared && !workflow.deleted"
-            id="export-button"
-            v-b-tooltip.top
-            :class="{ 'mouse-out': !props.showControls }"
-            variant="link"
-            :size="buttonSize"
-            title="Export workflow"
-            @click="onExport">
-            <FontAwesomeIcon :icon="faFileExport" />
-        </BButton>
-
-        <BButton
-            v-if="!workflow.deleted"
-            id="download-button"
-            v-b-tooltip.top
-            :class="{ 'mouse-out': !props.showControls }"
-            variant="link"
-            :size="buttonSize"
-            title="Download workflow"
-            :href="downloadUrl">
-            <FontAwesomeIcon :icon="faDownload" />
-        </BButton>
-
-        <BButton
-            v-if="!shared && !workflow.deleted"
-            id="share-button"
-            v-b-tooltip.top
-            :class="{ 'mouse-out': !props.showControls }"
-            variant="link"
-            :size="buttonSize"
-            title="Share workflow"
-            @click="onShare">
-            <FontAwesomeIcon :icon="faShareAlt" />
-        </BButton>
-
-        <BButton
-            v-if="workflow.deleted"
-            id="restore-button"
-            v-b-tooltip.top
-            :class="{ 'mouse-out': !props.showControls }"
-            variant="link"
-            :size="buttonSize"
-            title="Restore workflow"
-            @click="onRestore">
-            <FontAwesomeIcon :icon="faTrashRestore" />
-        </BButton>
-
-        <BButton
-            id="view-button"
-            v-b-tooltip.top
-            :class="{ 'mouse-out': !props.showControls }"
-            variant="link"
-            :size="buttonSize"
-            title="View workflow"
-            @click="emit('toggleShowPreview', true)">
-            <FontAwesomeIcon :icon="faEye" />
-        </BButton>
-
-        <AsyncButton
-            v-if="workflow.show_in_tool_panel"
-            id="remove-bookmark-button"
-            title="Remove bookmark"
-            :class="{ 'mouse-out': !props.showControls }"
-            :icon="faStar"
-            :size="buttonSize"
-            :action="() => onToggleBookmark(false)" />
-
-        <AsyncButton
-            v-else
-            id="add-bookmark-button"
-            :class="{ 'mouse-out': !props.showControls }"
-            title="Add a bookmark. This workflow will appear in the left tool panel."
-            :icon="farStar"
-            :size="buttonSize"
-            :action="() => onToggleBookmark(true)" />
+                <BButton
+                    v-if="action.if && action.component === 'button'"
+                    :id="action.id"
+                    v-b-tooltip.hover
+                    :class="{ 'mouse-out': !showControls }"
+                    :variant="action.variant"
+                    :size="action.size"
+                    :title="action.tooltip"
+                    :icon="action.icon"
+                    :href="action.href"
+                    @click="action.onClick">
+                    <FontAwesomeIcon :icon="action.icon" />
+                </BButton>
+            </div>
+        </div>
     </div>
 </template>
 
 <style scoped lang="scss">
 .workflow-actions {
+    display: flex;
+    align-items: baseline;
+    flex-wrap: wrap;
+    justify-content: flex-end;
+
     .mouse-out {
         opacity: 0.5;
     }
