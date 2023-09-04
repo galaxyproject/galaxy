@@ -6,13 +6,14 @@
 
         <ErrorMessages :messages="errors" @dismissed="onErrorDismissed"></ErrorMessages>
 
-        <div v-if="!hasUsername">
-            <div>To make a {{ modelClass }} accessible via link or publish it, you must create a public username:</div>
-            <form class="form-group" @submit.prevent="setUsername()">
+        <form v-if="!hasUsername" class="d-flex flex-column flex-gapy-1" @submit.prevent="setUsername()">
+            <label>
+                To make a {{ modelClass }} accessible via link or publish it, you must create a public username:
                 <input v-model="newUsername" class="form-control" type="text" />
-            </form>
-            <b-button type="submit" variant="primary" @click="setUsername()">Set Username</b-button>
-        </div>
+            </label>
+
+            <b-button class="align-self-start" type="submit" variant="primary">Set Username</b-button>
+        </form>
         <div v-else-if="ready">
             <div class="mb-3">
                 <b-form-checkbox v-model="item.importable" switch class="make-accessible" @change="onImportable">
@@ -32,37 +33,11 @@
             <div v-if="item.importable" class="mb-4">
                 <div>This {{ modelClass }} is currently {{ itemStatus }}.</div>
                 <p>Anyone can view and import this {{ modelClass }} by visiting the following URL:</p>
-                <blockquote>
-                    <a v-if="showUrl" id="item-url" :href="itemUrl" target="_top" class="ml-2">
-                        url:
-                        {{ itemUrl }}
-                    </a>
-                    <span v-else id="item-url-text">
-                        slug:
-                        {{ itemUrlParts[0] }}<SlugInput class="ml-1" :slug="itemUrlParts[1]" @onChange="onChange" />
-                    </span>
-                    <b-button
-                        id="tooltip-clipboard"
-                        v-b-tooltip.hover
-                        variant="link"
-                        size="md"
-                        class="inline-icon-button"
-                        :title="tooltipClipboard"
-                        @click="onCopy"
-                        @mouseout="onCopyOut"
-                        @blur="onCopyOut">
-                        <FontAwesomeIcon :icon="['far', 'copy']" fixed-width />
-                    </b-button>
-                    <b-button
-                        v-b-tooltip.hover
-                        class="inline-icon-button"
-                        title="Edit URL"
-                        variant="link"
-                        size="md"
-                        @click="onEdit">
-                        <FontAwesomeIcon icon="edit" fixed-width />
-                    </b-button>
-                </blockquote>
+                <EditableUrl
+                    :prefix="itemUrl.prefix"
+                    :slug="itemUrl.slug"
+                    @change="onChangeSlug"
+                    @submit="onSubmitSlug" />
             </div>
             <div v-else class="mb-4">
                 Access to this {{ modelClass }} is currently restricted so that only you and the users listed below can
@@ -274,12 +249,10 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { getGalaxyInstance } from "app";
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
-import SlugInput from "components/Common/SlugInput";
 import { getAppRoot } from "onload/loadConfig";
 import { mapState } from "pinia";
-import { copy } from "utils/clipboard";
 import { errorMessageAsString } from "utils/simple-error";
-import Vue, { ref } from "vue";
+import Vue, { computed, reactive, ref, watch } from "vue";
 import Multiselect from "vue-multiselect";
 
 import { useConfig } from "@/composables/config";
@@ -288,6 +261,7 @@ import { useUserStore } from "@/stores/userStore";
 import ErrorMessages from "./ErrorMessages";
 
 import Heading from "../Common/Heading.vue";
+import EditableUrl from "./EditableUrl.vue";
 
 Vue.use(BootstrapVue);
 library.add(faCopy, faEdit, faUserPlus, faUserSlash, faCaretDown, faCaretUp);
@@ -302,9 +276,9 @@ export default {
     components: {
         ErrorMessages,
         FontAwesomeIcon,
-        SlugInput,
         Multiselect,
         Heading,
+        EditableUrl,
     },
     props: {
         id: {
@@ -320,16 +294,79 @@ export default {
             required: true,
         },
     },
-    setup() {
+    setup(props) {
         const { config, isConfigLoaded } = useConfig(true);
 
         const errors = ref([]);
+
+        function addError(newError) {
+            // temporary turning Set into Array, until we update till Vue 3.0, that supports Set reactivity
+            errors.value = Array.from(new Set(errors.value).add(newError));
+        }
 
         function onErrorDismissed(index) {
             errors.value.splice(index, 1);
         }
 
-        return { config, isConfigLoaded, onErrorDismissed, errors };
+        const item = ref({
+            title: "title",
+            username_and_slug: "username/slug",
+            importable: false,
+            published: false,
+            users_shared_with: [],
+            extra: defaultExtra(),
+        });
+
+        const itemRoot = computed(() => {
+            const port = window.location.port ? `:${window.location.port}` : "";
+            return `${window.location.protocol}//${window.location.hostname}${port}${getAppRoot()}`;
+        });
+
+        const itemUrl = reactive({
+            prefix: "",
+            slug: "",
+        });
+
+        watch(
+            () => item.value.username_and_slug,
+            (value) => {
+                const index = value.lastIndexOf("/");
+
+                itemUrl.prefix = itemRoot.value + value.substring(0, index + 1);
+                itemUrl.slug = value.substring(index + 1);
+            },
+            { immediate: true }
+        );
+
+        const slugUrl = computed(() => `${getAppRoot()}api/${props.pluralName.toLowerCase()}/${props.id}/slug`);
+
+        function onChangeSlug(newValue) {
+            itemUrl.slug = newValue;
+        }
+
+        async function onSubmitSlug(newValue) {
+            itemUrl.slug = newValue;
+
+            try {
+                await axios.put(slugUrl.value, { new_slug: newValue });
+            } catch (e) {
+                addError(errorMessageAsString(e));
+            }
+        }
+
+        return {
+            config,
+            isConfigLoaded,
+            onErrorDismissed,
+            errors,
+            addError,
+            item,
+            itemRoot,
+            itemUrl,
+            onChangeSlug,
+            slugUrl,
+            onSubmitSlug,
+        };
     },
     data() {
         const Galaxy = getGalaxyInstance();
@@ -346,14 +383,6 @@ export default {
                 sharingCandidates: [],
                 userOptions: [],
                 currentUserSearch: "",
-            },
-            item: {
-                title: "title",
-                username_and_slug: "username/slug",
-                importable: false,
-                published: false,
-                users_shared_with: [],
-                extra: defaultExtra(),
             },
             shareFields: ["email", { key: "id", label: "" }],
             makeMembersPublic: false,
@@ -400,28 +429,8 @@ export default {
         itemStatus() {
             return this.item.published ? "accessible via link and published" : "accessible via link";
         },
-        itemRoot() {
-            const port = window.location.port ? `:${window.location.port}` : "";
-            return `${window.location.protocol}//${window.location.hostname}${port}${getAppRoot()}`;
-        },
-        itemUrl() {
-            return `${this.itemRoot}${this.item.username_and_slug}`;
-        },
-        itemSlugParts() {
-            const str = this.item.username_and_slug;
-            const index = str.lastIndexOf("/");
-            return [str.substring(0, index + 1), str.substring(index + 1)];
-        },
-        itemUrlParts() {
-            const str = this.itemUrl;
-            const index = str.lastIndexOf("/");
-            return [str.substring(0, index + 1), str.substring(index + 1)];
-        },
         published_url() {
             return `${getAppRoot()}${this.pluralNameLower}/list_published`;
-        },
-        slugUrl() {
-            return `${getAppRoot()}api/${this.pluralNameLower}/${this.id}/slug`;
         },
     },
     created: function () {
@@ -448,20 +457,6 @@ export default {
         onError(axiosError) {
             this.addError(errorMessageAsString(axiosError));
         },
-        addError(newError) {
-            // temporary turning Set into Array, until we update till Vue 3.0, that supports Set reactivity
-            this.errors = Array.from(new Set(this.errors).add(newError));
-        },
-        onCopy() {
-            copy(this.itemUrl);
-            this.tooltipClipboard = "Copied!";
-        },
-        onCopyOut() {
-            this.tooltipClipboard = "Copy URL";
-        },
-        onEdit() {
-            this.showUrl = false;
-        },
         assignItem(newItem, overwriteCandidates) {
             if (newItem.errors) {
                 this.errors = newItem.errors;
@@ -475,16 +470,6 @@ export default {
             }
 
             this.ready = true;
-        },
-        onChange(newSlug) {
-            this.showUrl = true;
-            const requestUrl = `${this.slugUrl}`;
-            axios
-                .put(requestUrl, {
-                    new_slug: newSlug,
-                })
-                .then(() => (this.item.username_and_slug = `${this.itemSlugParts[0]}${newSlug}`))
-                .catch(this.onError);
         },
         onImportable(importable) {
             if (importable) {
