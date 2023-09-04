@@ -90,70 +90,97 @@ function onTagsUpdate(tags: string[]) {
 
 <template>
     <div class="workflow-card" @mouseenter="showControls = true" @mouseleave="showControls = false">
-        <div class="workflow-card-container d-flex flex-column justify-content-between">
-            <div class="d-flex justify-content-between">
-                <div>
-                    <WorkflowIndicators :workflow="workflow" :published-view="publishedView" />
+        <div class="workflow-card-container">
+            <div>
+                <div class="d-flex justify-content-between align-items-center">
+                    <div>
+                        <WorkflowIndicators :workflow="workflow" :published-view="publishedView" />
 
-                    <span class="workflow-name font-weight-bold"> {{ workflow.name }} </span>
+                        <span class="workflow-name hide-in-card font-weight-bold">
+                            {{ workflow.name }}
+                            <BButton
+                                v-if="!shared && !workflow.deleted"
+                                id="rename-button"
+                                v-b-tooltip.top
+                                :class="{ 'mouse-out': !showControls }"
+                                variant="link"
+                                size="sm"
+                                title="Rename workflow"
+                                @click="showRename = !showRename">
+                                <FontAwesomeIcon :icon="faPen" />
+                            </BButton>
+                        </span>
+                    </div>
 
-                    <BButton
-                        v-if="!shared && !workflow.deleted"
-                        id="rename-button"
-                        v-b-tooltip.top
-                        :class="{ 'mouse-out': !showControls }"
-                        variant="link"
-                        size="sm"
-                        title="Rename workflow"
-                        @click="showRename = !showRename">
-                        <FontAwesomeIcon :icon="faPen" />
-                    </BButton>
+                    <div class="workflow-count-actions">
+                        <WorkflowActions
+                            class="hide-in-card"
+                            :workflow="workflow"
+                            :published="publishedView"
+                            :show-controls="showControls"
+                            @refreshList="emit('refreshList', true)"
+                            @toggleShowPreview="toggleShowPreview" />
+
+                        <WorkflowInvocationsCount :workflow="workflow" />
+
+                        <BButton
+                            id="view-button"
+                            v-b-tooltip.top
+                            class="show-in-card"
+                            size="sm"
+                            title="View workflow"
+                            variant="link"
+                            @click="toggleShowPreview(true)">
+                            <FontAwesomeIcon :icon="faEye" />
+                        </BButton>
+
+                        <WorkflowActions
+                            class="show-in-card"
+                            menu
+                            :workflow="workflow"
+                            :published="publishedView"
+                            :show-controls="showControls"
+                            @refreshList="emit('refreshList', true)"
+                            @toggleShowPreview="toggleShowPreview" />
+                    </div>
                 </div>
 
                 <div>
-                    <WorkflowActions
-                        class="workflow-actions"
-                        :workflow="workflow"
-                        :show-controls="showControls"
-                        @refreshList="emit('refreshList', true)"
-                        @toggleShowPreview="toggleShowPreview" />
+                    <span class="workflow-name show-in-card">
+                        {{ workflow.name }}
+                        <BButton
+                            v-if="!shared && !workflow.deleted"
+                            id="rename-button"
+                            v-b-tooltip.top
+                            :class="{ 'mouse-out': !showControls }"
+                            variant="link"
+                            size="sm"
+                            title="Rename workflow"
+                            @click="showRename = !showRename">
+                            <FontAwesomeIcon :icon="faPen" />
+                        </BButton>
+                    </span>
                 </div>
+
+                <TextSummary
+                    v-if="description"
+                    class="my-1"
+                    :description="description"
+                    :max-length="gridView ? 100 : 250" />
             </div>
 
-            <div class="workflow-count-view d-flex">
-                <WorkflowInvocationsCount :workflow="workflow" />
+            <div class="workflow-card-footer">
+                <div>
+                    <StatelessTags
+                        clickable
+                        :value="workflow.tags"
+                        :disabled="workflow.deleted"
+                        :max-visible-tags="gridView ? 2 : 8"
+                        @input="(tags) => onTagsUpdate(tags)"
+                        @tag-click="emit('tagClick', $event)" />
+                </div>
 
-                <BButton
-                    v-show="gridView"
-                    id="view-button"
-                    v-b-tooltip.top
-                    class="workflow-preview-button"
-                    size="sm"
-                    title="View workflow"
-                    variant="link"
-                    @click="toggleShowPreview(true)">
-                    <FontAwesomeIcon :icon="faEye" />
-                </BButton>
-            </div>
-
-            <BRow v-if="description" class="text-summary" no-gutters>
-                <TextSummary :description="description" :max-length="gridView ? 100 : 250" />
-            </BRow>
-
-            <BRow no-gutters>
-                <BCol class="d-flex align-items-center" sm="6" cols="8">
-                    <BRow align-h="end" no-gutters>
-                        <StatelessTags
-                            clickable
-                            :value="workflow.tags"
-                            :disabled="workflow.deleted"
-                            :max-visible-tags="gridView ? 2 : 8"
-                            @input="(tags) => onTagsUpdate(tags)"
-                            @tag-click="emit('tagClick', $event)" />
-                    </BRow>
-                </BCol>
-
-                <BCol align-self="end" class="text-right" sm="6" cols="4">
+                <div class="d-flex justify-content-end">
                     <BButton
                         v-if="!shared && !workflow.deleted"
                         v-b-tooltip.hover
@@ -167,8 +194,8 @@ function onTagsUpdate(tags: string[]) {
                     </BButton>
 
                     <WorkflowRunButton :id="workflow.id" />
-                </BCol>
-            </BRow>
+                </div>
+            </div>
 
             <WorkflowRename
                 v-if="!shared && !workflow.deleted"
@@ -198,14 +225,17 @@ function onTagsUpdate(tags: string[]) {
     container-type: inline-size;
 
     .workflow-card-container {
+        display: flex;
+        flex-direction: column;
+        justify-content: space-between;
         background-color: white;
         border: 1px solid #e5e5e5;
         border-radius: 0.5rem;
         padding: 0.5rem;
-        margin-bottom: 0.5rem;
+        margin: 0 0.25rem 0.5rem 0.25rem;
 
-        .workflow-count-view {
-            margin-left: auto;
+        .workflow-count-actions {
+            display: flex;
         }
 
         .text-summary {
@@ -214,6 +244,7 @@ function onTagsUpdate(tags: string[]) {
 
         .workflow-name {
             font-size: 1rem;
+            font-weight: bold;
         }
 
         .mouse-out {
@@ -223,26 +254,43 @@ function onTagsUpdate(tags: string[]) {
         .workflow-preview-modal {
             min-width: max-content;
         }
+
+        @container (min-width: 576px) {
+            .workflow-card-footer {
+                display: flex;
+                flex-wrap: wrap;
+                align-items: center;
+                justify-content: space-between;
+            }
+        }
     }
 
     @container (max-width: 768px) {
-        .workflow-card-container {
-            margin: 0 0.5rem 0.5rem 0.5rem;
-        }
-
-        .workflow-actions {
+        .hide-in-card {
             display: none !important;
         }
 
-        .workflow-count-view {
-            justify-content: space-between;
-            margin-bottom: 0.5rem;
+        .show-in-card {
+            display: inline-block !important;
+        }
+
+        .workflow-count-actions {
+            align-items: baseline;
         }
     }
 
     @container (min-width: 768px) {
-        .workflow-preview-button {
-            display: none;
+        .workflow-count-actions {
+            align-items: end;
+            flex-direction: column;
+        }
+
+        .hide-in-card {
+            display: inline-block !important;
+        }
+
+        .show-in-card {
+            display: none !important;
         }
     }
 }
