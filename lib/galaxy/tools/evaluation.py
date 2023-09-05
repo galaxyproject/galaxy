@@ -210,7 +210,12 @@ class ToolEvaluator:
         compute_environment = self.compute_environment
         job_working_directory = compute_environment.working_directory()
 
-        param_dict = TreeDict(self.param_dict)
+        if self.tool.tool_type == "cwl":
+            param_dict: Union[Dict[str, Any], TreeDict] = self.param_dict
+        else:
+            # TreeDict provides a way to access parameters without their fully qualified path,
+            # we only need this for Galaxy tools.
+            param_dict = TreeDict(self.param_dict)
 
         param_dict["__datatypes_config__"] = param_dict["GALAXY_DATATYPES_CONF_FILE"] = os.path.join(
             job_working_directory, "registry.xml"
@@ -236,6 +241,9 @@ class ToolEvaluator:
         # so we should use it (otherwise the upload tool does not work in real user setups)
         if self.job.tool_id == "upload1":
             param_dict["paramfile"] = os.path.join(job_working_directory, "upload_params.json")
+
+        if not isinstance(param_dict, TreeDict):
+            return param_dict
 
         if "input" not in param_dict.data:
 
