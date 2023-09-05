@@ -2042,6 +2042,66 @@ should_run:
             assert message["details"] == "Type is: str"
             assert message["workflow_step_id"] == 2
 
+    def test_run_workflow_subworkflow_conditional_with_simple_mapping_step(self):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """class: GalaxyWorkflow
+inputs:
+  should_run:
+    type: boolean
+  some_collection:
+    type: data_collection
+steps:
+  subworkflow:
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        some_collection:
+          type: data_collection
+        should_run:
+          type: boolean
+      steps:
+        a_tool_step:
+          tool_id: cat1
+          in:
+            input1: some_collection
+    in:
+      some_collection: some_collection
+      should_run: should_run
+    outputs:
+      inner_out: a_tool_step/out_file1
+    when: $(inputs.should_run)
+outputs:
+  outer_output:
+    outputSource: subworkflow/inner_out
+""",
+                test_data="""
+some_collection:
+  collection_type: list
+  elements:
+    - identifier: true
+      content: A
+    - identifier: false
+      content: B
+  type: File
+should_run:
+  value: false
+  type: raw
+""",
+                history_id=history_id,
+                wait=True,
+                assert_ok=True,
+            )
+            invocation_details = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+            subworkflow_invocation_id = invocation_details["steps"][-1]["subworkflow_invocation_id"]
+            self.workflow_populator.wait_for_invocation_and_jobs(
+                history_id=history_id, workflow_id="whatever", invocation_id=subworkflow_invocation_id
+            )
+            invocation_details = self.workflow_populator.get_invocation(subworkflow_invocation_id, step_details=True)
+            for step in invocation_details["steps"]:
+                if step["workflow_step_label"] == "a_tool_step":
+                    assert sum(1 for j in step["jobs"] if j["state"] == "skipped") == 2
+
     def test_run_workflow_subworkflow_conditional_step(self):
         with self.dataset_populator.test_history() as history_id:
             summary = self._run_workflow(
@@ -2095,6 +2155,84 @@ should_run:
             invocation_details = self.workflow_populator.get_invocation(subworkflow_invocation_id, step_details=True)
             for step in invocation_details["steps"]:
                 if step["workflow_step_label"] == "a_tool_step":
+                    assert sum(1 for j in step["jobs"] if j["state"] == "skipped") == 1
+
+    def test_run_nested_conditional_workflow_steps(self):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """
+class: GalaxyWorkflow
+inputs:
+  dataset:
+    type: data
+  when:
+    type: boolean
+outputs:
+  output:
+    outputSource: outer_subworkflow/output
+steps:
+- label: outer_subworkflow
+  when: $(inputs.when)
+  in:
+    dataset:
+      source: dataset
+    when:
+      source: when
+  run:
+    class: GalaxyWorkflow
+    label: subworkflow cat1
+    inputs:
+      dataset:
+        type: data
+    outputs:
+      output:
+        outputSource: cat1_workflow/output
+    steps:
+    - label: cat1_workflow
+      in:
+        dataset:
+          source: dataset
+      run:
+        class: GalaxyWorkflow
+        label: cat1
+        inputs:
+          dataset:
+            type: data
+        outputs:
+          output:
+            outputSource: cat1/out_file1
+        steps:
+        - tool_id: cat1
+          label: cat1
+          in:
+            input1:
+              source: dataset
+""",
+                test_data="""
+dataset:
+  value: 1.bed
+  type: File
+when:
+  value: false
+  type: raw
+""",
+                history_id=history_id,
+                wait=True,
+                assert_ok=True,
+            )
+            invocation_details = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+            subworkflow_invocation_id = invocation_details["steps"][-1]["subworkflow_invocation_id"]
+            self.workflow_populator.wait_for_invocation_and_jobs(
+                history_id=history_id, workflow_id="whatever", invocation_id=subworkflow_invocation_id
+            )
+            invocation_details = self.workflow_populator.get_invocation(subworkflow_invocation_id, step_details=True)
+            subworkflow_invocation_id = invocation_details["steps"][-1]["subworkflow_invocation_id"]
+            self.workflow_populator.wait_for_invocation_and_jobs(
+                history_id=history_id, workflow_id="whatever", invocation_id=subworkflow_invocation_id
+            )
+            invocation_details = self.workflow_populator.get_invocation(subworkflow_invocation_id, step_details=True)
+            for step in invocation_details["steps"]:
+                if step["workflow_step_label"] == "cat1":
                     assert sum(1 for j in step["jobs"] if j["state"] == "skipped") == 1
 
     def test_run_workflow_conditional_step_map_over_expression_tool(self):
