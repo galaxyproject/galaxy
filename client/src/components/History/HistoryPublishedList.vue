@@ -1,36 +1,50 @@
 <script setup>
+import { useInfiniteScroll } from "@vueuse/core";
 import Heading from "components/Common/Heading";
 import DebouncedInput from "components/DebouncedInput";
 import LoadingSpan from "components/LoadingSpan";
 import StatelessTags from "components/TagsMultiselect/StatelessTags";
+import ScrollToTopButton from "components/ToolsList/ScrollToTopButton";
 import UtcDate from "components/UtcDate";
+import { useAnimationFrameScroll } from "composables/sensors/animationFrameScroll";
 import Filtering, { contains, expandNameTag } from "utils/filtering";
-import { computed, ref, watch } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 
 import { getPublishedHistories, updateTags } from "./services";
+
+const LIMIT = 50;
+const DEFAULT_OFFSET_KEY = "-update_time-true";
 
 const validFilters = {
     name: contains("name"),
     annotation: contains("annotation"),
     tag: contains("tags", "tag", expandNameTag),
+    // add username/owner filter
 };
 
 const filters = new Filtering(validFilters, false);
 
-const limit = ref(50);
-const offset = ref(0);
-const items = ref([]);
-const perPage = ref(50);
+const offset = ref({ "-update_time-true": 0 });
+const allHistories = ref([]);
+const results = ref([]);
 const message = ref(null);
 const loading = ref(true);
 const sortDesc = ref(true);
-const currentPage = ref(1);
 const filterText = ref("");
 const showAdvanced = ref(false);
 const sortBy = ref("update_time");
+const scrollableDiv = ref(null);
+const { scrollTop } = useAnimationFrameScroll(scrollableDiv);
+const loadedItemIds = ref(new Set());
 
-const noItems = computed(() => !loading.value && items.value.length === 0 && !filterText.value);
-const noResults = computed(() => !loading.value && items.value.length === 0 && filterText.value);
+const noItems = computed(() => !loading.value && allHistories.value.length === 0 && !filterText.value);
+const noResults = computed(() => !loading.value && results.value.length === 0 && filterText.value);
+const allLoaded = computed(() => {
+    return noResults.value === false && offset.value[offsetKey.value] === null;
+});
+const offsetKey = computed(() => {
+    return `${filters.getQueryString(filterText.value)}-${sortBy.value}-${sortDesc.value}`;
+});
 
 const fields = [
     { key: "name", sortable: true },
@@ -61,13 +75,21 @@ const onTagClick = (tag) => {
     updateFilter(filters.setFilterValue(filterText.value, "tag", tag));
 };
 
-const load = async () => {
+async function load() {
+    if (allLoaded.value === true) {
+        return;
+    }
     loading.value = true;
+    let currentOffset = offset.value[offsetKey.value];
+    if (currentOffset === undefined) {
+        offset.value[offsetKey.value] = 0;
+        currentOffset = 0;
+    }
 
-    getPublishedHistories(
+    await getPublishedHistories(
         {
-            limit: limit.value,
-            offset: offset.value,
+            limit: LIMIT,
+            offset: currentOffset,
             sortBy: sortBy.value,
             sortDesc: sortDesc.value,
             filterText: filterText.value,
@@ -75,7 +97,31 @@ const load = async () => {
         filters
     )
         .then((data) => {
-            items.value = data;
+            // add all new incoming histories to allHistories
+            const newData = data.filter((item) => !loadedItemIds.value.has(item.id));
+            allHistories.value = [...allHistories.value, ...newData];
+            newData.forEach((item) => loadedItemIds.value.add(item.id));
+            offset.value[DEFAULT_OFFSET_KEY] = allHistories.value.length;
+
+            if (filterText.value) {
+                const currFilters = filters.getFiltersForText(filterText.value);
+                results.value = allHistories.value.filter((history) => {
+                    if (!filters.testFilters(currFilters, history)) {
+                        return false;
+                    }
+                    return true;
+                });
+
+                // all items loaded for current filter
+                if (results.value.length <= currentOffset - 1) {
+                    offset.value[offsetKey.value] = null;
+                } else {
+                    offset.value[offsetKey.value] = results.value.length === 0 ? 0 : results.value.length + 1;
+                }
+            } else {
+                // no filter
+                results.value = allHistories.value;
+            }
         })
         .catch((error) => {
             message.value = error;
@@ -83,7 +129,7 @@ const load = async () => {
         .finally(() => {
             loading.value = false;
         });
-};
+}
 
 const onTagsUpdate = (newTags, row) => {
     row.item.tags = newTags;
@@ -99,15 +145,27 @@ const onSearch = () => {
     updateFilter(filters.getFilterText(filterSettings.value));
 };
 
-load();
+function scrollToTop() {
+    scrollableDiv.value.scrollTo({ top: 0, behavior: "smooth" });
+}
 
-watch([filterText, sortBy, sortDesc], () => {
-    load();
+onMounted(async () => {
+    await load();
+    useInfiniteScroll(scrollableDiv.value, () => load());
+});
+
+onUnmounted(() => {
+    // Remove the infinite scrolling behavior
+    useInfiniteScroll(scrollableDiv.value, () => {});
+});
+
+watch([filterText, sortBy, sortDesc], async () => {
+    await load();
 });
 </script>
 
 <template>
-    <section id="published-histories" class="d-flex flex-column">
+    <section id="published-histories" class="d-flex flex-column position-relative overflow-hidden">
         <Heading h1>Published Histories</Heading>
 
         <b-alert v-if="noItems" variant="info" show>No published histories found.</b-alert>
@@ -186,20 +244,20 @@ watch([filterText, sortBy, sortDesc], () => {
                 No matching entries found for: <span class="font-weight-bold">{{ filterText }}</span>
             </b-alert>
 
-            <b-alert v-if="loading" variant="info" show>
+            <b-alert v-if="results.length === 0 && loading" variant="info" show>
                 <LoadingSpan message="Loading published histories" />
             </b-alert>
+        </div>
 
+        <div ref="scrollableDiv" class="overflow-auto">
             <b-table
-                v-if="items.length"
+                v-if="results.length"
                 id="published-histories-table"
                 no-sort-reset
                 no-local-sorting
                 striped
                 :fields="fields"
-                :items="items"
-                :per-page="perPage"
-                :current-page="currentPage"
+                :items="results"
                 :sort-by.sync="sortBy"
                 :sort-desc.sync="sortDesc">
                 <template v-slot:cell(name)="row">
@@ -220,13 +278,18 @@ watch([filterText, sortBy, sortDesc], () => {
                     <UtcDate :date="data.value" mode="elapsed" />
                 </template>
             </b-table>
-
-            <b-pagination
-                v-if="items.length > perPage"
-                v-model="currentPage"
-                :per-page="perPage"
-                :total-rows="items.length"
-                align="center" />
+            <div v-if="allLoaded" class="list-end my-2">- End of search results -</div>
+            <b-overlay :show="loading" opacity="0.5" />
+            <ScrollToTopButton :offset="scrollTop" @click="scrollToTop" />
         </div>
     </section>
 </template>
+
+<style lang="scss">
+@import "theme/blue.scss";
+.list-end {
+    width: 100%;
+    text-align: center;
+    color: $text-light;
+}
+</style>
