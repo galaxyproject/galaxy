@@ -9,7 +9,9 @@ import { useAnimationFrameScroll } from "@/composables/sensors/animationFrameScr
 import { Toast } from "@/composables/toast";
 import type { HistorySummary } from "@/stores/historyStore";
 import { useHistoryStore } from "@/stores/historyStore";
+import localize from "@/utils/localization";
 
+import HistoryDropZone from "../CurrentHistory/HistoryDropZone.vue";
 import MultipleViewItem from "./MultipleViewItem.vue";
 
 const historyStore = useHistoryStore();
@@ -35,27 +37,19 @@ useAnimationFrameResizeObserver(scrollContainer, ({ clientSize, scrollSize }) =>
 
 const scrolledLeft = computed(() => !isScrollable.value || arrived.left);
 const scrolledRight = computed(() => !isScrollable.value || arrived.right);
-const pickerClass = computed(
-    () =>
-        "history-picker text-primary d-flex m-3 p-5 align-items-center text-nowrap" +
-        (showDropZone.value ? " item-drop-effect" : "")
-);
 
 const showDropZone = ref(false);
+const historyPickerText = computed(() =>
+    showDropZone.value ? localize("Create new history with this item") : localize("Select histories")
+);
 const processingDrop = ref(false);
-function onDragEnter(evt: MouseEvent) {
-    showDropZone.value = true;
-}
-
-function onDragLeave(evt: MouseEvent) {
-    showDropZone.value = false;
-}
 async function onDrop(evt: any) {
     if (processingDrop.value) {
+        showDropZone.value = false;
         return;
     }
-    showDropZone.value = false;
     processingDrop.value = true;
+    showDropZone.value = false;
     let data: any;
     try {
         data = JSON.parse(evt.dataTransfer.getData("text"))[0];
@@ -70,9 +64,9 @@ async function onDrop(evt: any) {
             await copyDataset(data.id, currentHistoryId, data.history_content_type, dataSource)
                 .then(() => {
                     if (data.history_content_type === "dataset") {
-                        Toast.info("Dataset copied to history");
+                        Toast.info(localize("Dataset copied to new history"));
                     } else {
-                        Toast.info("Collection copied to history");
+                        Toast.info(localize("Collection copied to new history"));
                     }
                     historyStore.loadHistoryById(currentHistoryId);
                 })
@@ -104,13 +98,14 @@ async function onDrop(evt: any) {
             </VirtualList>
 
             <div
-                :class="pickerClass"
+                class="history-picker text-primary d-flex m-3 align-items-center text-nowrap"
                 @click.stop="$emit('update:show-modal', true)"
                 @drop.prevent="onDrop"
-                @dragenter.prevent="onDragEnter"
+                @dragenter.prevent="showDropZone = true"
                 @dragover.prevent
-                @dragleave.prevent="onDragLeave">
-                Select histories
+                @dragleave.prevent="showDropZone = false">
+                {{ historyPickerText }}
+                <HistoryDropZone v-if="showDropZone" style="left: 0" />
             </div>
         </div>
     </div>
@@ -121,11 +116,9 @@ async function onDrop(evt: any) {
     .history-picker {
         border: dotted lightgray;
         cursor: pointer;
-    }
-
-    .item-drop-effect {
-        border: lightgray;
-        background-color: gainsboro;
+        width: 15rem;
+        position: relative;
+        justify-content: center;
     }
 
     position: relative;
