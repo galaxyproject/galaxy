@@ -34,6 +34,7 @@ from galaxy.managers.model_stores import ModelStoreManager
 from galaxy.managers.tool_data import ToolDataImportManager
 from galaxy.metadata.set_metadata import set_metadata_portable
 from galaxy.model.scoped_session import galaxy_scoped_session
+from galaxy.queue_worker import GalaxyQueueWorker
 from galaxy.schema.tasks import (
     ComputeDatasetHashTaskRequest,
     GenerateHistoryContentDownload,
@@ -56,6 +57,11 @@ from galaxy.util.custom_logging import get_logger
 from galaxy.web.short_term_storage import ShortTermStorageMonitor
 
 log = get_logger(__name__)
+
+
+@lru_cache()
+def setup_data_table_manager(app):
+    app._configure_tool_data_tables(from_shed_config=False)
 
 
 @lru_cache()
@@ -369,6 +375,7 @@ def compute_dataset_hash(
 
 @galaxy_task(action="import a data bundle")
 def import_data_bundle(
+    app: MinimalManagerApp,
     hda_manager: HDAManager,
     ldda_manager: LDDAManager,
     tool_data_import_manager: ToolDataImportManager,
@@ -378,6 +385,7 @@ def import_data_bundle(
     id: Optional[int] = None,
     tool_data_file_path: Optional[str] = None,
 ):
+    setup_data_table_manager(app)
     if src == "uri":
         assert uri
         tool_data_import_manager.import_data_bundle_by_uri(config, uri, tool_data_file_path=tool_data_file_path)
@@ -389,6 +397,8 @@ def import_data_bundle(
         else:
             dataset = ldda_manager.by_id(id)
         tool_data_import_manager.import_data_bundle_by_dataset(config, dataset, tool_data_file_path=tool_data_file_path)
+    queue_worker = GalaxyQueueWorker(app)
+    queue_worker.send_control_task("reload_tool_data_tables")
 
 
 @galaxy_task(action="pruning history audit table")
