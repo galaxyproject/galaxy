@@ -18,6 +18,7 @@ export interface User extends QuotaUsageResponse {
     email: string;
     tags_used: string[];
     isAnonymous: false;
+    is_admin?: boolean;
 }
 
 export interface AnonymousUser {

@@ -44,6 +44,14 @@
                 access it. Note that sharing a History will also allow access to all of its datasets.
             </div>
 
+            <Heading h2 size="md"> Share {{ modelClass }} with Individual Users </Heading>
+
+            <UserSharing
+                :item="item"
+                :model-class="modelClass"
+                @share="(users) => setSharing(actions.share_with, users)"
+                @error="onError" />
+
             <b-card no-body>
                 <b-button
                     v-b-toggle.accordion-1
@@ -260,8 +268,9 @@ import { useUserStore } from "@/stores/userStore";
 
 import ErrorMessages from "./ErrorMessages";
 
-import Heading from "../Common/Heading.vue";
 import EditableUrl from "./EditableUrl.vue";
+import UserSharing from "./UserSharing.vue";
+import Heading from "@/components/Common/Heading.vue";
 
 Vue.use(BootstrapVue);
 library.add(faCopy, faEdit, faUserPlus, faUserSlash, faCaretDown, faCaretUp);
@@ -279,6 +288,7 @@ export default {
         Multiselect,
         Heading,
         EditableUrl,
+        UserSharing,
     },
     props: {
         id: {
