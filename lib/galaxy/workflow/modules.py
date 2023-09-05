@@ -691,6 +691,46 @@ class WorkflowModule:
         return collections_to_match
 
 
+def build_extra_step_state(
+    trans,
+    step: WorkflowStep,
+    progress: "WorkflowProgress",
+    iteration_elements,
+    execution_state=None,
+    all_inputs_by_name: Optional[dict[str, dict[str, Any]]] = None,
+):
+    extra_step_state = {}
+    for step_input in step.inputs:
+        step_input_name = step_input.name
+        if iteration_elements and step_input_name in iteration_elements:  # noqa: B023
+            # extra state is set in execution slice, use it
+            extra_step_state[step_input_name] = iteration_elements[step_input_name]  # noqa: B023
+            continue
+        input_in_execution_state = execution_state and step_input_name not in execution_state.inputs
+        if input_in_execution_state and all_inputs_by_name is not None:
+            if step_input_name in all_inputs_by_name:
+                # extra state value comes from input state
+                extra_step_state[step_input_name] = progress.replacement_for_input(
+                    trans, step, all_inputs_by_name[step_input_name]
+                )
+                continue
+            # Might be needed someday...
+            # elif step_input.default_value_set:
+            #    extra_step_state[step_input_name] = step_input.default_value
+            else:
+                # extra state value comes from connection
+                extra_step_state[step_input_name] = progress.replacement_for_connection(
+                    step_input.connections[0], is_data=True
+                )
+                continue
+        if execution_state is None:
+            extra_step_state[step_input_name] = progress.replacement_for_connection(
+                step_input.connections[0], is_data=True
+            )
+
+    return extra_step_state
+
+
 class SubWorkflowModule(WorkflowModule):
     # Two step improvements to build runtime inputs for subworkflow modules
     # - First pass verify nested workflow doesn't have an RuntimeInputs
@@ -877,15 +917,9 @@ class SubWorkflowModule(WorkflowModule):
             else:
                 # Got a conditional step and we could potentially run it,
                 # so we have to build the step state and evaluate the expression
-                extra_step_state = {}
-                for step_input in step.inputs:
-                    step_input_name = step_input.name
-                    if iteration_elements and step_input_name in iteration_elements:  # noqa: B023
-                        value = iteration_elements[step_input_name]  # noqa: B023
-                    else:
-                        value = progress.replacement_for_connection(step_input.connections[0], is_data=True)
-                    extra_step_state[step_input_name] = value
-
+                extra_step_state = build_extra_step_state(
+                    trans, step, progress=progress, iteration_elements=iteration_elements
+                )
                 when_values.append(
                     evaluate_value_from_expressions(
                         progress, step, execution_state={}, extra_step_state=extra_step_state
@@ -2400,65 +2434,12 @@ class ToolModule(WorkflowModule):
         if not value_from_expressions:
             return replacements
 
-        hda_references = []
-
-        def to_cwl(value):
-            if isinstance(value, model.HistoryDatasetAssociation):
-                # I think the following two checks are needed but they may
-                # not be needed.
-                if not value.dataset.in_ready_state():
-                    why = f"dataset [{value.id}] is needed for valueFrom expression and is non-ready"
-                    raise DelayedWorkflowEvaluation(why=why)
-
-                if not value.is_ok:
-                    raise CancelWorkflowEvaluation()
-
-                hda_references.append(value)
-                if value.ext == "expression.json":
-                    with open(value.get_file_name()) as f:
-                        # OUR safe_loads won't work, will not load numbers, etc...
-                        return json.load(f)
-                else:
-                    properties = {
-                        "class": "File",
-                        "location": f"step_input://{len(hda_references)}",
-                    }
-                    set_basename_and_derived_properties(properties, value.dataset.created_from_basename or value.name)
-                    return properties
-
-            elif hasattr(value, "collection"):
-                collection = value.collection
-                if collection.collection_type == "list":
-                    return map(to_cwl, collection.dataset_instances)
-                elif collection.collection_type == "record":
-                    rval = {}
-                    for element in collection.elements:
-                        rval[element.element_identifier] = to_cwl(element.element_object)
-                    return rval
-            else:
-                return value
-
-        def from_cwl(value):
-            # TODO: turn actual files into HDAs here ... somehow I suppose. Things with
-            # file:// locations for instance.
-            if isinstance(value, dict) and "class" in value and "location" in value:
-                if value["class"] == "File":
-                    # This is going to re-file -> HDA this each iteration I think, not a good
-                    # implementation.
-                    return progress.raw_to_galaxy(value)
-
-                assert value["location"].startswith("step_input://"), f"Invalid location {value}"
-                return hda_references[int(value["location"][len("step_input://") :]) - 1]
-            elif isinstance(value, dict):
-                raise NotImplementedError()
-            else:
-                return value
-
+        hda_references: list[model.HistoryDatasetAssociation] = []
         step_state = {}
         for key, value in extra_step_state.items():
-            step_state[key] = to_cwl(value)
+            step_state[key] = to_cwl(value, hda_references=hda_references, step=step)
         for key, value in execution_state.inputs.items():
-            step_state[key] = to_cwl(value)
+            step_state[key] = to_cwl(value, hda_references=hda_references, step=step)
 
         for key, value_from in value_from_expressions.items():
             as_cwl_value = do_eval(
@@ -2466,7 +2447,7 @@ class ToolModule(WorkflowModule):
                 step_state,
                 context=step_state[key],
             )
-            new_val = from_cwl(as_cwl_value)
+            new_val = from_cwl(as_cwl_value, hda_references=hda_references, progress=progress)
             replacements[key] = new_val
 
         return replacements
@@ -2601,34 +2582,19 @@ class ToolModule(WorkflowModule):
                 message = f"Error due to input mapping of '{unicodify(k)}' in tool '{tool.id}'.  A common cause of this is conditional outputs that cannot be determined until runtime, please review workflow step {step.order_index + 1}."
                 raise exceptions.MessageException(message)
 
-            if step.when_expression and when_value is not False:
-                extra_step_state = {}
-                for step_input in step.inputs:
-                    step_input_name = step_input.name
-                    input_in_execution_state = step_input_name not in execution_state.inputs
-                    if input_in_execution_state:
-                        if step_input_name in all_inputs_by_name:
-                            if iteration_elements and step_input_name in iteration_elements:  # noqa: B023
-                                value = iteration_elements[step_input_name]  # noqa: B023
-                            else:
-                                value = progress.replacement_for_input(trans, step, all_inputs_by_name[step_input_name])
-                            # TODO: only do this for values... is everything with a default
-                            # this way a field parameter? I guess not?
-                            extra_step_state[step_input_name] = value
-                        # Might be needed someday...
-                        # elif step_input.default_value_set:
-                        #    extra_step_state[step_input_name] = step_input.default_value
-                        else:
-                            if iteration_elements and step_input_name in iteration_elements:  # noqa: B023
-                                value = iteration_elements[step_input_name]  # noqa: B023
-                            else:
-                                value = progress.replacement_for_connection(step_input.connections[0], is_data=True)
-                            extra_step_state[step_input_name] = value
+            extra_step_state = build_extra_step_state(
+                trans,
+                step,
+                progress=progress,
+                iteration_elements=iteration_elements,
+                execution_state=execution_state,
+                all_inputs_by_name=all_inputs_by_name,
+            )
 
-                if when_value is not False:
-                    when_value = evaluate_value_from_expressions(
-                        progress, step, execution_state=execution_state, extra_step_state=extra_step_state
-                    )
+            if step.when_expression and when_value is not False:
+                when_value = evaluate_value_from_expressions(
+                    progress, step, execution_state=execution_state, extra_step_state=extra_step_state
+                )
             if when_value is not None:
                 # Track this more formally ?
                 execution_state.inputs["__when_value__"] = when_value
