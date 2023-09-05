@@ -770,12 +770,15 @@ class SubWorkflowModule(WorkflowModule):
                 assert len(progress.when_values) == 1, "Got more than 1 when value, this shouldn't be possible"
             iteration_elements_iter = [(None, progress.when_values[0] if progress.when_values else None)]
 
-        when_values = []
-        if step.when_expression:
-            for iteration_elements, when_value in iteration_elements_iter:
-                if when_value is False:
-                    when_values.append(when_value)
-                    continue
+        when_values: List[Union[bool, None]] = []
+        for iteration_elements, when_value in iteration_elements_iter:
+            if when_value is False or not step.when_expression:
+                # We're skipping this step (when==False) or we keep
+                # the current when_value if there is no explicit when_expression on this step.
+                when_values.append(when_value)
+            else:
+                # Got a conditional step and we could potentially run it,
+                # so we have to build the step state and evaluate the expression
                 extra_step_state = {}
                 for step_input in step.inputs:
                     step_input_name = step_input.name
@@ -790,8 +793,8 @@ class SubWorkflowModule(WorkflowModule):
                         progress, step, execution_state={}, extra_step_state=extra_step_state
                     )
                 )
-            if collection_info:
-                collection_info.when_values = when_values
+        if collection_info:
+            collection_info.when_values = when_values
 
         subworkflow_invoker = progress.subworkflow_invoker(
             trans,
