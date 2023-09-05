@@ -181,8 +181,8 @@ const isLDDA = computed(() => {
 const matchedBatchMode = computed(() => {
     const values = matchedValues.value;
     if (variant.value && values.length > 0 && values[0]) {
-        const hasSubcollectionType = values.find((v) => !!v.subcollection_type);
-        if (hasSubcollectionType) {
+        const hasMapOverType = values.find((v) => !!v.map_over_type);
+        if (hasMapOverType) {
             return true;
         }
         const isMultiple = values.length > 1;
@@ -247,7 +247,7 @@ function createValue(val: Array<DataOption> | DataOption | null) {
     if (val) {
         const values = Array.isArray(val) ? val : [val];
         if (variant.value && values.length > 0 && values[0]) {
-            const hasSubcollectionType = values.find((v) => !!v.subcollection_type);
+            const hasMapOverType = values.find((v) => !!v.map_over_type);
             const isMultiple = values.length > 1;
 
             // Determine source representation (uses only the initial value)
@@ -277,12 +277,12 @@ function createValue(val: Array<DataOption> | DataOption | null) {
 
             // Emit new value
             return {
-                batch: batch !== BATCH.DISABLED || !!hasSubcollectionType,
+                batch: batch !== BATCH.DISABLED || !!hasMapOverType,
                 product: batch === BATCH.ENABLED && !currentLinked.value,
                 values: values.map((entry) => ({
                     id: entry.id,
                     src: entry.src,
-                    subcollection_type: entry.subcollection_type || null,
+                    map_over_type: entry.map_over_type || null,
                 })),
             };
         }
@@ -491,8 +491,8 @@ watch(
                     <span>{{ v.name }}</span>
                     <span>(as {{ getSourceLabel(getSourceType(v)) }})</span>
                 </div>
-                <small v-if="v.subcollection_type" class="ml-2" data-description="form data collection type">
-                    Batch mode input with collection type: {{ v.subcollection_type }}.
+                <small v-if="v.map_over_type" class="ml-2" data-description="form data collection type">
+                    Batch mode input with collection type: {{ v.map_over_type }}.
                 </small>
             </div>
         </b-alert>

@@ -260,7 +260,7 @@ def __expand_collection_parameter(trans, input_key, incoming_val, collections_to
             if src != "hdca":
                 raise exceptions.ToolMetaParameterException(f"Invalid dataset collection source type {src}")
             encoded_hdc_id = incoming_val["id"]
-            subcollection_type = incoming_val.get("subcollection_type", None)
+            subcollection_type = incoming_val.get("map_over_type", None)
         except TypeError:
             encoded_hdc_id = incoming_val
             subcollection_type = None

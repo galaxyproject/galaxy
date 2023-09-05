@@ -29,7 +29,7 @@ const defaultOptions = {
     dce: [
         { id: "dce1", name: "dceName1", src: "dce", is_dataset: true },
         { id: "dce2", name: "dceName2", src: "dce" },
-        { id: "dce3", name: "dceName3", src: "dce", subcollection_type: "subcollectionType" },
+        { id: "dce3", name: "dceName3", src: "dce", map_over_type: "mapOverType" },
         { id: "dce4", name: "dceName4", src: "dce", is_dataset: true },
     ],
     hda: [
@@ -55,12 +55,12 @@ describe("FormData", () => {
         const value_0 = {
             batch: false,
             product: false,
-            values: [{ id: "hda3", src: "hda", subcollection_type: null }],
+            values: [{ id: "hda3", src: "hda", map_over_type: null }],
         };
         const value_1 = {
             batch: false,
             product: false,
-            values: [{ id: "hda1", src: "hda", subcollection_type: null }],
+            values: [{ id: "hda1", src: "hda", map_over_type: null }],
         };
         const options = wrapper.find(".btn-group").findAll("button");
         expect(options.length).toBe(4);
@@ -114,8 +114,8 @@ describe("FormData", () => {
             batch: false,
             product: false,
             values: [
-                { id: "hda2", subcollection_type: null, src: "hda" },
-                { id: "hda3", subcollection_type: null, src: "hda" },
+                { id: "hda2", map_over_type: null, src: "hda" },
+                { id: "hda3", map_over_type: null, src: "hda" },
             ],
         });
         expect(wrapper.emitted().input.length).toEqual(1);
@@ -127,8 +127,8 @@ describe("FormData", () => {
             batch: false,
             product: false,
             values: [
-                { id: "hda2", subcollection_type: null, src: "hda" },
-                { id: "hda3", subcollection_type: null, src: "hda" },
+                { id: "hda2", map_over_type: null, src: "hda" },
+                { id: "hda3", map_over_type: null, src: "hda" },
             ],
         };
         expect(wrapper.emitted().input[0][0]).toEqual(value_0);
@@ -136,7 +136,7 @@ describe("FormData", () => {
         const value_1 = {
             batch: false,
             product: false,
-            values: [{ id: "hda2", subcollection_type: null, src: "hda" }],
+            values: [{ id: "hda2", map_over_type: null, src: "hda" }],
         };
         expect(wrapper.emitted().input[1][0]).toEqual(value_1);
         await wrapper.setProps({ value: value_1 });
@@ -144,7 +144,7 @@ describe("FormData", () => {
         const value_2 = {
             batch: false,
             product: false,
-            values: [{ id: "hda2", subcollection_type: null, src: "hda" }],
+            values: [{ id: "hda2", map_over_type: null, src: "hda" }],
         };
         expect(wrapper.emitted().input[1][0]).toEqual(value_2);
         await wrapper.setProps({ value: value_2 });
@@ -160,7 +160,7 @@ describe("FormData", () => {
         const value_0 = {
             batch: false,
             product: false,
-            values: [{ id: "dce1", subcollection_type: null, src: "dce" }],
+            values: [{ id: "dce1", map_over_type: null, src: "dce" }],
         };
         expect(wrapper.emitted().input[0][0]).toEqual(value_0);
         expect(wrapper.emitted().input.length).toEqual(1);
@@ -180,12 +180,12 @@ describe("FormData", () => {
         expect(wrapper.emitted().input.length).toEqual(2);
     });
 
-    it("dataset collection element as hdca without subcollection_type", async () => {
+    it("dataset collection element as hdca without map_over_type", async () => {
         const wrapper = createTarget({
             value: { values: [{ id: "dce2", src: "dce" }] },
             options: defaultOptions,
         });
-        const value_0 = { batch: true, product: false, values: [{ id: "dce2", subcollection_type: null, src: "dce" }] };
+        const value_0 = { batch: true, product: false, values: [{ id: "dce2", map_over_type: null, src: "dce" }] };
         expect(wrapper.emitted().input[0][0]).toEqual(value_0);
         const messageBatch = wrapper.find("[data-description='form data batch label']");
         expect(messageBatch.text()).toBe("This data input will be submitted in batch mode.");
@@ -199,7 +199,7 @@ describe("FormData", () => {
         const value_0 = {
             batch: true,
             product: false,
-            values: [{ id: "dce3", subcollection_type: "subcollectionType", src: "dce" }],
+            values: [{ id: "dce3", map_over_type: "mapOverType", src: "dce" }],
         };
         expect(wrapper.emitted().input[0][0]).toEqual(value_0);
         const message = wrapper.findAll("[data-description='form data label']");
@@ -207,7 +207,7 @@ describe("FormData", () => {
         expect(message.at(0).text()).toBe("1. dceName3 (as dataset collection)");
         const messageSubcollection = wrapper.findAll("[data-description='form data collection type']");
         expect(messageSubcollection.length).toBe(1);
-        expect(messageSubcollection.at(0).text()).toBe("Batch mode input with collection type: subcollectionType.");
+        expect(messageSubcollection.at(0).text()).toBe("Batch mode input with collection type: mapOverType.");
     });
 
     it("dataset collection element as hdca mapped to non-batch field", async () => {
@@ -219,7 +219,7 @@ describe("FormData", () => {
         const value_0 = {
             batch: true,
             product: false,
-            values: [{ id: "dce3", subcollection_type: "subcollectionType", src: "dce" }],
+            values: [{ id: "dce3", map_over_type: "mapOverType", src: "dce" }],
         };
         expect(wrapper.emitted().input[0][0]).toEqual(value_0);
     });
@@ -233,7 +233,7 @@ describe("FormData", () => {
         const value_0 = {
             batch: false,
             product: false,
-            values: [{ id: "hdca4", subcollection_type: null, src: "hdca" }],
+            values: [{ id: "hdca4", map_over_type: null, src: "hdca" }],
         };
         expect(wrapper.emitted().input[0][0]).toEqual(value_0);
     });
@@ -252,8 +252,8 @@ describe("FormData", () => {
             batch: true,
             product: false,
             values: [
-                { id: "dce1", subcollection_type: null, src: "dce" },
-                { id: "dce4", subcollection_type: null, src: "dce" },
+                { id: "dce1", map_over_type: null, src: "dce" },
+                { id: "dce4", map_over_type: null, src: "dce" },
             ],
         };
         expect(wrapper.emitted().input[0][0]).toEqual(value_0);
@@ -270,7 +270,7 @@ describe("FormData", () => {
         expect(wrapper.emitted().input[1][0]).toEqual({
             batch: true,
             product: false,
-            values: [{ id: "hdca4", subcollection_type: null, src: "hdca" }],
+            values: [{ id: "hdca4", map_over_type: null, src: "hdca" }],
         });
         eventStore.setDragData({ id: "hda2", history_content_type: "dataset" });
         dispatchEvent(wrapper, "dragenter");
@@ -278,7 +278,7 @@ describe("FormData", () => {
         expect(wrapper.emitted().input[2][0]).toEqual({
             batch: false,
             product: false,
-            values: [{ id: "hda2", subcollection_type: null, src: "hda" }],
+            values: [{ id: "hda2", map_over_type: null, src: "hda" }],
         });
     });
 
@@ -291,7 +291,7 @@ describe("FormData", () => {
         expect(wrapper.emitted().input[0][0]).toEqual({
             batch: false,
             product: false,
-            values: [{ id: "hda3", subcollection_type: null, src: "hda" }],
+            values: [{ id: "hda3", map_over_type: null, src: "hda" }],
         });
         const noCheckLinked = wrapper.find("input[type='checkbox']");
         expect(noCheckLinked.exists()).toBeFalsy();
@@ -299,7 +299,7 @@ describe("FormData", () => {
         expect(wrapper.emitted().input[1][0]).toEqual({
             batch: true,
             product: false,
-            values: [{ id: "hda3", subcollection_type: null, src: "hda" }],
+            values: [{ id: "hda3", map_over_type: null, src: "hda" }],
         });
         const checkLinked = wrapper.find("input[type='checkbox']");
         expect(wrapper.find(".custom-switch span").text()).toBe(
@@ -313,7 +313,7 @@ describe("FormData", () => {
         expect(wrapper.emitted().input[2][0]).toEqual({
             batch: true,
             product: true,
-            values: [{ id: "hda3", subcollection_type: null, src: "hda" }],
+            values: [{ id: "hda3", map_over_type: null, src: "hda" }],
         });
     });
 
@@ -334,7 +334,7 @@ describe("FormData", () => {
             expect(wrapper.emitted().input[i][0]).toEqual({
                 batch: false,
                 product: false,
-                values: [{ id: "hdca4", subcollection_type: null, src: "hdca" }],
+                values: [{ id: "hdca4", map_over_type: null, src: "hdca" }],
             });
         }
         expect(wrapper.emitted().input.length).toEqual(2);
@@ -346,7 +346,7 @@ describe("FormData", () => {
         expect(wrapper.emitted().input[2][0]).toEqual({
             batch: false,
             product: false,
-            values: [{ id: "hda3", subcollection_type: null, src: "hda" }],
+            values: [{ id: "hda3", map_over_type: null, src: "hda" }],
         });
         const newSelectedValues = wrapper.findAll(SELECTED_VALUE);
         expect(newSelectedValues.at(0).text()).toBe("3: hdaName3");

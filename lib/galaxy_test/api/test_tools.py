@@ -609,7 +609,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
             inputs = {
                 "input": {
                     "batch": True,
-                    "values": [{"src": "hdca", "subcollection_type": "paired", "id": hdca_id}],
+                    "values": [{"src": "hdca", "map_over_type": "paired", "id": hdca_id}],
                 }
             }
             response = self._run("__UNZIP_COLLECTION__", history_id, inputs, assert_ok=True)
@@ -795,7 +795,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
             inputs = {
                 "input": {
                     "batch": batch,
-                    "values": [{"subcollection_type": "list:paired", "src": "hdca", "id": failed_hdca_id}],
+                    "values": [{"map_over_type": "list:paired", "src": "hdca", "id": failed_hdca_id}],
                 },
             }
         else:
@@ -1691,7 +1691,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
     @skip_without_tool("output_action_change_format_paired")
     def test_map_over_with_nested_paired_output_format_actions(self, history_id):
         hdca_id = self.__build_nested_list(history_id)
-        inputs = {"input": {"batch": True, "values": [dict(subcollection_type="paired", src="hdca", id=hdca_id)]}}
+        inputs = {"input": {"batch": True, "values": [dict(map_over_type="paired", src="hdca", id=hdca_id)]}}
         create = self._run("output_action_change_format_paired", history_id, inputs).json()
         outputs = create["outputs"]
         jobs = create["jobs"]
@@ -2109,7 +2109,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
     def test_paired_input_map_over_nested_collections(self, history_id):
         hdca_id = self.__build_nested_list(history_id)
         inputs = {
-            "input1": {"batch": True, "values": [dict(subcollection_type="paired", src="hdca", id=hdca_id)]},
+            "input1": {"batch": True, "values": [dict(map_over_type="paired", src="hdca", id=hdca_id)]},
         }
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
         create = self._run("collection_paired_structured_like", history_id, inputs, assert_ok=True)
@@ -2127,7 +2127,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
         hdca_id = self.__build_nested_list(history_id)
         inputs = {
             "cond|cond_param": "paired",
-            "cond|input1": {"batch": True, "values": [dict(subcollection_type="paired", src="hdca", id=hdca_id)]},
+            "cond|input1": {"batch": True, "values": [dict(map_over_type="paired", src="hdca", id=hdca_id)]},
         }
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
         create = self._run("collection_paired_conditional_structured_like", history_id, inputs, assert_ok=True)
@@ -2440,7 +2440,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
                 "f1": {"src": "hdca", "id": hdca1_id},
                 "f2": {
                     "batch": True,
-                    "values": [{"src": "hdca", "subcollection_type": "list", "id": hdca2_id}],
+                    "values": [{"src": "hdca", "map_over_type": "list", "id": hdca2_id}],
                 },
             }
             create = self._run("multi_data_param", history_id, inputs, assert_ok=True)
@@ -2569,7 +2569,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
             inputs = {
                 "f1": {
                     "batch": True,
-                    "values": [{"src": "hdca", "subcollection_type": "paired", "id": hdca_list_id}],
+                    "values": [{"src": "hdca", "map_over_type": "paired", "id": hdca_list_id}],
                 }
             }
             self._check_simple_subcollection_mapping(history_id, inputs)
@@ -2598,7 +2598,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
             inputs = {
                 "f1": {
                     "batch": True,
-                    "values": [{"src": "hdca", "subcollection_type": "paired", "id": nested_list_id}],
+                    "values": [{"src": "hdca", "map_over_type": "paired", "id": nested_list_id}],
                 },
                 "f2": {
                     "batch": True,
@@ -2975,7 +2975,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
         dataset_collection = self.dataset_collection_populator.wait_for_fetched_collection(fetch_response)
         hdca_id = dataset_collection["id"]
         inputs = {
-            "input1": {"batch": True, "values": [dict(subcollection_type="paired", src="hdca", id=hdca_id)]},
+            "input1": {"batch": True, "values": [dict(map_over_type="paired", src="hdca", id=hdca_id)]},
         }
         self.dataset_populator.wait_for_history(history_id, assert_ok=True)
         create = self._run("collection_paired_structured_like", history_id, inputs, assert_ok=True)
