@@ -5,8 +5,10 @@ export interface Item {
     published: boolean;
     users_shared_with: Array<{ email: string }>;
     extra?: {
-        cannot_change: unknown[];
-        can_change: unknown[];
+        cannot_change: Array<{ id: string; name: string }>;
+        can_change: Array<{ id: string; name: string }>;
         can_share: boolean;
     };
 }
+
+export type ShareOption = "make_public" | "make_accessible_to_shared" | "no_changes";

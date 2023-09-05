@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import axios from "axios";
-import { BButton } from "bootstrap-vue";
+import { BAlert, BButton, BCard, BCardHeader, BCol, BCollapse, BListGroup, BListGroupItem, BRow } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 import Multiselect from "vue-multiselect";
@@ -10,7 +10,7 @@ import { getAppRoot } from "@/onload";
 import { useUserStore } from "@/stores/userStore";
 import { assertArray } from "@/utils/assertions";
 
-import type { Item } from "./item";
+import type { Item, ShareOption } from "./item";
 
 const props = defineProps<{
     item: Item;
@@ -18,7 +18,7 @@ const props = defineProps<{
 }>();
 
 const emit = defineEmits<{
-    (e: "share", userIds: string[], shareOption?: object): void;
+    (e: "share", userIds: string[], shareOption?: ShareOption): void;
     (e: "error", error: Error): void;
 }>();
 
@@ -112,6 +112,21 @@ const noChanges = computed(() => {
 
     return !(newCandidates.length !== 0 || removedShared.length !== 0);
 });
+
+const canChangeCount = computed(() => props.item.extra?.can_change.length ?? 0);
+const cannotChangeCount = computed(() => props.item.extra?.cannot_change.length ?? 0);
+
+function onMakePublic() {
+    emit("share", sharingCandidatesAsEmails.value, "make_public");
+}
+
+function onMakePrivate() {
+    emit("share", sharingCandidatesAsEmails.value, "make_accessible_to_shared");
+}
+
+function onShareAnyway() {
+    emit("share", sharingCandidatesAsEmails.value, "no_changes");
+}
 </script>
 
 <template>
@@ -150,7 +165,8 @@ const noChanges = computed(() => {
                                 aria-hidden="true"
                                 tabindex="0"
                                 class="multiselect__tag-icon"
-                                @click="remove(option)"></i>
+                                @click="remove(option)"
+                                @keyup.enter.space="remove(option)"></i>
                         </span>
                     </template>
 
@@ -181,6 +197,71 @@ const noChanges = computed(() => {
                 </div>
             </div>
         </div>
+
+        <BAlert variant="warning" dismissible fade :show="permissionsChangeRequired">
+            {{
+                canChangeCount > 0
+                    ? `${canChangeCount} datasets are exclusively private to you`
+                    : `You are not authorized to share ${cannotChangeCount} datasets`
+            }}
+        </BAlert>
+
+        <BRow v-if="permissionsChangeRequired">
+            <BCol v-if="canChangeCount > 0">
+                <BCard>
+                    <BCardHeader header-tag="header" class="p-1" role="tab">
+                        <BButton v-b-toggle.can-share block variant="warning">
+                            Datasets can be shared by updating their permissions
+                        </BButton>
+                    </BCardHeader>
+
+                    <BCollapse id="can-share" visible accordion="can-share-accordion" role="tabpanel">
+                        <BListGroup>
+                            <BListGroupItem v-for="dataset in props.item.extra?.can_change ?? []" :key="dataset.id">
+                                {{ dataset.name }}
+                            </BListGroupItem>
+                        </BListGroup>
+                    </BCollapse>
+                </BCard>
+            </BCol>
+
+            <BCol v-if="cannotChangeCount > 0">
+                <BCard>
+                    <BCardHeader header-tag="header" class="p-1" role="tab">
+                        <BButton v-b-toggle.cannot-share block variant="danger">
+                            Datasets cannot be shared, you are not authorized to change permissions
+                        </BButton>
+                    </BCardHeader>
+
+                    <BCollapse id="cannot-share" visible accordion="cannot-accordion" role="tabpanel">
+                        <BListGroup>
+                            <BListGroupItem v-for="dataset in props.item.extra?.cannot_change ?? []" :key="dataset.id">
+                                {{ dataset.name }}
+                            </BListGroupItem>
+                        </BListGroup>
+                    </BCollapse>
+                </BCard>
+            </BCol>
+
+            <BCol>
+                <BCard
+                    border-variant="primary"
+                    header="How would you like to proceed?"
+                    header-bg-variant="primary"
+                    header-text-variant="white">
+                    <BButton v-if="canChangeCount > 0" block @click="onMakePublic"> Make datasets public </BButton>
+
+                    <BButton v-if="canChangeCount > 0" block @click="onMakePrivate">
+                        Make datasets private to me and
+                        {{ sharingCandidatesAsEmails.join() }}
+                    </BButton>
+
+                    <BButton block @click="onShareAnyway"> Share Anyway </BButton>
+
+                    <BButton block variant="warning" @click="onCancel"> Cancel </BButton>
+                </BCard>
+            </BCol>
+        </BRow>
     </div>
 </template>
 

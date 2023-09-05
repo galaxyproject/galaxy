@@ -49,7 +49,7 @@
             <UserSharing
                 :item="item"
                 :model-class="modelClass"
-                @share="(users) => setSharing(actions.share_with, users)"
+                @share="(users, option) => setSharing(actions.share_with, users, option)"
                 @error="onError" />
 
             <b-card no-body>
