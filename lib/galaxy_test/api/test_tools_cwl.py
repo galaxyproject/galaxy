@@ -24,7 +24,6 @@ class TestCwlTools(ApiTestCase):
 
     dataset_populator: DatasetPopulator
 
-    allow_path_paste = True
     require_admin_user = True
 
     def setUp(self):

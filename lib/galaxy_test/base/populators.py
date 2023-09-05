@@ -2422,9 +2422,10 @@ class CwlPopulator:
                 self.dataset_populator.galaxy_interactor,
                 history_id,
                 job,
-                use_fetch_api=False,
+                use_fetch_api=True,
                 tool_or_workflow=tool_or_workflow,
                 job_dir=test_data_directory,
+                use_path_paste=False,
             )
             if datasets:
                 self.dataset_populator.wait_for_history(history_id=history_id, assert_ok=True)
@@ -2473,8 +2474,9 @@ class CwlPopulator:
         expected_outputs = test["output"]
         try:
             for key, value in expected_outputs.items():
-                actual_output = run.get_output_as_object(key)
-                cwltest.compare.compare(value, actual_output)
+                with tempfile.TemporaryDirectory() as tmpdir:
+                    actual_output = run.get_output_as_object(key, download_folder=tmpdir)
+                    cwltest.compare.compare(value, actual_output)
         except Exception:
             self.dataset_populator._summarize_history(run.history_id)
             raise
