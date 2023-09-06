@@ -65,14 +65,15 @@ class StagingInterface(metaclass=abc.ABCMeta):
             self._handle_job(job)
         return tool_response
 
-    def _fetch_post(self, payload: Dict[str, Any]) -> Dict[str, Any]:
+    def _fetch_post(self, payload: Dict[str, Any]) -> List[Dict[str, Any]]:
         tool_response = self._post("tools/fetch", payload)
+        job_details = []
         for job in tool_response.get("jobs", []):
-            self._handle_job(job)
-        return tool_response
+            job_details.append(self._handle_job(job))
+        return job_details
 
     @abc.abstractmethod
-    def _handle_job(self, job_response: Dict[str, Any]):
+    def _handle_job(self, job_response: Dict[str, Any]) -> Dict[str, Any]:
         """Implementer can decide if to wait for job(s) individually or not here."""
 
     def stage(
@@ -161,7 +162,7 @@ class StagingInterface(metaclass=abc.ABCMeta):
                     fetch_payload["targets"][0]["elements"][0]["tags"] = tags
             else:
                 raise ValueError(f"Unsupported type for upload_target: {type(upload_target)}")
-            return self._fetch_post(fetch_payload)
+            return self._fetch_post(fetch_payload)[0]
 
         # Save legacy upload_func to target older Galaxy servers
         def upload_func(upload_target: UploadTarget) -> Dict[str, Any]:
@@ -290,8 +291,9 @@ class InteractorStaging(StagingInterface):
         assert response.status_code == 200, response.text
         return response.json()
 
-    def _handle_job(self, job_response: Dict[str, Any]):
+    def _handle_job(self, job_response: Dict[str, Any]) -> Dict[str, Any]:
         self.galaxy_interactor.wait_for_job(job_response["id"])
+        return self.galaxy_interactor.get_job_stdio(job_response["id"])
 
     @property
     def use_fetch_api(self):
