@@ -197,7 +197,7 @@ defineExpose({
                     </template>
                 </Multiselect>
 
-                <div class="share-with-card-buttons">
+                <div class="share-with-card-buttons mt-2 w-100 d-flex justify-content-end flex-gapx-1">
                     <BButton class="cancel-sharing-with" :disabled="noChanges" @click="onCancel"> Cancel </BButton>
                     <BButton variant="primary" class="submit-sharing-with" :disabled="noChanges" @click="onSubmit">
                         {{ currentSearch ? `Add` : `Save` }}
