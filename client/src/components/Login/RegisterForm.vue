@@ -93,8 +93,9 @@
                     </b-card>
                 </b-form>
             </div>
-            <div v-if="termsUrl" class="col">
-                <b-embed type="iframe" :src="termsUrl" aspect="1by1" />
+            <div v-if="termsUrl" class="col position-relative embed-container">
+                <iframe title="terms-of-use" :src="termsUrl" frameborder="0" class="terms-iframe"></iframe>
+                <div v-localize class="scroll-hint">↓ Scroll to review ↓</div>
             </div>
         </div>
     </div>
@@ -204,3 +205,25 @@ export default {
     },
 };
 </script>
+<style scoped>
+.embed-container {
+    position: relative;
+}
+
+.scroll-hint {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(255, 255, 255, 0.9);
+    padding: 2px 5px;
+    border-radius: 4px;
+}
+
+.terms-iframe {
+    width: 100%;
+    height: 90vh;
+    border: none;
+    overflow-y: auto;
+}
+</style>
