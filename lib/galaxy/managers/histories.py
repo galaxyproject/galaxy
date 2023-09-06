@@ -885,7 +885,14 @@ class HistoryFilters(sharable.SharableModelFilters, deletable.PurgableFiltersMix
             }
         )
         self.fn_filter_parsers.update(
-            {"username": {"op": {"eq": self.username_eq, "contains": self.username_contains, }, }, }
+            {
+                "username": {
+                    "op": {
+                        "eq": self.username_eq,
+                        "contains": self.username_contains,
+                    },
+                },
+            }
         )
 
     def username_eq(self, item, val: str) -> bool:
