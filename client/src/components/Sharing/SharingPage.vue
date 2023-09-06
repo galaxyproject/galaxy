@@ -222,7 +222,7 @@ async function setUsername() {
 <template>
     <div>
         <Heading h1 size="lg" separator>
-            Share or Publish {{ modelClass }} <span v-if="ready">`{{ item.title }}`</span>
+            Share or Publish {{ modelClass }} <span v-if="ready">"{{ item.title }}"</span>
         </Heading>
 
         <ErrorMessages :messages="errors" @dismissed="onErrorDismissed"></ErrorMessages>
