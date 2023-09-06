@@ -145,7 +145,8 @@ class StagingInterface(metaclass=abc.ABCMeta):
                 fetch_payload["targets"][0].pop("elements")
                 tar_path = upload_target.tar_path
                 src = _attach_file(fetch_payload, tar_path)
-                fetch_payload["targets"][0]["elements_from"] = src
+                fetch_payload["targets"][0]["elements_from"] = "directory"
+                fetch_payload["targets"][0]["src"] = "files"
             elif isinstance(upload_target, ObjectUploadTarget):
                 content = json.dumps(upload_target.object)
                 fetch_payload = _fetch_payload(history_id, file_type="expression.json")
