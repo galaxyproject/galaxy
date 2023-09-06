@@ -271,18 +271,6 @@ defineExpose({
     </div>
 </template>
 
-<style scoped lang="scss">
-.user-sharing {
-    // removes content shifting
-    &:deep(.multiselect__input) {
-        padding-left: 0;
-        padding-top: 2px;
-        margin-bottom: 10px;
-        font-size: 14px;
-    }
-}
-</style>
-
 <style>
 .user-sharing-modal {
     width: 100%;
