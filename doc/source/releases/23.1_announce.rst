@@ -1,12 +1,48 @@
 
-:orphan:
-
 ===========================================================
 Mid 2023 Galaxy Release (v 23.1)
 ===========================================================
 
+.. include:: _header.rst
 
-Schedule
+Highlights
 ===========================================================
- * Planned Freeze Date: 2023-05-15
- * Planned Release Date: 2023-06-30
+
+
+Get Galaxy
+==========
+
+The code lives at `GitHub <https://github.com/galaxyproject/galaxy>`__ and you should have `Git <https://git-scm.com/>`__ to obtain it.
+
+To get a new Galaxy repository run:
+  .. code-block:: shell
+
+      $ git clone -b release_23.1 https://github.com/galaxyproject/galaxy.git
+
+To update an existing Galaxy repository run:
+  .. code-block:: shell
+
+      $ git fetch origin && git checkout release_23.1 && git pull --ff-only origin release_23.1
+
+See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for additional details on source code locations.
+
+Administration Notes
+====================
+
+
+Configuration Changes
+=====================
+
+
+Deprecation Notices
+===========================================================
+
+The first Galaxy release of 2024 (24.0) will drop support for Python 3.7, which has already reached end of life (EOL).
+
+Release Notes
+===========================================================
+
+.. include:: 23.1.rst
+   :start-after: announce_start
+
+.. include:: _thanks.rst
