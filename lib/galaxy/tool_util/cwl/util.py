@@ -156,10 +156,7 @@ def galactic_job_json(
     dataset_collections: List[Dict[str, Any]] = []
 
     def response_to_hda(target: UploadTarget, upload_response: Dict[str, Any]) -> Dict[str, str]:
-        assert isinstance(upload_response, dict), upload_response
-        assert "outputs" in upload_response, upload_response
-        assert len(upload_response["outputs"]) > 0, upload_response
-        dataset = upload_response["outputs"][0]
+        dataset = next(iter(upload_response["outputs"].values()))
         datasets.append(dataset)
         dataset_id = dataset["id"]
         return {"src": "hda", "id": dataset_id}
