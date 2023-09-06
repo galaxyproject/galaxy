@@ -23,7 +23,6 @@ import NewUserWelcome from "components/NewUserWelcome/NewUserWelcome";
 import PageList from "components/Page/PageList";
 import PageDisplay from "components/PageDisplay/PageDisplay";
 import PageEditor from "components/PageEditor/PageEditor";
-import Sharing from "components/Sharing/Sharing";
 import ToolSuccess from "components/Tool/ToolSuccess";
 import ToolsList from "components/ToolsList/ToolsList";
 import ToolsJson from "components/ToolsView/ToolsSchemaJson/ToolsJson";
@@ -67,6 +66,7 @@ import AboutGalaxy from "@/components/AboutGalaxy.vue";
 import HistoryArchive from "@/components/History/Archiving/HistoryArchive.vue";
 import HistoryArchiveWizard from "@/components/History/Archiving/HistoryArchiveWizard.vue";
 import NotificationsList from "@/components/Notifications/NotificationsList.vue";
+import Sharing from "@/components/Sharing/SharingPage.vue";
 import WorkflowPublished from "@/components/Workflow/Published/WorkflowPublished.vue";
 
 Vue.use(VueRouter);
