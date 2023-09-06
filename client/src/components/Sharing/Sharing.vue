@@ -50,7 +50,8 @@
                 :item="item"
                 :model-class="modelClass"
                 @share="(users, option) => setSharing(actions.share_with, users, option)"
-                @error="onError" />
+                @error="onError"
+                @cancel="getSharing" />
 
             <b-card no-body>
                 <b-button
@@ -340,10 +341,12 @@ export default {
         watch(
             () => item.value.username_and_slug,
             (value) => {
-                const index = value.lastIndexOf("/");
+                if (value) {
+                    const index = value.lastIndexOf("/");
 
-                itemUrl.prefix = itemRoot.value + value.substring(0, index + 1);
-                itemUrl.slug = value.substring(index + 1);
+                    itemUrl.prefix = itemRoot.value + value.substring(0, index + 1);
+                    itemUrl.slug = value.substring(index + 1);
+                }
             },
             { immediate: true }
         );

@@ -1,6 +1,16 @@
 <script setup lang="ts">
 import axios from "axios";
-import { BAlert, BButton, BCard, BCardHeader, BCol, BCollapse, BListGroup, BListGroupItem, BRow } from "bootstrap-vue";
+import {
+    BAlert,
+    BButton,
+    BCard,
+    BCardGroup,
+    BFormSelect,
+    BFormSelectOption,
+    BListGroup,
+    BListGroupItem,
+    BModal,
+} from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 import Multiselect from "vue-multiselect";
@@ -12,6 +22,8 @@ import { assertArray } from "@/utils/assertions";
 
 import type { Item, ShareOption } from "./item";
 
+import Heading from "../Common/Heading.vue";
+
 const props = defineProps<{
     item: Item;
     modelClass: string;
@@ -20,6 +32,7 @@ const props = defineProps<{
 const emit = defineEmits<{
     (e: "share", userIds: string[], shareOption?: ShareOption): void;
     (e: "error", error: Error): void;
+    (e: "cancel"): void;
 }>();
 
 const { currentUser } = storeToRefs(useUserStore());
@@ -42,7 +55,7 @@ const sharingCandidatesAsEmails = computed(() => sharingCandidates.value.map(({ 
 watch(
     () => props.item.users_shared_with,
     (users) => {
-        sharingCandidates.value = [...users];
+        sharingCandidates.value = [...(users ?? [])];
     },
     { immediate: true }
 );
@@ -79,7 +92,7 @@ async function onSearchChanged(searchValue: string) {
 function onBlur() {
     const isValueChosen = sharingCandidates.value.some(({ email }) => email === currentSearch.value);
 
-    if (currentSearch.value && !sharingCandidatesAsEmails.value && !isValueChosen) {
+    if (currentSearch.value && !exposeEmails.value && !isValueChosen) {
         sharingCandidates.value.push({ email: currentSearch.value });
     }
 }
@@ -96,7 +109,8 @@ const charactersThresholdWarning = "Enter at least 3 characters to see suggestio
 const elementsNotFoundWarning = "No elements found. Consider changing the search query";
 
 function onCancel() {
-    sharingCandidates.value = [...props.item.users_shared_with];
+    sharingCandidates.value = [...(props.item.users_shared_with ?? [])];
+    emit("cancel");
 }
 
 function onSubmit() {
@@ -105,7 +119,7 @@ function onSubmit() {
 
 const noChanges = computed(() => {
     const candidates = [...sharingCandidatesAsEmails.value];
-    const sharedWith = [...props.item.users_shared_with.map(({ email }) => email)];
+    const sharedWith = [...(props.item.users_shared_with ?? []).map(({ email }) => email)];
 
     const newCandidates = candidates.filter((email) => !sharedWith.includes(email));
     const removedShared = sharedWith.filter((email) => !candidates.includes(email));
@@ -116,23 +130,17 @@ const noChanges = computed(() => {
 const canChangeCount = computed(() => props.item.extra?.can_change.length ?? 0);
 const cannotChangeCount = computed(() => props.item.extra?.cannot_change.length ?? 0);
 
-function onMakePublic() {
-    emit("share", sharingCandidatesAsEmails.value, "make_public");
-}
+const selectedSharingOption = ref<ShareOption>("make_public");
 
-function onMakePrivate() {
-    emit("share", sharingCandidatesAsEmails.value, "make_accessible_to_shared");
-}
-
-function onShareAnyway() {
-    emit("share", sharingCandidatesAsEmails.value, "no_changes");
+function onUpdatePermissions() {
+    emit("share", sharingCandidatesAsEmails.value, selectedSharingOption.value);
 }
 </script>
 
 <template>
     <div class="user-sharing">
-        <div v-if="currentUser && isConfigLoaded && !permissionsChangeRequired">
-            <p v-if="props.item.users_shared_with.length === 0">
+        <div v-if="currentUser && isConfigLoaded">
+            <p v-if="props.item.users_shared_with?.length === 0">
                 You have not shared this {{ props.modelClass }} with any users.
             </p>
             <p v-else>
@@ -198,70 +206,68 @@ function onShareAnyway() {
             </div>
         </div>
 
-        <BAlert variant="warning" dismissible fade :show="permissionsChangeRequired">
-            {{
-                canChangeCount > 0
-                    ? `${canChangeCount} datasets are exclusively private to you`
-                    : `You are not authorized to share ${cannotChangeCount} datasets`
-            }}
-        </BAlert>
+        <BModal
+            :visible="permissionsChangeRequired"
+            size="xl"
+            no-close-on-backdrop
+            scrollable
+            dialog-class="user-sharing-modal"
+            @ok="onUpdatePermissions"
+            @cancel="onCancel"
+            @close="onCancel">
+            <template v-slot:modal-title>
+                <Heading inline h2 size="md"> Permissions Change Required </Heading>
+            </template>
 
-        <BRow v-if="permissionsChangeRequired">
-            <BCol v-if="canChangeCount > 0">
-                <BCard>
-                    <BCardHeader header-tag="header" class="p-1" role="tab">
-                        <BButton v-b-toggle.can-share block variant="warning">
-                            Datasets can be shared by updating their permissions
-                        </BButton>
-                    </BCardHeader>
+            <BAlert variant="warning" dismissible :show="permissionsChangeRequired && canChangeCount > 0">
+                This {{ modelClass }} contains {{ canChangeCount }}
+                {{ canChangeCount === 1 ? "dataset which is" : "datasets which are" }} exclusively private to you. You
+                need to update {{ canChangeCount === 1 ? "its" : "their" }} permissions, in order to share
+                {{ canChangeCount === 1 ? "it" : "them" }}.
+            </BAlert>
 
-                    <BCollapse id="can-share" visible accordion="can-share-accordion" role="tabpanel">
-                        <BListGroup>
-                            <BListGroupItem v-for="dataset in props.item.extra?.can_change ?? []" :key="dataset.id">
-                                {{ dataset.name }}
-                            </BListGroupItem>
-                        </BListGroup>
-                    </BCollapse>
-                </BCard>
-            </BCol>
+            <BAlert variant="danger" dismissible :show="permissionsChangeRequired && cannotChangeCount > 0">
+                This {{ modelClass }} contains {{ cannotChangeCount }}
+                {{ cannotChangeCount === 1 ? "dataset" : "datasets" }} which you are not authorized to share.
+            </BAlert>
 
-            <BCol v-if="cannotChangeCount > 0">
-                <BCard>
-                    <BCardHeader header-tag="header" class="p-1" role="tab">
-                        <BButton v-b-toggle.cannot-share block variant="danger">
-                            Datasets cannot be shared, you are not authorized to change permissions
-                        </BButton>
-                    </BCardHeader>
+            <BCard
+                border-variant="primary"
+                header="How would you like to proceed?"
+                header-bg-variant="primary"
+                header-text-variant="white"
+                class="mb-4">
+                <BFormSelect v-model="selectedSharingOption">
+                    <BFormSelectOption value="make_public"> Make datasets public </BFormSelectOption>
+                    <BFormSelectOption value="make_accessible_and_shared">
+                        Make datasets private to me and users this {{ modelClass }} is shared with
+                    </BFormSelectOption>
+                    <BFormSelectOption value="no_changes"> Share {{ modelClass }} anyways </BFormSelectOption>
+                </BFormSelect>
+            </BCard>
 
-                    <BCollapse id="cannot-share" visible accordion="cannot-accordion" role="tabpanel">
-                        <BListGroup>
-                            <BListGroupItem v-for="dataset in props.item.extra?.cannot_change ?? []" :key="dataset.id">
-                                {{ dataset.name }}
-                            </BListGroupItem>
-                        </BListGroup>
-                    </BCollapse>
-                </BCard>
-            </BCol>
-
-            <BCol>
+            <BCardGroup deck>
                 <BCard
-                    border-variant="primary"
-                    header="How would you like to proceed?"
-                    header-bg-variant="primary"
-                    header-text-variant="white">
-                    <BButton v-if="canChangeCount > 0" block @click="onMakePublic"> Make datasets public </BButton>
-
-                    <BButton v-if="canChangeCount > 0" block @click="onMakePrivate">
-                        Make datasets private to me and
-                        {{ sharingCandidatesAsEmails.join() }}
-                    </BButton>
-
-                    <BButton block @click="onShareAnyway"> Share Anyway </BButton>
-
-                    <BButton block variant="warning" @click="onCancel"> Cancel </BButton>
+                    v-if="canChangeCount > 0"
+                    header="The following datasets can be shared by updating their permissions">
+                    <BListGroup>
+                        <BListGroupItem v-for="dataset in props.item.extra?.can_change ?? []" :key="dataset.id">
+                            {{ dataset.name }}
+                        </BListGroupItem>
+                    </BListGroup>
                 </BCard>
-            </BCol>
-        </BRow>
+
+                <BCard
+                    v-if="cannotChangeCount > 0"
+                    header="The following datasets cannot be shared, you are not authorized to change their permissions">
+                    <BListGroup>
+                        <BListGroupItem v-for="dataset in props.item.extra?.cannot_change ?? []" :key="dataset.id">
+                            {{ dataset.name }}
+                        </BListGroupItem>
+                    </BListGroup>
+                </BCard>
+            </BCardGroup>
+        </BModal>
     </div>
 </template>
 
@@ -274,5 +280,11 @@ function onShareAnyway() {
         margin-bottom: 10px;
         font-size: 14px;
     }
+}
+</style>
+
+<style>
+.user-sharing-modal {
+    width: 100%;
 }
 </style>
