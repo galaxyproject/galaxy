@@ -305,7 +305,7 @@ def galactic_job_json(
 
             file_path = os.path.join(test_data_directory, file_path)
 
-            tmp = tempfile.NamedTemporaryFile(delete=False)
+            tmp = tempfile.NamedTemporaryFile(delete=False, suffix=".tar")
             tf = tarfile.open(fileobj=tmp, mode="w:", dereference=True)
             tf.add(file_path, ".")
             tf.close()
