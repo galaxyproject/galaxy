@@ -3200,7 +3200,7 @@ class CwlCommandBindingTool(Tool):
                     bkp_cwd = os.getcwd()
                     os.chdir(tmp_dir)
                     tar = tarfile.open(tar_file_location)
-                    tar.extractall()
+                    tar.extractall(directory_location)
                     tar.close()
                     os.chdir(bkp_cwd)
 
