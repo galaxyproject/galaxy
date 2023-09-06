@@ -306,7 +306,12 @@ watch([filterText, sortBy, sortDesc], async () => {
                     </router-link>
                 </template>
                 <template v-slot:cell(username)="row">
-                    <a href="#" @click="setFilter('user', row.item.username)">{{ row.item.username }}</a>
+                    <a
+                        href="#"
+                        class="published-histories-username-link"
+                        @click="setFilter('user', row.item.username)"
+                        >{{ row.item.username }}</a
+                    >
                 </template>
                 <template v-slot:cell(tags)="row">
                     <StatelessTags
