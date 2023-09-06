@@ -68,7 +68,7 @@
                                     v-if="mailingJoinAddr && serverMailConfigured"
                                     :label="labelSubscribe"
                                     label-for="register-form-subscribe">
-                                    <input
+                                    <b-form-checkbox
                                         id="register-form-subscribe"
                                         v-model="subscribe"
                                         name="subscribe"
