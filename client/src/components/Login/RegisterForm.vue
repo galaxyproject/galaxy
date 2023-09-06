@@ -3,6 +3,7 @@
         <div class="row justify-content-md-center">
             <div class="col col-lg-6">
                 <b-alert :show="!!registrationWarningMessage" variant="info">
+                    <!-- eslint-disable-next-line vue/no-v-html -->
                     <span v-html="registrationWarningMessage" />
                 </b-alert>
                 <b-alert :show="!!messageText" :variant="messageVariant">
