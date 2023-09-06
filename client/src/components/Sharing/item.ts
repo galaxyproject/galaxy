@@ -8,6 +8,7 @@ export interface Item {
         cannot_change: Array<{ id: string; name: string }>;
         can_change: Array<{ id: string; name: string }>;
     };
+    errors?: string[];
 }
 
 export type ShareOption = "make_public" | "make_accessible_to_shared" | "no_changes";

@@ -12,7 +12,7 @@ import {
     BModal,
 } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
-import { computed, ref, watch } from "vue";
+import { computed, ref } from "vue";
 import Multiselect from "vue-multiselect";
 
 import { useConfig } from "@/composables/config";
@@ -49,16 +49,12 @@ const permissionsChangeRequired = computed(() => {
 const userIsAdmin = computed(() => currentUser.value && "is_admin" in currentUser.value && currentUser.value.is_admin);
 const exposeEmails = computed(() => config.value.expose_user_email || userIsAdmin.value);
 
-const sharingCandidates = ref<Array<{ email: string }>>([]);
+const sharingCandidates = ref<Array<{ email: string }>>([...(props.item.users_shared_with ?? [])]);
 const sharingCandidatesAsEmails = computed(() => sharingCandidates.value.map(({ email }) => email));
 
-watch(
-    () => props.item.users_shared_with,
-    (users) => {
-        sharingCandidates.value = [...(users ?? [])];
-    },
-    { immediate: true }
-);
+function reset() {
+    sharingCandidates.value = [...(props.item.users_shared_with ?? [])];
+}
 
 const userOptions = ref<Array<{ email: string }>>([]);
 const currentSearch = ref("");
@@ -135,6 +131,10 @@ const selectedSharingOption = ref<ShareOption>("make_public");
 function onUpdatePermissions() {
     emit("share", sharingCandidatesAsEmails.value, selectedSharingOption.value);
 }
+
+defineExpose({
+    reset,
+});
 </script>
 
 <template>
