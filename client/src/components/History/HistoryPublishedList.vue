@@ -13,13 +13,12 @@ import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { getPublishedHistories, updateTags } from "./services";
 
 const LIMIT = 50;
-const DEFAULT_OFFSET_KEY = "-update_time-true";
 
 const validFilters = {
     name: contains("name"),
     annotation: contains("annotation"),
     tag: contains("tags", "tag", expandNameTag),
-    // add username/owner filter
+    user: contains("username"),
 };
 
 const filters = new Filtering(validFilters, false);
@@ -27,8 +26,8 @@ const filters = new Filtering(validFilters, false);
 const offset = ref({ "-update_time-true": 0 });
 const allHistories = ref([]);
 const results = ref([]);
-const message = ref(null);
-const loading = ref(true);
+const error = ref(null);
+const loading = ref(false);
 const sortDesc = ref(true);
 const filterText = ref("");
 const showAdvanced = ref(false);
@@ -40,19 +39,16 @@ const loadedItemIds = ref(new Set());
 const noItems = computed(() => !loading.value && allHistories.value.length === 0 && !filterText.value);
 const noResults = computed(() => !loading.value && results.value.length === 0 && filterText.value);
 const allLoaded = computed(() => {
-    return noResults.value === false && offset.value[offsetKey.value] === null;
-});
-const offsetKey = computed(() => {
-    return `${filters.getQueryString(filterText.value)}-${sortBy.value}-${sortDesc.value}`;
+    return noResults.value === false && offset.value[getOffsetKey(sortBy.value, sortDesc.value)] === null;
 });
 
-const fields = [
-    { key: "name", sortable: true },
+const fields = computed(() => [
+    { key: "name", sortable: !loading.value },
     { key: "annotation", sortable: false },
     { label: "Owner", key: "username", sortable: false },
     { label: "Tags", key: "tags", sortable: false },
-    { label: "Last Updated", key: "update_time", sortable: true },
-];
+    { label: "Last Updated", key: "update_time", sortable: !loading.value },
+]);
 
 const localFilter = computed({
     get() {
@@ -71,18 +67,74 @@ const updateFilter = (newVal) => {
     filterText.value = newVal.trim();
 };
 
-const onTagClick = (tag) => {
-    updateFilter(filters.setFilterValue(filterText.value, "tag", tag));
+const setFilter = (filter, tag) => {
+    updateFilter(filters.setFilterValue(filterText.value, filter, tag));
 };
 
+const onTagsUpdate = (newTags, row) => {
+    row.item.tags = newTags;
+    updateTags(row.item.id, "History", row.item.tags);
+};
+
+const onToggle = () => {
+    showAdvanced.value = !showAdvanced.value;
+};
+
+const onSearch = () => {
+    onToggle();
+    updateFilter(filters.getFilterText(filterSettings.value));
+};
+
+const scrollToTop = () => {
+    scrollableDiv.value.scrollTo({ top: 0, behavior: "smooth" });
+};
+
+const sortAndFilterHistories = () => {
+    allHistories.value = allHistories.value.sort((a, b) => {
+        const aVal = a[sortBy.value].trim();
+        const bVal = b[sortBy.value].trim();
+        if (!sortDesc.value) {
+            return aVal.localeCompare(bVal);
+        } else {
+            return bVal.localeCompare(aVal);
+        }
+    });
+
+    if (filterText.value) {
+        const currFilters = filters.getFiltersForText(filterText.value);
+        results.value = allHistories.value.filter((history) => {
+            if (!filters.testFilters(currFilters, history)) {
+                return false;
+            }
+            return true;
+        });
+    } else {
+        // no filter
+        results.value = allHistories.value;
+    }
+};
+
+function getOffsetKey(sort_by, sort_desc) {
+    return `${filters.getQueryString(filterText.value)}-${sort_by}-${sort_desc}`;
+}
+
 async function load() {
-    if (allLoaded.value === true) {
+    if (loading.value) {
         return;
     }
     loading.value = true;
-    let currentOffset = offset.value[offsetKey.value];
+    if (allLoaded.value) {
+        sortAndFilterHistories();
+        loading.value = false;
+        error.value = null;
+        return;
+    }
+
+    // Define offsetKey in offset ref if it doesn't exist
+    const currOffsetKey = getOffsetKey(sortBy.value, sortDesc.value);
+    let currentOffset = offset.value[currOffsetKey];
     if (currentOffset === undefined) {
-        offset.value[offsetKey.value] = 0;
+        offset.value[currOffsetKey] = 0;
         currentOffset = 0;
     }
 
@@ -101,52 +153,30 @@ async function load() {
             const newData = data.filter((item) => !loadedItemIds.value.has(item.id));
             allHistories.value = [...allHistories.value, ...newData];
             newData.forEach((item) => loadedItemIds.value.add(item.id));
-            offset.value[DEFAULT_OFFSET_KEY] = allHistories.value.length;
 
-            if (filterText.value) {
-                const currFilters = filters.getFiltersForText(filterText.value);
-                results.value = allHistories.value.filter((history) => {
-                    if (!filters.testFilters(currFilters, history)) {
-                        return false;
-                    }
-                    return true;
-                });
+            // sort and filter allHistories containing new histories
+            sortAndFilterHistories();
 
-                // all items loaded for current filter
-                if (results.value.length <= currentOffset - 1) {
-                    offset.value[offsetKey.value] = null;
-                } else {
-                    offset.value[offsetKey.value] = results.value.length === 0 ? 0 : results.value.length + 1;
-                }
+            // ------ UPDATE OFFSET ------
+            if (results.value.length > currentOffset - 1 && data.length >= 50) {
+                const addToOffset = filterText.value ? 1 : 0;
+                offset.value[currOffsetKey] = results.value.length === 0 ? 0 : results.value.length + addToOffset;
             } else {
-                // no filter
-                results.value = allHistories.value;
+                // All items loaded for current filter/offsetKey
+                offset.value[getOffsetKey("update_time", true)] = null;
+                offset.value[getOffsetKey("update_time", false)] = null;
+                offset.value[getOffsetKey("name", true)] = null;
+                offset.value[getOffsetKey("name", false)] = null;
             }
+            // ---------------------------
+            error.value = null;
         })
         .catch((error) => {
-            message.value = error;
+            error.value = error;
         })
         .finally(() => {
             loading.value = false;
         });
-}
-
-const onTagsUpdate = (newTags, row) => {
-    row.item.tags = newTags;
-    updateTags(row.item.id, "History", row.item.tags);
-};
-
-const onToggle = () => {
-    showAdvanced.value = !showAdvanced.value;
-};
-
-const onSearch = () => {
-    onToggle();
-    updateFilter(filters.getFilterText(filterSettings.value));
-};
-
-function scrollToTop() {
-    scrollableDiv.value.scrollTo({ top: 0, behavior: "smooth" });
 }
 
 onMounted(async () => {
@@ -222,6 +252,12 @@ watch([filterText, sortBy, sortDesc], async () => {
                     v-model="filterSettings['tag:']"
                     size="sm"
                     placeholder="any community tag" />
+                <small class="mt-1">Filter by owner:</small>
+                <b-form-input
+                    id="published-histories-advanced-filter-username"
+                    v-model="filterSettings['user:']"
+                    size="sm"
+                    placeholder="any username" />
                 <div class="mt-3">
                     <b-button
                         id="published-histories-advanced-filter-submit"
@@ -240,8 +276,13 @@ watch([filterText, sortBy, sortDesc], async () => {
                 </div>
             </div>
 
-            <b-alert v-if="noResults" variant="info" show>
-                No matching entries found for: <span class="font-weight-bold">{{ filterText }}</span>
+            <b-alert v-if="noResults || error" :variant="error ? 'danger' : 'info'" show>
+                <div>
+                    No matching entries found for: <span class="font-weight-bold">{{ filterText }}</span>
+                </div>
+                <div v-if="error">
+                    <i>{{ error }}</i>
+                </div>
             </b-alert>
 
             <b-alert v-if="results.length === 0 && loading" variant="info" show>
@@ -254,7 +295,6 @@ watch([filterText, sortBy, sortDesc], async () => {
                 v-if="results.length"
                 id="published-histories-table"
                 no-sort-reset
-                no-local-sorting
                 striped
                 :fields="fields"
                 :items="results"
@@ -265,17 +305,21 @@ watch([filterText, sortBy, sortDesc], async () => {
                         {{ row.item.name }}
                     </router-link>
                 </template>
+                <template v-slot:cell(username)="row">
+                    <a href="#" @click="setFilter('user', row.item.username)">{{ row.item.username }}</a>
+                </template>
                 <template v-slot:cell(tags)="row">
                     <StatelessTags
                         clickable
                         :value="row.item.tags"
                         :disabled="true"
                         @input="(tags) => onTagsUpdate(tags, row)"
-                        @tag-click="onTagClick" />
+                        @tag-click="(tag) => setFilter('tag', tag)" />
                 </template>
 
                 <template v-slot:cell(update_time)="data">
-                    <UtcDate :date="data.value" mode="elapsed" />
+                    <UtcDate v-if="data.value" :date="data.value" mode="elapsed" />
+                    <span v-else> - </span>
                 </template>
             </b-table>
             <div v-if="allLoaded" class="list-end my-2">- End of search results -</div>

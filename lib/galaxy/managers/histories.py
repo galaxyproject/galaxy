@@ -884,3 +884,12 @@ class HistoryFilters(sharable.SharableModelFilters, deletable.PurgableFiltersMix
                 "update_time": {"op": ("le", "ge", "gt", "lt"), "val": self.parse_date},
             }
         )
+        self.fn_filter_parsers.update(
+            {"username": {"op": {"eq": self.username_eq, "contains": self.username_contains,},},}
+        )
+
+    def username_eq(self, item, val: str) -> bool:
+        return val.lower() == str(item.user.username).lower()
+
+    def username_contains(self, item, val: str) -> bool:
+        return val.lower() in str(item.user.username).lower()
