@@ -217,6 +217,7 @@ export default {
     left: 50%;
     transform: translateX(-50%);
     background-color: rgba(255, 255, 255, 0.9);
+    border: 1px solid #ccc;
     padding: 2px 5px;
     border-radius: 4px;
 }
