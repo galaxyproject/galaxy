@@ -2,6 +2,7 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCaretDown, faCaretUp, faCopy, faEdit, faUserPlus, faUserSlash } from "@fortawesome/free-solid-svg-icons";
 import axios from "axios";
+import { BFormCheckbox } from "bootstrap-vue";
 import { computed, nextTick, reactive, ref, watch } from "vue";
 
 import { getGalaxyInstance } from "@/app";
@@ -12,6 +13,7 @@ import { errorMessageAsString } from "@/utils/simple-error";
 import type { Item, ShareOption } from "./item";
 
 import EditableUrl from "./EditableUrl.vue";
+import WorkflowEmbed from "./Embeds/WorkflowEmbed.vue";
 import ErrorMessages from "./ErrorMessages.vue";
 import UserSharing from "./UserSharing.vue";
 import Heading from "@/components/Common/Heading.vue";
@@ -217,10 +219,12 @@ async function setUsername() {
         })
         .catch(onError);
 }
+
+const embedable = computed(() => item.value.importable && props.modelClass.toLocaleLowerCase() === "workflow");
 </script>
 
 <template>
-    <div>
+    <div class="sharing-page">
         <Heading h1 size="lg" separator>
             Share or Publish {{ modelClass }} <span v-if="ready">"{{ item.title }}"</span>
         </Heading>
@@ -237,10 +241,10 @@ async function setUsername() {
         </form>
         <div v-else-if="ready">
             <div class="mb-3">
-                <b-form-checkbox v-model="item.importable" switch class="make-accessible" @change="onImportable">
+                <BFormCheckbox v-model="item.importable" switch class="make-accessible" @change="onImportable">
                     Make {{ modelClass }} accessible
-                </b-form-checkbox>
-                <b-form-checkbox
+                </BFormCheckbox>
+                <BFormCheckbox
                     v-if="item.importable"
                     v-model="item.published"
                     class="make-publishable"
@@ -248,7 +252,7 @@ async function setUsername() {
                     @change="onPublish">
                     Make {{ modelClass }} publicly available in
                     <a :href="publishedUrl" target="_top">Published {{ pluralName }}</a>
-                </b-form-checkbox>
+                </BFormCheckbox>
             </div>
 
             <div v-if="item.importable" class="mb-4">
@@ -265,6 +269,12 @@ async function setUsername() {
                 access it. Note that sharing a History will also allow access to all of its datasets.
             </div>
 
+            <div v-if="embedable" class="mb-4">
+                <Heading h2 size="md"> Embed {{ modelClass }} </Heading>
+
+                <WorkflowEmbed v-if="props.modelClass.toLowerCase() === 'workflow'" :id="id" />
+            </div>
+
             <Heading h2 size="md"> Share {{ modelClass }} with Individual Users </Heading>
 
             <UserSharing
@@ -278,4 +288,10 @@ async function setUsername() {
     </div>
 </template>
 
-<style scoped lang="scss"></style>
+<style scoped lang="scss">
+.sharing-page {
+    container-type: inline-size;
+
+    overflow-y: scroll;
+}
+</style>

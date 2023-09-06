@@ -1,0 +1,194 @@
+<script setup lang="ts">
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faCopy } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { useDebounce } from "@vueuse/core";
+import { BButton, BFormCheckbox, BFormInput, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
+import { computed, reactive, ref } from "vue";
+
+import { copy } from "@/utils/clipboard";
+import { withPrefix } from "@/utils/redirect";
+
+import ZoomControl from "@/components/Workflow/Editor/ZoomControl.vue";
+
+library.add(faCopy);
+
+const props = defineProps<{
+    id: string;
+}>();
+
+const settings = reactive({
+    buttons: true,
+    about: false,
+    heading: false,
+    position: [-20, -20] as [number, number],
+    zoom: 1,
+});
+
+const embedUrl = computed(() => {
+    let url = withPrefix(`/published/workflow?id=${props.id}&embed=true`);
+    url += `&buttons=${settings.buttons}`;
+    url += `&about=${settings.about}`;
+    url += `&heading=${settings.heading}`;
+    url += `&initialX=${settings.position[0]}&initialY=${settings.position[1]}`;
+    url += `&zoom=${settings.zoom}`;
+    return url;
+});
+
+const embed = computed(() => `<iframe title="Galaxy Workflow Embed" src="${embedUrl.value}" />`);
+
+const debouncedUrl = useDebounce(embedUrl, 1000);
+
+function onChangePosition(event: Event, index: number) {
+    const value = parseInt((event.target as HTMLInputElement).value);
+    settings.position[index] = value;
+}
+
+const showEmbed = ref(false);
+const showEmbedDebounced = useDebounce(showEmbed, 100);
+
+const copied = ref(false);
+
+function onCopy() {
+    copy(embed.value);
+    copied.value = true;
+}
+
+function onCopyOut() {
+    copied.value = false;
+}
+
+const clipboardTitle = computed(() => (copied.value ? "Copied!" : "Copy URL"));
+</script>
+
+<template>
+    <div class="workflow-embed">
+        <div class="settings">
+            <BFormCheckbox v-model="settings.heading"> Show heading </BFormCheckbox>
+            <BFormCheckbox v-model="settings.about"> Show about </BFormCheckbox>
+            <BFormCheckbox v-model="settings.buttons"> Show buttons </BFormCheckbox>
+
+            <label for="embed-position-control" class="control-label">
+                Initial position
+                <div id="embed-position-control" class="position-control">
+                    <label>
+                        x:
+                        <input
+                            :value="settings.position[0]"
+                            type="number"
+                            @change="(event) => onChangePosition(event, 0)" />
+                    </label>
+
+                    <label>
+                        y:
+                        <input
+                            :value="settings.position[1]"
+                            type="number"
+                            @change="(event) => onChangePosition(event, 1)" />
+                    </label>
+                </div>
+            </label>
+
+            <label for="embed-zoom-control" class="control-label">
+                Initial zoom
+                <ZoomControl
+                    id="embed-zoom-control"
+                    :zoom-level="settings.zoom"
+                    class="zoom-control"
+                    @onZoom="(level) => (settings.zoom = level)" />
+            </label>
+        </div>
+        <div class="preview">
+            <label for="embed-code" class="w-100">
+                Embed code
+                <BInputGroup id="embed-code">
+                    <BFormInput class="embed-code-input" :value="embed" readonly />
+                    <BInputGroupAppend>
+                        <BButton
+                            v-b-tooltip.hover
+                            :title="clipboardTitle"
+                            variant="primary"
+                            @click="onCopy"
+                            @blur="onCopyOut">
+                            <FontAwesomeIcon icon="copy" />
+                        </BButton>
+                    </BInputGroupAppend>
+                </BInputGroup>
+            </label>
+
+            <BFormCheckbox v-model="showEmbed" switch>Show embed Preview</BFormCheckbox>
+            <iframe v-if="showEmbedDebounced" title="Galaxy Workflow Embed" :src="debouncedUrl" />
+        </div>
+    </div>
+</template>
+
+<style scoped lang="scss">
+@import "theme/blue.scss";
+
+.workflow-embed {
+    display: flex;
+    gap: 0.5rem;
+}
+
+@container (max-width: 1200px) {
+    .workflow-embed {
+        flex-direction: column;
+    }
+}
+
+.workflow-embed {
+    .settings {
+        flex: 1;
+        display: flex;
+        align-items: start;
+        justify-content: start;
+        flex-direction: column;
+    }
+
+    .preview {
+        flex: 1;
+
+        iframe {
+            width: 100%;
+            height: 550px;
+        }
+
+        .embed-code-input {
+            background-color: transparent;
+        }
+    }
+}
+
+.control-label {
+    display: flex;
+    flex-direction: column;
+    margin-top: 0.25rem;
+}
+
+.zoom-control,
+.position-control {
+    position: unset;
+    padding: 2px 4px;
+    border-color: $brand-primary;
+    border-radius: 4px;
+    border-width: 1px;
+    border-style: solid;
+}
+
+.position-control {
+    display: flex;
+    flex-direction: column;
+    width: 9rem;
+
+    input {
+        width: 100%;
+    }
+
+    label {
+        margin-bottom: 0;
+        display: flex;
+        gap: 0.25rem;
+        align-items: center;
+    }
+}
+</style>
