@@ -7,7 +7,7 @@ import StatelessTags from "components/TagsMultiselect/StatelessTags";
 import ScrollToTopButton from "components/ToolsList/ScrollToTopButton";
 import UtcDate from "components/UtcDate";
 import { useAnimationFrameScroll } from "composables/sensors/animationFrameScroll";
-import Filtering, { contains, expandNameTag } from "utils/filtering";
+import Filtering, { contains, equals, expandNameTag } from "utils/filtering";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 
 import { getPublishedHistories, updateTags } from "./services";
@@ -19,9 +19,18 @@ const validFilters = {
     annotation: contains("annotation"),
     tag: contains("tags", "tag", expandNameTag),
     user: contains("username"),
+    user_eq: equals("username"),
 };
 
 const filters = new Filtering(validFilters, false);
+
+const props = defineProps({
+    fUsername: {
+        type: String,
+        required: false,
+        default: null,
+    },
+});
 
 const offset = ref({ "-update_time-true": 0 });
 const allHistories = ref([]);
@@ -91,12 +100,12 @@ const scrollToTop = () => {
 
 const sortAndFilterHistories = () => {
     allHistories.value = allHistories.value.sort((a, b) => {
-        const aVal = a[sortBy.value].trim();
-        const bVal = b[sortBy.value].trim();
+        const aVal = String(a[sortBy.value]).trim();
+        const bVal = String(b[sortBy.value]).trim();
         if (!sortDesc.value) {
-            return aVal.localeCompare(bVal);
+            return aVal - bVal;
         } else {
-            return bVal.localeCompare(aVal);
+            return bVal - aVal;
         }
     });
 
@@ -180,6 +189,9 @@ async function load() {
 }
 
 onMounted(async () => {
+    if (props.fUsername) {
+        filterText.value = filters.getFilterText({ "user_eq:": props.fUsername });
+    }
     await load();
     useInfiniteScroll(scrollableDiv.value, () => load());
 });
@@ -309,7 +321,7 @@ watch([filterText, sortBy, sortDesc], async () => {
                     <a
                         href="#"
                         class="published-histories-username-link"
-                        @click="setFilter('user', row.item.username)"
+                        @click="setFilter('user_eq', row.item.username)"
                         >{{ row.item.username }}</a
                     >
                 </template>
