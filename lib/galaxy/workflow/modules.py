@@ -167,6 +167,8 @@ def to_cwl(value, hda_references, step):
             return rval
     elif isinstance(value, list):
         return [to_cwl(v, hda_references=hda_references, step=step) for v in value]
+    elif is_runtime_value(value):
+        return None
     else:
         return value
 
