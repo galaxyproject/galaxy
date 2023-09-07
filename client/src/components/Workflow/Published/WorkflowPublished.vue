@@ -153,7 +153,7 @@ const viewUrl = computed(() => withPrefix(`/published/workflow?id=${props.id}`))
             <ToolPanel />
         </FlexPanel>
 
-        <div id="center" class="m-3 w-100 overflow-auto d-flex flex-column">
+        <div id="center" class="container-root m-3 w-100 overflow-auto d-flex flex-column">
             <div v-if="loading">
                 <Heading h1 separator size="xl">
                     <FontAwesomeIcon icon="fa-spinner" spin />
@@ -243,6 +243,10 @@ const viewUrl = computed(() => withPrefix(`/published/workflow?id=${props.id}`))
 <style scoped lang="scss">
 @import "theme/blue.scss";
 
+.container-root {
+    container-type: inline-size;
+}
+
 .published-workflow {
     display: flex;
     flex-grow: 1;
@@ -261,8 +265,10 @@ const viewUrl = computed(() => withPrefix(`/published/workflow?id=${props.id}`))
         max-width: 500px;
         height: 100%;
     }
+}
 
-    @media only screen and (max-width: 1100px) {
+@container (max-width: 900px) {
+    .published-workflow {
         flex-direction: column;
         height: unset;
 

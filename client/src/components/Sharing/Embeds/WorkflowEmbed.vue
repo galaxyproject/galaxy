@@ -10,6 +10,7 @@ import { getAppRoot } from "@/onload/loadConfig";
 import { copy } from "@/utils/clipboard";
 
 import ZoomControl from "@/components/Workflow/Editor/ZoomControl.vue";
+import WorkflowPublished from "@/components/Workflow/Published/WorkflowPublished.vue";
 
 library.add(faCopy);
 
@@ -21,9 +22,19 @@ const settings = reactive({
     buttons: true,
     about: false,
     heading: false,
-    position: [-20, -20] as [number, number],
+    initialX: -20,
+    initialY: -20,
     zoom: 1,
 });
+
+function onChangePosition(event: Event, xy: "x" | "y") {
+    const value = parseInt((event.target as HTMLInputElement).value);
+    if (xy === "x") {
+        settings.initialX = value;
+    } else {
+        settings.initialY = value;
+    }
+}
 
 const root = computed(() => {
     const port = window.location.port ? `:${window.location.port}` : "";
@@ -35,19 +46,17 @@ const embedUrl = computed(() => {
     url += `&buttons=${settings.buttons}`;
     url += `&about=${settings.about}`;
     url += `&heading=${settings.heading}`;
-    url += `&initialX=${settings.position[0]}&initialY=${settings.position[1]}`;
+    url += `&initialX=${settings.initialX}&initialY=${settings.initialY}`;
     url += `&zoom=${settings.zoom}`;
     return url;
 });
 
 const embed = computed(() => `<iframe title="Galaxy Workflow Embed" src="${embedUrl.value}" />`);
 
-const debouncedUrl = useDebounce(embedUrl, 1000);
+// These Embed settings are not reactive, to we have to key them
+const embedKey = computed(() => `zoom: ${settings.zoom}, x: ${settings.initialX}, y: ${settings.initialY}`);
 
-function onChangePosition(event: Event, index: number) {
-    const value = parseInt((event.target as HTMLInputElement).value);
-    settings.position[index] = value;
-}
+const debouncedEmbedKey = useDebounce(embedKey, 200);
 
 const showEmbed = ref(false);
 const showEmbedDebounced = useDebounce(showEmbed, 100);
@@ -79,17 +88,17 @@ const clipboardTitle = computed(() => (copied.value ? "Copied!" : "Copy URL"));
                     <label>
                         x:
                         <input
-                            :value="settings.position[0]"
+                            :value="settings.initialX"
                             type="number"
-                            @change="(event) => onChangePosition(event, 0)" />
+                            @change="(event) => onChangePosition(event, 'x')" />
                     </label>
 
                     <label>
                         y:
                         <input
-                            :value="settings.position[1]"
+                            :value="settings.initialY"
                             type="number"
-                            @change="(event) => onChangePosition(event, 1)" />
+                            @change="(event) => onChangePosition(event, 'y')" />
                     </label>
                 </div>
             </label>
@@ -122,7 +131,18 @@ const clipboardTitle = computed(() => (copied.value ? "Copied!" : "Copy URL"));
             </label>
 
             <BFormCheckbox v-model="showEmbed" switch>Show embed Preview</BFormCheckbox>
-            <iframe v-if="showEmbedDebounced" title="Galaxy Workflow Embed" :src="debouncedUrl" />
+            <WorkflowPublished
+                v-if="showEmbedDebounced"
+                :id="props.id"
+                :key="debouncedEmbedKey"
+                class="published-preview"
+                :zoom="settings.zoom"
+                embed
+                :show-about="settings.about"
+                :show-buttons="settings.buttons"
+                :show-heading="settings.heading"
+                :initial-x="settings.initialX"
+                :initial-y="settings.initialY" />
         </div>
     </div>
 </template>
@@ -153,7 +173,9 @@ const clipboardTitle = computed(() => (copied.value ? "Copied!" : "Copy URL"));
     .preview {
         flex: 1;
 
-        iframe {
+        .published-preview {
+            border: 2px solid $brand-primary;
+            border-radius: 4px;
             width: 100%;
             height: 550px;
         }
