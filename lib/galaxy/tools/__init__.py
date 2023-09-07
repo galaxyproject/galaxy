@@ -3615,10 +3615,10 @@ class SynchronizeTool(DatabaseOperationTool):
         self._add_datasets_to_history(history, new_elements2.values())
         # Create collections:
         output_collections.create_collection(
-            next(iter(self.outputs.values())), "output", elements=new_elements1, propagate_hda_tags=False
+            next(iter(self.outputs.values())), "output1", elements=new_elements1, propagate_hda_tags=False
         )
         output_collections.create_collection(
-            next(iter(self.outputs.values())), "output", elements=new_elements2, propagate_hda_tags=False
+            next(iter(self.outputs.values())), "output2", elements=new_elements2, propagate_hda_tags=False
         )
 
 
