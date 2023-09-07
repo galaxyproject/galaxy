@@ -3563,8 +3563,8 @@ class SortTool(DatabaseOperationTool):
         )
 
 
-class SynchronizeTool(DatabaseOperationTool):
-    tool_type = "synchronize_list"
+class HarmonizeTool(DatabaseOperationTool):
+    tool_type = "harmonize_list"
     require_terminal_states = False
     require_dataset_ok = False
 
