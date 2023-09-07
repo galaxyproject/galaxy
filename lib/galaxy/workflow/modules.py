@@ -169,6 +169,9 @@ def to_cwl(value, hda_references, step):
         return [to_cwl(v, hda_references=hda_references, step=step) for v in value]
     elif is_runtime_value(value):
         return None
+    elif isinstance(value, dict):
+        # Nested tool state, such as conditionals
+        return {k: to_cwl(v, hda_references=hda_references, step=step) for k, v in value.items()}
     else:
         return value
 
