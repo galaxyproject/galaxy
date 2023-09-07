@@ -24,7 +24,7 @@ has the base runner implementation. To create a new runner, that base
 runner must be inherited and only certain methods need to be
 overridden with your logic.
 
-These are the methods that need to be implemented:
+These are the methods that need to be implemented, with custom logic added as needed:
 
 1. ``__init__(app, nworkers, **kwargs)``
 
