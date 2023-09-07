@@ -59,6 +59,7 @@ import Vue from "vue";
 import VueRouter from "vue-router";
 
 import AvailableDatatypes from "@/components/AvailableDatatypes/AvailableDatatypes";
+import { parseBool } from "@/utils/utils";
 
 import { patchRouterPush } from "./router-push";
 
@@ -140,7 +141,16 @@ export function getRouter(Galaxy) {
             {
                 path: "/published/workflow",
                 component: WorkflowPublished,
-                props: (route) => ({ id: route.query.id }),
+                props: (route) => ({
+                    id: route.query.id,
+                    zoom: parseFloat(route.query.zoom),
+                    embed: parseBool(route.query.embed),
+                    showButtons: parseBool(route.query.buttons),
+                    showAbout: parseBool(route.query.about),
+                    showHeading: parseBool(route.query.heading),
+                    initialX: parseInt(route.query.initialX),
+                    initialY: parseInt(route.query.initialY),
+                }),
             },
             {
                 name: "error",

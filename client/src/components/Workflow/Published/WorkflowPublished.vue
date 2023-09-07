@@ -7,7 +7,6 @@ import { computed, ref, watch } from "vue";
 
 import { fromSimple } from "@/components/Workflow/Editor/modules/model";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
-import { useRouteQueryBool, useRouteQueryNumber } from "@/composables/route";
 import { usePanels } from "@/composables/usePanels";
 import { provideScopedWorkflowStores } from "@/composables/workflowStores";
 import { useUserStore } from "@/stores/userStore";
@@ -24,9 +23,40 @@ import WorkflowGraph from "@/components/Workflow/Editor/WorkflowGraph.vue";
 
 library.add(faSpinner, faUser, faBuilding, faPlay, faEdit, faDownload);
 
-const props = defineProps<{
-    id: string;
-}>();
+const props = defineProps({
+    id: {
+        type: String,
+        required: true,
+    },
+    zoom: {
+        type: Number,
+        default: 0.75,
+    },
+    embed: {
+        type: Boolean,
+        default: false,
+    },
+    showButtons: {
+        type: Boolean,
+        default: true,
+    },
+    showAbout: {
+        type: Boolean,
+        default: true,
+    },
+    showHeading: {
+        type: Boolean,
+        default: true,
+    },
+    initialX: {
+        type: Number,
+        default: -20,
+    },
+    initialY: {
+        type: Number,
+        default: -20,
+    },
+});
 
 const workflowInfo = ref<
     | {
@@ -49,11 +79,9 @@ const { datatypesMapper } = useDatatypesMapper();
 
 const { stateStore } = provideScopedWorkflowStores(props.id);
 
-const defaultScale = useRouteQueryNumber("zoom", 0.75);
-
 watch(
-    () => defaultScale.value,
-    () => stateStore.setScale(defaultScale.value),
+    () => props.zoom,
+    () => stateStore.setScale(props.zoom),
     { immediate: true }
 );
 
@@ -110,16 +138,9 @@ function logInTitle(title: string) {
     }
 }
 
-const embedded = useRouteQueryBool("embed");
-const showButtons = useRouteQueryBool("buttons", true);
-const showAbout = useRouteQueryBool("about", true);
-const showHeading = useRouteQueryBool("heading", true);
-const initialX = useRouteQueryNumber("initialX", -20);
-const initialY = useRouteQueryNumber("initialY", -20);
-
 const initialPosition = computed(() => ({
-    x: -initialX.value * defaultScale.value,
-    y: -initialY.value * defaultScale.value,
+    x: -props.initialX * props.zoom,
+    y: -props.initialY * props.zoom,
 }));
 
 const viewUrl = computed(() => withPrefix(`/published/workflow?id=${props.id}`));
@@ -127,8 +148,8 @@ const viewUrl = computed(() => withPrefix(`/published/workflow?id=${props.id}`))
 
 <template>
     <div id="columns" class="d-flex">
-        <ActivityBar v-if="!embedded && showActivityBar" />
-        <FlexPanel v-if="!embedded && showToolbox" side="left">
+        <ActivityBar v-if="!props.embed && showActivityBar" />
+        <FlexPanel v-if="!props.embed && showToolbox" side="left">
             <ToolPanel />
         </FlexPanel>
 
@@ -150,21 +171,21 @@ const viewUrl = computed(() => withPrefix(`/published/workflow?id=${props.id}`))
             <div v-else-if="workflowInfo" class="published-workflow">
                 <div class="workflow-preview d-flex flex-column">
                     <span
-                        v-if="showHeading || showButtons"
+                        v-if="props.showHeading || props.showButtons"
                         class="d-flex w-100 flex-gapx-1 flex-wrap justify-content-end align-items-center mb-2">
-                        <Heading v-if="showHeading" h1 separator inline size="xl" class="flex-grow-1 mb-0">
-                            <span v-if="showAbout"> Workflow Preview </span>
+                        <Heading v-if="props.showHeading" h1 separator inline size="xl" class="flex-grow-1 mb-0">
+                            <span v-if="props.showAbout"> Workflow Preview </span>
                             <span v-else> {{ workflowInfo.name }} </span>
                         </Heading>
 
-                        <span v-if="showButtons">
+                        <span v-if="props.showButtons">
                             <b-button :to="downloadUrl" title="Download Workflow" variant="secondary" size="md">
                                 <FontAwesomeIcon icon="fa-download" />
                                 Download
                             </b-button>
 
                             <b-button
-                                v-if="!embedded"
+                                v-if="!props.embed"
                                 :href="importUrl"
                                 :disabled="userStore.isAnonymous"
                                 :title="logInTitle('Import Workflow')"
@@ -177,7 +198,7 @@ const viewUrl = computed(() => withPrefix(`/published/workflow?id=${props.id}`))
                             </b-button>
 
                             <b-button
-                                v-if="!embedded"
+                                v-if="!props.embed"
                                 :to="runUrl"
                                 :disabled="userStore.isAnonymous"
                                 :title="logInTitle('Run Workflow')"
@@ -188,7 +209,7 @@ const viewUrl = computed(() => withPrefix(`/published/workflow?id=${props.id}`))
                             </b-button>
 
                             <b-button
-                                v-if="embedded"
+                                v-if="props.embed"
                                 :href="viewUrl"
                                 target="blank"
                                 variant="primary"
@@ -211,9 +232,9 @@ const viewUrl = computed(() => withPrefix(`/published/workflow?id=${props.id}`))
                 </div>
 
                 <WorkflowInformation
-                    v-if="showAbout && workflowInfo"
+                    v-if="props.showAbout && workflowInfo"
                     :workflow-info="workflowInfo"
-                    :embedded="embedded" />
+                    :embedded="props.embed" />
             </div>
         </div>
     </div>

@@ -6,8 +6,8 @@ import { useDebounce } from "@vueuse/core";
 import { BButton, BFormCheckbox, BFormInput, BInputGroup, BInputGroupAppend } from "bootstrap-vue";
 import { computed, reactive, ref } from "vue";
 
+import { getAppRoot } from "@/onload/loadConfig";
 import { copy } from "@/utils/clipboard";
-import { withPrefix } from "@/utils/redirect";
 
 import ZoomControl from "@/components/Workflow/Editor/ZoomControl.vue";
 
@@ -25,8 +25,13 @@ const settings = reactive({
     zoom: 1,
 });
 
+const root = computed(() => {
+    const port = window.location.port ? `:${window.location.port}` : "";
+    return `${window.location.protocol}//${window.location.hostname}${port}${getAppRoot()}`;
+});
+
 const embedUrl = computed(() => {
-    let url = withPrefix(`/published/workflow?id=${props.id}&embed=true`);
+    let url = `${root.value}published/workflow?id=${props.id}&embed=true`;
     url += `&buttons=${settings.buttons}`;
     url += `&about=${settings.about}`;
     url += `&heading=${settings.heading}`;
