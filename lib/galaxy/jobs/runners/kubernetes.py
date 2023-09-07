@@ -109,6 +109,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             k8s_interactivetools_use_ssl=dict(map=bool, default=False),
             k8s_interactivetools_ingress_annotations=dict(map=str),
             k8s_interactivetools_ingress_class=dict(map=str, default=None),
+            k8s_interactivetools_tls_secret=dict(map=str, default=None),
         )
 
         if "runner_param_specs" not in kwargs:
@@ -496,9 +497,18 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             k8s_spec_template["spec"]["ingressClassName"] = default_ingress_class
         if self.runner_params.get("k8s_interactivetools_use_ssl"):
             domains = list({e["domain"] for e in entry_points})
-            k8s_spec_template["spec"]["tls"] = [
-                {"hosts": [domain], "secretName": re.sub("[^a-z0-9-]", "-", domain)} for domain in domains
-            ]
+            override_secret = self.runner_params.get("k8s_interactivetools_tls_secret")
+            if override_secret:
+                k8s_spec_template["spec"]["tls"] = [
+                    {"hosts": [domain], "secretName": override_secret} for domain in domains
+                ]
+            else:
+                k8s_spec_template["spec"]["tls"] = [
+                    {
+                    "hosts": [domain],
+                    "secretName": re.sub("[^a-z0-9-]", "-", domain)
+                    } for domain in domains
+                ]
         if self.runner_params.get("k8s_interactivetools_ingress_annotations"):
             new_ann = yaml.safe_load(self.runner_params.get("k8s_interactivetools_ingress_annotations"))
             k8s_spec_template["metadata"]["annotations"].update(new_ann)
