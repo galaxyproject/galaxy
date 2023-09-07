@@ -39,14 +39,7 @@ from galaxy.workflow.extract import (
     extract_workflow,
     summarize,
 )
-from galaxy.workflow.modules import (
-    load_module_sections,
-    module_factory,
-)
-from galaxy.workflow.render import (
-    STANDALONE_SVG_TEMPLATE,
-    WorkflowCanvas,
-)
+from galaxy.workflow.modules import load_module_sections
 
 log = logging.getLogger(__name__)
 
@@ -333,18 +326,16 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
 
     @web.expose
     @web.require_login("use Galaxy workflows")
-    def gen_image(self, trans, id, **kwargs):
-        stored = self.get_stored_workflow(trans, id, check_ownership=True)
+    def gen_image(self, trans, id, embed="false", **kwargs):
+        embed = util.asbool(embed)
         try:
-            svg = self._workflow_to_svg_canvas(trans, stored)
-        except Exception:
-            message = (
-                "Galaxy is unable to create the SVG image. Please check your workflow, there might be missing tools."
-            )
-            return trans.show_error_message(message)
-        trans.response.set_content_type("image/svg+xml")
-        s = STANDALONE_SVG_TEMPLATE % svg.tostring()
-        return s.encode("utf-8")
+            s = trans.app.workflow_manager.get_workflow_svg_from_id(trans, id, for_embed=embed)
+            trans.response.set_content_type("image/svg+xml")
+            return s
+        except Exception as e:
+            log.exception("Failed to generate SVG image")
+            error_message = str(e)
+            return trans.show_error_message(error_message)
 
     @web.legacy_expose_api
     def create(self, trans, payload=None, **kwd):
@@ -630,21 +621,3 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
 
     def get_item(self, trans, id):
         return self.get_stored_workflow(trans, id)
-
-    def _workflow_to_svg_canvas(self, trans, stored):
-        workflow = stored.latest_workflow
-        workflow_canvas = WorkflowCanvas()
-        for step in workflow.steps:
-            # Load from database representation
-            module = module_factory.from_workflow_step(trans, step)
-            module_name = module.get_name()
-            module_data_inputs = module.get_data_inputs()
-            module_data_outputs = module.get_data_outputs()
-            workflow_canvas.populate_data_for_step(
-                step,
-                module_name,
-                module_data_inputs,
-                module_data_outputs,
-            )
-        workflow_canvas.add_steps()
-        return workflow_canvas.finish()

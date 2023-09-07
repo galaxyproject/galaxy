@@ -36,6 +36,7 @@ except Exception:
 from galaxy.config import GalaxyAppConfiguration
 from galaxy.exceptions import (
     MalformedContents,
+    ObjectNotFound,
     ServerNotConfiguredForRequest,
 )
 from galaxy.managers.hdcas import HDCASerializer
@@ -44,6 +45,7 @@ from galaxy.managers.jobs import (
     summarize_job_metrics,
     summarize_job_parameters,
 )
+from galaxy.managers.licenses import LicensesManager
 from galaxy.model.item_attrs import get_item_annotation_str
 from galaxy.model.orm.now import now
 from galaxy.schema import PdfDocumentType
@@ -67,6 +69,7 @@ OUTPUT_LABEL_PATTERN = re.compile(r"output=\s*%s\s*" % ARG_VAL_CAPTURED_REGEX)
 INPUT_LABEL_PATTERN = re.compile(r"input=\s*%s\s*" % ARG_VAL_CAPTURED_REGEX)
 STEP_LABEL_PATTERN = re.compile(r"step=\s*%s\s*" % ARG_VAL_CAPTURED_REGEX)
 PATH_LABEL_PATTERN = re.compile(r"path=\s*%s\s*" % ARG_VAL_CAPTURED_REGEX)
+SIZE_PATTERN = re.compile(r"size=\s*%s\s*" % ARG_VAL_CAPTURED_REGEX)
 # STEP_OUTPUT_LABEL_PATTERN = re.compile(r'step_output=([\w_\-]+)/([\w_\-]+)')
 UNENCODED_ID_PATTERN = re.compile(
     r"(history_id|workflow_id|history_dataset_id|history_dataset_collection_id|job_id|invocation_id)=([\d]+)"
@@ -154,6 +157,12 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
             elif container == "workflow_display":
                 stored_workflow = workflow_manager.get_stored_accessible_workflow(trans, encoded_id)
                 rval = self.handle_workflow_display(line, stored_workflow)
+            elif container == "workflow_image":
+                stored_workflow = workflow_manager.get_stored_accessible_workflow(trans, encoded_id)
+                rval = self.handle_workflow_image(line, stored_workflow)
+            elif container == "workflow_license":
+                stored_workflow = workflow_manager.get_stored_accessible_workflow(trans, encoded_id)
+                rval = self.handle_workflow_license(line, stored_workflow)
             elif container == "history_dataset_collection_display":
                 hdca = collection_manager.get_dataset_collection_instance(trans, "history", encoded_id)
                 rval = self.handle_dataset_collection_display(line, hdca)
@@ -243,6 +252,14 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
+    def handle_workflow_image(self, line, stored_workflow):
+        pass
+
+    @abc.abstractmethod
+    def handle_workflow_license(self, line, stored_workflow):
+        pass
+
+    @abc.abstractmethod
     def handle_dataset_collection_display(self, line, hdca):
         pass
 
@@ -312,6 +329,14 @@ class ReadyForExportMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHand
 
     def handle_workflow_display(self, line, stored_workflow):
         self.ensure_rendering_data_for("workflows", stored_workflow)["name"] = stored_workflow.name
+
+    def handle_workflow_image(self, line, stored_workflow):
+        pass
+
+    def handle_workflow_license(self, line, stored_workflow):
+        self.ensure_rendering_data_for("workflows", stored_workflow)[
+            "license"
+        ] = stored_workflow.latest_workflow.license
 
     def handle_dataset_collection_display(self, line, hdca):
         hdca_serializer = HDCASerializer(self.trans.app)
@@ -431,9 +456,13 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
             file = dataset.file_name
 
         with open(file, "rb") as f:
-            base64_image_data = base64.b64encode(f.read()).decode("utf-8")
-        rval = (f"![{name}](data:image/png;base64,{base64_image_data})", True)
+            image_data = f.read()
+        rval = (self._embed_image(name, "png", image_data), True)
         return rval
+
+    def _embed_image(self, name: str, image_type: str, image_data: bytes):
+        base64_image_data = base64.b64encode(image_data).decode("utf-8")
+        return f"![{name}](data:image/{image_type};base64,{base64_image_data})"
 
     def handle_history_link(self, line, history):
         if history:
@@ -470,6 +499,25 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
             markdown += "|{}|{}|\n".format(step.label or "Step %d" % (order_index + 1), annotation)
         markdown += "\n---\n"
         return (markdown, True)
+
+    def handle_workflow_license(self, line, stored_workflow):
+        # workflow_manager = self.trans.app.workflow_manager
+        license_manager = LicensesManager()
+        license_id = stored_workflow.latest_workflow.license
+        markdown = "*No license specified.*"
+        if license_id:
+            try:
+                license_metadata = license_manager.get_license_by_id(license_id)
+                markdown = f"[{license_metadata.name}]({license_metadata.url})"
+            except ObjectNotFound:
+                markdown = f"Unknown license ({license_id})"
+        return (f"\n\n{markdown}\n\n", True)
+
+    def handle_workflow_image(self, line, stored_workflow):
+        workflow_manager = self.trans.app.workflow_manager
+        image_data = workflow_manager.get_workflow_svg(self.trans, stored_workflow.latest_workflow, for_embed=True)
+        rval = (self._embed_image("Workflow", "svg+xml", image_data), True)
+        return rval
 
     def handle_dataset_collection_display(self, line, hdca):
         name = hdca.name or ""

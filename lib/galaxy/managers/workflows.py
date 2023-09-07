@@ -96,6 +96,10 @@ from galaxy.workflow.refactor.schema import (
     RefactorActionExecution,
     RefactorActions,
 )
+from galaxy.workflow.render import (
+    STANDALONE_SVG_TEMPLATE,
+    WorkflowCanvas,
+)
 from galaxy.workflow.reports import generate_report
 from galaxy.workflow.resources import get_resource_mapper_function
 from galaxy.workflow.steps import (
@@ -366,6 +370,38 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
                 raise exceptions.ItemAccessibilityException()
 
         return True
+
+    def get_workflow_svg_from_id(self, trans, id, for_embed=False) -> bytes:
+        stored = self.get_stored_accessible_workflow(trans, id)
+        return self.get_workflow_svg(trans, stored.latest_workflow, for_embed=for_embed)
+
+    def get_workflow_svg(self, trans, workflow, for_embed=False) -> bytes:
+        try:
+            svg = self._workflow_to_svg_canvas(trans, workflow, for_embed=for_embed)
+            s = STANDALONE_SVG_TEMPLATE % svg.tostring()
+            return s.encode("utf-8")
+        except Exception:
+            message = (
+                "Galaxy is unable to create the SVG image. Please check your workflow, there might be missing tools."
+            )
+            raise exceptions.MessageException(message)
+
+    def _workflow_to_svg_canvas(self, trans, workflow, for_embed=False):
+        workflow_canvas = WorkflowCanvas()
+        for step in workflow.steps:
+            # Load from database representation
+            module = module_factory.from_workflow_step(trans, step)
+            module_name = module.get_name()
+            module_data_inputs = module.get_data_inputs()
+            module_data_outputs = module.get_data_outputs()
+            workflow_canvas.populate_data_for_step(
+                step,
+                module_name,
+                module_data_inputs,
+                module_data_outputs,
+            )
+        workflow_canvas.add_steps()
+        return workflow_canvas.finish(for_embed=for_embed)
 
     def get_invocation(self, trans, decoded_invocation_id, eager=False) -> model.WorkflowInvocation:
         q = trans.sa_session.query(model.WorkflowInvocation)

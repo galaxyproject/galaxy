@@ -177,7 +177,7 @@ export default {
         },
         onWorkflow(response) {
             this.workflowShow = false;
-            this.$emit("onInsert", `workflow_display(workflow_id=${response.id})`);
+            this.$emit("onInsert", `${this.argumentName}(workflow_id=${response.id})`);
         },
         onVisualization(response) {
             this.visualizationShow = false;
