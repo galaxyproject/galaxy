@@ -154,6 +154,23 @@
                 </element>
             </output_collection>
         </test>
+        <!-- test that we can end with 2 empty collections -->
+        <test>
+            <param name="input1">
+                <collection type="list">
+                    <element name="element_1" value="simple_line_alternative.txt" />
+                    <element name="element_2" value="simple_line.txt" />
+                </collection>
+            </param>
+            <param name="input1">
+                <collection type="list">
+                    <element name="element_21" value="simple_line_alternative.txt" />
+                    <element name="element_11" value="simple_line.txt" />
+                </collection>
+            </param>
+            <output_collection name="output1" type="list" count="0"/>
+            <output_collection name="output2" type="list" count="0"/>
+        </test>
     </tests>
     <help><![CDATA[
 
@@ -161,7 +178,7 @@
 Synopsis
 ========
 
-Synchronize 2 collections: Inputs are 2 collections with at least one common identifier. Outputs are 2 collections with:
+Synchronize 2 collections: Inputs are 2 collections. Outputs are 2 collections with:
 - Same identifiers (identifiers which are specific to one or the other are removed)
 - Identifiers are in the same order
 

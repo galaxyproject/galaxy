@@ -3587,11 +3587,13 @@ class SynchronizeTool(DatabaseOperationTool):
                                     if element.element_identifier in old_elements2_dict]
         # Raise Exception if it is empty
         if len(final_sorted_identifiers) == 0:
-            hdca1_history_name = f"{hdca1.hid}: {hdca1.name}"
-            hdca2_history_name = f"{hdca2.hid}: {hdca2.name}"
-            message = f"The two collections '{hdca1_history_name}' and '{hdca2_history_name}'" \
-                " have no identifier in common. It is not possible to synchronize them."
-            raise Exception(message)
+            # Create empty collections:
+            output_collections.create_collection(
+                next(iter(self.outputs.values())), "output1", elements={}, propagate_hda_tags=False
+            )
+            output_collections.create_collection(
+                next(iter(self.outputs.values())), "output2", elements={}, propagate_hda_tags=False
+            )
         # Create outputs:
         new_elements1 = {}
         new_elements2 = {}
