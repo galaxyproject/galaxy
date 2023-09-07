@@ -3563,6 +3563,65 @@ class SortTool(DatabaseOperationTool):
         )
 
 
+class SynchronizeTool(DatabaseOperationTool):
+    tool_type = "synchronize_list"
+    require_terminal_states = False
+    require_dataset_ok = False
+
+    def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
+        # Get the 2 input collections
+        hdca1 = incoming["input1"]
+        hdca2 = incoming["input2"]
+        # Get the elements of both collections
+        elements1 = hdca1.collection.elements
+        elements2 = hdca2.collection.elements
+        # Put elements in dictionary with identifiers:
+        old_elements1_dict = {}
+        for element in elements1:
+            old_elements1_dict[element.element_identifier] = element
+        old_elements2_dict = {}
+        for element in elements2:
+            old_elements2_dict[element.element_identifier] = element
+        # Get the list of final identifiers
+        final_sorted_identifiers = [element.element_identifier for element in elements1
+                                    if element.element_identifier in old_elements2_dict]
+        # Raise Exception if it is empty
+        if len(final_sorted_identifiers) == 0:
+            hdca1_history_name = f"{hdca1.hid}: {hdca1.name}"
+            hdca2_history_name = f"{hdca2.hid}: {hdca2.name}"
+            message = f"The two collections '{hdca1_history_name}' and '{hdca2_history_name}'" \
+                " have no identifier in common. It is not possible to synchronize them."
+            raise Exception(message)
+        # Create outputs:
+        new_elements1 = {}
+        new_elements2 = {}
+        for identifier in final_sorted_identifiers:
+            # First collection output
+            dce_object = old_elements1_dict[identifier].element_object
+            if getattr(dce_object, "history_content_type", None) == "dataset":
+                copied_dataset = dce_object.copy(copy_tags=dce_object.tags, flush=False)
+            else:
+                copied_dataset = dce_object.copy(flush=False)
+            new_elements1[identifier] = copied_dataset
+            # Second collection output
+            dce_object = old_elements2_dict[identifier].element_object
+            if getattr(dce_object, "history_content_type", None) == "dataset":
+                copied_dataset = dce_object.copy(copy_tags=dce_object.tags, flush=False)
+            else:
+                copied_dataset = dce_object.copy(flush=False)
+            new_elements2[identifier] = copied_dataset
+        # Add datasets:
+        self._add_datasets_to_history(history, new_elements1.values())
+        self._add_datasets_to_history(history, new_elements2.values())
+        # Create collections:
+        output_collections.create_collection(
+            next(iter(self.outputs.values())), "output", elements=new_elements1, propagate_hda_tags=False
+        )
+        output_collections.create_collection(
+            next(iter(self.outputs.values())), "output", elements=new_elements2, propagate_hda_tags=False
+        )
+
+
 class RelabelFromFileTool(DatabaseOperationTool):
     tool_type = "relabel_from_file"
 
