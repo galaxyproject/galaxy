@@ -2,6 +2,7 @@ import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
+import { components } from "@/schema";
 import { useHistoryStore } from "@/stores/historyStore";
 import {
     addFavoriteToolQuery,
@@ -10,7 +11,9 @@ import {
     setCurrentThemeQuery,
 } from "@/stores/users/queries";
 
-interface User {
+type QuotaUsageResponse = components["schemas"]["UserQuotaUsage"];
+
+interface User extends QuotaUsageResponse {
     id: string;
     email: string;
     tags_used: string[];

@@ -1,7 +1,71 @@
+<script setup lang="ts">
+import { storeToRefs } from "pinia";
+import { computed, ref } from "vue";
+
+import { useConfig } from "@/composables/config";
+import { fetcher } from "@/schema";
+import { useUserStore } from "@/stores/userStore";
+import { errorMessageAsString } from "@/utils/simple-error";
+import { bytesToString } from "@/utils/utils";
+
+import { QuotaUsage } from "./Quota/model";
+
+import QuotaUsageSummary from "@/components/User/DiskUsage/Quota/QuotaUsageSummary.vue";
+
+const { config, isConfigLoaded } = useConfig(true);
+const userStore = useUserStore();
+const { currentUser } = storeToRefs(userStore);
+
+const errorMessage = ref<string>();
+const isRecalculating = ref<boolean>(false);
+const dismissCountDown = ref<number>(0);
+
+const niceTotalDiskUsage = computed(() => {
+    if (!currentUser.value || currentUser.value.isAnonymous) {
+        return "Unknown";
+    }
+    return bytesToString(currentUser.value.total_disk_usage, true);
+});
+
+const quotaUsages = computed(() => {
+    if (!currentUser.value || currentUser.value.isAnonymous) {
+        return [];
+    }
+    return [new QuotaUsage(currentUser.value)];
+});
+
+async function displayRecalculationForSeconds(seconds: number) {
+    return new Promise<void>((resolve) => {
+        isRecalculating.value = true;
+        dismissCountDown.value = seconds;
+
+        setTimeout(() => {
+            isRecalculating.value = false;
+            resolve();
+        }, seconds * 1000);
+    });
+}
+
+const recalculateDiskUsage = fetcher.path("/api/users/current/recalculate_disk_usage").method("put").create();
+
+async function onRefresh() {
+    try {
+        await recalculateDiskUsage({});
+        await displayRecalculationForSeconds(30);
+        userStore.loadUser();
+    } catch (e) {
+        errorMessage.value = errorMessageAsString(e);
+    }
+}
+
+function onCountDownChanged(count: number) {
+    dismissCountDown.value = count;
+}
+</script>
 <template>
     <div>
         <b-alert v-if="errorMessage" variant="danger" show>
-            <h2 class="alert-heading h-sm">{{ errorMessageTitle }}</h2>
+            <h2 v-localize class="alert-heading h-sm">Failed to access disk usage details.</h2>
             {{ errorMessage }}
         </b-alert>
         <b-container v-if="currentUser">
@@ -9,7 +73,7 @@
                 <QuotaUsageSummary v-if="quotaUsages" :quota-usages="quotaUsages" />
             </b-row>
             <h2 v-else id="basic-disk-usage-summary" class="text-center my-3">
-                You're using <b>{{ getTotalDiskUsage(currentUser) }}</b> of disk space.
+                You're using <b>{{ niceTotalDiskUsage }}</b> of disk space.
             </h2>
         </b-container>
         <b-container class="text-center mb-5 w-75">
@@ -25,89 +89,15 @@
             </button>
             <b-alert
                 v-if="isRecalculating"
+                v-localize
                 class="mt-2"
                 variant="info"
                 dismissible
                 fade
                 :show="dismissCountDown"
-                @dismiss-count-down="countDownChanged">
+                @dismiss-count-down="onCountDownChanged">
                 Recalculating disk usage... this may take some time, please check back later.
             </b-alert>
         </b-container>
     </div>
 </template>
-
-<script>
-import axios from "axios";
-import QuotaUsageSummary from "components/User/DiskUsage/Quota/QuotaUsageSummary";
-import { getAppRoot } from "onload/loadConfig";
-import { mapActions, mapState } from "pinia";
-import _l from "utils/localization";
-import { rethrowSimple } from "utils/simple-error";
-import { bytesToString } from "utils/utils";
-
-import { useConfig } from "@/composables/config";
-import { useUserStore } from "@/stores/userStore";
-
-import { QuotaUsage } from "./Quota/model";
-
-export default {
-    components: {
-        QuotaUsageSummary,
-    },
-    setup() {
-        const { config, isConfigLoaded } = useConfig(true);
-        return { config, isConfigLoaded };
-    },
-    data() {
-        return {
-            errorMessageTitle: _l("Failed to access disk usage details."),
-            errorMessage: null,
-            isRecalculating: false,
-            dismissCountDown: 0,
-        };
-    },
-    computed: {
-        ...mapState(useUserStore, ["currentUser"]),
-        quotaUsages() {
-            return [new QuotaUsage(this.currentUser)];
-        },
-    },
-    methods: {
-        ...mapActions(useUserStore, ["loadUser"]),
-        getTotalDiskUsage(user) {
-            return bytesToString(user.total_disk_usage, true);
-        },
-        onError(errorMessage) {
-            this.errorMessage = errorMessage;
-        },
-        async onRefresh() {
-            await this.requestDiskUsageRecalculation();
-            await this.displayRecalculationForSeconds(30);
-
-            this.loadUser();
-        },
-        async requestDiskUsageRecalculation() {
-            try {
-                await axios.put(`${getAppRoot()}api/users/current/recalculate_disk_usage`);
-            } catch (e) {
-                rethrowSimple(e);
-            }
-        },
-        async displayRecalculationForSeconds(seconds) {
-            return new Promise((resolve) => {
-                this.isRecalculating = true;
-                this.dismissCountDown = seconds;
-
-                setTimeout(() => {
-                    this.isRecalculating = false;
-                    resolve();
-                }, seconds * 1000);
-            });
-        },
-        countDownChanged(dismissCountDown) {
-            this.dismissCountDown = dismissCountDown;
-        },
-    },
-};
-</script>

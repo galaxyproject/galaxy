@@ -1,13 +1,9 @@
+import type { components } from "@/schema";
 import { bytesToString } from "@/utils/utils";
 
 export const DEFAULT_QUOTA_SOURCE_LABEL = "Default";
 
-export interface QuotaUsageResponse {
-    quota_source_label?: string;
-    quota_bytes?: number;
-    total_disk_usage: number;
-    quota_percent?: number;
-}
+type QuotaUsageResponse = components["schemas"]["UserQuotaUsage"];
 
 /**
  * Contains information about quota usage for a particular ObjectStore.
