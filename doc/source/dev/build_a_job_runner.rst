@@ -24,17 +24,27 @@ contains the base runner implementation. To create a new runner, the base
 runner class (in most cases, ``AsynchronousJobRunner``) must be inherited and only certain methods need to be
 overridden with your logic.
 
-These are the methods that need to be implemented, with custom logic added as needed:
+These are the methods that need to be implemented:
 
-1. ``__init__(app, nworkers, **kwargs)``
+1. ``queue_job(job_wrapper)``
 
-2. ``queue_job(job_wrapper)``
+2. ``check_watched_item(job_state)``
 
-3. ``check_watched_item(job_state)``
+3. ``stop_job(job)``
 
-4. ``stop_job(job)``
+4. ``recover(job, job_wrapper)``
 
-5. ``recover(job, job_wrapper)``
+In addition, you will almost certainly override the ``__init__(app, nworkers, **kwargs)``
+method in order to add custom logic to initialize your runner. In
+doing so, make sure to call the parent class constructor:
+
+.. code-block:: python
+
+    super().__init__(app, nworkers, **kwargs)
+
+Keep in mind that when you override a method, you should not reimplement any of
+the logic that is present in the base class: the above call to ``super()``
+ensures that all that such logic is handled automatically.
 
 The big picture
 ---------------
