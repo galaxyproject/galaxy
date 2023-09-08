@@ -12,6 +12,7 @@ execution:
       env:
         - name: 'JOBCONF_ENV_VAR'
           value: 'YEAH'
+        - execute: 'true' # just check that this does not confuse env setup
       docker_enabled: true
       require_container: true
       tmp_dir: '$(mktemp -d)'
