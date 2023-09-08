@@ -105,6 +105,7 @@ onMounted(async () => {
         </b-container>
         <b-container class="text-center mb-5 w-75">
             <button
+                id="refresh-disk-usage"
                 title="Recalculate disk usage"
                 :disabled="isRefreshing"
                 variant="outline-secondary"
@@ -114,7 +115,7 @@ onMounted(async () => {
                 <b-spinner v-if="isRefreshing" small />
                 <span v-else>Refresh</span>
             </button>
-            <b-alert v-if="isRefreshing" class="mt-2" variant="info" show dismissible fade>
+            <b-alert v-if="isRefreshing" class="refreshing-alert mt-2" variant="info" show dismissible fade>
                 Recalculating disk usage... this may take some time, please check back later.
             </b-alert>
         </b-container>
