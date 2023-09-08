@@ -78,15 +78,8 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
         self.arcjob = ARCJob()
         self.provider_backend = provider_name_to_backend("wlcg")
         #self.arc_url = None
-                
+
         
-        """ Following methods starts threads.
-        These methods invoke threading.Thread(name,target)
-        which in turn invokes methods monitor() and run_next().
-        """
-        self._init_monitor_thread()
-        self._init_worker_threads()
-                    
     def queue_job(self, job_wrapper):
         """ When a tool is submitted for execution in galaxy """
         """ This method 
@@ -119,6 +112,7 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
         bulkdesc += "</ActivityDescriptions>"
             
         results = self.arcrest.createJobs(bulkdesc, delegationID=delegationID)
+        arc_jobid = None
         
         if isinstance(results[0], ARCHTTPError):
             # submission error
@@ -127,6 +121,7 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
         else:
             # successful submission
             arc_jobid, status = results[0]
+            job_wrapper.get_job().job_runner_external_id = arc_jobid
             log.debug(f'Successfully submitted job to remote ARC resource {self.arc.cluster} with ARC id: {arc_jobid}')
             # beware! this means 1 worker, no timeout and default upload buffer
             errors = self.arcrest.uploadJobFiles([arc_jobid], [self.arcjob.inputFiles])
@@ -136,7 +131,7 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
                 job_wrapper.fail("Not submitted")
             else:
                 # successful input upload
-                log.debug(f'Successfully uploaded input-files to remote ARC resource {self.arc.cluster} for job with galaxy-id: {galaxy_jobid} and ARC id: {arc_jobid}')
+                log.debug(f'Successfully uploaded input-files {self.arcjob.inputFiles} to remote ARC resource {self.arc.cluster} for job with galaxy-id: {galaxy_jobid} and ARC id: {arc_jobid}')
                 self.arc.job_mapping[galaxy_jobid]=arc_jobid
                 # Create an object of AsynchronousJobState and add it to the monitor queue.
                 ajs = AsynchronousJobState(files_dir=job_wrapper.working_directory, job_wrapper=job_wrapper, job_id=galaxy_jobid, job_destination=job_destination)
@@ -218,7 +213,7 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
         
         """ Get task from ARC """
         arc_jobid = self.arc.job_mapping[job_state.job_id]
-        arc_job_state = self.job_actions(arc_jobid, "status")
+        arc_job_state = self.arcrest.getJobsStatus([arc_jobid])[0]
         if arc_job_state is None:
             return None
 
@@ -311,7 +306,7 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
             log.debug(f'Could not find arc_jobid for stopping job {job_id}')
             return None
         
-        arc_job_state = self.job_actions([arc_jobid],  "status")
+        arc_job_state = self.arcrest.getJobsStatus([arc_jobid])
         if arc_job_state is None:
             return None
         mapped_state = self.arc.ARC_STATE_MAPPING[arc_job_state]
@@ -319,7 +314,7 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
 
             try:
                 # Initiate a delete call,if the job is running in ARC.
-                waskilled = self.job_actions([arc_jobid],"kill")
+                waskilled = self.arcrest.killJobs([arc_jobid])
             except Exception as e:
                 log.debug(f'Job with ARC id: {arc_jobid} and Galaxy id: {job_id} was attempted killed by external request (user or admin), but this did not succeed. Exception was: {e}')
             
@@ -464,13 +459,12 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
         the user should him/herself enter what oout and err files 
         that the executable produces 
         """
-
         std_out = "arc.out"
         std_err = "arc.err"
 
+        
         """ Construct the job description xml object """
         """ TODO - extend to support fuller ARC job description options """
-        
         description_builder = ActivityDescriptionBuilder()
         description_builder.name = "galaxy_arc_hello_test"
         description_builder.stdout = std_out
@@ -500,7 +494,7 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
             if isexe:
                 """ Fill the appropriate job description fields expected for executables"""
                 """ App tag """
-                description_builder.app = "./" + dataset_name
+                description_builder.exe_path = "./" + dataset_name
 
 
         """ Populate datastaging output tag with all output files - in addition to populate the arcjob object"""
@@ -528,27 +522,3 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
         arcjob.RequestedTotalCPUTime = arc_cpuhrs
         arcjob.descstr = description_builder.to_xml_str()
 
-
-    def job_actions(self, arcid, action):
-
-
-        """ Kill job in ARC.
-            Pass job_id to http_delete_request method.
-        """
-        """ Really processing one job at a time, should I do this better? pyarcrest/arc.py takes a list of jobs"""
-
-        if action == "status":
-            results = self.arcrest.getJobsStatus([arcid])
-            for state in results:
-                try:
-                    job_state = state
-                    return  job_state
-                except Exception:
-                    log.error(f'Could not get status of job with id: {arcid}')
-        elif action == "kill":
-            results = self.arcrest.killJobs([arcid])
-            for killed in results:
-                if killed:
-                    return True
-                else:
-                    return False

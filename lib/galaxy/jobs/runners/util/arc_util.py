@@ -28,6 +28,7 @@ class ActivityDescriptionBuilder:
     stderr: str
     app: str
     cpu_time: str
+    exe_path: str
     memory: str
     inputs: List[str] = []
     outputs: List[str] = []
@@ -53,9 +54,10 @@ class ActivityDescriptionBuilder:
         app_err.text = self.stderr
 
         app_exe = SubElement(app,"Executable")
-        app_exe.text = self.app
+        app_exe_path = SubElement(app_exe,"Path")
+        app_exe_path.text = self.exe_path
 
-        """ Populate datastaging exec tag with all exec files - in addition populate the arcjob object  """
+
         for arc_input in self.inputs:
 
             """ Datastaging tag """
