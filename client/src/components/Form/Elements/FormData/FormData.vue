@@ -65,7 +65,7 @@ const dragData: Ref<EventData | null> = ref(null);
 const dragTarget: Ref<EventTarget | null> = ref(null);
 
 /** Store options which need to be preserved **/
-const keepOptions: Ref<Record<string, SelectOption>> = ref({});
+const keepOptions: Record<string, SelectOption> = {};
 
 /** Displays a wait indicator between setting a value and receiving an update */
 const waiting = ref(false);
@@ -120,7 +120,7 @@ const formattedOptions = computed(() => {
             };
             if (option.keep) {
                 const keepKey = `${option.id}_${option.src}`;
-                keepOptions.value[keepKey] = newOption;
+                keepOptions[keepKey] = newOption;
             } else {
                 const accepted = !props.tag || option.tags.includes(props.tag);
                 if (accepted) {
@@ -128,9 +128,24 @@ const formattedOptions = computed(() => {
                 }
             }
         });
+        // Add keep-options from other sources
+        const otherSources = [SOURCE.COLLECTION_ELEMENT, SOURCE.LIBRARY_DATASET];
+        for (const otherSource of otherSources) {
+            const otherOptions = props.options[otherSource];
+            if (Array.isArray(otherOptions)) {
+                otherOptions.forEach((option) => {
+                    const keepKey = `${option.id}_${option.src}`;
+                    const newOption = {
+                        label: `${option.name} (${option.src})`,
+                        value: option || null,
+                    };
+                    keepOptions[keepKey] = newOption;
+                });
+            }
+        }
         // Populate keep-options from cache
-        Object.entries(keepOptions.value).forEach(([key, option]) => {
-            if (option.value?.src === currentSource.value) {
+        Object.entries(keepOptions).forEach(([key, option]) => {
+            if (option.value && getSourceType(option.value) === currentSource.value) {
                 result.unshift(option);
             }
         });
@@ -155,43 +170,6 @@ const formattedOptions = computed(() => {
     } else {
         return [];
     }
-});
-
-/**
- * Dataset collection elements should be treated as plain values.
- */
-const isDCE = computed(() => {
-    if (props.value && props.value.values.length > 0) {
-        return props.value.values.findIndex((v) => v.src !== SOURCE.COLLECTION_ELEMENT) === -1;
-    } else {
-        return false;
-    }
-});
-const isLDDA = computed(() => {
-    if (props.value && props.value.values.length > 0) {
-        return props.value.values.findIndex((v) => v.src !== SOURCE.LIBRARY_DATASET) === -1;
-    } else {
-        return false;
-    }
-});
-
-/**
- * Matches an array of values to available options
- */
-const matchedValues = computed(() => {
-    const values: Array<DataOption> = [];
-    if (props.value && props.value.values.length > 0) {
-        props.value.values.forEach((entry) => {
-            if ("src" in entry && entry.src) {
-                const options = props.options[entry.src] || [];
-                const option = options.find((v) => v.id === entry.id && v.src === entry.src);
-                if (option) {
-                    values.push({ ...option, name: option.name || entry.id });
-                }
-            }
-        });
-    }
-    return values;
 });
 
 /**
@@ -241,15 +219,11 @@ function createValue(val: Array<DataOption> | DataOption | null) {
             if (variantIndex >= 0) {
                 const variantDetails = variant.value[variantIndex];
                 if (variantDetails) {
-                    if ((isLDDA.value || isDCE.value) && variantDetails.batch) {
-                        batch = variantDetails.batch;
-                    } else {
-                        // Switch to another field type if source differs from current field
-                        if (currentVariant.value && currentVariant.value.src !== sourceType) {
-                            currentField.value = variantIndex;
-                        }
-                        batch = (currentVariant.value && currentVariant.value.batch) || BATCH.DISABLED;
+                    // Switch to another field type if source differs from current field
+                    if (currentVariant.value && currentVariant.value.src !== sourceType) {
+                        currentField.value = variantIndex;
                     }
+                    batch = (currentVariant.value && currentVariant.value.batch) || BATCH.DISABLED;
                 }
             }
 
@@ -280,9 +254,9 @@ function getSourceLabel(src: string | null) {
  * Determine source type of a given value
  */
 function getSourceType(val: DataOption) {
-    if (isDCE.value) {
+    if (val.src === SOURCE.COLLECTION_ELEMENT) {
         return val.is_dataset ? SOURCE.DATASET : SOURCE.COLLECTION;
-    } else if (isLDDA.value) {
+    } else if (val.src === SOURCE.LIBRARY_DATASET) {
         return SOURCE.DATASET;
     } else {
         return val.src;
@@ -345,8 +319,8 @@ function handleIncoming(incoming: Record<string, unknown>, partial = true) {
                 const keepKey = `${newId}_${newSrc}`;
                 const existingOptions = props.options && props.options[newSrc];
                 const foundOption = existingOptions && existingOptions.find((option) => option.id === newId);
-                if (!foundOption && !(keepKey in keepOptions.value)) {
-                    keepOptions.value[keepKey] = { label: `${newHid || "Selected"}: ${newName}`, value: newValue };
+                if (!foundOption && !(keepKey in keepOptions)) {
+                    keepOptions[keepKey] = { label: `${newHid || "Selected"}: ${newName}`, value: newValue };
                 }
                 // Add new value to list
                 incomingValues.push(newValue);
@@ -430,11 +404,7 @@ onMounted(() => {
     eventBus.$on("waiting", (value: boolean) => {
         waiting.value = value;
     });
-    if (props.value && props.value.values) {
-        $emit("input", createValue(matchedValues.value));
-    } else {
-        $emit("input", createValue(currentValue.value));
-    }
+    $emit("input", createValue(currentValue.value));
 });
 
 /**
@@ -443,9 +413,7 @@ onMounted(() => {
 watch(
     () => [props.options, currentLinked.value, currentVariant.value],
     () => {
-        if (!isLDDA.value && !isDCE.value) {
-            $emit("input", createValue(currentValue.value));
-        }
+        $emit("input", createValue(currentValue.value));
     }
 );
 </script>
