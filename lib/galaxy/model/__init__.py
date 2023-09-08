@@ -7383,6 +7383,13 @@ class Workflow(Base, Dictifiable, RepresentById):
         cascade="all, delete-orphan",
         lazy=False,
     )
+    comments: List["WorkflowComment"] = relationship(
+        "WorkflowComment",
+        back_populates="workflow",
+        primaryjoin=(lambda: Workflow.id == WorkflowComment.workflow_id),  # type: ignore[has-type]
+        cascade="all, delete-orphan",
+        lazy=False,
+    )
     parent_workflow_steps = relationship(
         "WorkflowStep",
         primaryjoin=(lambda: Workflow.id == WorkflowStep.subworkflow_id),  # type: ignore[has-type]
@@ -7956,6 +7963,47 @@ class WorkflowOutput(Base, Serializable):
             label=self.label,
             uuid=str(self.uuid),
         )
+
+
+class WorkflowComment(Base, RepresentById):
+    """
+    WorkflowComment represents an in-editor comment which is no associated to any WorkflowStep.
+    It is purely decorative, and should not influence how a workflow is ran.
+    """
+
+    __tablename__ = "workflow_comment"
+
+    id = Column(Integer, primary_key=True)
+    workflow_id = Column(Integer, ForeignKey("workflow.id"), index=True, nullable=False)
+    position = Column(MutableJSONType)
+    size = Column(JSONType)
+    type = Column(String(16))
+    colour = Column(String(16))
+    data = Column(JSONType)
+    workflow = relationship(
+        "Workflow",
+        primaryjoin=(lambda: Workflow.id == WorkflowComment.workflow_id),
+        back_populates="comments",
+    )
+
+    def to_dict(self):
+        return {
+            "id": self.id,
+            "position": self.position,
+            "size": self.size,
+            "type": self.type,
+            "colour": self.colour,
+            "data": self.data,
+        }
+
+    def from_dict(dict):
+        comment = WorkflowComment()
+        comment.type = dict.get("type", "text")
+        comment.position = dict.get("position", None)
+        comment.size = dict.get("size", None)
+        comment.colour = dict.get("colour", "none")
+        comment.data = dict.get("data", None)
+        return comment
 
 
 class StoredWorkflowUserShareAssociation(Base, UserShareAssociation):
