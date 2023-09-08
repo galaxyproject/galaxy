@@ -1153,10 +1153,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                 self._tools_by_id[tool_id] = tool
         else:
             self._tools_by_id[tool_id] = tool
-        old_id = tool.old_id
-        if old_id not in self._tools_by_old_id:
-            self._tools_by_old_id[old_id] = []
-        self._tools_by_old_id[old_id].append(tool)
+        self._tools_by_old_id.setdefault(tool.old_id, []).append(tool)
 
     def package_tool(self, trans, tool_id):
         """
