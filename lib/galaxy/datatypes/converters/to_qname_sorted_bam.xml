@@ -1,6 +1,6 @@
-<tool id="CONVERTER_bam_to_qname_sorted_bam" name="Convert BAM to queryname-sorted BAM" version="1.0.0" hidden="true" profile="18.01">
+<tool id="CONVERTER_bam_to_qname_sorted_bam" name="Convert BAM to queryname-sorted BAM" version="1.0.1" hidden="true" profile="18.01">
     <requirements>
-        <requirement type="package" version="1.6">samtools</requirement>
+        <requirement type="package" version="1.18">samtools</requirement>
     </requirements>
     <command><![CDATA[
          samtools sort
@@ -8,7 +8,7 @@
             -o '${output}'
             -n
             -O bam
-            -T dataset
+            -T "\${TMPDIR:-.}" 
             '${input}'
     ]]>
     </command>
