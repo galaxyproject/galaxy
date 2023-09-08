@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import type { UseElementBoundingReturn } from "@vueuse/core";
 import { computed } from "vue";
 
-import type { WorkflowComment } from "@/stores/workflowEditorCommentStore";
+import { useWorkflowStores } from "@/composables/workflowStores";
+import type { WorkflowComment, WorkflowCommentColour } from "@/stores/workflowEditorCommentStore";
 
 import FrameComment from "./FrameComment.vue";
 import FreehandComment from "./FreehandComment.vue";
@@ -10,6 +12,13 @@ import TextComment from "./TextComment.vue";
 
 const props = defineProps<{
     comment: WorkflowComment;
+    scale: number;
+    rootOffset: UseElementBoundingReturn;
+    readonly?: boolean;
+}>();
+
+const emit = defineEmits<{
+    (e: "pan-by", position: { x: number; y: number }): void;
 }>();
 
 const cssVariables = computed(() => ({
@@ -18,11 +27,48 @@ const cssVariables = computed(() => ({
     "--width": `${props.comment.size[0]}px`,
     "--height": `${props.comment.size[1]}px`,
 }));
+
+const { commentStore } = useWorkflowStores();
+
+function onUpdateData(data: any) {
+    commentStore.changeData(props.comment.id, data);
+}
+
+function onResize(size: [number, number]) {
+    commentStore.changeSize(props.comment.id, size);
+}
+
+function onMove(position: [number, number]) {
+    commentStore.changePosition(props.comment.id, position);
+}
+
+function onPan(position: { x: number; y: number }) {
+    emit("pan-by", position);
+}
+
+function onRemove() {
+    commentStore.deleteComment(props.comment.id);
+}
+
+function onSetColour(colour: WorkflowCommentColour) {
+    commentStore.changeColour(props.comment.id, colour);
+}
 </script>
 
 <template>
     <div class="workflow-editor-comment" :style="cssVariables">
-        <TextComment v-if="props.comment.type === 'text'" />
+        <TextComment
+            v-if="props.comment.type === 'text'"
+            :comment="props.comment"
+            :scale="props.scale"
+            :readonly="props.readonly"
+            :root-offset="props.rootOffset"
+            @change="onUpdateData"
+            @resize="onResize"
+            @move="onMove"
+            @pan-by="onPan"
+            @remove="onRemove"
+            @set-colour="onSetColour" />
         <MarkdownComment v-else-if="props.comment.type === 'markdown'" />
         <FrameComment v-else-if="props.comment.type === 'frame'" />
         <FreehandComment v-else-if="props.comment.type === 'freehand'" />

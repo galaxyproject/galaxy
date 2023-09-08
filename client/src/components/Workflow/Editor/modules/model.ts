@@ -80,7 +80,7 @@ export function toSimple(workflow: Workflow): Omit<Workflow, "version"> {
     const creator = workflow.creator;
     const annotation = workflow.annotation;
     const name = workflow.name;
-    const comments = workflow.comments;
+    const comments = workflow.comments.filter((comment) => !(comment.type === "text" && comment.data.text === ""));
 
     return { steps, report, license, creator, annotation, name, comments };
 }

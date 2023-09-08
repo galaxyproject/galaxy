@@ -30,6 +30,15 @@
                     @onActivate="onActivate"
                     @onDeactivate="onDeactivate"
                     v-on="$listeners" />
+                <WorkflowComment
+                    v-for="comment in comments"
+                    :id="`workflow-comment-${comment.id}`"
+                    :key="`workflow-comment-${comment.id}`"
+                    :comment="comment"
+                    :scale="scale"
+                    :readonly="readonly"
+                    :root-offset="elementBounding"
+                    @pan-by="panBy" />
             </div>
         </div>
         <WorkflowMinimap
@@ -58,6 +67,7 @@ import type { OutputTerminals } from "./modules/terminals";
 import { maxZoom, minZoom } from "./modules/zoomLevels";
 
 import AdaptiveGrid from "./AdaptiveGrid.vue";
+import WorkflowComment from "./Comments/WorkflowComment.vue";
 import WorkflowNode from "@/components/Workflow/Editor/Node.vue";
 import WorkflowEdges from "@/components/Workflow/Editor/WorkflowEdges.vue";
 import WorkflowMinimap from "@/components/Workflow/Editor/WorkflowMinimap.vue";
@@ -154,6 +164,9 @@ watchEffect(() => {
 const canvasStyle = computed(() => {
     return { transform: `translate(${transform.value.x}px, ${transform.value.y}px) scale(${transform.value.k})` };
 });
+
+const { commentStore } = useWorkflowStores();
+const { comments } = storeToRefs(commentStore);
 </script>
 
 <style scoped land="scss">
