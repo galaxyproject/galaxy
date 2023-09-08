@@ -2325,16 +2325,6 @@ class DataToolParameter(BaseDataToolParameter):
                 }
             )
 
-        # append DCE
-        if isinstance(other_values.get(self.name), DatasetCollectionElement):
-            dce = other_values[self.name]
-            append_dce(dce)
-
-        # append LDDA
-        if isinstance(other_values.get(self.name), LibraryDatasetDatasetAssociation):
-            ldda = other_values[self.name]
-            append_ldda(ldda)
-
         # add datasets
         hda_list = util.listify(other_values.get(self.name))
         # Prefetch all at once, big list of visible, non-deleted datasets.
