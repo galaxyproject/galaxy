@@ -14,14 +14,13 @@ from galaxy.jobs.runners import (
     AsynchronousJobState
 )
 from galaxy.jobs.runners.util.arc_util import (
+    ActivityDescriptionBuilder,
     ARCHTTPError,
     ARCJob,
     ensure_pyarc,
     get_client,
 )
 from galaxy.util import unicodify
-
-from xml.etree.ElementTree import Element, SubElement, tostring, fromstring
 
 log = logging.getLogger(__name__)
 
@@ -478,26 +477,10 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
         """ Construct the job description xml object """
         """ TODO - extend to support fuller ARC job description options """
         
-        descr     = Element('ActivityDescription')
-        descr.set("xmlns","http://www.eu-emi.eu/es/2010/12/adl")
-        descr.set("xmlns:emiestypes","http://www.eu-emi.eu/es/2010/12/types")
-        descr.set("xmlns:nordugrid-adl","http://www.nordugrid.org/es/2011/12/nordugrid-adl")
-
-        actid     = SubElement(descr,"ActivityIdentification")
-        app       = SubElement(descr,"Application")
-        resources = SubElement(descr,"Resources")
-        datastaging = SubElement(descr,"DataStaging")
-
-        actid_name = SubElement(actid,"Name")
-        actid_name.text = "galaxy_arc_hello_test"
-
-        app_out = SubElement(app,"Output")
-        app_out.text = std_out
-        
-        app_err = SubElement(app,"Error")
-        app_err.text = std_err
-        
-        app_exe = SubElement(app,"Executable")
+        description_builder = ActivityDescriptionBuilder()
+        description_builder.name = "galaxy_arc_hello_test"
+        description_builder.stdout = std_out
+        description_builder.stderr = std_err
 
 
         """ These are the files that are uploaded by the user for this job - store the path in a dict for use later  
@@ -518,47 +501,28 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
            
             """ Populate the arcjob object with the source - pyarcrest expects this"""
             arcjob.inputFiles[dataset_name] = 'file://' + dataset_path
-
-            """ Datastaging tag """
-            sub_el = SubElement(datastaging,"InputFile")
-            subsub_el = SubElement(sub_el,"Name")
-            subsub_el.text = dataset_name
+            description_builder.inputs.append(dataset_name)
 
             if isexe:
                 """ Fill the appropriate job description fields expected for executables"""
                 """ App tag """
-                sub_el = SubElement(app_exe,"Path")
-                sub_el.text = "./" + dataset_name
+                description_builder.app = "./" + dataset_name
 
 
         """ Populate datastaging output tag with all output files - in addition to populate the arcjob object"""
         """ Potentially more than one file - but currently actually only one, so the for-loop here is currently not actually needed """
  
-        """ Fill the appropriate job description fields """
-        sub_el = SubElement(datastaging,"OutputFile")
-        subsub_el = SubElement(sub_el,"Name")
-        subsub_el.text = "/"
-        
+        description_builder.outputs.append("/")
 
         """ This is hardcoded stdout and stderr files from the ARC job defined here in the runner - TODO - not hardcoded """
-        sub_el = SubElement(datastaging,"OutputFile")
-        subsub_el = SubElement(sub_el,"Name")
-        subsub_el.text = std_out
-
-        """ This is hardcoded stdout and stderr files from the ARC job defined here in the runner - TODO - not hardcoded """
-        sub_el = SubElement(datastaging,"OutputFile")
-        subsub_el = SubElement(sub_el,"Name")
-        subsub_el.text = std_err
+        description_builder.outputs.append(std_out)
+        description_builder.outputs.append(std_err)
 
         """ TODO - just a sample, this will probably be set by the destination itself - to be discussed """
-        cpuhrs = arc_cpuhrs
-        sub_el = SubElement(resources,"IndividualCPUTime")
-        sub_el.text = arc_cpuhrs
+        description_builder.cpu_time = arc_cpuhrs
 
         """ TODO - just a sample, this will probably be set by the destination itself - to be discussed """
-        mem = arc_mem
-        sub_el = SubElement(resources,"IndividualPhysicalMemory")
-        sub_el.text = arc_mem
+        description_builder.memory = arc_mem
 
         """ Populate the arcjob object with rest of necessary and useful fields including the full job description string"""
         """ All files that should be collected by ARC when the job is finished need to be appended to the downloadFiles list - 
@@ -567,8 +531,8 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
         arcjob.downloadFiles.append("/")
         arcjob.StdOut = std_out
         arcjob.StdErr = std_err
-        arcjob.RequestedTotalCPUTime = cpuhrs
-        arcjob.descstr = tostring(descr, encoding='unicode',method='xml')
+        arcjob.RequestedTotalCPUTime = arc_cpuhrs
+        arcjob.descstr = description_builder.to_xml_str()
 
 
     def job_actions(self, arcid, action):
