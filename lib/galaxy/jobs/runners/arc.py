@@ -317,6 +317,7 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
             try:
                 # Initiate a delete call,if the job is running in ARC.
                 waskilled = self.arcrest.killJobs([arc_jobid])
+                f"Job with ARC id: {arc_jobid} and Galaxy id: {job_id} was killed by external request (user or admin). Status waskilld: {waskilled}"
             except Exception as e:
                 log.debug(
                     f"Job with ARC id: {arc_jobid} and Galaxy id: {job_id} was attempted killed by external request (user or admin), but this did not succeed. Exception was: {e}"
@@ -417,9 +418,8 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
         """
 
         """ The job_wrapper.job_destination has access to the parameters from the id=arc destination configured in the job_conf"""
-        job_destination = job_wrapper.job_destination
-        galaxy_job = job_wrapper.get_job()
-        galaxy_workdir = job_wrapper.working_directory
+        #will be used later
+        #job_destination = job_wrapper.job_destination
 
         """ job_input_params are the input params fetched from the tool """
         job_input_params = {}
@@ -444,7 +444,6 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
 
         description_builder = ActivityDescriptionBuilder()
                 
-        #job_files: Dict = {}
         description_builder.job_files["inputs"] = []
         description_builder.job_files["outputs"] = []
         for inputdata in galaxy_job.input_datasets:
@@ -481,7 +480,7 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
         key is dataset_id and value is the file path in the galaxy data folder """
         inputfile_paths = job_wrapper.job_io.get_input_paths()
         job_inputfiles_galaxy_paths = {}
-        for idx, input_path in enumerate(inputfile_paths):
+        for input_path in inputfile_paths:
             job_inputfiles_galaxy_paths[input_path.dataset_id] = input_path.real_path
 
         """ Populate datastaging exec tag with all exec files - in addition populate the arcjob object  """

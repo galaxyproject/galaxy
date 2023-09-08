@@ -1,7 +1,6 @@
 from typing import (
     List,
     Dict,
-    Optional,
 )
 from xml.etree.ElementTree import (
     Element,
