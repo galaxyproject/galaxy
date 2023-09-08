@@ -7,6 +7,7 @@
             -@ \${GALAXY_SLOTS:-1}
             -o '${output}'
             -n
+            --no-PG
             -O bam
             -T "\${TMPDIR:-.}" 
             '${input}'
@@ -21,7 +22,8 @@
     <tests>
         <test>
             <param name="input" ftype="sam" value="bfast_out1.sam"/>
-            <output name="output" ftype="qname_sorted.bam" value="bfast_out1.qname_sorted.bam"/>
+            <!--lines diff due to @HD line which contained GO:none before-->
+            <output name="output" ftype="qname_sorted.bam" value="bfast_out1.qname_sorted.bam" lines_diff="2"/>
         </test>
     </tests>
     <help>

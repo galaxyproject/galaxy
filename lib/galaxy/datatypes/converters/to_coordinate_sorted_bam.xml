@@ -5,6 +5,7 @@
     <command><![CDATA[
          samtools sort
             -@ \${GALAXY_SLOTS:-1}
+            --no-PG
             -o '${output}'
             -O bam
             -T "\${TMPDIR:-.}"
@@ -20,7 +21,8 @@
     <tests>
         <test>
             <param name="input" ftype="sam" value="bfast_out1.sam"/>
-            <output name="output" ftype="bam" value="bfast_out1.bam"/>
+            <!--lines diff due to @HD line which contained GO:none before-->
+            <output name="output" ftype="bam" value="bfast_out1.bam" lines_diff="2"/>
         </test>
     </tests>
     <help>
