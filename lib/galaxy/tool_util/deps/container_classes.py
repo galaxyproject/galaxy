@@ -441,7 +441,8 @@ class DockerContainer(Container, HasDockerLikeVolumes):
         # set env variables defined by the job destination
         if self.job_destination:
             for env in self.job_destination.env:
-                env_directives.append(f'"{env["name"]}={env["value"]}"')
+                if "name" in env and "value" in env:
+                    env_directives.append(f'"{env["name"]}={env["value"]}"')
 
         assert self.job_info is not None
         working_directory = self.job_info.working_directory
@@ -567,7 +568,8 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
         # add env variables from the job destination
         if self.job_destination:
             for e in self.job_destination.env:
-                env.append((e["name"], e["value"]))
+                if "name" in e and "value" in e:
+                    env.append((e["name"], e["value"]))
 
         assert self.job_info is not None
         working_directory = self.job_info.working_directory
