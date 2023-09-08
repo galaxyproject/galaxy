@@ -3596,7 +3596,7 @@ class HarmonizeTool(DatabaseOperationTool):
             )
             return
         
-        def output_with_selected_identifiers(old_elements_dic, output_label):
+        def output_with_selected_identifiers(old_elements_dict, output_label):
             # Create a new dictionary with the elements in the good order
             new_elements = {}
             for identifier in final_sorted_identifiers:
