@@ -3594,34 +3594,27 @@ class HarmonizeTool(DatabaseOperationTool):
             output_collections.create_collection(
                 next(iter(self.outputs.values())), "output2", elements={}, propagate_hda_tags=False
             )
+            return
+        
+        def output_with_selected_identifiers(old_elements_dic, output_label):
+            # Create a new dictionary with the elements in the good order
+            new_elements = {}
+            for identifier in final_sorted_identifiers:
+                dce_object = old_elements_dict[identifier].element_object
+                if getattr(dce_object, "history_content_type", None) == "dataset":
+                    copied_dataset = dce_object.copy(copy_tags=dce_object.tags, flush=False)
+                else:
+                    copied_dataset = dce_object.copy(flush=False)
+                new_elements[identifier] = copied_dataset
+            # Add datasets:
+            self._add_datasets_to_history(history, new_elements.values())
+            # Create collections:
+            output_collections.create_collection(
+                next(iter(self.outputs.values())), output_label, elements=new_elements, propagate_hda_tags=False
+            )
         # Create outputs:
-        new_elements1 = {}
-        new_elements2 = {}
-        for identifier in final_sorted_identifiers:
-            # First collection output
-            dce_object = old_elements1_dict[identifier].element_object
-            if getattr(dce_object, "history_content_type", None) == "dataset":
-                copied_dataset = dce_object.copy(copy_tags=dce_object.tags, flush=False)
-            else:
-                copied_dataset = dce_object.copy(flush=False)
-            new_elements1[identifier] = copied_dataset
-            # Second collection output
-            dce_object = old_elements2_dict[identifier].element_object
-            if getattr(dce_object, "history_content_type", None) == "dataset":
-                copied_dataset = dce_object.copy(copy_tags=dce_object.tags, flush=False)
-            else:
-                copied_dataset = dce_object.copy(flush=False)
-            new_elements2[identifier] = copied_dataset
-        # Add datasets:
-        self._add_datasets_to_history(history, new_elements1.values())
-        self._add_datasets_to_history(history, new_elements2.values())
-        # Create collections:
-        output_collections.create_collection(
-            next(iter(self.outputs.values())), "output1", elements=new_elements1, propagate_hda_tags=False
-        )
-        output_collections.create_collection(
-            next(iter(self.outputs.values())), "output2", elements=new_elements2, propagate_hda_tags=False
-        )
+        output_with_selected_identifiers(old_elements1_dict, "output1")
+        output_with_selected_identifiers(old_elements2_dict, "output2")
 
 
 class RelabelFromFileTool(DatabaseOperationTool):
