@@ -85,6 +85,9 @@ exec
 raw
 : Disable auto-quoting of values when setting up environment variables.
 
+For containerized execution the environment setup done by ``file`` and ``exec`` ``env`` tags will
+not be available in the container, but only to the pre-and-post-tool-execution job environment.
+
 Destinations may also specify other destinations (which may be dynamic destinations) that jobs should be resubmitted to if they fail to complete at the first destination for certain reasons. This is done with the `<resubmit>` tag contained within a `<destination>`.
 
 condition
