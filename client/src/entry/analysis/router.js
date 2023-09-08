@@ -266,7 +266,11 @@ export function getRouter(Galaxy) {
                     {
                         path: "histories/list_published",
                         component: HistoryPublishedList,
-                        props: true,
+                        props: (route) => {
+                            return {
+                                ...route.query,
+                            };
+                        },
                     },
                     {
                         path: "histories/archived",
