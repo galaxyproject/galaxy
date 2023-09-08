@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 
 import { useConfig } from "@/composables/config";
+import { useTaskMonitor } from "@/composables/taskMonitor";
 import { fetcher } from "@/schema";
 import { useUserStore } from "@/stores/userStore";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -15,10 +16,10 @@ import QuotaUsageSummary from "@/components/User/DiskUsage/Quota/QuotaUsageSumma
 const { config, isConfigLoaded } = useConfig(true);
 const userStore = useUserStore();
 const { currentUser } = storeToRefs(userStore);
+const { isRunning: isRecalculateTaskRunning, waitForTask } = useTaskMonitor();
 
 const errorMessage = ref<string>();
 const isRecalculating = ref<boolean>(false);
-const dismissCountDown = ref<number>(0);
 
 const niceTotalDiskUsage = computed(() => {
     if (!currentUser.value || currentUser.value.isAnonymous) {
@@ -34,10 +35,23 @@ const quotaUsages = computed(() => {
     return [new QuotaUsage(currentUser.value)];
 });
 
+const isRefreshing = computed(() => {
+    return isRecalculateTaskRunning.value || isRecalculating.value;
+});
+
+watch(
+    () => isRefreshing.value,
+    (newValue, oldValue) => {
+        // Make sure we reload the user when the recalculation is done
+        if (oldValue && !newValue) {
+            userStore.loadUser();
+        }
+    }
+);
+
 async function displayRecalculationForSeconds(seconds: number) {
     return new Promise<void>((resolve) => {
         isRecalculating.value = true;
-        dismissCountDown.value = seconds;
 
         setTimeout(() => {
             isRecalculating.value = false;
@@ -50,16 +64,18 @@ const recalculateDiskUsage = fetcher.path("/api/users/current/recalculate_disk_u
 
 async function onRefresh() {
     try {
-        await recalculateDiskUsage({});
-        await displayRecalculationForSeconds(30);
-        userStore.loadUser();
+        const response = await recalculateDiskUsage({});
+        if (response.status == 200) {
+            // Wait for the task to complete
+            waitForTask(response.data.id);
+        } else if (response.status == 204) {
+            // We cannot track any task, so just display the
+            // recalculation message for a reasonable amount of time
+            await displayRecalculationForSeconds(30);
+        }
     } catch (e) {
         errorMessage.value = errorMessageAsString(e);
     }
-}
-
-function onCountDownChanged(count: number) {
-    dismissCountDown.value = count;
 }
 </script>
 <template>
@@ -79,23 +95,15 @@ function onCountDownChanged(count: number) {
         <b-container class="text-center mb-5 w-75">
             <button
                 title="Recalculate disk usage"
-                :disabled="isRecalculating"
+                :disabled="isRefreshing"
                 variant="outline-secondary"
                 size="sm"
                 pill
                 @click="onRefresh">
-                <b-spinner v-if="isRecalculating" small />
+                <b-spinner v-if="isRefreshing" small />
                 <span v-else>Refresh</span>
             </button>
-            <b-alert
-                v-if="isRecalculating"
-                v-localize
-                class="mt-2"
-                variant="info"
-                dismissible
-                fade
-                :show="dismissCountDown"
-                @dismiss-count-down="onCountDownChanged">
+            <b-alert v-if="isRefreshing" class="mt-2" variant="info" show dismissible fade>
                 Recalculating disk usage... this may take some time, please check back later.
             </b-alert>
         </b-container>
