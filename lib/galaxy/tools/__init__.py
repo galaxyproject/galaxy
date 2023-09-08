@@ -3595,7 +3595,7 @@ class HarmonizeTool(DatabaseOperationTool):
                 next(iter(self.outputs.values())), "output2", elements={}, propagate_hda_tags=False
             )
             return
-        
+
         def output_with_selected_identifiers(old_elements_dict, output_label):
             # Create a new dictionary with the elements in the good order
             new_elements = {}
