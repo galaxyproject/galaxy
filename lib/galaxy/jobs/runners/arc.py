@@ -13,13 +13,15 @@ from galaxy.jobs.runners import (
     AsynchronousJobRunner,
     AsynchronousJobState
 )
+from galaxy.jobs.runners.util.arc_util import (
+    ARCHTTPError,
+    ARCJob,
+    ensure_pyarc,
+    get_client,
+)
 from galaxy.util import unicodify
 
 from xml.etree.ElementTree import Element, SubElement, tostring, fromstring
-
-from pyarcrest.common import getNullLogger
-from pyarcrest.arc import ARCJob, ARCRest, ARCRest_1_1
-from pyarcrest.errors import (ARCError, ARCHTTPError)
 
 log = logging.getLogger(__name__)
 
@@ -77,6 +79,7 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
 
         # Start the job runner parent object
         super(ArcRESTJobRunner,self).__init__(app, nworkers, **kwargs)
+        ensure_pyarc()
 
         self.arc = Arc()
         self.arcjob = ARCJob()
@@ -113,7 +116,7 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
          
         token = job_wrapper.get_job().user.get_oidc_tokens(self.provider_backend)['access']
         # proxypath is ignored if you are using token
-        self.arcrest = ARCRest.getClient(url=self.arc.cluster, version="1.1", token=token, impls={"1.1":ARCRest_1_1})
+        self.arcrest = get_client(self.arc.cluster, token=token)
         
         # token parameter isn't necessary, unless there is a bug
         delegationID = self.arcrest.createDelegation()
@@ -218,7 +221,7 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
 
         """ Make sure to get a fresh token and client """
         token = self._get_token(galaxy_job_wrapper)
-        self.arcrest = ARCRest.getClient(url=self.arc.cluster, version="1.1", token=token, impls={"1.1":ARCRest_1_1})
+        self.arcrest = get_client(self.arc.cluster, token=token)
         
         """ Get task from ARC """
         arc_jobid = self.arc.job_mapping[job_state.job_id]
@@ -233,7 +236,7 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
             log.debug(f'Could not map state of ARC job with id: {arc_jobid} and Galaxy job id: {job_state.job_id}')
             return None
         
-        self.arcrest = ARCRest.getClient(url=self.arc.cluster, version="1.1", token=self._get_token(galaxy_job_wrapper), impls={"1.1":ARCRest_1_1})
+        self.arcrest = get_client(self.arc.cluster, token=self._get_token(galaxy_job_wrapper))
 
         if mapped_state == "Finished":
 
@@ -305,7 +308,7 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
         
         """ Make sure to get a fresh token and client """
         token = self._get_token(job_wrapper)
-        self.arcrest = ARCRest.getClient(url=self.arc.cluster, version="1.1", token=token, impls={"1.1":ARCRest_1_1})
+        self.arcrest = get_client(self.arc.cluster, token=token)
 
 
         # Get task status from ARC.
