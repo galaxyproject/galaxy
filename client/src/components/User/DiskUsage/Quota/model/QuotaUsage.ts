@@ -3,15 +3,15 @@ import { bytesToString } from "@/utils/utils";
 
 export const DEFAULT_QUOTA_SOURCE_LABEL = "Default";
 
-type QuotaUsageResponse = components["schemas"]["UserQuotaUsage"];
+export type UserQuotaUsageData = components["schemas"]["UserQuotaUsage"];
 
 /**
  * Contains information about quota usage for a particular ObjectStore.
  */
 export class QuotaUsage {
-    private _data: QuotaUsageResponse;
+    private _data: UserQuotaUsageData;
 
-    constructor(data: QuotaUsageResponse) {
+    constructor(data: UserQuotaUsageData) {
         this._data = data;
     }
 

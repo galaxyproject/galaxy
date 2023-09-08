@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
-import { computed, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 
 import { useConfig } from "@/composables/config";
 import { useTaskMonitor } from "@/composables/taskMonitor";
@@ -9,7 +9,7 @@ import { useUserStore } from "@/stores/userStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 import { bytesToString } from "@/utils/utils";
 
-import { QuotaUsage } from "./Quota/model";
+import { QuotaUsage, UserQuotaUsageData } from "./Quota/model";
 
 import QuotaUsageSummary from "@/components/User/DiskUsage/Quota/QuotaUsageSummary.vue";
 
@@ -18,6 +18,7 @@ const userStore = useUserStore();
 const { currentUser } = storeToRefs(userStore);
 const { isRunning: isRecalculateTaskRunning, waitForTask } = useTaskMonitor();
 
+const quotaUsages = ref<QuotaUsage[]>();
 const errorMessage = ref<string>();
 const isRecalculating = ref<boolean>(false);
 
@@ -28,13 +29,6 @@ const niceTotalDiskUsage = computed(() => {
     return bytesToString(currentUser.value.total_disk_usage, true);
 });
 
-const quotaUsages = computed(() => {
-    if (!currentUser.value || currentUser.value.isAnonymous) {
-        return [];
-    }
-    return [new QuotaUsage(currentUser.value)];
-});
-
 const isRefreshing = computed(() => {
     return isRecalculateTaskRunning.value || isRecalculating.value;
 });
@@ -42,10 +36,11 @@ const isRefreshing = computed(() => {
 watch(
     () => isRefreshing.value,
     (newValue, oldValue) => {
-        // Make sure we reload the user when the recalculation is done
+        // Make sure we reload the user and the quota usages when the recalculation is done
         if (oldValue && !newValue) {
             const includeHistories = false;
             userStore.loadUser(includeHistories);
+            loadQuotaUsages();
         }
     }
 );
@@ -78,6 +73,21 @@ async function onRefresh() {
         errorMessage.value = errorMessageAsString(e);
     }
 }
+
+const fetchQuotaUsages = fetcher.path("/api/users/{user_id}/usage").method("get").create();
+
+async function loadQuotaUsages() {
+    try {
+        const { data } = await fetchQuotaUsages({ user_id: "current" });
+        quotaUsages.value = data.map((u: UserQuotaUsageData) => new QuotaUsage(u));
+    } catch (e) {
+        errorMessage.value = errorMessageAsString(e);
+    }
+}
+
+onMounted(async () => {
+    await loadQuotaUsages();
+});
 </script>
 <template>
     <div>
