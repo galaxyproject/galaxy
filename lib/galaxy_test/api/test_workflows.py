@@ -1970,6 +1970,44 @@ should_run:
                 if step["workflow_step_label"] == "cat1":
                     assert sum(1 for j in step["jobs"] if j["state"] == "skipped") == 1
 
+    def test_run_workflow_simple_conditional_step_with_nested_tool_state(self):
+        with self.dataset_populator.test_history() as history_id:
+            summary = self._run_workflow(
+                """class: GalaxyWorkflow
+inputs:
+  should_run:
+    type: boolean
+  some_file:
+    type: data
+steps:
+  nested_tool_state:
+    tool_id: identifier_multiple_in_conditional
+    state:
+      outer_cond:
+        cond_param_outer: true
+        inner_cond:
+          cond_param_inner: true
+          input1:
+            $link: some_file
+    in:
+      should_run: should_run
+    when: $(inputs.should_run)
+""",
+                test_data="""
+some_file:
+  value: 1.bed
+  type: File
+should_run:
+  value: false
+  type: raw
+""",
+                history_id=history_id,
+            )
+            invocation_details = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+            for step in invocation_details["steps"]:
+                if step["workflow_step_label"] == "identifier_multiple_in_conditional":
+                    assert sum(1 for j in step["jobs"] if j["state"] == "skipped") == 1
+
     def test_run_workflow_invalid_when_expression(self):
         with self.dataset_populator.test_history() as history_id:
             summary = self._run_workflow(
