@@ -44,7 +44,8 @@ watch(
     (newValue, oldValue) => {
         // Make sure we reload the user when the recalculation is done
         if (oldValue && !newValue) {
-            userStore.loadUser();
+            const includeHistories = false;
+            userStore.loadUser(includeHistories);
         }
     }
 );

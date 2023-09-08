@@ -57,20 +57,22 @@ export const useUserStore = defineStore("userStore", () => {
         currentUser.value = user;
     }
 
-    function loadUser() {
+    function loadUser(includeHistories = true) {
         if (!loadPromise) {
             loadPromise = getCurrentUser()
                 .then(async (user) => {
-                    const historyStore = useHistoryStore();
                     currentUser.value = { ...user, isAnonymous: !user.email };
                     currentPreferences.value = user?.preferences ?? null;
                     // TODO: This is a hack to get around the fact that the API returns a string
                     if (currentPreferences.value?.favorites) {
                         currentPreferences.value.favorites = JSON.parse(user?.preferences?.favorites ?? { tools: [] });
                     }
-                    await historyStore.loadCurrentHistory();
-                    // load first few histories for user to start pagination
-                    await historyStore.loadHistories();
+                    if (includeHistories) {
+                        const historyStore = useHistoryStore();
+                        await historyStore.loadCurrentHistory();
+                        // load first few histories for user to start pagination
+                        await historyStore.loadHistories();
+                    }
                 })
                 .catch((e) => {
                     console.error("Failed to load user", e);
