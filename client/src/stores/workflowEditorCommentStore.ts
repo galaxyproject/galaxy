@@ -1,7 +1,9 @@
 import { defineStore } from "pinia";
 import { computed, ref, set } from "vue";
 
-export type WorkflowCommentColour = string;
+import type { Colour } from "@/components/Workflow/Editor/Comments/colours";
+
+export type WorkflowCommentColour = Colour | "none";
 
 export interface BaseWorkflowComment {
     id: number;
