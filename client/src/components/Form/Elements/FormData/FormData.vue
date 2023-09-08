@@ -176,28 +176,6 @@ const isLDDA = computed(() => {
 });
 
 /**
- * Determines if matched values are to be submitted in batch mode
- */
-const matchedBatchMode = computed(() => {
-    const values = matchedValues.value;
-    if (variant.value && values.length > 0 && values[0]) {
-        const hasMapOverType = values.find((v) => !!v.map_over_type);
-        if (hasMapOverType) {
-            return true;
-        }
-        const isMultiple = values.length > 1;
-        const sourceType = getSourceType(values[0]);
-        const variantDetails = variant.value.find(
-            (v) => (!isMultiple || v.multiple === isMultiple) && v.src === sourceType
-        );
-        if (variantDetails) {
-            return variantDetails.batch !== BATCH.DISABLED;
-        }
-    }
-    return false;
-});
-
-/**
  * Matches an array of values to available options
  */
 const matchedValues = computed(() => {
@@ -479,24 +457,7 @@ watch(
         @dragleave.prevent="onDragLeave"
         @dragover.prevent="onDragOver"
         @drop.prevent="onDrop">
-        <b-alert v-if="isDCE || isLDDA" variant="info" dismissible show @dismissed="$emit('input', null)">
-            <span v-localize class="font-weight-bold">Using the following datasets (dismiss to reset):</span>
-            <div v-if="matchedBatchMode" data-description="form data batch label">
-                <FontAwesomeIcon icon="fa-exclamation" />
-                <span v-localize class="ml-1"> This data input will be submitted in batch mode. </span>
-            </div>
-            <div v-for="(v, vIndex) of matchedValues" :key="vIndex">
-                <div class="ml-2" data-description="form data label">
-                    <span>{{ vIndex + 1 }}.</span>
-                    <span>{{ v.name }}</span>
-                    <span>(as {{ getSourceLabel(getSourceType(v)) }})</span>
-                </div>
-                <small v-if="v.map_over_type" class="ml-2" data-description="form data collection type">
-                    Batch mode input with collection type: {{ v.map_over_type }}.
-                </small>
-            </div>
-        </b-alert>
-        <div v-else>
+        <div>
             <div class="d-flex">
                 <BButtonGroup v-if="variant.length > 1" buttons class="align-self-start mr-2">
                     <BButton
