@@ -1938,6 +1938,45 @@ test_data:
                 history_id=history_id,
             )
 
+    def test_run_workflow_pick_value_bam_pja(self):
+        # Makes sure that setting metadata on expression tool data outputs
+        # doesn't break result evaluation.
+        with self.dataset_populator.test_history() as history_id:
+            self._run_workflow(
+                """class: GalaxyWorkflow
+inputs:
+  some_file:
+    type: data
+steps:
+  pick_value:
+    tool_id: pick_value
+    in:
+      style_cond|type_cond|pick_from_0|value:
+        source: some_file
+    out:
+      data_param:
+        change_datatype: bam
+    tool_state:
+      style_cond:
+        __current_case__: 2
+        pick_style: first_or_error
+        type_cond:
+          __current_case__: 4
+          param_type: data
+          pick_from:
+          - __index__: 0
+            value:
+              __class__: RuntimeValue
+""",
+                test_data="""
+some_file:
+  value: 1.bam
+  file_type: bam
+  type: File
+""",
+                history_id=history_id,
+            )
+
     def test_run_workflow_simple_conditional_step(self):
         with self.dataset_populator.test_history() as history_id:
             summary = self._run_workflow(
