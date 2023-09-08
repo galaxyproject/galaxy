@@ -3583,8 +3583,9 @@ class HarmonizeTool(DatabaseOperationTool):
         for element in elements2:
             old_elements2_dict[element.element_identifier] = element
         # Get the list of final identifiers
-        final_sorted_identifiers = [element.element_identifier for element in elements1
-                                    if element.element_identifier in old_elements2_dict]
+        final_sorted_identifiers = [
+            element.element_identifier for element in elements1 if element.element_identifier in old_elements2_dict
+        ]
         # Raise Exception if it is empty
         if len(final_sorted_identifiers) == 0:
             # Create empty collections:
@@ -3612,6 +3613,7 @@ class HarmonizeTool(DatabaseOperationTool):
             output_collections.create_collection(
                 next(iter(self.outputs.values())), output_label, elements=new_elements, propagate_hda_tags=False
             )
+
         # Create outputs:
         output_with_selected_identifiers(old_elements1_dict, "output1")
         output_with_selected_identifiers(old_elements2_dict, "output2")
