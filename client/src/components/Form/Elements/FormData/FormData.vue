@@ -220,13 +220,14 @@ function createValue(val: Array<DataOption> | DataOption | null) {
                 const variantDetails = variant.value[variantIndex];
                 if (variantDetails) {
                     // Switch to another field type if source differs from current field
-                    if (currentVariant.value && currentVariant.value.src !== sourceType) {
+                    if (isMultiple || (currentVariant.value && currentVariant.value.src !== sourceType)) {
                         currentField.value = variantIndex;
+                        batch = variantDetails.batch;
+                    } else {
+                        batch = (currentVariant.value && currentVariant.value.batch) || BATCH.DISABLED;
                     }
-                    batch = (currentVariant.value && currentVariant.value.batch) || BATCH.DISABLED;
                 }
             }
-
             // Emit new value
             return {
                 batch: batch !== BATCH.DISABLED || !!hasMapOverType,
@@ -400,11 +401,34 @@ function onDrop() {
     }
 }
 
+/**
+ * Matches an array of values to available options
+ */
+const matchedValues = computed(() => {
+    const values: Array<DataOption> = [];
+    if (props.value && props.value.values.length > 0) {
+        props.value.values.forEach((entry) => {
+            if ("src" in entry && entry.src) {
+                const options = props.options[entry.src] || [];
+                const option = options.find((v) => v.id === entry.id && v.src === entry.src);
+                if (option) {
+                    values.push({ ...option, name: option.name || entry.id });
+                }
+            }
+        });
+    }
+    return values;
+});
+
 onMounted(() => {
     eventBus.$on("waiting", (value: boolean) => {
         waiting.value = value;
     });
-    $emit("input", createValue(currentValue.value));
+    if (props.value) {
+        $emit("input", createValue(matchedValues.value));
+    } else {
+        $emit("input", createValue(currentValue.value));
+    }
 });
 
 /**
