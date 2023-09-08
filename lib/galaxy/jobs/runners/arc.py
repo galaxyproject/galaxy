@@ -1,11 +1,5 @@
-import os, sys
-import json
 import logging
-import time
-from datetime import datetime
-import shutil
 
-import requests
 from galaxy.authnz.util import provider_name_to_backend
 
 from galaxy import model
