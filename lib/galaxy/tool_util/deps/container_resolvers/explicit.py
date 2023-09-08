@@ -109,15 +109,15 @@ class CachedExplicitSingularityContainerResolver(CliContainerResolver):
             image_id = cast(str, container_description.identifier)
             cache_path = os.path.normpath(os.path.join(self.cache_directory_path, image_id))
             if install and not os.path.exists(cache_path):
-                destination_info = {}
                 destination_for_container_type = kwds.get("destination_for_container_type")
+                job_destination = None
                 if destination_for_container_type:
-                    destination_info = destination_for_container_type(self.container_type)
+                    job_destination = destination_for_container_type(self.container_type)
                 container = SingularityContainer(
                     container_id=container_description.identifier,
                     app_info=self.app_info,
                     tool_info=tool_info,
-                    destination_info=destination_info,
+                    job_destination=job_destination,
                     job_info=None,
                     container_description=container_description,
                 )

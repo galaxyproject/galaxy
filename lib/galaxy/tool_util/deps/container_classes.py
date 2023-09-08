@@ -34,6 +34,7 @@ from .requirements import (
 )
 
 if TYPE_CHECKING:
+    from galaxy.jobs import JobDestination
     from .dependencies import (
         AppInfo,
         JobInfo,
@@ -120,7 +121,7 @@ class Container(metaclass=ABCMeta):
         container_id: str,
         app_info: "AppInfo",
         tool_info: "ToolInfo",
-        destination_info: Dict[str, Any],
+        job_destination: Optional["JobDestination"],
         job_info: Optional["JobInfo"],
         container_description: Optional["ContainerDescription"],
         container_name: Optional[str] = None,
@@ -128,7 +129,11 @@ class Container(metaclass=ABCMeta):
         self.container_id = container_id
         self.app_info = app_info
         self.tool_info = tool_info
-        self.destination_info = destination_info
+        self.job_destination = job_destination
+        if job_destination:
+            self.job_destination_params = job_destination.params
+        else:
+            self.job_destination_params = {}
         self.job_info = job_info
         self.container_description = container_description
         self.container_name = container_name or uuid4().hex
@@ -136,7 +141,7 @@ class Container(metaclass=ABCMeta):
 
     def prop(self, name: str, default: Any) -> Any:
         destination_name = f"{self.container_type}_{name}"
-        return self.destination_info.get(destination_name, default)
+        return self.job_destination_params.get(destination_name, default)
 
     @property
     def resolve_dependencies(self) -> bool:
@@ -428,21 +433,26 @@ class DockerContainer(Container, HasDockerLikeVolumes):
         # Allow destinations to explicitly set environment variables just for
         # docker container. Better approach is to set for destination and then
         # pass through only what tool needs however. (See todo in ToolInfo.)
-        for key, value in self.destination_info.items():
+        for key, value in self.job_destination_params.items():
             if key.startswith("docker_env_"):
                 env = key[len("docker_env_") :]
                 env_directives.append(f'"{env}={value}"')
+
+        # set env variables defined by the job destination
+        if self.job_destination:
+            for env in self.job_destination.env:
+                env_directives.append(f'"{env["name"]}={env["value"]}"')
 
         assert self.job_info is not None
         working_directory = self.job_info.working_directory
         if not working_directory:
             raise Exception(f"Cannot containerize command [{working_directory}] without defined working directory.")
 
-        volumes_raw = self._expand_volume_str(self.destination_info.get("docker_volumes", "$defaults"))
+        volumes_raw = self._expand_volume_str(self.job_destination_params.get("docker_volumes", "$defaults"))
         preprocessed_volumes_list = preprocess_volumes(volumes_raw, self.container_type)
         # TODO: Remove redundant volumes...
         volumes = [DockerVolume.from_str(v) for v in preprocessed_volumes_list]
-        volumes_from = self.destination_info.get("docker_volumes_from", docker_util.DEFAULT_VOLUMES_FROM)
+        volumes_from = self.job_destination_params.get("docker_volumes_from", docker_util.DEFAULT_VOLUMES_FROM)
 
         docker_host_props = self.docker_host_props
 
@@ -500,8 +510,8 @@ _on_exit() {{
 
     def __get_destination_overridable_property(self, name: str) -> Any:
         prop_name = f"docker_{name}"
-        if prop_name in self.destination_info:
-            return self.destination_info[prop_name]
+        if prop_name in self.job_destination_params:
+            return self.job_destination_params[prop_name]
         else:
             return getattr(self.app_info, name)
 
@@ -549,17 +559,22 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
         # Allow destinations to explicitly set environment variables just for
         # docker container. Better approach is to set for destination and then
         # pass through only what tool needs however. (See todo in ToolInfo.)
-        for key, value in self.destination_info.items():
+        for key, value in self.job_destination_params.items():
             if key.startswith("singularity_env_"):
                 real_key = key[len("singularity_env_") :]
                 env.append((real_key, value))
+
+        # add env variables from the job destination
+        if self.job_destination:
+            for e in self.job_destination.env:
+                env.append((e["name"], e["value"]))
 
         assert self.job_info is not None
         working_directory = self.job_info.working_directory
         if not working_directory:
             raise Exception(f"Cannot containerize command [{working_directory}] without defined working directory.")
 
-        volumes_raw = self._expand_volume_str(self.destination_info.get("singularity_volumes", "$defaults"))
+        volumes_raw = self._expand_volume_str(self.job_destination_params.get("singularity_volumes", "$defaults"))
         preprocessed_volumes_list = preprocess_volumes(volumes_raw, self.container_type)
         volumes = [DockerVolume.from_str(v) for v in preprocessed_volumes_list]
 
