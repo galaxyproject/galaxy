@@ -41,7 +41,14 @@ const baseRules = {
     "vuejs-accessibility/form-control-has-label": "warn",
     "vuejs-accessibility/heading-has-content": "error",
     "vuejs-accessibility/iframe-has-title": "error",
-    "vuejs-accessibility/label-has-for": "warn",
+    "vuejs-accessibility/label-has-for": [
+        "warn",
+        {
+            required: {
+                some: ["nesting", "id"],
+            },
+        },
+    ],
     "vuejs-accessibility/mouse-events-have-key-events": "warn",
     "vuejs-accessibility/no-autofocus": "error",
     "vuejs-accessibility/no-static-element-interactions": "warn",

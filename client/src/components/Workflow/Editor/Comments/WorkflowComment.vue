@@ -69,7 +69,18 @@ function onSetColour(colour: WorkflowCommentColour) {
             @pan-by="onPan"
             @remove="onRemove"
             @set-colour="onSetColour" />
-        <MarkdownComment v-else-if="props.comment.type === 'markdown'" />
+        <MarkdownComment
+            v-else-if="props.comment.type === 'markdown'"
+            :comment="props.comment"
+            :scale="props.scale"
+            :readonly="props.readonly"
+            :root-offset="props.rootOffset"
+            @change="onUpdateData"
+            @resize="onResize"
+            @move="onMove"
+            @pan-by="onPan"
+            @remove="onRemove"
+            @set-colour="onSetColour" />
         <FrameComment v-else-if="props.comment.type === 'frame'" />
         <FreehandComment v-else-if="props.comment.type === 'freehand'" />
     </div>
