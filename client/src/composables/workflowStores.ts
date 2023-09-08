@@ -1,6 +1,7 @@
 import { inject, onScopeDispose, provide } from "vue";
 
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
+import { useWorkflowCommentStore } from "@/stores/workflowEditorCommentStore";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 
@@ -19,17 +20,20 @@ export function provideScopedWorkflowStores(workflowId: string) {
     const connectionStore = useConnectionStore(workflowId);
     const stateStore = useWorkflowStateStore(workflowId);
     const stepStore = useWorkflowStepStore(workflowId);
+    const commentStore = useWorkflowCommentStore(workflowId);
 
     onScopeDispose(() => {
         connectionStore.$dispose();
         stateStore.$dispose();
         stepStore.$dispose();
+        commentStore.$dispose();
     });
 
     return {
         connectionStore,
         stateStore,
         stepStore,
+        commentStore,
     };
 }
 
@@ -54,10 +58,12 @@ export function useWorkflowStores() {
     const connectionStore = useConnectionStore(workflowId);
     const stateStore = useWorkflowStateStore(workflowId);
     const stepStore = useWorkflowStepStore(workflowId);
+    const commentStore = useWorkflowCommentStore(workflowId);
 
     return {
         connectionStore,
         stateStore,
         stepStore,
+        commentStore,
     };
 }
