@@ -109,9 +109,7 @@ def set_meta_with_tool_provided(
     extension = dataset_instance.extension
     if extension == "_sniff_":
         try:
-            extension = sniff.handle_uploaded_dataset_file(
-                dataset_instance.dataset.external_filename, datatypes_registry
-            )
+            extension = sniff.handle_uploaded_dataset_file(dataset_instance.dataset.file_name, datatypes_registry)
             # We need to both set the extension so it is available to set_meta
             # and record it in the metadata so it can be reloaded on the server
             # side and the model updated (see MetadataCollection.{from,to}_JSON_dict)
@@ -401,7 +399,9 @@ def set_metadata_portable(
                 if not link_data_only:
                     # Only set external filename if we're dealing with files in job working directory.
                     # Fixes link_data_only uploads
-                    dataset.dataset.external_filename = external_filename
+                    if not object_store:
+                        # overriding the external filename would break pushing to object stores
+                        dataset.dataset.external_filename = external_filename
                     # We derive extra_files_dir_name from external_filename, because OutputsToWorkingDirectoryPathRewriter
                     # always rewrites the path to include the uuid, even if store_by is set to id, and the extra files
                     # rewrite is derived from the dataset path (since https://github.com/galaxyproject/galaxy/pull/16541).
