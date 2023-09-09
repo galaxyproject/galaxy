@@ -2,7 +2,6 @@
     This class creates input elements. New input parameter types should be added to the types dictionary.
 */
 import Backbone from "backbone";
-import DataPicker from "mvc/ui/ui-data-picker";
 import SelectFtp from "mvc/ui/ui-select-ftp";
 import SelectLibrary from "mvc/ui/ui-select-library";
 
@@ -12,7 +11,6 @@ export default Backbone.View.extend({
     types: {
         library_data: "_fieldLibrary",
         ftpfile: "_fieldFtp",
-        data_dialog: "_fieldDialog",
     },
 
     remove: function () {
@@ -30,15 +28,6 @@ export default Backbone.View.extend({
         this.field.value(input_def.value);
         this.setElement(input_def.el || "<div/>");
         this.$el.append(this.field.$el);
-    },
-
-    /** Data dialog picker field */
-    _fieldDialog: function (input_def) {
-        return new DataPicker({
-            id: input_def.id,
-            multiple: input_def.multiple,
-            onchange: input_def.onchange,
-        });
     },
 
     /** Library dataset field */
