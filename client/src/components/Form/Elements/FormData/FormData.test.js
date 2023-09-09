@@ -33,13 +33,14 @@ const defaultOptions = {
         { id: "dce4", name: "dceName4", src: "dce", is_dataset: true },
     ],
     hda: [
-        { id: "hda1", hid: 1, name: "hdaName1", src: "hda" },
-        { id: "hda2", hid: 2, name: "hdaName2", src: "hda" },
-        { id: "hda3", hid: 3, name: "hdaName3", src: "hda" },
+        { id: "hda1", hid: 1, name: "hdaName1", src: "hda", tags: ["tag1"] },
+        { id: "hda2", hid: 2, name: "hdaName2", src: "hda", tags: ["tag1", "tag2"] },
+        { id: "hda3", hid: 3, name: "hdaName3", src: "hda", tags: ["tag2", "tag3"] },
+        { id: "hda3", hid: 4, name: "hdaName4", src: "hda" },
     ],
     hdca: [
-        { id: "hdca4", hid: 4, name: "hdcaName4", src: "hdca" },
         { id: "hdca5", hid: 5, name: "hdcaName5", src: "hdca" },
+        { id: "hdca6", hid: 6, name: "hdcaName6", src: "hdca" },
     ],
 };
 
@@ -74,12 +75,12 @@ describe("FormData", () => {
         expect(wrapper.find(SELECTED_VALUE).text()).toEqual("2: hdaName2");
         expect(wrapper.emitted().input.length).toEqual(1);
         const elements_0 = wrapper.findAll(SELECT_OPTIONS);
-        expect(elements_0.length).toEqual(5);
+        expect(elements_0.length).toEqual(6);
         await elements_0.at(2).find("span").trigger("click");
         expect(wrapper.emitted().input.length).toEqual(2);
         expect(wrapper.emitted().input[1][0]).toEqual(value_1);
         await wrapper.setProps({ value: value_1 });
-        expect(wrapper.find(SELECTED_VALUE).text()).toEqual("3: hdaName3");
+        expect(wrapper.find(SELECTED_VALUE).text()).toEqual("4: hdaName4");
     });
 
     it("optional dataset", async () => {
@@ -91,7 +92,7 @@ describe("FormData", () => {
         expect(wrapper.emitted().input[0][0]).toEqual(null);
         expect(wrapper.emitted().input.length).toEqual(1);
         expect(wrapper.find(SELECTED_VALUE).text()).toEqual("Nothing selected");
-        expect(wrapper.findAll(SELECT_OPTIONS).length).toBe(6);
+        expect(wrapper.findAll(SELECT_OPTIONS).length).toBe(7);
     });
 
     it("multiple datasets", async () => {
@@ -121,7 +122,7 @@ describe("FormData", () => {
         expect(wrapper.emitted().input.length).toEqual(1);
         const selectedValues = wrapper.findAll(SELECTED_VALUE);
         expect(selectedValues.length).toBe(2);
-        expect(selectedValues.at(0).text()).toBe("3: hdaName3");
+        expect(selectedValues.at(0).text()).toBe("4: hdaName4");
         expect(selectedValues.at(1).text()).toBe("2: hdaName2");
         const value_0 = {
             batch: false,
@@ -220,19 +221,19 @@ describe("FormData", () => {
     it("dataset collection mapped to non-batch field", async () => {
         const wrapper = createTarget({
             type: "data_collection",
-            value: { values: [{ id: "hdca4", src: "hdca" }] },
+            value: { values: [{ id: "hdca5", src: "hdca" }] },
             options: defaultOptions,
         });
         const value_0 = {
             batch: false,
             product: false,
-            values: [{ id: "hdca4", map_over_type: null, src: "hdca" }],
+            values: [{ id: "hdca5", map_over_type: null, src: "hdca" }],
         };
         expect(wrapper.emitted().input[0][0]).toEqual(value_0);
         await wrapper.vm.$nextTick();
         const selectedValues = wrapper.findAll(SELECTED_VALUE);
         expect(selectedValues.length).toBe(1);
-        expect(selectedValues.at(0).text()).toBe("4: hdcaName4");
+        expect(selectedValues.at(0).text()).toBe("5: hdcaName5");
     });
 
     it("multiple dataset collection elements (as hdas)", async () => {
@@ -299,14 +300,14 @@ describe("FormData", () => {
             values: [{ id: "dce4", map_over_type: null, src: "dce" }],
         });
         const elements_0 = wrapper.findAll(SELECT_OPTIONS);
-        expect(elements_0.length).toEqual(5);
+        expect(elements_0.length).toEqual(6);
         await elements_0.at(3).find("span").trigger("click");
         const value_0 = {
             batch: true,
             product: false,
             values: [
                 { id: "dce4", map_over_type: null, src: "dce" },
-                { id: "hda2", map_over_type: null, src: "hda" },
+                { id: "hda3", map_over_type: null, src: "hda" },
             ],
         };
         expect(wrapper.emitted().input[2][0]).toEqual(value_0);
@@ -325,7 +326,7 @@ describe("FormData", () => {
             product: true,
             values: [
                 { id: "dce4", map_over_type: null, src: "dce" },
-                { id: "hda2", map_over_type: null, src: "hda" },
+                { id: "hda3", map_over_type: null, src: "hda" },
             ],
         });
     });
@@ -333,7 +334,7 @@ describe("FormData", () => {
     it("match dataset collection on initial value", async () => {
         const wrapper = createTarget({
             value: {
-                values: [{ id: "hdca4", src: "hdca" }],
+                values: [{ id: "hdca5", src: "hdca" }],
             },
             multiple: true,
             options: defaultOptions,
@@ -347,13 +348,13 @@ describe("FormData", () => {
             expect(wrapper.emitted().input[i][0]).toEqual({
                 batch: false,
                 product: false,
-                values: [{ id: "hdca4", map_over_type: null, src: "hdca" }],
+                values: [{ id: "hdca5", map_over_type: null, src: "hdca" }],
             });
         }
         expect(wrapper.emitted().input.length).toEqual(2);
         const selectedValues = wrapper.findAll(SELECTED_VALUE);
         expect(selectedValues.length).toBe(1);
-        expect(selectedValues.at(0).text()).toBe("4: hdcaName4");
+        expect(selectedValues.at(0).text()).toBe("5: hdcaName5");
         await wrapper.find("[title='Multiple datasets'").trigger("click");
         expect(options.at(0).classes()).toContain("active");
         expect(wrapper.emitted().input[2][0]).toEqual({
@@ -363,5 +364,31 @@ describe("FormData", () => {
         });
         const newSelectedValues = wrapper.findAll(SELECTED_VALUE);
         expect(newSelectedValues.at(0).text()).toBe("dceName4 (dce)");
+    });
+
+    it("tagging filter", async () => {
+        const wrapper_0 = createTarget({
+            tag: "tag1",
+            options: defaultOptions,
+        });
+        const select_0 = wrapper_0.findAll(SELECT_OPTIONS);
+        expect(select_0.length).toBe(4);
+        expect(select_0.at(2).text()).toBe("2: hdaName2");
+        expect(select_0.at(3).text()).toBe("1: hdaName1");
+        const wrapper_1 = createTarget({
+            tag: "tag2",
+            options: defaultOptions,
+        });
+        const select_1 = wrapper_1.findAll(SELECT_OPTIONS);
+        expect(select_1.length).toBe(4);
+        expect(select_1.at(2).text()).toBe("3: hdaName3");
+        expect(select_1.at(3).text()).toBe("2: hdaName2");
+        const wrapper_2 = createTarget({
+            tag: "tag3",
+            options: defaultOptions,
+        });
+        const select_2 = wrapper_2.findAll(SELECT_OPTIONS);
+        expect(select_2.length).toBe(3);
+        expect(select_2.at(2).text()).toBe("3: hdaName3");
     });
 });
