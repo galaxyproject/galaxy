@@ -297,19 +297,13 @@ WORKFLOW_SAFE_TOOL_VERSION_UPDATES = {
     "Show beginning1": safe_update(parse_version("1.0.0"), parse_version("1.0.2")),
     "Show tail1": safe_update(parse_version("1.0.0"), parse_version("1.0.1")),
     "sort1": safe_update(parse_version("1.1.0"), parse_version("1.2.0")),
-    "bigwigtowig": safe_update(parse_version("377+galaxy0"), parse_version("445+galaxy0")),
-    "CONVERTER_interval_to_bgzip_0": safe_update(parse_version("1.0.1"), parse_version("1.0.4")),
+    "CONVERTER_interval_to_bgzip_0": safe_update(parse_version("1.0.1"), parse_version("1.0.2")),
     "CONVERTER_Bam_Bai_0": safe_update(parse_version("1.0.0"), parse_version("1.0.1")),
-    "CONVERTER_bed_gff_or_vcf_to_bigwig_0": safe_update(parse_version("1.0.1"), parse_version("1.0.2")),
-    "CONVERTER_bedgraph_to_bigwig": safe_update(parse_version("1.0.1"), parse_version("1.0.2")),
     "CONVERTER_cram_to_bam_0": safe_update(parse_version("1.0.1"), parse_version("1.0.2")),
     "CONVERTER_fasta_to_fai": safe_update(parse_version("1.0.0"), parse_version("1.0.1")),
-    "CONVERTER_interval_to_bigwig_0": safe_update(parse_version("1.0.1"), parse_version("1.0.2")),
     "CONVERTER_sam_to_bigwig_0": safe_update(parse_version("1.0.2"), parse_version("1.0.3")),
-    "CONVERTER_bam_to_bigwig_0": safe_update(parse_version("1.0.2"), parse_version("1.0.3")),
     "CONVERTER_bam_to_coodinate_sorted_bam": safe_update(parse_version("1.0.0"), parse_version("1.0.1")),
     "CONVERTER_bam_to_qname_sorted_bam": safe_update(parse_version("1.0.0"), parse_version("1.0.1")),
-    "CONVERTER_wig_to_bigwig": safe_update(parse_version("1.0.1"), parse_version("1.0.2")),
 }
 
 

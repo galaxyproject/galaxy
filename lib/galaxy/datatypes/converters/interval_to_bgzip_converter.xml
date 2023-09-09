@@ -1,4 +1,4 @@
-<tool id="CONVERTER_interval_to_bgzip_0" name="Convert Interval to BGZIP" version="1.0.4" hidden="true" profile="16.04">
+<tool id="CONVERTER_interval_to_bgzip_0" name="Convert Interval to BGZIP" version="1.0.3" hidden="true" profile="16.04">
     <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
     <macros>
         <xml name="assert_size" tokens="value" token_delta="10">
@@ -9,8 +9,8 @@
         </xml>
     </macros>
     <requirements>
-        <requirement type="package" version="9.4">coreutils</requirement>
-        <requirement type="package" version="1.17">htslib</requirement>
+        <requirement type="package" version="9.1">coreutils</requirement>
+        <requirement type="package" version="1.16">htslib</requirement>
     </requirements>
     <command><![CDATA[
         ## Skip any lines starting with '#' and 'track'
