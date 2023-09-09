@@ -135,8 +135,9 @@ const formattedOptions = computed(() => {
             if (Array.isArray(otherOptions)) {
                 otherOptions.forEach((option) => {
                     const keepKey = `${option.id}_${option.src}`;
+                    const sourceLabel = getSourceLabel(getSourceType(option));
                     const newOption = {
-                        label: `${option.name} (${option.src})`,
+                        label: `${option.name} (as ${sourceLabel})`,
                         value: option || null,
                     };
                     keepOptions[keepKey] = newOption;

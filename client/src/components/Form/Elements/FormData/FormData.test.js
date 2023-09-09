@@ -68,7 +68,7 @@ describe("FormData", () => {
         expect(options.at(0).classes()).toContain("active");
         expect(options.at(0).attributes("title")).toBe("Single dataset");
         expect(wrapper.emitted().input[0][0]).toEqual(value_0);
-        expect(wrapper.find(SELECTED_VALUE).text()).toEqual("dceName4 (dce)");
+        expect(wrapper.find(SELECTED_VALUE).text()).toEqual("dceName4 (as dataset)");
         await wrapper.setProps({ value: value_0 });
         expect(wrapper.emitted().input.length).toEqual(1);
         await wrapper.setProps({ value: { values: [{ id: "hda2", src: "hda" }] } });
@@ -167,7 +167,7 @@ describe("FormData", () => {
         expect(wrapper.emitted().input.length).toEqual(1);
         const selectedValues = wrapper.findAll(SELECTED_VALUE);
         expect(selectedValues.length).toBe(1);
-        expect(selectedValues.at(0).text()).toBe("dceName1 (dce)");
+        expect(selectedValues.at(0).text()).toBe("dceName1 (as dataset)");
     });
 
     it("dataset collection element as hdca without map_over_type", async () => {
@@ -180,7 +180,7 @@ describe("FormData", () => {
         await wrapper.vm.$nextTick();
         const selectedValues = wrapper.findAll(SELECTED_VALUE);
         expect(selectedValues.length).toBe(1);
-        expect(selectedValues.at(0).text()).toBe("dceName2 (dce)");
+        expect(selectedValues.at(0).text()).toBe("dceName2 (as dataset collection)");
     });
 
     it("dataset collection element as hdca mapped to batch field", async () => {
@@ -197,7 +197,7 @@ describe("FormData", () => {
         await wrapper.vm.$nextTick();
         const selectedValues = wrapper.findAll(SELECTED_VALUE);
         expect(selectedValues.length).toBe(1);
-        expect(selectedValues.at(0).text()).toBe("dceName3 (dce)");
+        expect(selectedValues.at(0).text()).toBe("dceName3 (as dataset collection)");
     });
 
     it("dataset collection element as hdca mapped to non-batch field", async () => {
@@ -215,7 +215,7 @@ describe("FormData", () => {
         await wrapper.vm.$nextTick();
         const selectedValues = wrapper.findAll(SELECTED_VALUE);
         expect(selectedValues.length).toBe(1);
-        expect(selectedValues.at(0).text()).toBe("dceName3 (dce)");
+        expect(selectedValues.at(0).text()).toBe("dceName3 (as dataset collection)");
     });
 
     it("dataset collection mapped to non-batch field", async () => {
@@ -363,7 +363,7 @@ describe("FormData", () => {
             values: [{ id: "dce4", map_over_type: null, src: "dce" }],
         });
         const newSelectedValues = wrapper.findAll(SELECTED_VALUE);
-        expect(newSelectedValues.at(0).text()).toBe("dceName4 (dce)");
+        expect(newSelectedValues.at(0).text()).toBe("dceName4 (as dataset)");
     });
 
     it("tagging filter", async () => {
