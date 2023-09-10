@@ -1765,18 +1765,21 @@ class MinimalJobWrapper(HasResourceParameters):
             metadata_set_successfully = self.external_output_metadata.external_metadata_set_successfully(
                 dataset, output_name, self.sa_session, working_directory=self.working_directory
             )
-            if retry_internally and not metadata_set_successfully:
-                # If Galaxy was expected to sniff type and didn't - do so.
-                if dataset.ext == "_sniff_":
-                    extension = sniff.handle_uploaded_dataset_file(
-                        dataset.dataset.file_name, self.app.datatypes_registry
-                    )
-                    dataset.extension = extension
+            if not metadata_set_successfully:
+                if self.tool.tool_type == "expression":
+                    dataset._state = model.Dataset.states.OK
+                elif retry_internally:
+                    # If Galaxy was expected to sniff type and didn't - do so.
+                    if dataset.ext == "_sniff_":
+                        extension = sniff.handle_uploaded_dataset_file(
+                            dataset.dataset.file_name, self.app.datatypes_registry
+                        )
+                        dataset.extension = extension
 
-                # call datatype.set_meta directly for the initial set_meta call during dataset creation
-                dataset.datatype.set_meta(dataset, overwrite=False)
-            elif job.states.ERROR != final_job_state and not metadata_set_successfully:
-                dataset._state = model.Dataset.states.FAILED_METADATA
+                    # call datatype.set_meta directly for the initial set_meta call during dataset creation
+                    dataset.datatype.set_meta(dataset, overwrite=False)
+                else:
+                    dataset._state = model.Dataset.states.FAILED_METADATA
             else:
                 self.external_output_metadata.load_metadata(
                     dataset,
