@@ -1,7 +1,76 @@
-<script setup lang="ts"></script>
+<script setup lang="ts">
+import { curveCatmullRom, curveLinear, line } from "d3";
+import { computed } from "vue";
+
+import { useWorkflowStores } from "@/composables/workflowStores";
+import type { FreehandWorkflowComment } from "@/stores/workflowEditorCommentStore";
+
+import { vecSubtract } from "../modules/geometry";
+import { colours } from "./colours";
+
+const props = defineProps<{
+    comment: FreehandWorkflowComment;
+}>();
+
+const _emit = defineEmits<{
+    (e: "remove"): void;
+}>();
+
+const linear = line().curve(curveLinear);
+const catmullRom = line().curve(curveCatmullRom);
+const { commentStore } = useWorkflowStores();
+
+const curve = computed(() => {
+    if (commentStore.isJustCreated(props.comment.id)) {
+        return linear(props.comment.data.line.map((p) => vecSubtract(p, props.comment.position))) ?? undefined;
+    } else {
+        return catmullRom(props.comment.data.line) ?? undefined;
+    }
+});
+
+const style = computed(() => {
+    const style = {
+        "pointer-events": "none",
+        "--thickness": `${props.comment.data.thickness}px`,
+    } as Record<string, string>;
+
+    if (props.comment.colour !== "none") {
+        style["--colour"] = colours[props.comment.colour];
+    }
+
+    return style;
+});
+</script>
 
 <template>
-    <div></div>
+    <svg class="freehand-workflow-comment">
+        <path class="prevent-zoom" :d="curve" :style="style"></path>
+    </svg>
 </template>
 
-<style scoped lang="scss"></style>
+<style scoped lang="scss">
+@import "theme/blue.scss";
+
+.freehand-workflow-comment {
+    --colour: #{$brand-primary};
+    --thickness: 5px;
+
+    position: absolute;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    z-index: 1600;
+    overflow: visible;
+
+    fill: none;
+    stroke-linecap: round;
+
+    path {
+        stroke-width: var(--thickness);
+        stroke: var(--colour);
+    }
+
+    pointer-events: none;
+}
+</style>

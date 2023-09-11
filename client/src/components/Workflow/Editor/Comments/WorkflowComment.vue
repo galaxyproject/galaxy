@@ -93,7 +93,7 @@ function onSetColour(colour: WorkflowCommentColour) {
             @pan-by="onPan"
             @remove="onRemove"
             @set-colour="onSetColour" />
-        <FreehandComment v-else-if="props.comment.type === 'freehand'" />
+        <FreehandComment v-else-if="props.comment.type === 'freehand'" :comment="props.comment" @remove="onRemove" />
     </div>
 </template>
 
