@@ -2,7 +2,14 @@ import { defineStore } from "pinia";
 import { computed, del, ref, set } from "vue";
 
 import type { Colour } from "@/components/Workflow/Editor/Comments/colours";
-import { vecReduceFigures, Vector } from "@/components/Workflow/Editor/modules/geometry";
+import {
+    vecAdd,
+    vecMax,
+    vecMin,
+    vecReduceFigures,
+    vecSubtract,
+    Vector,
+} from "@/components/Workflow/Editor/modules/geometry";
 import { assertDefined } from "@/utils/assertions";
 import { hasKeys, match } from "@/utils/utils";
 
@@ -60,22 +67,22 @@ interface CommentsMetadata {
 }
 
 function assertCommentDataValid(
-    annotationType: WorkflowComment["type"],
-    annotationData: unknown
-): asserts annotationData is WorkflowComment["data"] {
-    const valid = match(annotationType, {
-        text: () => hasKeys(annotationData, ["text", "size"]),
-        markdown: () => hasKeys(annotationData, ["text"]),
-        frame: () => hasKeys(annotationData, ["title"]),
-        freehand: () => hasKeys(annotationData, ["thickness", "line"]),
+    commentType: WorkflowComment["type"],
+    commentData: unknown
+): asserts commentData is WorkflowComment["data"] {
+    const valid = match(commentType, {
+        text: () => hasKeys(commentData, ["text", "size"]),
+        markdown: () => hasKeys(commentData, ["text"]),
+        frame: () => hasKeys(commentData, ["title"]),
+        freehand: () => hasKeys(commentData, ["thickness", "line"]),
     });
 
     if (!valid) {
-        throw new TypeError(
-            `Object "${annotationData}" is not a valid data object for an ${annotationType} annotation`
-        );
+        throw new TypeError(`Object "${commentData}" is not a valid data object for an ${commentType} comment`);
     }
 }
+
+export type WorkflowCommentStore = ReturnType<typeof useWorkflowCommentStore>;
 
 export const useWorkflowCommentStore = (workflowId: string) => {
     return defineStore(`workflowCommentStore${workflowId}`, () => {
@@ -129,8 +136,61 @@ export const useWorkflowCommentStore = (workflowId: string) => {
             set(comment, "colour", colour);
         }
 
+        function addPoint(id: number, point: [number, number]) {
+            const comment = getComment.value(id);
+            if (!(comment.type === "freehand")) {
+                throw new Error("Can only add points to freehand comment");
+            }
+
+            comment.data.line.push(point);
+
+            comment.size = vecMax(comment.size, vecSubtract(point, comment.position));
+
+            const prevPosition = comment.position;
+            comment.position = vecMin(comment.position, point);
+
+            const diff = vecSubtract(prevPosition, comment.position);
+            comment.size = vecAdd(comment.size, diff);
+        }
+
         function deleteComment(id: number) {
             del(commentsRecord.value, id);
+        }
+
+        /**
+         * Adds a single comment. Sets the `userCreated` flag.
+         * Meant to be used when a user adds an comment.
+         * @param comment
+         */
+        function createComment(comment: BaseWorkflowComment) {
+            markJustCreated(comment.id);
+            addComments([comment as WorkflowComment]);
+        }
+
+        function markJustCreated(id: number) {
+            const metadata = localCommentsMetadata.value[id];
+
+            if (metadata) {
+                set(metadata, "justCreated", true);
+            } else {
+                set(localCommentsMetadata.value, id, { justCreated: true });
+            }
+        }
+
+        function clearJustCreated(id: number) {
+            const metadata = localCommentsMetadata.value[id];
+
+            if (metadata) {
+                del(metadata, "justCreated");
+            }
+        }
+
+        function deleteFreehandComments() {
+            Object.values(commentsRecord.value).forEach((comment) => {
+                if (comment.type === "freehand") {
+                    deleteComment(comment.id);
+                }
+            });
         }
 
         return {
@@ -143,7 +203,11 @@ export const useWorkflowCommentStore = (workflowId: string) => {
             changeSize,
             changeData,
             changeColour,
+            addPoint,
             deleteComment,
+            createComment,
+            clearJustCreated,
+            deleteFreehandComments,
             $reset,
         };
     })();

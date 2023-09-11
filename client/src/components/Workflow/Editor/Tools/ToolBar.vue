@@ -1,19 +1,27 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faMagnet, faMousePointer } from "@fortawesome/free-solid-svg-icons";
+import { faMarkdown } from "@fortawesome/free-brands-svg-icons";
+import { faEraser, faMagnet, faMousePointer, faObjectGroup, faPen } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useMagicKeys, whenever } from "@vueuse/core";
 import { BButton, BButtonGroup, BFormInput } from "bootstrap-vue";
-import { computed, toRefs } from "vue";
+import { computed, toRefs, watch } from "vue";
 
 import { useUid } from "@/composables/utils/uid";
 import { useWorkflowStores } from "@/composables/workflowStores";
+import { type CommentTool } from "@/stores/workflowEditorToolbarStore";
 import { match } from "@/utils/utils";
 
-library.add(faMagnet, faMousePointer);
+import { useToolLogic } from "./useToolLogic";
 
-const { toolbarStore } = useWorkflowStores();
+import ColourSelector from "@/components/Workflow/Editor/Comments/ColourSelector.vue";
+
+library.add(faMagnet, faMousePointer, faObjectGroup, faMarkdown, faPen, faEraser);
+
+const { toolbarStore, commentStore } = useWorkflowStores();
 const { snapActive, currentTool } = toRefs(toolbarStore);
+
+const { commentOptions } = toolbarStore;
 
 const snapButtonTitle = computed(() => {
     if (snapActive.value) {
@@ -26,6 +34,21 @@ const snapButtonTitle = computed(() => {
 function onClickPointer() {
     currentTool.value = "pointer";
 }
+
+function onCommentToolClick(comment: CommentTool) {
+    currentTool.value = comment;
+}
+
+watch(
+    () => toolbarStore.currentTool,
+    (currentTool) => {
+        if (currentTool === "pointer") {
+            toolbarStore.inputCatcherActive = false;
+        } else {
+            toolbarStore.inputCatcherActive = true;
+        }
+    }
+);
 
 const snappingDistanceId = useUid("snapping-distance-");
 
@@ -50,10 +73,36 @@ const snappingDistanceRangeValue = computed({
     },
 });
 
-const { ctrl_1, ctrl_2 } = useMagicKeys();
+const fontSizeId = useUid("font-size-");
+
+const fontSize = computed({
+    get() {
+        return `${commentOptions.textSize}`;
+    },
+    set(value) {
+        commentOptions.textSize = parseInt(value);
+    },
+});
+
+const thicknessId = useUid("thickness-");
+
+const smoothingId = useUid("smoothing-");
+
+function onRemoveAllFreehand() {
+    commentStore.deleteFreehandComments();
+}
+
+useToolLogic(toolbarStore, commentStore);
+
+const { ctrl_1, ctrl_2, ctrl_3, ctrl_4, ctrl_5, ctrl_6, ctrl_7 } = useMagicKeys();
 
 whenever(ctrl_1!, () => (toolbarStore.currentTool = "pointer"));
 whenever(ctrl_2!, () => (toolbarStore.snapActive = !toolbarStore.snapActive));
+whenever(ctrl_3!, () => (toolbarStore.currentTool = "textComment"));
+whenever(ctrl_4!, () => (toolbarStore.currentTool = "markdownComment"));
+whenever(ctrl_5!, () => (toolbarStore.currentTool = "frameComment"));
+whenever(ctrl_6!, () => (toolbarStore.currentTool = "freehandComment"));
+whenever(ctrl_7!, () => (toolbarStore.currentTool = "freehandEraser"));
 </script>
 
 <template>
@@ -78,12 +127,62 @@ whenever(ctrl_2!, () => (toolbarStore.snapActive = !toolbarStore.snapActive));
                     <FontAwesomeIcon icon="fa-magnet" size="lg" />
                 </BButton>
             </BButtonGroup>
+
+            <BButtonGroup vertical>
+                <BButton
+                    v-b-tooltip.hover.noninteractive.right
+                    class="button font-weight-bold"
+                    title="Text comment (Ctrl + 3)"
+                    :pressed="currentTool === 'textComment'"
+                    variant="outline-primary"
+                    @click="() => onCommentToolClick('textComment')">
+                    <span class="icon-t">T</span>
+                </BButton>
+                <BButton
+                    v-b-tooltip.hover.noninteractive.right
+                    class="button"
+                    title="Markdown comment (Ctrl + 4)"
+                    :pressed="currentTool === 'markdownComment'"
+                    variant="outline-primary"
+                    @click="() => onCommentToolClick('markdownComment')">
+                    <FontAwesomeIcon :icon="['fab', 'markdown']" size="lg" />
+                </BButton>
+                <BButton
+                    v-b-tooltip.hover.noninteractive.right
+                    class="button"
+                    title="Frame comment (Ctrl + 5)"
+                    :pressed="currentTool === 'frameComment'"
+                    variant="outline-primary"
+                    @click="() => onCommentToolClick('frameComment')">
+                    <FontAwesomeIcon icon="fa-object-group" size="lg" />
+                </BButton>
+            </BButtonGroup>
+
+            <BButtonGroup vertical>
+                <BButton
+                    v-b-tooltip.hover.noninteractive.right
+                    title="Freehand Pen (Ctrl + 6)"
+                    :pressed="currentTool === 'freehandComment'"
+                    class="button"
+                    variant="outline-primary"
+                    @click="() => onCommentToolClick('freehandComment')">
+                    <FontAwesomeIcon icon="fa-pen" size="lg" />
+                </BButton>
+                <BButton
+                    v-b-tooltip.hover.noninteractive.right
+                    title="Freehand Eraser (Ctrl + 7)"
+                    :pressed="currentTool === 'freehandEraser'"
+                    class="button"
+                    variant="outline-primary"
+                    @click="() => onCommentToolClick('freehandEraser')">
+                    <FontAwesomeIcon icon="fa-eraser" size="lg" />
+                </BButton>
+            </BButtonGroup>
         </div>
         <div class="options">
             <div
                 v-if="
-                    toolbarStore.snapActive &&
-                    !['freehandAnnotation', 'freehandEraser'].includes(toolbarStore.currentTool)
+                    toolbarStore.snapActive && !['freehandComment', 'freehandEraser'].includes(toolbarStore.currentTool)
                 "
                 class="option wide">
                 <label :for="snappingDistanceId" class="flex-label">
@@ -97,6 +196,69 @@ whenever(ctrl_2!, () => (toolbarStore.snapActive = !toolbarStore.snapActive));
                     min="1"
                     max="5"
                     step="1" />
+            </div>
+
+            <div v-if="toolbarStore.currentTool === 'textComment'" class="option buttons">
+                <BButtonGroup>
+                    <BButton
+                        :pressed.sync="commentOptions.bold"
+                        variant="outline-primary"
+                        class="button font-weight-bold">
+                        Bold
+                    </BButton>
+                    <BButton :pressed.sync="commentOptions.italic" variant="outline-primary" class="button font-italic">
+                        Italic
+                    </BButton>
+                </BButtonGroup>
+            </div>
+
+            <div v-if="!['pointer', 'freehandEraser'].includes(toolbarStore.currentTool)" class="option buttons">
+                <ColourSelector
+                    :colour="commentOptions.colour"
+                    class="colour-selector"
+                    @set-colour="(colour) => (commentOptions.colour = colour)" />
+            </div>
+
+            <div v-if="toolbarStore.currentTool === 'textComment'" class="option small">
+                <label :for="fontSizeId" class="flex-label">
+                    <span class="font-weight-bold">Text Size</span>
+                    {{ commentOptions.textSize }}00%
+                </label>
+                <BFormInput :id="fontSizeId" v-model="fontSize" type="range" min="1" max="5" step="1" />
+            </div>
+
+            <div v-if="toolbarStore.currentTool === 'freehandComment'" class="option small">
+                <label :for="thicknessId" class="flex-label">
+                    <span class="font-weight-bold">Size</span>
+                    {{ commentOptions.lineThickness }} pixels
+                </label>
+                <BFormInput
+                    :id="thicknessId"
+                    v-model="commentOptions.lineThickness"
+                    type="range"
+                    min="4"
+                    max="20"
+                    step="1" />
+            </div>
+
+            <div v-if="toolbarStore.currentTool === 'freehandComment'" class="option small">
+                <label :for="smoothingId" class="flex-label">
+                    <span class="font-weight-bold">Smoothing</span>
+                    {{ commentOptions.smoothing }}
+                </label>
+                <BFormInput
+                    :id="smoothingId"
+                    v-model="commentOptions.smoothing"
+                    type="range"
+                    min="1"
+                    max="10"
+                    step="1" />
+            </div>
+
+            <div v-if="['freehandComment', 'freehandEraser'].includes(toolbarStore.currentTool)" class="option buttons">
+                <BButton class="button" title="Remove all freehand comments" @click="onRemoveAllFreehand">
+                    Remove all
+                </BButton>
             </div>
         </div>
     </div>

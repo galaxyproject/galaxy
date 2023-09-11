@@ -8,6 +8,7 @@
                 :viewport-bounding-box="viewportBoundingBox"
                 :transform="transform" />
             <div class="node-area" :style="canvasStyle">
+                <InputCatcher :transform="transform" />
                 <WorkflowEdges
                     :transform="transform"
                     :dragging-terminal="draggingTerminal"
@@ -69,6 +70,7 @@ import { maxZoom, minZoom } from "./modules/zoomLevels";
 
 import AdaptiveGrid from "./AdaptiveGrid.vue";
 import WorkflowComment from "./Comments/WorkflowComment.vue";
+import InputCatcher from "./Tools/InputCatcher.vue";
 import ToolBar from "./Tools/ToolBar.vue";
 import WorkflowNode from "@/components/Workflow/Editor/Node.vue";
 import WorkflowEdges from "@/components/Workflow/Editor/WorkflowEdges.vue";

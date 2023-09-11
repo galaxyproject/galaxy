@@ -741,7 +741,7 @@ export default {
     left: 1rem;
     bottom: 1rem;
     cursor: pointer;
-    z-index: 1002;
+    z-index: 2000;
 }
 
 .workflow-center {

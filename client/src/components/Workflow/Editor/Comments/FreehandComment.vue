@@ -12,13 +12,13 @@ const props = defineProps<{
     comment: FreehandWorkflowComment;
 }>();
 
-const _emit = defineEmits<{
+const emit = defineEmits<{
     (e: "remove"): void;
 }>();
 
 const linear = line().curve(curveLinear);
 const catmullRom = line().curve(curveCatmullRom);
-const { commentStore } = useWorkflowStores();
+const { commentStore, toolbarStore } = useWorkflowStores();
 
 const curve = computed(() => {
     if (commentStore.isJustCreated(props.comment.id)) {
@@ -30,7 +30,7 @@ const curve = computed(() => {
 
 const style = computed(() => {
     const style = {
-        "pointer-events": "none",
+        "pointer-events": toolbarStore.currentTool === "freehandEraser" ? "stroke" : "none",
         "--thickness": `${props.comment.data.thickness}px`,
     } as Record<string, string>;
 
@@ -38,13 +38,33 @@ const style = computed(() => {
         style["--colour"] = colours[props.comment.colour];
     }
 
+    if (toolbarStore.inputCatcherEnabled) {
+        style["cursor"] = "crosshair";
+    }
+
     return style;
 });
+
+function onMouseOver() {
+    if (toolbarStore.inputCatcherPressed) {
+        emit("remove");
+    }
+}
+function onClick() {
+    if (toolbarStore.inputCatcherEnabled) {
+        emit("remove");
+    }
+}
 </script>
 
 <template>
     <svg class="freehand-workflow-comment">
-        <path class="prevent-zoom" :d="curve" :style="style"></path>
+        <path
+            class="prevent-zoom"
+            :d="curve"
+            :style="style"
+            @mouseover="onMouseOver"
+            @mousedown.prevent="onClick"></path>
     </svg>
 </template>
 
