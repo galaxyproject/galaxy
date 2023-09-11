@@ -1,6 +1,10 @@
 import { useEventListener } from "@vueuse/core";
 import { type Ref, watch } from "vue";
 
+import { useWorkflowStores } from "@/composables/workflowStores";
+
+import { vecSnap } from "../modules/geometry";
+
 /**
  * Common functionality required for handling a user resizable element.
  * `resize: both` needs to be set on the elements style, this composable
@@ -30,6 +34,8 @@ export function useResizable(
 
     let prevWidth = sizeControl.value[0];
     let prevHeight = sizeControl.value[1];
+
+    const { toolbarStore } = useWorkflowStores();
     useEventListener(target, "mouseup", () => {
         const element = target.value;
 
@@ -38,7 +44,11 @@ export function useResizable(
             const height = element.offsetHeight;
 
             if (prevWidth !== width || prevHeight !== height) {
-                onResized([width, height]);
+                if (toolbarStore.snapActive) {
+                    onResized(vecSnap([width, height], toolbarStore.snapDistance));
+                } else {
+                    onResized([width, height]);
+                }
 
                 prevWidth = width;
                 prevHeight = height;

@@ -3,6 +3,7 @@ import { inject, onScopeDispose, provide } from "vue";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
 import { useWorkflowCommentStore } from "@/stores/workflowEditorCommentStore";
 import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
+import { useWorkflowEditorToolbarStore } from "@/stores/workflowEditorToolbarStore";
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 
 /**
@@ -21,12 +22,14 @@ export function provideScopedWorkflowStores(workflowId: string) {
     const stateStore = useWorkflowStateStore(workflowId);
     const stepStore = useWorkflowStepStore(workflowId);
     const commentStore = useWorkflowCommentStore(workflowId);
+    const toolbarStore = useWorkflowEditorToolbarStore(workflowId);
 
     onScopeDispose(() => {
         connectionStore.$dispose();
         stateStore.$dispose();
         stepStore.$dispose();
         commentStore.$dispose();
+        toolbarStore.$dispose();
     });
 
     return {
@@ -34,6 +37,7 @@ export function provideScopedWorkflowStores(workflowId: string) {
         stateStore,
         stepStore,
         commentStore,
+        toolbarStore,
     };
 }
 
@@ -51,7 +55,7 @@ export function useWorkflowStores() {
 
     if (typeof workflowId !== "string") {
         throw new Error(
-            "Workflow ID not provided by parent component. Use `setupWorkflowStores` on a parent component."
+            "Workflow ID not provided by parent component. Use `provideScopedWorkflowStores` on a parent component."
         );
     }
 
@@ -59,11 +63,13 @@ export function useWorkflowStores() {
     const stateStore = useWorkflowStateStore(workflowId);
     const stepStore = useWorkflowStepStore(workflowId);
     const commentStore = useWorkflowCommentStore(workflowId);
+    const toolbarStore = useWorkflowEditorToolbarStore(workflowId);
 
     return {
         connectionStore,
         stateStore,
         stepStore,
         commentStore,
+        toolbarStore,
     };
 }

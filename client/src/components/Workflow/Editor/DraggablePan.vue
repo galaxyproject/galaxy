@@ -28,7 +28,7 @@ const props = defineProps({
         default: null,
     },
     disabled: {
-        tyoe: Boolean,
+        type: Boolean,
         default: false,
     },
 });
@@ -44,6 +44,7 @@ const emit = defineEmits<{
     (e: "pan-by", position: Position): void;
     (e: "move", position: MovePosition, event?: MouseEvent): void;
     (e: "mouseup", event: MouseEvent): void;
+    (e: "start"): void;
 }>();
 
 let isPanning = false;
@@ -144,6 +145,10 @@ function onMouseUp(e: MouseEvent) {
     isPanning = false;
     emit("mouseup", e);
 }
+
+function onStart() {
+    emit("start");
+}
 </script>
 
 <template>
@@ -155,6 +160,7 @@ function onMouseUp(e: MouseEvent) {
         :disabled="disabled"
         @move="onMove"
         @mouseup="onMouseUp"
+        @start="onStart"
         v-on="$listeners">
         <slot></slot>
     </Draggable>
