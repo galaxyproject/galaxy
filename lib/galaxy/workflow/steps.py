@@ -14,7 +14,7 @@ def attach_ordered_steps(workflow):
     """Attempt to topologically order steps and attach to workflow. If this
     fails - the workflow contains cycles so it mark it as such.
     """
-    ordered_steps = order_workflow_steps(workflow.steps)
+    ordered_steps = order_workflow_steps(workflow.steps, workflow.comments)
     workflow.has_cycles = True
     if ordered_steps:
         workflow.has_cycles = False
@@ -24,7 +24,7 @@ def attach_ordered_steps(workflow):
     return workflow.has_cycles
 
 
-def order_workflow_steps(steps):
+def order_workflow_steps(steps, comments):
     """
     Perform topological sort of the steps, return ordered or None
     """
@@ -38,7 +38,16 @@ def order_workflow_steps(steps):
         # find minimum left and top values to normalize position
         min_left = min(step.position["left"] for step in steps)
         min_top = min(step.position["top"] for step in steps)
-        # normalize by min_left and min_top
+        # consider comments to find normalization position
+        if comments:
+            min_left_comments = min(comment.position[0] for comment in comments if comment.type != "freehand")
+            min_top_comments = min(comment.position[1] for comment in comments if comment.type != "freehand")
+            min_left = min(min_left_comments, min_left)
+            min_top = min(min_top_comments, min_top)
+            # normalize comments by min_left and min_top
+            for comment in comments:
+                comment.position = [comment.position[0] - min_left, comment.position[1] - min_top]
+        # normalize steps by min_left and min_top
         for step in steps:
             step.position = {
                 "left": step.position["left"] - min_left,

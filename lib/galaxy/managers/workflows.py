@@ -796,6 +796,14 @@ class WorkflowContentsManager(UsesAnnotations):
 
         workflow.has_cycles = True
         workflow.steps = steps
+
+        comments: List[model.WorkflowComment] = []
+        for comment_dict in data.get("comments", []):
+            comment = model.WorkflowComment.from_dict(comment_dict)
+            comments.append(comment)
+
+        workflow.comments = comments
+
         # we can't reorder subworkflows, as step connections would become invalid
         if not is_subworkflow:
             # Order the steps if possible
@@ -1119,6 +1127,7 @@ class WorkflowContentsManager(UsesAnnotations):
         data["creator"] = workflow.creator_metadata
         data["source_metadata"] = workflow.source_metadata
         data["annotation"] = self.get_item_annotation_str(trans.sa_session, trans.user, stored) or ""
+        data["comments"] = [comment.to_dict() for comment in workflow.comments]
 
         output_label_index = set()
         input_step_types = set(workflow.input_step_types)
@@ -1356,6 +1365,7 @@ class WorkflowContentsManager(UsesAnnotations):
             data["uuid"] = str(workflow.uuid)
         steps: Dict[int, Dict[str, Any]] = {}
         data["steps"] = steps
+        data["comments"] = [comment.to_dict() for comment in workflow.comments]
         if workflow.reports_config:
             data["report"] = workflow.reports_config
         if workflow.creator_metadata:
