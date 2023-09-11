@@ -11,7 +11,10 @@ from galaxy.jobs.runners.util.arc_util import (
     ARCJob,
     ensure_pyarc,
     get_client,
+    ARCHTTPError,
+    NoValueInARCResult,
 )
+
 from galaxy.util import unicodify
 
 log = logging.getLogger(__name__)
@@ -26,7 +29,6 @@ class Arc:
 
     def __init__(self):
         self.cluster = ""
-        self.job_mapping = {}
 
         self.ARC_STATE_MAPPING = {
             "ACCEPTING": "Accepted",
@@ -51,10 +53,9 @@ class Arc:
             "Job not found": "Failed",
         }
 
-    def set_job_cluster(self, cluster):
-        self.cluster = cluster
 
 
+    
 class ArcRESTJobRunner(AsynchronousJobRunner):
     """
     Job runner backed by a finite pool of worker threads. FIFO scheduling
@@ -69,7 +70,7 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
         """
 
         # Start the job runner parent object
-        super(ArcRESTJobRunner, self).__init__(app, nworkers, **kwargs)
+        super().__init__(app, nworkers, **kwargs)
         ensure_pyarc()
 
         self.arc = Arc()
@@ -92,7 +93,7 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
         """ Set the cluster to submit the job to - extracted from the job_destination parameters in job_conf.xml """
         user_preferences = job_wrapper.get_job().user.extra_preferences
         arc_url = user_preferences.get("distributed_arc_compute|remote_arc_resources", "None")
-        self.arc.set_job_cluster(arc_url)
+        self.arc.cluster = arc_url
 
         """ Prepare and submit job to arc """
         self.prepare_job(job_wrapper, self.arcjob)
@@ -111,15 +112,15 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
         results = self.arcrest.createJobs(bulkdesc, delegationID=delegationID)
         arc_jobid = None
 
-        if isinstance(results[0], self.arcrest.ARCHTTPError):
+        if isinstance(results[0], ARCHTTPError):
             # submission error
             log.error("Job creation failure.  No Response from ARC")
             job_wrapper.fail("Not submitted")
         else:
             # successful submission
             arc_jobid, status = results[0]
-            job_wrapper.get_job().job_runner_external_id = arc_jobid
-            log.debug(f"Successfully submitted job to remote ARC resource {self.arc.cluster} with ARC id: {arc_jobid}")
+            job_wrapper.set_external_id(arc_jobid)
+            log.debug(f"Successfully submitted job to remote ARC resource {self.arc.cluster} with ARC id: {arc_jobid}job_wrapper.external_job_id: {job_wrapper.get_job().job_runner_external_id} job_wrapper.get_job().get-job_runner_external_id(): {job_wrapper.get_job().get_job_runner_external_id()}")
             # beware! this means 1 worker, no timeout and default upload buffer
             errors = self.arcrest.uploadJobFiles([arc_jobid], [self.arcjob.inputFiles])
             if errors[0]:  # input upload error
@@ -133,12 +134,11 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
                 log.debug(
                     f"Successfully uploaded input-files {self.arcjob.inputFiles} to remote ARC resource {self.arc.cluster} for job with galaxy-id: {galaxy_jobid} and ARC id: {arc_jobid}"
                 )
-                self.arc.job_mapping[galaxy_jobid] = arc_jobid
                 # Create an object of AsynchronousJobState and add it to the monitor queue.
                 ajs = AsynchronousJobState(
                     files_dir=job_wrapper.working_directory,
                     job_wrapper=job_wrapper,
-                    job_id=galaxy_jobid,
+                    job_id=arc_jobid,
                     job_destination=job_destination,
                 )
                 self.monitor_queue.put(ajs)
@@ -152,8 +152,7 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
         galaxy_workdir = job_dir + "/working"
         galaxy_outputs = job_dir + "/outputs"
 
-        arc_jobid = self.arc.job_mapping[job_state.job_id]
-        outputs_dir = job_state.job_wrapper.outputs_directory
+        arc_jobid = job_state.job_id
 
         """ job_state.output_file and job_state.error_file is e.g. galaxy_5.e and galaxy_5.o where 5 is the galaxy job id """
         """ Hardcoded out and err files - this is ok. But TODO - need to handle if the tool itself has some stdout that should be kept"""
@@ -205,7 +204,6 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
         """
 
         galaxy_job_wrapper = job_state.job_wrapper
-        galaxy_job = galaxy_job_wrapper.get_job()
         galaxy_workdir = galaxy_job_wrapper.working_directory
         mapped_state = ""
 
@@ -214,9 +212,10 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
         self.arcrest = get_client(self.arc.cluster, token=token)
 
         """ Get task from ARC """
-        arc_jobid = self.arc.job_mapping[job_state.job_id]
+        arc_jobid = job_state.job_id
         arc_job_state = self.arcrest.getJobsStatus([arc_jobid])[0]
-        if arc_job_state is None:
+
+        if isinstance(arc_job_state, ARCHTTPError) or isinstance(arc_job_state, NoValueInARCResult):
             return None
 
         if arc_job_state:
@@ -296,20 +295,16 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
            No Return data expected
         """
         job_id = job_wrapper.job_id
-        arc_jobid = ""
+        arc_jobid = job_wrapper.get_job().job_runner_external_id
+
 
         """ Make sure to get a fresh token and client """
         token = self._get_token(job_wrapper)
         self.arcrest = get_client(self.arc.cluster, token=token)
 
-        # Get task status from ARC.
-        try:
-            arc_jobid = self.arc.job_mapping[job_id]
-        except KeyError:
-            log.debug(f"Could not find arc_jobid for stopping job {job_id}")
-            return None
 
-        arc_job_state = self.arcrest.getJobsStatus([arc_jobid])
+        """ Get the current ARC job status from the remote ARC endpoint """
+        arc_job_state = self.arcrest.getJobsStatus([arc_jobid])[0]
         if arc_job_state is None:
             return None
         mapped_state = self.arc.ARC_STATE_MAPPING[arc_job_state]
@@ -330,7 +325,7 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
         """ This method is called by galaxy at the time of startup.
             Jobs in Running & Queued status in galaxy are put in the monitor_queue by creating an AsynchronousJobState object
         """
-        job_id = job_wrapper.job_id
+        job_id = job_wrapper.job_runner_external_id()
         ajs = AsynchronousJobState(files_dir=job_wrapper.working_directory, job_wrapper=job_wrapper)
         ajs.job_id = str(job_id)
         ajs.job_destination = job_wrapper.job_destination
@@ -339,7 +334,7 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
         if job.state == model.Job.states.RUNNING:
             log.debug(
                 "({}/{}) is still in running state, adding to the god queue".format(
-                    job.id, job.get_job_runner_external_id()
+                    job.id, job.job_runner_external_id()
                 )
             )
             ajs.old_state = "R"
@@ -349,7 +344,7 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
         elif job.state == model.Job.states.QUEUED:
             log.debug(
                 "({}/{}) is still in god queued state, adding to the god queue".format(
-                    job.id, job.get_job_runner_external_id()
+                    job.id, job.job_runner_external_id()
                 )
             )
             ajs.old_state = "Q"
@@ -420,6 +415,7 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
         """ The job_wrapper.job_destination has access to the parameters from the id=arc destination configured in the job_conf"""
         #will be used later
         #job_destination = job_wrapper.job_destination
+        galaxy_job = job_wrapper.get_job()
 
         """ job_input_params are the input params fetched from the tool """
         job_input_params = {}

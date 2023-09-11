@@ -14,9 +14,14 @@ try:
         ARCRest,
         ARCRest_1_1,
     )
-    from pyarcrest.errors import ARCHTTPError
+    from pyarcrest.errors import (
+        ARCHTTPError,
+        NoValueInARCResult,
+        )
+        
 except ImportError:
     ARCHTTPError = None
+    NoValueInARCResult = None
     ARCRest_1_1 = None
     ARCJob = None
 
