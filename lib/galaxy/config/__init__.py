@@ -637,6 +637,8 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         "fetch_url_whitelist": "fetch_url_allowlist",
         "containers_resolvers_config_file": "container_resolvers_config_file",
         "activation_email": "email_from",
+        "ga4gh_service_organization_name": "organization_name",
+        "ga4gh_service_organization_url": "organization_url",
     }
 
     deprecated_options = list(renamed_options.keys()) + [
