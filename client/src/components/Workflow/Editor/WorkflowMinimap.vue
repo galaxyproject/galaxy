@@ -6,12 +6,20 @@ import { computed, onMounted, ref, unref, watch } from "vue";
 import { useAnimationFrame } from "@/composables/sensors/animationFrame";
 import { useAnimationFrameThrottle } from "@/composables/throttle";
 import { useWorkflowStores } from "@/composables/workflowStores";
+import type {
+    FrameWorkflowComment,
+    MarkdownWorkflowComment,
+    TextWorkflowComment,
+    WorkflowComment,
+} from "@/stores/workflowEditorCommentStore";
 import type { Step, Steps } from "@/stores/workflowStepStore";
 
+import * as commentColours from "./Comments/colours";
 import { AxisAlignedBoundingBox, Transform } from "./modules/geometry";
 
 const props = defineProps<{
     steps: Steps;
+    comments: WorkflowComment[];
     viewportBounds: UseElementBoundingReturn;
     viewportBoundingBox: AxisAlignedBoundingBox;
 }>();
@@ -60,6 +68,15 @@ function recalculateAABB() {
         }
     });
 
+    props.comments.forEach((comment) => {
+        aabb.fitRectangle({
+            x: comment.position[0],
+            y: comment.position[1],
+            width: comment.size[0],
+            height: comment.size[1],
+        });
+    });
+
     aabb.squareCenter();
     aabb.expand(120);
 
@@ -70,9 +87,9 @@ function recalculateAABB() {
     }
 }
 
-// redraw if any steps change
+// redraw if any steps or comments change
 watch(
-    props.steps,
+    () => [props.steps, props.comments],
     () => {
         redraw = true;
         aabbChanged = true;
@@ -140,6 +157,20 @@ function renderMinimap() {
     // apply global to local transform
     canvasTransform.applyToContext(ctx);
 
+    const frameComments: FrameWorkflowComment[] = [];
+    const markdownComments: MarkdownWorkflowComment[] = [];
+    const textComments: TextWorkflowComment[] = [];
+
+    props.comments.forEach((comment) => {
+        if (comment.type === "frame") {
+            frameComments.push(comment);
+        } else if (comment.type === "markdown") {
+            markdownComments.push(comment);
+        } else if (comment.type === "text") {
+            textComments.push(comment);
+        }
+    });
+
     const allSteps = Object.values(props.steps);
     const okSteps: Step[] = [];
     const errorSteps: Step[] = [];
@@ -159,6 +190,53 @@ function renderMinimap() {
     });
 
     // draw rects
+
+    ctx.lineWidth = 2 / canvasTransform.scaleX;
+    frameComments.forEach((comment) => {
+        ctx.beginPath();
+
+        if (comment.colour !== "none") {
+            ctx.fillStyle = commentColours.brighterColours[comment.colour];
+            ctx.strokeStyle = commentColours.colours[comment.colour];
+        } else {
+            ctx.fillStyle = "rgba(0, 0, 0, 0)";
+            ctx.strokeStyle = colors.node;
+        }
+
+        ctx.rect(comment.position[0], comment.position[1], comment.size[0], comment.size[1]);
+        ctx.fill();
+        ctx.stroke();
+    });
+
+    ctx.fillStyle = "white";
+    markdownComments.forEach((comment) => {
+        ctx.beginPath();
+
+        if (comment.colour !== "none") {
+            ctx.strokeStyle = commentColours.colours[comment.colour];
+        } else {
+            ctx.strokeStyle = colors.node;
+        }
+
+        ctx.rect(comment.position[0], comment.position[1], comment.size[0], comment.size[1]);
+        ctx.fill();
+        ctx.stroke();
+    });
+
+    ctx.lineWidth = 1 / canvasTransform.scaleX;
+    textComments.forEach((comment) => {
+        ctx.beginPath();
+
+        if (comment.colour !== "none") {
+            ctx.strokeStyle = commentColours.brightColours[comment.colour];
+        } else {
+            ctx.strokeStyle = colors.node;
+        }
+
+        ctx.rect(comment.position[0], comment.position[1], comment.size[0], comment.size[1]);
+        ctx.stroke();
+    });
+
     ctx.beginPath();
     ctx.fillStyle = colors.node;
     okSteps.forEach((step) => {

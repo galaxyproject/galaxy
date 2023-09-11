@@ -46,6 +46,7 @@
         <WorkflowMinimap
             v-if="elementBounding"
             :steps="steps"
+            :comments="comments"
             :viewport-bounds="elementBounding"
             :viewport-bounding-box="viewportBoundingBox"
             @panBy="panBy"
