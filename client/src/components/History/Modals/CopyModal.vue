@@ -2,7 +2,7 @@
     <b-modal v-bind="$attrs" :title="title" title-tag="h2" v-on="$listeners">
         <transition name="fade">
             <b-alert v-localize :show="isAnonymous" variant="warning">
-                As an anonymous user, unless you login or register, you will lose your current history after copying
+                As an anonymous user, unless you log in or register, you will lose your current history after copying
                 this history. You can <a href="/user/login">log in here</a> or <a href="/user/create">register here</a>.
             </b-alert>
         </transition>
