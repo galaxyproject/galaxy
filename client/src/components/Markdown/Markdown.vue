@@ -27,6 +27,7 @@
                     <h1 class="text-break align-middle">
                         Title: {{ markdownConfig.title || markdownConfig.model_class }}
                     </h1>
+                    <h3 class="text-break align-middle">Workflow Version: {{ workflowVersions }}</h3>
                 </span>
             </div>
             <b-badge variant="info" class="w-100 rounded mb-3 white-space-normal">
@@ -67,8 +68,11 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import BootstrapVue from "bootstrap-vue";
 import MarkdownIt from "markdown-it";
 import markdownItRegexp from "markdown-it-regexp";
+import { mapActions } from "pinia";
 import store from "store";
 import Vue from "vue";
+
+import { useWorkflowStore } from "@/stores/workflowStore";
 
 import MarkdownContainer from "./MarkdownContainer.vue";
 import LoadingSpan from "components/LoadingSpan.vue";
@@ -131,6 +135,7 @@ export default {
             jobs: {},
             invocations: {},
             loading: true,
+            workflowVersion: null,
         };
     },
     computed: {
@@ -151,6 +156,9 @@ export default {
             }
             return "unavailable";
         },
+        workflowVersions() {
+            return this.workflowVersion;
+        },
         version() {
             return this.markdownConfig.generate_version || "Unknown Galaxy Version";
         },
@@ -162,8 +170,16 @@ export default {
     },
     created() {
         this.initConfig();
+        this.fetchWorkflowForInstanceId(Object.keys(this.markdownConfig.workflows)[0]).then((data) => {
+            var workflow = this.getStoredWorkflowByInstanceId(Object.keys(this.markdownConfig.workflows)[0]);
+            if (workflow) {
+                this.workflowVersion = workflow.version;
+            }
+        });
+    
     },
     methods: {
+        ...mapActions(useWorkflowStore, ["getStoredWorkflowByInstanceId", "fetchWorkflowForInstanceId"]),
         initConfig() {
             if (Object.keys(this.markdownConfig).length) {
                 const config = this.markdownConfig;
