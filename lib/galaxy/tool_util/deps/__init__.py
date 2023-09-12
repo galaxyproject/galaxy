@@ -145,7 +145,7 @@ class DependencyManager:
             plugin_source = self.__build_dependency_resolvers_plugin_source(conf_file)
         self.dependency_resolvers = self.__parse_resolver_conf_plugins(plugin_source)
         self._enabled_container_types: List[str] = []
-        self._destination_for_container_type: Dict[str, List["JobDestination"]] = {}
+        self._destination_for_container_type: Dict[str, Dict[str, JobDestination]] = {}
 
     def set_enabled_container_types(self, container_types_to_destinations):
         """Set the union of all enabled container types."""
@@ -153,16 +153,13 @@ class DependencyManager:
         # Just pick first enabled destination for a container type, probably covers the most common deployment scenarios
         self._destination_for_container_type = container_types_to_destinations
 
-    def get_destination_info_for_container_type(
-        self, container_type, destination_id=None
-    ) -> Optional["JobDestination"]:
+    def get_destination_info_for_container_type(self, container_type, destination_id=None):
         if destination_id is None:
-            return next(iter(self._destination_for_container_type[container_type]))
+            return next(iter(self._destination_for_container_type[container_type])).params
         else:
             for destination in self._destination_for_container_type[container_type]:
                 if destination.id == destination_id:
-                    return destination
-        return None
+                    return destination.params
 
     @property
     def enabled_container_types(self):

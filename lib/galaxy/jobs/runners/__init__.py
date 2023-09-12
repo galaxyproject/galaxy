@@ -565,7 +565,8 @@ class BaseJobRunner:
             job_directory_type=job_directory_type,
         )
 
-        container = self.app.container_finder.find_container(tool_info, job_wrapper.job_destination, job_info)
+        destination_info = job_wrapper.job_destination.params
+        container = self.app.container_finder.find_container(tool_info, destination_info, job_info)
         if container:
             job_wrapper.set_container(container)
         return container

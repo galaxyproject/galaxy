@@ -640,17 +640,17 @@ class MulledDockerContainerResolver(CliContainerResolver):
                 hash_func=self.hash_func,
                 resolution_cache=resolution_cache,
             ):
-                job_destination = None
+                destination_info = {}
                 destination_for_container_type = kwds.get("destination_for_container_type")
                 if destination_for_container_type:
-                    job_destination = destination_for_container_type(self.container_type)
+                    destination_info = destination_for_container_type(self.container_type)
                 container = CONTAINER_CLASSES[self.container_type](
-                    container_id=container_description.identifier,
-                    app_info=self.app_info,
-                    tool_info=tool_info,
-                    job_destination=job_destination,
-                    job_info=None,
-                    container_description=container_description,
+                    container_description.identifier,
+                    self.app_info,
+                    tool_info,
+                    destination_info,
+                    None,
+                    container_description,
                 )
                 self.pull(container)
             if not self.auto_install:
