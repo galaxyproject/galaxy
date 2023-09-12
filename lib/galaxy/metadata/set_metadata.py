@@ -83,6 +83,15 @@ def reset_external_filename(dataset_instance: DatasetInstance):
     dataset_instance.dataset.extra_files_path = None
 
 
+def push_if_necessary(object_store: ObjectStore, dataset: DatasetInstance, external_filename):
+    # Here we might be updating a disk based objectstore when outputs_to_working_directory is used,
+    # or a remote object store from its cache path.
+    # empty files could happen when outputs are discovered from working dir,
+    # empty file check needed for e.g. test/integration/test_extended_metadata_outputs_to_working_directory.py::test_tools[multi_output_assign_primary]
+    if os.path.getsize(external_filename):
+        object_store.update_from_file(dataset.dataset, file_name=external_filename, create=True)
+
+
 def set_validated_state(dataset_instance):
     datatype_validation = validate(dataset_instance)
 
@@ -435,15 +444,9 @@ def set_metadata_portable(
                 if not object_store or not export_store:
                     # Can't happen, but type system doesn't know
                     raise Exception("object_store not built")
-                if not is_deferred and not link_data_only and os.path.getsize(external_filename):
-                    # Here we might be updating a disk based objectstore when outputs_to_working_directory is used,
-                    # or a remote object store from its cache path.
-                    # empty files could happen when outputs are discovered from working dir,
-                    # empty file check needed for e.g. test/integration/test_extended_metadata_outputs_to_working_directory.py::test_tools[multi_output_assign_primary]
+                if not is_deferred and not link_data_only:
                     object_store_update_actions.append(
-                        partial(
-                            object_store.update_from_file, dataset.dataset, file_name=external_filename, create=True
-                        )
+                        partial(push_if_necessary, object_store, dataset, external_filename)
                     )
                 object_store_update_actions.append(partial(reset_external_filename, dataset))
                 object_store_update_actions.append(partial(export_store.add_dataset, dataset))
