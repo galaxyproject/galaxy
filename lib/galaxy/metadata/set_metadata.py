@@ -435,9 +435,11 @@ def set_metadata_portable(
                 if not object_store or not export_store:
                     # Can't happen, but type system doesn't know
                     raise Exception("object_store not built")
-                if not is_deferred and not link_data_only:
+                if not is_deferred and not link_data_only and os.path.getsize(external_filename):
                     # Here we might be updating a disk based objectstore when outputs_to_working_directory is used,
                     # or a remote object store from its cache path.
+                    # empty files could happen when outputs are discovered from working dir,
+                    # empty file check needed for e.g. test/integration/test_extended_metadata_outputs_to_working_directory.py::test_tools[multi_output_assign_primary]
                     object_store_update_actions.append(
                         partial(
                             object_store.update_from_file, dataset.dataset, file_name=external_filename, create=True
