@@ -12,8 +12,8 @@ echo \$(pwd) > '$pwd' &&
 echo "\$HOME" > '$home' &&
 echo "\$TMP"  > '$tmp' &&
 echo "\$SOME_ENV_VAR" > '$some_env_var' &&
-echo "\$JOBCONF_ENV_VAR" > '$jobconf_env_var' &&
-echo "\$CONTAINER_ENV_VAR" > '$container_env_var' &&
+echo "\${JOBCONF_ENV_VAR:-UNSET}" > '$jobconf_env_var' &&
+echo "\${CONTAINER_ENV_VAR:-UNSET}" > '$container_env_var' &&
 touch "\$_GALAXY_JOB_TMP_DIR/tmp_test" &&
 touch "\$HOME/home_test" &&
 

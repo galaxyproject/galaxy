@@ -63,7 +63,7 @@ class BaseJobEnvironmentIntegrationTestCase(integration_util.IntegrationTestCase
         tmp = self.dataset_populator.get_history_dataset_content(history_id, hid=5).strip()
         some_env = self.dataset_populator.get_history_dataset_content(history_id, hid=6).strip()
         jobconf_env_var = self.dataset_populator.get_history_dataset_content(history_id, hid=7).strip()
-        container_env_var = self.dataset_populator.get_history_dataset_content(history_id, hid=7).strip()
+        container_env_var = self.dataset_populator.get_history_dataset_content(history_id, hid=8).strip()
         return JobEnvironmentProperties(user_id, group_id, pwd, home, tmp, some_env, jobconf_env_var, container_env_var)
 
     def _check_completed_history(self, history_id):
@@ -91,6 +91,10 @@ class TestDefaultJobEnvironmentIntegration(BaseJobEnvironmentIntegrationTestCase
         assert job_env.group_id == str(egid), job_env.group_id
         assert job_env.pwd.startswith(self.jobs_directory)
         assert job_env.pwd.endswith("/working")
+
+        # check that env variables job
+        assert job_env.jobconf_env_var =="YEAH"
+        assert job_env.container_env_var =="UNSET"
 
         # Newer tools get isolated home directories in job_directory/home
         job_directory = os.path.dirname(job_env.pwd)

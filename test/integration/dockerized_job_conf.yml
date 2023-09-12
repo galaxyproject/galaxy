@@ -14,7 +14,7 @@ execution:
           value: 'YEAH'
         - execute: 'true' # just check that this does not confuse env setup
       docker_enabled: true
-      docker_env_CONTAINER_VAR: "DOCKER_VAR_VALUE"
+      docker_env_CONTAINER_ENV_VAR: "CONTAINER_VAR_VALUE"
       require_container: true
       tmp_dir: '$(mktemp -d)'
     local_docker_inline_container_resolvers:
