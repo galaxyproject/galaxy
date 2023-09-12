@@ -176,7 +176,6 @@ export default {
                 this.workflowVersion = workflow.version;
             }
         });
-    
     },
     methods: {
         ...mapActions(useWorkflowStore, ["getStoredWorkflowByInstanceId", "fetchWorkflowForInstanceId"]),
