@@ -435,7 +435,7 @@ def set_metadata_portable(
                 if not object_store or not export_store:
                     # Can't happen, but type system doesn't know
                     raise Exception("object_store not built")
-                if not is_deferred and not link_data_only and os.path.getsize(external_filename):
+                if not is_deferred and not link_data_only:
                     # Here we might be updating a disk based objectstore when outputs_to_working_directory is used,
                     # or a remote object store from its cache path.
                     object_store_update_actions.append(
