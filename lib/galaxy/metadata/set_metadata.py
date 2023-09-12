@@ -443,7 +443,7 @@ def set_metadata_portable(
                             object_store.update_from_file, dataset.dataset, file_name=external_filename, create=True
                         )
                     )
-                    object_store_update_actions.append(partial(reset_external_filename, dataset))
+                object_store_update_actions.append(partial(reset_external_filename, dataset))
                 object_store_update_actions.append(partial(export_store.add_dataset, dataset))
                 if dataset_instance_id not in unnamed_id_to_path:
                     object_store_update_actions.append(partial(collect_extra_files, object_store, dataset, "."))
