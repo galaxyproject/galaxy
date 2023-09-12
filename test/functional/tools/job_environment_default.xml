@@ -13,6 +13,7 @@ echo "\$HOME" > '$home' &&
 echo "\$TMP"  > '$tmp' &&
 echo "\$SOME_ENV_VAR" > '$some_env_var' &&
 echo "\$JOBCONF_ENV_VAR" > '$jobconf_env_var' &&
+echo "\$CONTAINER_ENV_VAR" > '$container_env_var' &&
 touch "\$_GALAXY_JOB_TMP_DIR/tmp_test" &&
 touch "\$HOME/home_test" &&
 
@@ -30,6 +31,7 @@ touch "\${TMPDIR:-/tmp}/job_tmpdir"
         <data name="tmp" format="txt" label="tmp" />
         <data name="some_env_var" format="txt" label="env_var" />
         <data name="jobconf_env_var" format="txt" label="jobconf_env_var" />
+        <data name="container_env_var" format="txt" label="container_env_var" />
     </outputs>
     <tests>
     </tests>
