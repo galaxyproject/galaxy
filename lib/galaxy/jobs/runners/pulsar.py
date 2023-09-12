@@ -2,7 +2,7 @@
 
 More information on Pulsar can be found at https://pulsar.readthedocs.io/ .
 """
-
+import copy
 import errno
 import logging
 import os
@@ -12,6 +12,7 @@ from time import sleep
 from typing import (
     Any,
     Dict,
+    Optional,
 )
 
 import pulsar.core
@@ -54,7 +55,6 @@ from galaxy.util import (
     specs,
     string_as_bool_or_none,
 )
-from galaxy.util.bunch import Bunch
 
 log = logging.getLogger(__name__)
 
@@ -466,7 +466,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
         command_line = None
         client = None
         remote_job_config = None
-        compute_environment = None
+        compute_environment: Optional[PulsarComputeEnvironment] = None
         remote_container = None
 
         fail_or_resubmit = False
@@ -492,7 +492,12 @@ class PulsarJobRunner(AsynchronousJobRunner):
             self.__prepare_input_files_locally(job_wrapper)
             remote_metadata = PulsarJobRunner.__remote_metadata(client)
             dependency_resolution = PulsarJobRunner.__dependency_resolution(client)
-            metadata_kwds = self.__build_metadata_configuration(client, job_wrapper, remote_metadata, remote_job_config)
+            metadata_kwds = self.__build_metadata_configuration(
+                client,
+                job_wrapper,
+                remote_metadata,
+                remote_job_config,
+            )
             remote_working_directory = remote_job_config["working_directory"]
             remote_job_directory = os.path.abspath(os.path.join(remote_working_directory, os.path.pardir))
             remote_tool_directory = os.path.abspath(os.path.join(remote_job_directory, "tool_files"))
@@ -896,7 +901,13 @@ class PulsarJobRunner(AsynchronousJobRunner):
     def __rewrite_parameters(pulsar_client):
         return string_as_bool_or_none(pulsar_client.destination_params.get("rewrite_parameters", False)) or False
 
-    def __build_metadata_configuration(self, client, job_wrapper, remote_metadata, remote_job_config):
+    def __build_metadata_configuration(
+        self,
+        client,
+        job_wrapper,
+        remote_metadata,
+        remote_job_config,
+    ):
         metadata_kwds = {}
         if remote_metadata and not job_wrapper.use_metadata_binary:
             remote_system_properties = remote_job_config.get("system_properties", {})
@@ -912,20 +923,20 @@ class PulsarJobRunner(AsynchronousJobRunner):
             # and false path indicating location on compute server. Since the
             # Pulsar disables from_work_dir copying as part of the job command
             # line we need to take the list of output locations on the Pulsar
-            # server (produced by self.get_output_files(job_wrapper)) and for
+            # server (produced by job_wrapper.job_io.get_output_fnames() and for
             # each work_dir output substitute the effective path on the Pulsar
             # server relative to the remote working directory as the
             # false_path to send the metadata command generation module.
             work_dir_outputs = self.get_work_dir_outputs(job_wrapper, tool_working_directory=working_directory)
-            outputs = [
-                Bunch(false_path=os.path.join(outputs_directory, os.path.basename(path)), real_path=path)
-                for path in self.get_output_files(job_wrapper)
-            ]
-            for output in outputs:
-                for pulsar_workdir_path, real_path in work_dir_outputs:
-                    if real_path == output.real_path:
-                        output.false_path = pulsar_workdir_path
-            metadata_kwds["output_fnames"] = outputs
+            outputs = job_wrapper.job_io.get_output_fnames()
+            real_path_to_output = {
+                os.path.join(outputs_directory, os.path.basename(str(o))): copy.copy(o) for o in outputs
+            }
+            for pulsar_workdir_path, real_path in work_dir_outputs:
+                work_dir_output = real_path_to_output.get(real_path)
+                if work_dir_output:
+                    work_dir_output.false_path = pulsar_workdir_path
+            metadata_kwds["output_fnames"] = list(real_path_to_output.values())
             metadata_kwds["compute_tmp_dir"] = metadata_directory
             metadata_kwds["config_root"] = remote_galaxy_home
             default_config_file = os.path.join(remote_galaxy_home, "config/galaxy.ini")

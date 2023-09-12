@@ -399,9 +399,7 @@ def set_metadata_portable(
                 if not link_data_only:
                     # Only set external filename if we're dealing with files in job working directory.
                     # Fixes link_data_only uploads
-                    if not object_store:
-                        # overriding the external filename would break pushing to object stores
-                        dataset.dataset.external_filename = external_filename
+                    dataset.dataset.external_filename = external_filename
                     # We derive extra_files_dir_name from external_filename, because OutputsToWorkingDirectoryPathRewriter
                     # always rewrites the path to include the uuid, even if store_by is set to id, and the extra files
                     # rewrite is derived from the dataset path (since https://github.com/galaxyproject/galaxy/pull/16541).
