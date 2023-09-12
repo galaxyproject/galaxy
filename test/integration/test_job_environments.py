@@ -93,8 +93,10 @@ class TestDefaultJobEnvironmentIntegration(BaseJobEnvironmentIntegrationTestCase
         assert job_env.pwd.endswith("/working")
 
         # check that env variables job
-        assert job_env.jobconf_env_var =="YEAH"
-        assert job_env.container_env_var =="UNSET"
+        # - variables defined via env in job_conf are set
+        # - container specific vars via <param id="docker_env_.."> are not
+        assert job_env.jobconf_env_var == "YEAH"
+        assert job_env.container_env_var == "UNSET"
 
         # Newer tools get isolated home directories in job_directory/home
         job_directory = os.path.dirname(job_env.pwd)
