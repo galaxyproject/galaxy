@@ -30,7 +30,7 @@ export const useNotificationsStore = defineStore("notificationsStore", () => {
     const unreadNotifications = computed(() => notifications.value.filter((n) => !n.seen_time));
 
     async function loadNotifications() {
-        const data = (await loadNotificationsFromServer()) as UserNotification[];
+        const data = await loadNotificationsFromServer();
         notifications.value = mergeObjectListsById(data, [], "create_time", "desc");
     }
 
