@@ -7,6 +7,7 @@ import { useRouter } from "vue-router/composables";
 import { createBroadcast, loadBroadcast, updateBroadcast } from "@/components/admin/Notifications/broadcasts.services";
 import { Toast } from "@/composables/toast";
 import { type components } from "@/schema";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import AsyncButton from "@/components/Common/AsyncButton.vue";
 import Heading from "@/components/Common/Heading.vue";
@@ -96,7 +97,7 @@ async function createOrUpdateBroadcast() {
             Toast.success("Broadcast created");
         }
     } catch (error: any) {
-        Toast.error(error.err_msg);
+        Toast.error(errorMessageAsString(error));
     } finally {
         router.push("/admin/notifications");
     }
@@ -119,7 +120,7 @@ async function loadBroadcastData() {
             broadcastPublished.value = new Date(broadcastData.value.publication_time) < new Date();
         }
     } catch (error: any) {
-        Toast.error(error.err_msg);
+        Toast.error(errorMessageAsString(error));
     }
     loading.value = false;
 }

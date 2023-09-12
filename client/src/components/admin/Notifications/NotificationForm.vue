@@ -14,6 +14,7 @@ import {
 } from "@/components/admin/Notifications/notifications.services";
 import { Toast } from "@/composables/toast";
 import { type components } from "@/schema";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 import AsyncButton from "@/components/Common/AsyncButton.vue";
 import Heading from "@/components/Common/Heading.vue";
@@ -100,7 +101,7 @@ async function loadData<T>(
         const tmp = await getData();
         target.value = tmp.map(formatter);
     } catch (error: any) {
-        Toast.error(error.err_msg);
+        Toast.error(errorMessageAsString(error));
     }
 }
 
@@ -122,7 +123,7 @@ async function sendNewNotification() {
         Toast.success("Notification sent");
         router.push("/admin/notifications");
     } catch (error: any) {
-        Toast.error(error.err_msg);
+        Toast.error(errorMessageAsString(error));
     }
 }
 </script>
