@@ -2,7 +2,6 @@
 
 More information on Pulsar can be found at https://pulsar.readthedocs.io/ .
 """
-import copy
 import errno
 import logging
 import os
@@ -497,6 +496,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 job_wrapper,
                 remote_metadata,
                 remote_job_config,
+                compute_environment=compute_environment,
             )
             remote_working_directory = remote_job_config["working_directory"]
             remote_job_directory = os.path.abspath(os.path.join(remote_working_directory, os.path.pardir))
@@ -907,10 +907,10 @@ class PulsarJobRunner(AsynchronousJobRunner):
         job_wrapper,
         remote_metadata,
         remote_job_config,
+        compute_environment: Optional["PulsarComputeEnvironment"] = None,
     ):
-        metadata_kwds = {}
+        metadata_kwds: Dict[str, Any] = {}
         if remote_metadata:
-            outputs_directory = remote_job_config["outputs_directory"]
             working_directory = remote_job_config["working_directory"]
             metadata_directory = remote_job_config["metadata_directory"]
             # For metadata calculation, we need to build a list of of output
@@ -924,14 +924,20 @@ class PulsarJobRunner(AsynchronousJobRunner):
             # false_path to send the metadata command generation module.
             work_dir_outputs = self.get_work_dir_outputs(job_wrapper, tool_working_directory=working_directory)
             outputs = job_wrapper.job_io.get_output_fnames()
-            real_path_to_output = {
-                os.path.join(outputs_directory, os.path.basename(str(o))): copy.copy(o) for o in outputs
-            }
+            real_path_to_output = {o.real_path: o for o in outputs}
+            rewritten_outputs = []
             for pulsar_workdir_path, real_path in work_dir_outputs:
-                work_dir_output = real_path_to_output.get(real_path)
+                work_dir_output = real_path_to_output.pop(real_path, None)
                 if work_dir_output:
                     work_dir_output.false_path = pulsar_workdir_path
-            metadata_kwds["output_fnames"] = list(real_path_to_output.values())
+                    rewritten_outputs.append(work_dir_output)
+
+            for output in real_path_to_output.values():
+                if compute_environment:
+                    output.false_path = compute_environment.path_mapper.remote_output_path_rewrite(str(output))
+                rewritten_outputs.append(output)
+
+            metadata_kwds["output_fnames"] = rewritten_outputs
             remote_system_properties = remote_job_config.get("system_properties", {})
             remote_galaxy_home = remote_system_properties.get("galaxy_home")
             if not job_wrapper.use_metadata_binary:
