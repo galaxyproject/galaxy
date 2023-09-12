@@ -2,6 +2,7 @@
 
 More information on Pulsar can be found at https://pulsar.readthedocs.io/ .
 """
+import copy
 import errno
 import logging
 import os
@@ -924,7 +925,8 @@ class PulsarJobRunner(AsynchronousJobRunner):
             # false_path to send the metadata command generation module.
             work_dir_outputs = self.get_work_dir_outputs(job_wrapper, tool_working_directory=working_directory)
             outputs = job_wrapper.job_io.get_output_fnames()
-            real_path_to_output = {o.real_path: o for o in outputs}
+            # copy fixes 'test/integration/test_pulsar_embedded_remote_metadata.py::test_tools[job_properties]'
+            real_path_to_output = {o.real_path: copy.copy(o) for o in outputs}
             rewritten_outputs = []
             for pulsar_workdir_path, real_path in work_dir_outputs:
                 work_dir_output = real_path_to_output.pop(real_path, None)
