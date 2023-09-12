@@ -234,6 +234,9 @@ class _BlastDb(Data):
                 ck_size=ck_size,
                 **kwd,
             )
+
+        dataset.sync_cache(user=trans.user)
+
         if self.file_ext == "blastdbn":
             title = "This is a nucleotide BLAST database"
         elif self.file_ext == "blastdbp":

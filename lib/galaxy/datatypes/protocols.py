@@ -83,6 +83,9 @@ class DatasetProtocol(
     def get_converted_files_by_type(self, file_type):
         ...
 
+    def sync_cache(self, **kwargs):
+        ...
+
     def get_mime(self) -> str:
         ...
 

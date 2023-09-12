@@ -381,6 +381,17 @@ class PithosObjectStore(ConcreteObjectStore):
         return content
 
     def _get_filename(self, obj, **kwargs):
+        base_dir = kwargs.get("base_dir", None)
+        dir_only = kwargs.get("dir_only", False)
+        obj_dir = kwargs.get("obj_dir", False)
+        path = self._construct_path(obj, **kwargs)
+
+        # for JOB_WORK directory
+        if base_dir and dir_only and obj_dir:
+            return os.path.abspath(path)
+        return self._get_cache_path(path)
+
+    def _sync_cache(self, obj, **kwargs):
         """Get the expected filename with absolute path"""
         base_dir = kwargs.get("base_dir", None)
         dir_only = kwargs.get("dir_only", False)

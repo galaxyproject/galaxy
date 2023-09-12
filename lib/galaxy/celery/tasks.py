@@ -332,10 +332,15 @@ def export_history(
 def prepare_dataset_collection_download(
     request: PrepareDatasetCollectionDownload,
     collection_manager: DatasetCollectionManager,
+    session: galaxy_scoped_session,
     task_user_id: Optional[int] = None,
 ):
+    if task_user_id:
+        user = session.query(model.User).get(task_user_id)
+    else:
+        user = None
     """Create a short term storage file tracked and available for download of target collection."""
-    collection_manager.write_dataset_collection(request)
+    collection_manager.write_dataset_collection(request, user=user)
 
 
 @galaxy_task(action="preparing Galaxy Markdown PDF for download")

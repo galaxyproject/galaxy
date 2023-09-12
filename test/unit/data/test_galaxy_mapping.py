@@ -1173,3 +1173,6 @@ class MockObjectStore:
             return True
         else:
             return False
+
+    def sync_cache(self, *arg, **kwds):
+        pass

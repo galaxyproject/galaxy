@@ -391,6 +391,7 @@ class Data(metaclass=DataMeta):
         ext = data.extension
         path = data.file_name
         efp = data.extra_files_path
+
         # Add any central file to the archive,
 
         display_name = os.path.splitext(outfname)[0]
@@ -438,19 +439,22 @@ class Data(metaclass=DataMeta):
         headers["Content-Disposition"] = f'attachment; filename="{filename}"'
         return open(dataset.file_name, mode="rb"), headers
 
-    def to_archive(self, dataset: DatasetProtocol, name: str = "") -> Iterable:
+    def to_archive(self, dataset: DatasetProtocol, name: str = "", user=None) -> Iterable:
         """
         Collect archive paths and file handles that need to be exported when archiving `dataset`.
 
         :param dataset: HistoryDatasetAssociation
         :param name: archive name, in collection context corresponds to collection name(s) and element_identifier,
                      joined by '/', e.g 'fastq_collection/sample1/forward'
+        :param trans: current transaction, if any
         """
         rel_paths = []
         file_paths = []
+        dataset.sync_cache(user=user)
         if dataset.datatype.composite_type or dataset.extension.endswith("html"):
             main_file = f"{name}.html"
             rel_paths.append(main_file)
+            dataset.sync_cache(dir_only=True, extra_dir=dataset.dataset.extra_files_path_name, user=user)
             file_paths.append(dataset.file_name)
             for fpath, rpath in self.__archive_extra_files_path(dataset.extra_files_path):
                 rel_paths.append(os.path.join(name, rpath))
@@ -466,6 +470,8 @@ class Data(metaclass=DataMeta):
         composite_extensions.append("data_manager_json")  # for downloading bundles if bundled.
 
         if data.extension in composite_extensions:
+            # sync cache for extra files
+            data.sync_cache(dir_only=True, extra_dir=data.dataset.extra_files_path_name, user=trans.user)
             return self._archive_composite_dataset(trans, data, headers, do_action=kwd.get("do_action", "zip"))
         else:
             headers["Content-Length"] = str(file_size)
@@ -537,6 +543,7 @@ class Data(metaclass=DataMeta):
         if filename and filename != "index":
             # For files in extra_files_path
             extra_dir = dataset.dataset.extra_files_path_name
+            dataset.sync_cache(extra_dir=extra_dir, alt_name=filename, user=trans.user)
             file_path = trans.app.object_store.get_filename(dataset.dataset, extra_dir=extra_dir, alt_name=filename)
             if os.path.exists(file_path):
                 if os.path.isdir(file_path):
@@ -577,6 +584,8 @@ class Data(metaclass=DataMeta):
             else:
                 raise ObjectNotFound(f"Could not find '{filename}' on the extra files path {file_path}.")
         self._clean_and_set_mime_type(trans, dataset.get_mime(), headers)
+
+        dataset.sync_cache(user=trans.user)
 
         downloading = to_ext is not None
         file_size = _get_file_size(dataset)

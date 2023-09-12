@@ -653,6 +653,18 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
         if base_dir and dir_only and obj_dir:
             return os.path.abspath(rel_path)
 
+        return self._get_cache_path(rel_path)
+
+    def _sync_cache(self, obj, **kwargs):
+        base_dir = kwargs.get("base_dir", None)
+        dir_only = kwargs.get("dir_only", False)
+        obj_dir = kwargs.get("obj_dir", False)
+        rel_path = self._construct_path(obj, **kwargs)
+
+        # for JOB_WORK directory
+        if base_dir and dir_only and obj_dir:
+            return os.path.abspath(rel_path)
+
         cache_path = self._get_cache_path(rel_path)
         # S3 does not recognize directories as files so cannot check if those exist.
         # So, if checking dir only, ensure given dir exists in cache and return

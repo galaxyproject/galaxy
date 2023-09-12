@@ -711,6 +711,18 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         return content
 
     def _get_filename(self, obj, **kwargs):
+        base_dir = kwargs.get("base_dir", None)
+        dir_only = kwargs.get("dir_only", False)
+        obj_dir = kwargs.get("obj_dir", False)
+        rel_path = self._construct_path(obj, **kwargs)
+
+        # for JOB_WORK directory
+        if base_dir and dir_only and obj_dir:
+            return os.path.abspath(rel_path)
+
+        return self._get_cache_path(rel_path)
+
+    def _sync_cache(self, obj, **kwargs):
         ipt_timer = ExecutionTimer()
         base_dir = kwargs.get("base_dir", None)
         dir_only = kwargs.get("dir_only", False)

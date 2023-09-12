@@ -219,6 +219,7 @@ class Ipynb(Json):
     ) -> Tuple[IO, Headers]:
         headers = kwd.pop("headers", {})
         preview = string_as_bool(preview)
+        dataset.sync_cache(user=trans.user)
         if to_ext or not preview:
             return self._serve_raw(dataset, to_ext, headers, **kwd)
         else:

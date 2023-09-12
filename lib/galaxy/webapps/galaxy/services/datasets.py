@@ -585,10 +585,12 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
                 if filename and filename != "index":
                     object_store = trans.app.object_store
                     dir_name = dataset_instance.dataset.extra_files_path_name
+                    dataset_instance.sync_cache(extra_dir=dir_name, alt_name=filename, user=trans.user)
                     file_path = object_store.get_filename(
                         dataset_instance.dataset, extra_dir=dir_name, alt_name=filename
                     )
                 else:
+                    dataset_instance.sync_cache(user=trans.user)
                     file_path = dataset_instance.file_name
                 rval = open(file_path, "rb")
             else:
@@ -647,6 +649,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         headers = {}
         headers["Content-Type"] = "application/octet-stream"
         headers["Content-Disposition"] = f'attachment; filename="Galaxy{hda.hid}-[{fname}].{file_ext}"'
+        hda.metadata.get(metadata_file).sync_cache(user=trans.user)
         file_path = hda.metadata.get(metadata_file).file_name
         if open_file:
             return open(file_path, "rb"), headers

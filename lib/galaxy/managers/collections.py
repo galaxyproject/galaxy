@@ -857,10 +857,10 @@ class DatasetCollectionManager:
             qry = qry.offset(int(offset))
         return qry
 
-    def write_dataset_collection(self, request: PrepareDatasetCollectionDownload):
+    def write_dataset_collection(self, request: PrepareDatasetCollectionDownload, user: model.User):
         short_term_storage_monitor = self.short_term_storage_monitor
         instance_id = request.history_dataset_collection_association_id
         with storage_context(request.short_term_storage_request_id, short_term_storage_monitor) as target:
             collection_instance = self.model.context.query(model.HistoryDatasetCollectionAssociation).get(instance_id)
             with ZipFile(target.path, "w") as zip_f:
-                write_dataset_collection(collection_instance, zip_f)
+                write_dataset_collection(collection_instance, zip_f, user=user)

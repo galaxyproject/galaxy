@@ -774,6 +774,8 @@ class BaseFastq(Sequence):
         to_ext: Optional[str] = None,
         **kwd,
     ):
+        dataset.sync_cache(user=trans.user)
+
         headers = kwd.get("headers", {})
         if preview:
             with compression_utils.get_fileobj(dataset.file_name) as fh:

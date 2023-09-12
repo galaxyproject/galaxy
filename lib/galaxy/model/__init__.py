@@ -4169,6 +4169,11 @@ class Dataset(Base, StorableObject, Serializable):
         serialization_options.attach_identifier(id_encoder, self, rval)
         return rval
 
+    def sync_cache(self, **kwargs):
+        object_store = self._assert_object_store_set()
+        if object_store.exists(self):
+            object_store.sync_cache(self, **kwargs)
+
 
 class DatasetSource(Base, Dictifiable, Serializable):
     __tablename__ = "dataset_source"
@@ -4881,6 +4886,9 @@ class DatasetInstance(UsesCreateAndUpdateTime, _HasTable):
                 file_metadata["sources"] = [s.serialize(id_encoder, serialization_options) for s in sources]
 
             rval["file_metadata"] = file_metadata
+
+    def sync_cache(self, **kwargs):
+        self.dataset.sync_cache(**kwargs)
 
 
 class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable):
@@ -9067,6 +9075,13 @@ class MetadataFile(Base, StorableObject, Serializable):
             extra_dir_at_root=True,
             alt_name=os.path.basename(self.file_name),
         )
+
+    def sync_cache(self, **kwargs):
+        object_store = self.dataset.object_store
+        store_by = object_store.get_store_by(self.dataset)
+        identifier = getattr(self, store_by)
+        alt_name = f"metadata_{identifier}.dat"
+        object_store.sync_cache(self, extra_dir="_metadata_files", extra_dir_at_root=True, alt_name=alt_name, **kwargs)
 
     @property
     def file_name(self):
