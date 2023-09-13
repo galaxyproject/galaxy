@@ -10,7 +10,6 @@ from galaxy.jobs.runners.util.arc_util import (
     ARCJobBuilder,
     ARCHTTPError,
     NoValueInARCResult,
-    ARCJob,
     ensure_pyarc,
     get_client,
 )
@@ -95,7 +94,6 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
         self.arc.url = user_preferences.get("distributed_arc_compute|remote_arc_resources", "None")
 
         """ Prepare and submit job to arc """
-        #self.arcjob = ARCJob()
         arc_job = self.prepare_job(job_wrapper)
 
         token = job_wrapper.get_job().user.get_oidc_tokens(self.provider_backend)["access"]
@@ -161,7 +159,7 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
             # Read from ARC output_file and write it into galaxy output_file.
             out_log = ""
             tool_stdout_path = galaxy_outputs + "/tool_stdout"
-            with open(galaxy_workdir + "/" + arc_jobid + "/arc.out", "r") as f:
+            with open(galaxy_workdir + "/" + arc_jobid + "/arc.out") as f:
                 out_log = f.read()
             with open(job_state.output_file, "a+") as log_file:
                 log_file.write(out_log)
@@ -172,7 +170,7 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
             # Read from ARC error_file and write it into galaxy error_file.
             err_log = ""
             tool_stderr_path = galaxy_outputs + "/tool_stderr"
-            with open(galaxy_workdir + "/" + arc_jobid + "/arc.err", "r") as f:
+            with open(galaxy_workdir + "/" + arc_jobid + "/arc.err") as f:
                 err_log = f.read()
             with open(job_state.error_file, "w+") as log_file:
                 log_file.write(err_log)
