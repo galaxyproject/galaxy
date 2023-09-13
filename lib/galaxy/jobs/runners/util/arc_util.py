@@ -47,8 +47,6 @@ class ARCJobBuilder:
     memory: str
     inputs: Dict[str, str] = {}
     outputs: List[str] = []
-    #job_files: Dict[str, List[Dict]]  = {}
-    #job_files: Dict[str, str] = {}
     descrstr: str
     
     def to_xml_str(self) -> str:
