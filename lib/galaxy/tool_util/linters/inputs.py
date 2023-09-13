@@ -395,10 +395,10 @@ def lint_inputs(tool_source: "ToolSource", lint_ctx: "LintContext"):
                         f"Parameter [{param_name}]: attribute '{attrib}' is incompatible with validator of type '{vtype}'",
                         node=validator,
                     )
-            if vtype == "expression":
+            if vtype in ["expression", "regex"]:
                 if validator.text is None:
                     lint_ctx.error(
-                        f"Parameter [{param_name}]: expression validators are expected to contain text", node=validator
+                        f"Parameter [{param_name}]: {vtype} validators are expected to contain text", node=validator
                     )
                 else:
                     try:
