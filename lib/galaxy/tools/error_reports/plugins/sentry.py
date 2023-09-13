@@ -7,7 +7,6 @@ try:
 except ImportError:
     sentry_sdk = None
 
-from galaxy import web
 from galaxy.util import string_as_bool
 from . import ErrorPlugin
 
@@ -55,21 +54,6 @@ class SentryPlugin(ErrorPlugin):
             "tool_version": job.tool_version,
             "tool_xml": tool.config_file if tool else None,
         }
-
-        # - "request" context
-        # Getting the url allows us to link to the dataset info page in case
-        # anything is missing from this report.
-        try:
-            url = web.url_for(
-                controller="dataset",
-                action="show_params",
-                dataset_id=self.app.security.encode_id(dataset.id),
-                qualified=True,
-            )
-        except AttributeError:
-            # The above does not work when handlers are separate from the web handlers
-            url = None
-        contexts["request"] = {"url": url}
 
         # - "feedback" context
         # The User Feedback API https://docs.sentry.io/api/projects/submit-user-feedback/ would be a better approach for
