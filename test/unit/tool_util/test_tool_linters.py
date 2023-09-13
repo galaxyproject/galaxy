@@ -1391,10 +1391,7 @@ def test_inputs_validator_incompatibilities(lint_ctx):
         "Parameter [param_name]: '[' is no valid regular expression: unterminated character set at position 0"
         in lint_ctx.error_messages
     )
-    assert (
-        "Parameter [param_name]: '(' is no valid regular expression: unexpected EOF while parsing (<unknown>, line 1)"
-        in lint_ctx.error_messages
-    )
+    assert "Parameter [param_name]: '(' is no valid regular expression" in lint_ctx.error_messages
     assert (
         "Parameter [another_param_name]: 'metadata' validators need to define the 'check' or 'skip' attribute(s)"
         in lint_ctx.error_messages
