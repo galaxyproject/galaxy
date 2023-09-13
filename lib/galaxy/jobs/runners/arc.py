@@ -108,7 +108,7 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
         delegationID = self.arcrest.createDelegation()
 
         bulkdesc = "<ActivityDescriptions>"
-        bulkdesc += arc_job.descstr
+        bulkdesc += arc_job.descrstr
         bulkdesc += "</ActivityDescriptions>"
 
         results = self.arcrest.createJobs(bulkdesc, delegationID=delegationID)
@@ -337,28 +337,20 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
         """ This method is called by galaxy at the time of startup.
             Jobs in Running & Queued status in galaxy are put in the monitor_queue by creating an AsynchronousJobState object
         """
-        job_id = job_wrapper.job_runner_external_id()
+        job_id = job.job_runner_external_id
         ajs = AsynchronousJobState(files_dir=job_wrapper.working_directory, job_wrapper=job_wrapper)
         ajs.job_id = str(job_id)
         ajs.job_destination = job_wrapper.job_destination
         job_wrapper.command_line = job.command_line
         ajs.job_wrapper = job_wrapper
         if job.state == model.Job.states.RUNNING:
-            log.debug(
-                "({}/{}) is still in running state, adding to the god queue".format(
-                    job.id, job.job_runner_external_id()
-                )
-            )
+            log.debug("({}/{}) is still in running state, adding to the god queue".format(job.id, ajs.job_id))
             ajs.old_state = "R"
             ajs.running = True
             self.monitor_queue.put(ajs)
 
         elif job.state == model.Job.states.QUEUED:
-            log.debug(
-                "({}/{}) is still in god queued state, adding to the god queue".format(
-                    job.id, job.job_runner_external_id()
-                )
-            )
+            log.debug("({}/{}) is still in god queued state, adding to the god queue".format(job.id, ajs.job_id))
             ajs.old_state = "Q"
             ajs.running = False
             self.monitor_queue.put(ajs)
