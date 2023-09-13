@@ -1,4 +1,6 @@
 import { mount } from "@vue/test-utils";
+import axios from "axios";
+import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
@@ -42,7 +44,7 @@ const fakeQuotaUsages: UserQuotaUsageData[] = [
     },
 ];
 
-const fakeTaskId = "fakeTaskId";
+const FAKE_TASK_ID = "fakeTaskId";
 
 async function mountDiskUsageSummaryWrapper(enableQuotas: boolean) {
     mockFetcher
@@ -53,8 +55,7 @@ async function mountDiskUsageSummaryWrapper(enableQuotas: boolean) {
     mockFetcher
         .path("/api/users/current/recalculate_disk_usage")
         .method("put")
-        .mock({ status: 200, data: { id: fakeTaskId } });
-    mockFetcher.path("/api/tasks/{task_id}/state").method("get").mock({ data: "SUCCESS" });
+        .mock({ status: 200, data: { id: FAKE_TASK_ID } });
 
     const pinia = createPinia();
     const wrapper = mount(DiskUsageSummary, {
@@ -68,6 +69,16 @@ async function mountDiskUsageSummaryWrapper(enableQuotas: boolean) {
 }
 
 describe("DiskUsageSummary.vue", () => {
+    let axiosMock: MockAdapter;
+
+    beforeEach(async () => {
+        axiosMock = new MockAdapter(axios);
+    });
+
+    afterEach(async () => {
+        axiosMock.reset();
+    });
+
     it("should display basic disk usage summary if quotas are NOT enabled", async () => {
         const enableQuotasInConfig = false;
         const wrapper = await mountDiskUsageSummaryWrapper(enableQuotasInConfig);
@@ -104,12 +115,12 @@ describe("DiskUsageSummary.vue", () => {
             },
         ];
         mockFetcher.path("/api/users/{user_id}/usage").method("get").mock({ data: updatedFakeQuotaUsages });
-        await wrapper.find("#refresh-disk-usage").trigger("click");
-        await flushPromises();
+        axiosMock.onGet(`/api/tasks/${FAKE_TASK_ID}/state`).reply(200, "SUCCESS");
+        const refreshButton = wrapper.find("#refresh-disk-usage");
+        await refreshButton.trigger("click");
         const refreshingAlert = wrapper.find(".refreshing-alert");
         expect(refreshingAlert.exists()).toBe(true);
         // Make sure the refresh has finished before checking the quota usage
-        await flushPromises();
         await flushPromises();
         // The refreshing alert should disappear and the quota usage should be updated
         expect(refreshingAlert.exists()).toBe(false);
