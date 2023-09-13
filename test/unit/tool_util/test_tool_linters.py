@@ -410,7 +410,7 @@ INPUTS_VALIDATOR_INCOMPATIBILITIES = """
             <validator type="in_range">TEXT</validator>
             <validator type="regex" filename="blah"/>
             <validator type="expression"/>
-            <validator type="expression">[</validator>
+            <validator type="regex">[</validator>
             <validator type="value_in_data_table"/>
         </param>
         <param name="another_param_name" type="data" format="bed">

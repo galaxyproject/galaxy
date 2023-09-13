@@ -400,7 +400,7 @@ def lint_inputs(tool_source: "ToolSource", lint_ctx: "LintContext"):
                     lint_ctx.error(
                         f"Parameter [{param_name}]: {vtype} validators are expected to contain text", node=validator
                     )
-                else:
+                elif vtype == "regex":
                     try:
                         re.compile(validator.text)
                     except Exception as e:
