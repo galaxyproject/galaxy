@@ -1,6 +1,6 @@
 from typing import (
-    List,
     Dict,
+    List,
 )
 from xml.etree.ElementTree import (
     Element,
@@ -17,8 +17,8 @@ try:
     from pyarcrest.errors import (
         ARCHTTPError,
         NoValueInARCResult,
-        )
-        
+    )
+
 except ImportError:
     ARCHTTPError = None
     NoValueInARCResult = None
@@ -48,7 +48,7 @@ class ARCJobBuilder:
     inputs: Dict[str, str] = {}
     outputs: List[str] = []
     descrstr: str
-    
+
     def to_xml_str(self) -> str:
         descr = Element("ActivityDescription")
         descr.set("xmlns", "http://www.eu-emi.eu/es/2010/12/adl")
