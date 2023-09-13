@@ -70,7 +70,6 @@ class SentryPlugin(ErrorPlugin):
         user = job.get_user()
         sentry_user = {
             "id": user.id if user else None,
-            # TODO: What about anonymous users?
         }
         if user and not self.redact_user_details_in_bugreport:
             sentry_user.update(
