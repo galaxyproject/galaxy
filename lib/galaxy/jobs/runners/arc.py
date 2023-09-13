@@ -11,6 +11,7 @@ from galaxy.jobs.runners.util.arc_util import (
     ensure_pyarc,
     get_client,
 )
+
 try:
     from pyarcrest.errors import (
         ARCHTTPError,
@@ -210,12 +211,10 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
         galaxy_workdir = galaxy_job_wrapper.working_directory
         mapped_state = ""
 
-
         """ Set the ARC endpoint url to submit the job to - extracted from the job_destination parameters in job_conf.xml """
         user_preferences = galaxy_job_wrapper.get_job().user.extra_preferences
         self.arc = Arc()
         self.arc.url = user_preferences.get("distributed_arc_compute|remote_arc_resources", "None")
-
 
         """ Make sure to get a fresh token and client """
         token = self._get_token(galaxy_job_wrapper)
@@ -307,13 +306,11 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
         job_id = job_wrapper.job_id
         arc_jobid = job_wrapper.get_job().job_runner_external_id
 
-
         """ Set the ARC endpoint url to submit the job to - extracted from the job_destination parameters in job_conf.xml """
         user_preferences = job_wrapper.get_job().user.extra_preferences
         self.arc = Arc()
         self.arc.url = user_preferences.get("distributed_arc_compute|remote_arc_resources", "None")
 
-        
         """ Make sure to get a fresh token and client """
         token = self._get_token(job_wrapper)
         self.arcrest = get_client(self.arc.url, token=token)
