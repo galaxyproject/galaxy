@@ -24,4 +24,4 @@ class TestDiskUsageCeleryExtended(TestDiskUsageUpdateDefault):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
-        config["metadata_strategy"] = "celery_extended"
+        config["metadata_strategy"] = "extended_celery"

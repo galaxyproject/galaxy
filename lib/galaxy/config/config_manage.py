@@ -41,6 +41,7 @@ from galaxy.config import (
     TOOL_SHED_CONFIG_SCHEMA_PATH,
 )
 from galaxy.config.schema import AppSchema
+from galaxy.schema.configuration import FullGalaxyConfig
 from galaxy.util import safe_makedirs
 from galaxy.util.properties import (
     nice_config_parser,
@@ -524,12 +525,23 @@ def _get_option_desc(option: Dict[str, Any]) -> str:
     return desc
 
 
+def _generate_schema(args: Namespace, app_desc: App) -> None:
+    """Generates the configuration YAML schema from the Pydantic model."""
+    if app_desc.app_name != "galaxy":
+        raise Exception("Only Galaxy is supported for configuration schema generation")
+    galaxy_config_schema = FullGalaxyConfig.schema()
+    target_path = app_desc.schema_path + ".test.yml"
+    with open(target_path, "w") as f:
+        yaml.dump(galaxy_config_schema, f)
+
+
 ACTIONS: Dict[str, Callable] = {
     "convert": _run_conversion,
     "build_sample_yaml": _build_sample_yaml,
     "validate": _validate,
     "lint": _lint,
     "build_rst": _to_rst,
+    "generate_schema": _generate_schema,
 }
 
 

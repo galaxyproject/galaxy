@@ -92,6 +92,9 @@ reports-config-convert: ## convert old style reports ini to yaml
 reports-config-lint: ## lint reports YAML configuration file
 	$(CONFIG_MANAGE) lint reports
 
+config-generate-schema: ## build galaxy YAML configuration schema
+	$(CONFIG_MANAGE) generate_schema galaxy
+
 config-validate: ## validate galaxy YAML configuration file
 	$(CONFIG_MANAGE) validate galaxy
 

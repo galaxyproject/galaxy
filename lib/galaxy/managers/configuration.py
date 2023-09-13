@@ -16,6 +16,7 @@ from galaxy.managers import base
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.markdown_util import weasyprint_available
 from galaxy.schema import SerializationParams
+from galaxy.schema.configuration import FullGalaxyConfig
 from galaxy.structured_app import StructuredApp
 from galaxy.web.framework.base import server_starttime
 
@@ -83,6 +84,14 @@ class ConfigurationManager:
 
     def reload_toolbox(self):
         self._app.queue_worker.send_control_task("reload_toolbox")
+
+    @staticmethod
+    def validate_config(config_dict: Dict[str, Any]):
+        """Validate the configuration against the schema model.
+
+        It will raise an exception if the configuration is invalid.
+        """
+        return FullGalaxyConfig(**config_dict)
 
 
 # TODO: this is a bit of an odd duck. It uses the serializer structure from managers
