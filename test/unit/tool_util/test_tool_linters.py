@@ -1384,6 +1384,7 @@ def test_inputs_validator_incompatibilities(lint_ctx):
         in lint_ctx.error_messages
     )
     assert "Parameter [param_name]: expression validators are expected to contain text" in lint_ctx.error_messages
+    assert "Parameter [param_name]: regex validators are expected to contain text" in lint_ctx.error_messages
     assert (
         "Parameter [param_name]: '[' is no valid regular expression: unterminated character set at position 0"
         in lint_ctx.error_messages
@@ -1407,7 +1408,7 @@ def test_inputs_validator_incompatibilities(lint_ctx):
     assert len(lint_ctx.info_messages) == 1
     assert not lint_ctx.valid_messages
     assert len(lint_ctx.warn_messages) == 1
-    assert len(lint_ctx.error_messages) == 9
+    assert len(lint_ctx.error_messages) == 10
 
 
 def test_inputs_validator_correct(lint_ctx):
