@@ -37,7 +37,7 @@ def get_client(cluster_url: str, token: str) -> ARCRest_1_1:
     return ARCRest.getClient(url=cluster_url, version="1.1", token=token, impls={"1.1": ARCRest_1_1})
 
 
-class ActivityDescriptionBuilder:
+class ARCJobBuilder:
     name: str
     stdout: str
     stderr: str
@@ -45,9 +45,11 @@ class ActivityDescriptionBuilder:
     cpu_time: str
     exe_path: str
     memory: str
-    inputs: List[str] = []
+    inputs: Dict[str, str] = {}
     outputs: List[str] = []
-    job_files: Dict[str, List[Dict]]  = {}
+    #job_files: Dict[str, List[Dict]]  = {}
+    #job_files: Dict[str, str] = {}
+    descrstr: str
     
     def to_xml_str(self) -> str:
         descr = Element("ActivityDescription")
