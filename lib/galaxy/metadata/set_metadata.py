@@ -83,6 +83,15 @@ def reset_external_filename(dataset_instance: DatasetInstance):
     dataset_instance.dataset.extra_files_path = None
 
 
+def push_if_necessary(object_store: ObjectStore, dataset: DatasetInstance, external_filename):
+    # Here we might be updating a disk based objectstore when outputs_to_working_directory is used,
+    # or a remote object store from its cache path.
+    # empty files could happen when outputs are discovered from working dir,
+    # empty file check needed for e.g. test/integration/test_extended_metadata_outputs_to_working_directory.py::test_tools[multi_output_assign_primary]
+    if os.path.getsize(external_filename):
+        object_store.update_from_file(dataset.dataset, file_name=external_filename, create=True)
+
+
 def set_validated_state(dataset_instance):
     datatype_validation = validate(dataset_instance)
 
@@ -399,9 +408,7 @@ def set_metadata_portable(
                 if not link_data_only:
                     # Only set external filename if we're dealing with files in job working directory.
                     # Fixes link_data_only uploads
-                    if not object_store:
-                        # overriding the external filename would break pushing to object stores
-                        dataset.dataset.external_filename = external_filename
+                    dataset.dataset.external_filename = external_filename
                     # We derive extra_files_dir_name from external_filename, because OutputsToWorkingDirectoryPathRewriter
                     # always rewrites the path to include the uuid, even if store_by is set to id, and the extra files
                     # rewrite is derived from the dataset path (since https://github.com/galaxyproject/galaxy/pull/16541).
@@ -437,15 +444,11 @@ def set_metadata_portable(
                 if not object_store or not export_store:
                     # Can't happen, but type system doesn't know
                     raise Exception("object_store not built")
-                if not is_deferred and not link_data_only and os.path.getsize(external_filename):
-                    # Here we might be updating a disk based objectstore when outputs_to_working_directory is used,
-                    # or a remote object store from its cache path.
+                if not is_deferred and not link_data_only:
                     object_store_update_actions.append(
-                        partial(
-                            object_store.update_from_file, dataset.dataset, file_name=external_filename, create=True
-                        )
+                        partial(push_if_necessary, object_store, dataset, external_filename)
                     )
-                    object_store_update_actions.append(partial(reset_external_filename, dataset))
+                object_store_update_actions.append(partial(reset_external_filename, dataset))
                 object_store_update_actions.append(partial(export_store.add_dataset, dataset))
                 if dataset_instance_id not in unnamed_id_to_path:
                     object_store_update_actions.append(partial(collect_extra_files, object_store, dataset, "."))
