@@ -411,6 +411,7 @@ INPUTS_VALIDATOR_INCOMPATIBILITIES = """
             <validator type="regex" filename="blah"/>
             <validator type="expression"/>
             <validator type="regex">[</validator>
+            <validator type="expression">(</validator>
             <validator type="value_in_data_table"/>
         </param>
         <param name="another_param_name" type="data" format="bed">
@@ -1390,6 +1391,10 @@ def test_inputs_validator_incompatibilities(lint_ctx):
         in lint_ctx.error_messages
     )
     assert (
+        "Parameter [param_name]: '(' is no valid regular expression: unexpected EOF while parsing (<unknown>, line 1)"
+        in lint_ctx.error_messages
+    )
+    assert (
         "Parameter [another_param_name]: 'metadata' validators need to define the 'check' or 'skip' attribute(s)"
         in lint_ctx.error_messages
     )
@@ -1408,7 +1413,7 @@ def test_inputs_validator_incompatibilities(lint_ctx):
     assert len(lint_ctx.info_messages) == 1
     assert not lint_ctx.valid_messages
     assert len(lint_ctx.warn_messages) == 1
-    assert len(lint_ctx.error_messages) == 10
+    assert len(lint_ctx.error_messages) == 11
 
 
 def test_inputs_validator_correct(lint_ctx):
