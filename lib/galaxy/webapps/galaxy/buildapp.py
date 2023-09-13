@@ -712,44 +712,6 @@ def populate_api_routes(webapp, app):
             conditions=dict(method=["POST"]),
         )
 
-    def connect_invocation_endpoint(endpoint_name, endpoint_suffix, action, conditions=None):
-        # /api/invocations/<invocation_id>
-        # /api/workflows/<workflow_id>/invocations/<invocation_id>
-        # /api/workflows/<workflow_id>/usage/<invocation_id> (deprecated)
-        conditions = conditions or dict(method=["GET"])
-        webapp.mapper.connect(
-            f"workflow_invocation_{endpoint_name}",
-            f"/api/workflows/{{workflow_id}}/invocations/{{invocation_id}}{endpoint_suffix}",
-            controller="workflows",
-            action=action,
-            conditions=conditions,
-        )
-        webapp.mapper.connect(
-            f"workflow_usage_{endpoint_name}",
-            f"/api/workflows/{{workflow_id}}/usage/{{invocation_id}}{endpoint_suffix}",
-            controller="workflows",
-            action=action,
-            conditions=conditions,
-        )
-        webapp.mapper.connect(
-            f"invocation_{endpoint_name}",
-            f"/api/invocations/{{invocation_id}}{endpoint_suffix}",
-            controller="workflows",
-            action=action,
-            conditions=conditions,
-        )
-
-    connect_invocation_endpoint("show", "", action="show_invocation")
-    connect_invocation_endpoint("show_report", "/report", action="show_invocation_report")
-    connect_invocation_endpoint("show_report_pdf", "/report.pdf", action="show_invocation_report_pdf")
-    connect_invocation_endpoint("jobs_summary", "/jobs_summary", action="invocation_jobs_summary")
-    connect_invocation_endpoint("step_jobs_summary", "/step_jobs_summary", action="invocation_step_jobs_summary")
-    connect_invocation_endpoint("cancel", "", action="cancel_invocation", conditions=dict(method=["DELETE"]))
-    connect_invocation_endpoint("show_step", "/steps/{step_id}", action="invocation_step")
-    connect_invocation_endpoint(
-        "update_step", "/steps/{step_id}", action="update_invocation_step", conditions=dict(method=["PUT"])
-    )
-
     # ================================
     # ===== USERS API =====
     # ================================

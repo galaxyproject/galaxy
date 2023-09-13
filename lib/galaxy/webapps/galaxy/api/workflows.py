@@ -35,10 +35,6 @@ from galaxy.files.uris import (
     validate_uri_access,
 )
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.managers.jobs import (
-    fetch_job_states,
-    invocation_job_source_iter,
-)
 from galaxy.managers.workflows import (
     MissingToolsException,
     RefactorRequest,
@@ -71,7 +67,6 @@ from galaxy.web import (
     expose_api,
     expose_api_anonymous,
     expose_api_anonymous_and_sessionless,
-    expose_api_raw,
     expose_api_raw_anonymous_and_sessionless,
     format_return_as_json,
 )
@@ -859,182 +854,6 @@ class WorkflowsAPIController(
             object_tracker.invocations_by_key.values(), serialization_params
         )
 
-    @expose_api
-    def show_invocation(self, trans: GalaxyWebTransaction, invocation_id, **kwd):
-        """
-        GET /api/workflows/{workflow_id}/invocations/{invocation_id}
-        GET /api/invocations/{invocation_id}
-
-        Get detailed description of workflow invocation
-
-        :param  invocation_id:      the invocation id (required)
-        :type   invocation_id:      str
-
-        :param  step_details:       fetch details about individual invocation steps
-                                    and populate a steps attribute in the resulting
-                                    dictionary. Defaults to false.
-        :type   step_details:       bool
-
-        :param  legacy_job_state:   If step_details is true, and this is set to true
-                                    populate the invocation step state with the job state
-                                    instead of the invocation step state. This will also
-                                    produce one step per job in mapping jobs to mimic the
-                                    older behavior with respect to collections. Partially
-                                    scheduled steps may provide incomplete information
-                                    and the listed steps outputs are the mapped over
-                                    step outputs but the individual job outputs
-                                    when this is set - at least for now.
-        :type   legacy_job_state:   bool
-
-        :raises: exceptions.MessageException, exceptions.ObjectNotFound
-        """
-        decoded_workflow_invocation_id = self.decode_id(invocation_id)
-        workflow_invocation = self.workflow_manager.get_invocation(trans, decoded_workflow_invocation_id, eager=True)
-        if not workflow_invocation:
-            raise exceptions.ObjectNotFound()
-
-        return self.__encode_invocation(workflow_invocation, **kwd)
-
-    @expose_api
-    def cancel_invocation(self, trans: ProvidesUserContext, invocation_id, **kwd):
-        """
-        DELETE /api/workflows/{workflow_id}/invocations/{invocation_id}
-        DELETE /api/invocations/{invocation_id}
-        Cancel the specified workflow invocation.
-
-        :param  invocation_id:      the usage id (required)
-        :type   invocation_id:      str
-
-        :raises: exceptions.MessageException, exceptions.ObjectNotFound
-        """
-        decoded_workflow_invocation_id = self.decode_id(invocation_id)
-        workflow_invocation = self.workflow_manager.request_invocation_cancellation(
-            trans, decoded_workflow_invocation_id
-        )
-        return self.__encode_invocation(workflow_invocation, **kwd)
-
-    @expose_api
-    def show_invocation_report(self, trans: GalaxyWebTransaction, invocation_id, **kwd):
-        """
-        GET /api/workflows/{workflow_id}/invocations/{invocation_id}/report
-        GET /api/invocations/{invocation_id}/report
-
-        Get JSON summarizing invocation for reporting.
-        """
-        kwd["format"] = "json"
-        return self.workflow_manager.get_invocation_report(trans, invocation_id, **kwd)
-
-    @expose_api_raw
-    def show_invocation_report_pdf(self, trans: GalaxyWebTransaction, invocation_id, **kwd):
-        """
-        GET /api/workflows/{workflow_id}/invocations/{invocation_id}/report.pdf
-        GET /api/invocations/{invocation_id}/report.pdf
-
-        Get JSON summarizing invocation for reporting.
-        """
-        kwd["format"] = "pdf"
-        trans.response.set_content_type("application/pdf")
-        return self.workflow_manager.get_invocation_report(trans, invocation_id, **kwd)
-
-    @expose_api
-    def invocation_step(self, trans, invocation_id, step_id, **kwd):
-        """
-        GET /api/workflows/{workflow_id}/invocations/{invocation_id}/steps/{step_id}
-        GET /api/invocations/{invocation_id}/steps/{step_id}
-
-        :param  invocation_id:      the invocation id (required)
-        :type   invocation_id:      str
-
-        :param  step_id:      encoded id of the WorkflowInvocationStep (required)
-        :type   step_id:      str
-
-        :param  payload:       payload containing update action information
-                               for running workflow.
-
-        :raises: exceptions.MessageException, exceptions.ObjectNotFound
-        """
-        decoded_invocation_step_id = self.decode_id(step_id)
-        invocation_step = self.workflow_manager.get_invocation_step(trans, decoded_invocation_step_id)
-        return self.__encode_invocation_step(trans, invocation_step)
-
-    @expose_api_anonymous_and_sessionless
-    def invocation_step_jobs_summary(self, trans: GalaxyWebTransaction, invocation_id, **kwd):
-        """
-        GET /api/workflows/{workflow_id}/invocations/{invocation_id}/step_jobs_summary
-        GET /api/invocations/{invocation_id}/step_jobs_summary
-
-        return job state summary info aggregated across per step of the workflow invocation
-
-        Warning: We allow anyone to fetch job state information about any object they
-        can guess an encoded ID for - it isn't considered protected data. This keeps
-        polling IDs as part of state calculation for large histories and collections as
-        efficient as possible.
-
-        :param  invocation_id:    the invocation id (required)
-        :type   invocation_id:    str
-
-        :rtype:     dict[]
-        :returns:   an array of job summary object dictionaries for each step
-        """
-        decoded_invocation_id = self.decode_id(invocation_id)
-        ids = []
-        types = []
-        for job_source_type, job_source_id, _ in invocation_job_source_iter(trans.sa_session, decoded_invocation_id):
-            ids.append(job_source_id)
-            types.append(job_source_type)
-        return [self.encode_all_ids(trans, s) for s in fetch_job_states(trans.sa_session, ids, types)]
-
-    @expose_api_anonymous_and_sessionless
-    def invocation_jobs_summary(self, trans: GalaxyWebTransaction, invocation_id, **kwd):
-        """
-        GET /api/workflows/{workflow_id}/invocations/{invocation_id}/jobs_summary
-        GET /api/invocations/{invocation_id}/jobs_summary
-
-        return job state summary info aggregated across all current jobs of workflow invocation
-
-        Warning: We allow anyone to fetch job state information about any object they
-        can guess an encoded ID for - it isn't considered protected data. This keeps
-        polling IDs as part of state calculation for large histories and collections as
-        efficient as possible.
-
-        :param  invocation_id:    the invocation id (required)
-        :type   invocation_id:    str
-
-        :rtype:     dict
-        :returns:   a job summary object merged for all steps in workflow invocation
-        """
-        ids = [self.decode_id(invocation_id)]
-        types = ["WorkflowInvocation"]
-        return [self.encode_all_ids(trans, s) for s in fetch_job_states(trans.sa_session, ids, types)][0]
-
-    @expose_api
-    def update_invocation_step(self, trans: GalaxyWebTransaction, invocation_id, step_id, payload, **kwd):
-        """
-        PUT /api/workflows/{workflow_id}/invocations/{invocation_id}/steps/{step_id}
-        PUT /api/invocations/{invocation_id}/steps/{step_id}
-
-        Update state of running workflow step invocation - still very nebulous
-        but this would be for stuff like confirming paused steps can proceed
-        etc....
-
-        :param  invocation_id:      the usage id (required)
-        :type   invocation_id:      str
-
-        :param  step_id:      encoded id of the WorkflowInvocationStep (required)
-        :type   step_id:      str
-
-        :raises: exceptions.MessageException, exceptions.ObjectNotFound
-        """
-        decoded_invocation_step_id = self.decode_id(step_id)
-        action = payload.get("action", None)
-
-        invocation_step = self.workflow_manager.update_invocation_step(
-            trans,
-            decoded_invocation_step_id,
-            action=action,
-        )
-        return self.__encode_invocation_step(trans, invocation_step)
-
     def _workflow_from_dict(self, trans, data, workflow_create_options, source=None):
         """Creates a workflow from a dict.
 
@@ -1100,9 +919,6 @@ class WorkflowsAPIController(
             changeset_revision = item["changeset_revision"]
             irm.install(tool_shed_url, name, owner, changeset_revision, install_options)
 
-    def __encode_invocation_step(self, trans: ProvidesUserContext, invocation_step):
-        return self.encode_all_ids(trans, invocation_step.to_dict("element"), True)
-
     def __get_stored_accessible_workflow(self, trans, workflow_id, **kwd):
         instance = util.string_as_bool(kwd.get("instance", "false"))
         return self.workflow_manager.get_stored_accessible_workflow(trans, workflow_id, by_stored_id=not instance)
@@ -1111,10 +927,6 @@ class WorkflowsAPIController(
         instance = util.string_as_bool(kwd.get("instance", "false"))
         return self.workflow_manager.get_stored_workflow(trans, workflow_id, by_stored_id=not instance)
 
-    def __encode_invocation(self, invocation, **kwd):
-        params = InvocationSerializationParams(**kwd)
-        return self.invocations_service.serialize_workflow_invocation(invocation, params)
-
 
 StoredWorkflowIDPathParam: DecodedDatabaseIdField = Path(
     ..., title="Stored Workflow ID", description="The encoded database identifier of the Stored Workflow."
@@ -1122,6 +934,10 @@ StoredWorkflowIDPathParam: DecodedDatabaseIdField = Path(
 
 InvocationIDPathParam: DecodedDatabaseIdField = Path(
     ..., title="Invocation ID", description="The encoded database identifier of the Invocation."
+)
+
+WorkflowInvocationStepIDPathParam: DecodedDatabaseIdField = Path(
+    ..., title="WorkflowInvocationStep ID", description="The encoded database identifier of the WorkflowInvocationStep."
 )
 
 DeletedQueryParam: bool = Query(
@@ -1427,6 +1243,275 @@ class FastAPIInvocations:
             payload,
         )
         return rval
+
+    @router.get("/api/invocations/{invocation_id}", summary="Get detailed description of a workflow invocation.")
+    def show_invocation(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
+        step_details: Optional[bool] = False,
+        legacy_job_state: Optional[bool] = False,
+    ):
+        serialization_params = InvocationSerializationParams(
+            step_details=step_details, legacy_job_state=legacy_job_state
+        )
+        rval = self.invocations_service.show(trans, invocation_id, serialization_params, eager=True)
+        return rval
+
+    @router.get(
+        "/api/workflows/{workflow_id}/invocations/{invocation_id}",
+        summary="Get detailed description of a workflow invocation.",
+    )
+    @router.get(
+        "/api/workflows/{workflow_id}/usage/{invocation_id}",
+        summary="Get detailed description of a workflow invocation.",
+        deprecated=True,
+    )
+    def show_workflow_invocation(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
+        invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
+        step_details: Optional[bool] = False,
+        legacy_job_state: Optional[bool] = False,
+    ):
+        """A wrapper for multiple API endpoints providing the same logic."""
+        return self.show_invocation(trans, invocation_id, step_details, legacy_job_state)
+
+    @router.delete("/api/invocations/{invocation_id}", summary="Cancel the specified workflow invocation.")
+    def cancel_invocation(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
+        step_details: Optional[bool] = False,
+        legacy_job_state: Optional[bool] = False,
+    ):
+        serialization_params = InvocationSerializationParams(
+            step_details=step_details, legacy_job_state=legacy_job_state
+        )
+        rval = self.invocations_service.cancel(trans, invocation_id, serialization_params)
+        return rval
+
+    @router.delete(
+        "/api/workflows/{workflow_id}/invocations/{invocation_id}", summary="Cancel the specified workflow invocation."
+    )
+    @router.delete(
+        "/api/workflows/{workflow_id}/usage/{invocation_id}",
+        summary="Cancel the specified workflow invocation.",
+        deprecated=True,
+    )
+    def cancel_workflow_invocation(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
+        invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
+        step_details: Optional[bool] = False,
+        legacy_job_state: Optional[bool] = False,
+    ):
+        """A wrapper for multiple API endpoints providing the same logic."""
+        return self.cancel_invocation(trans, invocation_id, step_details, legacy_job_state)
+
+    @router.get(
+        "/api/invocations/{invocation_id}/report",
+        summary="Get JSON summarizing invocation for reporting.",
+    )
+    def show_invocation_report(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
+    ):
+        return self.invocations_service.show_invocation_report(trans, invocation_id)
+
+    @router.get(
+        "/api/workflows/{workflow_id}/invocations/{invocation_id}/report",
+        summary="Get JSON summarizing invocation for reporting.",
+    )
+    @router.get(
+        "/api/workflows/{workflow_id}/usage/{invocation_id}/report",
+        summary="Get JSON summarizing invocation for reporting.",
+        deprecated=True,
+    )
+    def show_workflow_invocation_report(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
+        invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
+    ):
+        """A wrapper for multiple API endpoints providing the same logic."""
+        return self.show_invocation_report(trans, invocation_id)
+
+    @router.get(
+        "/api/invocations/{invocation_id}/report.pdf",
+        summary="Get PDF summarizing invocation for reporting.",
+        response_class=StreamingResponse,
+    )
+    def show_invocation_report_pdf(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
+    ):
+        wfi_report = self.invocations_service.show_invocation_report(trans, invocation_id, format="pdf")
+        return StreamingResponse(
+            content=BytesIO(wfi_report),
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f'attachment; filename="report_galaxy_invocation_{trans.security.encode_id(invocation_id)}.pdf"',
+                "Access-Control-Expose-Headers": "Content-Disposition",
+            },
+        )
+
+    @router.get(
+        "/api/workflows/{workflow_id}/invocations/{invocation_id}/report.pdf",
+        summary="Get PDF summarizing invocation for reporting.",
+        response_class=StreamingResponse,
+    )
+    @router.get(
+        "/api/workflows/{workflow_id}/usage/{invocation_id}/report.pdf",
+        summary="Get PDF summarizing invocation for reporting.",
+        response_class=StreamingResponse,
+        deprecated=True,
+    )
+    def show_workflow_invocation_report_pdf(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
+        invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
+    ):
+        """A wrapper for multiple API endpoints providing the same logic."""
+        return self.show_invocation_report_pdf(trans, invocation_id)
+
+    @router.get(
+        "/api/invocations/{invocation_id}/steps/{step_id}",
+        summary="Show details of workflow invocation step.",
+    )
+    def invocation_step(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
+        step_id: DecodedDatabaseIdField = WorkflowInvocationStepIDPathParam,
+    ):
+        return self.invocations_service.show_invocation_step(trans, step_id)
+
+    @router.get(
+        "/api/workflows/{workflow_id}/invocations/{invocation_id}/steps/{step_id}",
+        summary="Show details of workflow invocation step.",
+    )
+    @router.get(
+        "/api/workflows/{workflow_id}/usage/{invocation_id}/steps/{step_id}",
+        summary="Show details of workflow invocation step.",
+        deprecated=True,
+    )
+    def workflow_invocation_step(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
+        invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
+        step_id: DecodedDatabaseIdField = WorkflowInvocationStepIDPathParam,
+    ):
+        return self.invocation_step(trans, step_id=step_id)
+
+    @router.put(
+        "/api/invocations/{invocation_id}/steps/{step_id}",
+        summary="Update state of running workflow step invocation - still very nebulous but this would be for stuff like confirming paused steps can proceed etc.",
+    )
+    def update_invocation_step(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
+        step_id: DecodedDatabaseIdField = WorkflowInvocationStepIDPathParam,
+        action: bool = True,
+    ):
+        return self.invocations_service.update_invocation_step(trans, step_id, action)
+
+    @router.put(
+        "/api/workflows/{workflow_id}/invocations/{invocation_id}/steps/{step_id}",
+        summary="Update state of running workflow step invocation.",
+    )
+    @router.put(
+        "/api/workflows/{workflow_id}/usage/{invocation_id}/steps/{step_id}",
+        summary="Update state of running workflow step invocation.",
+        deprecated=True,
+    )
+    def update_workflow_invocation_step(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
+        invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
+        step_id: DecodedDatabaseIdField = WorkflowInvocationStepIDPathParam,
+        action: bool = True,
+    ):
+        """A wrapper for multiple API endpoints providing the same logic."""
+        return self.update_invocation_step(trans, step_id=step_id, action=action)
+
+    @router.get(
+        "/api/invocations/{invocation_id}/step_jobs_summary",
+        summary="Get job state summary info aggregated per step of the workflow invocation.",
+    )
+    def invocation_step_jobs_summary(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
+    ):
+        """
+        Warning: We allow anyone to fetch job state information about any object they
+        can guess an encoded ID for - it isn't considered protected data. This keeps
+        polling IDs as part of state calculation for large histories and collections as
+        efficient as possible.
+        """
+        return self.invocations_service.show_invocation_step_jobs_summary(trans, invocation_id)
+
+    @router.get(
+        "/api/workflows/{workflow_id}/invocations/{invocation_id}/step_jobs_summary",
+        summary="Get job state summary info aggregated per step of the workflow invocation.",
+    )
+    @router.get(
+        "/api/workflows/{workflow_id}/usage/{invocation_id}/step_jobs_summary",
+        summary="Get job state summary info aggregated per step of the workflow invocation.",
+        deprecated=True,
+    )
+    def workflow_invocation_step_jobs_summary(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
+        invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
+    ):
+        """A wrapper for multiple API endpoints providing the same logic."""
+        return self.invocation_step_jobs_summary(trans, invocation_id)
+
+    @router.get(
+        "/api/invocations/{invocation_id}/jobs_summary",
+        summary="Get job state summary info aggregated across all current jobs of the workflow invocation.",
+    )
+    def invocation_jobs_summary(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
+    ):
+        """
+        Warning: We allow anyone to fetch job state information about any object they
+        can guess an encoded ID for - it isn't considered protected data. This keeps
+        polling IDs as part of state calculation for large histories and collections as
+        efficient as possible.
+        """
+        return self.invocations_service.show_invocation_jobs_summary(trans, invocation_id)
+
+    @router.get(
+        "/api/workflows/{workflow_id}/invocations/{invocation_id}/jobs_summary",
+        summary="Get job state summary info aggregated across all current jobs of the workflow invocation.",
+    )
+    @router.get(
+        "/api/workflows/{workflow_id}/usage/{invocation_id}/jobs_summary",
+        summary="Get job state summary info aggregated across all current jobs of the workflow invocation.",
+        deprecated=True,
+    )
+    def workflow_invocation_jobs_summary(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
+        invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
+    ):
+        """A wrapper for multiple API endpoints providing the same logic."""
+        return self.invocation_jobs_summary(trans, invocation_id)
 
     # TODO: remove this endpoint after 23.1 release
     @router.get(
