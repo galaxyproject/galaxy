@@ -456,11 +456,11 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
             tool_input_tag = input_data.name
             file_realname = input_data.dataset.get_display_name()
             
-            arc_job.inputs[real_name] = "file://" + file_source
+            arc_job.inputs[file_realname] = "file://" + file_source
             
             """ This is just for the ARC test-tool, will not be used in the final version using generic tools. """
             if "exe" in tool_input_tag:
-                arc_job.exe_path = "./" + real_name
+                arc_job.exe_path = "./" + file_realname
             
 
         """ Potentially more than one file - but currently actually only one, so the for-loop here is currently not actually needed """
