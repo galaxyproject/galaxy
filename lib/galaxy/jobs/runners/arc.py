@@ -83,7 +83,7 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
 
     def queue_job(self, job_wrapper):
         """When a tool is submitted for execution in galaxy"""
-        """ This method 
+        """ This method
         1. Fetches the configured ARC endpoint for this user
         2. Prepares an ARC job description based on the jobs destination parameters
         3. Submits the job to the remote ARC endpoint via pyarcrest
@@ -425,33 +425,32 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
         for param in galaxy_job.parameters:
             job_input_params[str(param.name)] = str(param.value.strip('"'))
 
-        """ 
-        Organize the galaxy jobs input-files into executables,  input- and output-files 
-        The ARC job description expects a different format for executables compared to other input files. 
-        
+        """ Organize the galaxy jobs input-files into executables,  input- and output-files
+        The ARC job description expects a different format for executables compared to other input files.
+
         This works currently in the following way for the ARC test-tool
-        - The tool (hello_arc.xml) has param with name tag arcjob_exe, arcjob_outputs (and could potentially have arcjob_inputs) 
-        
-        If the galaxy_job.get_input_datasets() name attribute has "exe" in it: 
+        - The tool (hello_arc.xml) has param with name tag arcjob_exe, arcjob_outputs (and could potentially have arcjob_inputs)
+
+        If the galaxy_job.get_input_datasets() name attribute has "exe" in it:
         In the below I match the strings
         - exe in the tag_name to match  the input file uploaded via the arcjob_exe form field
-        Else I treat it as "ordinary" input file. 
+        Else I treat it as "ordinary" input file.
 
         For outputs - I get the galaxy_job.get_output_datasets().
-        Currently in the ARC test-tool there is no specified specific output files - ARC client will collect all output files generated in the ARC jobs working directory. 
-        
-        TODO: Use the command-builder to extract the executable command instead of using an executable file uploaded to Galaxy. 
-        TODO: Extend to support fuller ARC job description options - such as ARC runtimeenvironment that inform the ARC client about what capabilities the endpoint has. 
+        Currently in the ARC test-tool there is no specified specific output files - ARC client will collect all output files generated in the ARC jobs working directory.
+
+        TODO: Use the command-builder to extract the executable command instead of using an executable file uploaded to Galaxy.
+        TODO: Extend to support fuller ARC job description options - such as ARC runtimeenvironment that inform the ARC client about what capabilities the endpoint has.
                e.g. what software is installed.
         """
 
         arc_job = ARCJobBuilder()
 
-        """ 
-        These are the files that are uploaded by the user for this job 
-        file_source: is the file path in the galaxy data folder, 
+        """
+        These are the files that are uploaded by the user for this job
+        file_source: is the file path in the galaxy data folder,
         file_realname: the filename the uploaded file had
-        tool_input_tag: - the tools form input name 
+        tool_input_tag: - the tools form input name
         """
         input_datasets = galaxy_job.get_input_datasets()
 
@@ -477,10 +476,10 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
         arc_cpuhrs = str(job_input_params["arcjob_cpuhrs"])
         arc_mem = str(job_input_params["arcjob_memory"])
 
-        """ 
-        TODO- should probably not be Hard-coded 
-        the user should him/herself enter what oout and err files 
-        that the executable produces 
+        """
+        TODO- should probably not be Hard-coded
+        the user should him/herself enter what oout and err files
+        that the executable produces
         """
         std_out = "arc.out"
         std_err = "arc.err"
@@ -499,8 +498,8 @@ class ArcRESTJobRunner(AsynchronousJobRunner):
         arc_job.memory = arc_mem
 
         """ Populate the arcjob object with rest of necessary and useful fields including the full job description string"""
-        """ All files that should be collected by ARC when the job is finished need to be appended to the downloadFiles list - 
-        here it is just the folder / and all files in the folder will be downloaded. 
+        """ All files that should be collected by ARC when the job is finished need to be appended to the downloadFiles list -
+        here it is just the folder / and all files in the folder will be downloaded.
         The arc.py in pyarcrest loops over this list to fetch all outputfiles  """
         arc_job.descrstr = arc_job.to_xml_str()
 
