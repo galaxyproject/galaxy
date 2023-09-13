@@ -1,10 +1,11 @@
+import type { UserNotification } from "@/components/Notifications";
 import { type components, fetcher } from "@/schema";
 
 const getNotifications = fetcher.path("/api/notifications").method("get").create();
 
 export async function loadNotificationsFromServer() {
     const { data } = await getNotifications({});
-    return data;
+    return data as UserNotification[];
 }
 
 type UserNotificationsBatchUpdateRequest = components["schemas"]["UserNotificationsBatchUpdateRequest"];

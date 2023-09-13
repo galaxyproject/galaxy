@@ -194,6 +194,7 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/admin/invocations")
     webapp.add_client_route("/admin/toolbox_dependencies")
     webapp.add_client_route("/admin/data_manager{path_info:.*}")
+    webapp.add_client_route("/admin/notifications{path_info:.*}")
     webapp.add_client_route("/admin/error_stack")
     webapp.add_client_route("/admin/users")
     webapp.add_client_route("/admin/users/create")
