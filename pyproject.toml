@@ -99,6 +99,7 @@ python-magic = "*"
 python-multipart = "*"  # required to support form parsing in FastAPI/Starlette
 PyYAML = "*"
 refgenconf = ">=0.12.0"
+regex = "*"
 requests = "*"
 rocrate = "*"
 Routes = "*"

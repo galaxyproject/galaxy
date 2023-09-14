@@ -8,6 +8,7 @@
                     :enable_beta_markdown_export="config.enable_beta_markdown_export"
                     :download-endpoint="stsUrl(config)"
                     :export-link="exportUrl"
+                    :read-only="!userOwnsPage"
                     @onEdit="onEdit" />
                 <PageHtml v-else :page="page" />
             </div>
@@ -17,7 +18,10 @@
 </template>
 
 <script>
+import { storeToRefs } from "pinia";
+
 import { useConfig } from "@/composables/config";
+import { useUserStore } from "@/stores/userStore";
 import { withPrefix } from "@/utils/redirect";
 import { urlData } from "@/utils/url";
 
@@ -39,7 +43,9 @@ export default {
     },
     setup() {
         const { config, isConfigLoaded } = useConfig(true);
-        return { config, isConfigLoaded };
+        const userStore = useUserStore();
+        const { currentUser } = storeToRefs(userStore);
+        return { config, currentUser, isConfigLoaded };
     },
     data() {
         return {
@@ -47,6 +53,9 @@ export default {
         };
     },
     computed: {
+        userOwnsPage() {
+            return this.currentUser.username === this.page.username;
+        },
         dataUrl() {
             return `/api/pages/${this.pageId}`;
         },
