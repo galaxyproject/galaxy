@@ -197,3 +197,10 @@
   doc: Invenio RDM turn-key research data management repository
   label: Invenio RDM Demo Repository
   url: https://inveniordm.web.cern.ch/
+
+- type: onedata
+  id: onedata1
+  label: Onedata
+  doc: Your Onedata files - configure an access token via the user preferences
+  accessToken: ${user.preferences['onedata|access_token']}
+  onezoneDomain: ${user.preferences['onedata|onezone_domain']}

@@ -111,3 +111,16 @@ preferences:
               label: Whether to make draft records publicly available or restricted.
               type: boolean
               required: False
+
+    # Used in file_sources_conf.yml
+    onedata:
+        description: Your Onedata account
+        inputs:
+            - name: onezone_domain
+              label: Domain of the Onezone service (e.g. "demo.onedata.org")
+              type: text
+              required: False
+            - name: access_token
+              label: Your access token, suitable for REST API access in a Oneprovider service
+              type: password
+              required: False

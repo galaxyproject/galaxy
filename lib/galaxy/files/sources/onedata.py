@@ -1,30 +1,25 @@
 try:
-    from fs.onedatafs import OnedataFS
+    from fs.onedatarestfs import OnedataRESTFS
 except ImportError:
-    OnedataFS = None
+    OnedataRESTFS = None
 
-from typing import (
-    Optional,
-    Union,
-)
-
-from . import (
-    FilesSourceOptions,
-    FilesSourceProperties,
-)
+from typing import Optional
+from . import FilesSourceOptions
 from ._pyfilesystem2 import PyFilesystem2FilesSource
 
 
-class OneDataFilesSource(PyFilesystem2FilesSource):
+class OnedataFilesSource(PyFilesystem2FilesSource):
     plugin_type = "onedata"
-    required_module = OnedataFS
-    required_package = "fs-onedatafs"
+    required_module = OnedataRESTFS
+    required_package = "fs.onedatarestfs"
 
     def _open_fs(self, user_context=None, opts: Optional[FilesSourceOptions] = None):
         props = self._serialization_props(user_context)
-        extra_props: Union[FilesSourceProperties, dict] = opts.extra_props or {} if opts else {}
-        handle = OnedataFS(**{**props, **extra_props})
+        onezone_domain = props.pop("onezoneDomain", {}) or ""
+        onezone_domain = onezone_domain.lstrip("https://").lstrip("http://")
+        access_token = props.pop("accessToken", {}) or ""
+        handle = OnedataRESTFS(onezone_domain, access_token)
         return handle
 
 
-__all__ = ("OneDataFilesSource",)
+__all__ = ("OnedataFilesSource",)
