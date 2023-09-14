@@ -4,13 +4,14 @@ except ImportError:
     OnedataRESTFS = None
 
 from typing import Optional
+
 from . import FilesSourceOptions
 from ._pyfilesystem2 import PyFilesystem2FilesSource
 
 
 def remove_prefix(prefix, string):
     if string.startswith(prefix):
-        string = string[len(prefix):]
+        string = string[len(prefix) :]
     return string
 
 
