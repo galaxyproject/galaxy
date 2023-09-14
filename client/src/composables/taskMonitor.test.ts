@@ -1,26 +1,38 @@
-import axios from "axios";
-import MockAdapter from "axios-mock-adapter";
-import { useTaskMonitor } from "composables/taskMonitor";
 import flushPromises from "flush-promises";
+
+import { useTaskMonitor } from "@/composables/taskMonitor";
+import { mockFetcher } from "@/schema/__mocks__";
+
+jest.mock("@/schema");
 
 const PENDING_TASK_ID = "pending-fake-task-id";
 const COMPLETED_TASK_ID = "completed-fake-task-id";
 const FAILED_TASK_ID = "failed-fake-task-id";
 const REQUEST_FAILED_TASK_ID = "request-failed-fake-task-id";
 
+function getMockedTaskStatus({ task_id }: { task_id: string }) {
+    switch (task_id) {
+        case PENDING_TASK_ID:
+            return { data: "PENDING", status: 200 };
+
+        case COMPLETED_TASK_ID:
+            return { data: "SUCCESS", status: 200 };
+
+        case FAILED_TASK_ID:
+            return { data: "FAILURE", status: 200 };
+
+        case REQUEST_FAILED_TASK_ID:
+            throw new Error("Request failed");
+
+        default:
+            return { data: "UNKNOWN", status: 404 };
+    }
+}
+
+mockFetcher.path("/api/tasks/{task_id}/state").method("get").mock(getMockedTaskStatus);
+
 describe("useTaskMonitor", () => {
-    let axiosMock;
-
-    beforeEach(async () => {
-        axiosMock = new MockAdapter(axios);
-    });
-
-    afterEach(async () => {
-        axiosMock.reset();
-    });
-
     it("should indicate the task is running when it is still pending", async () => {
-        axiosMock.onGet(`/api/tasks/${PENDING_TASK_ID}/state`).reply(200, "PENDING");
         const { waitForTask, isRunning } = useTaskMonitor();
 
         expect(isRunning.value).toBe(false);
@@ -30,7 +42,6 @@ describe("useTaskMonitor", () => {
     });
 
     it("should indicate the task is successfully completed when the state is SUCCESS", async () => {
-        axiosMock.onGet(`/api/tasks/${COMPLETED_TASK_ID}/state`).reply(200, "SUCCESS");
         const { waitForTask, isRunning, isCompleted } = useTaskMonitor();
 
         expect(isCompleted.value).toBe(false);
@@ -41,7 +52,6 @@ describe("useTaskMonitor", () => {
     });
 
     it("should indicate the task has failed when the state is FAILED", async () => {
-        axiosMock.onGet(`/api/tasks/${FAILED_TASK_ID}/state`).reply(200, "FAILURE");
         const { waitForTask, isRunning, hasFailed } = useTaskMonitor();
 
         expect(hasFailed.value).toBe(false);
@@ -52,7 +62,6 @@ describe("useTaskMonitor", () => {
     });
 
     it("should indicate the task status request failed when the request failed", async () => {
-        axiosMock.onGet(`/api/tasks/${REQUEST_FAILED_TASK_ID}/state`).reply(400, "UNKNOWN");
         const { waitForTask, requestHasFailed } = useTaskMonitor();
 
         expect(requestHasFailed.value).toBe(false);
