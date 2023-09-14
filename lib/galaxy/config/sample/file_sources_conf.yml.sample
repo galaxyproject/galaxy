@@ -201,6 +201,6 @@
 - type: onedata
   id: onedata1
   label: Onedata
-  doc: Your Onedata files - configure an access token via the user preferences
+  doc: Your Onedata files - configure an access token via user preferences
   accessToken: ${user.preferences['onedata|access_token']}
   onezoneDomain: ${user.preferences['onedata|onezone_domain']}
