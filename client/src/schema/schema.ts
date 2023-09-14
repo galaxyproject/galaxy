@@ -8688,6 +8688,12 @@ export interface components {
             | "Page"
             | "StoredWorkflow"
             | "Visualization";
+        /**
+         * TaskState
+         * @description Enum representing the possible states of a task.
+         * @enum {string}
+         */
+        TaskState: "PENDING" | "STARTED" | "RETRY" | "FAILURE" | "SUCCESS";
         /** ToolDataDetails */
         ToolDataDetails: {
             /**
@@ -16677,7 +16683,7 @@ export interface operations {
             /** @description String indicating task state. */
             200: {
                 content: {
-                    "application/json": string;
+                    "application/json": components["schemas"]["TaskState"];
                 };
             };
             /** @description Validation Error */
