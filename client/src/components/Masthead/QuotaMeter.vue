@@ -7,7 +7,9 @@
                 :disabled="isAnonymous"
                 class="ml-auto"
                 :title="title"
-                data-description="storage dashboard link">
+                data-description="storage dashboard link"
+                @mouseover="callHelpMode"
+                @focus="callHelpMode">
                 {{ usingString + " " + totalUsageString }}
             </b-link>
         </div>
@@ -18,7 +20,9 @@
                 :disabled="isAnonymous"
                 to="/storage"
                 :title="title"
-                data-description="storage dashboard link">
+                data-description="storage dashboard link"
+                @mouseover="callHelpMode"
+                @focus="callHelpMode">
                 <b-progress :max="100">
                     <b-progress-bar aria-label="Quota usage" :value="usage" :variant="variant" />
                 </b-progress>
@@ -29,22 +33,26 @@
 </template>
 
 <script>
-import { mapState } from "pinia";
+import { mapState, mapStores } from "pinia";
 import { bytesToString } from "utils/utils";
 
 import { useConfigStore } from "@/stores/configurationStore";
+import { useHelpModeTextStore } from "@/stores/helpmode/helpModeTextStore";
 import { useUserStore } from "@/stores/userStore";
 
 export default {
     name: "QuotaMeter",
     data() {
+        //
         return {
             usingString: this.l("Using"),
+            helpTextString: "This is your Quota storage meter. It is an indication of how much storage you are using. To learn more about Quota Storage, check out this GTN tutorial.",
         };
     },
     computed: {
         ...mapState(useConfigStore, ["config"]),
         ...mapState(useUserStore, ["currentUser", "isAnonymous"]),
+        ...mapStores(useHelpModeTextStore),
         hasQuota() {
             const quotasEnabled = this.config?.enable_quotas ?? false;
             const quotaLimited = this.currentUser?.quota !== "unlimited" ?? false;
@@ -84,6 +92,11 @@ export default {
             } else {
                 return "danger";
             }
+        },
+    },
+    methods: {
+        callHelpMode() {
+            this.helpModeTextStore.addHelpModeText(this.helpTextString);
         },
     },
 };
