@@ -1,4 +1,5 @@
 """This module contains a linting functions for tool inputs."""
+import ast
 import re
 from typing import TYPE_CHECKING
 
@@ -395,14 +396,17 @@ def lint_inputs(tool_source: "ToolSource", lint_ctx: "LintContext"):
                         f"Parameter [{param_name}]: attribute '{attrib}' is incompatible with validator of type '{vtype}'",
                         node=validator,
                     )
-            if vtype == "expression":
+            if vtype in ["expression", "regex"]:
                 if validator.text is None:
                     lint_ctx.error(
-                        f"Parameter [{param_name}]: expression validators are expected to contain text", node=validator
+                        f"Parameter [{param_name}]: {vtype} validators are expected to contain text", node=validator
                     )
                 else:
                     try:
-                        re.compile(validator.text)
+                        if vtype == "regex":
+                            re.compile(validator.text)
+                        else:
+                            ast.parse(validator.text, mode="eval")
                     except Exception as e:
                         lint_ctx.error(
                             f"Parameter [{param_name}]: '{validator.text}' is no valid regular expression: {str(e)}",
