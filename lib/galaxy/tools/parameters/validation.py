@@ -5,7 +5,8 @@ import abc
 import json
 import logging
 import os.path
-import re
+
+import regex
 
 from galaxy import (
     model,
@@ -144,7 +145,7 @@ class RegexValidator(Validator):
         if not isinstance(value, list):
             value = [value]
         for val in value:
-            match = re.match(self.expression, val or "")
+            match = regex.match(self.expression, val or "")
             super().validate(match is not None, value_to_show=val)
 
 
