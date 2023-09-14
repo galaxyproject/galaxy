@@ -1,57 +1,61 @@
-import axios from "axios";
 import { computed, readonly, ref } from "vue";
+
+import { fetcher } from "@/schema";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 const SUCCESS_STATE = "SUCCESS";
 const FAILURE_STATE = "FAILURE";
 const TASK_READY_STATES = [SUCCESS_STATE, FAILURE_STATE];
 const DEFAULT_POLL_DELAY = 10000;
 
+const getTaskStatus = fetcher.path("/api/tasks/{task_id}/state").method("get").create();
+
 /**
  * Composable for waiting on Galaxy background tasks.
  */
 export function useTaskMonitor() {
-    let timeout = null;
+    let timeout: NodeJS.Timeout | null = null;
     let pollDelay = DEFAULT_POLL_DELAY;
 
     const isRunning = ref(false);
-    const status = ref(null);
-    const currentTaskId = ref(null);
+    const status = ref<string>();
+    const currentTaskId = ref<string>();
     const requestHasFailed = ref(false);
 
     const isCompleted = computed(() => status.value === SUCCESS_STATE);
     const hasFailed = computed(() => status.value === FAILURE_STATE);
-    const queryStateUrl = computed(() => `/api/tasks/${currentTaskId.value}/state`);
 
-    function waitForTask(taskId, pollDelayInMs = DEFAULT_POLL_DELAY) {
+    async function waitForTask(taskId: string, pollDelayInMs = DEFAULT_POLL_DELAY) {
         pollDelay = pollDelayInMs;
         resetState();
         currentTaskId.value = taskId;
         isRunning.value = true;
-        fetchTaskStatus();
+        return fetchTaskStatus(taskId);
     }
 
-    function fetchTaskStatus() {
-        axios.get(queryStateUrl.value).then(handleStatusResponse).catch(handleError);
-    }
-
-    function handleStatusResponse(response) {
-        status.value = response.data;
-        const isReady = TASK_READY_STATES.includes(status.value);
-        if (isReady) {
-            isRunning.value = false;
-        } else {
-            pollAfterDelay();
+    async function fetchTaskStatus(taskId: string) {
+        try {
+            const { data } = await getTaskStatus({ task_id: taskId });
+            status.value = data;
+            const isReady = TASK_READY_STATES.includes(status.value);
+            if (isReady) {
+                isRunning.value = false;
+            } else {
+                pollAfterDelay(taskId);
+            }
+        } catch (err) {
+            handleError(errorMessageAsString(err));
         }
     }
 
-    function pollAfterDelay(taskId) {
+    function pollAfterDelay(taskId: string) {
         resetTimeout();
         timeout = setTimeout(() => {
             fetchTaskStatus(taskId);
         }, pollDelay);
     }
 
-    function handleError(err) {
+    function handleError(err: string) {
         status.value = err;
         requestHasFailed.value = true;
         isRunning.value = false;
@@ -66,7 +70,7 @@ export function useTaskMonitor() {
 
     function resetState() {
         resetTimeout();
-        status.value = null;
+        status.value = undefined;
     }
 
     return {
