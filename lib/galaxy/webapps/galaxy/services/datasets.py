@@ -545,15 +545,16 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         Generate list of extra files.
         """
         hda = self.hda_manager.get_accessible(history_content_id, trans.user)
-        extra_files_path = hda.extra_files_path
         rval = []
-        for root, directories, files in safe_walk(extra_files_path):
-            for directory in directories:
-                rval.append(
-                    {"class": "Directory", "path": os.path.relpath(os.path.join(root, directory), extra_files_path)}
-                )
-            for file in files:
-                rval.append({"class": "File", "path": os.path.relpath(os.path.join(root, file), extra_files_path)})
+        if not hda.is_pending and hda.extra_files_path_exists():
+            extra_files_path = hda.extra_files_path
+            for root, directories, files in safe_walk(extra_files_path):
+                for directory in directories:
+                    rval.append(
+                        {"class": "Directory", "path": os.path.relpath(os.path.join(root, directory), extra_files_path)}
+                    )
+                for file in files:
+                    rval.append({"class": "File", "path": os.path.relpath(os.path.join(root, file), extra_files_path)})
 
         return rval
 
