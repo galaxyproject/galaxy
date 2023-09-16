@@ -643,12 +643,21 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         TODO: Remove the `open_file` parameter when removing the associated legacy endpoint.
         """
         hda = self.hda_manager.get_accessible(history_content_id, trans.user)
-        file_ext = hda.metadata.spec.get(metadata_file).get("file_ext", metadata_file)
+        if hda.is_pending:
+            raise galaxy_exceptions.AcceptedRetryLater("dataset not in terminal state, retry later.", retry_after=60)
+        file_ext = hda.metadata.spec.get(metadata_file, {}).get("file_ext", metadata_file)
         fname = "".join(c in util.FILENAME_VALID_CHARS and c or "_" for c in hda.name)[0:150]
         headers = {}
         headers["Content-Type"] = "application/octet-stream"
         headers["Content-Disposition"] = f'attachment; filename="Galaxy{hda.hid}-[{fname}].{file_ext}"'
-        file_path = hda.metadata.get(metadata_file).file_name
+        metadata_file_instance = hda.metadata.get(metadata_file)
+        if not metadata_file_instance:
+            return galaxy_exceptions.RequestParameterInvalidException(
+                f"metadata file '{metadata_file}' not valid for dataset."
+            )
+        file_path = metadata_file_instance.file_name
+        if not os.path.exists(file_path):
+            return galaxy_exceptions.ObjectNotFound(f"metadata file '{metadata_file}' not found.")
         if open_file:
             return open(file_path, "rb"), headers
         return file_path, headers
