@@ -57,6 +57,7 @@
                 :collapsed-enable-icon="collapsedEnableIcon"
                 :collapsed-disable-text="collapsedDisableText"
                 :collapsed-disable-icon="collapsedDisableIcon"
+                :loading="loading"
                 :workflow-building-mode="workflowBuildingMode"
                 @change="onChange" />
         </div>
@@ -83,6 +84,10 @@ export default {
         inputs: {
             type: Array,
             default: null,
+        },
+        loading: {
+            type: Boolean,
+            default: false,
         },
         prefix: {
             type: String,

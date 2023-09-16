@@ -2,6 +2,7 @@
     <FormInputs
         :key="id"
         :inputs="formInputs"
+        :loading="loading"
         :prefix="prefix"
         :sustain-repeats="sustainRepeats"
         :sustain-conditionals="sustainConditionals"
@@ -36,6 +37,10 @@ export default {
         errors: {
             type: Object,
             default: null,
+        },
+        loading: {
+            type: Boolean,
+            default: false,
         },
         prefix: {
             type: String,

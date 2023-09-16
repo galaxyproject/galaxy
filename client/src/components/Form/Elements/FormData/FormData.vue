@@ -4,7 +4,7 @@ import { faCopy, faFile, faFolder } from "@fortawesome/free-regular-svg-icons";
 import { faExclamation, faLink, faUnlink } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BButtonGroup, BFormCheckbox } from "bootstrap-vue";
-import Vue, { computed, onMounted, type Ref, ref, watch } from "vue";
+import { computed, onMounted, type Ref, ref, watch } from "vue";
 
 import { getGalaxyInstance } from "@/app";
 import { type EventData, useEventStore } from "@/stores/eventStore";
@@ -23,6 +23,7 @@ interface SelectOption {
 
 const props = withDefaults(
     defineProps<{
+        loading?: boolean;
         multiple?: boolean;
         optional?: boolean;
         options: Record<string, Array<DataOption>>;
@@ -35,6 +36,7 @@ const props = withDefaults(
         tag?: string;
     }>(),
     {
+        loading: false,
         multiple: false,
         optional: false,
         value: null,
@@ -44,8 +46,6 @@ const props = withDefaults(
         tag: null,
     }
 );
-
-const eventBus = new Vue();
 
 const eventStore = useEventStore();
 
@@ -67,9 +67,6 @@ const dragTarget: Ref<EventTarget | null> = ref(null);
 /** Store options which need to be preserved **/
 const keepOptions: Record<string, SelectOption> = {};
 
-/** Displays a wait indicator between setting a value and receiving an update */
-const waiting = ref(false);
-
 /**
  * Determine whether the file dialog can be used or not
  */
@@ -85,11 +82,33 @@ const currentSource = computed(() => (currentVariant.value ? currentVariant.valu
  */
 const currentValue = computed({
     get: () => {
-        eventBus.$emit("waiting", false);
-        return getValue();
+        const value: Array<DataOption> = [];
+        if (props.value) {
+            for (const v of props.value.values) {
+                const foundEntry = formattedOptions.value.find(
+                    (entry) => entry.value && entry.value.id === v.id && entry.value.src === v.src
+                );
+                if (foundEntry && foundEntry.value) {
+                    value.push(foundEntry.value);
+                    if (!currentVariant.value?.multiple) {
+                        break;
+                    }
+                }
+            }
+            if (value.length > 0) {
+                return value;
+            }
+        }
+        if (!props.optional && formattedOptions.value.length > 0) {
+            const firstEntry = formattedOptions.value && formattedOptions.value[0];
+            if (firstEntry && firstEntry.value) {
+                value.push(firstEntry.value);
+                return value;
+            }
+        }
+        return null;
     },
     set: (val) => {
-        eventBus.$emit("waiting", true);
         $emit("input", createValue(val));
     },
 });
@@ -265,37 +284,6 @@ function getSourceType(val: DataOption) {
     }
 }
 
-/**
- * Parse incoming value for select field
- */
-function getValue() {
-    const value: Array<DataOption> = [];
-    if (props.value) {
-        for (const v of props.value.values) {
-            const foundEntry = formattedOptions.value.find(
-                (entry) => entry.value && entry.value.id === v.id && entry.value.src === v.src
-            );
-            if (foundEntry && foundEntry.value) {
-                value.push(foundEntry.value);
-                if (!currentVariant.value?.multiple) {
-                    break;
-                }
-            }
-        }
-        if (value.length > 0) {
-            return value;
-        }
-    }
-    if (!props.optional && formattedOptions.value.length > 0) {
-        const firstEntry = formattedOptions.value && formattedOptions.value[0];
-        if (firstEntry && firstEntry.value) {
-            value.push(firstEntry.value);
-            return value;
-        }
-    }
-    return null;
-}
-
 /** Add values from drag/drop or data dialog sources */
 function handleIncoming(incoming: Record<string, unknown>, partial = true) {
     if (incoming) {
@@ -422,9 +410,6 @@ const matchedValues = computed(() => {
 });
 
 onMounted(() => {
-    eventBus.$on("waiting", (value: boolean) => {
-        waiting.value = value;
-    });
     if (props.value) {
         $emit("input", createValue(matchedValues.value));
     } else {
@@ -467,7 +452,7 @@ watch(
                         v-b-tooltip.hover.bottom
                         title="Browse or Upload Datasets"
                         @click="onBrowse">
-                        <FontAwesomeIcon v-if="waiting" icon="fa-spinner" spin />
+                        <FontAwesomeIcon v-if="loading" icon="fa-spinner" spin />
                         <span v-else class="font-weight-bold">...</span>
                     </BButton>
                 </BButtonGroup>

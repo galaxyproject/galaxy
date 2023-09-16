@@ -43,6 +43,7 @@
                         :id="toolId"
                         :inputs="formConfig.inputs"
                         :errors="formConfig.errors"
+                        :loading="loading"
                         :validation-scroll-to="validationScrollTo"
                         :warnings="formConfig.warnings"
                         @onChange="onChange"
@@ -155,6 +156,7 @@ export default {
     data() {
         return {
             disabled: false,
+            loading: false,
             showLoading: true,
             showForm: false,
             showEntryPoints: false,
@@ -271,6 +273,7 @@ export default {
         requestTool(newVersion) {
             this.currentVersion = newVersion || this.currentVersion;
             this.disabled = true;
+            this.loading = true;
             console.debug("ToolForm - Requesting tool.", this.id);
             return getToolFormData(this.id, this.currentVersion, this.job_id, this.history_id)
                 .then((data) => {
@@ -290,6 +293,7 @@ export default {
                 })
                 .finally(() => {
                     this.disabled = false;
+                    this.loading = false;
                     this.showLoading = false;
                 });
         },

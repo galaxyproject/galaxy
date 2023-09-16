@@ -35,6 +35,7 @@ interface FormElementProps {
     error?: string;
     warning?: string;
     disabled?: boolean;
+    loading?: boolean;
     attributes?: FormParameterAttributes;
     collapsedEnableText?: string;
     collapsedDisableText?: string;
@@ -276,6 +277,7 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
                 v-else-if="['data', 'data_collection'].includes(props.type)"
                 :id="id"
                 v-model="currentValue"
+                :loading="loading"
                 :extension="attrs.extension"
                 :flavor="attrs.flavor"
                 :multiple="attrs.multiple"
