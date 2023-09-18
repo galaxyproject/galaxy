@@ -1,8 +1,25 @@
-/*
-    Client representation of state and state messages. See: https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/model/__init__.py#L3292
-    for a list of available states.
-*/
-export const STATES = {
+import { components } from "@/schema";
+
+type DatasetState = components["schemas"]["DatasetState"];
+// The 'failed' state is for the collection job state summary, not a dataset state.
+type State = DatasetState | "failed";
+
+interface StateRepresentation {
+    status: "success" | "warning" | "info" | "danger";
+    text?: string;
+    icon?: string;
+    spin?: boolean;
+}
+
+type StateMap = {
+    [_ in State]: StateRepresentation;
+};
+
+/**
+ * Client representation of state and state messages.
+ * See: https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/model/__init__.py#L3292 for a list of available states.
+ */
+export const STATES: StateMap = {
     /** has successfully completed running */
     ok: {
         status: "success",
