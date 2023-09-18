@@ -195,6 +195,5 @@ export const StoreProvider = (storeAction, storeGetter) => {
     };
 };
 
-export const DatasetProvider = StoreProvider("fetchDataset", "getDataset");
 export const CollectionElementsProvider = StoreProvider("fetchCollectionElements", "getCollectionElements");
 export const ToolsProvider = StoreProvider("fetchAllTools", "getTools");
