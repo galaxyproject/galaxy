@@ -12,7 +12,7 @@ interface StateRepresentation {
 }
 
 type StateMap = {
-    [_ in State]: StateRepresentation;
+    [__ in State]: StateRepresentation;
 };
 
 /**
