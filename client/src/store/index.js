@@ -13,7 +13,7 @@ import { collectionAttributesStore } from "./collectionAttributesStore";
 import { datasetExtFilesStore } from "./datasetExtFilesStore";
 import { datasetPathDestinationStore } from "./datasetPathDestinationStore";
 import { gridSearchStore } from "./gridSearchStore";
-import { collectionElementsStore, datasetStore } from "./historyStore";
+import { collectionElementsStore } from "./historyStore";
 import { invocationStore } from "./invocationStore";
 import { jobDestinationParametersStore } from "./jobDestinationParametersStore";
 import { panelStore } from "./panelStore";
@@ -49,7 +49,6 @@ export function createStore() {
             collectionAttributesStore: collectionAttributesStore,
             collectionElements: collectionElementsStore,
             destinationParameters: jobDestinationParametersStore,
-            dataset: datasetStore,
             datasetExtFiles: datasetExtFilesStore,
             datasetPathDestination: datasetPathDestinationStore,
             invocations: invocationStore,
