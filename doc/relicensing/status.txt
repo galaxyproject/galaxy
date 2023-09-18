@@ -1,0 +1,47 @@
+# agreed to re-licensing
+# GitHub username, primary email, evidence
+
+dannon, https://github.com/galaxyproject/galaxy/pull/14540
+jmchilton, https://github.com/galaxyproject/galaxy/pull/14540
+natefoo, https://github.com/galaxyproject/galaxy/pull/14540
+hexylena, https://github.com/galaxyproject/galaxy/pull/14540
+bgruening, https://github.com/galaxyproject/galaxy/pull/14540
+blankenberg, https://github.com/galaxyproject/galaxy/pull/14540
+martenson, https://github.com/galaxyproject/galaxy/pull/14540
+nuwang, https://github.com/galaxyproject/galaxy/pull/14540
+anuprulez, anup.rulez@gmail.com, https://github.com/galaxyproject/galaxy/pull/14540
+jdavcs, https://github.com/galaxyproject/galaxy/pull/14540
+mvdbeek, https://github.com/galaxyproject/galaxy/pull/14540
+VJalili, https://github.com/galaxyproject/galaxy/pull/14540
+davelopez, https://github.com/galaxyproject/galaxy/pull/14540
+ahmedhamidawan, aawan@mindgrub.com, https://github.com/galaxyproject/galaxy/pull/13332
+abretaud, abretaud@irisa.fr, https://github.com/galaxyproject/galaxy/pull/12159
+ZimmerA, z.adrian1995@gmail.com, https://github.com/galaxyproject/galaxy/pull/12337
+ajs6f, ajs6f@apache.org, https://github.com/galaxyproject/galaxy/pull/13301
+astrovsky01, a.ostrovsky@mac.com, https://github.com/galaxyproject/galaxy/pull/11802
+almahmoud, mahmoudalexandru@gmail.com, https://github.com/galaxyproject/galaxy/pull/12155
+itisAliRH, itisalirh@gmail.com, https://github.com/galaxyproject/galaxy/pull/13104
+annefou, annefou@geo.uio.no, https://github.com/galaxyproject/galaxy/pull/11812
+abretaud, anthony.bretaudeau@inria.fr, https://github.com/galaxyproject/galaxy/pull/12159
+
+# not yet agreed, needs research
+Daniel Bouchard <danieljosephbouchard@gmail.com> # GH user: Airistotal
+Alan Amossé <alan.amosse@gmail.com> # GH user: Alanamosse
+Alexander Lenail <lenail@mit.edu> <alexander.lenail@tufts.edu> # GH user: alexlenail
+Ott Oopkaup <ott.oopkaup@gmail.com> # GH user: ooobik
+Anastasia Tyryshkina <atyryshkina@gmail.com> # GH user: atyryshkina
+Evgeny Anatskiy <evgeny.anatskiy@gmail.com> # GH user: anatskiy
+Andrea Bagnacani <andrea.bagnacani@uni-rostock.de> # GH user: bagnacan
+Andreas Skorczyk <me@andreas-sk.de> # GH user: AndreasSko
+Andrew Robinson <Andrew.Robinson@latrobe.edu.au # GH user: andrewjrobinson , single commit: https://github.com/galaxyproject/galaxy/commit/357a23b290df6e22f756a54b767fca4e0e4ab4c1
+Andrew Warren <anwarren@vbi.vt.edu> # GH user: aswarren , single commit: https://github.com/galaxyproject/galaxy/commit/3bfc738bf569f3c94989af4170fee14024a320c6
+Andrey Tovchigrechko <tovchigrechkoa@medimmune.com> # GH user: andreyto single commit, one line change: https://github.com/galaxyproject/galaxy/commit/d06b221905cc4eb935939c6a29685c0dff125bf8
+Anil Thanki <thanki.anil@gmail.com> # GH user: anilthanki
+Ann Loraine <aloraine@uncc.edu> # GH user: aloraine , only one commit, to change a URL: https://github.com/galaxyproject/galaxy/commit/ea22750604bb2b14a437eddc6ab34dd9d4d9fba7
+Anton Nekrutenko <anton@nekrut.org>  # GH user: nekrut
+
+# not agreed, but contributions no longer present
+Adam Brenner <aebrenne@uci.edu> # GH user: abrenner, only commits to tools moved to tool shed (no longer in galaxy)
+Abdulrahman Azab <eng.azab@gmail.com> # GH user: abdulrahmanazab, one-line contribution, rewritten by John Chilton
+Andrea Sbardellati <andrea.sbardellati@crs4.it>  # only one commit to bowtie2 wrapper, since moved to the tool shed
+
