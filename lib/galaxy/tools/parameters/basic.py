@@ -2137,6 +2137,9 @@ class DataToolParameter(BaseDataToolParameter):
         elif isinstance(value, (HistoryDatasetAssociation, LibraryDatasetDatasetAssociation)):
             rval.append(value)
         elif isinstance(value, dict) and "src" in value and "id" in value:
+            if value["src"] == "ldda":
+                decoded_id = trans.security.decode_id(value["id"])
+                rval.append(trans.sa_session.query(LibraryDatasetDatasetAssociation).get(decoded_id))
             if value["src"] == "hda":
                 decoded_id = trans.security.decode_id(value["id"])
                 rval.append(trans.sa_session.query(HistoryDatasetAssociation).get(decoded_id))
@@ -2272,7 +2275,7 @@ class DataToolParameter(BaseDataToolParameter):
             # For consistency, should these just always be in the dict?
             d["min"] = self.min
             d["max"] = self.max
-        d["options"] = {"hda": [], "hdca": []}
+        d["options"] = {"dce": [], "ldda": [], "hda": [], "hdca": []}
         d["tag"] = self.tag
 
         # return dictionary without options if context is unavailable
@@ -2300,26 +2303,27 @@ class DataToolParameter(BaseDataToolParameter):
             return list.append(value)
 
         def append_dce(dce):
-            if dce.hda:
-                # well this isn't good, but what's the alternative ?
-                # we should be precise about what we're (re-)running here.
-                key = "hda"
-            else:
-                key = "hdca"
-            d["options"][key].append(
+            d["options"]["dce"].append(
                 {
                     "id": trans.security.encode_id(dce.id),
                     "name": dce.element_identifier,
+                    "is_dataset": dce.hda is not None,
                     "src": "dce",
                     "tags": [],
                     "keep": True,
                 }
             )
 
-        # append DCE
-        if isinstance(other_values.get(self.name), DatasetCollectionElement):
-            dce = other_values[self.name]
-            append_dce(dce)
+        def append_ldda(ldda):
+            d["options"]["ldda"].append(
+                {
+                    "id": trans.security.encode_id(ldda.id),
+                    "name": ldda.name,
+                    "src": "ldda",
+                    "tags": [],
+                    "keep": True,
+                }
+            )
 
         # add datasets
         hda_list = util.listify(other_values.get(self.name))
@@ -2342,6 +2346,8 @@ class DataToolParameter(BaseDataToolParameter):
                 append(d["options"]["hda"], hda, f"({hda_state}) {hda.name}", "hda", True)
             elif isinstance(hda, DatasetCollectionElement):
                 append_dce(hda)
+            elif isinstance(hda, LibraryDatasetDatasetAssociation):
+                append_ldda(hda)
 
         # add dataset collections
         dataset_collection_matcher = dataset_matcher_factory.dataset_collection_matcher(dataset_matcher)
@@ -2503,7 +2509,7 @@ class DataCollectionToolParameter(BaseDataToolParameter):
         # append DCE
         if isinstance(other_values.get(self.name), DatasetCollectionElement):
             dce = other_values[self.name]
-            d["options"]["hdca"].append(
+            d["options"]["dce"].append(
                 {
                     "id": trans.security.encode_id(dce.id),
                     "hid": -1,
@@ -2538,10 +2544,10 @@ class DataCollectionToolParameter(BaseDataToolParameter):
                 {
                     "id": trans.security.encode_id(hdca.id),
                     "hid": hdca.hid,
+                    "map_over_type": subcollection_type,
                     "name": name,
                     "src": "hdca",
                     "tags": [t.user_tname if not t.value else f"{t.user_tname}:{t.value}" for t in hdca.tags],
-                    "map_over_type": subcollection_type,
                 }
             )
 

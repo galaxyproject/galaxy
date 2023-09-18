@@ -10,6 +10,7 @@ import type { FormParameterAttributes, FormParameterTypes, FormParameterValue } 
 
 import FormBoolean from "./Elements/FormBoolean.vue";
 import FormColor from "./Elements/FormColor.vue";
+import FormData from "./Elements/FormData/FormData.vue";
 import FormDataDialog from "./Elements/FormDataDialog.vue";
 import FormDirectory from "./Elements/FormDirectory.vue";
 import FormDrilldown from "./Elements/FormDrilldown/FormDrilldown.vue";
@@ -33,8 +34,8 @@ interface FormElementProps {
     help?: string;
     error?: string;
     warning?: string;
-    backbonejs?: boolean;
     disabled?: boolean;
+    loading?: boolean;
     attributes?: FormParameterAttributes;
     collapsedEnableText?: string;
     collapsedDisableText?: string;
@@ -50,7 +51,6 @@ interface FormElementProps {
 const props = withDefaults(defineProps<FormElementProps>(), {
     id: "identifier",
     refreshOnChange: false,
-    backbonejs: false,
     disabled: false,
     collapsedEnableText: "Enable",
     collapsedDisableText: "Disable",
@@ -205,9 +205,9 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
                     <label :for="props.id">{{ props.title }}</label>
                 </span>
             </span>
-            <span v-else-if="props.title" class="ui-form-title-text"
-                ><label :for="props.id">{{ props.title }}</label></span
-            >
+            <span v-else-if="props.title" class="ui-form-title-text">
+                <label :for="props.id">{{ props.title }}</label>
+            </span>
 
             <span
                 v-if="isRequired && isRequiredType && props.title"
@@ -273,6 +273,18 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
                 :options="attrs.options"
                 :optional="attrs.optional"
                 :multiple="attrs.multiple" />
+            <FormData
+                v-else-if="['data', 'data_collection'].includes(props.type)"
+                :id="id"
+                v-model="currentValue"
+                :loading="loading"
+                :extension="attrs.extension"
+                :flavor="attrs.flavor"
+                :multiple="attrs.multiple"
+                :optional="attrs.optional"
+                :options="attrs.options"
+                :tag="attrs.tag"
+                :type="props.type" />
             <FormDrilldown
                 v-else-if="props.type === 'drill_down'"
                 :id="id"
@@ -289,11 +301,11 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
             <FormUpload v-else-if="props.type === 'upload'" v-model="currentValue" />
             <FormRulesEdit v-else-if="props.type == 'rules'" v-model="currentValue" :target="attrs.target" />
             <FormParameter
-                v-else-if="backbonejs"
+                v-else-if="['data_dialog', 'ftpfile', 'library_data'].includes(props.type)"
                 :id="props.id"
                 v-model="currentValue"
                 :data-label="props.title"
-                :type="props.type ?? (attrs.options ? 'select' : 'text')"
+                :type="props.type"
                 :attributes="attrs" />
             <FormTags
                 v-else-if="props.type === 'tags'"

@@ -14,7 +14,6 @@
                         :refresh-on-change="false"
                         :disabled="sustainConditionals"
                         :attributes="input.test_param"
-                        :backbonejs="true"
                         @change="onChange" />
                     <div v-for="(caseDetails, caseId) in input.cases" :key="caseId">
                         <FormNode
@@ -54,11 +53,11 @@
                 :help="input.help"
                 :refresh-on-change="input.refresh_on_change"
                 :attributes="input.attributes || input"
-                :backbonejs="true"
                 :collapsed-enable-text="collapsedEnableText"
                 :collapsed-enable-icon="collapsedEnableIcon"
                 :collapsed-disable-text="collapsedDisableText"
                 :collapsed-disable-icon="collapsedDisableIcon"
+                :loading="loading"
                 :workflow-building-mode="workflowBuildingMode"
                 @change="onChange" />
         </div>
@@ -85,6 +84,10 @@ export default {
         inputs: {
             type: Array,
             default: null,
+        },
+        loading: {
+            type: Boolean,
+            default: false,
         },
         prefix: {
             type: String,

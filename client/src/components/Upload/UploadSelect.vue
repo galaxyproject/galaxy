@@ -97,6 +97,8 @@ const currentValue = computed({
         margin: 0px;
         padding: 0px;
         .multiselect__single {
+            text-overflow: ellipsis;
+            white-space: nowrap;
             width: 130px;
         }
     }
