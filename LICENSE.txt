@@ -1,6 +1,6 @@
-Copyright (c) 2005-2022 Galaxy Contributors (see CONTRIBUTORS.md)
+Copyright (c) 2005-2026 Galaxy Contributors (see CONTRIBUTORS.md)
 
-Galaxy is provided from 2026-02-23 onwards entirely under the MIT License.
+Galaxy is provided from 2026-02-25 onwards entirely under the MIT License.
 
 Some icons found in Galaxy are from the Silk Icons set, available under
 the Creative Commons Attribution 2.5 License, from:
