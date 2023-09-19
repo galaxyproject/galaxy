@@ -25,11 +25,14 @@ export const useDatasetStore = defineStore("datasetStore", () => {
     });
 
     async function fetchDataset(params: { id: string }) {
-        loadingDatasets.value[params.id] = true;
-        const dataset = await fetchDatasetDetails(params);
-        Vue.set(storedDatasets.value, dataset.id, dataset);
-        delete loadingDatasets.value[params.id];
-        return dataset;
+        Vue.set(loadingDatasets.value, params.id, true);
+        try {
+            const dataset = await fetchDatasetDetails(params);
+            Vue.set(storedDatasets.value, dataset.id, dataset);
+            return dataset;
+        } finally {
+            Vue.delete(loadingDatasets.value, params.id);
+        }
     }
 
     function saveDatasets(historyContentsPayload: HistoryContentItemBase[]) {
