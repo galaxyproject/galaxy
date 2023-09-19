@@ -20,15 +20,15 @@ effectiveness.
 
 History Archival Feature!
 -------------------------
-Your history menu now has a new option move a history out of your active history
+Your history menu now has a new option to move a history out of your active histories
 and into an archive! When archiving a history, you will be presented with two
-options: one to “Keep the Storage Space” and one to “Free the Storage Space”
+options: either to “Keep the Storage Space” or to “Free the Storage Space”
 taken up by the history. Keeping the storage space will keep the contents of the
 history where they are, allowing them to be restored at any moment, but will
 prevent the UI from allowing certain operations on the history. Freeing the
 storage space will prompt you to package and export the history to a permanent
 remote source as a backup snapshot, and then purge the history and its contents
-to free up storage space. There will be a simple list, titles Archived
+to free up storage space. There will be a simple list, titled Archived
 Histories, for you to explore your archived histories and restore and reimport
 them, as needed!
 
@@ -36,7 +36,7 @@ Galaxy Notification System!
 ---------------------------
 The previous Galaxy notification system has been overhauled to support more
 complex scenarios and features! As users, you will now have more control of your
-notifications, including the option to subscribe/unsubscribe from certain times
+notifications, including the option to subscribe/unsubscribe from certain types
 of notifications. The new notification system will also support notification
 broadcasting, allowing the Galaxy team to send server-wide announcements, such
 as User Agreement updates and server maintenance notifications.
