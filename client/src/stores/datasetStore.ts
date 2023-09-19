@@ -1,18 +1,19 @@
 import { defineStore } from "pinia";
 import Vue, { computed, ref } from "vue";
 
-import { DatasetDetails, HistoryContentItemBase } from "./services";
+import { DatasetEntry, HistoryContentItemBase } from "./services";
 import { fetchDatasetDetails } from "./services/dataset.service";
 
 export const useDatasetStore = defineStore("datasetStore", () => {
-    const storedDatasets = ref<{ [key: string]: DatasetDetails }>({});
+    const storedDatasets = ref<{ [key: string]: DatasetEntry }>({});
 
     const getDataset = computed(() => {
         return (datasetId: string) => {
-            if (!storedDatasets.value[datasetId]) {
+            const dataset = storedDatasets.value[datasetId];
+            if (needsUpdate(dataset)) {
                 fetchDataset({ id: datasetId });
             }
-            return storedDatasets.value[datasetId] ?? null;
+            return dataset ?? null;
         };
     });
 
@@ -23,12 +24,20 @@ export const useDatasetStore = defineStore("datasetStore", () => {
     }
 
     function saveDatasets(historyContentsPayload: HistoryContentItemBase[]) {
-        const datasetList = historyContentsPayload
-            .filter((entry) => entry.history_content_type === "dataset")
-            .map((entry) => entry as DatasetDetails);
+        const datasetList = historyContentsPayload.filter(
+            (entry) => entry.history_content_type === "dataset"
+        ) as DatasetEntry[];
         for (const dataset of datasetList) {
             Vue.set(storedDatasets.value, dataset.id, dataset);
         }
+    }
+
+    function needsUpdate(dataset?: DatasetEntry) {
+        if (!dataset) {
+            return true;
+        }
+        const isNotDetailed = !("peek" in dataset);
+        return isNotDetailed;
     }
 
     return {
