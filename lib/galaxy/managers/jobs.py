@@ -513,7 +513,7 @@ class JobSearch:
                     e = aliased(model.HistoryDatasetAssociation)
                     query = query.add_columns(a.dataset_collection_element_id)
                     query = (
-                        query.join(a)
+                        query.join(a, a.job_id == model.Job.id)
                         .join(b, b.id == a.dataset_collection_element_id)
                         .join(
                             c,
