@@ -27,13 +27,16 @@ from sqlalchemy import (
     and_,
     desc,
     false,
+    func,
     or_,
+    select,
     true,
 )
 from sqlalchemy.orm import (
     aliased,
     joinedload,
     Query,
+    Session,
     subqueryload,
 )
 
@@ -50,7 +53,10 @@ from galaxy.managers import (
 from galaxy.managers.base import decode_id
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.executables import artifact_class
-from galaxy.model import StoredWorkflow
+from galaxy.model import (
+    StoredWorkflow,
+    StoredWorkflowUserShareAssociation,
+)
 from galaxy.model.base import transaction
 from galaxy.model.index_filter_util import (
     append_user_filter,
@@ -1972,3 +1978,9 @@ class Format2ConverterGalaxyInterface(ImporterGalaxyInterface):
         raise NotImplementedError(
             "Direct format 2 import of nested workflows is not yet implemented, use bioblend client."
         )
+
+
+def count_stored_workflow_user_assocs(session: Session, user, stored_workflow) -> int:
+    stmt = select(StoredWorkflowUserShareAssociation).filter_by(user=user, stored_workflow=stored_workflow)
+    stmt = select(func.count()).select_from(stmt)
+    return session.scalar(stmt)

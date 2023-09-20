@@ -40,6 +40,7 @@ from galaxy.managers.jobs import (
     invocation_job_source_iter,
 )
 from galaxy.managers.workflows import (
+    count_stored_workflow_user_assocs,
     MissingToolsException,
     RefactorRequest,
     WorkflowCreateOptions,
@@ -156,13 +157,12 @@ class WorkflowsAPIController(
         # Decode the encoded workflow ids
         for ids in workflow_ids:
             workflow_ids_decoded.append(trans.security.decode_id(ids))
-        sess = trans.sa_session
+        session = trans.sa_session
         # This explicit remove seems like a hack, need to figure out
         # how to make the association do it automatically.
         for m in user.stored_workflow_menu_entries:
-            sess.delete(m)
+            session.delete(m)
         user.stored_workflow_menu_entries = []
-        q = sess.query(model.StoredWorkflow)
         # To ensure id list is unique
         seen_workflow_ids = set()
         for wf_id in workflow_ids_decoded:
@@ -171,10 +171,11 @@ class WorkflowsAPIController(
             else:
                 seen_workflow_ids.add(wf_id)
             m = model.StoredWorkflowMenuEntry()
-            m.stored_workflow = q.get(wf_id)
+            m.stored_workflow = session.get(model.StoredWorkflow, wf_id)
+
             user.stored_workflow_menu_entries.append(m)
-        with transaction(sess):
-            sess.commit()
+        with transaction(session):
+            session.commit()
         message = "Menu updated."
         trans.set_message(message)
         return {"message": message, "status": "done"}
@@ -192,12 +193,8 @@ class WorkflowsAPIController(
         """
         stored_workflow = self.__get_stored_workflow(trans, id, **kwd)
         if stored_workflow.importable is False and stored_workflow.user != trans.user and not trans.user_is_admin:
-            if (
-                trans.sa_session.query(model.StoredWorkflowUserShareAssociation)
-                .filter_by(user=trans.user, stored_workflow=stored_workflow)
-                .count()
-                == 0
-            ):
+            wf_count = count_stored_workflow_user_assocs(trans.sa_session, trans.user, stored_workflow)
+            if wf_count == 0:
                 message = "Workflow is neither importable, nor owned by or shared with current user"
                 raise exceptions.ItemAccessibilityException(message)
         if kwd.get("legacy", False):
