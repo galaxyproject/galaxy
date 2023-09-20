@@ -3,7 +3,6 @@ import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import { createPinia, mapState } from "pinia";
 import { collectionElementsStore } from "store/historyStore/collectionElementsStore";
-import { datasetStore } from "store/historyStore/datasetStore";
 import { useHistoryItemsStore } from "stores/history/historyItemsStore";
 import { useHistoryStore } from "stores/historyStore";
 import Vuex from "vuex";
@@ -58,7 +57,6 @@ describe("watchHistory", () => {
             store: new Vuex.Store({
                 modules: {
                     collectionElements: collectionElementsStore,
-                    dataset: datasetStore,
                 },
             }),
             localVue,

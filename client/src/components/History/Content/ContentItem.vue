@@ -90,7 +90,7 @@
         <b-collapse :visible="expandDataset">
             <DatasetDetails
                 v-if="expandDataset"
-                :dataset="item"
+                :id="item.id"
                 :writable="writable"
                 :show-highlight="(isHistoryItem && filterable) || addHighlightBtn"
                 :item-urls="itemUrls"

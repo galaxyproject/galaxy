@@ -1,8 +1,25 @@
-/*
-    Client representation of state and state messages. See: https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/model/__init__.py#L3292
-    for a list of available states.
-*/
-export const STATES = {
+import { components } from "@/schema";
+
+type DatasetState = components["schemas"]["DatasetState"];
+// The 'failed' state is for the collection job state summary, not a dataset state.
+type State = DatasetState | "failed";
+
+interface StateRepresentation {
+    status: "success" | "warning" | "info" | "danger";
+    text?: string;
+    icon?: string;
+    spin?: boolean;
+}
+
+type StateMap = {
+    [__ in State]: StateRepresentation;
+};
+
+/**
+ * Client representation of state and state messages.
+ * See: https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/model/__init__.py#L3292 for a list of available states.
+ */
+export const STATES: StateMap = {
     /** has successfully completed running */
     ok: {
         status: "success",
@@ -80,9 +97,17 @@ export const STATES = {
         status: "danger",
         icon: "exclamation-triangle",
     },
-};
+} as const satisfies StateMap;
 
 /** We want to display a single state for a dataset collection whose elements may have mixed states.
  * This list is ordered from highest to lowest priority. If any element is in error state the whole collection should be in error.
  */
-export const HIERARCHICAL_COLLECTION_JOB_STATES = ["error", "failed", "upload", "paused", "running", "queued", "new"];
+export const HIERARCHICAL_COLLECTION_JOB_STATES = [
+    "error",
+    "failed",
+    "upload",
+    "paused",
+    "running",
+    "queued",
+    "new",
+] as const;
