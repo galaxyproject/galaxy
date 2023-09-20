@@ -13,6 +13,7 @@ export const colours = {
 } as const;
 
 export type Colour = keyof typeof colours;
+export type HexColour = `#${string}`;
 
 export const brightColours = (() => {
     const brighter: Record<string, string> = {};
@@ -23,7 +24,7 @@ export const brightColours = (() => {
         hsluv[2] = l;
         brighter[name] = hsluvToHex(hsluv);
     });
-    return brighter as Record<Colour, string>;
+    return brighter as Record<Colour, HexColour>;
 })();
 
 export const brighterColours = (() => {
@@ -35,12 +36,12 @@ export const brighterColours = (() => {
         hsluv[2] = l;
         brighter[name] = hsluvToHex(hsluv);
     });
-    return brighter as Record<Colour, string>;
+    return brighter as Record<Colour, HexColour>;
 })();
 
 export const darkenedColours = {
     ...colours,
-    turquoise: "#00a6c0",
-    lime: "#5eae00",
-    yellow: "#e9ad00",
+    turquoise: "#00a6c0" as const,
+    lime: "#5eae00" as const,
+    yellow: "#e9ad00" as const,
 };
