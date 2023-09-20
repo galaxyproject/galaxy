@@ -32,6 +32,7 @@ from galaxy.files.uris import validate_uri_access
 from galaxy.managers.citations import CitationsManager
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.managers.histories import (
+    get_fasta_hdas_by_history,
     HistoryDeserializer,
     HistoryExportManager,
     HistoryFilters,
@@ -640,11 +641,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         installed_builds = []
         for build in glob.glob(os.path.join(trans.app.config.len_file_path, "*.len")):
             installed_builds.append(os.path.basename(build).split(".len")[0])
-        fasta_hdas = (
-            trans.sa_session.query(model.HistoryDatasetAssociation)
-            .filter_by(history=history, extension="fasta", deleted=False)
-            .order_by(model.HistoryDatasetAssociation.hid.desc())
-        )
+        fasta_hdas = get_fasta_hdas_by_history(trans.sa_session, history.id)
         return CustomBuildsMetadataResponse(
             installed_builds=[LabelValuePair(label=ins, value=ins) for ins in installed_builds],
             fasta_hdas=[
