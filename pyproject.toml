@@ -152,7 +152,7 @@ responses = "*"
 selenium = "*"
 seletools = "*"
 Sphinx = ">=4.0"  # support docutils 0.17
-sphinx_rtd_theme = ">=1.0.0"
+sphinx-rtd-theme = ">=1.0.0,<2"  # https://github.com/python-poetry/poetry/issues/8194
 statsd = "*"
 testfixtures = "*"
 tuspy = "*"
