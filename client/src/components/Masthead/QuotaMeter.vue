@@ -46,8 +46,6 @@ export default {
         //
         return {
             usingString: this.l("Using"),
-            helpTextString:
-                "This is your Quota storage meter. It is an indication of how much storage you are using. To learn more about Quota Storage, check out this GTN tutorial.",
         };
     },
     computed: {
@@ -97,7 +95,7 @@ export default {
     },
     methods: {
         callHelpMode() {
-            this.helpModeTextStore.addHelpModeText(this.helpTextString);
+            this.helpModeTextStore.addHelpModeText("quotaMeterHelpString");
         },
     },
 };

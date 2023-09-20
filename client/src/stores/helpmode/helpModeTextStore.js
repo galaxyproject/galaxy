@@ -1,5 +1,7 @@
 import { defineStore } from "pinia";
 
+import config from './helpTextConfig.yml';
+
 export const useHelpModeTextStore = defineStore("helpModeText", {
     state: () => {
         return {
@@ -9,7 +11,7 @@ export const useHelpModeTextStore = defineStore("helpModeText", {
 
     actions: {
         addHelpModeText(text) {
-            this.helpmodetext = text;
+            this.helpmodetext = config[text];
         },
     },
 });
