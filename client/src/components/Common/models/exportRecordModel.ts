@@ -5,10 +5,11 @@ import type { components } from "@/schema";
 type ExportObjectRequestMetadata = components["schemas"]["ExportObjectRequestMetadata"];
 
 export type StoreExportPayload = components["schemas"]["StoreExportPayload"];
+export type ModelStoreFormat = components["schemas"]["ModelStoreFormat"];
 export type ObjectExportTaskResponse = components["schemas"]["ObjectExportTaskResponse"];
 
 export interface ExportParams {
-    readonly modelStoreFormat: string;
+    readonly modelStoreFormat: ModelStoreFormat;
     readonly includeFiles: boolean;
     readonly includeDeleted: boolean;
     readonly includeHidden: boolean;
