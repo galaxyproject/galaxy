@@ -1,9 +1,10 @@
 import axios from "axios";
-import { withPrefix } from "utils/redirect";
-import { rethrowSimple } from "utils/simple-error";
 import { readonly, ref } from "vue";
 
-export const DEFAULT_EXPORT_PARAMS = {
+import { ExportParams } from "@/components/Common/models/exportRecordModel";
+import { withPrefix } from "@/utils/redirect";
+
+export const DEFAULT_EXPORT_PARAMS: ExportParams = {
     modelStoreFormat: "rocrate.zip",
     includeFiles: true,
     includeDeleted: false,
@@ -17,38 +18,43 @@ const DEFAULT_OPTIONS = { exportParams: DEFAULT_EXPORT_PARAMS, pollDelayInMs: DE
  * Composable to simplify and reuse the logic for downloading objects using Galaxy's Short Term Storage system.
  */
 export function useShortTermStorage() {
-    let timeout = null;
+    let timeout: NodeJS.Timeout | null = null;
     let pollDelay = DEFAULT_POLL_DELAY;
 
     const isPreparing = ref(false);
 
-    async function prepareHistoryDownload(historyId, options = DEFAULT_OPTIONS) {
+    async function prepareHistoryDownload(historyId: string, options = DEFAULT_OPTIONS) {
         return prepareObjectDownload(historyId, "histories", options, false);
     }
 
-    async function downloadHistory(historyId, options = DEFAULT_OPTIONS) {
+    async function downloadHistory(historyId: string, options = DEFAULT_OPTIONS) {
         return prepareObjectDownload(historyId, "histories", options, true);
     }
 
-    async function prepareWorkflowInvocationDownload(invocationId, options = DEFAULT_OPTIONS) {
+    async function prepareWorkflowInvocationDownload(invocationId: string, options = DEFAULT_OPTIONS) {
         return prepareObjectDownload(invocationId, "invocations", options, false);
     }
 
-    async function downloadWorkflowInvocation(invocationId, options = DEFAULT_OPTIONS) {
+    async function downloadWorkflowInvocation(invocationId: string, options = DEFAULT_OPTIONS) {
         return prepareObjectDownload(invocationId, "invocations", options, true);
     }
 
-    function getDownloadObjectUrl(storageRequestId) {
+    function getDownloadObjectUrl(storageRequestId: string) {
         const url = withPrefix(`/api/short_term_storage/${storageRequestId}`);
         return url;
     }
 
-    function downloadObjectByRequestId(storageRequestId) {
+    function downloadObjectByRequestId(storageRequestId: string) {
         const url = getDownloadObjectUrl(storageRequestId);
         window.location.assign(url);
     }
 
-    async function prepareObjectDownload(object_id, object_api, options = DEFAULT_OPTIONS, downloadWhenReady = true) {
+    async function prepareObjectDownload(
+        object_id: string,
+        object_api: string,
+        options = DEFAULT_OPTIONS,
+        downloadWhenReady = true
+    ) {
         const finalOptions = Object.assign(DEFAULT_OPTIONS, options);
         resetTimeout();
         isPreparing.value = true;
@@ -65,12 +71,12 @@ export function useShortTermStorage() {
         handleInitialize(response, downloadWhenReady);
     }
 
-    function handleInitialize(response, downloadWhenReady) {
+    function handleInitialize(response: any, downloadWhenReady: boolean) {
         const storageRequestId = response.data.storage_request_id;
         pollStorageRequestId(storageRequestId, downloadWhenReady);
     }
 
-    function pollStorageRequestId(storageRequestId, downloadWhenReady) {
+    function pollStorageRequestId(storageRequestId: string, downloadWhenReady: boolean) {
         const url = withPrefix(`/api/short_term_storage/${storageRequestId}/ready`);
         axios
             .get(url)
@@ -80,7 +86,7 @@ export function useShortTermStorage() {
             .catch(handleError);
     }
 
-    function handlePollResponse(response, storageRequestId, downloadWhenReady) {
+    function handlePollResponse(response: any, storageRequestId: string, downloadWhenReady: boolean) {
         const ready = response.data;
         if (ready) {
             isPreparing.value = false;
@@ -88,19 +94,18 @@ export function useShortTermStorage() {
                 downloadObjectByRequestId(storageRequestId);
             }
         } else {
-            pollAfterDelay(storageRequestId);
+            pollAfterDelay(storageRequestId, downloadWhenReady);
         }
     }
 
-    function handleError(err) {
-        rethrowSimple(err);
+    function handleError(_err: any) {
         isPreparing.value = false;
     }
 
-    function pollAfterDelay(storageRequestId) {
+    function pollAfterDelay(storageRequestId: string, downloadWhenReady: boolean) {
         resetTimeout();
         timeout = setTimeout(() => {
-            pollStorageRequestId(storageRequestId);
+            pollStorageRequestId(storageRequestId, downloadWhenReady);
         }, pollDelay);
     }
 
