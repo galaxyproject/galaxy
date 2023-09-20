@@ -115,6 +115,7 @@ class TestHistoryImportExportFtpSeleniumIntegrationWithTasks(TestHistoryImportEx
         history_export_tasks.toggle_options_link.wait_for_and_click()
 
         # Export to FTP file source
+        history_export_tasks.file_source_tab.wait_for_present()
         history_export_tasks.file_source_tab.wait_for_and_click()
         self._export_to_ftp_with_filename("my_export.tar.gz")
 
