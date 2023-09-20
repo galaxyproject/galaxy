@@ -568,7 +568,7 @@
     <datatype extension="excel.xls" type="galaxy.datatypes.binary:ExcelXls" display_in_upload="true"/>
     <datatype extension="xlsx" type="galaxy.datatypes.binary:Xlsx" display_in_upload="true"/>
     <!-- Word datatypes -->
-    <datatype extension="docx" type="galaxy.datatypes.binary:docx" display_in_upload="true"/>
+    <datatype extension="docx" type="galaxy.datatypes.binary:Docx" display_in_upload="true"/>
     <datatype extension="btwisted" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="cai" type="galaxy.datatypes.data:Text" subclass="true"/>
     <datatype extension="cat_db" type="galaxy.datatypes.data:Text" subclass="true"/>
