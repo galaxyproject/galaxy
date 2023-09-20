@@ -420,7 +420,7 @@ class JobSearch:
                     c = aliased(model.HistoryDatasetAssociation)
                     d = aliased(model.JobParameter)
                     e = aliased(model.HistoryDatasetAssociationHistory)
-                    query.add_columns(a.dataset_id)
+                    query = query.add_columns(a.dataset_id)
                     used_ids.append(a.dataset_id)
                     query = query.join(a, a.job_id == model.Job.id)
                     stmt = select([model.HistoryDatasetAssociation.id]).where(
