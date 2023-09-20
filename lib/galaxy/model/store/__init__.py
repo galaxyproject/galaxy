@@ -205,10 +205,10 @@ class SessionlessContext:
     def flush(self) -> None:
         pass
 
-    def add(self, obj: Union[model.DatasetInstance, model.RepresentById]) -> None:
+    def add(self, obj: model.RepresentById) -> None:
         self.objects[obj.__class__][obj.id] = obj
 
-    def query(self, model_class: Type) -> Bunch:
+    def query(self, model_class: model.RepresentById) -> Bunch:
         def find(obj_id):
             return self.objects.get(model_class, {}).get(obj_id) or None
 
@@ -217,6 +217,9 @@ class SessionlessContext:
             return Bunch(first=lambda: next(iter(self.objects.get(model_class, {None: None}))))
 
         return Bunch(find=find, get=find, filter_by=filter_by)
+
+    def get(self, model_class: model.RepresentById, primary_key: Any):  # patch for SQLAlchemy 2.0 compatibility
+        return self.query(model_class).get(primary_key)
 
 
 def replace_metadata_file(
@@ -891,7 +894,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
 
     def _attach_raw_id_if_editing(
         self,
-        obj: Union[model.DatasetInstance, model.RepresentById],
+        obj: model.RepresentById,
         attrs: Dict[str, Any],
     ) -> None:
         if self.sessionless and "id" in attrs and self.import_options.allow_edit:
@@ -1269,7 +1272,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
 
             self._session_add(icj)
 
-    def _session_add(self, obj: Union[model.DatasetInstance, model.RepresentById]) -> None:
+    def _session_add(self, obj: model.RepresentById) -> None:
         self.sa_session.add(obj)
 
     def _flush(self) -> None:
@@ -1958,7 +1961,7 @@ class DirectoryModelExportStore(ModelExportStore):
 
     def exported_key(
         self,
-        obj: Union[model.DatasetInstance, model.RepresentById],
+        obj: model.RepresentById,
     ) -> Union[str, int]:
         return self.serialization_options.get_identifier(self.security, obj)
 
