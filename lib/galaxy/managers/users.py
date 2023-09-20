@@ -23,6 +23,7 @@ from sqlalchemy import (
     select,
     true,
 )
+from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import NoResultFound
 
 from galaxy import (
@@ -36,7 +37,10 @@ from galaxy.managers import (
     base,
     deletable,
 )
-from galaxy.model import UserQuotaUsage
+from galaxy.model import (
+    User,
+    UserQuotaUsage,
+)
 from galaxy.model.base import transaction
 from galaxy.security.validate_user_input import (
     VALID_EMAIL_RE,
@@ -850,3 +854,8 @@ def get_user_by_username(session, user_class, username):
         return session.execute(stmt).scalar_one()
     except Exception:
         return None
+
+
+def get_users_by_ids(session: Session, user_ids):
+    stmt = select(User).where(User.id.in_(user_ids))
+    return session.scalars(stmt).all()
