@@ -517,7 +517,7 @@ class BaseAppConfiguration(HasDynamicProperties):
         for key in self.schema.paths_to_resolve:
             value = getattr(self, key)
             # Check if value is a list or should be listified; if so, listify and resolve each item separately.
-            if type(value) is list or (self.listify_options and key in self.listify_options):
+            if isinstance(value, list) or (self.listify_options and key in self.listify_options):
                 saved_values = listify(getattr(self, key), do_strip=True)  # listify and save original value
                 setattr(self, key, "_")  # replace value with temporary placeholder
                 resolve(key)  # resolve temporary value (`_` becomes `parent-path/_`)
@@ -546,7 +546,7 @@ class BaseAppConfiguration(HasDynamicProperties):
             return current_path
 
         current_value = getattr(self, key)  # resolved path or list of resolved paths
-        if type(current_value) is list:
+        if isinstance(current_value, list):
             initial_paths = listify(self._raw_config[key], do_strip=True)  # initial unresolved paths
             updated_paths = []
             # check and, if needed, update each path in the list

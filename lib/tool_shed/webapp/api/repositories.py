@@ -1041,7 +1041,7 @@ class RepositoriesController(BaseAPIController):
             local_filename = util.mkstemp_ln(file_data.file.name, "upload_file_data_")
             file_data.file.close()
             file_data = dict(filename=file_data.filename, local_filename=local_filename)
-        elif type(file_data) == dict and "local_filename" not in file_data:
+        elif isinstance(file_data, dict) and "local_filename" not in file_data:
             raise Exception("Uploaded file was encoded in a way not understood.")
 
         commit_message = kwd.get("commit_message", "Uploaded")
