@@ -97,9 +97,17 @@ export const STATES: StateMap = {
         status: "danger",
         icon: "exclamation-triangle",
     },
-};
+} as const satisfies StateMap;
 
 /** We want to display a single state for a dataset collection whose elements may have mixed states.
  * This list is ordered from highest to lowest priority. If any element is in error state the whole collection should be in error.
  */
-export const HIERARCHICAL_COLLECTION_JOB_STATES = ["error", "failed", "upload", "paused", "running", "queued", "new"];
+export const HIERARCHICAL_COLLECTION_JOB_STATES = [
+    "error",
+    "failed",
+    "upload",
+    "paused",
+    "running",
+    "queued",
+    "new",
+] as const;
