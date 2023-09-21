@@ -10,6 +10,7 @@ from sqlalchemy import (
 import galaxy.model
 import galaxy.model.tool_shed_install
 import tool_shed.webapp.model as model
+from galaxy.managers.users import get_user_by_username
 
 log = logging.getLogger("test.tool_shed.test_db_util")
 
@@ -171,10 +172,6 @@ def get_user(email):
     return sa_session().query(model.User).filter(model.User.table.c.email == email).first()
 
 
-def get_user_by_name(username):
-    return sa_session().query(model.User).filter(model.User.table.c.username == username).first()
-
-
 def mark_obj_deleted(obj):
     obj.deleted = True
     sa_session().add(obj)
@@ -190,7 +187,7 @@ def ga_refresh(obj):
 
 
 def get_repository_by_name_and_owner(name, owner_username, return_multiple=False):
-    owner = get_user_by_name(owner_username)
+    owner = get_user_by_username(sa_session(), owner_username, model.User)
     repository = (
         sa_session()
         .query(model.Repository)

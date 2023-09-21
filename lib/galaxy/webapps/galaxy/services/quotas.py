@@ -8,7 +8,7 @@ from galaxy.managers.quotas import (
     get_quotas,
     QuotaManager,
 )
-from galaxy.model.repositories import get_user_by_email
+from galaxy.managers.users import get_user_by_email
 from galaxy.quota._schema import (
     CreateQuotaParams,
     CreateQuotaResult,
@@ -119,7 +119,7 @@ class QuotasService(ServiceBase):
             try:
                 return trans.security.decode_id(item)
             except Exception:
-                return user_repo.get_by_email(item).id
+                return get_user_by_email(trans.sa_session, item).id
 
         def get_group_id(item):
             try:

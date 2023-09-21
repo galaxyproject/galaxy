@@ -18,15 +18,14 @@ from sqlalchemy import (
     and_,
     not_,
     or_,
-    select,
 )
 
 from galaxy import (
     model,
     util,
 )
+from galaxy.managers.users import get_user_by_email
 from galaxy.model import Job
-from galaxy.model.repositories import get_user_by_email
 from galaxy.web.legacy_framework import grids
 from galaxy.webapps.base.controller import (
     BaseUIController,
@@ -1307,8 +1306,7 @@ def get_monitor_id(trans, monitor_email):
     A convenience method to obtain the monitor job id.
     """
     monitor_user_id = None
-    stmt = select(trans.model.User.id).filter(trans.model.User.email == monitor_email).limit(1)
-    monitor_row = trans.sa_session.scalars(stmt).first()
+    monitor_row = get_user_by_email(trans.sa_session, monitor_email)
     if monitor_row is not None:
         monitor_user_id = monitor_row[0]
     return monitor_user_id
