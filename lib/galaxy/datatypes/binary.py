@@ -4540,11 +4540,3 @@ class FITS(Binary):
             return dataset.peek
         except Exception:
             return f"Binary FITS file size ({nice_size(dataset.get_size())})"
-
-class Docx(Binary):
-    """
-    Docx file.
-    Docx files are generated and used by Microsoft word software as a format to store text informations.
-    """
-
-    file_ext = "docx"
