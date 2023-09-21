@@ -314,6 +314,7 @@ class HDCASerializer(DCASerializer, taggable.TaggableSerializerMixin, annotatabl
             "contents_url": self.generate_contents_url,
             "job_state_summary": self.serialize_job_state_summary,
             "elements_datatypes": self.serialize_elements_datatypes,
+            "collection_id": self.serialize_id,
         }
         self.serializers.update(serializers)
 
