@@ -659,7 +659,7 @@ class FileToolParameter(ToolParameter):
         if isinstance(value, FilesPayload):
             # multi-part upload handled and persisted in service layer
             return value.dict()
-        if type(value) == dict:
+        elif isinstance(value, dict):
             if "session_id" in value:
                 # handle api upload
                 session_id = value["session_id"]

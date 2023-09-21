@@ -55,7 +55,7 @@ def persist_uploads(params, trans):
                 local_filename = util.mkstemp_ln(f.file.name, "upload_file_data_")
                 f.file.close()
                 upload_dataset["file_data"] = dict(filename=f.filename, local_filename=local_filename)
-            elif type(f) == dict and "local_filename" not in f:
+            elif isinstance(f, dict) and "local_filename" not in f:
                 raise Exception("Uploaded file was encoded in a way not understood by Galaxy.")
             if (
                 "url_paste" in upload_dataset

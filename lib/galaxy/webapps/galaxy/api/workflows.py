@@ -150,7 +150,7 @@ class WorkflowsAPIController(
         workflow_ids = payload.get("workflow_ids")
         if workflow_ids is None:
             workflow_ids = []
-        elif type(workflow_ids) != list:
+        elif not isinstance(workflow_ids, list):
             workflow_ids = [workflow_ids]
         workflow_ids_decoded = []
         # Decode the encoded workflow ids
