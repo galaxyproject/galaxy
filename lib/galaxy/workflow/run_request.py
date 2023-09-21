@@ -14,6 +14,7 @@ from galaxy.model import (
     EffectiveOutput,
     History,
     HistoryDatasetAssociation,
+    HistoryDatasetCollectionAssociation,
     LibraryDataset,
     LibraryDatasetDatasetAssociation,
     WorkflowInvocation,
@@ -400,7 +401,10 @@ def build_workflow_run_configs(
                         f"Unknown workflow input source '{input_source}' specified."
                     )
                 if add_to_history and content.history != history:
-                    content = content.copy(flush=False)
+                    if isinstance(content, HistoryDatasetCollectionAssociation):
+                        content = content.copy(element_destination=history, flush=False)
+                    else:
+                        content = content.copy(flush=False)
                     history.stage_addition(content)
                 input_dict["content"] = content
             except AssertionError:
