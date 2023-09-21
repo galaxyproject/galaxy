@@ -62,6 +62,16 @@ def stream_url_to_file(
             temp.flush()
     else:
         page = urllib.request.urlopen(path, timeout=DEFAULT_SOCKET_TIMEOUT)  # page will be .close()ed in stream_to_file
+        # default to no exceptions
+        ip_allowlist_reverify = []
+        if file_sources:
+            try:
+                ip_allowlist_reverify = file_sources._file_sources_config.fetch_url_allowlist
+            except AttributeError:
+                # may have existing serialized config at upgrade time?
+                pass
+        # Reverify non-local with open connection here
+        validate_non_local(page.geturl(), ip_allowlist_reverify)
         temp_name = stream_to_file(
             page, prefix=prefix, source_encoding=get_charset_from_http_headers(page.headers), dir=dir
         )
