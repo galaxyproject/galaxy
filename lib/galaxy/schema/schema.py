@@ -1366,7 +1366,7 @@ class CreateNewCollectionPayload(Model):
         description="Whether to mark the original HDAs as hidden.",
     )
     copy_elements: Optional[bool] = Field(
-        default=False,
+        default=True,
         title="Copy Elements",
         description="Whether to create a copy of the source HDAs for the new collection.",
     )

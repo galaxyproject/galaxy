@@ -2445,8 +2445,8 @@ export interface components {
             content?: string | string;
             /**
              * Copy Elements
-             * @description If the source is a collection, whether to copy child HDAs into the target history as well, defaults to False but this is less than ideal and may be changed in future releases.
-             * @default false
+             * @description If the source is a collection, whether to copy child HDAs into the target history as well. Prior to the galaxy release 23.1 this defaulted to false.
+             * @default true
              */
             copy_elements?: boolean;
             /**
@@ -2616,7 +2616,7 @@ export interface components {
             /**
              * Copy Elements
              * @description Whether to create a copy of the source HDAs for the new collection.
-             * @default false
+             * @default true
              */
             copy_elements?: boolean;
             /**
