@@ -388,6 +388,9 @@ const removeTagsAction = computed(() => {
 @import "theme/blue.scss";
 @import "nodeTerminalStyle.scss";
 
+.node-output-buttons{
+    overflow-wrap: anywhere;
+}
 .node-output {
     display: flex;
     position: relative;
