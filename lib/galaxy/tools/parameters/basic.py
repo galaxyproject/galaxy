@@ -2189,7 +2189,7 @@ class DataToolParameter(BaseDataToolParameter):
             if len(rval) > 1:
                 raise ParameterValueError("more than one dataset supplied to single input dataset parameter", self.name)
             if len(rval) > 0:
-                rval = rval[0]  # type:ignore[assignment]
+                return rval[0]
             else:
                 raise ParameterValueError("invalid dataset supplied to single input dataset parameter", self.name)
         return rval
