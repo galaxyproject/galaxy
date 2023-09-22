@@ -1,6 +1,5 @@
 from markupsafe import escape
 from sqlalchemy import (
-    desc,
     false,
     true,
 )
@@ -19,8 +18,14 @@ from galaxy.managers.histories import (
     HistoryManager,
     HistorySerializer,
 )
-from galaxy.managers.pages import PageManager
+from galaxy.managers.pages import (
+    get_page as get_page_,
+    get_shared_pages,
+    page_exists,
+    PageManager,
+)
 from galaxy.managers.sharable import SlugBuilder
+from galaxy.managers.users import get_user_by_username
 from galaxy.managers.workflows import WorkflowsManager
 from galaxy.model.base import transaction
 from galaxy.model.item_attrs import UsesItemRatings
@@ -377,7 +382,7 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
             ids = util.listify(kwargs["id"])
             for id in ids:
                 if operation == "delete":
-                    item = session.query(model.Page).get(self.decode_id(id))
+                    item = session.get(model.Page, self.decode_id(id))
                     self.security_check(trans, item, check_ownership=True)
                     item.deleted = True
             with transaction(session):
@@ -397,14 +402,7 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
 
     def _get_shared(self, trans):
         """Identify shared pages"""
-        shared_by_others = (
-            trans.sa_session.query(model.PageUserShareAssociation)
-            .filter_by(user=trans.get_user())
-            .join(model.Page.table)
-            .filter(model.Page.deleted == false())
-            .order_by(desc(model.Page.update_time))
-            .all()
-        )
+        shared_by_others = get_shared_pages(trans.sa_session, trans.get_user())
         return [
             {"username": p.page.user.username, "slug": p.page.slug, "title": p.page.title} for p in shared_by_others
         ]
@@ -480,7 +478,7 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
             return self.message_exception(trans, "No page id received for editing.")
         decoded_id = self.decode_id(id)
         user = trans.get_user()
-        p = trans.sa_session.query(model.Page).get(decoded_id)
+        p = trans.sa_session.get(model.Page, decoded_id)
         p = self.security_check(trans, p, check_ownership=True)
         if trans.request.method == "GET":
             if p.slug is None:
@@ -515,10 +513,7 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
                 return self.message_exception(
                     trans, "Page identifier can only contain lowercase letters, numbers, and dashes (-)."
                 )
-            elif (
-                p_slug != p.slug
-                and trans.sa_session.query(model.Page).filter_by(user=p.user, slug=p_slug, deleted=False).first()
-            ):
+            elif p_slug != p.slug and page_exists(trans.sa_session, p.user, p_slug):
                 return self.message_exception(trans, "Page id must be unique.")
             else:
                 p.title = p_title
@@ -535,7 +530,7 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
     @web.require_login()
     def display(self, trans, id, **kwargs):
         id = self.decode_id(id)
-        page = trans.sa_session.query(model.Page).get(id)
+        page = trans.sa_session.get(model.Page, id)
         if not page:
             raise web.httpexceptions.HTTPNotFound()
         return self.display_by_username_and_slug(trans, page.user.username, page.slug)
@@ -545,9 +540,8 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
         """Display page based on a username and slug."""
 
         # Get page.
-        session = trans.sa_session
-        user = session.query(model.User).filter_by(username=username).first()
-        page = trans.sa_session.query(model.Page).filter_by(user=user, slug=slug, deleted=False).first()
+        user = get_user_by_username(trans.sa_session, username)
+        page = get_page_(trans.sa_session, user, slug)
         if page is None:
             raise web.httpexceptions.HTTPNotFound()
 
@@ -605,7 +599,7 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
         """Get a page from the database by id."""
         # Load history from database
         id = self.decode_id(id)
-        page = trans.sa_session.query(model.Page).get(id)
+        page = trans.sa_session.get(model.Page, id)
         if not page:
             error("Page not found")
         else:
