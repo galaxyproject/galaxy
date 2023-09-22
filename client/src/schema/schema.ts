@@ -4807,10 +4807,11 @@ export interface components {
              */
             hid: number;
             /**
-             * Content Type
-             * @description The type of this item.
+             * History Content Type
+             * @description This is always `dataset` for datasets.
+             * @enum {string}
              */
-            history_content_type: components["schemas"]["HistoryContentType"];
+            history_content_type: "dataset";
             /**
              * History ID
              * @description The encoded ID of the history associated with this item.
@@ -5021,10 +5022,11 @@ export interface components {
              */
             hid: number;
             /**
-             * Content Type
-             * @description The type of this item.
+             * History Content Type
+             * @description This is always `dataset` for datasets.
+             * @enum {string}
              */
-            history_content_type: components["schemas"]["HistoryContentType"];
+            history_content_type: "dataset";
             /**
              * History ID
              * @description The encoded ID of the history associated with this item.
@@ -5136,10 +5138,11 @@ export interface components {
              */
             hid: number;
             /**
-             * Content Type
-             * @description The type of this item.
+             * History Content Type
+             * @description This is always `dataset_collection` for dataset collections.
+             * @enum {string}
              */
-            history_content_type: components["schemas"]["HistoryContentType"];
+            history_content_type: "dataset_collection";
             /**
              * History ID
              * @description The encoded ID of the history associated with this item.
@@ -5270,10 +5273,11 @@ export interface components {
              */
             hid: number;
             /**
-             * Content Type
-             * @description The type of this item.
+             * History Content Type
+             * @description This is always `dataset_collection` for dataset collections.
+             * @enum {string}
              */
-            history_content_type: components["schemas"]["HistoryContentType"];
+            history_content_type: "dataset_collection";
             /**
              * History ID
              * @description The encoded ID of the history associated with this item.
