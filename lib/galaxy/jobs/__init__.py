@@ -21,6 +21,7 @@ from json import loads
 
 import packaging.version
 import yaml
+from lxml import etree
 from pulsar.client.staging import COMMAND_VERSION_FILENAME
 
 import galaxy
@@ -576,7 +577,7 @@ class JobConfiguration(ConfiguresHandlers):
                             field_name, self.resource_parameters
                         )
                         raise KeyError(message)
-                    fields.append(self.resource_parameters[field_name])
+                    fields.append(etree.fromstring(self.resource_parameters[field_name]))
 
                 if fields:
                     conditional_element = parse_xml_string(self.JOB_RESOURCE_CONDITIONAL_XML)

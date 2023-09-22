@@ -914,7 +914,7 @@ def parse_resource_parameters(resource_param_file):
         resource_definitions_root = resource_definitions.getroot()
         for parameter_elem in resource_definitions_root.findall("param"):
             name = parameter_elem.get("name")
-            resource_parameters[name] = parameter_elem
+            resource_parameters[name] = etree.tostring(parameter_elem)
 
     return resource_parameters
 
