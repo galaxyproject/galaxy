@@ -9,6 +9,7 @@ from typing import (
 
 from typing_extensions import Unpack
 
+from galaxy.files.uris import validate_non_local
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
     get_charset_from_http_headers,
@@ -47,6 +48,10 @@ class HTTPFilesSource(BaseFilesSource):
         self._url_regex = re.compile(self._url_regex_str)
         self._props = props
 
+    @property
+    def _allowlist(self):
+        return self._file_sources_config.fetch_url_allowlist
+
     def _realize_to(
         self, source_path: str, native_path: str, user_context=None, opts: Optional[FilesSourceOptions] = None
     ):
@@ -54,10 +59,11 @@ class HTTPFilesSource(BaseFilesSource):
         extra_props: HTTPFilesSourceProperties = cast(HTTPFilesSourceProperties, opts.extra_props or {} if opts else {})
         headers = props.pop("http_headers", {}) or {}
         headers.update(extra_props.get("http_headers") or {})
-
         req = urllib.request.Request(source_path, headers=headers)
 
         with urllib.request.urlopen(req, timeout=DEFAULT_SOCKET_TIMEOUT) as page:
+            # Verify url post-redirects is still allowlisted
+            validate_non_local(page.geturl(), self._allowlist)
             f = open(native_path, "wb")  # fd will be .close()ed in stream_to_open_named_file
             return stream_to_open_named_file(
                 page, f.fileno(), native_path, source_encoding=get_charset_from_http_headers(page.headers)

@@ -230,13 +230,16 @@ class ConfiguredFileSourcesConfig:
     def __init__(
         self,
         symlink_allowlist=None,
+        fetch_url_allowlist=None,
         library_import_dir=None,
         user_library_import_dir=None,
         ftp_upload_dir=None,
         ftp_upload_purge=True,
     ):
         symlink_allowlist = symlink_allowlist or []
+        fetch_url_allowlist = fetch_url_allowlist or []
         self.symlink_allowlist = symlink_allowlist
+        self.fetch_url_allowlist = fetch_url_allowlist
         self.library_import_dir = library_import_dir
         self.user_library_import_dir = user_library_import_dir
         self.ftp_upload_dir = ftp_upload_dir
@@ -248,6 +251,7 @@ class ConfiguredFileSourcesConfig:
         # for this component.
         kwds = {}
         kwds["symlink_allowlist"] = getattr(config, "user_library_import_symlink_allowlist", [])
+        kwds["fetch_url_allowlist"] = getattr(config, "fetch_url_allowlist", [])
         kwds["library_import_dir"] = getattr(config, "library_import_dir", None)
         kwds["user_library_import_dir"] = getattr(config, "user_library_import_dir", None)
         kwds["ftp_upload_dir"] = getattr(config, "ftp_upload_dir", None)
@@ -257,6 +261,7 @@ class ConfiguredFileSourcesConfig:
     def to_dict(self):
         return {
             "symlink_allowlist": self.symlink_allowlist,
+            "fetch_url_allowlist": self.fetch_url_allowlist,
             "library_import_dir": self.library_import_dir,
             "user_library_import_dir": self.user_library_import_dir,
             "ftp_upload_dir": self.ftp_upload_dir,
@@ -267,6 +272,7 @@ class ConfiguredFileSourcesConfig:
     def from_dict(as_dict):
         return ConfiguredFileSourcesConfig(
             symlink_allowlist=as_dict["symlink_allowlist"],
+            fetch_url_allowlist=as_dict["fetch_url_allowlist"],
             library_import_dir=as_dict["library_import_dir"],
             user_library_import_dir=as_dict["user_library_import_dir"],
             ftp_upload_dir=as_dict["ftp_upload_dir"],
