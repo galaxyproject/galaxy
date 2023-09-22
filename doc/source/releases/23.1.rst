@@ -652,8 +652,17 @@ Fixes
   `Pull Request 16092`_
 .. bug_tag_tools
 
+* FileInput no longer accept 'U' in the file mode
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 16704`_
 .. bug_tag_workflows
 
+* Add missing join condition in job search
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 16710`_
+* Fix job search query
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 16714`_
 * Fix "database is locked" error (occurring in the context of workflow testing under SQLite)
   (thanks to `@jdavcs <https://github.com/jdavcs>`__).
   `Pull Request 16208`_
@@ -673,6 +682,9 @@ Fixes
   `Pull Request 16166`_
 .. bug_tag_jobs
 
+* Fix closed transaction error on galaxy startup/check jobs
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 16687`_
 * read job_conf directly from `config_dir` instead of computing it again from `config_file`
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 15596`_
@@ -689,6 +701,15 @@ Fixes
   `Pull Request 16280`_
 .. bug
 
+* Fix legend not scrollable in storage overview charts
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 16703`_
+* List extra files only for terminal datasets
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 16705`_
+* Fix collection id encoding
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 16718`_
 * linter: allow options elements in data params
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 14572`_

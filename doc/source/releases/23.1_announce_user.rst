@@ -149,6 +149,9 @@ Builtin Tool Updates
 ===========================================================
 
 .. tools
+* FileInput no longer accept 'U' in the file mode
+  (thanks to `@bgruening <https://github.com/bgruening>`__).
+  `Pull Request 16704`_
 * Deprecate tools/evolution
   (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
   `Pull Request 15656`_
