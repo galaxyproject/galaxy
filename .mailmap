@@ -7,8 +7,6 @@ Ahmed Hamid Awan <aawan@mindgrub.com> Ahmed Awan <qe66653@umbc.edu>
 Ahmed Hamid Awan <aawan@mindgrub.com> <78516064+ahmedhamidawan@users.noreply.github.com>
 Ahmed Hamid Awan <aawan@mindgrub.com> <qe66653@umbc.edu>
 Abdulrahman Azab <eng.azab@gmail.com> # GH user: abdulrahmanazab, one-line contribution, rewritten by John Chilton
-Anthony Bretaudeau <abretaud@irisa.fr> # GH user: abretaud 
-Anthony Bretaudeau <abretaud@irisa.fr> <anthony.bretaudeau@rennes.inra.fr>
 Adam Brenner <aebrenne@uci.edu> # GH user: abrenner, only commits to tools moved to tool shed (no longer in galaxy)
 Daniel Bouchard <danieljosephbouchard@gmail.com> <daniel.bouchard@phac-aspc.gc.ca> # GH user: Airistotal 
 Daniel Bouchard <danieljosephbouchard@gmail.com> <danieltos.bouchard@gmail.com>
@@ -40,13 +38,22 @@ Anil Thanki <thanki.anil@gmail.com> # GH user: anilthanki
 Anne Fouilloux <annefou@geo.uio.no> <annefou@uio.no> # GH user: annefou
 Ann Loraine <aloraine@uncc.edu>  # GH user: aloraine 
 Anthony Bretaudeau <anthony.bretaudeau@inria.fr> # GH user: abretaud
-<anthony.bretaudeau@inria.fr> <abretaud@irisa.fr>
+Anthony Bretaudeau <anthony.bretaudeau@inria.fr> <abretaud@irisa.fr>
+Anthony Bretaudeau <anthony.bretaudeau@inria.fr> <anthony.bretaudeau@rennes.inra.fr>
 <anthony.bretaudeau@inria.fr> <anthony.bretaudeau@irisa.fr>
 Anton Nekrutenko <anton@nekrut.org>  # GH user: nekrut
-<anton@nekrut.org> <anekrut@gmail.com>
+Anton Nekrutenko <anton@nekrut.org> <anekrut@gmail.com>
 <anton@nekrut.org> <anton@bx.psu.edu>
-<anton@nekrut.org> Anton Nekrutenko <anton@Antons-MacBook-Air.local>
+<anton@nekrut.org> <anton@Antons-MacBook-Air.local>
 Anup Kumar <anup.rulez@gmail.com>  # GH user: anuprulez
 Anup Kumar <anup.rulez@gmail.com> <kumara@informatik.uni-freiburg.de>
 
+Steven Shum <weiyanshum@gmail.com>  # GH user: shenweiyan
+Steven Shum <weiyanshum@gmail.com> <ishenweiyan@foxmail.com>
+Steven Shum <weiyanshum@gmail.com> <ishenweiyan@qq.com>
 
+Yvan Le Bras <yvan.le-bras@mnhn.fr>  # GH user: yvanlebras
+<yvan.le-bras@mnhn.fr> <yvan.le_bras@irisa.fr>
+zhuzi <110071444+undergone2345@users.noreply.github.com>  # GH user: undergone2345
+Zipho Mashologu <zipho.m@gmail.com>  # GH user: zipho
+<zipho.m@gmail.com> <zipho@trustpay.biz>
