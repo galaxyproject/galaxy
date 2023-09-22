@@ -51,6 +51,11 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
         }
     }
 
+    async function loadCollectionElements(collection: HDCASummary) {
+        const elements = await Service.fetchElementsFromHDCA({ hdca: collection });
+        Vue.set(storedCollectionElements.value, collection.id, elements);
+    }
+
     function saveCollections(historyContentsPayload: HistoryContentItemBase[]) {
         const collectionsInHistory = historyContentsPayload.filter(
             (entry) => entry.history_content_type === "dataset_collection"
@@ -65,6 +70,7 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
         storedCollectionElements,
         getCollectionElements,
         isLoadingCollectionElements,
+        loadCollectionElements,
         saveCollections,
     };
 });
