@@ -24,7 +24,6 @@ from sqlalchemy import (
     select,
     true,
 )
-from sqlalchemy.orm import Session
 from typing_extensions import Literal
 
 from galaxy import (
@@ -44,7 +43,6 @@ from galaxy.managers.base import (
     StorageCleanerManager,
 )
 from galaxy.managers.export_tracker import StoreExportTracker
-from galaxy.model import HistoryDatasetAssociation
 from galaxy.model.base import transaction
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
@@ -902,12 +900,3 @@ class HistoryFilters(sharable.SharableModelFilters, deletable.PurgableFiltersMix
 
     def username_contains(self, item, val: str) -> bool:
         return val.lower() in str(item.user.username).lower()
-
-
-def get_fasta_hdas_by_history(session: Session, history_id: int):
-    stmt = (
-        select(HistoryDatasetAssociation)
-        .filter_by(history_id=history_id, extension="fasta", deleted=False)
-        .order_by(HistoryDatasetAssociation.hid.desc())
-    )
-    return session.scalars(stmt).all()

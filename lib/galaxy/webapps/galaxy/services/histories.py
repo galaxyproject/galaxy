@@ -16,8 +16,10 @@ from typing import (
 
 from sqlalchemy import (
     false,
+    select,
     true,
 )
+from sqlalchemy.orm import Session
 
 from galaxy import (
     exceptions as glx_exceptions,
@@ -32,7 +34,6 @@ from galaxy.files.uris import validate_uri_access
 from galaxy.managers.citations import CitationsManager
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.managers.histories import (
-    get_fasta_hdas_by_history,
     HistoryDeserializer,
     HistoryExportManager,
     HistoryFilters,
@@ -41,6 +42,7 @@ from galaxy.managers.histories import (
 )
 from galaxy.managers.notification import NotificationManager
 from galaxy.managers.users import UserManager
+from galaxy.model import HistoryDatasetAssociation
 from galaxy.model.base import transaction
 from galaxy.model.store import payload_to_source_uri
 from galaxy.schema import (
@@ -788,3 +790,12 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
             if export_metadata and isinstance(export_metadata.request_data.payload, WriteStoreToPayload):
                 return export_metadata.request_data.payload
         return None
+
+
+def get_fasta_hdas_by_history(session: Session, history_id: int):
+    stmt = (
+        select(HistoryDatasetAssociation)
+        .filter_by(history_id=history_id, extension="fasta", deleted=False)
+        .order_by(HistoryDatasetAssociation.hid.desc())
+    )
+    return session.scalars(stmt).all()
