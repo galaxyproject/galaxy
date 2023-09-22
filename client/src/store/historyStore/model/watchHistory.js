@@ -84,7 +84,7 @@ export async function watchHistoryOnce(store) {
         historyStore.setHistory(history);
         datasetStore.saveDatasets(payload);
         historyItemsStore.saveHistoryItems(historyId, payload);
-        collectionElementsStore.saveCollectionElements(payload);
+        collectionElementsStore.saveCollections(payload);
         // trigger changes in legacy handler
         const Galaxy = getGalaxyInstance();
         if (Galaxy) {

@@ -24,7 +24,7 @@ describe("useCollectionElementsStore", () => {
         const store = useCollectionElementsStore();
         expect(store.storedCollections).toEqual({});
 
-        store.saveCollectionObjects(collections);
+        store.saveCollections(collections);
 
         expect(store.storedCollections).toEqual({
             "1": collection1,

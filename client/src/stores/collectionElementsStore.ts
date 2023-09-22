@@ -51,7 +51,7 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
         }
     }
 
-    function saveCollectionObjects(historyContentsPayload: HistoryContentItemBase[]) {
+    function saveCollections(historyContentsPayload: HistoryContentItemBase[]) {
         const collectionsInHistory = historyContentsPayload.filter(
             (entry) => entry.history_content_type === "dataset_collection"
         ) as HDCASummary[];
@@ -65,6 +65,6 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
         storedCollectionElements,
         getCollectionElements,
         isLoadingCollectionElements,
-        saveCollectionObjects,
+        saveCollections,
     };
 });
