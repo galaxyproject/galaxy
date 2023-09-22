@@ -99,6 +99,8 @@ class LibraryContentsController(
             return rval
 
         library = trans.sa_session.get(Library, self.decode_id(library_id))
+        if not library:
+            raise exceptions.RequestParameterInvalidException("No library found with the id provided.")
         if not (trans.user_is_admin or trans.app.security_agent.can_access_library(current_user_roles, library)):
             raise exceptions.RequestParameterInvalidException("No library found with the id provided.")
         encoded_id = f"F{trans.security.encode_id(library.root_folder.id)}"
