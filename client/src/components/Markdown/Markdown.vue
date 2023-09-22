@@ -1,86 +1,60 @@
 <template>
     <div class="markdown-wrapper">
-        <LoadingSpan v-if="loading" />
+        <loading-span v-if="loading" />
         <div v-else>
-            <a v-if="effectiveExportLink" :href="exportLink" class="markdown-export position-absolute p-3">
-                <i class="fa fa-3x fa-download" />
-            </a>
             <div>
+                <sts-download-button
+                    v-if="effectiveExportLink"
+                    class="float-right markdown-pdf-export"
+                    :fallback-url="exportLink"
+                    :download-endpoint="downloadEndpoint"
+                    size="sm"
+                    title="Generate PDF">
+                </sts-download-button>
                 <b-button
                     v-if="!readOnly"
-                    class="float-right"
-                    title="Edit Markdown"
-                    variant="link"
+                    v-b-tooltip.hover
+                    class="float-right markdown-edit mr-2"
                     role="button"
-                    v-b-tooltip.hover.bottom
-                    @click="$emit('onEdit')"
-                >
+                    size="sm"
+                    title="Edit Markdown"
+                    @click="$emit('onEdit')">
+                    Edit
                     <font-awesome-icon icon="edit" />
                 </b-button>
-                <h3 class="float-right align-middle mr-1 mt-2">Galaxy {{ markdownConfig.model_class }}</h3>
-                <span class="float-left font-weight-light mb-3">
-                    <small>Title: {{ markdownConfig.title || markdownConfig.model_class }}</small
-                    ><br />
-                    <small>Username: {{ markdownConfig.username }}</small>
+                <h1 class="float-right align-middle mr-2 mt-1 h-md">Galaxy {{ markdownConfig.model_class }}</h1>
+                <span class="float-left font-weight-light">
+                    <h1 class="text-break align-middle">
+                        Title: {{ markdownConfig.title || markdownConfig.model_class }}
+                    </h1>
                 </span>
             </div>
-            <b-badge variant="info" class="w-100 rounded mb-3">
-                <div class="float-left m-1">Created with Galaxy {{ getVersion }} on {{ getTime }}</div>
-                <div class="float-right m-1">Identifier {{ markdownConfig.id }}</div>
+            <b-badge variant="info" class="w-100 rounded mb-3 white-space-normal">
+                <div class="float-left m-1 text-break">Generated with Galaxy {{ version }} on {{ time }}</div>
+                <div class="float-right m-1">Identifier: {{ markdownConfig.id }}</div>
             </b-badge>
             <div>
                 <b-alert v-if="markdownErrors.length > 0" variant="warning" show>
                     <div v-for="(obj, index) in markdownErrors" :key="index" class="mb-1">
-                        <h5>{{ obj.error || "Error" }}</h5>
+                        <h2 class="h-text">{{ obj.error || "Error" }}</h2>
                         {{ obj.line }}
                     </div>
                 </b-alert>
             </div>
-            <div v-for="(obj, index) in markdownObjects" :key="index">
-                <p v-if="obj.name == 'default'" v-html="obj.content" class="text-justify m-2" />
-                <div v-else-if="obj.name == 'generate_galaxy_version'" class="galaxy-version">
-                    <pre><code>{{ getVersion }}</code></pre>
-                </div>
-                <div v-else-if="obj.name == 'generate_time'" class="galaxy-time">
-                    <pre><code>{{ getTime }}</code></pre>
-                </div>
-                <HistoryDatasetAsImage v-else-if="obj.name == 'history_dataset_as_image'" :args="obj.args" />
-                <HistoryDatasetLink v-else-if="obj.name == 'history_dataset_link'" :args="obj.args" />
-                <HistoryDatasetIndex v-else-if="obj.name == 'history_dataset_index'" :args="obj.args" />
-                <InvocationTime v-else-if="obj.name == 'invocation_time'" :args="obj.args" :invocations="invocations" />
-                <JobMetrics v-else-if="obj.name == 'job_metrics'" :args="obj.args" />
-                <JobParameters v-else-if="obj.name == 'job_parameters'" :args="obj.args" />
-                <WorkflowDisplay v-else-if="obj.name == 'workflow_display'" :args="obj.args" :workflows="workflows" />
-                <HistoryDatasetCollectionDisplay
-                    v-else-if="obj.name == 'history_dataset_collection_display'"
-                    :args="obj.args"
-                    :collections="historyDatasetCollections"
-                />
-                <ToolStd
-                    v-else-if="['tool_stdout', 'tool_stderr'].includes(obj.name)"
-                    :args="obj.args"
+            <div v-for="(obj, index) in markdownObjects" :key="index" class="markdown-components">
+                <p v-if="obj.name == 'default'" class="text-justify m-2" v-html="obj.content" />
+                <markdown-container
+                    v-else
                     :name="obj.name"
+                    :args="obj.args"
+                    :datasets="datasets"
+                    :collections="collections"
+                    :histories="histories"
+                    :invocations="invocations"
                     :jobs="jobs"
-                />
-                <HistoryDatasetDisplay
-                    v-else-if="['history_dataset_embedded', 'history_dataset_display'].includes(obj.name)"
-                    :args="obj.args"
-                    :datasets="historyDatasets"
-                    :embedded="obj.name == 'history_dataset_embedded'"
-                />
-                <HistoryDatasetDetails
-                    v-else-if="
-                        [
-                            'history_dataset_name',
-                            'history_dataset_info',
-                            'history_dataset_peek',
-                            'history_dataset_type',
-                        ].includes(obj.name)
-                    "
-                    :name="obj.name"
-                    :args="obj.args"
-                    :datasets="historyDatasets"
-                />
+                    :time="time"
+                    :version="version"
+                    :workflows="workflows" />
             </div>
         </div>
     </div>
@@ -90,56 +64,51 @@
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import store from "store";
-import { getGalaxyInstance } from "app";
 import MarkdownIt from "markdown-it";
+import markdownItRegexp from "markdown-it-regexp";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faEdit } from "@fortawesome/free-solid-svg-icons";
+import { faDownload, faEdit } from "@fortawesome/free-solid-svg-icons";
 
-import LoadingSpan from "components/LoadingSpan";
-import HistoryDatasetAsImage from "./Elements/HistoryDatasetAsImage";
-import HistoryDatasetDisplay from "./Elements/HistoryDatasetDisplay";
-import HistoryDatasetLink from "./Elements/HistoryDatasetLink";
-import HistoryDatasetIndex from "./Elements/HistoryDatasetIndex";
-import HistoryDatasetCollectionDisplay from "./Elements/HistoryDatasetCollection/CollectionDisplay";
-import HistoryDatasetDetails from "./Elements/HistoryDatasetDetails";
-import InvocationTime from "./Elements/InvocationTime";
-import JobMetrics from "./Elements/JobMetrics";
-import JobParameters from "./Elements/JobParameters";
-import ToolStd from "./Elements/ToolStd";
-import WorkflowDisplay from "./Elements/Workflow/WorkflowDisplay";
+import LoadingSpan from "components/LoadingSpan.vue";
+import StsDownloadButton from "components/StsDownloadButton.vue";
+import MarkdownContainer from "./MarkdownContainer.vue";
 
 const FUNCTION_VALUE_REGEX = `\\s*(?:[\\w_\\-]+|\\"[^\\"]+\\"|\\'[^\\']+\\')\\s*`;
-const FUNCTION_CALL = `\\s*\\w+\\s*=` + FUNCTION_VALUE_REGEX;
+const FUNCTION_CALL = `\\s*[\\w\\|]+\\s*=` + FUNCTION_VALUE_REGEX;
 const FUNCTION_CALL_LINE = `\\s*(\\w+)\\s*\\(\\s*(?:(${FUNCTION_CALL})(,${FUNCTION_CALL})*)?\\s*\\)\\s*`;
 const FUNCTION_CALL_LINE_TEMPLATE = new RegExp(FUNCTION_CALL_LINE, "m");
 
+const mdNewline = markdownItRegexp(/<br>/, () => {
+    return "<div style='clear:both;'/><br>";
+});
+
 const md = MarkdownIt();
+md.use(mdNewline);
 
 Vue.use(BootstrapVue);
 
-library.add(faEdit);
+library.add(faDownload, faEdit);
 
 export default {
     store: store,
     components: {
-        HistoryDatasetDetails,
-        HistoryDatasetAsImage,
-        HistoryDatasetCollectionDisplay,
-        HistoryDatasetDisplay,
-        HistoryDatasetIndex,
-        HistoryDatasetLink,
-        JobMetrics,
-        JobParameters,
-        LoadingSpan,
-        ToolStd,
-        WorkflowDisplay,
-        InvocationTime,
+        MarkdownContainer,
         FontAwesomeIcon,
+        LoadingSpan,
+        StsDownloadButton,
     },
     props: {
         markdownConfig: {
             type: Object,
+            default: null,
+        },
+        enable_beta_markdown_export: {
+            type: Boolean,
+            default: false,
+        },
+        downloadEndpoint: {
+            type: String,
             default: null,
         },
         readOnly: {
@@ -155,8 +124,9 @@ export default {
         return {
             markdownObjects: [],
             markdownErrors: [],
-            historyDatasets: {},
-            historyDatasetCollections: {},
+            datasets: {},
+            histories: {},
+            collections: {},
             workflows: {},
             jobs: {},
             invocations: {},
@@ -164,10 +134,10 @@ export default {
         };
     },
     computed: {
-        getVersion() {
-            return this.markdownConfig.generate_version || "Unknown Galaxy Version";
+        effectiveExportLink() {
+            return this.enable_beta_markdown_export ? this.exportLink : null;
         },
-        getTime() {
+        time() {
             const generateTime = this.markdownConfig.generate_time;
             if (generateTime) {
                 const date = new Date(generateTime);
@@ -181,25 +151,34 @@ export default {
             }
             return "unavailable";
         },
-        effectiveExportLink() {
-            const Galaxy = getGalaxyInstance();
-            return Galaxy.config.enable_beta_markdown_export ? this.exportLink : null;
+        version() {
+            return this.markdownConfig.generate_version || "Unknown Galaxy Version";
         },
     },
     watch: {
-        markdownConfig: function (config) {
-            const markdown = config.markdown;
-            this.markdownErrors = config.errors || [];
-            this.markdownObjects = this.splitMarkdown(markdown);
-            this.historyDatasets = config.history_datasets || {};
-            this.historyDatasetCollections = config.history_dataset_collections || {};
-            this.workflows = config.workflows || {};
-            this.jobs = config.jobs || {};
-            this.invocations = config.invocations || {};
-            this.loading = false;
+        markdownConfig() {
+            this.initConfig();
         },
     },
+    created() {
+        this.initConfig();
+    },
     methods: {
+        initConfig() {
+            if (Object.keys(this.markdownConfig).length) {
+                const config = this.markdownConfig;
+                const markdown = config.content || config.markdown;
+                this.markdownErrors = config.errors || [];
+                this.markdownObjects = this.splitMarkdown(markdown);
+                this.datasets = config.history_datasets || {};
+                this.histories = config.histories || {};
+                this.collections = config.history_dataset_collections || {};
+                this.workflows = config.workflows || {};
+                this.jobs = config.jobs || {};
+                this.invocations = config.invocations || {};
+                this.loading = false;
+            }
+        },
         splitMarkdown(markdown) {
             const sections = [];
             let digest = markdown;
@@ -250,7 +229,9 @@ export default {
             // we need [... ] to return empty string, if regex doesn't match
             const function_arguments = [...content.matchAll(new RegExp(FUNCTION_CALL, "g"))];
             for (let i = 0; i < function_arguments.length; i++) {
-                if (function_arguments[i] === undefined) continue;
+                if (function_arguments[i] === undefined) {
+                    continue;
+                }
                 const arguments_str = function_arguments[i].toString().replace(/,/g, "").trim();
                 if (arguments_str) {
                     const [key, val] = arguments_str.split("=");
@@ -266,10 +247,3 @@ export default {
     },
 };
 </script>
-<style scoped>
-.markdown-export {
-    bottom: 0;
-    right: 0;
-    opacity: 0.5;
-}
-</style>

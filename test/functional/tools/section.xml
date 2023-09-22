@@ -1,8 +1,8 @@
-<tool id="section" name="section">
-    <command>
-        echo "$int.inttest"   >> $out_file1; 
-        echo "$float.floattest" >> $out_file1; 
-    </command>
+<tool id="section" name="section" version="1.0.0">
+    <command><![CDATA[
+echo $int.inttest > '$out_file1' &&
+echo $float.floattest >> '$out_file1'
+    ]]></command>
     <inputs>
         <section name="int" title="Integer Section" expanded="true">
             <param name="inttest" value="1" type="integer" />

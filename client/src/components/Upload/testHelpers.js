@@ -2,14 +2,12 @@ import _ from "underscore";
 import Backbone from "backbone";
 import "utils/uploadbox";
 import { mount, createLocalVue } from "@vue/test-utils";
-import { getNewAttachNode } from "jest/helpers";
+import BootstrapVue from "bootstrap-vue";
 
-export function mountWithApp(component, options = {}, propsData_ = {}) {
-    const app = _.defaults(options, {
+export const createMockDetails = (options = {}) => {
+    return _.defaults(options, {
         defaultExtension: "auto",
-        currentFtp: () => {
-            return "ftp://localhost";
-        },
+        currentFtp: "ftp://localhost",
         model: new Backbone.Model(),
         effectiveExtensions: [
             { id: "ab1", text: "ab1", description: "A binary sequence file in 'ab1' format with a '.ab1'" },
@@ -32,15 +30,23 @@ export function mountWithApp(component, options = {}, propsData_ = {}) {
             },
         ],
     });
-    const propsData = _.defaults(propsData_, { app });
+};
+
+export function mountWithDetails(component, options = {}, propsData_ = {}) {
+    const details = createMockDetails(options);
+    const propsData = _.defaults(propsData_, { details });
+
     const localVue = createLocalVue();
+    localVue.use(BootstrapVue);
+
     const wrapper = mount(component, {
         propsData,
         localVue,
-        attachTo: getNewAttachNode(),
+        attachTo: document.body,
         stubs: {
             select2: true,
         },
     });
+
     return { wrapper, localVue };
 }

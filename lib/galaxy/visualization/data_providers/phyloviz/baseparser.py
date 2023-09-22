@@ -1,4 +1,8 @@
 import json
+from typing import (
+    Any,
+    Dict,
+)
 
 
 class Node:
@@ -14,6 +18,8 @@ class Node:
         self.length, self.bootstrap = kwargs.get("length", 0), kwargs.get("bootstrap", None)
         self.events = kwargs.get("events", "")
 
+        self.parent = None
+
         # clean up boot strap values
         if self.bootstrap == -1:
             self.bootstrap = None
@@ -26,23 +32,18 @@ class Node:
             self.children += child
 
     def __str__(self):
-        return self.name + " id:" + str(self.id) + ", depth: " + str(self.depth)
+        return f"{self.name} id:{str(self.id)}, depth: {str(self.depth)}"
 
-    def toJson(self):
+    def toJson(self) -> Dict[str, Any]:
         """Converts the data in the node to a dict representation of json"""
-        thisJson = {
-            "name"      : self.name,
-            "id"        : self.id,
-            "depth"     : self.depth,
-            "dist"      : self.length
-        }
+        thisJson = {"name": self.name, "id": self.id, "depth": self.depth, "dist": self.length}
         thisJson = self.addChildrenToJson(thisJson)
         thisJson = self.addMiscToJson(thisJson)
         return thisJson
 
     def addChildrenToJson(self, jsonDict):
         """Needs a special method to addChildren, such that the key does not appear in the Jsondict when the children is empty
-        this requirement is due to the layout algorithm used by d3 layout for hiding subtree """
+        this requirement is due to the layout algorithm used by d3 layout for hiding subtree"""
         if len(self.children) > 0:
             children = [node.toJson() for node in self.children]
             jsonDict["children"] = children
@@ -79,7 +80,7 @@ class PhyloTree:
         self.id += 1
         return Node(nodeName, **kwargs)
 
-    def addRoot(self, root):
+    def addRoot(self, root: Node):
         """Creates a root for phyloTree"""
         assert isinstance(root, Node)
         root.parent = None
@@ -88,7 +89,7 @@ class PhyloTree:
     def generateJsonableDict(self):
         """Changes itself into a dictonary by recurssively calling the tojson on all its nodes. Think of it
         as a dict in an array of dict in an array of dict and so on..."""
-        jsonTree = ""
+        jsonTree: Dict[str, Any]
         if self.root:
             assert isinstance(self.root, Node)
             jsonTree = self.root.toJson()

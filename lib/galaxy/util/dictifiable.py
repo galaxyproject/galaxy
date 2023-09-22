@@ -1,21 +1,24 @@
 import datetime
 import uuid
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Optional,
+)
 
 
 def dict_for(obj, **kwds):
     # Create dict to represent item.
-    return dict(
-        model_class=obj.__class__.__name__,
-        **kwds
-    )
+    return dict(model_class=obj.__class__.__name__, **kwds)
 
 
 class Dictifiable:
-    """ Mixin that enables objects to be converted to dictionaries. This is useful
-        when for sharing objects across boundaries, such as the API, tool scripts,
-        and JavaScript code. """
+    """Mixin that enables objects to be converted to dictionaries. This is useful
+    when for sharing objects across boundaries, such as the API, tool scripts,
+    and JavaScript code."""
 
-    def to_dict(self, view='collection', value_mapper=None):
+    def to_dict(self, view: str = "collection", value_mapper: Optional[Dict[str, Callable]] = None) -> Dict[str, Any]:
         """
         Return item dictionary.
         """
@@ -32,8 +35,9 @@ class Dictifiable:
             try:
                 return item.to_dict(view=view, value_mapper=value_mapper)
             except Exception:
+                assert value_mapper is not None
                 if key in value_mapper:
-                    return value_mapper.get(key)(item)
+                    return value_mapper[key](item)
                 if type(item) == datetime.datetime:
                     return item.isoformat()
                 elif type(item) == uuid.UUID:
@@ -50,9 +54,9 @@ class Dictifiable:
 
         # Fill item dict with visible keys.
         try:
-            visible_keys = self.__getattribute__('dict_' + view + '_visible_keys')
+            visible_keys = self.__getattribute__(f"dict_{view}_visible_keys")
         except AttributeError:
-            raise Exception('Unknown Dictifiable view: %s' % view)
+            raise Exception(f"Unknown Dictifiable view: {view}")
         for key in visible_keys:
             try:
                 item = self.__getattribute__(key)

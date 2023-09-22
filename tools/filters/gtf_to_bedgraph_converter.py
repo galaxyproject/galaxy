@@ -21,29 +21,29 @@ def __main__():
     # Do conversion.
     skipped_lines = 0
     first_skipped_line = 0
-    out = open(tmp_name1, 'w')
+    out = open(tmp_name1, "w")
 
     # Write track data to temporary file.
     i = 0
     for i, line in enumerate(open(input_name)):
-        line = line.rstrip('\r\n')
+        line = line.rstrip("\r\n")
 
-        if line and not line.startswith('#'):
+        if line and not line.startswith("#"):
             try:
-                elems = line.split('\t')
+                elems = line.split("\t")
                 start = str(int(elems[3]) - 1)  # GTF coordinates are 1-based, BedGraph are 0-based.
                 strand = elems[6]
-                if strand not in ['+', '-']:
-                    strand = '+'
+                if strand not in ["+", "-"]:
+                    strand = "+"
                 attributes_list = elems[8].split(";")
                 attributes = {}
                 for name_value_pair in attributes_list:
                     pair = name_value_pair.strip().split(" ")
                     name = pair[0].strip()
-                    if name == '':
+                    if name == "":
                         continue
                     # Need to strip double quote from values
-                    value = pair[1].strip(" \"")
+                    value = pair[1].strip(' "')
                     attributes[name] = value
                 value = attributes[attribute_name]
                 # GTF format: chrom source, name, chromStart, chromEnd, score, strand, frame, attributes.
@@ -79,7 +79,10 @@ def __main__():
 
     info_msg = "%i lines converted to BEDGraph.  " % (i + 1 - skipped_lines)
     if skipped_lines > 0:
-        info_msg += "Skipped %d blank/comment/invalid lines starting with line #%d." % (skipped_lines, first_skipped_line)
+        info_msg += "Skipped %d blank/comment/invalid lines starting with line #%d." % (
+            skipped_lines,
+            first_skipped_line,
+        )
     print(info_msg)
 
 

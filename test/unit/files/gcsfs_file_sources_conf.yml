@@ -1,0 +1,11 @@
+- type: googlecloudstorage
+  id: test1
+  doc: Test access to Google Cloud Storage.
+  project: ${user.preferences['googlecloudstorage|project']}
+  bucket_name: 'genomics-public-data'
+  token_uri: "https://www.googleapis.com/oauth2/v4/token"
+  client_id: ${user.preferences['googlecloudstorage|client_id']}
+  client_secret: ${user.preferences['googlecloudstorage|client_secret']}
+  token: ${user.preferences['googlecloudstorage|access_token']}
+  refresh_token: ${user.preferences['googlecloudstorage|refresh_token']}
+  anonymous: true

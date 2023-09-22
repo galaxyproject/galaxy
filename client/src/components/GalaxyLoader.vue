@@ -1,9 +1,8 @@
 <template>
     <div
         class="galaxy-loader"
-        :class="[`galaxy-loader_${style}`, { 'galaxy-loader_center': center }]"
-        :style="{ transform: `scale(${size / 100})` }"
-    >
+        :class="[`galaxy-loader_${variant}`, { 'galaxy-loader_center': center }]"
+        :style="{ transform: `scale(${size / 100})` }">
         <div class="galaxy-loader_strip-1"></div>
         <div class="galaxy-loader_strip-2"></div>
         <div class="galaxy-loader_strip-3"></div>
@@ -13,7 +12,7 @@
 <script>
 export default {
     props: {
-        style: {
+        variant: {
             type: String,
             default: "light",
         },

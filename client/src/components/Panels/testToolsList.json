@@ -1,0 +1,72 @@
+[
+    {
+        "model_class": "ToolSection",
+        "id": "group_1",
+        "name": "Group 1",
+        "elems": [
+            {
+                "model_class": "Tool",
+                "name": "Join",
+                "id": "join1",
+                "description": "two files",
+                "panel_section_id": "group_1",
+                "panel_section_name": "Group 1"
+            },
+            {
+                "model_class": "Tool",
+                "name": "Remove",
+                "id": "remove1",
+                "description": "lines",
+                "panel_section_id": "group_1",
+                "panel_section_name": "Group 1"
+            },
+            {
+                "model_class": "Tool",
+                "name": "Cut",
+                "id": "cut1",
+                "description": "lines",
+                "panel_section_id": "group_1",
+                "panel_section_name": "Group 1"
+            },
+            {
+                "model_class": "Tool",
+                "name": "Find",
+                "id": "find1",
+                "description": "joined dataset",
+                "panel_section_id": "group_1",
+                "panel_section_name": "Group 1"
+            }
+        ]
+    },
+    {
+        "model_class": "ToolSection",
+        "id": "group_2",
+        "name": "Group 2",
+        "elems": [
+            {
+                "model_class": "Tool",
+                "name": "Join Collections",
+                "id": "join_collections",
+                "description": "",
+                "panel_section_id": "group_2",
+                "panel_section_name": "Group 2"
+            },
+            {
+                "model_class": "Tool",
+                "name": "Create Collections",
+                "id": "create_collections",
+                "description": "from datasets",
+                "panel_section_id": "group_2",
+                "panel_section_name": "Group 2"
+            }
+        ]
+    },
+    {
+        "model_class": "Tool",
+        "name": "Remove duplicate",
+        "id": "remove_duplicate",
+        "description": "lines from dataset",
+        "panel_section_id": "remove_duplicate",
+        "panel_section_name": "Remove duplicate"
+    }
+]

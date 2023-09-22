@@ -9,8 +9,8 @@
     </outputs>
     <tests>
         <test>
-            <param name="input1" format="gff" value="gff_filter_by_feature_count_out2.gff"/>
-            <output name="output1" format="interval_index" value="interval_index_filter_by_feature_count_out2.interval_index"/>
+            <param name="input1" ftype="gff" value="gff_filter_by_feature_count_out2.gff"/>
+            <output name="output1" ftype="interval_index" value="interval_index_filter_by_feature_count_out2.interval_index"/>
         </test>
     </tests>
     <help>

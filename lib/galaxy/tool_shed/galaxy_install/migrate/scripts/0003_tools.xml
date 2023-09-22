@@ -1,6 +1,0 @@
-<?xml version="1.0"?>
-<toolshed name="toolshed.g2.bx.psu.edu">
-    <repository name="freebayes" description="Galaxy Freebayes Bayesian genetic variant detector tool" changeset_revision="213a3d6b579a">
-        <tool id="freebayes" version="0.0.2 " file="variant_detection/freebayes.xml" />
-    </repository>
-</toolshed>

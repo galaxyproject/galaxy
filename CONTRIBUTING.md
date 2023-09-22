@@ -41,7 +41,10 @@ Git](https://swcarpentry.github.io/git-novice/) tutorial is a good place to
 start.  More learning resources are listed at
 https://help.github.com/en/github/getting-started-with-github/git-and-github-learning-resources
 
-1. Make sure you have a free [GitHub](https://github.com/) account.
+1. Make sure you have a free [GitHub](https://github.com/) account. To increase
+   the security of your account, we strongly recommend that you configure
+   [two-factor authentication](https://docs.github.com/en/github/authenticating-to-github/securing-your-account-with-two-factor-authentication-2fa).
+   Additionally, you may want to [sign your commits](https://docs.github.com/en/github/authenticating-to-github/managing-commit-signature-verification).
 
 2. Fork the [galaxy repository](https://github.com/galaxyproject/galaxy) on
    GitHub to make your changes.  To keep your copy up to date with respect to
@@ -68,7 +71,7 @@ https://help.github.com/en/github/getting-started-with-github/git-and-github-lea
      issue (`git checkout -b bugfix_branch release_XX.XX`).
 
    * Serious security problems should not be fixed via pull request - please see
-     [the Galaxy security policies](SECURITY_POLICY.md) for information about
+     [the Galaxy security policies](SECURITY.md) for information about
      responsibly disclosing security issues.
 
 4. If your changes modify code please ensure the resulting files conform to
@@ -88,10 +91,23 @@ https://help.github.com/en/github/getting-started-with-github/git-and-github-lea
    Developers reviewing your pull request will be happy to help you add or run
    the relevant tests as part of the pull request review process.
 
-6. Commit and push your changes to your
+6. Write a useful and properly formatted commit message.
+   Follow [these guidelines and template](https://git-scm.com/book/en/v2/Distributed-Git-Contributing-to-a-Project#_commit_guidelines),
+   in particular start your message with a short imperative sentence on a single
+   line, possibly followed by a blank line and a more detailed explanation.
+
+   In the detailed explanation it's good to include relevant external references
+   (e.g. GitHub issue fixed) using full URLs, and errors or tracebacks the
+   commit is supposed to fix.
+   You can use the Markdown syntax for lists and code highlighting, wrapping the
+   explanation text at 72 characters when possible.
+
+   Example of a good commit message: https://github.com/galaxyproject/galaxy/commit/0429c4d515536f9cca6b70b2abeb019de807c955
+
+7. Commit and push your changes to your
    [fork](https://help.github.com/en/github/using-git/pushing-commits-to-a-remote-repository).
 
-7. Open a [pull
+8. Open a [pull
    request](https://help.github.com/en/github/collaborating-with-issues-and-pull-requests/creating-a-pull-request)
    with these changes. Your pull request message ideally should include:
 
@@ -101,11 +117,38 @@ https://help.github.com/en/github/getting-started-with-github/git-and-github-lea
 
    * How to test the changes, if you haven't included specific tests already.
 
-8. The pull request should pass all the continuous integration tests which are
+9. The pull request should pass all the continuous integration tests which are
    automatically started by GitHub using e.g. Travis CI.
 
-9. Your pull request will be handled according to [some
-   rules](doc/source/project/organization.rst#handling-pull-requests).
+10. Your pull request will be handled according to [some
+    rules](doc/source/project/organization.rst#handling-pull-requests).
+
+11. If, before your pull request is merged, conflicts arise between your branch
+    and the target branch (because other commits were pushed to the target
+    branch), you need to either:
+
+    1) [rebase your branch](https://git-scm.com/docs/git-rebase) on top of the
+       target branch, or
+    2) merge the target branch into your branch.
+
+    We recommend the first approach (i.e. rebasing) because it produces cleaner
+    git histories, which are easier to bisect. If your branch is called
+    `feature_branch` and your target branch is `dev`, you can rebase your branch
+    with the following commands:
+
+    ```
+    $ git checkout feature_branch
+    $ git pull
+    $ git fetch upstream
+    $ git rebase upstream/dev
+    ```
+
+    Once you have resolved the conflicts in all commits of your branch, you can
+    force-push the rebased branch to update the pull request:
+
+    ```
+    $ git push --force
+    ```
 
 ## Style guidelines
 
@@ -114,14 +157,30 @@ https://help.github.com/en/github/getting-started-with-github/git-and-github-lea
 - Galaxy follows [PEP-8](https://www.python.org/dev/peps/pep-0008/), with
   particular emphasis on readability being the ultimate goal:
   - 4 spaces (not tabs!) per indentation level
-  - divergences from PEP-8 are listed in the `[flake8]` section of the `setup.cfg`
-  file.
-- Python imports should be ordered following the
-  [smarkets](https://github.com/PyCQA/flake8-import-order/blob/master/tests/test_cases/complete_smarkets.py)
-  style.
+  - divergences from PEP-8 are listed in the `[flake8]` section of the `.flake8`
+    file and in the `[tool.ruff]` section of the `pyproject.toml` file.
+  - The Python code base is automatically formatted using
+    [isort](https://pycqa.github.io/isort/) (for imports) and
+    [black](https://black.readthedocs.io). To easily format your Python code
+    before submitting your contribution, please either use `make diff-format`
+    or run `isort FILE; black FILE` for each FILE you modify.
 - Python [docstrings](http://www.python.org/dev/peps/pep-0257/) need to be in
   [reStructured Text (RST)](https://docutils.sourceforge.io/rst.html) format and
   compatible with [Sphinx](https://www.sphinx-doc.org).
+
+## Documentation
+
+General documentation (e.g. admin, development, release notes) is found in the
+``doc/source/`` directory.
+The documentation source files need to be written in one of these markup
+languages:
+- [reStructuredText](https://www.sphinx-doc.org/en/master/usage/restructuredtext/index.html)
+  (with Sphinx extensions)
+- [Markdown](https://myst-parser.readthedocs.io/en/latest/syntax/typography.html)
+  (with MyST-Parser extensions).
+These source files are then built into HTML documentation with
+[Sphinx](https://www.sphinx-doc.org/) by running ``make docs`` and published on
+the [Galaxy Documentation website](https://docs.galaxyproject.org/).
 
 ## A Quick Note about Tools
 

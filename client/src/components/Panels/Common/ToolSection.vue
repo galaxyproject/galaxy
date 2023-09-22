@@ -1,38 +1,40 @@
 <template>
     <div v-if="isSection && hasElements" class="tool-panel-section">
-        <div :class="['toolSectionTitle', `tool-menu-section-${sectionName}`]">
-            <a @click="toggleMenu" href="javascript:void(0)" role="button">
+        <div
+            v-b-tooltip.topright.hover.noninteractive
+            :class="['toolSectionTitle', `tool-menu-section-${sectionName}`]"
+            :title="title">
+            <a class="title-link" href="javascript:void(0)" @click="toggleMenu()">
                 <span class="name">
-                    {{ this.name }}
+                    {{ name }}
                 </span>
+                <ToolPanelLinks :links="links" />
             </a>
         </div>
         <transition name="slide">
             <div v-if="opened">
-                <template v-for="[key, el] in category.elems.entries()">
-                    <div v-if="el.text" class="tool-panel-label" :key="key">
-                        {{ el.text }}
-                    </div>
+                <template v-for="[key, el] in sortedElements">
+                    <ToolPanelLabel
+                        v-if="category.text || el.model_class === 'ToolSectionLabel'"
+                        :key="key"
+                        :definition="el" />
                     <tool
                         v-else
+                        :key="key"
                         class="ml-2"
                         :tool="el"
-                        :key="key"
                         :tool-key="toolKey"
                         :hide-name="hideName"
                         :operation-title="operationTitle"
                         :operation-icon="operationIcon"
                         @onOperation="onOperation"
-                        @onClick="onClick"
-                    />
+                        @onClick="onClick" />
                 </template>
             </div>
         </transition>
     </div>
     <div v-else>
-        <div v-if="category.text" class="tool-panel-label">
-            {{ category.text }}
-        </div>
+        <ToolPanelLabel v-if="category.text" :definition="category" />
         <tool
             v-else
             :tool="category"
@@ -40,19 +42,24 @@
             :operation-title="operationTitle"
             :operation-icon="operationIcon"
             @onOperation="onOperation"
-            @onClick="onClick"
-        />
+            @onClick="onClick" />
     </div>
 </template>
 
 <script>
 import Tool from "./Tool";
+import ToolPanelLabel from "./ToolPanelLabel";
 import ariaAlert from "utils/ariaAlert";
+import ToolPanelLinks from "./ToolPanelLinks";
+
+import { useConfig } from "composables/config";
 
 export default {
     name: "ToolSection",
     components: {
         Tool,
+        ToolPanelLabel,
+        ToolPanelLinks,
     },
     props: {
         category: {
@@ -89,29 +96,92 @@ export default {
             type: Boolean,
             default: false,
         },
+        sortItems: {
+            type: Boolean,
+            default: true,
+        },
+    },
+    setup() {
+        const { config, isLoaded } = useConfig();
+        return {
+            config,
+            isLoaded,
+        };
     },
     data() {
         return {
             opened: this.expanded || this.checkFilter(),
+            hover: false,
         };
-    },
-    watch: {
-        queryFilter() {
-            this.opened = this.checkFilter();
-        },
     },
     computed: {
         name() {
             return this.category.title || this.category.name;
         },
         isSection() {
-            return this.category.elems;
+            return this.category.elems !== undefined;
         },
         hasElements() {
             return this.category.elems && this.category.elems.length > 0;
         },
+        title() {
+            return this.category.description;
+        },
+        links() {
+            return this.category.links || {};
+        },
+        sortedElements() {
+            // If this.config.sortTools is true, sort the tools alphabetically
+            // When administrators have manually inserted labels we respect
+            // the order set and hope for the best from the integrated
+            // panel.
+            if (
+                this.isLoaded &&
+                this.config.toolbox_auto_sort === true &&
+                this.sortItems === true &&
+                !this.category.elems.some((el) => el.text !== undefined && el.text !== "")
+            ) {
+                const elements = [...this.category.elems];
+                const sorted = elements.sort((a, b) => {
+                    const aNameLower = a.name.toLowerCase();
+                    const bNameLower = b.name.toLowerCase();
+                    if (aNameLower > bNameLower) {
+                        return 1;
+                    } else if (aNameLower < bNameLower) {
+                        return -1;
+                    } else {
+                        return 0;
+                    }
+                });
+                return Object.entries(sorted);
+            } else {
+                return Object.entries(this.category.elems);
+            }
+        },
+    },
+    watch: {
+        queryFilter() {
+            this.opened = this.checkFilter();
+        },
+        opened(newVal, oldVal) {
+            if (newVal !== oldVal) {
+                const currentState = newVal ? "opened" : "closed";
+                ariaAlert(`${this.name} tools menu ${currentState}`);
+            }
+        },
+    },
+    created() {
+        this.eventHub.$on("openToolSection", this.openToolSection);
+    },
+    beforeDestroy() {
+        this.eventHub.$off("openToolSection", this.openToolSection);
     },
     methods: {
+        openToolSection(sectionId) {
+            if (this.isSection && sectionId == this.category?.id) {
+                this.toggleMenu(true);
+            }
+        },
         checkFilter() {
             return !this.disableFilter && !!this.queryFilter;
         },
@@ -121,10 +191,8 @@ export default {
         onOperation(tool, evt) {
             this.$emit("onOperation", tool, evt);
         },
-        toggleMenu() {
-            this.opened = !this.opened;
-            const currentState = this.opened ? "opened" : "closed";
-            ariaAlert(`${this.name} tools menu ${currentState}`);
+        toggleMenu(nextState = !this.opened) {
+            this.opened = nextState;
         },
     },
 };
@@ -183,5 +251,19 @@ export default {
 .slide-leave-to {
     overflow: hidden;
     max-height: 0;
+}
+
+.title-link {
+    &:deep(.tool-panel-links) {
+        display: none;
+    }
+
+    &:hover,
+    &:focus,
+    &:focus-within {
+        &:deep(.tool-panel-links) {
+            display: inline;
+        }
+    }
 }
 </style>

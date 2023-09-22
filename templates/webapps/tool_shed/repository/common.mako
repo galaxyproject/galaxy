@@ -77,7 +77,7 @@
         config.addInitialization(function() {
             console.log("common.mako, container_javascripts");
 
-            var store = window.bundleEntries.store;
+            var store = window.bundleToolshed.store;
             var init_dependencies = function() {
                 var storage_id = "library-expand-state-${trans.security.encode_id(10000)}";
                 var restore_folder_state = function() {

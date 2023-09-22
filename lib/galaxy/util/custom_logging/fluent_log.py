@@ -12,12 +12,11 @@ except ImportError:
     FluentSender = None
 
 
-FLUENT_IMPORT_MESSAGE = ('The Python fluent package is required to use this '
-                         'feature, please install it')
+FLUENT_IMPORT_MESSAGE = "The Python fluent package is required to use this " "feature, please install it"
 
 
 class FluentTraceLogger:
-    def __init__(self, name, host='localhost', port=24224):
+    def __init__(self, name, host="localhost", port=24224):
         assert FluentSender is not None, FLUENT_IMPORT_MESSAGE
         self.lock = threading.Lock()
         self.thread_local = threading.local()
@@ -26,7 +25,7 @@ class FluentTraceLogger:
 
     def context_set(self, key, value):
         self.lock.acquire()
-        if not hasattr(self.thread_local, 'context'):
+        if not hasattr(self.thread_local, "context"):
             self.thread_local.context = {}
         self.thread_local.context[key] = value
         self.lock.release()
@@ -38,7 +37,7 @@ class FluentTraceLogger:
 
     def log(self, label, event_time=None, **kwargs):
         self.lock.acquire()
-        if hasattr(self.thread_local, 'context'):
+        if hasattr(self.thread_local, "context"):
             kwargs.update(self.thread_local.context)
         self.lock.release()
         event_time = event_time or time.time()

@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
 <visualization name="Phylogenetic Tree Visualization">
-    <description>A performant, reusable, and extensible tree visualisation library for the web hosted at: http://biojs.io/d/phylocanvas.</description>
+    <description>A performant, reusable, and extensible tree visualisation from the Centre for Genomic Pathogen Surveillance at https://www.phylocanvas.gl</description>
     <data_sources>
         <data_source>
             <model_class>HistoryDatasetAssociation</model_class>
@@ -21,27 +21,27 @@
             <help>Select a tree type.</help>
             <type>select</type>
             <display>radio</display>
-            <value>rectangular</value>
+            <value>rc</value>
             <data>
                 <data>
+                    <label>Rectangular</label>
+                    <value>rc</value>
+                </data>
+                <data>
                     <label>Circular</label>
-                    <value>circular</value>
+                    <value>cr</value>
                 </data>
                 <data>
                     <label>Diagonal</label>
-                    <value>diagonal</value>
+                    <value>dg</value>
                 </data>
                 <data>
                     <label>Hierarchical</label>
-                    <value>hierarchical</value>
+                    <value>hr</value>
                 </data>
                 <data>
                     <label>Radial</label>
-                    <value>radial</value>
-                </data>
-                <data>
-                    <label>Rectangular</label>
-                    <value>rectangular</value>
+                    <value>rd</value>
                 </data>
             </data>
         </input>
@@ -49,7 +49,7 @@
             <name>edge_color</name>
             <label>Select a color for the tree</label>
             <type>color</type>
-            <value>#548DB8</value>
+            <value>#222222</value>
         </input>
         <input>
             <name>highlighted_color</name>
@@ -58,46 +58,10 @@
             <value>#548DB8</value>
         </input>
         <input>
-            <name>selected_color</name>
-            <label>Select a color for the selected branch of tree</label>
+            <name>node_color</name>
+            <label>Select a color for the nodes of the tree</label>
             <type>color</type>
-            <value>#00b050</value>
-        </input>
-        <input>
-            <label>Collapse the selected branch</label>
-            <name>collapse_branch</name>
-            <help>Select true to collapse the selected branch.</help>
-            <type>select</type>
-            <display>radio</display>
-            <value>false</value>
-            <data>
-                <data>
-                    <label>True</label>
-                    <value>true</value>
-                </data>
-                <data>
-                    <label>False</label>
-                    <value>false</value>
-                </data>
-            </data>
-        </input>
-        <input>
-            <label>Prune the selected branch</label>
-            <name>prune_branch</name>
-            <help>Select true to prune the selected branch.</help>
-            <type>select</type>
-            <display>radio</display>
-            <value>false</value>
-            <data>
-                <data>
-                    <label>True</label>
-                    <value>true</value>
-                </data>
-                <data>
-                    <label>False</label>
-                    <value>false</value>
-                </data>
-            </data>
+            <value>#333333</value>
         </input>
         <input>
             <label>Show/Hide labels</label>

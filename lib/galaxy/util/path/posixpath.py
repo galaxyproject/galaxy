@@ -6,5 +6,4 @@ import sys
 
 from . import _build_self
 
-
 _build_self(sys.modules[__name__], posixpath)

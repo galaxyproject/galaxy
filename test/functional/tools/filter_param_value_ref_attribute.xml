@@ -1,0 +1,116 @@
+<tool id="filter_param_value_ref_attribute" name="filter_param_value_ref_attribute" version="0.1.0">
+    <description>Filter input with the param_value</description>
+    <command><![CDATA[
+        #if $select_single
+            echo $select_single >> '$output' &&
+        #end if
+        #if $select_mult
+            echo $select_mult >> '$output' &&
+        #end if
+        #if $select_coll
+            echo $select_coll >> '$output' &&
+        #end if
+        true
+    ]]></command>
+    <inputs>
+        <!-- this tests the param_value filter with the ref_attribute attribute 
+             (so ref is dataset(s) or a dataset collection), the following pairs
+             test param_value filter refering:
+             - dataset 
+             - multiple datasets
+             - a collection
+
+             in each case the data and the select input are optional to allow
+             to test them separately -->
+
+        <!-- 1. dataset (here with non-default keep) -->
+        <param name="data_single" type="data" format="bed" optional="true"/>
+        <param name="select_single" type="select" multiple="true" optional="true">
+            <options from_data_table="test_fasta_indexes">
+                <column name="value" index="0"/>
+                <column name="name" index="1"/>
+                <filter type="param_value" column="1" ref="data_single" ref_attribute="metadata.dbkey" keep="false"/>
+            </options>
+        </param>
+        
+        <!-- 2. same, but with a data input accepting multiple datasets 
+            (which may have different dbkeys .. but we can not specify them in a test) -->
+        <param name="data_mult" format="bed" type="data" multiple="true" optional="true"/>
+        <param name="select_mult" type="select" multiple="true" optional="true">
+            <options from_data_table="test_fasta_indexes">
+                <column name="value" index="0"/>
+                <column name="name" index="1"/>
+                <filter type="param_value" column="1" ref="data_mult" ref_attribute="metadata.dbkey"/>
+            </options>
+        </param>
+        
+        <!-- 3. same, but with a collection input (elements may have different dbkeys) -->
+        <param name="data_coll" format="bed" type="data_collection" collection_type="list" optional="true"/>
+        <param name="select_coll" type="select" multiple="true" optional="true">
+            <options from_data_table="test_fasta_indexes">
+                <column name="value" index="0"/>
+                <column name="name" index="1"/>
+                <filter type="param_value" column="1" ref="data_coll" ref_attribute="metadata.dbkey"/>
+            </options>
+        </param>
+    </inputs>
+
+    <outputs>
+        <data format="txt" name="output" />
+    </outputs>
+
+    <tests>
+        <test expect_failure="false">
+            <param name="data_single" value="1.bed" ftype="bed" dbkey="hg19"/>
+            <param name="select_single" value="hg18_value,mm10_value"/>
+            <output name="output">
+                <assert_contents>
+                    <has_line line="hg18_value,mm10_value"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test expect_failure="true">
+            <param name="data_single" value="1.bed" ftype="bed" dbkey="hg19"/>
+            <param name="select_single" value="hg19_value"/>
+        </test>
+        <test expect_failure="false">
+            <param name="data_mult" value="1.bed,2.bed" dbkey="hg19"/>
+            <param name="select_mult" value="hg19_value"/>
+            <output name="output">
+                <assert_contents>
+                    <has_line line="hg19_value"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test expect_failure="true">
+            <param name="data_mult" value="1.bed,2.bed" dbkey="hg19"/>
+            <param name="select_mult" value="hg18_value"/>
+        </test>
+        <test expect_failure="false">
+            <param name="data_coll">
+                <collection type="list">
+                    <element name="element1" ftype="bed" value="1.bed" dbkey="hg18"/>
+                    <element name="element2" ftype="bed" value="2.bed" dbkey="hg19"/>
+               </collection>
+            </param>
+            <param name="select_coll" value="hg18_value,hg19_value"/>
+            <output name="output">
+                <assert_contents>
+                    <has_line line="hg18_value,hg19_value"/>
+                </assert_contents>
+            </output>
+        </test>
+        <test expect_failure="true">
+            <param name="data_coll">
+                <collection type="list">
+                    <element name="element1" ftype="bed" value="1.bed" dbkey="hg18"/>
+                    <element name="element2" ftype="bed" value="2.bed" dbkey="hg19"/>
+               </collection>
+            </param>
+            <param name="select_coll" value="mm10_value"/>
+        </test>
+    </tests>
+
+    <help>
+    </help>
+</tool>

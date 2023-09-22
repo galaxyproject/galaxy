@@ -35,10 +35,6 @@
                     var selKeys = $.map(selNodes, function(node) {
                         return node.data.key;
                     });
-                    if (document.forms["select_files_to_delete"]) {
-                        // The following is used only ~/templates/webapps/tool_shed/repository/browse_repository.mako.
-                        document.select_files_to_delete.selected_files_to_delete.value = selKeys.join(",");
-                    }
                     // The following is used only in ~/templates/webapps/tool_shed/repository/upload.mako.
                     if (document.forms["upload_form"]) {
                         document.upload_form.upload_point.value = selKeys.slice(-1);
@@ -77,7 +73,7 @@
         config.addInitialization(function() {
             console.log("common.mako, container_javascripts");
 
-            var store = window.bundleEntries.store;
+            var store = window.bundleToolshed.store;
             var init_dependencies = function() {
                 var storage_id = "library-expand-state-${trans.security.encode_id(10000)}";
                 var restore_folder_state = function() {
@@ -401,32 +397,6 @@
     %>
 </%def>
 
-<%def name="render_failed_test( failed_test, pad, parent, row_counter, row_is_header=False, render_repository_actions_for='tool_shed' )">
-    <%
-        from tool_shed.util.basic_util import to_html_string
-        encoded_id = trans.security.encode_id( failed_test.id )
-    %>
-    <tr class="datasetRow"
-        %if parent is not None:
-            parent="${parent}"
-        %endif
-        id="libraryItem-rft-${encoded_id}">
-        <td style="padding-left: ${pad+20}px;">
-            <table id="test_environment">
-                <tr><td bgcolor="#FFFFCC"><b>Tool id:</b> ${failed_test.tool_id | h}</td></tr>
-                <tr><td><b>Tool version:</b> ${failed_test.tool_id | h}</td></tr>
-                <tr><td><b>Test:</b> ${failed_test.test_id | h}</td></tr>
-                <tr><td><b>Stderr:</b> <br/>${ to_html_string( failed_test.stderr ) }</td></tr>
-                <tr><td><b>Traceback:</b> <br/>${ to_html_string( failed_test.traceback ) }</td></tr>
-            </table>
-        </td>
-    </tr>
-    <%
-        my_row = row_counter.count
-        row_counter.increment()
-    %>
-</%def>
-
 <%def name="render_invalid_data_manager( data_manager, pad, parent, row_counter, row_is_header=False, render_repository_actions_for='tool_shed' )">
     <%
         encoded_id = trans.security.encode_id( data_manager.id )
@@ -652,176 +622,6 @@
     </style>
 </%def>
 
-<%def name="render_tool_dependency_installation_error( installation_error, pad, parent, row_counter, row_is_header=False, render_repository_actions_for='tool_shed' )">
-    <%
-        from galaxy.util import unicodify
-        encoded_id = trans.security.encode_id( installation_error.id )
-    %>
-    <tr class="datasetRow"
-        %if parent is not None:
-            parent="${parent}"
-        %endif
-        id="libraryItem-rtdie-${encoded_id}">
-        <td style="padding-left: ${pad+20}px;">
-            <table id="test_environment">
-                <tr bgcolor="#FFFFCC">
-                    <th>Type</th><th>Name</th><th>Version</th>
-                </tr>
-                <tr>
-                    <td>${installation_error.name | h}</td>
-                    <td>${installation_error.type | h}</td>
-                    <td>${installation_error.version | h}</td>
-                </tr>
-                <tr><th>Error</th></tr>
-                <tr><td colspan="3">${unicodify( installation_error.error_message ) | h}</td></tr>
-            </table>
-        </td>
-    </tr>
-    <%
-        my_row = row_counter.count
-        row_counter.increment()
-    %>
-</%def>
-
-<%def name="render_tool_dependency_successful_installation( successful_installation, pad, parent, row_counter, row_is_header=False, render_repository_actions_for='tool_shed' )">
-    <%
-        encoded_id = trans.security.encode_id( successful_installation.id )
-    %>
-    <tr class="datasetRow"
-        %if parent is not None:
-            parent="${parent}"
-        %endif
-        id="libraryItem-rtdsi-${encoded_id}">
-        <td style="padding-left: ${pad+20}px;">
-            <table id="test_environment">
-                <tr bgcolor="#FFFFCC">
-                    <th>Type</th><th>Name</th><th>Version</th>
-                </tr>
-                <tr>
-                    <td>${successful_installation.name | h}</td>
-                    <td>${successful_installation.type | h}</td>
-                    <td>${successful_installation.version | h}</td>
-                </tr>
-                <tr><th>Installation directory</th></tr>
-                <tr><td colspan="3">${successful_installation.installation_directory | h}</td></tr>
-            </table>
-        </td>
-    </tr>
-    <%
-        my_row = row_counter.count
-        row_counter.increment()
-    %>
-</%def>
-
-<%def name="render_repository_installation_error( installation_error, pad, parent, row_counter, row_is_header=False, is_current_repository=False, render_repository_actions_for='tool_shed' )">
-    <%
-        from galaxy.util import unicodify
-        encoded_id = trans.security.encode_id( installation_error.id )
-    %>
-    <tr class="datasetRow"
-        %if parent is not None:
-            parent="${parent}"
-        %endif
-        id="libraryItem-rrie-${encoded_id}">
-        <td style="padding-left: ${pad+20}px;">
-            <table id="test_environment">
-                %if not is_current_repository:
-                    <tr bgcolor="#FFFFCC">
-                        <th>Tool shed</th><th>Name</th><th>Owner</th><th>Changeset revision</th>
-                    </tr>
-                    <tr>
-                        <td>${installation_error.tool_shed | h}</td>
-                        <td>${installation_error.name | h}</td>
-                        <td>${installation_error.owner | h}</td>
-                        <td>${installation_error.changeset_revision | h}</td>
-                    </tr>
-                %endif
-                <tr><th>Error</th></tr>
-                <tr><td colspan="4">${unicodify( installation_error.error_message ) | h}</td></tr>
-            </table>
-        </td>
-    </tr>
-    <%
-        my_row = row_counter.count
-        row_counter.increment()
-    %>
-</%def>
-
-<%def name="render_repository_successful_installation( successful_installation, pad, parent, row_counter, row_is_header=False, is_current_repository=False, render_repository_actions_for='tool_shed' )">
-    <%
-        encoded_id = trans.security.encode_id( successful_installation.id )
-    %>
-    <tr class="datasetRow"
-        %if parent is not None:
-            parent="${parent}"
-        %endif
-        id="libraryItem-rrsi-${encoded_id}">
-        <td style="padding-left: ${pad+20}px;">
-            <table id="test_environment">
-                %if not is_current_repository:
-                    <tr bgcolor="#FFFFCC">
-                        <th>Tool shed</th><th>Name</th><th>Owner</th><th>Changeset revision</th>
-                    </tr>
-                    <tr>
-                        <td>${successful_installation.tool_shed | h}</td>
-                        <td>${successful_installation.name | h}</td>
-                        <td>${successful_installation.owner | h}</td>
-                        <td>${successful_installation.changeset_revision | h}</td>
-                    </tr>
-                %endif
-            </table>
-        </td>
-    </tr>
-    <%
-        my_row = row_counter.count
-        row_counter.increment()
-    %>
-</%def>
-
-<%def name="render_not_tested( not_tested, pad, parent, row_counter, row_is_header=False, render_repository_actions_for='tool_shed' )">
-    <%
-        encoded_id = trans.security.encode_id( not_tested.id )
-    %>
-    <tr class="datasetRow"
-        %if parent is not None:
-            parent="${parent}"
-        %endif
-        id="libraryItem-rnt-${encoded_id}">
-        <td style="padding-left: ${pad+20}px;">
-            <table id="test_environment">
-                <tr><td>${not_tested.reason | h}</td></tr>
-            </table>
-        </td>
-    </tr>
-    <%
-        my_row = row_counter.count
-        row_counter.increment()
-    %>
-</%def>
-
-<%def name="render_passed_test( passed_test, pad, parent, row_counter, row_is_header=False, render_repository_actions_for='tool_shed' )">
-    <%
-        encoded_id = trans.security.encode_id( passed_test.id )
-    %>
-    <tr class="datasetRow"
-        %if parent is not None:
-            parent="${parent}"
-        %endif
-        id="libraryItem-rpt-${encoded_id}">
-        <td style="padding-left: ${pad+20}px;">
-            <table id="test_environment">
-                <tr><td bgcolor="#FFFFCC"><b>Tool id:</b> ${passed_test.tool_id | h}</td></tr>
-                <tr><td><b>Tool version:</b> ${passed_test.tool_id | h}</td></tr>
-                <tr><td><b>Test:</b> ${passed_test.test_id | h}</td></tr>
-            </table>
-        </td>
-    </tr>
-    <%
-        my_row = row_counter.count
-        row_counter.increment()
-    %>
-</%def>
-
 <%def name="render_tool( tool, pad, parent, row_counter, row_is_header, render_repository_actions_for='tool_shed' )">
     <%
         encoded_id = trans.security.encode_id( tool.id )
@@ -921,33 +721,6 @@
                 ${tool_dependency.installation_status | h}
             %endif
         </${cell_type}>
-    </tr>
-    <%
-        my_row = row_counter.count
-        row_counter.increment()
-    %>
-</%def>
-
-<%def name="render_test_environment( test_environment, pad, parent, row_counter, row_is_header=False, render_repository_actions_for='tool_shed' )">
-    <% encoded_id = trans.security.encode_id( test_environment.id ) %>
-    <tr class="datasetRow"
-        %if parent is not None:
-            parent="${parent}"
-        %endif
-        id="libraryItem-rte-${encoded_id}">
-        <td style="padding-left: ${pad+20}px;">
-            <table class="grid" id="test_environment">
-                <tr><td><b>Time tested:</b> ${test_environment.time_tested | h}</td></tr>
-                <tr><td><b>System:</b> ${test_environment.system | h}</td></tr>
-                <tr><td><b>Architecture:</b> ${test_environment.architecture | h}</td></tr>
-                <tr><td><b>Python version:</b> ${test_environment.python_version | h}</td></tr>
-                <tr><td><b>Galaxy revision:</b> ${test_environment.galaxy_revision | h}</td></tr>
-                <tr><td><b>Galaxy database version:</b> ${test_environment.galaxy_database_version | h}</td></tr>
-                <tr><td><b>Tool shed revision:</b> ${test_environment.tool_shed_revision | h}</td></tr>
-                <tr><td><b>Tool shed database version:</b> ${test_environment.tool_shed_database_version | h}</td></tr>
-                <tr><td><b>Tool shed mercurial version:</b> ${test_environment.tool_shed_mercurial_version | h}</td></tr>
-            </table>
-        </td>
     </tr>
     <%
         my_row = row_counter.count

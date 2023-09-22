@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <!DOCTYPE visualization SYSTEM "../../visualization.dtd">
-<visualization name="Example">
+<visualization name="Example" embeddable="false">
     <description>This is a developer example which demonstrates how to implement and configure a basic d3-based plugin for charts.</description>
     <data_sources>
         <data_source>
@@ -14,10 +14,6 @@
         <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
     </params>
     <entry_point entry_point_type="chart" src="script.js"/>
-    <specs>
-        <tag>svg</tag>
-        <use_panels>both</use_panels>
-    </specs>
     <settings>
         <input>
             <name>data_dialog</name>

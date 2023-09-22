@@ -93,61 +93,10 @@ ${render_tool_shed_repository_actions( repository, metadata=None, changeset_revi
                     <div style="clear: both"></div>
                 </div>
                 <div class="form-row">
-                    <label>Review:</label>
-                    %if rra and rra.comment:
-                        <div class="form-row-input">
-                            <pre><textarea name="comment" rows="5" cols="80">${rra.comment | h}</textarea></pre>
-                        </div>
-                    %else:
-                        <div class="form-row-input">
-                            <textarea name="comment" rows="5" cols="80"></textarea>
-                        </div>
-                    %endif
-                    <div style="clear: both"></div>
-                </div>
-                <div class="form-row">
                     <input type="submit" name="rate_button" id="rate_button" value="Submit" />
                 </div>
             </form>
         </div>
     </div>
     <p/>
-    %if repository.ratings and ( len( repository.ratings ) > 1 or repository.ratings[0] != rra ):
-        <div class="toolForm">
-            <div class="toolFormBody">
-                %if display_reviews:
-                    <div class="form-row">
-                        <a href="${h.url_for( controller='repository', action='rate_repository', id=trans.security.encode_id( repository.id ), display_reviews=False )}"><label>Hide Reviews</label></a>
-                    </div>
-                    <table class="grid">
-                        <thead>
-                            <tr>
-                                <th>Rating</th>
-                                <th>Comments</th>
-                                <th>Reviewed</th>
-                                <th>User</th>
-                            </tr>
-                        </thead>
-                        <% count = 0 %>
-                        %for review in repository.ratings:
-                            <%
-                                count += 1
-                                name = 'rating%d' % count
-                            %>
-                            <tr>
-                                <td>${render_star_rating( name, review.rating, disabled=True )}</td>
-                                <td><pre>${review.comment | h}</pre></td>
-                                <td>${time_ago( review.update_time )}</td>
-                                <td>${review.user.username | h}</td>
-                            </tr>
-                        %endfor
-                    </table>
-                %else:
-                    <div class="form-row">
-                        <a href="${h.url_for( controller='repository', action='rate_repository', id=trans.security.encode_id( repository.id ), display_reviews=True )}"><label>Display Reviews</label></a>
-                    </div>
-                %endif
-            </div>
-        </div>
-    %endif
 %endif

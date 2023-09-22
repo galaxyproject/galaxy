@@ -3,8 +3,7 @@
         :error-message="errorMessage"
         :options-show="optionsShow"
         :modal-show="modalShow"
-        :hide-modal="onCancel"
-    >
+        :hide-modal="onCancel">
         <template v-slot:search>
             <data-dialog-search v-model="filter" />
         </template>
@@ -15,15 +14,14 @@
                 :multiple="multiple"
                 :filter="filter"
                 @clicked="onClick"
-                @load="load"
-            />
+                @open="onLoad" />
         </template>
         <template v-slot:buttons>
-            <b-btn size="sm" class="float-left" v-if="undoShow" @click="load()">
+            <b-btn v-if="undoShow" size="sm" class="float-left" @click="load()">
                 <div class="fa fa-caret-left mr-1" />
                 Back
             </b-btn>
-            <b-btn size="sm" class="float-left mr-1" @click="onUpload">
+            <b-btn v-if="allowUpload" size="sm" class="float-left mr-1" @click="onUpload">
                 <div class="fa fa-upload ml-1" />
                 Upload
             </b-btn>
@@ -32,9 +30,8 @@
                 size="sm"
                 class="float-right ml-1"
                 variant="primary"
-                @click="onOk"
                 :disabled="!hasValue"
-            >
+                @click="onOk">
                 Ok
             </b-btn>
         </template>
@@ -49,7 +46,8 @@ import { UrlTracker } from "./utilities";
 import { Model } from "./model";
 import { Services } from "./services";
 import { getAppRoot } from "onload/loadConfig";
-import { mountUploadModal } from "components/Upload";
+import { useGlobalUploadModal } from "composables/globalUploadModal";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 Vue.use(BootstrapVue);
 
@@ -76,6 +74,14 @@ export default {
             type: Boolean,
             default: false,
         },
+        allowUpload: {
+            type: Boolean,
+            default: true,
+        },
+    },
+    setup() {
+        const { openGlobalUploadModal } = useGlobalUploadModal();
+        return { openGlobalUploadModal };
     },
     data() {
         return {
@@ -130,8 +136,9 @@ export default {
                 format: this.format,
                 callback: this.callback,
                 modalShow: true,
+                selectable: true,
             };
-            mountUploadModal(propsData);
+            this.openGlobalUploadModal(propsData);
             this.modalShow = false;
         },
         /** Called when selection is complete, values are formatted and parsed to external callback **/
@@ -145,6 +152,10 @@ export default {
         onCancel() {
             this.modalShow = false;
             this.$emit("onCancel");
+        },
+        /** On clicking folder name div: overloader for the @click.stop in DataDialogTable **/
+        onLoad(record) {
+            this.load(record.url);
         },
         /** Performs server request to retrieve data records **/
         load(url) {
@@ -165,8 +176,8 @@ export default {
                     this.formatRows();
                     this.optionsShow = true;
                 })
-                .catch((errorMessage) => {
-                    this.errorMessage = errorMessage;
+                .catch((error) => {
+                    this.errorMessage = errorMessageAsString(error);
                 });
         },
     },

@@ -1,0 +1,70 @@
+{
+    "a_galaxy_workflow": "true",
+    "annotation": "simple workflow",
+    "format-version": "0.1",
+    "name": "TestWorkflow1",
+    "steps": {
+        "0": {
+            "annotation": "input1 description",
+            "content_id": null,
+            "errors": null,
+            "id": 0,
+            "input_connections": {},
+            "inputs": [
+                {
+                    "description": "input1 description",
+                    "name": "WorkflowInput1"
+                }
+            ],
+            "label": "WorkflowInput1",
+            "name": "Input dataset",
+            "outputs": [],
+            "position": {
+                "bottom": 370.65625,
+                "height": 61,
+                "left": 613.546875,
+                "right": 813.546875,
+                "top": 309.65625,
+                "width": 200,
+                "x": 613.546875,
+                "y": 309.65625
+            },
+            "tool_id": null,
+            "tool_state": "{\"optional\": false, \"tag\": \"tag1\"}",
+            "tool_version": null,
+            "type": "data_input",
+            "uuid": "5262f9f9-28d7-486f-9cf8-f7c01da4f31c",
+            "workflow_outputs": []
+        },
+        "1": {
+            "annotation": "",
+            "content_id": null,
+            "errors": null,
+            "id": 1,
+            "input_connections": {},
+            "inputs": [],
+            "label": null,
+            "name": "Input dataset collection",
+            "outputs": [],
+            "position": {
+                "bottom": 472.5,
+                "height": 81,
+                "left": 616,
+                "right": 816,
+                "top": 391.5,
+                "width": 200,
+                "x": 616,
+                "y": 391.5
+            },
+            "tool_id": null,
+            "tool_state": "{\"optional\": false, \"tag\": \"tag2\", \"collection_type\": \"list\"}",
+            "tool_version": null,
+            "type": "data_collection_input",
+            "uuid": "f6ee8140-92cf-4bbd-8683-dc9076fd72fa",
+            "workflow_outputs": []
+        }
+    },
+    "tags": [],
+    "uuid": "6e6d28b0-cf38-47d3-937c-18738da04306",
+    "version": 4
+}

@@ -15,9 +15,12 @@ import logging
 import os
 import sys
 
-from sqlalchemy import false, not_
+from sqlalchemy import (
+    false,
+    not_,
+)
 
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'lib')))
+sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, "lib")))
 
 import galaxy.config
 import galaxy.model.mapping
@@ -27,41 +30,37 @@ from galaxy.util.script import main_factory
 DESCRIPTION = "Locate all datasets in libraries."
 ARGUMENTS = (
     (
-        ('-v', '--verbose'),
+        ("-v", "--verbose"),
         dict(
-            action='store_true',
+            action="store_true",
             default=False,
-            help='Verbose logging output',
+            help="Verbose logging output",
         ),
     ),
     (
-        ('-o', '--output'),
+        ("-o", "--output"),
         dict(
-            default='stdout',
-            help='Write output to file',
+            default="stdout",
+            help="Write output to file",
         ),
     ),
     (
-        ('-p', '--public'),
-        dict(
-            action='store_true',
-            default=False,
-            help='Only dump files in "public" libraries'
-        ),
+        ("-p", "--public"),
+        dict(action="store_true", default=False, help='Only dump files in "public" libraries'),
     ),
     (
-        ('--relative',),
+        ("--relative",),
         dict(
             default=None,
-            help='Write paths relative to the given directory',
+            help="Write paths relative to the given directory",
         ),
     ),
     (
-        ('--exists',),
+        ("--exists",),
         dict(
-            action='store_true',
+            action="store_true",
             default=False,
-            help='Check for dataset existence, warn if it does not exist',
+            help="Check for dataset existence, warn if it does not exist",
         ),
     ),
 )
@@ -76,15 +75,19 @@ def _config_logging(args):
 
 
 def _get_libraries(args, model):
-    log.debug('Setting up query')
+    log.debug("Setting up query")
     library_access_action = model.security_agent.permitted_actions.LIBRARY_ACCESS.action
     query = model.context.query(model.Library)
     query = query.filter(model.Library.table.c.deleted == false())
     if args.public:
-        restricted_library_ids = {lp.library_id for lp in (
-            model.context.query(model.LibraryPermissions).filter(
-                model.LibraryPermissions.table.c.action == library_access_action
-            ).distinct())}
+        restricted_library_ids = {
+            lp.library_id
+            for lp in (
+                model.context.query(model.LibraryPermissions)
+                .filter(model.LibraryPermissions.table.c.action == library_access_action)
+                .distinct()
+            )
+        }
         if restricted_library_ids:
             query = query.filter(not_(model.Library.table.c.id.in_(restricted_library_ids)))
     query = query.order_by(model.Library.table.c.name)
@@ -107,10 +110,10 @@ def _walk_libraries(args, model):
 
 
 def _open_output(args):
-    if args.output == 'stdout':
+    if args.output == "stdout":
         return sys.stdout
     else:
-        return open(args.output, 'w')
+        return open(args.output, "w")
 
 
 def _path(path, args):
@@ -124,21 +127,21 @@ def _get_library_dataset_paths(args, kwargs):
     _config_logging(args)
     config = galaxy.config.Configuration(**kwargs)
     object_store = build_object_store_from_config(config)
-    model = galaxy.model.mapping.init('/tmp/', kwargs.get('database_connection'), object_store=object_store)
+    model = galaxy.model.mapping.init("/tmp/", kwargs.get("database_connection"), object_store=object_store)
     output = _open_output(args)
     last_library = None
-    log.debug('Beginning library walk')
+    log.debug("Beginning library walk")
     for library, dataset in _walk_libraries(args, model):
         if library != last_library:
-            log.info('Library: %s', library.name)
+            log.info("Library: %s", library.name)
         filename = object_store.get_filename(dataset)
         files_dir = dataset.get_extra_files_path()
         if (args.exists and object_store.exists(dataset)) or not args.exists:
-            output.write('%s\n' % _path(filename, args))
+            output.write("%s\n" % _path(filename, args))
         elif args.exists:
-            log.warning('Missing %s', filename)
+            log.warning("Missing %s", filename)
         if files_dir and os.path.exists(files_dir):
-            output.write('%s\n' % _path(files_dir, args))
+            output.write("%s\n" % _path(files_dir, args))
         last_library = library
     output.close()
 
@@ -148,11 +151,8 @@ ACTIONS = {
 }
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     main = main_factory(
-        description=DESCRIPTION,
-        actions=ACTIONS,
-        arguments=ARGUMENTS,
-        default_action="get_library_dataset_paths"
+        description=DESCRIPTION, actions=ACTIONS, arguments=ARGUMENTS, default_action="get_library_dataset_paths"
     )
     main()

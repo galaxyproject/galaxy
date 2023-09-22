@@ -1,7 +1,4 @@
-# -*- coding: utf-8 -*-
-
 from galaxy.security import idencoding
-
 
 test_helper_1 = idencoding.IdEncodingHelper(id_secret="secu1")
 test_helper_2 = idencoding.IdEncodingHelper(id_secret="secu2")
@@ -65,6 +62,17 @@ def test_maximum_length_handling_nonascii():
     assert e11 != e12
 
 
+def test_unicode_null_decoding():
+    encoded_id = test_helper_1.encode_id(1)
+    threw_exception = False
+    try:
+        test_helper_1.decode_guid(f"{encoded_id[:-1]}\0")
+    except Exception:
+        threw_exception = True
+
+    assert threw_exception
+
+
 def test_encode_decode():
     # Different ids are encoded differently
     assert test_helper_1.encode_id(1) != test_helper_1.encode_id(2)
@@ -121,7 +129,7 @@ def test_encode_dict():
 
 def test_guid_generation():
     guids = set()
-    for i in range(100):
+    for _ in range(100):
         guids.add(test_helper_1.get_new_guid())
     assert len(guids) == 100  # Not duplicate guids generated.
 
@@ -130,4 +138,4 @@ def test_encode_decode_guid():
     session_key = test_helper_1.get_new_guid()
     encoded_key = test_helper_1.encode_guid(session_key)
     decoded_key = test_helper_1.decode_guid(encoded_key)
-    assert session_key == decoded_key, "%s != %s" % (session_key, decoded_key)
+    assert session_key == decoded_key, f"{session_key} != {decoded_key}"

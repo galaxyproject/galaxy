@@ -1,5 +1,3 @@
-import sys
-
 import pytest
 from Cheetah.NameMapper import NotFound
 
@@ -45,22 +43,18 @@ INVALID_CHEETAH_SYNTAX = """#if 1 <> 1
 
 
 def test_fill_simple_template():
-    template_str = str(fill_template(SIMPLE_TEMPLATE, {'a_list': [1, 2]}))
+    template_str = str(fill_template(SIMPLE_TEMPLATE, {"a_list": [1, 2]}))
     assert template_str == FILLED_SIMPLE_TEMPLATE
 
 
 def test_fill_list_comprehension_template():
-    if sys.version_info.major > 2:
-        with pytest.raises(NotFound):
-            fill_template(LIST_COMPREHENSION_TEMPLATE, retry=0)
-    else:
-        template_str = fill_template(LIST_COMPREHENSION_TEMPLATE, retry=0)
-        assert template_str == 'echo 1\n'
+    with pytest.raises(NotFound):
+        fill_template(LIST_COMPREHENSION_TEMPLATE, retry=0)
 
 
 def test_fill_list_comprehension_template_2():
-    template_str = fill_template(LIST_COMPREHENSION_TEMPLATE, python_template_version='2', retry=1)
-    assert template_str == 'echo 1\n'
+    template_str = fill_template(LIST_COMPREHENSION_TEMPLATE, python_template_version="2", retry=1)
+    assert template_str == "echo 1\n"
 
 
 def test_fill_dict_comprehension():
@@ -79,10 +73,10 @@ def test_gen_expr():
 
 
 def test_fix_template_two_to_three():
-    template_str = fill_template(TWO_TO_THREE_TEMPLATE, python_template_version='2', retry=1)
-    assert template_str == 'a a 1'
+    template_str = fill_template(TWO_TO_THREE_TEMPLATE, python_template_version="2", retry=1)
+    assert template_str == "a a 1"
 
 
 def test_fix_template_invalid_cheetah():
-    template_str = fill_template(INVALID_CHEETAH_SYNTAX, python_template_version='2', retry=1)
+    template_str = fill_template(INVALID_CHEETAH_SYNTAX, python_template_version="2", retry=1)
     assert template_str == "1 is 1\n"

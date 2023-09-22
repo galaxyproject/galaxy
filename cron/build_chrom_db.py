@@ -11,31 +11,32 @@ All chromInfo is placed in a path with the convention
 Usage:
 python build_chrom_db.py dbpath/ [builds_file]
 """
-from __future__ import print_function
 
 import fileinput
 import os
 import sys
-
-import requests
-from six.moves.urllib.parse import urlencode
+from urllib.parse import urlencode
 
 import parse_builds  # noqa: I100,I202
+import requests
 
 
 def getchrominfo(url, db):
     tableURL = "http://genome-test.gi.ucsc.edu/cgi-bin/hgTables?"
-    URL = tableURL + urlencode({
-        "clade": "",
-        "org": "",
-        "db": db,
-        "hgta_outputType": "primaryTable",
-        "hgta_group": "allTables",
-        "hgta_table": "chromInfo",
-        "hgta_track": db,
-        "hgta_regionType": "",
-        "position": "",
-        "hgta_doTopSubmit": "get info"})
+    URL = tableURL + urlencode(
+        {
+            "clade": "",
+            "org": "",
+            "db": db,
+            "hgta_outputType": "primaryTable",
+            "hgta_group": "allTables",
+            "hgta_table": "chromInfo",
+            "hgta_track": db,
+            "hgta_regionType": "",
+            "position": "",
+            "hgta_doTopSubmit": "get info",
+        }
+    )
     page = requests.get(URL).text
     for i, line in enumerate(page.splitlines()):
         line = line.rstrip("\r\n")
@@ -78,5 +79,5 @@ if __name__ == "__main__":
                 for chrominfo in getchrominfo("http://genome-test.gi.ucsc.edu/cgi-bin/hgTables?", build):
                     print("\t".join(chrominfo), file=outfile)
         except Exception as e:
-            print("Failed to retrieve %s: %s" % (build, e))
+            print(f"Failed to retrieve {build}: {e}")
             os.remove(outfile_name)

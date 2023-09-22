@@ -1,6 +1,10 @@
-from galaxy.datatypes.metadata import ListParameter, MetadataElement
+from galaxy.datatypes.data import Text
+from galaxy.datatypes.metadata import (
+    ListParameter,
+    MetadataElement,
+)
+from galaxy.datatypes.protocols import DatasetProtocol
 from galaxy.datatypes.sniff import get_headers
-from galaxy.datatypes.text import Text
 
 
 class TextGrid(Text):
@@ -21,11 +25,19 @@ class TextGrid(Text):
 
     blurb = "Praat TextGrid file"
 
-    MetadataElement(name="annotations", default=[], desc="Annotation types", param=ListParameter, readonly=True, visible=True, optional=True, no_value=[])
+    MetadataElement(
+        name="annotations",
+        default=[],
+        desc="Annotation types",
+        param=ListParameter,
+        readonly=True,
+        visible=True,
+        optional=True,
+        no_value=[],
+    )
 
-    def sniff(self, filename):
-
-        with open(filename, 'r') as fd:
+    def sniff(self, filename: str) -> bool:
+        with open(filename) as fd:
             text = fd.read(len(self.header))
             return text == self.header
 
@@ -49,37 +61,69 @@ class BPF(Text):
 
     file_ext = "par"
 
-    MetadataElement(name="annotations", default=[], desc="Annotation types", param=ListParameter, readonly=True, visible=True, optional=True, no_value=[])
-    mandatory_headers = ['LHD', 'REP', 'SNB', 'SAM', 'SBF', 'SSB', 'NCH', 'SPN', 'LBD']
-    optional_headers = ['FIL', 'TYP', 'DBN', 'VOL', 'DIR', 'SRC', 'BEG', 'END', 'RED', 'RET', 'RCC', 'CMT', 'SPI', 'PCF', 'PCN', 'EXP', 'SYS', 'DAT', 'SPA', 'MAO', 'GPO', 'SAO']
+    MetadataElement(
+        name="annotations",
+        default=[],
+        desc="Annotation types",
+        param=ListParameter,
+        readonly=True,
+        visible=True,
+        optional=True,
+        no_value=[],
+    )
+    mandatory_headers = ["LHD", "REP", "SNB", "SAM", "SBF", "SSB", "NCH", "SPN", "LBD"]
+    optional_headers = [
+        "FIL",
+        "TYP",
+        "DBN",
+        "VOL",
+        "DIR",
+        "SRC",
+        "BEG",
+        "END",
+        "RED",
+        "RET",
+        "RCC",
+        "CMT",
+        "SPI",
+        "PCF",
+        "PCN",
+        "EXP",
+        "SYS",
+        "DAT",
+        "SPA",
+        "MAO",
+        "GPO",
+        "SAO",
+    ]
 
-    def set_meta(self, dataset, overwrite=True, **kwd):
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         """Set the metadata for this dataset from the file contents"""
         types = set()
-        with open(dataset.dataset.file_name, 'r') as fd:
+        with open(dataset.dataset.file_name) as fd:
             for line in fd:
                 # Split the line on a colon rather than regexing it
-                parts = line.split(':')
+                parts = line.split(":")
 
                 # And if the first part is a 3 character string, then it's
                 # interesting.
                 if len(parts) and len(parts[0]) == 3:
                     types.add(parts[0])
                 else:
-                    return False
+                    return
 
         dataset.metadata.annotations = list(types)
 
-    def sniff(self, filename):
+    def sniff(self, filename: str) -> bool:
         # We loop over 30 as there are 9 mandatory headers (the last should be
         # `LBD:`), while there are 21 optional headers that can be
         # interspersed.
-        seen_headers = [line[0] for line in get_headers(filename, sep=':', count=40)]
+        seen_headers = [line[0] for line in get_headers(filename, sep=":", count=40)]
 
         # We cut everything after LBD, where the headers end and contents
         # start. We choose not to validate contents.
-        if 'LBD' in seen_headers:
-            seen_headers = seen_headers[0:seen_headers.index('LBD') + 1]
+        if "LBD" in seen_headers:
+            seen_headers = seen_headers[0 : seen_headers.index("LBD") + 1]
 
         # Check that every mandatory header is present in the seen headers
         for header in self.mandatory_headers:

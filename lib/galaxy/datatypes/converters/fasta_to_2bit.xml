@@ -13,8 +13,8 @@
     </outputs>
     <tests>
         <test>
-            <param name="input" format="fasta" value="chr_m.fasta"/>
-            <output name="output" format="twobit" value="chr_m.twobit"/>
+            <param name="input" ftype="fasta" value="chr_m.fasta"/>
+            <output name="output" ftype="twobit" value="chr_m.twobit"/>
         </test>
     </tests>
     <help>

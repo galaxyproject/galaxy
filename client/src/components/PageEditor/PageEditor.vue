@@ -1,26 +1,27 @@
 <template>
     <LoadingSpan v-if="loading" message="Loading Page" class="m-3" />
     <page-editor-markdown
-        v-else-if="contentFormat == 'markdown'"
+        v-else
         :title="title"
         :page-id="pageId"
         :public-url="publicUrl"
         :content="content"
-        :content-data="contentData"
-    />
-    <page-editor-html v-else :title="title" :page-id="pageId" :public-url="publicUrl" :content="content" />
+        :content-data="contentData" />
 </template>
 
 <script>
 import axios from "axios";
-import { Toast } from "ui/toast";
+import { Toast } from "composables/toast";
 import { getAppRoot } from "onload/loadConfig";
 import { rethrowSimple } from "utils/simple-error";
 import LoadingSpan from "components/LoadingSpan";
-import PageEditorHtml from "./PageEditorHtml";
 import PageEditorMarkdown from "./PageEditorMarkdown";
 
 export default {
+    components: {
+        PageEditorMarkdown,
+        LoadingSpan,
+    },
     props: {
         pageId: {
             required: true,
@@ -36,11 +37,6 @@ export default {
             publicUrl: null,
             loading: true,
         };
-    },
-    components: {
-        PageEditorHtml,
-        PageEditorMarkdown,
-        LoadingSpan,
     },
     created() {
         this.getPage(this.pageId)

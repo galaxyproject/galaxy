@@ -17,6 +17,8 @@ $vertical-gap: 8px;
 }
 
 .list-item {
+    border: 1px solid $border-color;
+
     .vertical-spacing {
         @extend %vertical-spacing;
     }

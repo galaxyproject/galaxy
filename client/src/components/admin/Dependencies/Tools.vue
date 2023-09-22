@@ -4,7 +4,7 @@
             <tool-display :tool-id="toolIds[0]" />
         </span>
         <span v-else-if="compact"> {{ toolIds.length }} tools </span>
-        <div v-else :key="index" v-for="(toolId, index) in toolIds">
+        <div v-for="(toolId, index) in toolIds" v-else :key="index">
             <tool-display :tool-id="toolId" />
         </div>
     </div>

@@ -82,7 +82,10 @@ ${get_css()}
                             </a>
                         </td>
                         <td>${job[1]}</td>
-                        ${make_sparkline(key, trends[key], "bar", "/ day")}
+                        %try:
+                            ${make_sparkline(key, trends[key], "bar", "/ day")}
+                        %except KeyError:
+                        %endtry
                         <td id="${key}"></td>
                     </tr>
                     <%

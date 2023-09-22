@@ -1,9 +1,9 @@
 <tool id="strict_shell_default_off" name="strict_shell_default_off" version="1.0.0">
-    <command detect_errors="exit_code">
-        echo "Hello" > $out_file1
-        ; sh -c "exit $exit_code"
-        ; sh -c "exit 0"
-    </command>
+    <command detect_errors="exit_code"><![CDATA[
+echo 'Hello' > '$out_file1'
+; sh -c 'exit $exit_code'
+; sh -c 'exit 0'
+    ]]></command>
     <inputs>
         <param name="exit_code" type="integer" value="0" label="exit code"/>
     </inputs>

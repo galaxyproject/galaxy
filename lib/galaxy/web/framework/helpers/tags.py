@@ -22,10 +22,8 @@ def format_attrs(**attrs):
     >>> format_attrs(p=None) == u''
     True
     """
-    strings = [' {}="{}"'.format(attr, escape_silent(value))
-        for attr, value in sorted(attrs.items())
-        if value is not None]
-    return ''.join(strings)
+    strings = [f' {attr}="{escape_silent(value)}"' for attr, value in sorted(attrs.items()) if value is not None]
+    return "".join(strings)
 
 
 def javascript_link(*urls, **attrs):
@@ -47,16 +45,16 @@ def javascript_link(*urls, **attrs):
         <script src="/app.js" type="text/javascript"></script>
         <script src="/test/test.1.js" type="text/javascript"></script>
     """
-    if 'defer' in attrs:
-        if attrs['defer']:
-            attrs['defer'] = 'defer'
+    if "defer" in attrs:
+        if attrs["defer"]:
+            attrs["defer"] = "defer"
         else:
-            del attrs['defer']
-    attrs['type'] = 'text/javascript'
-    tag_template = '<script%s></script>'
+            del attrs["defer"]
+    attrs["type"] = "text/javascript"
+    tag_template = "<script%s></script>"
     tags = []
     for url in urls:
-        attrs['src'] = url
+        attrs["src"] = url
         tag = tag_template % format_attrs(**attrs)
         tags.append(tag)
     return "\n".join(tags)
@@ -81,10 +79,10 @@ def stylesheet_link(*urls, **attrs):
     attrs.setdefault("rel", "stylesheet")
     attrs.setdefault("type", "text/css")
     attrs.setdefault("media", "screen")
-    tag_template = '<link%s />'
+    tag_template = "<link%s />"
     tags = []
     for url in urls:
-        attrs['href'] = url
+        attrs["href"] = url
         tag = tag_template % format_attrs(**attrs)
         tags.append(tag)
     return "\n".join(tags)

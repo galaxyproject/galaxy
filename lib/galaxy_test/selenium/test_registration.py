@@ -1,11 +1,10 @@
 from .framework import (
     selenium_test,
-    SeleniumTestCase
+    SeleniumTestCase,
 )
 
 
-class RegistrationTestCase(SeleniumTestCase):
-
+class TestRegistration(SeleniumTestCase):
     @selenium_test
     def test_landing(self):
         # loading galaxy homepage
@@ -19,6 +18,15 @@ class RegistrationTestCase(SeleniumTestCase):
         self.register()
 
     @selenium_test
+    def test_registration_accessibility(self):
+        self.home()
+        self.components.masthead.register_or_login.wait_for_and_click()
+        registration = self.components.registration
+        registration.toggle.wait_for_and_click()
+        registration.form.wait_for_visible()
+        registration.form.assert_no_axe_violations_with_impact_of_at_least("moderate")
+
+    @selenium_test
     def test_logout(self):
         self.home()
         self.register()
@@ -26,7 +34,7 @@ class RegistrationTestCase(SeleniumTestCase):
         self.logout_if_needed()
         assert not self.is_logged_in()
         self.home()
-        self.components.masthead.user_email.assert_absent_or_hidden()
+        self.components.masthead.username.assert_absent_or_hidden()
 
     @selenium_test
     def test_reregister_email_fails(self):
@@ -51,34 +59,34 @@ class RegistrationTestCase(SeleniumTestCase):
         self.register(email1, password, username, confirm)
         self.logout_if_needed()
         self.register(email2, password, username, confirm, assert_valid=False)
-        self.assert_error_message(contains='Public name is taken')
+        self.assert_error_message(contains="Public name is taken")
 
     @selenium_test
     def test_bad_emails(self):
-        bad_emails = ['bob', 'bob@', 'bob@idontwanttocleanup', 'bob.cantmakeme']
+        bad_emails = ["bob", "bob@", "bob.cantmakeme"]
         good_email = self._get_random_email()
         password = self.default_password
         confirm = password
         username = good_email.split("@")[0]
         for bad_email in bad_emails:
             self.register(bad_email, password, username, confirm, assert_valid=False)
-            self.assert_error_message(contains='The format of the email address is not correct.')
+            self.assert_error_message(contains="The format of the email address is not correct.")
 
     @selenium_test
     def test_short_password(self):
         self.register(password="1234", assert_valid=False)
-        self.assert_error_message(contains='Use a password of at least 6 characters')
+        self.assert_error_message(contains="Use a password of at least 6 characters")
 
     @selenium_test
     def test_password_confirmation(self):
-        bad_confirms = ['1234', '12345678', '123456 7']
+        bad_confirms = ["1234", "12345678", "123456 7"]
         for bad_confirm in bad_confirms:
             self.register(confirm=bad_confirm, assert_valid=False)
-            self.assert_error_message(contains='Passwords do not match')
+            self.assert_error_message(contains="Passwords do not match")
 
     @selenium_test
     def test_bad_usernames(self):
-        bad_usernames = ['BOBERT', 'Robert Paulson', 'bobert!']
+        bad_usernames = ["BOBERT", "Robert Paulson", "bobert!"]
         for bad_username in bad_usernames:
             self.register(username=bad_username, assert_valid=False)
-            self.assert_error_message(contains='Public name must contain only ')
+            self.assert_error_message(contains="Public name must contain only ")

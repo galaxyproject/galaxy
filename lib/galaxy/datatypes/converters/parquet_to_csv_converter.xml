@@ -1,0 +1,21 @@
+<!-- In order to use this converter the admin has to install its dependency pyarrow e.g. through the Galaxy admin UI -->
+<tool id="CONVERTER_parquet_to_csv" name="Convert Parquet to csv" version="1.0.0" profile="19.05">
+    <requirements>
+        <requirement type="package" version="4.0.1">pyarrow</requirement>
+    </requirements>
+    <command>python '$__tool_directory__/parquet_to_csv_converter.py' '$input' '$output'</command>
+    <inputs>
+        <param name="input" type="data" format="parquet" label="Parquet file"/>
+    </inputs>
+    <outputs>
+        <data name="output" format="csv"/>
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" ftype="parquet" value="parq_conv.parquet"/>
+            <output name="output" ftype="csv" value="parq_conv.csv"/>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

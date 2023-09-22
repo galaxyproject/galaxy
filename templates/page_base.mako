@@ -3,7 +3,13 @@
 </%doc>
 
 <%def name="get_page_url( sort_id, order, *args, **kwargs )">
+    %try:
+        %if str(by_destination).lower() == "true":
+            <a href="${h.url_for( controller=args[0], action=args[1], by_destination=True, sort_id=sort_id, order=order, **kwargs )}">${kwargs.get("page")}</a>
+        %endif
+    %except NameError:
         <a href="${h.url_for( controller=args[0], action=args[1], sort_id=sort_id, order=order, **kwargs )}">${kwargs.get("page")}</a>
+    %endtry
 </%def>
 
 <%!
@@ -44,11 +50,12 @@
     </div>
 </%def>
 
-<%def name="get_entry_selector(controller, action, entries, sort_id, order)">
+<%def name="get_entry_selector(controller, action, entries, sort_id, order, by_destination=False)">
     <div id="entry_form" >
         <form method="post" controller=${controller} action=${action}>
             <input type="hidden" value=${sort_id} name="sort_id">
             <input type="hidden" value=${order} name="order">
+            <input type="hidden" value=${by_destination} name="by_destination">
             %try:
                 %if spark_limit:
                     <input type="hidden" value=${spark_limit} name="spark_limit">

@@ -22,6 +22,12 @@
                  first login. Default is False. -->
 <!--        <auto-register>True</auto-register>
 -->
+
+            <!-- How often Galaxy should retry to validate a user-name: 
+                 If a username is invalid (already taken, too short, too long, non-alphanumeric + '_-')
+                 Galaxy tries again with username+"-i" for i<= max-retries. -->
+<!--        <max-retries>10</max-retries>
+-->
             <!-- Whether users are allowed to change their password. Default is
                  False. -->
 <!--        <allow-password-change>False</allow-password-change>
@@ -51,7 +57,9 @@
                  Options and values should match those from the python-ldap
                  documentation.
                  The following example allows connecting to ldaps:// (SSL/TLS)
-                 when self-signed certificates are used -->
+                 when self-signed certificates are used 
+                 These options are valid only if ldap provider is used. 
+                 For ldap3 none of these options are used-->
 <!--        <ldap-options>OPT_X_TLS_REQUIRE_CERT=OPT_X_TLS_ALLOW</ldap-options>
 -->
             <!-- Whether unregistered users should use their LDAP username

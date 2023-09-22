@@ -13,8 +13,6 @@
         </params>
     </xml>
     <xml name="specs">
-        <tag>svg</tag>
-        <use_panels>optional</use_panels>
         <exports>
             <exports>png</exports>
             <exports>svg</exports>
@@ -26,9 +24,10 @@
             <label>Pick a series color</label>
             <name>color</name>
             <type>color</type>
+            <optional>true</optional>
         </input>
         <input>
-            <label>Data point labels</label>
+            <label>Column of data point labels</label>
             <name>tooltip</name>
             <type>data_column</type>
             <is_label>true</is_label>
@@ -45,14 +44,14 @@
     <xml name="groups_bar">
         <input>
             <name>x</name>
-            <label>Values for x-axis</label>
+            <label>Column of x-axis values</label>
             <type>data_column</type>
             <is_label>true</is_label>
             <is_auto>true</is_auto>
         </input>
         <input>
             <name>y</name>
-            <label>Values for y-axis</label>
+            <label>Column of y-axis values</label>
             <type>data_column</type>
             <is_numeric>true</is_numeric>
         </input>
@@ -418,6 +417,13 @@
             <help>Would you like to add a legend?</help>
             <type>boolean</type>
             <value>true</value>
+        </input>
+        <input>
+            <name>__use_panels</name>
+            <label>Use multi-panels</label>
+            <help>Would you like to separate your data into individual panels?</help>
+            <type>boolean</type>
+            <value>false</value>
         </input>
     </xml>
 </macros>

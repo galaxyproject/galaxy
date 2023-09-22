@@ -4,16 +4,16 @@ from galaxy.datatypes.registry import example_datatype_registry_for_sample
 
 def test_matches_any():
     datatypes_registry = example_datatype_registry_for_sample()
-    data_datatype = datatypes_registry.get_datatype_by_extension('data')
-    fasta_datatype = datatypes_registry.get_datatype_by_extension('fasta')
-    fastq_datatype = datatypes_registry.get_datatype_by_extension('fastq')
-    fastqsanger_datatype = datatypes_registry.get_datatype_by_extension('fastqsanger')
-    fastqgz_datatype = datatypes_registry.get_datatype_by_extension('fastq.gz')
-    fastqbz2_datatype = datatypes_registry.get_datatype_by_extension('fastq.bz2')
-    fastqsangergz_datatype = datatypes_registry.get_datatype_by_extension('fastqsanger.gz')
-    fastqsangerbz2_datatype = datatypes_registry.get_datatype_by_extension('fastqsanger.bz2')
-    h5_datatype = datatypes_registry.get_datatype_by_extension('h5')
-    mz5_datatype = datatypes_registry.get_datatype_by_extension('mz5')
+    data_datatype = datatypes_registry.get_datatype_by_extension("data")
+    fasta_datatype = datatypes_registry.get_datatype_by_extension("fasta")
+    fastq_datatype = datatypes_registry.get_datatype_by_extension("fastq")
+    fastqsanger_datatype = datatypes_registry.get_datatype_by_extension("fastqsanger")
+    fastqgz_datatype = datatypes_registry.get_datatype_by_extension("fastq.gz")
+    fastqbz2_datatype = datatypes_registry.get_datatype_by_extension("fastq.bz2")
+    fastqsangergz_datatype = datatypes_registry.get_datatype_by_extension("fastqsanger.gz")
+    fastqsangerbz2_datatype = datatypes_registry.get_datatype_by_extension("fastqsanger.bz2")
+    h5_datatype = datatypes_registry.get_datatype_by_extension("h5")
+    mz5_datatype = datatypes_registry.get_datatype_by_extension("mz5")
 
     # Test empty list behavior.
     assert not fasta_datatype.matches_any([])
@@ -88,15 +88,15 @@ def test_sniff_compressed_dynamic_datatypes_default_on():
     # when coming from guess_ext.
     datatypes_registry = example_datatype_registry_for_sample(sniff_compressed_dynamic_datatypes_default=True)
 
-    fastqsangergz_datatype = datatypes_registry.get_datatype_by_extension('fastqsanger.gz')
-    fname = sniff.get_test_fname('1.fastqsanger.gz')
+    fastqsangergz_datatype = datatypes_registry.get_datatype_by_extension("fastqsanger.gz")
+    fname = sniff.get_test_fname("1.fastqsanger.gz")
     assert fastqsangergz_datatype.sniff(fname)
 
     sniff_order = datatypes_registry.sniff_order
-    fname = sniff.get_test_fname('1.fastqsanger.gz')
-    assert sniff.guess_ext(fname, sniff_order) == 'fastqsanger.gz'
-    fname = sniff.get_test_fname('1.fastqsanger.bz2')
-    assert sniff.guess_ext(fname, sniff_order) == 'fastqsanger.bz2'
+    fname = sniff.get_test_fname("1.fastqsanger.gz")
+    assert sniff.guess_ext(fname, sniff_order) == "fastqsanger.gz"
+    fname = sniff.get_test_fname("1.fastqsanger.bz2")
+    assert sniff.guess_ext(fname, sniff_order) == "fastqsanger.bz2"
 
 
 def test_sniff_compressed_dynamic_datatypes_default_off():
@@ -104,13 +104,13 @@ def test_sniff_compressed_dynamic_datatypes_default_off():
     datatypes_registry = example_datatype_registry_for_sample(sniff_compressed_dynamic_datatypes_default=False)
 
     # sniffer still returns True for these files...
-    fastqsangergz_datatype = datatypes_registry.get_datatype_by_extension('fastqsanger.gz')
-    fname = sniff.get_test_fname('1.fastqsanger.gz')
+    fastqsangergz_datatype = datatypes_registry.get_datatype_by_extension("fastqsanger.gz")
+    fname = sniff.get_test_fname("1.fastqsanger.gz")
     assert fastqsangergz_datatype.sniff(fname)
 
     # but they don't report as matching the specified sniff_order.
     sniff_order = datatypes_registry.sniff_order
-    fname = sniff.get_test_fname('1.fastqsanger.gz')
-    assert 'fastq' not in sniff.guess_ext(fname, sniff_order)
-    fname = sniff.get_test_fname('1.fastqsanger.bz2')
-    assert 'fastq' not in sniff.guess_ext(fname, sniff_order)
+    fname = sniff.get_test_fname("1.fastqsanger.gz")
+    assert "fastq" not in sniff.guess_ext(fname, sniff_order)
+    fname = sniff.get_test_fname("1.fastqsanger.bz2")
+    assert "fastq" not in sniff.guess_ext(fname, sniff_order)

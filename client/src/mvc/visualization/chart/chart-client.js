@@ -10,6 +10,11 @@ import Editor from "mvc/visualization/chart/views/editor";
 import Viewer from "mvc/visualization/chart/views/viewer";
 import Menu from "mvc/visualization/chart/views/menu";
 
+/** Get boolean as string */
+function asBoolean(value) {
+    return String(value).toLowerCase() == "true";
+}
+
 export default Backbone.View.extend({
     initialize: function (options) {
         const Galaxy = getGalaxyInstance();
@@ -26,7 +31,7 @@ export default Backbone.View.extend({
         this.$buttons = this.$(".charts-buttons");
         this.chart = new Chart({}, options);
         this.chart.plugin = options.visualization_plugin;
-        this.chart.plugin.specs = this.chart.plugin.specs || {};
+        this.chart.requiresConfirmation = asBoolean(this.chart.plugin.specs?.confirm);
         this.chart_load = options.chart_load;
         this.message = new Ui.Message();
         this.deferred = new Deferred();
@@ -42,7 +47,6 @@ export default Backbone.View.extend({
             .done((dataset) => {
                 this.dataset = dataset;
                 this.chart.load();
-                this.chart.trigger("redraw");
             })
             .fail((response) => {
                 const message = response.responseJSON && response.responseJSON.err_msg;

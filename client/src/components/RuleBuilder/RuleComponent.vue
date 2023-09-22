@@ -12,12 +12,6 @@
 import _l from "utils/localization";
 
 export default {
-    data: function () {
-        return {
-            applyLabel: _l("Apply"),
-            cancelLabel: _l("Cancel"),
-        };
-    },
     props: {
         ruleType: {
             type: String,
@@ -26,22 +20,25 @@ export default {
         displayRuleType: {
             required: true,
         },
-        builder: {
-            required: true,
-        },
     },
-    methods: {
-        cancel() {
-            this.builder.displayRuleType = null;
-        },
-        okay() {
-            this.builder.handleRuleSave(this.ruleType);
-            this.cancel();
-        },
+    data: function () {
+        return {
+            applyLabel: _l("Apply"),
+            cancelLabel: _l("Cancel"),
+        };
     },
     computed: {
         typeToClass() {
             return "rule-edit-" + this.ruleType.replace(/_/g, "-");
+        },
+    },
+    methods: {
+        cancel() {
+            this.$emit("update:displayRuleType", null);
+        },
+        okay() {
+            this.$emit("saveRule", this.ruleType);
+            this.cancel();
         },
     },
 };

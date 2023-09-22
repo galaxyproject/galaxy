@@ -4,8 +4,8 @@ import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import _l from "utils/localization";
-import * as d3 from "d3";
-import { event as currentEvent } from "d3";
+import * as d3 from "d3v3";
+import { event as currentEvent } from "d3v3";
 import visualization from "viz/visualization";
 import mod_utils from "utils/utils";
 import config from "utils/config";
@@ -99,10 +99,14 @@ var UsesTicks = {
      */
     formatNum: function (num, sigDigits) {
         // Use default of 2 sig. digits.
-        if (sigDigits === undefined) sigDigits = 2;
+        if (sigDigits === undefined) {
+            sigDigits = 2;
+        }
 
         // Verify input number
-        if (num === null) return null;
+        if (num === null) {
+            return null;
+        }
 
         // Calculate return value
         var rval = null;

@@ -1,0 +1,44 @@
+<tool id="select_from_csvdataset" name="select_from_csvdataset" version="0.1.0">
+    <description>Create dynamic options from CSV data sets</description>
+    <command><![CDATA[
+echo select_single '$select_single' > '$output'
+    ]]></command>
+    <inputs>
+        <param name="single" type="data" format="csv" label="single"/>
+        <param name="select_single" type="select" label="select_single">
+            <options from_dataset="single" separator="," startswith="1/3/09">
+                <column name="name" index="1"/>
+                <column name="value" index="2"/>
+                <validator type="no_options" message="No data is available in single" />
+            </options>
+        </param>
+    </inputs>
+
+    <outputs>
+        <data name="output" format="txt" />
+    </outputs>
+
+    <tests>
+        <!-- test that csv can be selected, i.e. if the separator attribute of <options> works-->
+        <test>
+            <param name="single" value="1.csv" />
+            <param name="select_single" value="Product1" />
+            <output name="output">
+                <assert_contents>
+                    <has_text text="select_single 1200" />    
+                </assert_contents>
+            </output>
+        </test>
+        <!-- test that only data from lines starting with "1/2/09" can be selected, i.e. if the startswith attribute of <options> works-->
+        <test expect_failure="true">
+            <param name="single" value="1.csv" />
+            <param name="select_single" value="Product" />
+        </test>
+        <test expect_failure="true">
+            <param name="single" value="1.csv" />
+            <param name="select_single" value="Product2" />
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

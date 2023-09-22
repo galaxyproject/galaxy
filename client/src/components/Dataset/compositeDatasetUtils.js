@@ -1,20 +1,13 @@
-import { getAppRoot } from "onload/loadConfig";
-import { Services } from "components/Dataset/services";
+import { getCompositeDatasetLink } from "components/Dataset/services";
 import store from "../../store/index";
 
 export const getPathDestination = async (history_dataset_id, path) => {
-    const services = new Services({ root: getAppRoot() });
-
     const computePathDestination = (pathDestination) => {
-        if (pathDestination.datasetContent[0].class === "Directory")
-            pathDestination.datasetRootDir = datasetContent[0].path;
-        else return;
-
         if (path === undefined || path === "undefined") {
             return pathDestination;
         }
 
-        const filepath = `${pathDestination.datasetRootDir}/${path}`;
+        const filepath = path;
 
         const datasetEntry = datasetContent.find((datasetEntry) => {
             return filepath === datasetEntry.path;
@@ -26,7 +19,7 @@ export const getPathDestination = async (history_dataset_id, path) => {
                 pathDestination.filepath = filepath;
                 return pathDestination;
             }
-            pathDestination.fileLink = services.getCompositeDatasetLink(history_dataset_id, datasetEntry.path);
+            pathDestination.fileLink = getCompositeDatasetLink(history_dataset_id, datasetEntry.path);
         }
         return pathDestination;
     };

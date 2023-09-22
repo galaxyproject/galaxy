@@ -3,8 +3,7 @@
         :error-message="errorMessage"
         :options-show="optionsShow"
         :modal-show="modalShow"
-        :hide-modal="onCancel"
-    >
+        :hide-modal="onCancel">
         <template v-slot:search>
             <data-dialog-search v-model="filter" />
         </template>
@@ -16,8 +15,7 @@
                 :filter="filter"
                 leaf-icon="fa fa-folder"
                 @clicked="clicked"
-                @load="load"
-            />
+                @load="load" />
         </template>
     </selection-dialog>
 </template>

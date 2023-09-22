@@ -1,14 +1,21 @@
 """Generic I/O and shell processing code used by Galaxy tool dependencies."""
 import logging
 import os
+import shlex
 import subprocess
 import sys as _sys
-
-from six.moves import shlex_quote
+import tempfile
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+    Union,
+)
 
 from galaxy.util import (
     unicodify,
-    which
+    which,
 )
 
 log = logging.getLogger(__name__)
@@ -48,7 +55,7 @@ def redirect_aware_commmunicate(p, sys=_sys):
     return out, err
 
 
-def shell(cmds, env=None, **kwds):
+def shell(cmds: Union[List[str], str], env: Optional[Dict[str, str]] = None, **kwds: Dict[str, Any]) -> int:
     """Run shell commands with `shell_process` and wait."""
     sys = kwds.get("sys", _sys)
     assert sys is not None
@@ -61,17 +68,19 @@ def shell(cmds, env=None, **kwds):
         return p.wait()
 
 
-def shell_process(cmds, env=None, **kwds):
+def shell_process(
+    cmds: Union[List[str], str], env: Optional[Dict[str, str]] = None, **kwds: Dict[str, Any]
+) -> subprocess.Popen:
     """A high-level method wrapping subprocess.Popen.
 
     Handles details such as environment extension and in process I/O
     redirection.
     """
     sys = kwds.get("sys", _sys)
-    popen_kwds = dict()
+    popen_kwds: Dict[str, Any] = dict()
     if isinstance(cmds, str):
         log.warning("Passing program arguments as a string may be a security hazard if combined with untrusted input")
-        popen_kwds['shell'] = True
+        popen_kwds["shell"] = True
     if kwds.get("stdout", None) is None and redirecting_io(sys=sys):
         popen_kwds["stdout"] = subprocess.PIPE
     if kwds.get("stderr", None) is None and redirecting_io(sys=sys):
@@ -100,11 +109,11 @@ def argv_to_str(command_argv, quote=True):
 
     If None appears in the command list it is simply excluded.
 
-    Arguments are quoted with shlex_quote. That said, this method is not meant to be
+    Arguments are quoted with shlex.quote(). That said, this method is not meant to be
     used in security critical paths of code and should not be used to sanitize
     code.
     """
-    map_func = shlex_quote if quote else lambda x: x
+    map_func = shlex.quote if quote else lambda x: x
     return " ".join(map_func(c) for c in command_argv if c is not None)
 
 
@@ -145,28 +154,49 @@ class CommandLineException(Exception):
         self.stdout = stdout
         self.stderr = stderr
         self.returncode = returncode
-        self.message = ("Failed to execute command-line %s, stderr was:\n"
-                        "-------->>begin stderr<<--------\n"
-                        "%s\n"
-                        "-------->>end stderr<<--------\n"
-                        "-------->>begin stdout<<--------\n"
-                        "%s\n"
-                        "-------->>end stdout<<--------\n"
-                        ) % (command, stderr, stdout)
+        self.message = (
+            "Failed to execute command-line {}, stderr was:\n"
+            "-------->>begin stderr<<--------\n"
+            "{}\n"
+            "-------->>end stderr<<--------\n"
+            "-------->>begin stdout<<--------\n"
+            "{}\n"
+            "-------->>end stdout<<--------\n"
+        ).format(command, stderr, stdout)
 
     def __str__(self):
         """Return a verbose error message indicating the command problem."""
         return self.message
 
 
+def new_clean_env():
+    """
+    Returns a minimal environment to use when invoking a subprocess
+    """
+    env = {}
+    for k in ("HOME", "LC_CTYPE", "PATH", "TMPDIR"):
+        if k in os.environ:
+            env[k] = os.environ[k]
+    if "TMPDIR" not in env:
+        env["TMPDIR"] = os.path.abspath(tempfile.gettempdir())
+    # Set LC_CTYPE environment variable to enforce UTF-8 file encoding.
+    # This is needed e.g. for Python < 3.7 where
+    # `locale.getpreferredencoding()` (also used by open() to determine the
+    # default file encoding) would return `ANSI_X3.4-1968` without this.
+    if not env.get("LC_CTYPE", "").endswith("UTF-8"):
+        env["LC_CTYPE"] = "C.UTF-8"
+    return env
+
+
 __all__ = (
-    'argv_to_str',
-    'CommandLineException',
-    'download_command',
-    'execute',
-    'redirect_aware_commmunicate',
-    'redirecting_io',
-    'shell',
-    'shell_process',
-    'which',
+    "argv_to_str",
+    "CommandLineException",
+    "download_command",
+    "execute",
+    "new_clean_env",
+    "redirect_aware_commmunicate",
+    "redirecting_io",
+    "shell",
+    "shell_process",
+    "which",
 )

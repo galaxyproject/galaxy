@@ -24,7 +24,7 @@ from . import (
     exceptions,
     external,
     hierarchy,
-    line
+    line,
 )
 
-__all__ = ('decorators', 'exceptions', 'base', 'chunk', 'line', 'hierarchy', 'column', 'external', 'dataset')
+__all__ = ("decorators", "exceptions", "base", "chunk", "line", "hierarchy", "column", "external", "dataset")

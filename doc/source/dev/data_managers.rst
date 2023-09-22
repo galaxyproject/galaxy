@@ -101,6 +101,8 @@ This tag defines a particular Data Manager. Any number of
 +---------------+------------+-----------+--------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 | ``id``        | A string*  | no        | ``id="twobit_builder"``                          | Must be unique across all Data Managers; should be lowercase and contain only letters, numbers, and underscores. While technically optional, it is a best-practice to specify this value. When not specified, it will use the id of the underlying Data Manager Tool. |
 +---------------+------------+-----------+--------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
+| ``version``   | A string*  | no        | ``version="0.0.1"``                              | Deprecated with release 21.09. The version of the data manager defaults to the version of the data manager tool                                                                                                                                                       |
++---------------+------------+-----------+--------------------------------------------------+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------+
 
 The following is an example that contains all of the attributes
 described above.
@@ -496,6 +498,7 @@ Data Managers are composed of two components:
 
 - Data Manager configuration (e.g. *data_manager_conf.xml*)
 - Data Manager Tool
+- Data table configuration
 
 Data Manager Configuration
 ~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -504,6 +507,11 @@ the set of available Data Managers using an XML description. Each
 Data Manager can add entries to one or more Tool Data Tables. For
 each Tool Data Table under consideration, the expected output entry
 columns, and how to handle the Data Manager Tool results, are defined.
+
+Upon installation, Galaxy will recursivly search for data_manager_conf.xml in the repository.
+data_manager_conf.xml should be located in the root of the repository but can be located in a sub-directory.
+The first instance of data_manager_conf.xml found will be used.
+This file defines the paths to the data manager tools within the repository directory structure.
 
 Data Manager Tool
 ~~~~~~~~~~~~~~~~~
@@ -529,6 +537,17 @@ referenced by the Data Manager Tool, if any, is stored within the
 
 A data manager tool can use a ``conda`` environment if the target
 Galaxy is version 18.09 or above (specified in the tool's XML file).
+
+Data manager tools are loaded by referring to them in the data_manager_conf.xml file for the repository.
+
+Data table configuration
+~~~~~~~~~~~~~~~~~~~~~~~~
+
+Data tables that data managers operate on are specified in `tool_data_table_conf.xml.sample` located at the repository root.
+
+Tables can be preloaded with content from files at `tool-data/*.loc.sample` relative to the repository root.
+tool-data can contain subdirectories but files in those subdirectories must be referred to including the subdirectory path by
+anything that resolves relative to the tool-data path within Galaxy (ie. path entries in the data table).
 
 Data Manager Server Configuration Options
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -599,7 +618,7 @@ the ``extra_files_path`` of ``out_file``.
 
 .. code-block:: xml
 
-    <tool id="data_manager_fetch_genome_all_fasta" name="Reference Genome" version="0.0.1" tool_type="manage_data">
+    <tool id="data_manager_fetch_genome_all_fasta" name="Reference Genome" tool_type="manage_data">
         <description>fetching</description>
         <command interpreter="python">data_manager_fetch_genome_all_fasta.py "${out_file}" --dbkey_description ${ dbkey.get_display_text() }</command>
         <inputs>

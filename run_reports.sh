@@ -36,5 +36,12 @@ if [ -z "$GALAXY_REPORTS_CONFIG" ]; then
 fi
 
 find_server ${GALAXY_REPORTS_CONFIG:-none} reports
+
+if [ "$run_server" = "gunicorn" -a -z "$GALAXY_REPORTS_CONFIG" ]; then
+    GALAXY_REPORTS_CONFIG="config/reports.yml.sample"
+    export GALAXY_REPORTS_CONFIG
+    echo 'WARNING: Using default reports config at config/reports.yml.sample, copy to config/reports.yml or set $GALAXY_REPORTS_CONFIG if this is not intentional'
+fi
+
 echo "Executing: $run_server $server_args"
 eval $run_server $server_args

@@ -1,23 +1,40 @@
+import { createPinia } from "pinia";
 import MockAdapter from "axios-mock-adapter";
 import axios from "axios";
-import UploadModal from "./UploadModal.vue";
-
-import { shallowMount, createLocalVue } from "@vue/test-utils";
+import UploadModal from "./UploadModal";
+import UploadModalContent from "./UploadModalContent";
+import { mount } from "@vue/test-utils";
+import { getLocalVue, mockModule } from "tests/jest/helpers";
+import { configStore } from "store/configStore";
+import Vuex from "vuex";
+import { useUserStore } from "stores/userStore";
+import { useHistoryStore } from "stores/historyStore";
 
 jest.mock("app");
 
 const propsData = {
     chunkUploadSize: 1024,
     uploadPath: "/api/tools",
+    fileSourcesConfigured: true,
+};
+
+const createStore = () => {
+    return new Vuex.Store({
+        modules: {
+            config: mockModule(configStore, { config: {} }),
+        },
+    });
 };
 
 describe("UploadModal.vue", () => {
     let wrapper;
-    let localVue;
     let axiosMock;
+    let userStore;
+    let historyStore;
 
-    beforeEach(() => {
+    beforeEach(async () => {
         axiosMock = new MockAdapter(axios);
+
         const fastaResponse = {
             description_url: "https://wiki.galaxyproject.org/Learn/Datatypes#Fasta",
             display_in_upload: true,
@@ -26,7 +43,9 @@ describe("UploadModal.vue", () => {
                 "A sequence in FASTA format consists of a single-line description, followed by lines of sequence data. The first character of the description line is a greater-than ('>') symbol in the first column. All lines should be shorter than 80 characters.",
         };
         const datatypesResponse = [fastaResponse];
+
         axiosMock.onGet(`/api/datatypes?extension_only=False`).reply(200, datatypesResponse);
+
         const genomesResponse = [
             ["Scarlet macaw Jun 2013 (SMACv1.1/araMac1) (araMac1)", "araMac1"],
             ["Cat Dec. 2008 (NHGRI/GTB V17e/felCat4) (felCat4)", "felCat4"],
@@ -34,33 +53,62 @@ describe("UploadModal.vue", () => {
         ];
         axiosMock.onGet(`/api/genomes`).reply(200, genomesResponse);
 
-        localVue = createLocalVue();
-        wrapper = shallowMount(UploadModal, {
-            propsData: propsData,
-            localVue: localVue,
+        // mock current user & history
+
+        axiosMock.onGet(`/api/datatypes?extension_only=False`).reply(200, datatypesResponse);
+
+        const localVue = getLocalVue();
+        const pinia = createPinia();
+        const store = createStore();
+
+        wrapper = await mount(UploadModal, {
+            store,
+            provide: { store },
+            propsData,
+            localVue,
+            stubs: {
+                BTabs: true,
+                BTab: true,
+                Collection: true,
+                Composite: true,
+                Default: true,
+                RulesInput: true,
+            },
+            pinia,
         });
+
+        userStore = useUserStore();
+        userStore.currentUser = { id: "fakeUser" };
+        historyStore = useHistoryStore();
+        historyStore.setHistories([{ id: "fakeHistory" }]);
+        historyStore.setCurrentHistoryId("fakeHistory");
+
+        await wrapper.vm.open();
     });
 
     afterEach(() => {
         axiosMock.restore();
+        axiosMock.reset();
     });
 
     it("should load with correct defaults", async () => {
-        expect(wrapper.vm.auto.id).toBe("auto");
-        expect(wrapper.vm.datatypesDisableAuto).toBe(false);
+        const contentWrapper = wrapper.findComponent(UploadModalContent);
+        expect(contentWrapper.vm.auto.id).toBe("auto");
+        expect(contentWrapper.vm.datatypesDisableAuto).toBe(false);
     });
 
     it("should fetch datatypes and parse them", async () => {
-        await localVue.nextTick();
-        await localVue.nextTick();
-        expect(wrapper.vm.listExtensions.length).toBe(2);
-        expect(wrapper.vm.listExtensions[0].id).toBe("auto");
-        expect(wrapper.vm.listExtensions[1].id).toBe("fasta");
+        // lists are one layer deeper now, it won't matter after refactoring
+        const contentWrapper = wrapper.findComponent(UploadModalContent);
+        expect(contentWrapper.exists()).toBe(true);
+        expect(contentWrapper.vm.listExtensions.length).toBe(2);
+        expect(contentWrapper.vm.listExtensions[0].id).toBe("auto");
+        expect(contentWrapper.vm.listExtensions[1].id).toBe("fasta");
     });
 
     it("should fetch genomes and parse them", async () => {
-        await localVue.nextTick();
-        await localVue.nextTick();
-        expect(wrapper.vm.listGenomes.length).toBe(3);
+        // lists are one yaer deeper now, it won't matter after refactoring
+        const contentWrapper = wrapper.findComponent(UploadModalContent);
+        expect(contentWrapper.vm.listGenomes.length).toBe(3);
     });
 });

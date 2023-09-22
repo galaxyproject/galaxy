@@ -3,8 +3,15 @@
         <div v-if="error" class="alert alert-danger" show>{{ error }}</div>
         <div v-else>
             <b-alert :variant="messageVariant" :show="showMessage">{{ message }}</b-alert>
-            <delayed-input class="mb-3" @onChange="onQuery" placeholder="Search Datasets" />
-            <b-table id="dataset-table" striped no-local-sorting @sort-changed="onSort" :fields="fields" :items="rows">
+            <delayed-input class="m-1 mb-3" placeholder="Search Datasets" @change="onQuery" />
+            <b-table
+                id="dataset-table"
+                striped
+                no-sort-reset
+                no-local-sorting
+                :fields="fields"
+                :items="rows"
+                @sort-changed="onSort">
                 <template v-slot:cell(name)="row">
                     <DatasetName :item="row.item" @showDataset="onShowDataset" @copyDataset="onCopyDataset" />
                 </template>
@@ -12,7 +19,10 @@
                     <DatasetHistory :item="row.item" />
                 </template>
                 <template v-slot:cell(tags)="row">
-                    <Tags :index="row.index" :tags="row.item.tags" @input="onTags" />
+                    <StatelessTags
+                        :value="row.item.tags"
+                        :disabled="row.item.deleted"
+                        @input="(tags) => onTags(tags, row.index)" />
                 </template>
                 <template v-slot:cell(update_time)="data">
                     <UtcDate :date="data.value" mode="elapsed" />
@@ -20,26 +30,24 @@
             </b-table>
             <loading-span v-if="loading" message="Loading datasets" />
             <div v-if="showNotFound">
-                No matching entries found for: <span class="font-weight-bold">{{ this.query }}</span
+                No matching entries found for: <span class="font-weight-bold">{{ query }}</span
                 >.
             </div>
-            <div v-if="showNotAvailable">
-                No datasets found.
-            </div>
+            <div v-if="showNotAvailable">No datasets found.</div>
         </div>
     </div>
 </template>
 <script>
-import { getAppRoot } from "onload/loadConfig";
+import { mapActions } from "pinia";
+import { useHistoryStore } from "@/stores/historyStore";
 import { getGalaxyInstance } from "app";
-import { Services } from "./services";
+import { copyDataset, getDatasets, updateTags } from "./services";
 import DatasetName from "./DatasetName";
 import DatasetHistory from "./DatasetHistory";
 import DelayedInput from "components/Common/DelayedInput";
 import UtcDate from "components/UtcDate";
-import Tags from "components/Common/Tags";
+import StatelessTags from "components/TagsMultiselect/StatelessTags";
 import LoadingSpan from "components/LoadingSpan";
-import { mapActions } from "vuex";
 
 export default {
     components: {
@@ -48,7 +56,7 @@ export default {
         LoadingSpan,
         DelayedInput,
         UtcDate,
-        Tags,
+        StatelessTags,
     },
     data() {
         return {
@@ -90,7 +98,7 @@ export default {
             sortDesc: true,
             loading: true,
             message: null,
-            messageVariant: null,
+            messageVariant: "danger",
             rows: [],
         };
     },
@@ -106,23 +114,19 @@ export default {
         },
     },
     created() {
-        this.fetchHistories();
-        this.root = getAppRoot();
-        this.services = new Services({ root: this.root });
         this.load();
     },
     methods: {
-        ...mapActions(["fetchHistories"]),
+        ...mapActions(useHistoryStore, ["applyFilters"]),
         load(concat = false) {
             this.loading = true;
-            this.services
-                .getDatasets({
-                    query: this.query,
-                    sortBy: this.sortBy,
-                    sortDesc: this.sortDesc,
-                    offset: this.offset,
-                    limit: this.limit,
-                })
+            getDatasets({
+                query: this.query,
+                sortBy: this.sortBy,
+                sortDesc: this.sortDesc,
+                offset: this.offset,
+                limit: this.limit,
+            })
                 .then((datasets) => {
                     if (concat) {
                         this.rows = this.rows.concat(datasets);
@@ -140,8 +144,7 @@ export default {
             const history = Galaxy.currHistoryPanel;
             const dataset_id = item.id;
             const history_id = history.model.id;
-            this.services
-                .copyDataset(dataset_id, history_id)
+            copyDataset(dataset_id, history_id)
                 .then((response) => {
                     history.loadCurrentHistory();
                 })
@@ -149,21 +152,23 @@ export default {
                     this.onError(error);
                 });
         },
-        onShowDataset(item) {
-            const Galaxy = getGalaxyInstance();
-            this.services
-                .setHistory(item.history_id)
-                .then((history) => {
-                    Galaxy.currHistoryPanel.loadCurrentHistory();
-                })
-                .catch((error) => {
-                    this.onError(error);
-                });
+        async onShowDataset(item) {
+            const { history_id } = item;
+            const filters = {
+                deleted: item.deleted,
+                visible: item.visible,
+                hid: item.hid,
+            };
+            try {
+                await this.applyFilters(history_id, filters);
+            } catch (error) {
+                this.onError(error);
+            }
         },
         onTags(tags, index) {
             const item = this.rows[index];
             item.tags = tags;
-            this.services.updateTags(item.id, "HistoryDatasetAssociation", tags).catch((error) => {
+            updateTags(item.id, "HistoryDatasetAssociation", tags).catch((error) => {
                 this.onError(error);
             });
         },
@@ -186,13 +191,8 @@ export default {
                 }
             }
         },
-        onSuccess(message) {
-            this.message = message;
-            this.messageVariant = "success";
-        },
         onError(message) {
             this.message = message;
-            this.messageVariant = "danger";
         },
     },
 };

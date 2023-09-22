@@ -102,23 +102,23 @@ tests:
   outputs:
     out_file1:
       asserts:
-        has_line:
+        - that: has_line
           line: booltrue
-        has_line:
-          line: 12456
-        has_line:
-          line: 6.789
-        has_line:
+        - that: has_line
+          line: '12456'
+        - that: has_line
+          line: '6.789'
+        - that: has_line
           line: "This is a line of text."
-        has_line:
+        - that: has_line
           line: "This is a different line of text."
-        has_line:
+        - that: has_line
           line: p1used
-        has_line:
+        - that: has_line
           line: a_drop
-        has_line:
+        - that: has_line
           line: a_check
-        has_line:
+        - that: has_line
           line: a_radio
 - inputs:
     simp_file: simple_line.txt

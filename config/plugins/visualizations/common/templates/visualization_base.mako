@@ -20,6 +20,7 @@
 <html>
     <head>
         <title>${self.title()}</title>
+        <link rel="index" href="${ h.url_for( '/' ) }"/>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
         ${self.metas()}
         ${self.stylesheets()}
@@ -39,7 +40,7 @@
 
 ## Default stylesheets
 <%def name="stylesheets()">
-${h.css('base')}
+${h.dist_css('base')}
 </%def>
 
 ## Default javascripts

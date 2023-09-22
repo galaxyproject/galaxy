@@ -1,0 +1,11 @@
+{
+    "tool_id": "upload1",
+    "tool_version": "1.1.7",
+    "exit_code": 0,
+    "tool_stdout": "stdout",
+    "tool_stderr": "stderr",
+    "command_line": "commandline",
+    "job_messages": ["test-msg1", "test-msg2", "test-msg3", "test-msg4"],
+    "id": "test_id",
+    "copied_from_job_id": "test_copied_from_job_id"
+}

@@ -1,98 +1,159 @@
 <template>
     <b-container fluid class="p-0">
-        <h2>User preferences</h2>
+        <h1 v-localize class="h-lg">User preferences</h1>
         <b-alert :variant="messageVariant" :show="!!message">
             {{ message }}
         </b-alert>
         <p>
-            You are logged in as <strong id="user-preferences-current-email">{{ email }}</strong
-            >.
+            <span v-localize>You are signed in as</span>
+            <strong id="user-preferences-current-email">{{ email }}</strong>
+            <span v-localize>and you are using</span>
+            <strong>{{ diskUsage }}</strong>
+            <span v-localize>of disk space.</span>
+            <span v-localize>If this is more than expected, please visit the</span>
+            <router-link id="edit-preferences-cloud-auth" to="/storage">
+                <b v-localize>Storage Dashboard</b>
+            </router-link>
+            <span v-localize>to free up disk space.</span>
+            <span v-if="enableQuotas">
+                <span v-localize>Your disk quota is:</span>
+                <strong>{{ diskQuota }}</strong
+                >.
+            </span>
         </p>
-        <b-row class="ml-3 mb-1" v-for="(link, index) in activeLinks" :key="index">
-            <i :class="['pref-icon pt-1 fa fa-lg', link.icon]" />
-            <div class="pref-content pr-1">
-                <a :id="link.id" v-if="link.onclick" @click="link.onclick" href="javascript:void(0)"
-                    ><b>{{ link.title }}</b></a
-                >
-                <a :id="link.id" v-else :href="`${baseUrl}/${link.action}`"
-                    ><b>{{ link.title }}</b></a
-                >
-                <div class="form-text text-muted">
-                    {{ link.description }}
-                </div>
-            </div>
-        </b-row>
-        <b-row class="ml-3 mb-1">
-            <i class="pref-icon pt-1 fa fa-lg fa-plus-square-o" />
-            <div class="pref-content pr-1">
-                <a @click="toggleNotifications" href="javascript:void(0)"><b>Enable notifications</b></a>
-                <div class="form-text text-muted">
-                    Allow push and tab notifcations on job completion. To disable, revoke the site notification
-                    privilege in your browser.
-                </div>
-            </div>
-        </b-row>
-        <b-row class="ml-3 mb-1">
-            <i class="pref-icon pt-1 fa fa-lg fa-radiation" />
-            <div class="pref-content pr-1">
-                <a href="javascript:void(0)"><b v-b-modal.modal-prevent-closing>Delete Account</b></a>
-                <div class="form-text text-muted">
-                    Delete your account on this Galaxy server.
-                </div>
-                <b-modal
-                    id="modal-prevent-closing"
-                    centered
-                    ref="modal"
-                    title="Account Deletion"
-                    title-tag="h2"
-                    @show="resetModal"
-                    @hidden="resetModal"
-                    @ok="handleOk"
-                >
-                    <p>
-                        <b-alert variant="danger" :show="showDeleteError">{{ deleteError }}</b-alert>
-                        <b>
-                            This action cannot be undone. Your account will be permanently deleted, along with the data
-                            contained in it.
-                        </b>
-                    </p>
-                    <b-form ref="form" @submit.prevent="handleSubmit">
-                        <b-form-group
-                            :state="nameState"
-                            label="Enter your user email for this account as confirmation."
-                            label-for="Email"
-                            invalid-feedback="Incorrect email"
-                        >
-                            <b-form-input id="name-input" v-model="name" :state="nameState" required></b-form-input>
-                        </b-form-group>
-                    </b-form>
-                </b-modal>
-            </div>
-        </b-row>
-        <p class="mt-2">
-            You are using <strong>{{ diskUsage }}</strong> of disk space in this Galaxy instance.
-            <span v-html="quotaUsageString"></span>
-            Is your usage more than expected? See the
-            <a href="https://galaxyproject.org/learn/managing-datasets/" target="_blank"><b>documentation</b></a> for
-            tips on how to find all of the data in your account.
-        </p>
+        <user-preferences-element
+            v-for="(link, index) in activePreferences"
+            :id="link.id"
+            :key="index"
+            :icon="link.icon"
+            :title="link.title"
+            :description="link.description"
+            :to="`/user/${index}`" />
+        <user-preferences-element
+            id="edit-preferences-api-key"
+            icon="fa-key"
+            title="Manage API Key"
+            description="Access your current API key or create a new one."
+            to="/user/api_key" />
+        <user-preferences-element
+            id="edit-preferences-notifications"
+            icon="fa-bell"
+            title="Manage Notifications"
+            description="Manage your notification settings."
+            to="/user/notifications/preferences" />
+        <user-preferences-element
+            id="edit-preferences-cloud-auth"
+            icon="fa-cloud"
+            title="Manage Cloud Authorization"
+            description="Add or modify the configuration that grants Galaxy to access your cloud-based resources."
+            to="/user/cloud_auth" />
+        <ConfigProvider v-slot="{ config }">
+            <user-preferences-element
+                v-if="config.enable_oidc"
+                id="manage-third-party-identities"
+                icon="fa-id-card-o"
+                title="Manage Third-Party Identities"
+                description="Connect or disconnect access to your third-party identities."
+                to="/user/external_ids" />
+        </ConfigProvider>
+        <user-preferences-element
+            id="edit-preferences-custom-builds"
+            icon="fa-cubes"
+            title="Manage Custom Builds"
+            description="Add or remove custom builds using history datasets."
+            to="/custom_builds" />
+        <user-preferences-element
+            icon="fa-th-list"
+            title="Manage Activity Bar"
+            description="Click here to show or hide the activity bar."
+            badge="New!"
+            @click="toggleActivityBar = !toggleActivityBar">
+            <b-collapse v-model="toggleActivityBar">
+                <UserActivityBarSettings />
+            </b-collapse>
+        </user-preferences-element>
+        <user-preferences-element
+            v-if="hasThemes"
+            icon="fa-palette"
+            title="Pick a Color Theme"
+            description="Click here to change the user interface color theme."
+            badge="New!"
+            @click="toggleTheme = !toggleTheme">
+            <b-collapse v-model="toggleTheme">
+                <ThemeSelector />
+            </b-collapse>
+        </user-preferences-element>
+        <ConfigProvider v-slot="{ config }">
+            <user-preferences-element
+                v-if="!config.single_user"
+                id="edit-preferences-make-data-private"
+                icon="fa-lock"
+                title="Make All Data Private"
+                description="Click here to make all data private."
+                @click="makeDataPrivate" />
+        </ConfigProvider>
+        <ConfigProvider v-slot="{ config }">
+            <UserBeaconSettings v-if="config && config.enable_beacon_integration" :user-id="userId">
+            </UserBeaconSettings>
+        </ConfigProvider>
+        <ConfigProvider v-slot="{ config }">
+            <UserPreferredObjectStore
+                v-if="config && config.object_store_allows_id_selection && currentUser"
+                :preferred-object-store-id="currentUser.preferred_object_store_id"
+                :user-id="userId">
+            </UserPreferredObjectStore>
+        </ConfigProvider>
+        <ConfigProvider v-slot="{ config }">
+            <UserDeletion
+                v-if="config && !config.single_user && config.enable_account_interface"
+                :email="email"
+                :user-id="userId">
+            </UserDeletion>
+        </ConfigProvider>
+        <user-preferences-element
+            v-if="hasLogout"
+            id="edit-preferences-sign-out"
+            icon="fa-sign-out"
+            title="Sign Out"
+            description="Click here to sign out of all sessions."
+            @click="signOut" />
     </b-container>
 </template>
 
 <script>
 import Vue from "vue";
+import { mapState } from "pinia";
 import BootstrapVue from "bootstrap-vue";
+import ThemeSelector from "./ThemeSelector.vue";
 import { getGalaxyInstance } from "app";
-import { getAppRoot } from "onload/loadConfig";
+import { withPrefix } from "utils/redirect";
 import _l from "utils/localization";
 import axios from "axios";
 import QueryStringParsing from "utils/query-string-parsing";
 import { getUserPreferencesModel } from "components/User/UserPreferencesModel";
+import ConfigProvider from "components/providers/ConfigProvider";
+import { userLogoutAll } from "utils/logout";
+import UserDeletion from "./UserDeletion";
+import UserActivityBarSettings from "./UserActivityBarSettings";
+import UserPreferencesElement from "./UserPreferencesElement";
+import UserPreferredObjectStore from "./UserPreferredObjectStore";
+
 import "@fortawesome/fontawesome-svg-core";
+import UserBeaconSettings from "./UserBeaconSettings";
+import { useUserStore } from "@/stores/userStore";
 
 Vue.use(BootstrapVue);
 
 export default {
+    components: {
+        ConfigProvider,
+        UserActivityBarSettings,
+        UserDeletion,
+        UserPreferencesElement,
+        ThemeSelector,
+        UserBeaconSettings,
+        UserPreferredObjectStore,
+    },
     props: {
         userId: {
             type: String,
@@ -107,15 +168,31 @@ export default {
         return {
             email: "",
             diskUsage: "",
-            quotaUsageString: "",
-            baseUrl: `${getAppRoot()}user`,
+            diskQuota: "",
             messageVariant: null,
             message: null,
-            name: "",
-            nameState: null,
-            deleteError: "",
-            submittedNames: [],
+            toggleActivityBar: false,
+            toggleTheme: false,
         };
+    },
+    computed: {
+        ...mapState(useUserStore, ["currentUser"]),
+        activePreferences() {
+            const userPreferencesEntries = Object.entries(getUserPreferencesModel());
+            // Object.entries returns an array of arrays, where the first element
+            // is the key (string) and the second is the value (object)
+            const enabledPreferences = userPreferencesEntries.filter((f) => !f[1].disabled);
+            return Object.fromEntries(enabledPreferences);
+        },
+        hasLogout() {
+            const Galaxy = getGalaxyInstance();
+            return !!Galaxy.session_csrf_token && !Galaxy.config.single_user;
+        },
+        hasThemes() {
+            const Galaxy = getGalaxyInstance();
+            const themes = Object.keys(Galaxy.config.themes);
+            return themes?.length > 1 ?? false;
+        },
     },
     created() {
         const message = QueryStringParsing.get("message");
@@ -124,62 +201,13 @@ export default {
             this.message = message;
             this.messageVariant = status;
         }
-        axios.get(`${getAppRoot()}api/users/${this.userId}`).then((response) => {
+        axios.get(withPrefix(`/api/users/${this.userId}`)).then((response) => {
             this.email = response.data.email;
             this.diskUsage = response.data.nice_total_disk_usage;
-            this.quotaUsageString = this.enableQuotas
-                ? `Your disk quota is: <strong>${response.data.quota}</strong>.`
-                : "";
+            this.diskQuota = response.data.quota;
         });
     },
-    computed: {
-        activeLinks() {
-            const activeLinks = {};
-            const UserPreferencesModel = getUserPreferencesModel();
-            for (const key in UserPreferencesModel) {
-                if (UserPreferencesModel[key].shouldRender !== false) {
-                    activeLinks[key] = UserPreferencesModel[key];
-                    switch (key) {
-                        case "make_data_private":
-                            activeLinks[key].onclick = this.makeDataPrivate;
-                            break;
-                        case "custom_builds":
-                            activeLinks[key].onclick = this.openManageCustomBuilds;
-                            break;
-                        case "logout":
-                            activeLinks[key].onclick = this.signOut;
-                            break;
-                        // case "delete_user":
-                        //     activeLinks[key].onclick = this.deleteUser;
-                        default:
-                            activeLinks[key].action = key;
-                    }
-                }
-            }
-
-            return activeLinks;
-        },
-        showDeleteError() {
-            return this.deleteError !== "";
-        },
-    },
     methods: {
-        toggleNotifications() {
-            Notification.requestPermission().then(function (permission) {
-                //If the user accepts, let's create a notification
-                if (permission === "granted") {
-                    new Notification("Notifications enabled", {
-                        icon: "static/favicon.ico",
-                    });
-                } else {
-                    alert("Notifications disabled, please re-enable through browser settings.");
-                }
-            });
-        },
-        openManageCustomBuilds() {
-            const Galaxy = getGalaxyInstance();
-            Galaxy.page.router.push(`${getAppRoot()}custom_builds`);
-        },
         makeDataPrivate() {
             const Galaxy = getGalaxyInstance();
             if (
@@ -195,10 +223,12 @@ export default {
                     )
                 )
             ) {
-                axios.post(`${getAppRoot()}history/make_private?all_histories=true`).then((response) => {
+                axios.post(withPrefix(`/history/make_private?all_histories=true`)).then((response) => {
                     Galaxy.modal.show({
                         title: _l("Datasets are now private"),
-                        body: `All of your histories and datsets have been made private.  If you'd like to make all *future* histories private please use the <a href="${Galaxy.root}user/permissions">User Permissions</a> interface.`,
+                        body: `All of your histories and datsets have been made private.  If you'd like to make all *future* histories private please use the <a href="${withPrefix(
+                            "/user/permissions"
+                        )}">User Permissions</a> interface.`,
                         buttons: {
                             Close: () => {
                                 Galaxy.modal.hide();
@@ -217,60 +247,10 @@ export default {
                     Cancel: function () {
                         Galaxy.modal.hide();
                     },
-                    "Sign out": function () {
-                        window.location.href = `${getAppRoot()}user/logout?session_csrf_token=${
-                            Galaxy.session_csrf_token
-                        }`;
-                    },
+                    "Sign out": userLogoutAll,
                 },
             });
-        },
-        checkFormValidity() {
-            const valid = this.$refs.form.checkValidity();
-            this.nameState = valid;
-            return valid;
-        },
-        resetModal() {
-            this.name = "";
-            this.nameState = null;
-        },
-        handleOk(bvModalEvt) {
-            // Prevent modal from closing
-            bvModalEvt.preventDefault();
-            // Trigger submit handler
-            this.handleSubmit();
-        },
-        async handleSubmit() {
-            const Galaxy = getGalaxyInstance();
-            const userId = Galaxy.user.id;
-            if (!this.checkFormValidity()) {
-                return false;
-            }
-            if (this.email === this.name) {
-                this.nameState = true;
-                try {
-                    await axios.delete(`${getAppRoot()}api/users/${userId}`);
-                } catch (e) {
-                    if (e.response.status === 403) {
-                        this.deleteError =
-                            "User deletion must be configured on this instance in order to allow user self-deletion.  Please contact an administrator for assistance.";
-                        return false;
-                    }
-                }
-                window.location.href = `${getAppRoot()}user/logout?session_csrf_token=${Galaxy.session_csrf_token}`;
-            } else {
-                this.nameState = false;
-                return false;
-            }
         },
     },
 };
 </script>
-<style scoped>
-.pref-content {
-    width: calc(100% - 3rem);
-}
-.pref-icon {
-    width: 3rem;
-}
-</style>

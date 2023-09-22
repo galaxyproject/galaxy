@@ -2,7 +2,6 @@
 
 <%def name="render_tool_shed_repository_actions( repository, metadata=None, changeset_revision=None )">
     <%
-        from tool_shed.util.review_util import can_browse_repository_reviews, changeset_revision_reviewed_by_user, get_review_by_repository_id_changeset_revision_user_id
         from tool_shed.util.metadata_util import is_malicious
 
         if repository.metadata_revisions:
@@ -33,11 +32,6 @@
             changeset_is_malicious = False
 
         can_browse_contents = not is_new
-
-        if can_browse_repository_reviews( trans.app, trans.user, repository ):
-            can_browse_reviews = True
-        else:
-            can_browse_reviews = False
 
         if trans.user and trans.user != repository.user:
             can_contact_owner = True
@@ -73,28 +67,6 @@
             can_rate = True
         else:
             can_rate = False
-        
-        if metadata is not None and changeset_revision is not None:
-            if has_metadata and not is_deprecated and trans.app.security_agent.user_can_review_repositories( trans.user ):
-                can_review_repository = True
-            else:
-                can_review_repository = False
-            if changeset_revision_reviewed_by_user( trans.user, repository, changeset_revision ):
-                reviewed_by_user = True
-            else:
-                reviewed_by_user = False
-        else:
-            can_review_repository = False
-            reviewed_by_user = False
-
-        if reviewed_by_user:
-            review = get_review_by_repository_id_changeset_revision_user_id( app=trans.app,
-                                                                             repository_id=trans.security.encode_id( repository.id ),
-                                                                             changeset_revision=changeset_revision,
-                                                                             user_id=trans.security.encode_id( trans.user.id ) )
-            review_id = trans.security.encode_id( review.id )
-        else:
-            review_id = None
 
         if not is_new and not is_deprecated:
             can_set_metadata = True
@@ -134,16 +106,6 @@
         %else:
             <li><a class="action-button" id="repository-${repository.id}-popup" class="menubutton">Repository Actions</a></li>
             <div popupmenu="repository-${repository.id}-popup">
-                %if can_review_repository:
-                    %if reviewed_by_user:
-                        <a class="action-button" target="galaxy_main" href="${h.url_for( controller='repository_review', action='edit_review', id=review_id )}">Manage my review of this revision</a>
-                    %else:
-                        <a class="action-button" target="galaxy_main" href="${h.url_for( controller='repository_review', action='create_review', id=trans.app.security.encode_id( repository.id ), changeset_revision=changeset_revision )}">Add a review to this revision</a>
-                    %endif
-                %endif
-                %if can_browse_reviews:
-                    <a class="action-button" target="galaxy_main" href="${h.url_for( controller='repository_review', action='manage_repository_reviews', id=trans.app.security.encode_id( repository.id ) )}">Browse reviews of this repository</a>
-                %endif
                 %if can_upload:
                     <a class="action-button" target="galaxy_main" href="${h.url_for( controller='upload', action='upload', repository_id=trans.security.encode_id( repository.id ) )}">Upload files to repository</a>
                 %endif
@@ -193,7 +155,6 @@
     <br/><br/>
     <ul class="manage-table-actions">
         %if repository:
-            <li><a class="action-button" target="galaxy_main" href="${h.url_for( controller='repository', action='install_repositories_by_revision', repository_ids=trans.security.encode_id( repository.id ), changeset_revisions=changeset_revision )}">Install to Galaxy</a></li>
             <li><a class="action-button" target="galaxy_main" href="${h.url_for( controller='repository', action='preview_tools_in_changeset', repository_id=trans.security.encode_id( repository.id ), changeset_revision=changeset_revision )}">Browse repository</a></li>
             <li><a class="action-button" id="repository-${repository.id}-popup" class="menubutton">Tool Shed Actions</a></li>
             <div popupmenu="repository-${repository.id}-popup">

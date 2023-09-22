@@ -1,0 +1,93 @@
+<tool id="drill_down" name="drill_down" version="0.1.0">
+    <description>Drill down parameter test</description>
+    <command><![CDATA[
+echo "dd $dd" > '$output' &&
+echo "dd_recurse $dd_recurse" >> '$output'
+    ]]></command>
+    <inputs>
+        <!-- default drill_down, i.e. hierarchy="exact"
+            - select exacty the chosen values
+            - "inner" option nodes (non-leaves) are selectable
+         -->
+        <param name="dd" type="drill_down" label="dd" multiple="true">
+            <options>
+                <option name="a" value="a">
+                    <option name="aa" value="aa"/>
+                    <option name="ab" value="ab">
+                        <option name="aba" value="aba"/>
+                        <option name="abb" value="abb"/>
+                    </option>
+                </option>
+                <option name="b" value="b">
+                    <option name="ba" value="ba"/>
+                    <option name="bb" value="bb">
+                        <option name="bba" value="bba"/>
+                        <option name="bbb" value="bbb"/>
+                    </option>
+                </option>
+            </options>
+        </param>
+        <!-- recurse drill_down, i.e. hierarchy="recurse"
+            - select all leaves below a chosen node
+            - only "leave" are are selectable
+         -->
+        <param name="dd_recurse" type="drill_down" hierarchy="recurse" label="dd_recurse" multiple="true">
+            <options>
+                <option name="a" value="a">
+                    <option name="aa" value="aa"/>
+                    <option name="ab" value="ab">
+                        <option name="aba" value="aba"/>
+                        <option name="abb" value="abb"/>
+                    </option>
+                </option>
+                <option name="b" value="b">
+                    <option name="ba" value="ba"/>
+                    <option name="bb" value="bb">
+                        <option name="bba" value="bba"/>
+                        <option name="bbb" value="bbb"/>
+                    </option>
+                </option>
+            </options>
+        </param>
+    </inputs>
+    <outputs>
+        <data name="output" format="txt"/>
+    </outputs>
+    <tests>
+        <!-- select options from different subtrees -->
+        <test>
+            <param name="dd" value="a,bb"/>
+            <param name="dd_recurse" value="a,bb"/>
+            <output name="output">
+                <assert_contents>
+                    <has_line line="dd a,bb"/>
+                    <has_line line="dd_recurse aa,aba,abb,bba,bbb"/>
+                </assert_contents>
+            </output>
+        </test>
+        <!-- select options from the same subtree -->
+        <test>
+            <param name="dd" value="a,ab"/>
+            <param name="dd_recurse" value="a,ab"/>
+            <output name="output">
+                <assert_contents>
+                    <has_line line="dd a,ab"/>
+                    <has_line line="dd_recurse aa,aba,abb"/>
+                </assert_contents>
+            </output>
+        </test>
+        <!-- select leave nodes -->
+        <test>
+            <param name="dd" value="aa,bbb"/>
+            <param name="dd_recurse" value="aa,bbb"/>
+            <output name="output">
+                <assert_contents>
+                    <has_line line="dd aa,bbb"/>
+                    <has_line line="dd_recurse aa,bbb"/>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

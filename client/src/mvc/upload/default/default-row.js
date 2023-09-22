@@ -136,6 +136,7 @@ export default UploadBoxRow.extend({
     _refreshType: function () {
         var options = this.model.attributes;
         this.$title.val(_.escape(options.file_name));
+        this.$title.select();
         this.$size.html(Utils.bytesToString(options.file_size));
         this.$mode.removeClass().addClass("upload-mode").addClass("text-primary");
         if (options.file_mode == "new") {

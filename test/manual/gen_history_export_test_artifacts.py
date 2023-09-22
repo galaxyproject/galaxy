@@ -8,9 +8,7 @@ from bioblend import galaxy
 galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir, os.path.pardir))
 sys.path[1:1] = [os.path.join(galaxy_root, "lib"), os.path.join(galaxy_root, "test")]
 
-from galaxy_test.base.populators import (
-    GiDatasetPopulator,
-)
+from galaxy_test.base.populators import GiDatasetPopulator
 
 DESCRIPTION = "Script to generate history export test artifacts."
 

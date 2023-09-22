@@ -6,7 +6,7 @@ For help with uploading data via FTP on Galaxy [Main](https://galaxyproject.org/
 
 ## Install some FTP server
 
-Although there is no specific required server, we use [ProFTPD](http://proftpd.org/) for our [public site](http://usegalaxy.org/) since it supports all the things we'll need to be able to do, such as authenticating against the Galaxy database. We recommend you to use the same FTP server as the configurations we provide are targeting it. You can also browse the list of alternative FTP servers at http://en.wikipedia.org/wiki/List_of_FTP_server_software
+Although there is no specific required server, we use [ProFTPD](http://proftpd.org/) for Galaxy Main since it supports all the things we need to be able to do, such as authenticating against the Galaxy database. We recommend you to use the same FTP server as the configurations we provide are targeting it. You can also browse a [comparison of alternative FTP servers](https://en.wikipedia.org/wiki/Comparison_of_FTP_server_software_packages).
 
 ## Configure Galaxy
 
@@ -38,11 +38,11 @@ GRANT
 
 ## Configuring ProFTPD
 
-By default, Galaxy stores passwords using [PBKDF2](http://en.wikipedia.org/wiki/PBKDF2). It's possible to disable this using the `use_pbkdf2: false` setting in the `galaxy` section of `galaxy.yml`. Once disabled, any new passwords created will be stored in an older hex-encoded SHA1 format. Because of this, it's possible to have both PBKDF2 and SHA1 passwords in your database (especially if your server has been around since before PBKDF2 support was added). Although this is fine (Galaxy can read passwords in either format), ProFTPD will expect them in one format or the other (although with some amount of hackery it could probably be made to read both).
+By default, Galaxy stores passwords using [PBKDF2](https://en.wikipedia.org/wiki/PBKDF2). It's possible to disable this using the `use_pbkdf2: false` setting in the `galaxy` section of `galaxy.yml`. Once disabled, any new passwords created will be stored in an older hex-encoded SHA1 format. Because of this, it's possible to have both PBKDF2 and SHA1 passwords in your database (especially if your server has been around since before PBKDF2 support was added). Although this is fine (Galaxy can read passwords in either format), ProFTPD will expect them in one format or the other (although with some amount of hackery it could probably be made to read both).
 
 Because of this, you'll need to choose one or the other in your Galaxy config (PBKDF2 is more secure and therefore preferred) and configure ProFTPD accordingly. If users cannot log in because their password is stored in the wrong format, they can simply use Galaxy's password change form to set their password, which will rewrite their password using the currently configured algorithm.
 
-For more hints on the PBKDF2 configuration, see the fantastic blog post [FTP upload to Galaxy using ProFTPd and PBKDF2](http://galacticengineer.blogspot.co.uk/2015/02/ftp-upload-to-galaxy-using-proftpd-and.html) by Peter Briggs (which was used to create the documentation below).
+For more hints on the PBKDF2 configuration, see the fantastic blog post [FTP upload to Galaxy using ProFTPd and PBKDF2](https://galacticengineer.blogspot.com/2015/02/ftp-upload-to-galaxy-using-proftpd-and.html) by Peter Briggs (which was used to create the documentation below).
 
 Although any FTP server should work, our public site uses ProFTPD.  You'll need the following extra modules for ProFTPD:
 
@@ -121,20 +121,21 @@ For PBKDF2 passwords, the following additions to `proftpd.conf` should work:
 # Configuration that handles PBKDF2 encryption
 # Set up mod_sql to authenticate against the Galaxy database
 SQLAuthTypes                    PBKDF2
-SQLPasswordPBKDF2               SHA256 10000 24 
+SQLPasswordPBKDF2               SHA256 100000 24
 SQLPasswordEncoding             base64
  
 # For PBKDF2 authentication
-# See http://dev.list.galaxyproject.org/ProFTPD-integration-with-Galaxy-td4660295.html
 SQLPasswordUserSalt             sql:/GetUserSalt
  
 # Define a custom query for lookup that returns a passwd-like entry. Replace 512s with the UID and GID of the user running the Galaxy server
 SQLUserInfo                     custom:/LookupGalaxyUser
-SQLNamedQuery                   LookupGalaxyUser SELECT "email, (CASE WHEN substring(password from 1 for 6) = 'PBKDF2' THEN substring(password from 38 for 69) ELSE password END) AS password2,512,512,'/home/nate/galaxy_dist/database/ftp/%U','/bin/bash' FROM galaxy_user WHERE email='%U'"
+SQLNamedQuery                   LookupGalaxyUser SELECT "email, split_part(password, '$', 5) AS password2,512,512,'/home/nate/galaxy_dist/database/ftp/%U','/bin/bash' FROM galaxy_user WHERE email='%U'"
  
 # Define custom query to fetch the password salt
-SQLNamedQuery                   GetUserSalt SELECT "(CASE WHEN SUBSTRING (password from 1 for 6) = 'PBKDF2' THEN SUBSTRING (password from 21 for 16) END) AS salt FROM galaxy_user WHERE email='%U'"
+SQLNamedQuery                   GetUserSalt SELECT "split_part(password, '$', 4) AS salt FROM galaxy_user WHERE email='%U'"
 ```
+
+Please note that you would need to update `SQLPasswordPBKDF2` based on the values (HASH_FUNCTION, COST_FACTOR and KEY_LENGTH) you will find here [Galaxy security passwords](https://docs.galaxyproject.org/en/master/_modules/galaxy/security/passwords.html)
 
 For SHA1 passwords, the following additions to `proftpd.conf` should work:
 

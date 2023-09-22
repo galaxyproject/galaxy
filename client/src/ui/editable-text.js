@@ -20,6 +20,8 @@ $.fn.make_text_editable = function (config_dict) {
     var on_finish = "on_finish" in config_dict ? config_dict.on_finish : null;
     var help_text = "help_text" in config_dict ? config_dict.help_text : null;
 
+    const data_description = "data_description" in config_dict ? config_dict.data_description : null;
+
     // Add element behavior.
     var container = $(this);
     container.addClass("editable-text").click(function (e) {
@@ -97,6 +99,9 @@ $.fn.make_text_editable = function (config_dict) {
         container.append(input_elt);
         if (button_elt) {
             container.append(button_elt);
+        }
+        if (data_description != null) {
+            input_elt.attr("data-description", data_description);
         }
         input_elt.focus();
         input_elt.select();

@@ -22,17 +22,15 @@ def evaluate(config, input):
     new_input = default_context
     new_input.update(input)
 
-    sp = subprocess.Popen([application, NODE_ENGINE],
-                          shell=False,
-                          close_fds=True,
-                          stdin=subprocess.PIPE,
-                          stdout=subprocess.PIPE)
-    input_str = json.dumps(new_input) + "\n\n"
+    sp = subprocess.Popen(
+        [application, NODE_ENGINE], shell=False, close_fds=True, stdin=subprocess.PIPE, stdout=subprocess.PIPE
+    )
+    input_str = f"{json.dumps(new_input)}\n\n"
     input_bytes = input_str.encode("utf-8")
     (stdoutdata, stderrdata) = sp.communicate(input_bytes)
     if sp.returncode != 0:
-        args = (json.dumps(new_input, indent=4), stdoutdata, stderrdata)
-        message = "Expression engine returned non-zero exit code on evaluation of\n%s%s%s" % args
+        message = f"Expression engine returned non-zero exit code on evaluation of\n{json.dumps(new_input, indent=4)}{stdoutdata}{stderrdata}"
         raise Exception(message)
 
-    return json.loads(stdoutdata.decode("utf-8"))
+    rval_raw = stdoutdata.decode("utf-8")
+    return json.loads(rval_raw)

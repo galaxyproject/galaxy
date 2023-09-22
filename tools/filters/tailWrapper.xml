@@ -1,10 +1,24 @@
-<tool id="Show tail1" name="Select last" version="1.0.0">
+<tool id="Show tail1" name="Select last" version="1.0.1" profile="20.05">
   <description>lines from a dataset</description>
-  <command detect_errors="exit_code">
-perl '$__tool_directory__/tailWrapper.pl' '$input' $lineNum '$out_file1'</command>
+  <requirements>
+    <requirement type="package" version="8.31">coreutils</requirement>
+  </requirements>
+  <command detect_errors="exit_code"><![CDATA[
+    set -eo pipefail;
+    (
+    #if $header
+      head -n 1 '$input' &&
+      tail -n +2 '$input'
+    #else
+      cat '$input'
+    #end if
+    | tail -n $lineNum
+    ) > '$out_file1'
+  ]]></command>
   <inputs>
-    <param name="lineNum" type="integer" value="10" label="Select last" help="lines"/>
+    <param name="lineNum" type="integer" value="10" min="1" label="Select last" help="lines"/>
     <param name="input" type="data" format="txt" label="from"/>
+    <param name="header" type="boolean" label="Dataset has a header" help="if checked the header is kept and is not counted as a kept line"/>
   </inputs>
   <outputs>
     <data name="out_file1" format_source="input" metadata_source="input"/>
@@ -13,7 +27,23 @@ perl '$__tool_directory__/tailWrapper.pl' '$input' $lineNum '$out_file1'</comman
     <test>
       <param name="lineNum" value="10"/>
       <param name="input" value="1.bed"/>
-      <output name="out_file1" file="eq-showtail.dat"/>
+      <output name="out_file1" file="eq-showtail.dat">
+        <assert_contents>
+          <not_has_text text="CCDS989.1_cds_0_0_chr1_147962193_r"/>
+          <has_n_lines n="10"/>
+        </assert_contents>
+      </output>
+    </test>
+    <test>
+      <param name="lineNum" value="10"/>
+      <param name="input" value="1.bed"/>
+      <param name="header" value="true"/>
+      <output name="out_file1">
+        <assert_contents>
+          <has_text text="CCDS989.1_cds_0_0_chr1_147962193_r"/>
+          <has_n_lines n="11"/>
+        </assert_contents>
+      </output>
     </test>
   </tests>
   <help>

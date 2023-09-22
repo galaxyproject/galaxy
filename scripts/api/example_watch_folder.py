@@ -10,32 +10,34 @@ python example_watch_folder.py <api_key> <api_url> /tmp/g_inbox/ /tmp/g_inbox/do
 
 NOTE:  The upload method used requires the data library filesystem upload allow_library_path_paste
 """
-from __future__ import print_function
 
 import os
 import shutil
 import sys
 import time
 
-from common import display, submit
+from common import (
+    display,
+    submit,
+)
 
 
 def main(api_key, api_url, in_folder, out_folder, data_library, workflow):
     # Find/Create data library with the above name.  Assume we're putting datasets in the root folder '/'
-    libs = display(api_key, api_url + 'libraries', return_formatted=False)
+    libs = display(api_key, api_url + "libraries", return_formatted=False)
     library_id = None
     for library in libs:
-        if library['name'] == data_library:
-            library_id = library['id']
+        if library["name"] == data_library:
+            library_id = library["id"]
     if not library_id:
-        lib_create_data = {'name': data_library}
-        library = submit(api_key, api_url + 'libraries', lib_create_data, return_formatted=False)
-        library_id = library[0]['id']
+        lib_create_data = {"name": data_library}
+        library = submit(api_key, api_url + "libraries", lib_create_data, return_formatted=False)
+        library_id = library[0]["id"]
     folders = display(api_key, api_url + "libraries/%s/contents" % library_id, return_formatted=False)
     for f in folders:
-        if f['name'] == "/":
-            library_folder_id = f['id']
-    workflow = display(api_key, api_url + 'workflows/%s' % workflow, return_formatted=False)
+        if f["name"] == "/":
+            library_folder_id = f["id"]
+    workflow = display(api_key, api_url + "workflows/%s" % workflow, return_formatted=False)
     if not workflow:
         print("Workflow %s not found, terminating.")
         sys.exit(1)
@@ -49,27 +51,27 @@ def main(api_key, api_url, in_folder, out_folder, data_library, workflow):
             fullpath = os.path.join(in_folder, fname)
             if os.path.isfile(fullpath):
                 data = {}
-                data['folder_id'] = library_folder_id
-                data['file_type'] = 'auto'
-                data['dbkey'] = ''
-                data['upload_option'] = 'upload_paths'
-                data['filesystem_paths'] = fullpath
-                data['create_type'] = 'file'
+                data["folder_id"] = library_folder_id
+                data["file_type"] = "auto"
+                data["dbkey"] = ""
+                data["upload_option"] = "upload_paths"
+                data["filesystem_paths"] = fullpath
+                data["create_type"] = "file"
                 libset = submit(api_key, api_url + "libraries/%s/contents" % library_id, data, return_formatted=False)
                 # TODO Handle this better, but the datatype isn't always
                 # set for the followup workflow execution without this
                 # pause.
                 time.sleep(5)
                 for ds in libset:
-                    if 'id' in ds:
+                    if "id" in ds:
                         # Successful upload of dataset, we have the ldda now.  Run the workflow.
                         wf_data = {}
-                        wf_data['workflow_id'] = workflow['id']
-                        wf_data['history'] = "%s - %s" % (fname, workflow['name'])
-                        wf_data['ds_map'] = {}
-                        for step_id, ds_in in workflow['inputs'].items():
-                            wf_data['ds_map'][step_id] = {'src': 'ld', 'id': ds['id']}
-                        res = submit(api_key, api_url + 'workflows', wf_data, return_formatted=False)
+                        wf_data["workflow_id"] = workflow["id"]
+                        wf_data["history"] = "{} - {}".format(fname, workflow["name"])
+                        wf_data["ds_map"] = {}
+                        for step_id in workflow["inputs"].keys():
+                            wf_data["ds_map"][step_id] = {"src": "ld", "id": ds["id"]}
+                        res = submit(api_key, api_url + "workflows", wf_data, return_formatted=False)
                         if res:
                             print(res)
                             # Successful workflow execution, safe to move dataset.
@@ -77,7 +79,7 @@ def main(api_key, api_url, in_folder, out_folder, data_library, workflow):
         time.sleep(10)
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     try:
         api_key = sys.argv[1]
         api_url = sys.argv[2]
@@ -86,6 +88,6 @@ if __name__ == '__main__':
         data_library = sys.argv[5]
         workflow = sys.argv[6]
     except IndexError:
-        print('usage: %s key url in_folder out_folder data_library workflow' % os.path.basename(sys.argv[0]))
+        print("usage: %s key url in_folder out_folder data_library workflow" % os.path.basename(sys.argv[0]))
         sys.exit(1)
     main(api_key, api_url, in_folder, out_folder, data_library, workflow)

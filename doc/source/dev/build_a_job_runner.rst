@@ -276,7 +276,9 @@ Note:
 
 -  ``get_task_from_external_runner`` and ``create_log_files`` are user-defined methods.
 
--  Return value is ``job_state`` for running, pending jobs and None for any remaining states of a job.
+-  The method should return ``job_state`` if the job should remain in the job runner's list of watched
+   jobs (i.e. if it is running or pending). If it no longer needs to be watched (e.g. it has terminated
+   either successfully or with an error) it should return None.
 
 ``create_log_files()`` are nothing but copying the files (``error_file``,
 ``output_file``, ``exit_code_file``) from the external runner's directory to

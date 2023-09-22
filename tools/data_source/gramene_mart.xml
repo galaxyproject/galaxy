@@ -9,6 +9,9 @@
 -->
 <tool name="GrameneMart" id="gramenemart" tool_type="data_source" version="1.0.1">
     <description> Central server</description>
+    <edam_operations>
+        <edam_operation>operation_0224</edam_operation>
+    </edam_operations>
     <command><![CDATA[
 python '$__tool_directory__/data_source.py' '$output' $__app__.config.output_size_limit
     ]]></command>
@@ -26,7 +29,7 @@ python '$__tool_directory__/data_source.py' '$output' $__app__.config.output_siz
         <request_param galaxy_name="data_type" remote_name="exportView_outputformat" missing="tabular">
             <value_translation>
                 <value galaxy_value="tabular" remote_value="TSV" />
-            </value_translation> 
+            </value_translation>
         </request_param>
         <request_param galaxy_name="URL_method" remote_name="URL_method" missing="get" />
         <request_param galaxy_name="dbkey" remote_name="dbkey" missing="?" />

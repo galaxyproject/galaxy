@@ -1,14 +1,13 @@
 <template>
     <div>
-        <b-breadcrumb v-if="dataTable && !loading" :items="breadcrumbItems" id="breadcrumb" />
+        <b-breadcrumb v-if="dataTable && !loading" id="breadcrumb" :items="breadcrumbItems" />
         <Alert :message="message" :variant="status" />
         <Alert v-if="viewOnly" message="Not implemented" variant="dark" />
         <Alert v-else-if="loading" message="Waiting for data" status="info" />
         <Alert
             v-else-if="dataTable && !dataTable['data'].length"
             message="There are currently no entries in this tool data table."
-            variant="primary"
-        />
+            variant="primary" />
         <b-container v-else-if="dataTable">
             <b-row>
                 <b-col>
@@ -17,8 +16,8 @@
                             <b-container>
                                 <b-row align-v="center">
                                     <b-col cols="auto">
-                                        <b-button @click="reload()" v-b-tooltip.hover :title="buttonLabel">
-                                            <span class="fa fa-refresh" />
+                                        <b-button v-b-tooltip.hover :title="buttonLabel" @click="reload()">
+                                            <span class="fa fa-sync" />
                                         </b-button>
                                     </b-col>
                                     <b-col>
@@ -28,12 +27,11 @@
                             </b-container>
                         </template>
                         <b-table
-                            :fields="fields(this.dataTable['columns'])"
+                            :fields="fields(dataTable['columns'])"
                             :items="dataTable['data']"
                             small
                             hover
-                            striped
-                        />
+                            striped />
                     </b-card>
                 </b-col>
             </b-row>
@@ -76,33 +74,12 @@ export default {
             return [
                 {
                     text: "Tool Data Tables",
-                    to: "/",
+                    to: "/admin/data_manager",
                 },
                 {
                     text: this.dataTableName,
                 },
             ];
-        },
-    },
-    methods: {
-        fields(columns) {
-            // Columns and data are given as arrays. Use each column index as field
-            // key for the table and the column values as labels
-            return columns.reduce((acc, c, i) => Object.assign(acc, { [i]: { label: c } }), {});
-        },
-        reload() {
-            axios
-                .get(`${getAppRoot()}data_manager/reload_tool_data_tables?table_name=${this.dataTableName}`)
-                .then((response) => {
-                    if (response.data.dataTable) {
-                        this.dataTable = response.data.dataTable;
-                    }
-                    this.message = response.data.message;
-                    this.status = response.data.status;
-                })
-                .catch((error) => {
-                    console.error(error);
-                });
         },
     },
     created() {
@@ -118,6 +95,25 @@ export default {
             .catch((error) => {
                 console.error(error);
             });
+    },
+    methods: {
+        fields(columns) {
+            return columns.map((elem, index) => ({ key: index.toString(), label: elem }));
+        },
+        reload() {
+            axios
+                .get(`${getAppRoot()}data_manager/reload_tool_data_tables?table_name=${this.dataTableName}`)
+                .then((response) => {
+                    if (response.data.dataTable) {
+                        this.dataTable = response.data.dataTable;
+                    }
+                    this.message = response.data.message;
+                    this.status = response.data.status;
+                })
+                .catch((error) => {
+                    console.error(error);
+                });
+        },
     },
 };
 </script>

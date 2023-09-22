@@ -1,12 +1,16 @@
 import logging
 import os
+import re
 import urllib.parse
 
 import requests
 import yaml
 
 from galaxy.exceptions import MessageException
-from galaxy.util import asbool
+from galaxy.util import (
+    asbool,
+    DEFAULT_SOCKET_TIMEOUT,
+)
 from galaxy.util.search import parse_filters
 
 log = logging.getLogger(__name__)
@@ -22,6 +26,9 @@ DEFAULT_TRS_SERVERS = [
     },
 ]
 GA4GH_GALAXY_DESCRIPTOR = "GALAXY"
+TRS_URL_REGEX = (
+    r"(?P<trs_base_url>https?:\/\/.+)\/ga4gh\/trs\/v2\/tools\/(?P<tool_id>.+)\/versions\/(?P<version_id>[^\/]+).*"
+)
 
 
 def parse_search_kwds(search_query):
@@ -37,64 +44,87 @@ def parse_search_kwds(search_query):
         "descriptorType": "GALAXY",
     }
     if description_term and description_term.strip():
-        query_kwd["description"] = description_term,
+        query_kwd["description"] = (description_term,)
 
     if keyed_terms is not None:
-        for (key, value) in keyed_terms:
+        for key, value, _ in keyed_terms:
             query_kwd[key] = value
     return query_kwd
 
 
-class TrsProxy(object):
-
+class TrsProxy:
     def __init__(self, config=None):
         config_file = getattr(config, "trs_servers_config_file", None)
         if config_file and os.path.exists(config_file):
-            with open(config_file, "r") as f:
+            with open(config_file) as f:
                 server_list = yaml.safe_load(f)
         else:
             server_list = DEFAULT_TRS_SERVERS
-        self._server_list = server_list
+        self._server_list = server_list if server_list else []
         self._server_dict = {t["id"]: t for t in self._server_list}
 
     def get_servers(self):
         return self._server_list
 
-    def get_tools(self, trs_server, **kwd):
+    def get_server(self, trs_server):
+        trs_url = self._server_dict[trs_server]["api_url"]
+        return TrsServer(trs_url)
+
+    def server_from_url(self, trs_url):
+        return TrsServer(trs_url)
+
+    def match_url(self, url):
+        matches = re.match(TRS_URL_REGEX, url)
+        if matches:
+            match_dict = matches.groupdict()
+            match_dict["tool_id"] = urllib.parse.unquote(match_dict["tool_id"])
+            return match_dict
+        else:
+            return None
+
+
+class TrsServer:
+    def __init__(self, trs_url):
+        self._trs_url = trs_url
+
+    def get_tools(self, **kwd):
         query_kwd = {}
         for key in ["toolClass", "descriptorType", "description", "name", "organization"]:
             value = kwd.pop(key, None)
             if value is not None:
                 query_kwd[key] = value
 
-        trs_api_url = self._get_api_endpoint(trs_server, **kwd)
+        trs_api_url = self._get_api_endpoint(**kwd)
         return self._get(trs_api_url, params=query_kwd)
 
-    def get_tool(self, trs_server, tool_id, **kwd):
-        trs_api_url = self._get_tool_api_endpoint(trs_server, tool_id, **kwd)
+    def get_tool(self, tool_id, **kwd):
+        trs_api_url = self._get_tool_api_endpoint(tool_id, **kwd)
         return self._get(trs_api_url)
 
-    def get_versions(self, trs_server, tool_id, **kwd):
-        trs_api_url = self._get_tool_api_endpoint(trs_server, tool_id, **kwd) + "/versions"
+    def get_versions(self, tool_id, **kwd):
+        trs_api_url = f"{self._get_tool_api_endpoint(tool_id, **kwd)}/versions"
         return self._get(trs_api_url)
 
-    def get_version(self, trs_server, tool_id, version_id, **kwd):
-        trs_api_url = self._get_tool_api_endpoint(trs_server, tool_id, **kwd) + "/versions/" + version_id
+    def get_version(self, tool_id, version_id, **kwd):
+        trs_api_url = f"{self._get_tool_api_endpoint(tool_id, **kwd)}/versions/{version_id}"
         return self._get(trs_api_url)
 
-    def get_version_descriptor(self, trs_server, tool_id, version_id, **kwd):
-        trs_api_url = self._get_tool_api_endpoint(trs_server, tool_id, **kwd) + "/versions/" + version_id + "/%s/descriptor" % GA4GH_GALAXY_DESCRIPTOR
+    def get_version_descriptor(self, tool_id, version_id, **kwd):
+        trs_api_url = (
+            f"{self._get_tool_api_endpoint(tool_id, **kwd)}/versions/{version_id}/{GA4GH_GALAXY_DESCRIPTOR}/descriptor"
+        )
         return self._get(trs_api_url)["content"]
 
     def _quote(self, tool_id, **kwd):
         if asbool(kwd.get("tool_id_b64_encoded", False)):
             import base64
+
             tool_id = base64.b64decode(tool_id)
         tool_id = urllib.parse.quote_plus(tool_id)
         return tool_id
 
     def _get(self, url, params=None):
-        response = requests.get(url, params=params)
+        response = requests.get(url, params=params, timeout=DEFAULT_SOCKET_TIMEOUT)
         if response.ok:
             return response.json()
         else:
@@ -108,12 +138,12 @@ class TrsProxy(object):
                 pass
             raise MessageException.from_code(code, message)
 
-    def _get_api_endpoint(self, trs_server, **kwd):
-        trs_url = self._server_dict[trs_server]["api_url"]
-        trs_api_endpoint = trs_url + "/" + "ga4gh/trs/v2/tools"
+    def _get_api_endpoint(self, **kwd):
+        trs_url = self._trs_url
+        trs_api_endpoint = f"{trs_url}/ga4gh/trs/v2/tools"
         return trs_api_endpoint
 
-    def _get_tool_api_endpoint(self, trs_server, tool_id, **kwd):
+    def _get_tool_api_endpoint(self, tool_id, **kwd):
         tool_id = self._quote(tool_id, **kwd)
-        trs_api_url = self._get_api_endpoint(trs_server, **kwd) + "/" + tool_id
+        trs_api_url = f"{self._get_api_endpoint(**kwd)}/{tool_id}"
         return trs_api_url

@@ -1,40 +1,17 @@
 <template>
-    <invocations
-        :invocation-items="invocationItems"
-        :loading="loading"
+    <InvocationsList
         header-message="Workflow invocations that are still being scheduled are displayed on this page."
         no-invocations-message="There are no scheduling workflow invocations to show currently."
-        :owner-grid="false"
-    >
-    </invocations>
+        :owner-grid="false">
+    </InvocationsList>
 </template>
 
 <script>
-import Invocations from "../Workflow/Invocations";
-import { getActiveInvocations } from "./AdminServices";
+import InvocationsList from "../Workflow/InvocationsList";
 
 export default {
     components: {
-        Invocations,
-    },
-    data() {
-        return {
-            invocationItems: [],
-            loading: true,
-        };
-    },
-    created() {
-        getActiveInvocations()
-            .then((response) => {
-                this.invocationItems = response.data;
-                this.loading = false;
-            })
-            .catch(this.handleError);
-    },
-    methods: {
-        handleError(error) {
-            console.error(error);
-        },
+        InvocationsList,
     },
 };
 </script>

@@ -36,4 +36,4 @@ class UCSCOutWrapper:
         return self.__next__()
 
     def readline(self):
-        return self.next()
+        return next(self)

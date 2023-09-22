@@ -13,14 +13,14 @@ from galaxy.web.form_builder import SelectField
 log = logging.getLogger(__name__)
 
 
-def build_repository_type_select_field(trans, repository=None, name='repository_type'):
+def build_repository_type_select_field(trans, repository=None, name="repository_type"):
     """Called from the Tool Shed to generate the current list of supported repository types."""
     if repository:
         selected_type = str(repository.type)
     else:
         selected_type = None
     repository_type_select_field = SelectField(name=name)
-    for type_label, type_class in trans.app.repository_types_registry.repository_types_by_label.items():
+    for type_class in trans.app.repository_types_registry.repository_types_by_label.values():
         option_label = str(type_class.label)
         option_value = str(type_class.type)
         if selected_type and selected_type == option_value:
@@ -38,32 +38,42 @@ def build_repository_type_select_field(trans, repository=None, name='repository_
 
 
 def generate_message_for_repository_type_change(app, repository):
-    message = ''
+    message = ""
     if repository.can_change_type_to(app, REPOSITORY_SUITE_DEFINITION):
-        repository_suite_definition_type_class = \
-            app.repository_types_registry.get_class_by_label(REPOSITORY_SUITE_DEFINITION)
-        message += "This repository currently contains a single file named <b>%s</b>.  If the intent of this repository is " % \
-            REPOSITORY_DEPENDENCY_DEFINITION_FILENAME
+        repository_suite_definition_type_class = app.repository_types_registry.get_class_by_label(
+            REPOSITORY_SUITE_DEFINITION
+        )
+        message += (
+            "This repository currently contains a single file named <b>%s</b>.  If the intent of this repository is "
+            % REPOSITORY_DEPENDENCY_DEFINITION_FILENAME
+        )
         message += "to define relationships to a collection of repositories that contain related Galaxy utilities with "
-        message += "no plans to add additional files, consider setting its type to <b>%s</b>.<br/>" % \
-            repository_suite_definition_type_class.label
+        message += (
+            "no plans to add additional files, consider setting its type to <b>%s</b>.<br/>"
+            % repository_suite_definition_type_class.label
+        )
     elif repository.can_change_type_to(app, TOOL_DEPENDENCY_DEFINITION):
-        tool_dependency_definition_type_class = \
-            app.repository_types_registry.get_class_by_label(TOOL_DEPENDENCY_DEFINITION)
-        message += "This repository currently contains a single file named <b>%s</b>.  If additional files will " % \
-            TOOL_DEPENDENCY_DEFINITION_FILENAME
-        message += "not be added to this repository, consider setting its type to <b>%s</b>.<br/>" % \
-            tool_dependency_definition_type_class.label
+        tool_dependency_definition_type_class = app.repository_types_registry.get_class_by_label(
+            TOOL_DEPENDENCY_DEFINITION
+        )
+        message += (
+            "This repository currently contains a single file named <b>%s</b>.  If additional files will "
+            % TOOL_DEPENDENCY_DEFINITION_FILENAME
+        )
+        message += (
+            "not be added to this repository, consider setting its type to <b>%s</b>.<br/>"
+            % tool_dependency_definition_type_class.label
+        )
     return message
 
 
 __all__ = (
-    'build_repository_type_select_field',
-    'generate_message_for_repository_type_change',
-    'REPOSITORY_DEPENDENCY_DEFINITION_FILENAME',
-    'REPOSITORY_SUITE_DEFINITION',
-    'TOOL_DEPENDENCY_DEFINITION',
-    'TOOL_DEPENDENCY_DEFINITION_FILENAME',
-    'UNRESTRICTED',
-    'types',
+    "build_repository_type_select_field",
+    "generate_message_for_repository_type_change",
+    "REPOSITORY_DEPENDENCY_DEFINITION_FILENAME",
+    "REPOSITORY_SUITE_DEFINITION",
+    "TOOL_DEPENDENCY_DEFINITION",
+    "TOOL_DEPENDENCY_DEFINITION_FILENAME",
+    "UNRESTRICTED",
+    "types",
 )

@@ -10,6 +10,21 @@ export default {
     data() {
         return { schemaTagObj: {} };
     },
+    created() {
+        axios
+            .get(`${getAppRoot()}api/tools?tool_help=True`)
+            .then((response) => {
+                this.schemaTagObj = this.createToolsJson(response.data);
+                const el = document.createElement("script");
+                el.id = "schema-json";
+                el.type = "application/ld+json";
+                el.text = JSON.stringify(this.schemaTagObj);
+                document.head.appendChild(el);
+            })
+            .catch((error) => {
+                console.error(error);
+            });
+    },
     methods: {
         createToolsJson(tools) {
             function extractSections(acc, section) {
@@ -40,21 +55,6 @@ export default {
                 "@graph": tools.reduce(extractSections, []),
             };
         },
-    },
-    created() {
-        axios
-            .get(`${getAppRoot()}api/tools?tool_help=True`)
-            .then((response) => {
-                this.schemaTagObj = this.createToolsJson(response.data);
-                const el = document.createElement("script");
-                el.id = "schema-json";
-                el.type = "application/ld+json";
-                el.text = JSON.stringify(this.schemaTagObj);
-                document.head.appendChild(el);
-            })
-            .catch((error) => {
-                console.error(error);
-            });
     },
 };
 </script>

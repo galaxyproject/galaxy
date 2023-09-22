@@ -6,9 +6,9 @@ import multiprocessing
 import os
 import shutil
 import subprocess
-import threading
 import time
 from datetime import datetime
+from typing import Optional
 
 try:
     # Imports are done this way to allow objectstore code to be used outside of Galaxy.
@@ -17,85 +17,106 @@ try:
     from boto.s3.connection import S3Connection
     from boto.s3.key import Key
 except ImportError:
-    boto = None
+    boto = None  # type: ignore[assignment]
 
-from galaxy.exceptions import ObjectInvalid, ObjectNotFound
+from galaxy.exceptions import (
+    ObjectInvalid,
+    ObjectNotFound,
+)
 from galaxy.util import (
     directory_hash_id,
     string_as_bool,
     umask_fix_perms,
+    unlink,
     which,
 )
 from galaxy.util.path import safe_relpath
-from galaxy.util.sleeper import Sleeper
+from . import ConcreteObjectStore
+from .caching import (
+    CacheTarget,
+    enable_cache_monitor,
+    InProcessCacheMonitor,
+    parse_caching_config_dict_from_xml,
+)
 from .s3_multipart_upload import multipart_upload
-from ..objectstore import ConcreteObjectStore, convert_bytes
 
-NO_BOTO_ERROR_MESSAGE = ("S3/Swift object store configured, but no boto dependency available."
-                         "Please install and properly configure boto or modify object store configuration.")
+NO_BOTO_ERROR_MESSAGE = (
+    "S3/Swift object store configured, but no boto dependency available."
+    "Please install and properly configure boto or modify object store configuration."
+)
 
 log = logging.getLogger(__name__)
-logging.getLogger('boto').setLevel(logging.INFO)  # Otherwise boto is quite noisy
+logging.getLogger("boto").setLevel(logging.INFO)  # Otherwise boto is quite noisy
+
+
+def download_directory(bucket, remote_folder, local_path):
+    # List objects in the specified S3 folder
+    objects = bucket.list(prefix=remote_folder)
+
+    for obj in objects:
+        remote_file_path = obj.key
+        local_file_path = os.path.join(local_path, os.path.relpath(remote_file_path, remote_folder))
+
+        # Create directories if they don't exist
+        os.makedirs(os.path.dirname(local_file_path), exist_ok=True)
+
+        # Download the file
+        obj.get_contents_to_filename(local_file_path)
 
 
 def parse_config_xml(config_xml):
     try:
-        a_xml = config_xml.findall('auth')[0]
-        access_key = a_xml.get('access_key')
-        secret_key = a_xml.get('secret_key')
+        a_xml = config_xml.findall("auth")[0]
+        access_key = a_xml.get("access_key")
+        secret_key = a_xml.get("secret_key")
 
-        b_xml = config_xml.findall('bucket')[0]
-        bucket_name = b_xml.get('name')
-        use_rr = string_as_bool(b_xml.get('use_reduced_redundancy', "False"))
-        max_chunk_size = int(b_xml.get('max_chunk_size', 250))
+        b_xml = config_xml.findall("bucket")[0]
+        bucket_name = b_xml.get("name")
+        use_rr = string_as_bool(b_xml.get("use_reduced_redundancy", "False"))
+        max_chunk_size = int(b_xml.get("max_chunk_size", 250))
 
-        cn_xml = config_xml.findall('connection')
+        cn_xml = config_xml.findall("connection")
         if not cn_xml:
             cn_xml = {}
         else:
             cn_xml = cn_xml[0]
 
-        host = cn_xml.get('host', None)
-        port = int(cn_xml.get('port', 6000))
-        multipart = string_as_bool(cn_xml.get('multipart', 'True'))
-        is_secure = string_as_bool(cn_xml.get('is_secure', 'True'))
-        conn_path = cn_xml.get('conn_path', '/')
+        host = cn_xml.get("host", None)
+        port = int(cn_xml.get("port", 6000))
+        multipart = string_as_bool(cn_xml.get("multipart", "True"))
+        is_secure = string_as_bool(cn_xml.get("is_secure", "True"))
+        conn_path = cn_xml.get("conn_path", "/")
 
-        c_xml = config_xml.findall('cache')[0]
-        cache_size = float(c_xml.get('size', -1))
+        cache_dict = parse_caching_config_dict_from_xml(config_xml)
 
-        staging_path = c_xml.get('path', None)
-
-        tag, attrs = 'extra_dir', ('type', 'path')
+        tag, attrs = "extra_dir", ("type", "path")
         extra_dirs = config_xml.findall(tag)
         if not extra_dirs:
-            msg = 'No {tag} element in XML tree'.format(tag=tag)
+            msg = f"No {tag} element in XML tree"
             log.error(msg)
             raise Exception(msg)
         extra_dirs = [{k: e.get(k) for k in attrs} for e in extra_dirs]
 
         return {
-            'auth': {
-                'access_key': access_key,
-                'secret_key': secret_key,
+            "auth": {
+                "access_key": access_key,
+                "secret_key": secret_key,
             },
-            'bucket': {
-                'name': bucket_name,
-                'use_reduced_redundancy': use_rr,
-                'max_chunk_size': max_chunk_size,
+            "bucket": {
+                "name": bucket_name,
+                "use_reduced_redundancy": use_rr,
+                "max_chunk_size": max_chunk_size,
             },
-            'connection': {
-                'host': host,
-                'port': port,
-                'multipart': multipart,
-                'is_secure': is_secure,
-                'conn_path': conn_path,
+            "connection": {
+                "host": host,
+                "port": port,
+                "multipart": multipart,
+                "is_secure": is_secure,
+                "conn_path": conn_path,
             },
-            'cache': {
-                'size': cache_size,
-                'path': staging_path,
-            },
-            'extra_dirs': extra_dirs,
+            "cache": cache_dict,
+            "extra_dirs": extra_dirs,
+            "private": ConcreteObjectStore.parse_private_from_config_xml(config_xml),
         }
     except Exception:
         # Toss it back up after logging, we can't continue loading at this point.
@@ -104,29 +125,27 @@ def parse_config_xml(config_xml):
 
 
 class CloudConfigMixin:
-
     def _config_to_dict(self):
         return {
-            'auth': {
-                'access_key': self.access_key,
-                'secret_key': self.secret_key,
+            "auth": {
+                "access_key": self.access_key,
+                "secret_key": self.secret_key,
             },
-            'bucket': {
-                'name': self.bucket,
-                'use_reduced_redundancy': self.use_rr,
+            "bucket": {
+                "name": self.bucket,
+                "use_reduced_redundancy": self.use_rr,
             },
-            'connection': {
-                'host': self.host,
-                'port': self.port,
-                'multipart': self.multipart,
-                'is_secure': self.is_secure,
-                'conn_path': self.conn_path,
+            "connection": {
+                "host": self.host,
+                "port": self.port,
+                "multipart": self.multipart,
+                "is_secure": self.is_secure,
+                "conn_path": self.conn_path,
             },
-            'cache': {
-                'size': self.cache_size,
-                'path': self.staging_path,
+            "cache": {
+                "size": self.cache_size,
+                "path": self.staging_path,
             },
-            'enable_cache_monitor': False,
         }
 
 
@@ -136,37 +155,39 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
     cache exists that is used as an intermediate location for files between
     Galaxy and S3.
     """
-    store_type = 's3'
+
+    cache_monitor: Optional[InProcessCacheMonitor] = None
+    store_type = "aws_s3"
 
     def __init__(self, config, config_dict):
         super().__init__(config, config_dict)
+        self.cache_monitor = None
 
         self.transfer_progress = 0
 
-        auth_dict = config_dict['auth']
-        bucket_dict = config_dict['bucket']
-        connection_dict = config_dict.get('connection', {})
-        cache_dict = config_dict['cache']
-        self.enable_cache_monitor = config_dict.get('enable_cache_monitor', True)
+        auth_dict = config_dict["auth"]
+        bucket_dict = config_dict["bucket"]
+        connection_dict = config_dict.get("connection", {})
+        cache_dict = config_dict.get("cache") or {}
+        self.enable_cache_monitor, self.cache_monitor_interval = enable_cache_monitor(config, config_dict)
 
-        self.access_key = auth_dict.get('access_key')
-        self.secret_key = auth_dict.get('secret_key')
+        self.access_key = auth_dict.get("access_key")
+        self.secret_key = auth_dict.get("secret_key")
 
-        self.bucket = bucket_dict.get('name')
-        self.use_rr = bucket_dict.get('use_reduced_redundancy', False)
-        self.max_chunk_size = bucket_dict.get('max_chunk_size', 250)
+        self.bucket = bucket_dict.get("name")
+        self.use_rr = bucket_dict.get("use_reduced_redundancy", False)
+        self.max_chunk_size = bucket_dict.get("max_chunk_size", 250)
 
-        self.host = connection_dict.get('host', None)
-        self.port = connection_dict.get('port', 6000)
-        self.multipart = connection_dict.get('multipart', True)
-        self.is_secure = connection_dict.get('is_secure', True)
-        self.conn_path = connection_dict.get('conn_path', '/')
+        self.host = connection_dict.get("host", None)
+        self.port = connection_dict.get("port", 6000)
+        self.multipart = connection_dict.get("multipart", True)
+        self.is_secure = connection_dict.get("is_secure", True)
+        self.conn_path = connection_dict.get("conn_path", "/")
 
-        self.cache_size = cache_dict.get('size', -1)
-        self.staging_path = cache_dict.get('path') or self.config.object_store_cache_path
+        self.cache_size = cache_dict.get("size") or self.config.object_store_cache_size
+        self.staging_path = cache_dict.get("path") or self.config.object_store_cache_path
 
-        extra_dirs = {
-            e['type']: e['path'] for e in config_dict.get('extra_dirs', [])}
+        extra_dirs = {e["type"]: e["path"] for e in config_dict.get("extra_dirs", [])}
         self.extra_dirs.update(extra_dirs)
 
         self._initialize()
@@ -176,38 +197,37 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
             raise Exception(NO_BOTO_ERROR_MESSAGE)
 
         # for multipart upload
-        self.s3server = {'access_key': self.access_key,
-                         'secret_key': self.secret_key,
-                         'is_secure': self.is_secure,
-                         'max_chunk_size': self.max_chunk_size,
-                         'host': self.host,
-                         'port': self.port,
-                         'use_rr': self.use_rr,
-                         'conn_path': self.conn_path}
+        self.s3server = {
+            "access_key": self.access_key,
+            "secret_key": self.secret_key,
+            "is_secure": self.is_secure,
+            "max_chunk_size": self.max_chunk_size,
+            "host": self.host,
+            "port": self.port,
+            "use_rr": self.use_rr,
+            "conn_path": self.conn_path,
+        }
 
         self._configure_connection()
         self._bucket = self._get_bucket(self.bucket)
         self.start_cache_monitor()
         # Test if 'axel' is available for parallel download and pull the key into cache
-        if which('axel'):
+        if which("axel"):
             self.use_axel = True
         else:
             self.use_axel = False
 
     def start_cache_monitor(self):
-        # Clean cache only if value is set in galaxy.ini
-        if self.cache_size != -1 and self.enable_cache_monitor:
-            # Convert GBs to bytes for comparison
-            self.cache_size = self.cache_size * 1073741824
-            # Helper for interruptable sleep
-            self.sleeper = Sleeper()
-            self.cache_monitor_thread = threading.Thread(target=self.__cache_monitor)
-            self.cache_monitor_thread.start()
-            log.info("Cache cleaner manager started")
+        if self.enable_cache_monitor:
+            self.cache_monitor = InProcessCacheMonitor(self.cache_target, self.cache_monitor_interval)
 
     def _configure_connection(self):
         log.debug("Configuring S3 Connection")
-        self.conn = S3Connection(self.access_key, self.secret_key)
+        # If access_key is empty use default credential chain
+        if self.access_key:
+            self.conn = S3Connection(self.access_key, self.secret_key)
+        else:
+            self.conn = S3Connection()
 
     @classmethod
     def parse_xml(clazz, config_xml):
@@ -218,73 +238,17 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
         as_dict.update(self._config_to_dict())
         return as_dict
 
-    def __cache_monitor(self):
-        time.sleep(2)  # Wait for things to load before starting the monitor
-        while self.running:
-            total_size = 0
-            # Is this going to be too expensive of an operation to be done frequently?
-            file_list = []
-            for dirpath, _, filenames in os.walk(self.staging_path):
-                for filename in filenames:
-                    filepath = os.path.join(dirpath, filename)
-                    file_size = os.path.getsize(filepath)
-                    total_size += file_size
-                    # Get the time given file was last accessed
-                    last_access_time = time.localtime(os.stat(filepath)[7])
-                    # Compose a tuple of the access time and the file path
-                    file_tuple = last_access_time, filepath, file_size
-                    file_list.append(file_tuple)
-            # Sort the file list (based on access time)
-            file_list.sort()
-            # Initiate cleaning once within 10% of the defined cache size?
-            cache_limit = self.cache_size * 0.9
-            if total_size > cache_limit:
-                log.info("Initiating cache cleaning: current cache size: %s; clean until smaller than: %s",
-                         convert_bytes(total_size), convert_bytes(cache_limit))
-                # How much to delete? If simply deleting up to the cache-10% limit,
-                # is likely to be deleting frequently and may run the risk of hitting
-                # the limit - maybe delete additional #%?
-                # For now, delete enough to leave at least 10% of the total cache free
-                delete_this_much = total_size - cache_limit
-                self.__clean_cache(file_list, delete_this_much)
-            self.sleeper.sleep(30)  # Test cache size every 30 seconds?
-
-    def __clean_cache(self, file_list, delete_this_much):
-        """ Keep deleting files from the file_list until the size of the deleted
-        files is greater than the value in delete_this_much parameter.
-
-        :type file_list: list
-        :param file_list: List of candidate files that can be deleted. This method
-            will start deleting files from the beginning of the list so the list
-            should be sorted accordingly. The list must contains 3-element tuples,
-            positioned as follows: position 0 holds file last accessed timestamp
-            (as time.struct_time), position 1 holds file path, and position 2 has
-            file size (e.g., (<access time>, /mnt/data/dataset_1.dat), 472394)
-
-        :type delete_this_much: int
-        :param delete_this_much: Total size of files, in bytes, that should be deleted.
-        """
-        # Keep deleting datasets from file_list until deleted_amount does not
-        # exceed delete_this_much; start deleting from the front of the file list,
-        # which assumes the oldest files come first on the list.
-        deleted_amount = 0
-        for entry in file_list:
-            if deleted_amount < delete_this_much:
-                deleted_amount += entry[2]
-                os.remove(entry[1])
-                # Debugging code for printing deleted files' stats
-                # folder, file_name = os.path.split(f[1])
-                # file_date = time.strftime("%m/%d/%y %H:%M:%S", f[0])
-                # log.debug("%s. %-25s %s, size %s (deleted %s/%s)" \
-                #     % (i, file_name, convert_bytes(f[2]), file_date, \
-                #     convert_bytes(deleted_amount), convert_bytes(delete_this_much)))
-            else:
-                log.debug("Cache cleaning done. Total space freed: %s", convert_bytes(deleted_amount))
-                return
+    @property
+    def cache_target(self) -> CacheTarget:
+        return CacheTarget(
+            self.staging_path,
+            self.cache_size,
+            0.9,
+        )
 
     def _get_bucket(self, bucket_name):
-        """ Sometimes a handle to a bucket is not established right away so try
-        it a few times. Raise error is connection is not established. """
+        """Sometimes a handle to a bucket is not established right away so try
+        it a few times. Raise error is connection is not established."""
         for i in range(5):
             try:
                 bucket = self.conn.get_bucket(bucket_name)
@@ -302,7 +266,7 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
         raise S3ResponseError
 
     def _fix_permissions(self, rel_path):
-        """ Set permissions on rel_path"""
+        """Set permissions on rel_path"""
         for basedir, _, files in os.walk(rel_path):
             umask_fix_perms(basedir, self.config.umask, 0o777, self.config.gid)
             for filename in files:
@@ -312,17 +276,28 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
                     continue
                 umask_fix_perms(path, self.config.umask, 0o666, self.config.gid)
 
-    def _construct_path(self, obj, base_dir=None, dir_only=None, extra_dir=None, extra_dir_at_root=False, alt_name=None, obj_dir=False, **kwargs):
+    def _construct_path(
+        self,
+        obj,
+        base_dir=None,
+        dir_only=None,
+        extra_dir=None,
+        extra_dir_at_root=False,
+        alt_name=None,
+        obj_dir=False,
+        in_cache=False,
+        **kwargs,
+    ):
         # extra_dir should never be constructed from provided data but just
         # make sure there are no shenannigans afoot
         if extra_dir and extra_dir != os.path.normpath(extra_dir):
-            log.warning('extra_dir is not normalized: %s', extra_dir)
+            log.warning("extra_dir is not normalized: %s", extra_dir)
             raise ObjectInvalid("The requested object is invalid")
         # ensure that any parent directory references in alt_name would not
         # result in a path not contained in the directory path constructed here
         if alt_name:
             if not safe_relpath(alt_name):
-                log.warning('alt_name would locate path outside dir: %s', alt_name)
+                log.warning("alt_name would locate path outside dir: %s", alt_name)
                 raise ObjectInvalid("The requested object is invalid")
             # alt_name can contain parent directory references, but S3 will not
             # follow them, so if they are valid we normalize them out
@@ -342,10 +317,12 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
             return os.path.join(base, rel_path)
 
         # S3 folders are marked by having trailing '/' so add it now
-        rel_path = '%s/' % rel_path
+        rel_path = f"{rel_path}/"
 
         if not dir_only:
-            rel_path = os.path.join(rel_path, alt_name if alt_name else "dataset_%s.dat" % self._get_object_id(obj))
+            rel_path = os.path.join(rel_path, alt_name if alt_name else f"dataset_{self._get_object_id(obj)}.dat")
+        if in_cache:
+            return self._get_cache_path(rel_path)
         return rel_path
 
     def _get_cache_path(self, rel_path):
@@ -357,9 +334,8 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
     def _get_size_in_s3(self, rel_path):
         try:
             key = self._bucket.get_key(rel_path)
-            if key:
-                return key.size
-        except S3ResponseError:
+            return key.size
+        except (S3ResponseError, AttributeError):
             log.exception("Could not get size of key '%s' from S3", rel_path)
             return -1
 
@@ -367,7 +343,7 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
         exists = False
         try:
             # A hackish way of testing if the rel_path is a folder vs a file
-            is_dir = rel_path[-1] == '/'
+            is_dir = rel_path[-1] == "/"
             if is_dir:
                 keyresult = self._bucket.get_all_keys(prefix=rel_path)
                 if len(keyresult) > 0:
@@ -383,7 +359,7 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
         return exists
 
     def _in_cache(self, rel_path):
-        """ Check if the given dataset is in the local cache and return True if so. """
+        """Check if the given dataset is in the local cache and return True if so."""
         # log.debug("------ Checking cache for rel_path %s" % rel_path)
         cache_path = self._get_cache_path(rel_path)
         return os.path.exists(cache_path)
@@ -415,7 +391,7 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
         # Ensure the cache directory structure exists (e.g., dataset_#_files/)
         rel_path_dir = os.path.dirname(rel_path)
         if not os.path.exists(self._get_cache_path(rel_path_dir)):
-            os.makedirs(self._get_cache_path(rel_path_dir))
+            os.makedirs(self._get_cache_path(rel_path_dir), exist_ok=True)
         # Now pull in the file
         file_ok = self._download(rel_path)
         self._fix_permissions(self._get_cache_path(rel_path_dir))
@@ -428,16 +404,24 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
         try:
             log.debug("Pulling key '%s' into cache to %s", rel_path, self._get_cache_path(rel_path))
             key = self._bucket.get_key(rel_path)
+            if key is None:
+                message = f"Attempting to download an invalid key for path {rel_path}."
+                log.critical(message)
+                raise Exception(message)
             # Test if cache is large enough to hold the new file
-            if self.cache_size > 0 and key.size > self.cache_size:
-                log.critical("File %s is larger (%s) than the cache size (%s). Cannot download.",
-                             rel_path, key.size, self.cache_size)
+            if not self.cache_target.fits_in_cache(key.size):
+                log.critical(
+                    "File %s is larger (%s) than the configured cache allows (%s). Cannot download.",
+                    rel_path,
+                    key.size,
+                    self.cache_target.log_description,
+                )
                 return False
             if self.use_axel:
                 log.debug("Parallel pulled key '%s' into cache to %s", rel_path, self._get_cache_path(rel_path))
                 ncores = multiprocessing.cpu_count()
                 url = key.generate_url(7200)
-                ret_code = subprocess.call(['axel', '-a', '-n', ncores, url])
+                ret_code = subprocess.call(["axel", "-a", "-n", str(ncores), url])
                 if ret_code == 0:
                     return True
             else:
@@ -462,32 +446,47 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
             if os.path.exists(source_file):
                 key = Key(self._bucket, rel_path)
                 if os.path.getsize(source_file) == 0 and key.exists():
-                    log.debug("Wanted to push file '%s' to S3 key '%s' but its size is 0; skipping.", source_file, rel_path)
+                    log.debug(
+                        "Wanted to push file '%s' to S3 key '%s' but its size is 0; skipping.", source_file, rel_path
+                    )
                     return True
                 if from_string:
                     key.set_contents_from_string(from_string, reduced_redundancy=self.use_rr)
                     log.debug("Pushed data from string '%s' to key '%s'", from_string, rel_path)
                 else:
                     start_time = datetime.now()
-                    log.debug("Pushing cache file '%s' of size %s bytes to key '%s'", source_file, os.path.getsize(source_file), rel_path)
+                    log.debug(
+                        "Pushing cache file '%s' of size %s bytes to key '%s'",
+                        source_file,
+                        os.path.getsize(source_file),
+                        rel_path,
+                    )
                     mb_size = os.path.getsize(source_file) / 1e6
                     if mb_size < 10 or (not self.multipart):
                         self.transfer_progress = 0  # Reset transfer progress counter
-                        key.set_contents_from_filename(source_file,
-                                                       reduced_redundancy=self.use_rr,
-                                                       cb=self._transfer_cb,
-                                                       num_cb=10)
+                        key.set_contents_from_filename(
+                            source_file, reduced_redundancy=self.use_rr, cb=self._transfer_cb, num_cb=10
+                        )
                     else:
                         multipart_upload(self.s3server, self._bucket, key.name, source_file, mb_size)
                     end_time = datetime.now()
-                    log.debug("Pushed cache file '%s' to key '%s' (%s bytes transfered in %s sec)",
-                              source_file, rel_path, os.path.getsize(source_file), end_time - start_time)
+                    log.debug(
+                        "Pushed cache file '%s' to key '%s' (%s bytes transfered in %s sec)",
+                        source_file,
+                        rel_path,
+                        os.path.getsize(source_file),
+                        end_time - start_time,
+                    )
                 return True
             else:
-                log.error("Tried updating key '%s' from source file '%s', but source file does not exist.",
-                          rel_path, source_file)
+                log.error(
+                    "Tried updating key '%s' from source file '%s', but source file does not exist.",
+                    rel_path,
+                    source_file,
+                )
         except S3ResponseError:
             log.exception("Trouble pushing S3 key '%s' from file '%s'", rel_path, source_file)
+            raise
         return False
 
     def file_ready(self, obj, **kwargs):
@@ -500,8 +499,12 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
         if self._in_cache(rel_path):
             if os.path.getsize(self._get_cache_path(rel_path)) == self._get_size_in_s3(rel_path):
                 return True
-            log.debug("Waiting for dataset %s to transfer from OS: %s/%s", rel_path,
-                      os.path.getsize(self._get_cache_path(rel_path)), self._get_size_in_s3(rel_path))
+            log.debug(
+                "Waiting for dataset %s to transfer from OS: %s/%s",
+                rel_path,
+                os.path.getsize(self._get_cache_path(rel_path)),
+                self._get_size_in_s3(rel_path),
+            )
         return False
 
     def _exists(self, obj, **kwargs):
@@ -515,15 +518,15 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
         in_s3 = self._key_exists(rel_path)
         # log.debug("~~~~~~ File '%s' exists in cache: %s; in s3: %s" % (rel_path, in_cache, in_s3))
         # dir_only does not get synced so shortcut the decision
-        dir_only = kwargs.get('dir_only', False)
-        base_dir = kwargs.get('base_dir', None)
+        dir_only = kwargs.get("dir_only", False)
+        base_dir = kwargs.get("base_dir", None)
         if dir_only:
             if in_cache or in_s3:
                 return True
             # for JOB_WORK directory
             elif base_dir:
                 if not os.path.exists(rel_path):
-                    os.makedirs(rel_path)
+                    os.makedirs(rel_path, exist_ok=True)
                 return True
             else:
                 return False
@@ -539,12 +542,11 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
 
     def _create(self, obj, **kwargs):
         if not self._exists(obj, **kwargs):
-
             # Pull out locally used fields
-            extra_dir = kwargs.get('extra_dir', None)
-            extra_dir_at_root = kwargs.get('extra_dir_at_root', False)
-            dir_only = kwargs.get('dir_only', False)
-            alt_name = kwargs.get('alt_name', None)
+            extra_dir = kwargs.get("extra_dir", None)
+            extra_dir_at_root = kwargs.get("extra_dir_at_root", False)
+            dir_only = kwargs.get("dir_only", False)
+            alt_name = kwargs.get("alt_name", None)
 
             # Construct hashed path
             rel_path = os.path.join(*directory_hash_id(self._get_object_id(obj)))
@@ -559,7 +561,7 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
             # Create given directory in cache
             cache_dir = os.path.join(self.staging_path, rel_path)
             if not os.path.exists(cache_dir):
-                os.makedirs(cache_dir)
+                os.makedirs(cache_dir, exist_ok=True)
 
             # Although not really necessary to create S3 folders (because S3 has
             # flat namespace), do so for consistency with the regular file system
@@ -568,16 +570,16 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
             # self._push_to_os(s3_dir, from_string='')
             # If instructed, create the dataset in cache & in S3
             if not dir_only:
-                rel_path = os.path.join(rel_path, alt_name if alt_name else "dataset_%s.dat" % self._get_object_id(obj))
-                open(os.path.join(self.staging_path, rel_path), 'w').close()
-                self._push_to_os(rel_path, from_string='')
+                rel_path = os.path.join(rel_path, alt_name if alt_name else f"dataset_{self._get_object_id(obj)}.dat")
+                open(os.path.join(self.staging_path, rel_path), "w").close()
+                self._push_to_os(rel_path, from_string="")
+        return self
 
     def _empty(self, obj, **kwargs):
         if self._exists(obj, **kwargs):
             return bool(self._size(obj, **kwargs) > 0)
         else:
-            raise ObjectNotFound('objectstore.empty, object does not exist: %s, kwargs: %s'
-                                 % (str(obj), str(kwargs)))
+            raise ObjectNotFound(f"objectstore.empty, object does not exist: {obj}, kwargs: {kwargs}")
 
     def _size(self, obj, **kwargs):
         rel_path = self._construct_path(obj, **kwargs)
@@ -593,10 +595,10 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
 
     def _delete(self, obj, entire_dir=False, **kwargs):
         rel_path = self._construct_path(obj, **kwargs)
-        extra_dir = kwargs.get('extra_dir', None)
-        base_dir = kwargs.get('base_dir', None)
-        dir_only = kwargs.get('dir_only', False)
-        obj_dir = kwargs.get('obj_dir', False)
+        extra_dir = kwargs.get("extra_dir", None)
+        base_dir = kwargs.get("base_dir", None)
+        dir_only = kwargs.get("dir_only", False)
+        obj_dir = kwargs.get("obj_dir", False)
         try:
             # Remove temparory data in JOB_WORK directory
             if base_dir and dir_only and obj_dir:
@@ -608,7 +610,7 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
             # with all the files in it. This is easy for the local file system,
             # but requires iterating through each individual key in S3 and deleing it.
             if entire_dir and extra_dir:
-                shutil.rmtree(self._get_cache_path(rel_path))
+                shutil.rmtree(self._get_cache_path(rel_path), ignore_errors=True)
                 results = self._bucket.get_all_keys(prefix=rel_path)
                 for key in results:
                     log.debug("Deleting key %s", key.name)
@@ -616,7 +618,7 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
                 return True
             else:
                 # Delete from cache first
-                os.unlink(self._get_cache_path(rel_path))
+                unlink(self._get_cache_path(rel_path), ignore_errors=True)
                 # Delete from S3 as well
                 if self._key_exists(rel_path):
                     key = Key(self._bucket, rel_path)
@@ -626,7 +628,7 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
         except S3ResponseError:
             log.exception("Could not delete key '%s' from S3", rel_path)
         except OSError:
-            log.exception('%s delete error', self._get_filename(obj, **kwargs))
+            log.exception("%s delete error", self._get_filename(obj, **kwargs))
         return False
 
     def _get_data(self, obj, start=0, count=-1, **kwargs):
@@ -642,9 +644,9 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
         return content
 
     def _get_filename(self, obj, **kwargs):
-        base_dir = kwargs.get('base_dir', None)
-        dir_only = kwargs.get('dir_only', False)
-        obj_dir = kwargs.get('obj_dir', False)
+        base_dir = kwargs.get("base_dir", None)
+        dir_only = kwargs.get("dir_only", False)
+        obj_dir = kwargs.get("obj_dir", False)
         rel_path = self._construct_path(obj, **kwargs)
 
         # for JOB_WORK directory
@@ -665,7 +667,8 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
             return cache_path
         # Check if the file exists in persistent storage and, if it does, pull it into cache
         elif self._exists(obj, **kwargs):
-            if dir_only:  # Directories do not get pulled into cache
+            if dir_only:
+                download_directory(self._bucket, rel_path, cache_path)
                 return cache_path
             else:
                 if self._pull_into_cache(rel_path):
@@ -674,8 +677,7 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
         # even if it does not exist.
         # if dir_only:
         #     return cache_path
-        raise ObjectNotFound('objectstore.get_filename, no cache_path: %s, kwargs: %s'
-                             % (str(obj), str(kwargs)))
+        raise ObjectNotFound(f"objectstore.get_filename, no cache_path: {obj}, kwargs: {kwargs}")
         # return cache_path # Until the upload tool does not explicitly create the dataset, return expected path
 
     def _update_from_file(self, obj, file_name=None, create=False, **kwargs):
@@ -700,8 +702,7 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
             # Update the file on S3
             self._push_to_os(rel_path, source_file)
         else:
-            raise ObjectNotFound('objectstore.update_from_file, object does not exist: %s, kwargs: %s'
-                                 % (str(obj), str(kwargs)))
+            raise ObjectNotFound(f"objectstore.update_from_file, object does not exist: {obj}, kwargs: {kwargs}")
 
     def _get_object_url(self, obj, **kwargs):
         if self._exists(obj, **kwargs):
@@ -717,28 +718,26 @@ class S3ObjectStore(ConcreteObjectStore, CloudConfigMixin):
         return 0.0
 
     def shutdown(self):
-        self.running = False
-        thread = getattr(self, 'cache_monitor_thread', None)
-        if thread:
-            log.debug("Shutting down thread")
-            self.sleeper.wake()
-            thread.join(5)
+        self.cache_monitor and self.cache_monitor.shutdown()
 
 
-class SwiftObjectStore(S3ObjectStore):
+class GenericS3ObjectStore(S3ObjectStore):
     """
-    Object store that stores objects as items in a Swift bucket. A local
-    cache exists that is used as an intermediate location for files between
-    Galaxy and Swift.
+    Object store that stores objects as items in a generic S3 (non AWS) bucket.
+    A local cache exists that is used as an intermediate location for files between
+    Galaxy and the S3 storage service.
     """
-    store_type = 'swift'
+
+    store_type = "generic_s3"
 
     def _configure_connection(self):
-        log.debug("Configuring Swift Connection")
-        self.conn = boto.connect_s3(aws_access_key_id=self.access_key,
-                                    aws_secret_access_key=self.secret_key,
-                                    is_secure=self.is_secure,
-                                    host=self.host,
-                                    port=self.port,
-                                    calling_format=boto.s3.connection.OrdinaryCallingFormat(),
-                                    path=self.conn_path)
+        log.debug("Configuring generic S3 Connection")
+        self.conn = boto.connect_s3(
+            aws_access_key_id=self.access_key,
+            aws_secret_access_key=self.secret_key,
+            is_secure=self.is_secure,
+            host=self.host,
+            port=self.port,
+            calling_format=boto.s3.connection.OrdinaryCallingFormat(),
+            path=self.conn_path,
+        )

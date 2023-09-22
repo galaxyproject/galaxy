@@ -1,0 +1,11 @@
+{
+    "name": "ts_visjs",
+    "version": "1.0.0",
+    "license": "MIT",
+    "dependencies": {
+        "vis": "^4.21.0"
+    },
+    "scripts": {
+        "build": "mkdir -p static/dist && cp -r node_modules/vis/dist/img node_modules/vis/dist/vis.min.js node_modules/vis/dist/vis.min.css static/dist"
+    }
+}

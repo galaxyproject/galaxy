@@ -1,0 +1,122 @@
+desc: Description of job running configuration, can be embedded into Galaxy configuration
+  or loaded from an additional file with the job_config_file option.
+type: map
+mapping:
+  runners:
+    type: map
+    mapping:
+      dynamic:
+        type: map
+        mapping:
+          rules_module:
+            type: str
+      regex;(.+):
+        type: map
+        allowempty: true
+        mapping:
+          workers:
+            type: int
+          load:
+            type: str
+          enabled:
+            type: bool
+  handling:
+    type: map
+    allowempty: true
+  execution: 
+    type: map
+    allowempty: true
+    mapping:
+      default:
+        type: str
+      environments:
+        type: map
+        mapping:
+          regex;(.+):
+            type: map
+            allowempty: true
+            mapping:
+              runner:
+                type: str
+              tags:
+                type: seq
+                sequence:
+                  - type: str
+              shell:
+                type: str
+              env:
+                type: seq
+                sequence:
+                  - type: map
+                    mapping:
+                      name:
+                        type: str
+                      raw:
+                        type: bool
+                      value:
+                        type: str
+                      file:
+                        type: str
+                      execute:
+                        type: str
+              resubmit:
+                type: seq
+                sequence:
+                  - type: map
+                    mapping:
+                      delay:
+                        type:  any  # str or number
+                      condition:
+                        type: str
+                      environment:
+                        type: str
+                      handler:
+                        type: str
+              metadata_strategy:
+                type: str
+              tool_evaluation_strategy:
+                type: str
+
+  tools: 
+    type: seq
+    sequence:
+      - type: map
+        allowempty: true
+        mapping:
+          id:
+            type: str
+          class:
+            type: str
+          handler:
+            type: str
+          environment:
+            type: str
+          resources:
+            type: str
+  resources:
+    type: map
+    mapping:
+      default:
+        type: str
+      groups:
+        type: map
+        mapping:
+          regex;(.+):
+            type: seq
+            sequence:
+              - type: str
+  limits:
+    type: seq
+    sequence:
+      - type: map
+        mapping:
+          type:
+            type: str
+          value:
+            type: any
+          window:
+            type: int
+          id:
+            type: str
+          tag:
+            type: str

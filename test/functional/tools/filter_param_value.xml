@@ -1,0 +1,53 @@
+<tool id="filter_param_value" name="filter_param_value" version="0.1.0">
+    <description>Filter input with the param_value</description>
+    <command><![CDATA[
+        echo $select1 > '$output' && 
+        echo $select2 >> '$output'
+    ]]></command>
+    <inputs>
+        <!-- define 2 selects that are initialised with entries from a data table
+             and use param_value filters to ensure that disjoint elements are
+             selected (one of them is multiple="true" to ensure that also list of
+             elements can be used in the filter) -->
+        <param name="select1" type="select" multiple="true">
+            <options from_data_table="test_fasta_indexes">
+                <column name="value" index="0"/>
+                <column name="name" index="1"/>
+                <!-- unfortunatelly this does not work (bug?): at the moment ane can
+                     not refer to other inputs that are defined below)
+                    <filter type="param_value" column="0" ref="select2" keep="false"/> -->
+            </options>
+        </param>
+        <param name="select2" type="select">
+            <options from_data_table="test_fasta_indexes">
+                <column name="value" index="0"/>
+                <column name="name" index="1"/>
+                <filter type="param_value" column="0" ref="select1" keep="false"/>
+            </options>
+        </param>
+    </inputs>
+
+    <outputs>
+        <data format="txt" name="output" />
+    </outputs>
+
+    <tests>
+        <test expect_failure="false">
+            <param name="select1" value="hg18_value,hg19_value"/>
+            <param name="select2" value="mm10_value" />
+            <output name="output">
+                <assert_contents>
+                    <has_line line="hg18_value,hg19_value" />    
+                    <has_line line="mm10_value" />    
+                </assert_contents>
+            </output>
+        </test>
+        <test expect_failure="true">
+            <param name="select1" value="hg18_value,hg19_value"/>
+            <param name="select2" value="hg18_value" />
+        </test>
+    </tests>
+
+    <help>
+    </help>
+</tool>

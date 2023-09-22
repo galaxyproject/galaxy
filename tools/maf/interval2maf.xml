@@ -1,3 +1,5 @@
+<!-- this tool is deprecated in favour of the tools-iuc one
+     https://github.com/galaxyproject/tools-iuc/tree/master/tools/interval2maf -->
 <tool id="Interval2Maf1" name="Extract MAF blocks" version="1.0.1">
   <description>given a set of genomic intervals</description>
   <macros>

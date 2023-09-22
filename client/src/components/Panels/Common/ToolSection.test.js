@@ -1,7 +1,18 @@
-import Vue from "vue";
 import { mount } from "@vue/test-utils";
+import { getLocalVue } from "tests/jest/helpers";
 import ToolSection from "./ToolSection";
-import { getNewAttachNode } from "jest/helpers";
+
+import { useConfig } from "composables/config";
+
+jest.mock("composables/config");
+useConfig.mockReturnValue({
+    config: {
+        toolbox_auto_sort: true,
+    },
+    isLoaded: true,
+});
+
+const localVue = getLocalVue();
 
 describe("ToolSection", () => {
     test("test tool section", () => {
@@ -11,7 +22,7 @@ describe("ToolSection", () => {
                     name: "name",
                 },
             },
-            attachTo: getNewAttachNode(),
+            localVue,
         });
         const nameElement = wrapper.findAll(".name");
         expect(nameElement.at(0).text()).toBe("name");
@@ -34,19 +45,17 @@ describe("ToolSection", () => {
                     ],
                 },
             },
-            attachTo: getNewAttachNode(),
+            localVue,
         });
         expect(wrapper.vm.opened).toBe(false);
         const $sectionName = wrapper.find(".name");
         expect($sectionName.text()).toBe("tool_section");
-        $sectionName.trigger("click");
-        await Vue.nextTick();
+        await $sectionName.trigger("click");
         const $names = wrapper.findAll(".name");
         expect($names.at(1).text()).toBe("name");
-        const $label = wrapper.find(".tool-panel-label");
-        expect($label.text()).toBe("text");
-        $sectionName.trigger("click");
-        await Vue.nextTick();
+        const $label = wrapper.find(".title-link");
+        expect($label.text()).toBe("tool_section");
+        await $sectionName.trigger("click");
         expect(wrapper.findAll(".name").length).toBe(1);
     });
 
@@ -66,30 +75,23 @@ describe("ToolSection", () => {
                 },
                 queryFilter: "test",
             },
-            attachTo: getNewAttachNode(),
+            localVue,
         });
         expect(wrapper.vm.opened).toBe(true);
         const $sectionName = wrapper.find(".name");
-        $sectionName.trigger("click");
-        await Vue.nextTick();
+        await $sectionName.trigger("click");
         expect(wrapper.vm.opened).toBe(false);
-        wrapper.setProps({ queryFilter: "" });
-        await Vue.nextTick();
+        await wrapper.setProps({ queryFilter: "" });
         expect(wrapper.vm.opened).toBe(false);
-        wrapper.setProps({ queryFilter: "test" });
-        await Vue.nextTick();
+        await wrapper.setProps({ queryFilter: "test" });
         expect(wrapper.vm.opened).toBe(true);
-        wrapper.setProps({ disableFilter: true });
-        await Vue.nextTick();
+        await wrapper.setProps({ disableFilter: true });
         expect(wrapper.vm.opened).toBe(true);
-        wrapper.setProps({ queryFilter: "" });
-        await Vue.nextTick();
+        await wrapper.setProps({ queryFilter: "" });
         expect(wrapper.vm.opened).toBe(false);
-        $sectionName.trigger("click");
-        await Vue.nextTick();
+        await $sectionName.trigger("click");
         expect(wrapper.vm.opened).toBe(true);
-        wrapper.setProps({ queryFilter: "test" });
-        await Vue.nextTick();
+        await wrapper.setProps({ queryFilter: "test" });
         expect(wrapper.vm.opened).toBe(false);
     });
 });

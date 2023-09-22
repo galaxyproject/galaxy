@@ -1,0 +1,88 @@
+{
+  "0": {
+    "id": 0,
+    "type": "data_input",
+    "label": "data input",
+    "content_id": null,
+    "name": "Input dataset",
+    "tool_state": {
+      "optional": "\"false\"",
+      "tag": "\"\"",
+      "__page__": null,
+      "__rerun_remap_job_id__": null
+    },
+    "errors": null,
+    "inputs": [],
+    "outputs": [
+      {
+        "name": "output",
+        "extensions": [
+          "input"
+        ],
+        "optional": false
+      }
+    ],
+    "annotation": "",
+    "post_job_actions": {},
+    "uuid": "bdfb1f7e-a7b7-4c95-85cb-901abdc6b276",
+    "workflow_outputs": [],
+    "input_connections": {},
+    "position": {
+      "left": 0,
+      "top": 0
+    }
+  },
+  "1": {
+    "id": 1,
+    "type": "tool",
+    "label": "",
+    "content_id": "Cut1",
+    "name": "Cut",
+    "tool_state": {
+      "columnList": "\"c1,c2\"",
+      "delimiter": "\"T\"",
+      "input": "{\"__class__\": \"ConnectedValue\"}",
+      "__page__": null,
+      "__rerun_remap_job_id__": null
+    },
+    "errors": null,
+    "inputs": [
+      {
+        "name": "input",
+        "label": "From",
+        "multiple": false,
+        "extensions": [
+          "txt"
+        ],
+        "optional": false,
+        "input_type": "dataset"
+      }
+    ],
+    "outputs": [
+      {
+        "name": "out_file1",
+        "extensions": [
+          "tabular"
+        ],
+        "type": "data",
+        "optional": false
+      }
+    ],
+    "annotation": "",
+    "post_job_actions": {},
+    "uuid": "16626ff6-6484-4db2-bffc-71b69ff05b80",
+    "workflow_outputs": [],
+    "input_connections": {
+      "input": [
+        {
+          "output_name": "output",
+          "id": 0
+        }
+      ]
+    },
+    "position": {
+      "left": 231.74591064453125,
+      "top": 122.94705200195312
+    }
+  }
+}

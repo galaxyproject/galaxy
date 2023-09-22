@@ -1,26 +1,58 @@
 <template>
-    <div class="w-50 p-2 float-left">
-        <b-card body-class="p-0">
-            <b-card-header>
-                <span>
-                    <span>Dataset Collection:</span>
-                    <span class="font-weight-light">{{ collectionName }}</span>
-                </span>
-            </b-card-header>
-            <b-card-body>
-                <LoadingSpan v-if="loading" message="Loading Collection" />
-                <div v-else class="content-height">
-                    <CollectionTree :node="itemContent" :skip-head="true" />
-                </div>
-            </b-card-body>
-        </b-card>
-    </div>
+    <b-card body-class="p-0">
+        <b-card-header>
+            <span class="float-right">
+                <b-button
+                    v-b-tooltip.hover
+                    :href="downloadUrl"
+                    variant="link"
+                    size="sm"
+                    role="button"
+                    title="Download Collection"
+                    type="button"
+                    class="py-0 px-1">
+                    <span class="fa fa-download" />
+                </b-button>
+                <b-button
+                    v-if="vcurrentUser && currentHistoryId"
+                    v-b-tooltip.hover
+                    href="#"
+                    role="button"
+                    variant="link"
+                    title="Import Collection"
+                    type="button"
+                    class="py-0 px-1"
+                    @click="onCopyCollection(currentHistoryId)">
+                    <span class="fa fa-file-import" />
+                </b-button>
+            </span>
+            <span>
+                <span>Dataset Collection:</span>
+                <span class="font-weight-light">{{ collectionName }}</span>
+            </span>
+        </b-card-header>
+        <b-card-body>
+            <LoadingSpan v-if="loading" message="Loading Collection" />
+            <div v-else class="content-height">
+                <b-alert v-if="!!messageText" :variant="messageVariant" show>
+                    {{ messageText }}
+                </b-alert>
+                <CollectionTree :node="itemContent" :skip-head="true" />
+            </div>
+        </b-card-body>
+    </b-card>
 </template>
 
 <script>
 import axios from "axios";
+import { mapState } from "pinia";
+import { useUserStore } from "@/stores/userStore";
+import { useHistoryStore } from "@/stores/historyStore";
+import { getAppRoot } from "onload/loadConfig";
 import CollectionTree from "./CollectionTree";
 import LoadingSpan from "components/LoadingSpan";
+import { copyCollection } from "components/Markdown/services";
+
 export default {
     components: {
         CollectionTree,
@@ -40,7 +72,23 @@ export default {
         return {
             itemContent: null,
             loading: true,
+            messageText: null,
+            messageVariant: null,
         };
+    },
+    computed: {
+        ...mapState(useUserStore, ["currentUser"]),
+        ...mapState(useHistoryStore, ["currentHistoryId"]),
+        collectionName() {
+            const collection = this.collections[this.args.history_dataset_collection_id];
+            return collection && collection.name;
+        },
+        itemUrl() {
+            return `${getAppRoot()}api/dataset_collections/${this.args.history_dataset_collection_id}`;
+        },
+        downloadUrl() {
+            return `${getAppRoot()}api/dataset_collections/${this.args.history_dataset_collection_id}/download`;
+        },
     },
     created() {
         this.getContent().then((data) => {
@@ -48,18 +96,20 @@ export default {
             this.loading = false;
         });
     },
-    computed: {
-        collectionName() {
-            const collection = this.collections[this.args.history_dataset_collection_id];
-            return collection && collection.name;
-        },
-        itemUrl() {
-            const collectionId = this.args.history_dataset_collection_id;
-            const collection = this.collections[collectionId];
-            return collection.url;
-        },
-    },
     methods: {
+        onCopyCollection(currentHistoryId) {
+            const hdcaId = this.args.history_dataset_collection_id;
+            copyCollection(hdcaId, currentHistoryId).then(
+                (response) => {
+                    this.messageVariant = "success";
+                    this.messageText = "Successfully copied to current history.";
+                },
+                (error) => {
+                    this.messageVariant = "danger";
+                    this.messageText = error;
+                }
+            );
+        },
         async getContent() {
             try {
                 const response = await axios.get(this.itemUrl);
@@ -74,5 +124,6 @@ export default {
 <style scoped>
 .content-height {
     max-height: 15rem;
+    overflow-y: auto;
 }
 </style>

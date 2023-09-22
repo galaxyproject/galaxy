@@ -11,7 +11,7 @@ import logging
 import os
 import sys
 
-sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, 'lib')))
+sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pardir, "lib")))
 
 # This junk is here to prevent loading errors
 import galaxy.model.mapping  # need to load this before we unpickle, in order to setup properties assigned by the mappers
@@ -30,15 +30,15 @@ def __main__():
     if not os.path.isfile(file_path):
         # Nothing to do - some splitters don't write a JSON file
         sys.exit(0)
-    data = json.load(open(file_path, 'r'))
+    data = json.load(open(file_path))
     try:
-        class_name_parts = data['class_name'].split('.')
-        module_name = '.'.join(class_name_parts[:-1])
+        class_name_parts = data["class_name"].split(".")
+        module_name = ".".join(class_name_parts[:-1])
         class_name = class_name_parts[-1]
         mod = __import__(module_name, globals(), locals(), [class_name])
         cls = getattr(mod, class_name)
         if not cls.process_split_file(data):
-            sys.stderr.write('Writing split file failed\n')
+            sys.stderr.write("Writing split file failed\n")
             sys.exit(1)
     except Exception as e:
         sys.stderr.write(str(e))

@@ -3,7 +3,7 @@
 from galaxy_test.driver import integration_util
 from .test_extended_metadata import (
     ExtendedMetadataIntegrationInstance,
-    TEST_TOOL_IDS
+    TEST_TOOL_IDS,
 )
 
 
@@ -14,7 +14,7 @@ class ExtendedMetadataOutputsToWorkingDirIntegrationInstance(ExtendedMetadataInt
     def handle_galaxy_config_kwds(cls, config):
         config["metadata_strategy"] = "extended"
         config["object_store_store_by"] = "uuid"
-        config["outpus_to_working_dir"] = True
+        config["outputs_to_working_directory"] = True
         config["retry_metadata_internally"] = False
 
 

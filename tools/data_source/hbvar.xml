@@ -1,6 +1,9 @@
 <?xml version="1.0"?>
 <tool name="HbVar" id="hbvar" tool_type="data_source" version="2.0.0">
     <description>Human Hemoglobin Variants and Thalassemias</description>
+    <edam_operations>
+        <edam_operation>operation_0224</edam_operation>
+    </edam_operations>
     <command><![CDATA[
 python '$__tool_directory__/data_source.py' '$output' $__app__.config.output_size_limit
     ]]></command>

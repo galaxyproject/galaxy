@@ -1,5 +1,5 @@
 <template>
-    <pre><code class="text-normalwrap">{{ content }}</code></pre>
+    <pre><code class="word-wrap-normal">{{ content }}</code></pre>
 </template>
 
 <script>

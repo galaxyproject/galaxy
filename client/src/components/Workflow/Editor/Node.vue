@@ -1,445 +1,278 @@
 <template>
-    <div :id="idString" :name="name" :node-label="label" class="workflow-node">
-        <div class="node-header unselectable clearfix">
-            <b-button
-                class="node-destroy py-0 float-right"
-                variant="primary"
-                size="sm"
-                aria-label="destroy node"
-                v-b-tooltip.hover
-                title="Remove"
-                @click="onRemove"
-            >
-                <i class="fa fa-times" />
-            </b-button>
-            <b-button
-                :id="popoverId"
-                v-if="isEnabled"
-                class="node-recommendations py-0 float-right"
-                variant="primary"
-                size="sm"
-                aria-label="tool recommendations"
-            >
-                <i class="fa fa-arrow-right" />
-            </b-button>
-            <b-popover :target="popoverId" triggers="hover" placement="bottom" :show.sync="popoverShow">
-                <Recommendations
-                    :get-node="getNode"
-                    :get-manager="getManager"
-                    :datatypes-mapper="datatypesMapper"
-                    @onCreate="onCreate"
-                />
-            </b-popover>
-            <b-button
-                v-if="canClone"
-                class="node-clone py-0 float-right"
-                variant="primary"
-                size="sm"
-                aria-label="clone node"
-                v-b-tooltip.hover
-                title="Duplicate"
-                @click="onClone"
-            >
-                <i class="fa fa-files-o" />
-            </b-button>
+    <draggable-wrapper
+        :id="idString"
+        ref="el"
+        :scale="scale"
+        :root-offset="rootOffset"
+        :name="name"
+        :node-label="title"
+        :class="classes"
+        :style="style"
+        @move="onMoveTo"
+        @pan-by="onPanBy">
+        <div class="node-header unselectable clearfix" @click="makeActive" @keyup.enter="makeActive">
+            <b-button-group class="float-right">
+                <loading-span v-if="isLoading" spinner-only />
+                <b-button
+                    v-if="canClone"
+                    v-b-tooltip.hover
+                    class="node-clone py-0"
+                    variant="primary"
+                    size="sm"
+                    aria-label="clone node"
+                    title="Duplicate"
+                    @click.prevent.stop="onClone">
+                    <i class="fa fa-files-o" />
+                </b-button>
+                <b-button
+                    v-b-tooltip.hover
+                    class="node-destroy py-0"
+                    variant="primary"
+                    size="sm"
+                    aria-label="destroy node"
+                    title="Remove"
+                    @click.prevent.stop="remove">
+                    <i class="fa fa-times" />
+                </b-button>
+                <b-button
+                    v-if="isEnabled"
+                    :id="popoverId"
+                    class="node-recommendations py-0"
+                    variant="primary"
+                    size="sm"
+                    aria-label="tool recommendations">
+                    <i class="fa fa-arrow-right" />
+                </b-button>
+                <b-popover
+                    v-if="isEnabled"
+                    :target="popoverId"
+                    triggers="hover"
+                    placement="bottom"
+                    :show.sync="popoverShow">
+                    <div>
+                        <Recommendations
+                            v-if="popoverShow"
+                            :step-id="id"
+                            :datatypes-mapper="datatypesMapper"
+                            @onCreate="onCreate" />
+                    </div>
+                </b-popover>
+            </b-button-group>
             <i :class="iconClass" />
+            <span v-if="step.when" v-b-tooltip.hover title="This step is conditionally executed.">
+                <font-awesome-icon icon="fa-code-branch" />
+            </span>
+            <span
+                v-b-tooltip.hover
+                title="Index of the step in the workflow run form. Steps are ordered by distance to the upper-left corner of the window; inputs are listed first."
+                >{{ step.id + 1 }}:
+            </span>
             <span class="node-title">{{ title }}</span>
         </div>
-        <b-alert v-if="!!errors" variant="danger" show class="node-error">
+        <b-alert v-if="!!errors" variant="danger" show class="node-error" @click="makeActive">
             {{ errors }}
         </b-alert>
-        <div v-else class="node-body">
-            <loading-span v-if="showLoading" message="Loading details" />
+        <div v-else class="node-body" @click="makeActive" @keyup.enter="makeActive">
             <node-input
-                v-for="input in inputs"
-                :key="input.name"
+                v-for="(input, index) in inputs"
+                :key="`in-${index}-${input.name}`"
                 :input="input"
-                :get-node="getNode"
-                :get-manager="getManager"
+                :step-id="id"
                 :datatypes-mapper="datatypesMapper"
-                @onAdd="onAddInput"
-                @onChange="onChange"
-            />
+                :step-position="step.position ?? { top: 0, left: 0 }"
+                :root-offset="rootOffset"
+                :scroll="scroll"
+                :scale="scale"
+                :parent-node="elHtml"
+                @onChange="onChange" />
             <div v-if="showRule" class="rule" />
             <node-output
-                v-for="output in outputs"
-                :key="output.name"
+                v-for="(output, index) in outputs"
+                :key="`out-${index}-${output.name}`"
                 :output="output"
-                :get-node="getNode"
-                :get-manager="getManager"
-                @onAdd="onAddOutput"
-                @onToggle="onToggleOutput"
-                @onChange="onChange"
-            />
+                :workflow-outputs="workflowOutputs"
+                :post-job-actions="postJobActions"
+                :step-id="id"
+                :step-type="step.type"
+                :step-position="step.position ?? { top: 0, left: 0 }"
+                :root-offset="reactive(rootOffset)"
+                :scroll="scroll"
+                :scale="scale"
+                :datatypes-mapper="datatypesMapper"
+                :parent-node="elHtml"
+                @onDragConnector="onDragConnector"
+                @stopDragging="onStopDragging"
+                @onChange="onChange" />
         </div>
-    </div>
+    </draggable-wrapper>
 </template>
 
-<script>
-import Vue from "vue";
+<script setup lang="ts">
+import type { PropType, Ref } from "vue";
+import Vue, { reactive } from "vue";
 import BootstrapVue from "bootstrap-vue";
-import WorkflowIcons from "components/Workflow/icons";
-import LoadingSpan from "components/LoadingSpan";
-import { getGalaxyInstance } from "app";
-import Recommendations from "components/Workflow/Editor/Recommendations";
-import NodeInput from "./NodeInput";
-import NodeOutput from "./NodeOutput";
-import { ActiveOutputs } from "./modules/outputs";
-import { attachDragging } from "./modules/dragging";
+import WorkflowIcons from "@/components/Workflow/icons";
+import LoadingSpan from "@/components/LoadingSpan.vue";
+import { getGalaxyInstance } from "@/app";
+import Recommendations from "@/components/Workflow/Editor/Recommendations.vue";
+import NodeInput from "@/components/Workflow/Editor/NodeInput.vue";
+import NodeOutput from "@/components/Workflow/Editor/NodeOutput.vue";
+import DraggableWrapper from "@/components/Workflow/Editor/DraggablePan.vue";
+import { computed, ref } from "vue";
+import { useNodePosition } from "@/components/Workflow/Editor/composables/useNodePosition";
+import { useWorkflowStateStore, type TerminalPosition, type XYPosition } from "@/stores/workflowEditorStateStore";
+import type { Step } from "@/stores/workflowStepStore";
+import { DatatypesMapperModel } from "@/components/Datatypes/model";
+import type { UseElementBoundingReturn, UseScrollReturn, VueInstance } from "@vueuse/core";
+import { useConnectionStore } from "@/stores/workflowConnectionStore";
+import { useWorkflowStepStore } from "@/stores/workflowStepStore";
+import { faCodeBranch } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import type { OutputTerminals } from "./modules/terminals";
+
 Vue.use(BootstrapVue);
 
-export default {
-    components: {
-        LoadingSpan,
-        Recommendations,
-        NodeInput,
-        NodeOutput,
-    },
-    props: {
-        id: {
-            type: String,
-            default: "",
-        },
-        contentId: {
-            type: String,
-            default: "",
-        },
-        name: {
-            type: String,
-            default: "name",
-        },
-        type: {
-            type: String,
-            default: null,
-        },
-        step: {
-            type: Object,
-            default: null,
-        },
-        getManager: {
-            type: Function,
-            default: null,
-        },
-        getCanvasManager: {
-            type: Function,
-            default: null,
-        },
-        datatypesMapper: {
-            type: Object,
-            default: null,
-        },
-    },
-    data() {
-        return {
-            popoverShow: false,
-            node: null,
-            inputs: [],
-            outputs: [],
-            inputTerminals: {},
-            outputTerminals: {},
-            errors: null,
-            label: null,
-            config_form: {},
-            showLoading: true,
-        };
-    },
-    mounted() {
-        this.canvasManager = this.getCanvasManager();
-        this.activeOutputs = new ActiveOutputs();
-        this.element = this.$el;
-        this.content_id = this.contentId;
+library.add(faCodeBranch);
 
-        // Set initial scroll position
-        const step = this.step;
-        const el = this.$el;
-        if (step.position) {
-            el.style.top = step.position.top + "px";
-            el.style.left = step.position.left + "px";
-        } else {
-            const p = document.getElementById("canvas-viewport");
-            const o = document.getElementById("canvas-container");
-            if (p && o) {
-                const left = -o.offsetLeft + (p.offsetWidth - el.offsetWidth) / 2;
-                const top = -o.offsetTop + (p.offsetHeight - el.offsetHeight) / 2;
-                el.style.top = `${top}px`;
-                el.style.left = `${left}px`;
-            }
+const props = defineProps({
+    id: { type: Number, required: true },
+    contentId: { type: String as PropType<string | null>, default: null },
+    name: { type: String as PropType<string | null>, default: null },
+    step: { type: Object as PropType<Step>, required: true },
+    datatypesMapper: { type: DatatypesMapperModel, required: true },
+    activeNodeId: {
+        type: null as unknown as PropType<number | null>,
+        required: true,
+        validator: (v: any) => typeof v === "number" || v === null,
+    },
+    rootOffset: { type: Object as PropType<UseElementBoundingReturn>, required: true },
+    scroll: { type: Object as PropType<UseScrollReturn>, required: true },
+    scale: { type: Number, default: 1 },
+    highlight: { type: Boolean, default: false },
+});
+
+const emit = defineEmits([
+    "onRemove",
+    "onActivate",
+    "onChange",
+    "onCreate",
+    "onUpdate",
+    "onClone",
+    "onUpdateStepPosition",
+    "pan-by",
+    "onDragConnector",
+    "stopDragging",
+]);
+
+const popoverShow = ref(false);
+const popoverId = computed(() => `popover-${props.id}`);
+const scrolledTo = ref(false);
+
+function remove() {
+    emit("onRemove", props.id);
+}
+
+const el: Ref<VueInstance | null> = ref(null);
+const elHtml: Ref<HTMLElement | null> = computed(() => (el.value?.$el as HTMLElement | undefined) ?? null);
+
+const postJobActions = computed(() => props.step.post_job_actions || {});
+const workflowOutputs = computed(() => props.step.workflow_outputs || []);
+const connectionStore = useConnectionStore();
+const stateStore = useWorkflowStateStore();
+const stepStore = useWorkflowStepStore();
+const isLoading = computed(() => Boolean(stateStore.getStepLoadingState(props.id)?.loading));
+useNodePosition(
+    elHtml,
+    props.id,
+    stateStore,
+    computed(() => props.scale)
+);
+const title = computed(() => props.step.label || props.step.name);
+const idString = computed(() => `wf-node-step-${props.id}`);
+const showRule = computed(() => props.step.inputs?.length > 0 && props.step.outputs?.length > 0);
+const iconClass = computed(() => `icon fa fa-fw ${WorkflowIcons[props.step.type]}`);
+const canClone = computed(() => props.step.type !== "subworkflow"); // Why ?
+const isEnabled = getGalaxyInstance().config.enable_tool_recommendations; // getGalaxyInstance is not reactive
+
+const isActive = computed(() => props.id === props.activeNodeId);
+const classes = computed(() => {
+    return {
+        "workflow-node": true,
+        "node-on-scroll-to": scrolledTo.value,
+        "node-highlight": props.highlight || isActive.value,
+        "is-active": isActive.value,
+    };
+});
+const style = computed(() => {
+    return { top: props.step.position!.top + "px", left: props.step.position!.left + "px" };
+});
+const errors = computed(() => props.step.errors || stateStore.getStepLoadingState(props.id)?.error);
+const inputs = computed(() => {
+    const connections = connectionStore.getConnectionsForStep(props.id);
+    const extraStepInputs = stepStore.getStepExtraInputs(props.id);
+    const stepInputs = [...extraStepInputs, ...(props.step.inputs || [])];
+    const unknownInputs: string[] = [];
+    connections.forEach((connection) => {
+        if (connection.input.stepId == props.id && !stepInputs.find((input) => input.name === connection.input.name)) {
+            unknownInputs.push(connection.input.name);
         }
+    });
+    const invalidInputNames = [...new Set(unknownInputs)];
+    const invalidInputTerminalSource = invalidInputNames.map((name) => {
+        return { name, optional: false, extensions: [], valid: false, input_type: "dataset" };
+    });
+    return [...stepInputs, ...invalidInputTerminalSource];
+});
+const invalidOutputs = computed(() => {
+    const connections = connectionStore.getConnectionsForStep(props.id);
+    const invalidConnections = connections.filter(
+        (connection) =>
+            connection.output.stepId == props.id &&
+            !props.step.outputs.find((output) => output.name === connection.output.name)
+    );
+    const invalidOutputNames = [...new Set(invalidConnections.map((connection) => connection.output.name))];
+    return invalidOutputNames.map((name) => {
+        return { name, optional: false, datatypes: [], valid: false };
+    });
+});
+const outputs = computed(() => {
+    return [...props.step.outputs, ...invalidOutputs.value];
+});
 
-        // Attach node dragging events
-        attachDragging(this.$el, {
-            dragstart: () => {
-                this.$emit("onActivate", this);
-            },
-            dragend: () => {
-                this.$emit("onChange");
-                this.canvasManager.drawOverview();
-            },
-            drag: (e, d) => {
-                const o = document.getElementById("canvas-container");
-                const el = this.$el;
-                const rect = o.getBoundingClientRect();
-                const left = (d.offsetX - rect.left) / this.canvasManager.canvasZoom;
-                const top = (d.offsetY - rect.top) / this.canvasManager.canvasZoom;
-                el.style.left = `${left}px`;
-                el.style.top = `${top}px`;
-                this.onRedraw();
-            },
-            dragclickonly: () => {
-                this.$emit("onActivate", this);
-            },
-        });
+function onDragConnector(dragPosition: TerminalPosition, terminal: OutputTerminals) {
+    emit("onDragConnector", dragPosition, terminal);
+}
 
-        // initialize node data
-        this.$emit("onAdd", this);
-        if (this.step._complete) {
-            this.initData(this.step);
-            this.updateData(this.step);
-        } else {
-            this.$emit("onUpdate", this);
-        }
-    },
-    computed: {
-        title() {
-            return this.label || this.name;
-        },
-        idString() {
-            return `wf-node-step-${this.id}`;
-        },
-        showRule() {
-            return this.inputs.length > 0 && this.outputs.length > 0;
-        },
-        iconClass() {
-            const iconType = WorkflowIcons[this.type];
-            if (iconType) {
-                return `icon fa fa-fw ${iconType}`;
-            }
-            return null;
-        },
-        popoverId() {
-            return `popover-${this.id}`;
-        },
-        canClone() {
-            return this.type != "subworkflow";
-        },
-        isEnabled() {
-            return getGalaxyInstance().config.enable_tool_recommendations;
-        },
-    },
-    methods: {
-        onChange() {
-            this.$emit("onChange");
-        },
-        onAddInput(input, terminal) {
-            const existingTerminal = this.inputTerminals[input.name];
-            if (existingTerminal) {
-                existingTerminal.update(input);
-                existingTerminal.destroyInvalidConnections();
-            } else {
-                this.inputTerminals[input.name] = terminal;
-            }
-        },
-        onAddOutput(output, terminal) {
-            const existingTerminal = this.outputTerminals[output.name];
-            if (existingTerminal) {
-                existingTerminal.update(output);
-                existingTerminal.destroyInvalidConnections();
-            } else {
-                this.outputTerminals[output.name] = terminal;
-            }
-        },
-        onToggleOutput(name) {
-            this.activeOutputs.toggle(name);
-            this.$emit("onChange");
-        },
-        onCreate(contentId, name) {
-            this.$emit("onCreate", contentId, name);
-            this.popoverShow = false;
-        },
-        onClone() {
-            this.$emit("onClone", this);
-        },
-        onRemove() {
-            Object.values(this.inputTerminals).forEach((t) => {
-                t.destroy();
-            });
-            Object.values(this.outputTerminals).forEach((t) => {
-                t.destroy();
-            });
-            this.$emit("onRemove", this);
-        },
-        onRedraw() {
-            Object.values(this.inputTerminals).forEach((t) => {
-                t.redraw();
-            });
-            Object.values(this.outputTerminals).forEach((t) => {
-                t.redraw();
-            });
-        },
-        getNode() {
-            return this;
-        },
-        setNode(data) {
-            data.workflow_outputs = data.outputs.map((o) => {
-                return {
-                    output_name: o.name,
-                    label: o.label,
-                };
-            });
-            this.initData(data);
-            Vue.nextTick(() => {
-                this.updateData(data);
-                this.$emit("onActivate", this);
-            });
-        },
-        setData(data) {
-            this.config_form = data.config_form;
-            this.tool_state = data.tool_state;
-            this.errors = data.errors;
-            this.annotation = data.annotation;
-            this.tooltip = data.tooltip || "";
-            this.postJobActions = data.post_job_actions || {};
-            this.label = data.label;
-            this.uuid = data.uuid;
-        },
-        initData(data) {
-            this.setData(data);
-            this.inputs = data.inputs ? data.inputs.slice() : [];
-            this.outputs = data.outputs ? data.outputs.slice() : [];
-            this.activeOutputs.initialize(this.outputs, data.workflow_outputs);
-            this.$emit("onChange");
-        },
-        updateData(data) {
-            this.setData(data);
+function onMoveTo(position: XYPosition) {
+    emit("onUpdateStepPosition", props.id, {
+        top: position.y + props.scroll.y.value / props.scale,
+        left: position.x + props.scroll.x.value / props.scale,
+    });
+}
 
-            // Create a dictionary of all incoming outputs
-            const outputNames = {};
-            const outputIndex = {};
-            data.outputs.forEach((output) => {
-                const name = output.name;
-                outputNames[name] = 1;
-                outputIndex[name] = output;
-            });
+function onPanBy(panBy: XYPosition) {
+    emit("pan-by", panBy);
+}
 
-            // Identify unused outputs which existed previously
-            for (let i = this.outputs.length - 1; i >= 0; i--) {
-                const output = this.outputs[i];
-                const name = output.name;
-                if (!outputNames[name]) {
-                    // Remove the noodle connectors
-                    this.outputTerminals[name].connectors.forEach((x) => {
-                        if (x) {
-                            x.destroy();
-                        }
-                    });
-                    // Remove the rendered output terminal
-                    this.outputTerminals[name].$el.remove();
-                    // Remove the reference to the output and output terminal
-                    delete this.outputTerminals[name];
-                    this.outputs.splice(i, 1);
-                } else {
-                    // Output exists in both sources
-                    outputNames[name] = 2;
-                    // Update existing outputs with incoming output attributes
-                    const outputIncoming = outputIndex[name];
-                    Object.entries(outputIncoming).forEach(([key, newValue]) => {
-                        Vue.set(output, key, newValue);
-                    });
-                }
-            }
+function onStopDragging() {
+    emit("stopDragging");
+}
 
-            // Add or update remaining outputs
-            data.outputs.forEach((output) => {
-                const terminal = this.outputTerminals[output.name];
-                if (terminal) {
-                    terminal.update(output);
-                    terminal.destroyInvalidConnections();
-                }
-                if (outputNames[output.name] == 1) {
-                    this.outputs.push(output);
-                }
-            });
+function onChange() {
+    emit("onChange");
+}
 
-            // Create a list of all current input names
-            const inputNames = {};
-            const inputIndex = {};
-            data.inputs.forEach((input) => {
-                const name = input.name;
-                inputNames[name] = 1;
-                inputIndex[name] = input;
-            });
+function onCreate(contentId: string, name: string) {
+    emit("onCreate", contentId, name);
+    popoverShow.value = false;
+}
 
-            // Identify unused inputs which existed previously
-            for (let i = this.inputs.length - 1; i >= 0; i--) {
-                const name = this.inputs[i].name;
-                if (!inputNames[name] || inputIndex[name].input_type !== this.inputs[i].input_type) {
-                    this.inputTerminals[name].destroy();
-                    delete this.inputTerminals[name];
-                    this.inputs.splice(i, 1);
-                } else {
-                    inputNames[name] = 2;
-                }
-            }
+function onClone() {
+    emit("onClone", props.id);
+}
 
-            // Add and update input rows
-            data.inputs.forEach((input) => {
-                const terminal = this.inputTerminals[input.name];
-                if (terminal) {
-                    terminal.update(input);
-                    terminal.destroyInvalidConnections();
-                }
-                if (inputNames[input.name] == 1) {
-                    this.inputs.push(input);
-                }
-            });
-
-            // removes output from list of workflow outputs
-            this.activeOutputs.updateOutputs(outputNames);
-
-            // trigger legacy events
-            Vue.nextTick(() => {
-                this.onRedraw();
-            });
-
-            // emit change completion event
-            this.showLoading = false;
-            this.$emit("onChange");
-        },
-        labelOutput(output, label) {
-            return this.activeOutputs.labelOutput(output, label);
-        },
-        changeOutputDatatype(output, datatype) {
-            if (datatype === "__empty__") {
-                datatype = null;
-            }
-            const outputName = output.name;
-            const outputTerminal = this.outputTerminals[outputName];
-            if (datatype) {
-                this.postJobActions["ChangeDatatypeAction" + outputName] = {
-                    action_arguments: { newtype: datatype },
-                    action_type: "ChangeDatatypeAction",
-                    output_name: outputName,
-                };
-            } else {
-                delete this.postJobActions["ChangeDatatypeAction" + outputName];
-            }
-            outputTerminal.destroyInvalidConnections();
-            this.$emit("onChange");
-        },
-        makeActive() {
-            this.element.classList.add("node-active");
-        },
-        makeInactive() {
-            // Keep inactive nodes stacked from most to least recently active
-            // by moving element to the end of parent's node list
-            const element = this.element;
-            ((p) => {
-                p.removeChild(element);
-                p.appendChild(element);
-            })(element.parentNode);
-            // Remove active class
-            element.classList.remove("node-active");
-        },
-    },
-};
+function makeActive() {
+    emit("onActivate", props.id);
+}
 </script>

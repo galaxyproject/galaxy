@@ -2,7 +2,7 @@
     <div>
         <b-alert :show="messageVisible" variant="danger"> {{ messageText }} </b-alert>
         <b-alert :show="infoVisible" variant="info"> No errors available. </b-alert>
-        <b-table striped v-if="errorStackVisible" :fields="errorStackAttributes" :items="errorStack" />
+        <b-table v-if="errorStackVisible" striped :fields="errorStackAttributes" :items="errorStack" />
     </div>
 </template>
 <script>

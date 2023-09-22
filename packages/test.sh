@@ -1,6 +1,6 @@
 #!/bin/bash
 
-set -e
+set -ex
 
 # Don't display the pip progress bar when running under CI
 [ "$CI" = 'true' ] && export PIP_PROGRESS_BAR=off
@@ -14,43 +14,32 @@ TEST_ENV_DIR=${TEST_ENV_DIR:-$(mktemp -d -t gxpkgtestenvXXXXXX)}
 
 virtualenv -p "$TEST_PYTHON" "$TEST_ENV_DIR"
 . "${TEST_ENV_DIR}/bin/activate"
+pip install --upgrade pip setuptools wheel
+pip install -r../lib/galaxy/dependencies/pinned-typecheck-requirements.txt
 
-# ensure ordered by dependency dag
-PACKAGE_DIRS=(
-    util
-    objectstore
-    job_metrics
-    containers
-    tool_util
-    data
-    job_execution
-    auth
-    web_stack
-    web_framework
-    app
-    webapps
-)
-# tool_util not yet working 100%,
-# data has many problems quota, tool shed install database, etc..
-RUN_TESTS=(1 1 1 1 1 1 1 1 1 1 0 0)
-for ((i=0; i<${#PACKAGE_DIRS[@]}; i++)); do
-    package_dir=${PACKAGE_DIRS[$i]}
-    run_tests=${RUN_TESTS[$i]}
+# ensure ordered by dependency DAG
+while read -r package_dir; do
+    printf "\n========= TESTING PACKAGE ${package_dir} =========\n\n"
 
     cd "$package_dir"
-    pip install -e '.'
-    pip install -r test-requirements.txt
 
     # Install extras (if needed)
     if [ "$package_dir" = "util" ]; then
         pip install -e '.[template,jstree]'
-    fi
-    if [ "$package_dir" = "tool_util" ]; then
-        pip install -e '.[mulled]'
+    elif [ "$package_dir" = "tool_util" ]; then
+        pip install -e '.[cwl,mulled,edam]'
+    else
+        pip install -e '.'
     fi
 
-    if [[ "$run_tests" == "1" ]]; then
-        pytest --doctest-modules galaxy tests
-    fi
+    pip install -r test-requirements.txt
+
+    # Prevent execution of alembic/env.py at test collection stage (alembic.context not set)
+    # Also ignore functional tests (galaxy_test/ and tool_shed/test/).
+    unit_extra='--doctest-modules --ignore=galaxy/model/migrations/alembic/ --ignore=galaxy_test/
+		--ignore=tool_shed/test/ --ignore=tool_shed/webapp/model/migrations/alembic/'
+    # Ignore exit code 5 (no tests ran)
+    pytest $unit_extra -m 'not external_dependency_management' . || test $? -eq 5
+    make mypy
     cd ..
-done
+done < packages_by_dep_dag.txt

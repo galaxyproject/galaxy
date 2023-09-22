@@ -1,0 +1,10 @@
+# to run tests, start vault with:
+# $ vault server -dev -dev-root-token-id=vault_application_token
+# The Vault application token can is obtained using command `vault token create`.
+# If running the vault server in -dev mode, a token is displayed at startup as a root token.
+# For more info on how to obtain Vault tokens, see the
+# [Vault documentation](https://learn.hashicorp.com/tutorials/vault/getting-started-authentication?in=vault/getting-started#token-authentication).
+type: hashicorp
+path_prefix: /my_galaxy_instance
+vault_address: ${vault_address}
+vault_token: ${vault_token}

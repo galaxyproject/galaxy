@@ -1,0 +1,162 @@
+
+===========================================================
+May 2021 Galaxy Release (v 21.05)
+===========================================================
+
+.. include:: _header.rst
+
+Highlights
+===========================================================
+
+**New development stack**
+  Galaxy release 21.09 will ship with a new web framework (`FastAPI <https://fastapi.tiangolo.com/>`__),
+  `Celery <https://docs.celeryq.dev/>`__ task queue and process management using `Circus <https://circus.readthedocs.io/en/latest/>`__. You can preview new stack now by running ``APP_WEBSERVER=dev ./run.sh``.
+
+**Celery for background tasks**
+  Galaxy can now run certain tasks in the background. The Celery workers are
+  currently not required, but if activated can perform certain long-running tasks,
+  such as creating history export archives. Celery tasks will bridge the gap between
+  rapid requests that can be handled during a web request and jobs that require extensive
+  and relatively slow setup. (`Pull Request 11789`_, `Pull Request 11772`_, `Pull Request 11720`_)
+
+**More robust selection of job handlers**
+  Job throughput can be increased by starting Galaxy with multiple external job
+  handler processes. Jobs were traditionally assigned to a job handler process
+  by the web handler or workflow handler process that created the job. Since
+  Release 19.01 Galaxy has supported additional mechanisms that use database
+  serialization techniques to let job handlers assign processes to themselves.
+  This mechanism is more robust and doesn't require that all job handler
+  processes be alive and known by the web handler process. Galaxy now determines
+  the best method for assigning jobs based on the database in use, if the assignment
+  method is not set explicitly. Older job assignment methods will be removed in Galaxy
+  release 21.09. For more details see the `Job Handler Assignment Methods section <https://docs.galaxyproject.org/en/release_21.05/admin/scaling.html#job-handler-assignment-methods>`__
+  of the Galaxy documentation. ( `Pull Request 11792`_)
+
+
+Also check out the `21.05 user release notes <21.05_announce_user.html>`__
+
+Deprecation Notices
+===========================================================
+
+**Deprecation of support for PostgreSQL < 9.5**
+  When using PostgreSQL as database server, Galaxy now requires PostgreSQL 9.5
+  or newer. Instructions for updating PostgreSQL can be found in the
+  `official documentation <https://www.postgresql.org/docs/current/upgrading.html>`__.
+
+Upcoming Deprecation Notices
+===========================================================
+
+**Deprecation of support for Python 3.6 in Galaxy release 21.09**
+  This Galaxy release (21.05) will be the last release that supports Python 3.6 or newer.
+  We encourage updating to a newer Python if possible.
+
+**Deprecation of uwsgi and paste**
+  This Galaxy release (21.05) will be the last release that supports the WSGI standard,
+  and with it uwsgi and paste. From release 21.09 Galaxy will be an ASGI application.
+  We will update documentation and playbooks during the upcoming development cycle to
+  enable a smooth transition.
+
+Configuration Changes
+=====================
+
+
+Added
+-----
+
+The following configuration options are new
+
+config/user_preferences_extra_conf.yml.sample
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  preferences.dropbox
+-  preferences.owncloud
+
+config/galaxy.yml.sample:galaxy
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  mapping.galaxy.mapping.cache_dir
+-  mapping.galaxy.mapping.enable_celery_tasks
+-  mapping.galaxy.mapping.flush_per_n_datasets
+-  mapping.galaxy.mapping.matomo_server
+-  mapping.galaxy.mapping.matomo_site_id
+-  mapping.galaxy.mapping.plausible_domain
+-  mapping.galaxy.mapping.plausible_server
+-  mapping.galaxy.mapping.statsd_mock_calls
+
+
+Changed
+-------
+
+The following configuration options have been changed
+
+config/user_preferences_extra_conf.yml.sample
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  preferences.localization.inputs has changed from ::
+
+    [{'label': 'Prefered language',
+      'name': 'locale',
+      'options': [['Navigator default', 'auto'],
+                  ['Chinese', 'zh'],
+                  ['English', 'en'],
+                  ['French', 'fr'],
+                  ['Japanese', 'ja']],
+      'required': False,
+      'type': 'select'}]
+
+   to ::
+
+       [{'label': 'Prefered language',
+         'name': 'locale',
+         'options': [['Navigator default', 'auto'],
+                     ['中文', 'zh'],
+                     ['English', 'en'],
+                     ['Español', 'es'],
+                     ['Français', 'fr'],
+                     ['日本語', 'ja']],
+         'required': False,
+         'type': 'select'}]
+
+Removed
+-------
+
+The following configuration options have been completely removed
+
+config/galaxy.yml.sample:galaxy
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+-  mapping.galaxy.mapping.transfer_manager_port
+
+
+New Configuration Files
+-----------------------
+
+The following files are new, or recently converted to yaml
+
+-  ``config/file_sources_conf.yml.sample``
+
+
+Get Galaxy
+==========
+
+The code lives at `GitHub <https://github.com/galaxyproject/galaxy>`__ and you should have `Git <https://git-scm.com/>`__ to obtain it.
+
+To get a new Galaxy repository run:
+  .. code-block:: shell
+
+      $ git clone -b release_21.05 https://github.com/galaxyproject/galaxy.git
+
+To update an existing Galaxy repository run:
+  .. code-block:: shell
+
+      $ git fetch origin && git checkout release_21.05 && git pull --ff-only origin release_21.05
+
+See the `community hub <https://galaxyproject.org/develop/source-code/>`__ for additional details on source code locations.
+
+Release Notes
+===========================================================
+
+.. include:: 21.05.rst
+   :start-after: announce_start
+
+.. include:: _thanks.rst

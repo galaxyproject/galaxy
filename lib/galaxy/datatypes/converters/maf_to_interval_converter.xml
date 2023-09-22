@@ -9,8 +9,8 @@
     </outputs>
     <tests>
         <test>
-            <param name="input1" format="maf" value="interval2maf_3from28way.maf"/>
-            <output name="output1" format="interval" value="interval2interval_3from28way.interval"/>
+            <param name="input1" ftype="maf" value="interval2maf_3from28way.maf"/>
+            <output name="output1" ftype="interval" value="interval2interval_3from28way.interval"/>
         </test>
     </tests>
     <help>

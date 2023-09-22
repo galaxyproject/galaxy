@@ -7,14 +7,13 @@ LMOD @ Github: https://github.com/TACC/Lmod
 
 """
 import logging
+from io import StringIO
 from os import getenv
 from os.path import exists
 from subprocess import (
     PIPE,
-    Popen
+    Popen,
 )
-
-from six import StringIO
 
 from . import (
     Dependency,
@@ -25,10 +24,10 @@ from . import (
 
 log = logging.getLogger(__name__)
 
-DEFAULT_LMOD_PATH = getenv('LMOD_CMD')
-DEFAULT_SETTARG_PATH = getenv('LMOD_SETTARG_CMD')
-DEFAULT_MODULEPATH = getenv('MODULEPATH')
-DEFAULT_MAPPING_FILE = 'config/lmod_modules_mapping.yml'
+DEFAULT_LMOD_PATH = getenv("LMOD_CMD")
+DEFAULT_SETTARG_PATH = getenv("LMOD_SETTARG_CMD")
+DEFAULT_MODULEPATH = getenv("MODULEPATH")
+DEFAULT_MAPPING_FILE = "config/lmod_modules_mapping.yml"
 INVALID_LMOD_PATH_MSG = "The following LMOD executable could not be found: %s. Either your LMOD Dependency Resolver is misconfigured or LMOD is improperly installed on your system !"
 EMPTY_MODULEPATH_MSG = "No valid LMOD MODULEPATH defined ! Either your LMOD Dependency Resolver is misconfigured or LMOD is improperly installed on your system !"
 
@@ -36,7 +35,7 @@ EMPTY_MODULEPATH_MSG = "No valid LMOD MODULEPATH defined ! Either your LMOD Depe
 class LmodDependencyResolver(DependencyResolver, MappableDependencyResolver):
     """Dependency resolver based on the LMOD environment modules system"""
 
-    dict_collection_visible_keys = DependencyResolver.dict_collection_visible_keys + ['base_path', 'modulepath']
+    dict_collection_visible_keys = DependencyResolver.dict_collection_visible_keys + ["base_path", "modulepath"]
     resolver_type = "lmod"
 
     def __init__(self, dependency_manager, **kwds):
@@ -45,16 +44,16 @@ class LmodDependencyResolver(DependencyResolver, MappableDependencyResolver):
         self._setup_mapping(dependency_manager, **kwds)
 
         # Other attributes
-        self.versionless = _string_as_bool(kwds.get('versionless', 'false'))
-        self.lmodexec = kwds.get('lmodexec', DEFAULT_LMOD_PATH)
-        self.settargexec = kwds.get('settargexec', DEFAULT_SETTARG_PATH)
-        self.modulepath = kwds.get('modulepath', DEFAULT_MODULEPATH)
+        self.versionless = _string_as_bool(kwds.get("versionless", "false"))
+        self.lmodexec = kwds.get("lmodexec", DEFAULT_LMOD_PATH)
+        self.settargexec = kwds.get("settargexec", DEFAULT_SETTARG_PATH)
+        self.modulepath = kwds.get("modulepath", DEFAULT_MODULEPATH)
         self.module_checker = AvailModuleChecker(self, self.modulepath)
 
     def _set_default_mapping_file(self, resolver_attributes):
-        if 'mapping_files' not in resolver_attributes:
+        if "mapping_files" not in resolver_attributes:
             if exists(DEFAULT_MAPPING_FILE):
-                resolver_attributes['mapping_files'] = DEFAULT_MAPPING_FILE
+                resolver_attributes["mapping_files"] = DEFAULT_MAPPING_FILE
 
     def resolve(self, requirement, **kwds):
         requirement = self._expand_mappings(requirement)
@@ -111,7 +110,7 @@ class AvailModuleChecker:
 
             # Split module lines by / to separate the module name from the module version
             # Module without version are discarded
-            module_parts = line.split('/')
+            module_parts = line.split("/")
             if len(module_parts) == 2:
                 yield module_parts[0], module_parts[1]
 
@@ -127,21 +126,29 @@ class AvailModuleChecker:
 
         # Build command line
         if default_version_only:
-            module_avail_command = [lmodexec, '-t', '-d', 'avail']
+            module_avail_command = [lmodexec, "-t", "-d", "avail"]
         else:
-            module_avail_command = [lmodexec, '-t', 'avail']
+            module_avail_command = [lmodexec, "-t", "avail"]
 
         # The list of avaialable modules is actually printed on stderr and not stdout for module commands
-        return Popen(module_avail_command, stdout=PIPE, stderr=PIPE, env={'MODULEPATH': self.modulepath}, close_fds=True).communicate()[1]
+        return Popen(
+            module_avail_command, stdout=PIPE, stderr=PIPE, env={"MODULEPATH": self.modulepath}, close_fds=True
+        ).communicate()[1]
 
 
 class LmodDependency(Dependency):
     """Prepare the commands required to solve the dependency and add them to the script used to run a tool in Galaxy."""
 
-    dict_collection_visible_keys = Dependency.dict_collection_visible_keys + ['module_name', 'module_version', 'dependency_resolver']
-    dependency_type = 'lmod'
+    dict_collection_visible_keys = Dependency.dict_collection_visible_keys + [
+        "module_name",
+        "module_version",
+        "dependency_resolver",
+    ]
+    dependency_type = "lmod"
 
-    def __init__(self, lmod_dependency_resolver, module_name, module_version=None, exact=True, dependency_resolver=None):
+    def __init__(
+        self, lmod_dependency_resolver, module_name, module_version=None, exact=True, dependency_resolver=None
+    ):
         self.lmod_dependency_resolver = lmod_dependency_resolver
         self.module_name = module_name
         self.module_version = module_version
@@ -164,18 +171,18 @@ class LmodDependency(Dependency):
         # Get the full module name in the form "tool_name/tool_version"
         module_to_load = self.module_name
         if self.module_version:
-            module_to_load = '{}/{}'.format(self.module_name, self.module_version)
+            module_to_load = f"{self.module_name}/{self.module_version}"
 
         # Build the list of command to add to run script
         # Note that since "module" is actually a bash function, we are directy executing the underlying executable instead
         # - Set the MODULEPATH environment variable
-        command = 'MODULEPATH=%s; ' % (self.lmod_dependency_resolver.modulepath)
-        command += 'export MODULEPATH; '
+        command = f"MODULEPATH={self.lmod_dependency_resolver.modulepath}; "
+        command += "export MODULEPATH; "
         # - Execute the "module load" command (or rather the "/path/to/lmod load" command)
-        command += 'eval `{} load {}` '.format(self.lmod_dependency_resolver.lmodexec, module_to_load)
+        command += f"eval `{self.lmod_dependency_resolver.lmodexec} load {module_to_load}` "
         # - Execute the "settarg" command in addition if needed
         if self.lmod_dependency_resolver.settargexec is not None:
-            command += '&& eval `%s -s sh`' % (self.lmod_dependency_resolver.settargexec)
+            command += f"&& eval `{self.lmod_dependency_resolver.settargexec} -s sh`"
 
         return command
 
@@ -184,4 +191,4 @@ def _string_as_bool(value):
     return str(value).lower() == "true"
 
 
-__all__ = ('LmodDependencyResolver', )
+__all__ = ("LmodDependencyResolver",)

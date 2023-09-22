@@ -26,8 +26,7 @@ def main():
 
     # convert the alignment blocks
 
-    reader = bx.align.axt.Reader(sys.stdin, support_ids=True,
-                                 species1=species1, species2=species2)
+    reader = bx.align.axt.Reader(sys.stdin, support_ids=True, species1=species1, species2=species2)
     sp1text = list()
     sp2text = list()
     for a in reader:

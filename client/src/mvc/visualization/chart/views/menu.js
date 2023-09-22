@@ -1,12 +1,11 @@
 /** This class renders the chart menu options. */
 import Backbone from "backbone";
 import Ui from "mvc/ui/ui-misc";
-import Screenshot from "mvc/visualization/chart/components/screenshot";
 
 export default Backbone.View.extend({
     initialize: function (app) {
         this.app = app;
-        this.model = new Backbone.Model({ visible: true });
+        this.model = new Backbone.Model({ visible: app.chart.requiresConfirmation });
         this.execute_button = new Ui.Button({
             icon: "fa-check-square",
             tooltip: "Confirm",
@@ -24,13 +23,7 @@ export default Backbone.View.extend({
             icon: "fa-file",
             onclick: () => {
                 this._wait(app.chart, () => {
-                    Screenshot.createPNG({
-                        $el: app.viewer.$el,
-                        title: app.chart.get("title"),
-                        error: (err) => {
-                            app.message.update({ message: err, status: "danger" });
-                        },
-                    });
+                    this.downloadAs("png");
                 });
             },
         });
@@ -40,13 +33,7 @@ export default Backbone.View.extend({
             icon: "fa-file-text-o",
             onclick: () => {
                 this._wait(app.chart, () => {
-                    Screenshot.createSVG({
-                        $el: app.viewer.$el,
-                        title: app.chart.get("title"),
-                        error: (err) => {
-                            app.message.update({ message: err, status: "danger" });
-                        },
-                    });
+                    this.downloadAs("svg");
                 });
             },
         });
@@ -55,27 +42,8 @@ export default Backbone.View.extend({
             title: "Save as PDF",
             icon: "fa-file-o",
             onclick: () => {
-                app.modal.show({
-                    title: "Send visualization data for PDF creation",
-                    body:
-                        "Galaxy does not provide integrated PDF export scripts. You may click 'Continue' to create the PDF by using a 3rd party service (https://export.highcharts.com).",
-                    buttons: {
-                        Cancel: () => {
-                            app.modal.hide();
-                        },
-                        Continue: () => {
-                            app.modal.hide();
-                            this._wait(app.chart, () => {
-                                Screenshot.createPDF({
-                                    $el: app.viewer.$el,
-                                    title: app.chart.get("title"),
-                                    error: (err) => {
-                                        app.message.update({ message: err, status: "danger" });
-                                    },
-                                });
-                            });
-                        },
-                    },
+                this._wait(app.chart, () => {
+                    this.downloadAs("pdf");
                 });
             },
         });
@@ -131,15 +99,49 @@ export default Backbone.View.extend({
         this.render();
     },
 
+    downloadAs: function (filetype) {
+        import(/* webpackChunkName: "Screenshot" */ "mvc/visualization/chart/components/screenshot").then(
+            (Screenshot) => {
+                if (filetype === "png") {
+                    Screenshot.createPNG({
+                        $el: this.app.viewer.$el,
+                        title: this.app.chart.get("title"),
+                        error: (err) => {
+                            this.app.message.update({ message: err, status: "danger" });
+                        },
+                    });
+                } else if (filetype === "svg") {
+                    Screenshot.createSVG({
+                        $el: this.app.viewer.$el,
+                        title: this.app.chart.get("title"),
+                        error: (err) => {
+                            this.app.message.update({ message: err, status: "danger" });
+                        },
+                    });
+                } else if (filetype === "pdf") {
+                    Screenshot.createPDF({
+                        $el: this.app.viewer.$el,
+                        title: this.app.chart.get("title"),
+                        error: (err) => {
+                            this.app.message.update({ message: err, status: "danger" });
+                        },
+                    });
+                } else {
+                    this.app.message.update({ message: "Unknown artifact type.", status: "danger" });
+                }
+            }
+        );
+    },
+
     render: function () {
-        var visible = this.model.get("visible");
+        const visible = this.model.get("visible");
         this.app.$el[visible ? "removeClass" : "addClass"]("charts-fullscreen");
-        this.execute_button.model.set("visible", visible && !!this.app.chart.plugin.specs.confirm);
+        this.execute_button.model.set("visible", visible && !!this.app.chart.plugin.specs?.confirm);
         this.save_button.model.set("visible", visible);
         this.export_button.model.set("visible", visible);
         this.right_button.model.set("visible", visible);
         this.left_button.model.set("visible", !visible);
-        var exports = this.app.chart.plugin.specs.exports || [];
+        const exports = this.app.chart.plugin.specs?.exports ?? [];
         this.export_button.collection.each((model) => {
             model.set("visible", exports.indexOf(model.get("key")) !== -1);
         });

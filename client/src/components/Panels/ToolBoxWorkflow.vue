@@ -1,52 +1,83 @@
 <template>
     <div class="unified-panel">
-        <div class="unified-panel-header" unselectable="on">
+        <div unselectable="on">
             <div class="unified-panel-header-inner">
-                <div class="panel-header-text">Tools</div>
+                <nav class="d-flex justify-content-between mx-3 my-2">
+                    <h2 v-localize class="m-1 h-sm">Tools</h2>
+                    <div class="panel-header-buttons">
+                        <panel-view-button
+                            v-if="panelViews && Object.keys(panelViews).length > 1"
+                            :panel-views="panelViews"
+                            :current-panel-view="currentPanelView"
+                            @updatePanelView="updatePanelView" />
+                    </div>
+                </nav>
             </div>
         </div>
         <div class="unified-panel-controls">
-            <tool-search placeholder="search tools" @onQuery="onQuery" @onResults="onResults" />
+            <tool-search
+                v-b-tooltip.hover
+                aria-haspopup="true"
+                :current-panel-view="currentPanelView"
+                placeholder="search tools"
+                :toolbox="workflowTools"
+                :query="query"
+                :query-pending="queryPending"
+                @onQuery="onQuery"
+                @onResults="onResults" />
+            <div v-if="closestTerm" class="pb-2">
+                <b-badge class="alert-danger w-100">
+                    Did you mean:
+                    <i>
+                        <a href="javascript:void(0)" @click="onQuery(closestTerm)">{{ closestTerm }}</a>
+                    </i>
+                    ?
+                </b-badge>
+            </div>
+            <div v-else-if="queryTooShort" class="pb-2">
+                <b-badge class="alert-danger w-100">Search string too short!</b-badge>
+            </div>
+            <div v-else-if="noResults" class="pb-2">
+                <b-badge class="alert-danger w-100">No results found!</b-badge>
+            </div>
         </div>
         <div class="unified-panel-body">
             <div class="toolMenuContainer">
                 <tool-section
                     v-for="category in moduleSections"
+                    :key="category.name"
                     :hide-name="true"
                     :category="category"
                     tool-key="name"
                     :section-name="category.name"
-                    :query-filter="query"
+                    :query-filter="queryFilter"
                     :disable-filter="true"
-                    :key="category.name"
-                    @onClick="onInsertModule"
-                />
+                    @onClick="onInsertModule" />
                 <tool-section
-                    :category="dataManagerSection"
+                    v-if="hasDataManagerSection"
                     :key="dataManagerSection.id"
-                    :query-filter="query"
+                    :category="dataManagerSection"
+                    :query-filter="queryFilter"
                     :disable-filter="true"
-                    @onClick="onInsertTool"
-                />
-                <div class="toolMenu" id="workflow-tool-menu">
-                    <tool-section
-                        v-for="section in sections"
-                        :category="section"
-                        :query-filter="query"
-                        :key="section.id"
-                        @onClick="onInsertTool"
-                    />
-                </div>
+                    @onClick="onInsertTool" />
                 <tool-section
-                    :category="workflowSection"
+                    v-for="section in sections"
+                    :key="section.id"
+                    :category="section"
+                    :query-filter="queryFilter"
+                    @onClick="onInsertTool" />
+                <tool-section
+                    v-if="hasWorkflowSection"
                     :key="workflowSection.name"
+                    :category="workflowSection"
+                    section-name="workflows"
+                    :sort-items="false"
                     operation-icon="fa fa-files-o"
                     operation-title="Insert individual steps."
-                    :query-filter="query"
+                    :query-filter="queryFilter"
                     :disable-filter="true"
                     @onClick="onInsertWorkflow"
-                    @onOperation="onInsertWorkflowSteps"
-                />
+                    @onOperation="onInsertWorkflowSteps" />
             </div>
         </div>
     </div>
@@ -56,24 +87,26 @@
 import _l from "utils/localization";
 import ToolSection from "./Common/ToolSection";
 import ToolSearch from "./Common/ToolSearch";
-import { filterToolSections } from "./utilities";
+import { filterToolSections, removeDisabledTools } from "./utilities";
+import PanelViewButton from "./Buttons/PanelViewButton";
 
 export default {
     name: "ToolBox",
     components: {
         ToolSection,
         ToolSearch,
-    },
-    data() {
-        return {
-            query: null,
-            results: null,
-        };
+        PanelViewButton,
     },
     props: {
         toolbox: {
             type: Array,
             required: true,
+        },
+        panelViews: {
+            type: Object,
+        },
+        currentPanelView: {
+            type: String,
         },
         workflows: {
             type: Array,
@@ -88,15 +121,33 @@ export default {
             required: true,
         },
     },
-    created() {
-        console.log(this.moduleSections);
+    data() {
+        return {
+            closestTerm: null,
+            query: null,
+            queryPending: false,
+            queryFilter: null,
+            results: null,
+        };
     },
     computed: {
+        queryTooShort() {
+            return this.query && this.query.length < 3;
+        },
+        noResults() {
+            return this.query && (!this.results || this.results.length === 0);
+        },
+        hasWorkflowSection() {
+            return this.workflows.length > 0;
+        },
         workflowSection() {
             return {
                 name: _l("Workflows"),
                 elems: this.workflows,
             };
+        },
+        hasDataManagerSection() {
+            return this.dataManagers.length > 0;
         },
         dataManagerSection() {
             return {
@@ -105,12 +156,13 @@ export default {
             };
         },
         sections() {
-            return filterToolSections(this.toolsLayout, this.results);
+            return filterToolSections(this.workflowTools, this.results);
         },
         toolsLayout() {
             return this.toolbox.map((section) => {
                 return {
                     ...section,
+                    disabled: !section.elems && !section.is_workflow_compatible,
                     elems:
                         section.elems &&
                         section.elems.map((el) => {
@@ -120,13 +172,20 @@ export default {
                 };
             });
         },
+        workflowTools() {
+            return removeDisabledTools(this.toolsLayout);
+        },
     },
     methods: {
         onQuery(query) {
             this.query = query;
+            this.queryPending = true;
         },
-        onResults(results) {
+        onResults(results, closestTerm = null) {
             this.results = results;
+            this.closestTerm = closestTerm;
+            this.queryFilter = !this.noResults ? this.query : null;
+            this.queryPending = false;
         },
         onInsertTool(tool, evt) {
             evt.preventDefault();
@@ -142,6 +201,9 @@ export default {
         },
         onInsertWorkflowSteps(workflow) {
             this.$emit("onInsertWorkflowSteps", workflow.id, workflow.step_count);
+        },
+        updatePanelView(panelView) {
+            this.$emit("updatePanelView", panelView);
         },
     },
 };

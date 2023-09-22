@@ -62,7 +62,6 @@
             </td>
         </tr>
         <tr class="header">
-            <td>File System</td>
             <td>Disk Size</td>
             <td>Used</td>
             <td>Available</td>
@@ -73,7 +72,6 @@
             <td>${disk_usage[1]}</td>
             <td>${disk_usage[2]}</td>
             <td>${disk_usage[3]}</td>
-            <td>${disk_usage[4]}</td>
         </tr>
     </table>
     <br clear="left" />

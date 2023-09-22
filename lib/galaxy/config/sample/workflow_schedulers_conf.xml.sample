@@ -18,19 +18,7 @@
        in job_conf.xml).
 
        The options here are the same as is documented for <handlers> in
-       job_conf.xml.sample_advanced with two exceptions:
-
-       - If a uWSGI farm named `workflow-schedulers` is present, it will be
-         preferred, followed by `job-handlers`. If any untagged handlers are
-         defined in this configuration they are eligible to schedule workflows
-         in addition to any matching mules.
-       - If uWSGI farms are present, the default assignment method is
-         `db-preassign` rather than `uwsgi-mule-message`, because `db-preassign`
-         is deterministic. All workflows scheduled in a single history will be
-         assigned to the same handler, ensuring they are scheduled serially
-         (preventing their outputs from being interleaved in the history). You
-         can override this by explicitly setting
-         `assign_with="uwsgi-mule-message"`.
+       job_conf.xml.sample_advanced
   -->
   <!--
   <handlers>

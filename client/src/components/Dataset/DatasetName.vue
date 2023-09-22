@@ -5,31 +5,28 @@
             class="workflow-dropdown font-weight-bold p-2"
             data-toggle="dropdown"
             aria-haspopup="true"
-            aria-expanded="false"
-        >
+            aria-expanded="false">
             <span
                 v-if="isError"
-                class="dataset-icon error fa fa-times-circle text-danger"
                 v-b-tooltip.hover
-                title="An error occurred for this dataset."
-            />
+                class="dataset-icon error fa fa-times-circle text-danger"
+                title="An error occurred for this dataset." />
             <span
                 v-else-if="isPaused"
-                class="dataset-icon pause fa fa-pause text-info"
                 v-b-tooltip.hover
-                title="The creation of this dataset has been paused."
-            />
+                class="dataset-icon pause fa fa-pause text-info"
+                title="The creation of this dataset has been paused." />
             <span v-else class="dataset-icon fa fa-caret-down" />
-            <span class="name">{{ this.getName }}</span>
+            <span class="name">{{ getName }}</span>
         </b-link>
         <div class="dropdown-menu" aria-labelledby="dataset-dropdown">
             <a class="dropdown-item" href="#" @click.prevent="showDataset">
                 <span class="fa fa-eye fa-fw mr-1" />
-                <span>Show in History</span>
+                <span>Show in History containing dataset</span>
             </a>
             <a class="dropdown-item" href="#" @click.prevent="copyDataset">
                 <span class="fa fa-copy fa-fw mr-1" />
-                <span>Copy to History</span>
+                <span>Copy to current History</span>
             </a>
         </div>
     </div>

@@ -4,23 +4,43 @@ import * as nv from "nvd3";
 import * as Backbone from "backbone";
 import * as _ from "underscore";
 
-import "../node_modules/nvd3/build/nv.d3.css";
-
 // TODO Disentangle jquery in the future
 /* global $ */
 
-var Series = window.bundleEntries.chartUtilities.Series;
-var Datasets = window.bundleEntries.chartUtilities.Datasets;
-var Jobs = window.bundleEntries.chartUtilities.Jobs;
+import { addZoom, makeCategories, makeTickFormat } from "@galaxyproject/charts/lib/utilities/series";
+import { requestPanels, request as requestDatasets } from "@galaxyproject/charts/lib/utilities/datasets";
+import { requestCharts, request as requestJobs } from "@galaxyproject/charts/lib/utilities/jobs";
+
+/** Get boolean as string */
+function _asBoolean(value) {
+    return String(value).toLowerCase() == "true";
+}
+
+/* Prepare containers */
+function createContainers(tag, chart, target) {
+    var n = _asBoolean(chart.settings.get("__use_panels")) ? chart.groups.length : 1;
+    var $container = $("#" + target);
+    $container.empty();
+    const targets = [];
+    for (var i = 0; i < n; i++) {
+        var panel_id = "vis-container-id-" + i;
+        var $panel = $("<" + tag + " style='float: left; height: 100%;' />").attr("id", panel_id);
+        $panel.width(parseInt(100 / n) + "%");
+        $container.append($panel);
+        targets.push(panel_id);
+    }
+    return targets;
+}
 
 var CommonWrapper = Backbone.View.extend({
     initialize: function(options) {
         var self = this;
+        options.targets = createContainers("svg", options.chart, options.target);
         this.options = options;
         options.render = function(canvas_id, groups) {
             return self.render(canvas_id, groups);
         };
-        Datasets.requestPanels(options);
+        requestPanels(options);
     },
     render: function(canvas_id, groups) {
         var self = this;
@@ -34,13 +54,13 @@ var CommonWrapper = Backbone.View.extend({
                 d3chart.yAxis.axisLabel(chart.settings.get("y_axis_label"));
                 d3chart.options({ showControls: false });
                 if (d3chart.showLegend) {
-                    d3chart.showLegend(chart.settings.get("show_legend") == "true");
+                    d3chart.showLegend(_asBoolean(chart.settings.get("show_legend")));
                 }
                 self._makeAxes(d3chart, groups, chart.settings);
                 if (makeConfig) {
                     makeConfig(d3chart);
                 }
-                if (chart.settings.get("__use_panels") === "true") {
+                if (_asBoolean(chart.settings.get("__use_panels"))) {
                     d3chart.options({ showControls: false });
                 }
                 d3chart.xAxis.showMaxMin(false);
@@ -56,7 +76,7 @@ var CommonWrapper = Backbone.View.extend({
                         if (d3chart.clipEdge) {
                             d3chart.clipEdge(true);
                         }
-                        Series.addZoom({
+                        addZoom({
                             xAxis: d3chart.xAxis,
                             yAxis: d3chart.yAxis,
                             yDomain: d3chart.yDomain,
@@ -78,9 +98,9 @@ var CommonWrapper = Backbone.View.extend({
 
     /** Format axes ticks */
     _makeAxes: function(d3chart, groups, settings) {
-        var categories = Series.makeCategories(groups, ["x", "y"]);
-        function makeTickFormat(id) {
-            Series.makeTickFormat({
+        var categories = makeCategories(groups, ["x", "y"]);
+        function makeTick(id) {
+            makeTickFormat({
                 categories: categories.array[id],
                 type: settings.get(id + "_axis_type|type"),
                 precision: settings.get(id + "_axis_type|precision"),
@@ -93,8 +113,8 @@ var CommonWrapper = Backbone.View.extend({
                 }
             });
         }
-        makeTickFormat("x");
-        makeTickFormat("y");
+        makeTick("x");
+        makeTick("y");
     }
 });
 
@@ -102,9 +122,11 @@ var PieWrapper = Backbone.View.extend({
     initialize: function(options) {
         var self = this;
         var chart = options.chart;
-        var targets = options.targets;
+        var targets = createContainers("svg", options.chart, options.target);
         var process = options.process;
-        Datasets.request({
+        var root = options.root;
+        requestDatasets({
+            root: root,
             chart: chart,
             dataset_id: chart.get("dataset_id"),
             dataset_groups: chart.groups,
@@ -131,8 +153,8 @@ var PieWrapper = Backbone.View.extend({
                 pie_data.push({ y: value.y, x: value.label });
             });
             nv.addGraph(function() {
-                var legend_visible = chart.settings.get("legend_visible") == "true";
-                var label_outside = chart.settings.get("label|outside") == "true";
+                var legend_visible = _asBoolean(chart.settings.get("legend_visible"));
+                var label_outside = _asBoolean(chart.settings.get("label|outside"));
                 var label_type = chart.settings.get("label|type");
                 var donut_ratio = parseFloat(chart.settings.get("donut_ratio"));
                 var chart_3d = nv.models
@@ -190,9 +212,10 @@ _.extend(window.bundleEntries || {}, {
         return new CommonWrapper(options);
     },
     nvd3_histogram: function(options) {
-        Jobs.request(
+        requestJobs(
+            options.root,
             options.chart,
-            Jobs.requestCharts(options.chart, "histogram"),
+            requestCharts(options.chart, "histogram"),
             function(dataset) {
                 var dataset_groups = new Backbone.Collection();
                 options.chart.groups.each(function(group, index) {
@@ -217,9 +240,10 @@ _.extend(window.bundleEntries || {}, {
         );
     },
     nvd3_histogram_discrete: function(options) {
-        Jobs.request(
+        requestJobs(
+            options.root,
             options.chart,
-            Jobs.requestCharts(options.chart, "histogramdiscrete"),
+            requestCharts(options.chart, "histogramdiscrete"),
             function(dataset) {
                 var dataset_groups = new Backbone.Collection();
                 options.chart.groups.each(function(group, index) {

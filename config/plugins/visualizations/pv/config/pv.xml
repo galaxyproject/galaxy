@@ -12,7 +12,7 @@
     <params>
         <param type="dataset" var_name_in_template="hda" required="true">dataset_id</param>
     </params>
-    <entry_point entry_point_type="chart" src="pv.js"/>
+    <entry_point entry_point_type="chart" src="dist/pv.js"/>
     <settings>
         <input>
             <label>Quality</label>
@@ -100,9 +100,9 @@
                             <label>Line width</label>
                             <help>Specify the line width.</help>
                             <type>float</type>
-                            <value>0.1</value>
-                            <min>10</min>
-                            <max>4</max>
+                            <value>4</value>
+                            <min>0.1</min>
+                            <max>10</max>
                         </inputs>
                     </inputs>
                 </cases>
@@ -114,9 +114,9 @@
                             <label>Point size</label>
                             <help>Specify the point size.</help>
                             <type>float</type>
-                            <value>0.1</value>
-                            <min>10</min>
-                            <max>1</max>
+                            <value>1</value>
+                            <min>0.1</min>
+                            <max>10</max>
                         </inputs>
                     </inputs>
                 </cases>
@@ -131,9 +131,9 @@
                             <label>Radius</label>
                             <help>Specify the tube radius.</help>
                             <type>float</type>
-                            <value>0.1</value>
-                            <min>3</min>
-                            <max>0.3</max>
+                            <value>0.3</value>
+                            <min>0.1</min>
+                            <max>3</max>
                         </inputs>
                     </inputs>
                 </cases>
@@ -145,9 +145,9 @@
                             <label>Line width</label>
                             <help>Specify the line width.</help>
                             <type>float</type>
-                            <value>0.1</value>
-                            <min>10</min>
-                            <max>4</max>
+                            <value>4</value>
+                            <min>0.1</min>
+                            <max>10</max>
                         </inputs>
                     </inputs>
                 </cases>
@@ -159,9 +159,9 @@
                             <label>Line width</label>
                             <help>Specify the line width.</help>
                             <type>float</type>
-                            <value>0.1</value>
-                            <min>10</min>
-                            <max>4</max>
+                            <value>4</value>
+                            <min>0.1</min>
+                            <max>10</max>
                         </inputs>
                     </inputs>
                 </cases>
@@ -173,9 +173,9 @@
                             <label>Radius</label>
                             <help>Specify the tube radius.</help>
                             <type>float</type>
-                            <value>0.1</value>
-                            <min>3</min>
-                            <max>0.3</max>
+                            <value>0.3</value>
+                            <min>0.1</min>
+                            <max>3</max>
                         </inputs>
                     </inputs>
                 </cases>

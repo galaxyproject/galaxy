@@ -8,7 +8,7 @@
 
 <script>
 import _l from "utils/localization";
-import RuleDefs from "mvc/rules/rule-definitions";
+import RuleDefs from "./rule-definitions";
 const MAPPING_TARGETS = RuleDefs.MAPPING_TARGETS;
 
 export default {
@@ -23,14 +23,6 @@ export default {
         colHeaders: {
             type: Array,
             required: true,
-        },
-    },
-    methods: {
-        remove() {
-            this.$emit("remove");
-        },
-        edit() {
-            this.$emit("edit");
         },
     },
     computed: {
@@ -48,6 +40,14 @@ export default {
         },
         columnsLabel() {
             return RuleDefs.columnDisplay(this.columns, this.colHeaders);
+        },
+    },
+    methods: {
+        remove() {
+            this.$emit("remove");
+        },
+        edit() {
+            this.$emit("edit");
         },
     },
 };

@@ -1,0 +1,32 @@
+<tool name="expression_null_handling_text" id="expression_null_handling_text"
+	  version="0.1.0" tool_type="expression">
+    <expression type="ecma5.1">
+        {return {'text_out': $job.text_input};}
+    </expression>
+    <inputs>
+        <param type="text" label="Text input." name="text_input" optional="true" />
+    </inputs>
+    <outputs>
+        <output type="text" name="text_out" from="text_out" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="text_input" value_json="&quot;foo bar&quot;" />
+            <output name="text_out" value_json="&quot;foo bar&quot;" />
+        </test>
+        <test>
+            <param name="text_input" value_json="&quot;null&quot;" />
+            <output name="text_out" value_json="&quot;null&quot;" />
+        </test>
+        <!-- Bug with the following test on postgres.
+        <test>
+            <param name="text_input" value_json="&quot;&quot;" />
+            <output name="text_out" value_json="&quot;&quot;" />
+        </test>
+        -->
+        <test>
+            <param name="text_input" value_json="null" />
+            <output name="text_out" value_json="null" />
+        </test>
+    </tests>
+</tool>

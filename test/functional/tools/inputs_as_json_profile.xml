@@ -1,7 +1,7 @@
 <!-- test if profile version of inputs json generation works, i.e.
      - multiple selects get comma separated string (lists >= 20.05)
      - empty optional selects get "None" ([] >= 20.05) -->
-<tool id="inputs_as_json" name="inputs_as_json" profile="20.01" version="1.0.0">
+<tool id="inputs_as_json_profile" name="inputs_as_json_profile" profile="20.05" version="1.0.0">
     <command detect_errors="exit_code"><![CDATA[
         cat inputs.json &&
         python $check_inputs inputs.json $test_case
@@ -30,8 +30,8 @@ if test_case == "1":
     assert_equals(as_dict["inttest"], 12456)
     assert_equals(as_dict["floattest"], 6.789)
     assert_equals(as_dict["radio_select"], "a_radio")
-    assert_equals(as_dict["optional_select"], "None")
-    assert_equals(as_dict["optional_multiple_select"], "None")
+    assert_equals(as_dict["optional_select"], None)
+    assert_equals(as_dict["optional_multiple_select"], [])
     assert_equals(as_dict["repeat"][0]["r"], "000000")
     assert_equals(as_dict["repeat"][1]["r"], "FFFFFF")
     assert_equals(as_dict["cond"]["more_text"], "fdefault")
@@ -46,7 +46,7 @@ elif test_case == "2":
     assert_equals(as_dict["floattest"], 1.0)
     assert_equals(as_dict["radio_select"], "a_radio")
     assert_equals(as_dict["optional_select"], "a")
-    assert_equals(as_dict["optional_multiple_select"], 'a,b')
+    assert_equals(as_dict["optional_multiple_select"], ['a', 'b'])
     assert_equals(as_dict["repeat"][0]["r"], "000000")
     assert_equals(as_dict["cond"]["cond_test"], "second")
     assert_equals(as_dict["cond"]["more_text"], "sdefault")

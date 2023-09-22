@@ -1,0 +1,5 @@
+id	col1	col2	col3
+#q2:types	categorical	categorical	numeric
+id1	a	1	1
+id2	b	2	2
+id3	c	3	3

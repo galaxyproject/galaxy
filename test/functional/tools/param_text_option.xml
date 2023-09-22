@@ -1,7 +1,7 @@
 <tool id="param_text_option" name="param_text_option" version="1.0.0">
-    <command>
-        echo "$text_param"  > $out_file1;
-    </command>
+    <command><![CDATA[
+echo "$text_param"  > $out_file1;
+    ]]></command>
     <inputs>
         <param name="text_param" type="text" value="foo 1">
             <option value="foo 1">Foo 1</option>

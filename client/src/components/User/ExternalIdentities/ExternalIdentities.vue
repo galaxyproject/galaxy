@@ -1,5 +1,14 @@
 <template>
     <section class="external-id">
+        <b-alert :show="!!connectExternal" variant="info">
+            You are logged in. You can now connect the Galaxy user account with the email <i>{{ userEmail }}</i
+            >, to your preferred external provider.
+        </b-alert>
+        <b-alert :show="!!existingEmail" variant="warning">
+            Note: We found a Galaxy account matching the email of this identity, <i>{{ existingEmail }}</i
+            >. The active account <i>{{ userEmail }}</i> has been linked to this external identity. If you wish to link
+            this identity to a different account, you will need to disconnect it from this account first.
+        </b-alert>
         <header>
             <b-alert
                 dismissible
@@ -11,13 +20,13 @@
             >
 
             <hgroup class="external-id-title">
-                <h1>Manage External Identities</h1>
+                <h1 class="h-lg">Manage External Identities</h1>
             </hgroup>
 
             <p>
                 Users with existing Galaxy user accounts (e.g., via Galaxy username and password) can associate their
                 account with their 3rd party identities. For instance, if a user associates their Galaxy account with
-                their Google account, then they can login to Galaxy either using their Galaxy username and password, or
+                their Google account, then they can log in to Galaxy either using their Galaxy username and password, or
                 their Google account. Whichever method they use they will be assuming same Galaxy user account, hence
                 having access to the same histories, workflows, datasets, libraries, etc.
             </p>
@@ -28,37 +37,34 @@
             </p>
         </header>
 
-        <div class="external-subheading" v-if="items.length">
-            <h3>Connected External Identities</h3>
+        <div v-if="items.length" class="external-subheading">
+            <h2 class="h-md">Connected External Identities</h2>
             <b-button
-                @click="onDisconnect(item)"
-                aria-label="Disconnect External Identity"
-                title="Disconnect External Identity"
                 v-for="item in items"
                 :key="item.email"
+                aria-label="Disconnect External Identity"
+                title="Disconnect External Identity"
                 class="d-block mt-3"
-            >
+                @click="onDisconnect(item)">
                 Disconnect {{ item.provider.charAt(0).toUpperCase() + item.provider.slice(1) }} - {{ item.email }}
             </b-button>
 
             <b-modal
-                centered
                 id="disconnectIDModal"
                 ref="deleteModal"
+                centered
                 title="Disconnect Identity?"
                 size="sm"
                 @ok="disconnectID"
-                @cancel="doomedItem = null"
-            ></b-modal>
+                @cancel="doomedItem = null"></b-modal>
 
             <b-modal
-                centered
                 id="disconnectAndResetModal"
                 ref="deleteAndResetModal"
+                centered
                 title="Deleting last external identity"
                 @ok="disconnectAndReset"
-                @cancel="doomedItem = null"
-            >
+                @cancel="doomedItem = null">
                 <p>
                     This is your only defined external identity. If you delete this identity, you will be logged out. To
                     log back in you will need to use a password associated with your account, or reconnect to this third
@@ -77,8 +83,8 @@
             >
         </div>
 
-        <div class="external-subheading" v-if="enable_oidc">
-            <h3>Connect Other External Identities</h3>
+        <div v-if="enable_oidc" class="external-subheading">
+            <h2 class="h-md">Connect Other External Identities</h2>
             <external-login :login_page="false" />
         </div>
     </section>
@@ -89,8 +95,10 @@ import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 import { getGalaxyInstance } from "app";
 import svc from "./service";
-import { logoutClick } from "layout/menu";
+import { userLogout } from "utils/logout";
 import ExternalLogin from "components/User/ExternalIdentities/ExternalLogin.vue";
+import { sanitize } from "dompurify";
+import { Toast } from "composables/toast";
 
 Vue.use(BootstrapVue);
 
@@ -108,11 +116,20 @@ export default {
             errorMessage: null,
             enable_oidc: galaxy.config.enable_oidc,
             cilogonOrCustos: null,
+            userEmail: galaxy.user.get("email"),
         };
     },
     computed: {
+        connectExternal() {
+            var urlParams = new URLSearchParams(window.location.search);
+            return urlParams.has("connect_external") && urlParams.get("connect_external") == "true";
+        },
         deleteButtonVariant() {
             return this.showDeleted ? "primary" : "secondary";
+        },
+        existingEmail() {
+            var urlParams = new URLSearchParams(window.location.search);
+            return urlParams.get("email_exists");
         },
         hasDoomed: {
             get() {
@@ -127,6 +144,14 @@ export default {
         showDeleted(deleted) {
             this.loadIdentities({ deleted });
         },
+    },
+    created() {
+        this.loadIdentities();
+    },
+    mounted() {
+        const params = new URLSearchParams(window.location.search);
+        const notificationMessage = sanitize(params.get("notification"));
+        Toast.success(notificationMessage);
     },
     methods: {
         loadIdentities() {
@@ -180,7 +205,7 @@ export default {
         disconnectAndReset() {
             // Disconnects the user's final ext id and logouts of current session
             this.disconnectID();
-            logoutClick();
+            userLogout();
         },
         removeItem(item) {
             this.items = this.items.filter((o) => o != item);
@@ -191,9 +216,6 @@ export default {
                 console.warn(err);
             };
         },
-    },
-    created() {
-        this.loadIdentities();
     },
 };
 </script>

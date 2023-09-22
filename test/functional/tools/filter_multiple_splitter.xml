@@ -1,0 +1,96 @@
+<tool id="filter_multiple_splitter" name="filter_multiple_splitter" version="0.1.0">
+    <description>Filter input with the multiple value splitter</description>
+    <command><![CDATA[
+        echo $index > '$output' && 
+        echo $index2 >> '$output'
+    ]]></command>
+    <inputs>
+        <param format="tabular" name="inputs" type="data" label="Inputs" help="" multiple="true" />
+        <!-- gff attribute column (8) contains semicolon separated attributes (e.g. ID=Motif:m15;Note=7-transmembrane)
+             - without the filters the complete entries in column 8 will be the options of the parameter
+             - multiple_splitter splits the column and creates a single option from each part 
+               (in the example separate options ID=Motif:m15 and Note=7-transmembrane are created)
+             - results sorted and made unique by the succeeding filters 
+               as a result the options are the attributes of all entries in the GFF -->
+        <param name="index" type="select" label="Splitted options">
+            <options from_dataset="inputs">
+                <column name="name" index="8"/>
+                <column name="value" index="8"/>
+                <filter type="multiple_splitter" column="8" separator=";"/>
+                <filter type="sort_by" column="8"/>
+                <filter type="unique_value" column="8"/>
+                <validator type="no_options" message="No option available for this input" />
+          </options>
+        </param>
+        <!-- test for
+             - splitting at multiple characters 
+             - select multiple options 
+             - unique does not change the order of the entries
+             - value is a different column
+
+             value should be the start position of the first feature that has 
+             the attribute selected by the user
+             -->
+        <param name="index2" type="select" label="Splitted multiple options" multiple="true">
+            <options from_dataset="inputs">
+                <column name="name" index="8"/>
+                <column name="value" index="3"/>
+                <filter type="multiple_splitter" column="8" separator="="/>
+                <filter type="multiple_splitter" column="8" separator=":"/>
+                <filter type="multiple_splitter" column="8" separator=";"/>
+                <filter type="unique_value" column="8"/>
+                <validator type="no_options" message="No option available for this input" />
+          </options>
+        </param>
+    </inputs>
+
+    <outputs>
+        <data format="txt" name="output" />
+    </outputs>
+
+    <tests>
+        <!-- TODOs
+             - simple filter acting on single file and single colum 
+             - column empty, column don't contain separator
+             - filter acting on multiple files 
+             - filter acting on multiple columns (can be specified comma separated)
+             - cobination of both 
+             - combine with regexp search, replace filter to remove 'ID='
+             - combine with param filter to list only Motif*?
+             - is there any use of splitting a different column than name / value
+             -->
+        <test>
+            <param name="inputs" value="5.gff3" />
+            <param name="index" value="ID=Motif:m09" />
+            <param name="index2" value="EDEN.1,seg03" />
+            <output name="output">
+                <assert_contents>
+                    <has_text text="ID=Motif:m09" />    
+                    <has_text text="1050,6885" />    
+                    <not_has_text text="hg18" />
+                </assert_contents>
+            </output>
+        </test>
+		<!-- selecting multiple files does not work at the moment 
+             strange thing: if you try with `planemo s` on loading
+			 the tool shows options from the first file in the selected (which is auto selected)
+			 if the selection is changed no options show up - also if the initially selected 
+             data set is chosen 
+		-->
+        <test>
+            <param name="inputs" value="5.gff3,a.tab" />
+            <param name="index" value="0.0009161" />
+            <param name="index2" value="EDEN.1,seg03" />
+            <output name="output">
+                <assert_contents>
+                    <has_text text="0.0009161" />    
+                    <has_text text="1050,6885" />    
+                    <not_has_text text="hg18" />
+                </assert_contents>
+            </output>
+    </test>
+    </tests>
+
+    <help>
+    </help>
+</tool>

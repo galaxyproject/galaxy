@@ -6,7 +6,7 @@
             <span v-if="input.value" class="font-weight-light font-italic">= {{ input.value }}</span>
         </span>
         <div v-if="input && input.inputs && input.inputs.length" :class="{ 'ml-3': !skipHead }">
-            <WorkflowInput v-for="child in input.inputs" :input="child" :key="child.id" />
+            <WorkflowInput v-for="child in input.inputs" :key="child.id" :input="child" />
         </div>
     </div>
 </template>

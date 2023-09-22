@@ -1,0 +1,58 @@
+<tool id="options_from_metadata_file" name="Test for options from dataset metadata file" version="1.0.0" profile="21.01">
+  <command><![CDATA[
+echo '${species}' > '${output}';
+echo '${species_comma}' >> '${output}';
+echo '${species_2}' >> '${output}'
+  ]]></command>
+  <inputs>
+    <param name="input" type="data" format="maf" label="MAF File"/>
+    <!-- test meta_file_key to define options-->
+    <param name="species" type="select" optional="false" label="Select species for the input dataset" multiple="true">
+        <options from_dataset="input" meta_file_key="species_chromosomes">
+          <column name="name" index="0"/>
+          <column name="value" index="0"/>
+        </options>
+    </param>
+    <!-- test meta_file_key in combination with separator to define options
+         (since the metadata file does not contain commas each line gets an option)-->
+    <param name="species_comma" type="select" optional="false" label="Select species for the input dataset">
+        <options from_dataset="input" meta_file_key="species_chromosomes" separator=",">
+          <column name="name" index="0"/>
+          <column name="value" index="0"/>
+        </options>
+    </param>
+    <!-- test meta_file_key referring a collection to define options-->
+    <param name="input_2" type="data_collection" collection_type="list" format="maf" label="MAF Collection" multiple="true"/>
+    <param name="species_2" type="select" optional="false" label="Select species for the input dataset" multiple="true">
+        <options from_dataset="input_2" meta_file_key="species_chromosomes">
+            <column name="name" index="0"/>
+            <column name="value" index="0"/>
+            <filter type="unique_value" name="unique_param" column="0"/>
+        </options>
+    </param>
+  </inputs>
+  <outputs>
+    <data format="txt" name="output"/>
+  </outputs>
+  <tests>
+    <test>
+      <param name="input" value="3.maf" ftype="maf"/>
+      <param name="species" value="hg17,canFam1"/>
+      <param name="species_comma" value="hg17&#009;chr7"/>
+      <param name="input_2">
+        <collection type="list">
+          <element name="e1" value="3.maf"/>
+          <element name="e2" value="4.maf"/>
+        </collection>
+      </param>
+      <param name="species_2" value="panTro1,rn3,bosTau2"/>
+      <output name="output" ftype="txt">
+        <assert_contents>
+          <has_line line="hg17,canFam1"/>
+          <has_line line="hg17__tc__chr7"/>
+          <has_line line="panTro1,rn3,bosTau2"/>
+        </assert_contents>
+      </output>
+    </test>
+  </tests>
+</tool>

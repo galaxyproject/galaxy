@@ -1,40 +1,30 @@
+<script setup lang="ts">
+import { computed } from "vue";
+import { format, formatDistanceToNow, parseISO } from "date-fns";
+
+interface UtcDateProps {
+    date: string;
+    mode?: "date" | "elapsed" | "pretty";
+}
+
+const props = withDefaults(defineProps<UtcDateProps>(), {
+    mode: "date",
+});
+
+const parsedDate = computed(() => parseISO(`${props.date}Z`));
+const elapsedTime = computed(() => formatDistanceToNow(parsedDate.value, { addSuffix: true }));
+const fullISO = computed(() => parsedDate.value.toISOString());
+const pretty = computed(() => format(parsedDate.value, "eeee MMM do H:mm:ss yyyy zz"));
+</script>
+
 <template>
-    <span class="utc-time" v-if="mode == 'date'" :title="elapsedTime">
-        {{ fullDate }}
+    <span v-if="mode == 'date'" class="utc-time" :title="elapsedTime">
+        {{ fullISO }}
     </span>
-    <span class="utc-time utc-time-elapsed" v-else :title="fullDate">
+    <span v-else-if="mode === 'elapsed'" class="utc-time utc-time-elapsed" :title="fullISO">
         {{ elapsedTime }}
     </span>
+    <span v-else class="utc-time" :title="elapsedTime">
+        {{ pretty }}
+    </span>
 </template>
-
-<script>
-import moment from "moment";
-
-export default {
-    props: {
-        date: {
-            type: String,
-            required: true,
-        },
-        mode: {
-            type: String,
-            default: "date", // or elapsed
-        },
-        customFormat: {
-            type: String,
-        },
-    },
-    created() {
-        if (this.customFormat) this.processedDate = moment(this.date, this.customFormat).format();
-        else this.processedDate = this.date;
-    },
-    computed: {
-        elapsedTime: function () {
-            return moment(moment.utc(this.processedDate)).from(moment().utc());
-        },
-        fullDate: function () {
-            return moment.utc(this.processedDate).format();
-        },
-    },
-};
-</script>

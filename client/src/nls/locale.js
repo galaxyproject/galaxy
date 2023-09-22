@@ -13,7 +13,6 @@ define({
         Visualization: false,
         "New Track Browser": false,
         "Saved Visualizations": false,
-        "Interactive Environments": false,
         Admin: false,
         Help: false,
         Support: false,
@@ -26,8 +25,8 @@ define({
         User: false,
         Login: false,
         Register: false,
-        "Login or Register": false,
-        "Logged in as": false,
+        "Log in or Register": false,
+        "Signed in as": false,
         Preferences: false,
         "Custom Builds": false,
         Logout: false,
@@ -96,7 +95,7 @@ define({
 
         // ---- history-view-edit
         "Edit history tags": false,
-        "Edit history Annotation": false,
+        "Edit history annotation": false,
         "Click to rename history": false,
         // multi operations
         "Operations on multiple datasets": false,
@@ -218,7 +217,6 @@ define({
         "Download local tool": false,
         "Tool lineage": false,
         "Reload a tool's configuration": false,
-        "Review tool migration stages": false,
         "View Tool Error Logs": false,
         "Manage Allowlist": false,
         "Manage Tool Dependencies": false,
@@ -232,9 +230,9 @@ define({
         "Local data": false,
         "Form Definitions": false,
 
-        // ---------------------------------------------------------------------------- Scratchbook
-        "Enable/Disable Scratchbook": false,
-        "Show/Hide Scratchbook": false,
+        // ---------------------------------------------------------------------------- Window Manager
+        "Enable/Disable Window Manager": false,
+        "Show/Hide Window Manager": false,
 
         // ---------------------------------------------------------------------------- misc. MVC
         Tags: false,
@@ -291,18 +289,16 @@ define({
         "Associate OpenIDs with your account.": false,
         "Customize your Toolbox by displaying or omitting sets of Tools.": false,
         "Access your current API key or create a new one.": false,
-        "Enable or disable the communication feature to chat with other users.": false,
         "Allows you to change your login credentials.": false,
-        "User Preferences": false,
+        "User preferences": false,
         "Sign out": false,
         "Manage custom builds": false,
         "Manage OpenIDs": false,
         "Manage Toolbox filters": false,
-        "Manage API key": false,
+        "Manage API Key": false,
         "Set dataset permissions for new histories": false,
-        "Change communication settings": false,
-        "Change password": false,
-        "Manage information": false,
+        "Change Password": false,
+        "Manage Information": false,
         // ---------------------------------------------------------------------------- history-list
         Histories: false,
         // ---------------------------------------------------------------------------- shed-list-view
@@ -370,7 +366,6 @@ define({
         "Refresh history": false,
         // ---------------------------------------------------------------------------- admin-panel
         "View error logs": false,
-        "View migration stages": false,
         "View lineage": false,
         "Manage dependencies": false,
         "Manage allowlist": false,
@@ -440,7 +435,7 @@ define({
         "Create new Build": false,
         "Delete custom build.": false,
         "Provide the data source.": false,
-        // ---------------------------------------------------------------------------- scratchbook
+        // ---------------------------------------------------------------------------- Window Manager
         "Next in History": false,
         "Previous in History": false,
         // ---------------------------------------------------------------------------- generic-nav-view
@@ -456,8 +451,17 @@ define({
         // ---------------------------------------------------------------------------- workflow_editor_tests
         "tool tooltip": false,
         // ----------------------------------------------------------------------------
+        "Subscribe to mailing list": false,
+        "Already have an account?": false,
+        "Log in here.": false,
+        "Create a Galaxy account": false,
+        "Or, register with email": false,
+        "Forgot password?": false,
+        "Register here.": false,
+        "Click here to reset your password.": false,
     },
     ja: true,
     fr: true,
     zh: true,
+    es: true,
 });

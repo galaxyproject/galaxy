@@ -1,12 +1,13 @@
 import * as d3 from "d3";
 import * as _ from "underscore";
-
-var Datasets = window.bundleEntries.chartUtilities.Datasets;
+import { request as requestDatasets } from "@galaxyproject/charts/lib/utilities/datasets";
 
 _.extend(window.bundleEntries || {}, {
     load: function(options) {
         var chart = options.chart;
-        Datasets.request({
+        var root = options.root;
+        requestDatasets({
+            root: root,
             dataset_id: chart.get("dataset_id"),
             dataset_groups: chart.groups,
             success: function(groups) {
@@ -14,7 +15,8 @@ _.extend(window.bundleEntries || {}, {
                 var error = null;
                 _.each(groups, function(group, group_index) {
                     try {
-                        var svg = d3.select("#" + (options.targets[group_index] || options.targets[0]));
+                        $("#" + options.target).append("<svg id='myexample'/>");
+                        var svg = d3.select("#myexample");
                         var height = parseInt(svg.style("height"));
                         var width = parseInt(svg.style("width"));
                         var maxValue = d3.max(group.values, function(d) {

@@ -1,13 +1,21 @@
 <template>
-    <markdown class="p-3" :markdown-config="markdownConfig" @onEdit="onEdit" />
+    <config-provider v-slot="{ config, loading }">
+        <markdown
+            v-if="!loading"
+            :markdown-config="markdownConfig"
+            :enable_beta_markdown_export="config.enable_beta_markdown_export"
+            :export-link="exportUrl"
+            :download-endpoint="stsUrl(config)"
+            @onEdit="onEdit" />
+    </config-provider>
 </template>
 
 <script>
-import axios from "axios";
-import { Toast } from "ui/toast";
-import { getAppRoot } from "onload/loadConfig";
-import { rethrowSimple } from "utils/simple-error";
-import Markdown from "components/Markdown/Markdown.vue";
+import { withPrefix } from "utils/redirect";
+import { urlData } from "utils/url";
+import { Toast } from "composables/toast";
+import ConfigProvider from "components/providers/ConfigProvider";
+import Markdown from "components/Markdown/Markdown";
 import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
 
@@ -15,6 +23,7 @@ Vue.use(BootstrapVue);
 
 export default {
     components: {
+        ConfigProvider,
         Markdown,
     },
     props: {
@@ -29,8 +38,17 @@ export default {
             invocationMarkdown: null,
         };
     },
+    computed: {
+        dataUrl() {
+            return `/api/invocations/${this.invocationId}/report`;
+        },
+        exportUrl() {
+            return `${this.dataUrl}.pdf`;
+        },
+    },
     created() {
-        this.getMarkdown(this.invocationId)
+        const url = this.dataUrl;
+        urlData({ url })
             .then((response) => {
                 this.markdownConfig = response;
                 this.invocationMarkdown = response.invocation_markdown;
@@ -41,17 +59,10 @@ export default {
     },
     methods: {
         onEdit() {
-            window.location = `${getAppRoot()}pages/create?invocation_id=${this.invocationId}`;
+            window.location = withPrefix(`/pages/create?invocation_id=${this.invocationId}`);
         },
-        /** Markdown data request helper **/
-        async getMarkdown(id) {
-            const url = `${getAppRoot()}api/invocations/${id}/report`;
-            try {
-                const { data } = await axios.get(url);
-                return data;
-            } catch (e) {
-                rethrowSimple(e);
-            }
+        stsUrl(config) {
+            return `${this.dataUrl}/prepare_download`;
         },
     },
 };

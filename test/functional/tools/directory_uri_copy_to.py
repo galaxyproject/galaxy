@@ -9,7 +9,7 @@ from galaxy.files import ConfiguredFileSources
 
 def get_file_sources(file_sources_path):
     assert os.path.exists(file_sources_path), "file sources path [%s] does not exist" % file_sources_path
-    with open(file_sources_path, "r") as f:
+    with open(file_sources_path) as f:
         file_sources_as_dict = json.load(f)
     file_sources = ConfiguredFileSources.from_dict(file_sources_as_dict)
     return file_sources
@@ -28,17 +28,15 @@ def main(argv=None):
         target_uri = directory_uri + "/helloworld"
     file_source_path = file_sources.get_file_source_path(target_uri)
     file_source = file_source_path.file_source
-    fd, temp_name = tempfile.mkstemp()
-    with open(fd, 'w') as f:
-        f.write('hello world!\n')
-    file_source.write_from(file_source_path.path, temp_name)
+    with tempfile.NamedTemporaryFile(mode="w", delete=False) as f:
+        f.write("hello world!\n")
+    file_source.write_from(file_source_path.path, f.name)
 
 
 def _parser():
     parser = argparse.ArgumentParser()
-    parser.add_argument('--directory_uri', type=str,
-                        help='directory target URI')
-    parser.add_argument('--file_sources', type=str, help='file sources json')
+    parser.add_argument("--directory_uri", type=str, help="directory target URI")
+    parser.add_argument("--file_sources", type=str, help="file sources json")
     return parser
 
 

@@ -157,4 +157,9 @@
         <field name="name" template="true">${__REFGENIE_DISPLAY_NAME__}</field>
         <field name="path" template="true">${__REFGENIE_ASSET__}</field>
     </table>
+    <!-- q2view servers -->
+    <table name="q2view_display" comment_char="#" allow_duplicate_entries="False">
+        <columns>value, name, url</columns>
+        <file path="tool-data/q2view_display.loc" />
+    </table>
 </tables>

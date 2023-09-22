@@ -1,4 +1,4 @@
-<tool id="interactive_tool_pyiron" tool_type="interactive" name="PyIron Interactive Jupyter Notebook" version="0.1">
+<tool id="interactive_tool_pyiron" tool_type="interactive" name="PyIron Interactive Jupyter Notebook" version="0.2.1" profile="21.09">
     <requirements>
         <container type="docker">quay.io/bgruening/docker-jupyter-notebook:pyiron</container>
     </requirements>
@@ -13,8 +13,8 @@
         <environment_variable name="REMOTE_HOST">$__galaxy_url__</environment_variable>
         <environment_variable name="GALAXY_WEB_PORT">8080</environment_variable>
         <environment_variable name="GALAXY_URL">$__galaxy_url__</environment_variable>
-        <environment_variable name="API_KEY" inject="api_key" />
-        <environment_variable name="PYIRONRESOURCEPATHS">/home/jovyan/resources</environment_variable>
+        <environment_variable name="API_KEY" inject="api_key"/>
+        <environment_variable name="PYIRONRESOURCEPATHS">/opt/conda/share/pyiron/</environment_variable>
     </environment_variables>
     <command detect_errors="aggressive"><![CDATA[
         #import re
@@ -28,9 +28,11 @@
         ln -sf '$input' './jupyter/data/${cleaned_name}' &&
 
         ## change into the directory where the notebooks are located
+        export HOME=/home/jovyan &&
+        export PATH=\${HOME}/.local/bin:\${PATH} &&
         cd ./jupyter/ &&
         cp \${HOME}/examples/* ./ &&
-        export PATH=/home/jovyan/.local/bin:\$PATH &&
+
 
         #if $mode.mode_select == 'scratch':
             ## copy default notebook
@@ -54,7 +56,6 @@
     ]]>
     </command>
     <inputs>
-
         <conditional name="mode">
             <param name="mode_select" type="select" label="Do you already have a notebook?" help="If not, no problem we will provide you with a default one.">
                 <option value="scratch">Start with a fresh notebook</option>
@@ -63,21 +64,19 @@
             <when value="scratch"/>
             <when value="previous">
                 <param name="ipynb" type="data" format="ipynb" label="IPython Notebook"/>
-                <param name="run_it" type="boolean" truevalue="true" falsevalue="false" label="Execute notebook and return a new one."
-                    help="This option is useful in workflows when you just want to execute a notebook and not dive into the webfrontend."/>
+                <param name="run_it" type="boolean" truevalue="true" falsevalue="false" label="Execute notebook and return a new one." help="This option is useful in workflows when you just want to execute a notebook and not dive into the webfrontend."/>
             </when>
         </conditional>
         <param name="input" type="data" optional="true" label="Include data into the environment"/>
-
     </inputs>
     <outputs>
-        <data name="jupyter_notebook" format="ipynb" label="PyIron Workbench"></data>
+        <data name="jupyter_notebook" format="ipynb" label="PyIron Workbench"/>
     </outputs>
     <tests>
         <test expect_num_outputs="1">
-            <param name="mode" value="previous" />
-            <param name="ipynb" value="test.ipynb" />
-            <param name="run_it" value="true" />
+            <param name="mode" value="previous"/>
+            <param name="ipynb" value="test.ipynb"/>
+            <param name="run_it" value="true"/>
             <output name="jupyter_notebook" file="test.ipynb" ftype="ipynb"/>
         </test>
     </tests>

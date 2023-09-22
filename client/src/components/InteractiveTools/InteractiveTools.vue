@@ -1,48 +1,45 @@
 <template>
-    <div>
-        <b-alert :name="message" :variant="messageVariant" :show="showMessage">{{ message }}</b-alert>
-        <h2>Active Interactive Tools</h2>
+    <div aria-labelledby="interactive-tools-heading">
+        <b-alert v-for="(message, index) in messages" :key="index" :show="3" variant="danger">{{ message }}</b-alert>
+        <h1 id="interactive-tools-heading" class="h-lg">Active Interactive Tools</h1>
         <b-row class="mb-3">
             <b-col cols="6">
                 <b-input
-                    id="workflow-search"
+                    id="interactivetool-search"
+                    v-model="filter"
                     class="m-1"
                     name="query"
                     placeholder="Search Interactive Tool"
                     autocomplete="off"
-                    type="text"
-                    v-model="filter"
-                />
+                    type="text" />
             </b-col>
         </b-row>
         <b-table
-            id="workflow-table"
+            id="interactive-tool-table"
             striped
             :fields="fields"
             :items="activeInteractiveTools"
             :filter="filter"
-            @filtered="filtered"
-        >
+            @filtered="filtered">
             <template v-slot:cell(checkbox)="row">
                 <b-form-checkbox :id="createId('checkbox', row.item.id)" v-model="row.item.marked" />
             </template>
             <template v-slot:cell(name)="row">
                 <a
-                    :index="row.index"
                     :id="createId('link', row.item.id)"
+                    v-b-tooltip
+                    title="Open Interactive Tool"
+                    :index="row.index"
                     :href="row.item.target"
                     target="_blank"
                     :name="row.item.name"
-                    >{{ row.item.name }}</a
-                >
+                    >{{ row.item.name }}
+                    <font-awesome-icon icon="external-link-alt" />
+                </a>
             </template>
             <template v-slot:cell(job_info)="row">
-                <label v-if="row.item.active">
-                    running
-                </label>
-                <label v-else>
-                    stopped
-                </label>
+                <label v-if="row.item.active"> running </label>
+                <label v-else> stopped </label>
             </template>
             <template v-slot:cell(created_time)="row">
                 <UtcDate :date="row.item.created_time" mode="elapsed" />
@@ -53,12 +50,12 @@
         </b-table>
         <label v-if="isActiveToolsListEmpty">You do not have active interactive tools yet </label>
         <div v-if="showNotFound">
-            No matching entries found for: <span class="font-weight-bold">{{ this.filter }}</span
+            No matching entries found for: <span class="font-weight-bold">{{ filter }}</span
             >.
         </div>
         <b-button
-            id="stopInteractiveTool"
             v-if="isCheckboxMarked"
+            id="stopInteractiveTool"
             v-b-tooltip.hover.bottom
             title="Terminate selected tools"
             @click.stop="stopInteractiveToolSession()"
@@ -68,18 +65,21 @@
 </template>
 
 <script>
-import { Services } from "./services";
-import Vue from "vue";
 import { getAppRoot } from "onload/loadConfig";
+import { Services } from "./services";
 import UtcDate from "components/UtcDate";
-import { getGalaxyInstance } from "app";
-import BootstrapVue from "bootstrap-vue";
+import { mapActions, mapState } from "pinia";
+import { useEntryPointStore } from "../../stores/entryPointStore";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
 
-Vue.use(BootstrapVue);
+library.add(faExternalLinkAlt);
 
 export default {
     components: {
         UtcDate,
+        FontAwesomeIcon,
     },
     data() {
         return {
@@ -111,13 +111,12 @@ export default {
                 },
             ],
             filter: "",
-            message: null,
-            messageVariant: null,
+            messages: [],
             nInteractiveTools: 0,
-            activeInteractiveTools: [],
         };
     },
     computed: {
+        ...mapState(useEntryPointStore, { activeInteractiveTools: "entryPoints" }),
         showNotFound() {
             return this.nInteractiveTools === 0 && this.filter && !this.isActiveToolsListEmpty;
         },
@@ -127,12 +126,6 @@ export default {
         isActiveToolsListEmpty() {
             return this.activeInteractiveTools.length === 0;
         },
-        showMessage() {
-            return !!this.message;
-        },
-        currentHistory() {
-            return getGalaxyInstance().currHistoryPanel;
-        },
     },
     created() {
         this.root = getAppRoot();
@@ -140,29 +133,27 @@ export default {
         this.load();
     },
     methods: {
+        ...mapActions(useEntryPointStore, ["ensurePollingEntryPoints", "removeEntryPoint"]),
         load() {
+            this.ensurePollingEntryPoints();
             this.filter = "";
-            this.services
-                .getActiveInteractiveTools()
-                .then((activeInteractiveTools) => {
-                    this.activeInteractiveTools = activeInteractiveTools;
-                })
-                .catch((error) => {
-                    this.error = error;
-                });
         },
         filtered: function (items) {
             this.nInteractiveTools = items.length;
         },
         stopInteractiveToolSession() {
-            const idsToStop = this.activeInteractiveTools.filter((tool) => tool.marked).map((tool) => tool.id);
-            this.services.stopInteractiveTool(idsToStop).then((response) => {
-                if (response.status === "ok") this.messageVariant = "success";
-                else this.messageVariant = "danger";
-                this.message = response.message;
-                this.activeInteractiveTools = this.activeInteractiveTools.filter((tool) => !tool.marked);
-                this.currentHistory.loadCurrentHistory();
-            });
+            this.activeInteractiveTools
+                .filter((tool) => tool.marked)
+                .map((tool) =>
+                    this.services
+                        .stopInteractiveTool(tool.id)
+                        .then((response) => {
+                            this.removeEntryPoint(tool.id);
+                        })
+                        .catch((error) => {
+                            this.messages.push(`Failed to stop interactive tool ${tool.name}: ${error.message}`);
+                        })
+                );
         },
         createId(tagLabel, id) {
             return tagLabel + "-" + id;

@@ -1,0 +1,7 @@
+<?xml version="1.0"?>
+<display id="q2view" version="1.0.0" name="view at">
+    <dynamic_links from_data_table="q2view_display" skip_startswith="#" id="value" name="name">
+        <url>${ url % { 'q2view_file_url_qp': $q2view_file.qp } }</url>
+        <param type="data" name="q2view_file" url="galaxy_${DATASET_HASH}.${dataset.ext}" />
+    </dynamic_links>
+</display>

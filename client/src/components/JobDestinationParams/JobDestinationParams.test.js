@@ -1,35 +1,53 @@
 import Vuex from "vuex";
-import { mount, createLocalVue } from "@vue/test-utils";
-import { createStore } from "../../store";
+import createCache from "vuex-cache";
+import { useUserStore } from "stores/userStore";
+import { PiniaVuePlugin, createPinia } from "pinia";
 import JobDestinationParams from "./JobDestinationParams";
+import { shallowMount, createLocalVue } from "@vue/test-utils";
 import jobDestinationResponse from "./testData/jobDestinationResponse";
 
 const JOB_ID = "foo_job_id";
 
-describe("JobDestinationParams/JobDestinationParams.vue", () => {
-    const localVue = createLocalVue();
-    localVue.use(Vuex);
+const localVue = createLocalVue();
+localVue.use(PiniaVuePlugin);
+localVue.use(Vuex);
 
-    const responseKeys = Object.keys(jobDestinationResponse);
-
-    let testStore;
-    let wrapper;
-
-    beforeEach(async () => {
-        testStore = createStore();
-        const propsData = {
-            jobId: JOB_ID,
-        };
-        wrapper = mount(JobDestinationParams, {
-            store: testStore,
-            propsData,
-            localVue,
-            computed: {
-                jobDestinationParams() {
+const testStore = new Vuex.Store({
+    plugins: [createCache()],
+    modules: {
+        jobDestinationParametersStore: {
+            actions: {
+                fetchJobDestinationParams: jest.fn(),
+            },
+            getters: {
+                jobDestinationParams: (state) => (job_id) => {
                     return jobDestinationResponse;
                 },
             },
+        },
+    },
+});
+
+describe("JobDestinationParams/JobDestinationParams.vue", () => {
+    const responseKeys = Object.keys(jobDestinationResponse);
+
+    let wrapper;
+    let userStore;
+
+    beforeEach(async () => {
+        const propsData = {
+            jobId: JOB_ID,
+        };
+        const pinia = createPinia();
+        wrapper = await shallowMount(JobDestinationParams, {
+            store: testStore,
+            propsData,
+            localVue,
+            attachTo: document.body,
+            pinia,
         });
+        userStore = useUserStore();
+        userStore.currentUser = { is_admin: true };
         expect(responseKeys.length > 0).toBeTruthy();
     });
 

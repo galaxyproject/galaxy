@@ -1,5 +1,5 @@
 <template>
-    <div v-if="!jobSourceType || jobSourceType == 'Job' || isTerminal">
+    <div v-if="!jobSourceType || jobSourceType == 'Job' || (isTerminal && !isErrored)">
         {{ simpleDescription }}
     </div>
     <div v-else-if="!jobStatesSummary || !jobStatesSummary.hasDetails()">
@@ -14,10 +14,10 @@
     <div v-else>
         <progress-bar
             :note="generatingNote"
-            :ok-progress="okPercent"
-            :running-progress="runningPercent"
-            :new-progress="otherPercent"
-        />
+            :ok-count="okCount"
+            :error-count="errorCount"
+            :running-count="runningCount"
+            :new-count="newCount" />
     </div>
 </template>
 <script>
@@ -26,17 +26,17 @@ import mixin from "./mixin";
 import ProgressBar from "components/ProgressBar";
 
 export default {
-    props: {
-        collection: { type: Object, required: true }, // backbone model
-        jobStatesSummary: { required: true },
-    },
     components: {
         ProgressBar,
     },
     mixins: [mixin],
+    props: {
+        collection: { type: Object, required: true }, // backbone model
+        jobStatesSummary: { required: true },
+    },
     computed: {
         loadingNote() {
-            return `Loading job data for ${this.collectionTypeDescription}}`;
+            return `Loading job data for ${this.collectionTypeDescription}`;
         },
         generatingNote() {
             return `${this.jobsStr} generating a ${this.collectionTypeDescription}`;
@@ -51,6 +51,9 @@ export default {
             return DC_VIEW.collectionDescription(this.collection);
         },
         errorDescription() {
+            if (this.isPopulationFailed) {
+                return `${this.collection.get("populated_state_message")}`;
+            }
             var jobCount = this.jobCount;
             var errorCount = this.jobStatesSummary.numInError();
             return `a ${this.collectionTypeDescription} with ${errorCount} / ${jobCount} jobs in error`;

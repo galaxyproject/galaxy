@@ -1,0 +1,24 @@
+.multiselect {
+    font-weight: normal;
+    .multiselect__option {
+        white-space: normal;
+        font-size: $font-size-base;
+    }
+    .multiselect__option--highlight {
+        background: $brand-light;
+        color: $brand-dark;
+    }
+    .multiselect__option--selected {
+        background: $brand-primary;
+        color: $brand-light;
+    }
+    .multiselect__single {
+        font-size: $font-size-base;
+    }
+    .multiselect__tag {
+        min-height: 0;
+    }
+    .multiselect__tags {
+        border: $border-default;
+    }
+}

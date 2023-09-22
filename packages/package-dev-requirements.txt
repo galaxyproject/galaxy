@@ -3,7 +3,8 @@
 
 # For dev
 sphinx
+mypy
 
 # For release
-wheel
+build
 twine

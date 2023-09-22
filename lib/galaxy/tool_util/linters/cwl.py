@@ -14,7 +14,7 @@ def lint_cwl_validation(tool_source, lint_ctx):
     except Exception as e:
         validation_exception = e
     if validation_exception:
-        lint_ctx.error("Failed to valdiate CWL artifact [%s]", validation_exception)
+        lint_ctx.error(f"Failed to valdiate CWL artifact: {validation_exception}")
     else:
         lint_ctx.info("CWL appears to be valid.")
 
@@ -26,18 +26,18 @@ def lint_new_draft(tool_source, lint_ctx):
     if cwl_version is None:
         lint_ctx.error("CWL file does not contain a 'cwlVersion'")
     if cwl_version not in ["v1.0"]:
-        lint_ctx.warn("CWL version [%s] is unknown, we recommend the v1.0 the stable release." % cwl_version)
+        lint_ctx.warn(f"CWL version [{cwl_version}] is unknown, we recommend the v1.0 the stable release.")
     else:
-        lint_ctx.info("Modern CWL version [%s]", cwl_version)
+        lint_ctx.info(f"Modern CWL version [{cwl_version}].")
 
 
 def lint_docker_image(tool_source, lint_ctx):
-    _, containers = tool_source.parse_requirements_and_containers()
+    _, containers, *_ = tool_source.parse_requirements_and_containers()
     if len(containers) == 0:
         lint_ctx.warn("Tool does not specify a DockerPull source.")
     else:
         identifier = containers[0].identifier
-        lint_ctx.info("Tool will run in Docker image [%s]." % identifier)
+        lint_ctx.info(f"Tool will run in Docker image [{identifier}].")
 
 
 def lint_description(tool_source, lint_ctx):

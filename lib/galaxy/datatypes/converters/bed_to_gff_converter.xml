@@ -13,8 +13,8 @@
     </outputs>
     <tests>
         <test>
-            <param name="input1" format="bed" value="droPer1.bed"/>
-            <output name="output1" format="gff" value="droPer1.gff"/>
+            <param name="input1" ftype="bed" value="droPer1.bed"/>
+            <output name="output1" ftype="gff" value="droPer1.gff"/>
         </test>
     </tests>
     <help>

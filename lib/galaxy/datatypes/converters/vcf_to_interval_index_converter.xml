@@ -13,8 +13,8 @@
     </outputs>
     <tests>
         <test>
-            <param name="input1" format="vcf" value="vcf_to_maf_in.vcf"/>
-            <output name="output1" format="interval_index" value="interval_index_to_maf_in.interval_index"/>
+            <param name="input1" ftype="vcf" value="vcf_to_maf_in.vcf"/>
+            <output name="output1" ftype="interval_index" value="interval_index_to_maf_in.interval_index"/>
         </test>
     </tests>
     <help>

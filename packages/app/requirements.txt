@@ -1,6 +1,0 @@
-galaxy-auth
-galaxy-job-execution
-galaxy-job-metrics
-galaxy-tool-util
-galaxy-web-framework
-galaxy-web-stack

@@ -1,8 +1,11 @@
-<tool id="gtf_filter_by_attribute_values_list" name="Filter GTF data by attribute values_list" version="0.1">
+<tool id="gtf_filter_by_attribute_values_list" name="Filter GTF data by attribute values_list" version="0.2">
     <description></description>
-    <command interpreter="python">
-      gtf_filter_by_attribute_values_list.py $input $attribute_name $ids $output
-    </command>
+    <requirements>
+        <requirement type="package" version="3.6">python</requirement>
+    </requirements>
+    <command><![CDATA[
+python '$__tool_directory__/gtf_filter_by_attribute_values_list.py' '$input' $attribute_name '$ids' '$output'
+    ]]></command>
     <inputs>
         <param format="gtf" name="input" type="data" label="Filter"/>
         <param name="attribute_name" type="select" label="Using attribute name">
@@ -19,10 +22,10 @@
     <tests>
         <!-- Test filtering with a simple list of values. -->
         <test>
-            <param name="input" value="gops_subtract_in1.gff"/>
+            <param name="input" value="gops_subtract_in1_wcomment.gff"/>
             <param name="attribute_name" value="gene_id"/>
             <param name="ids" value="gtf_filter_by_attribute_values_list_in1.txt"/>
-            <output name="output" file="gtf_filter_by_attribute_values_list_out1.gtf"/>
+            <output name="output" file="gtf_filter_by_attribute_values_list_out1_wcomment.gtf"/>
         </test>
         <!-- Test filtering with a more complex tabular file. -->
         <test>

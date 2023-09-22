@@ -8,7 +8,7 @@ Properly configured and written visualizations will be accessible to
 the user when they click the 'visualizations' icon for a dataset
 in their history panel.
 
-For more information, see http://wiki.galaxyproject.org/VisualizationsRegistry
+For more information, see https://training.galaxyproject.org/archive/2019-06-01/topics/dev/tutorials/visualization-generic/tutorial.html
 
 
 Sub-directory structure

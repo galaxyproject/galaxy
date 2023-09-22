@@ -2,26 +2,28 @@
 API operations allowing clients to manage tool dependencies.
 """
 import logging
+from typing import Optional
 
+from galaxy.managers.context import ProvidesAppContext
+from galaxy.structured_app import StructuredApp
 from galaxy.tool_util.deps import views
 from galaxy.web import (
     expose_api,
-    require_admin
+    require_admin,
 )
-from galaxy.webapps.base.controller import BaseAPIController
+from . import BaseGalaxyAPIController
 
 log = logging.getLogger(__name__)
 
 
-class ToolDependenciesAPIController(BaseAPIController):
-
-    def __init__(self, app):
+class ToolDependenciesAPIController(BaseGalaxyAPIController):
+    def __init__(self, app: StructuredApp):
         super().__init__(app)
         self._view = views.DependencyResolversView(app)
 
     @require_admin
     @expose_api
-    def index(self, trans, **kwd):
+    def index(self, trans: ProvidesAppContext, **kwd):
         """
         GET /api/dependency_resolvers
         """
@@ -29,7 +31,7 @@ class ToolDependenciesAPIController(BaseAPIController):
 
     @require_admin
     @expose_api
-    def show(self, trans, id):
+    def show(self, trans: ProvidesAppContext, id: str):
         """
         GET /api/dependency_resolvers/<id>
         """
@@ -47,7 +49,7 @@ class ToolDependenciesAPIController(BaseAPIController):
 
     @require_admin
     @expose_api
-    def resolver_dependency(self, trans, id, **kwds):
+    def resolver_dependency(self, trans: ProvidesAppContext, id: str, **kwds):
         """
         GET /api/dependency_resolvers/{index}/dependency
 
@@ -73,7 +75,7 @@ class ToolDependenciesAPIController(BaseAPIController):
 
     @require_admin
     @expose_api
-    def install_dependency(self, trans, id=None, **kwds):
+    def install_dependency(self, trans: ProvidesAppContext, id: Optional[str] = None, **kwds):
         """
         POST /api/dependency_resolvers/{index}/dependency
         POST /api/dependency_resolvers/dependency
@@ -103,7 +105,7 @@ class ToolDependenciesAPIController(BaseAPIController):
 
     @require_admin
     @expose_api
-    def manager_dependency(self, trans, **kwds):
+    def manager_dependency(self, trans: ProvidesAppContext, **kwds):
         """
         GET /api/dependency_resolvers/dependency
 
@@ -130,7 +132,7 @@ class ToolDependenciesAPIController(BaseAPIController):
 
     @require_admin
     @expose_api
-    def resolver_requirements(self, trans, id, **kwds):
+    def resolver_requirements(self, trans: ProvidesAppContext, id, **kwds):
         """
         GET /api/dependency_resolvers/{index}/requirements
 
@@ -149,7 +151,7 @@ class ToolDependenciesAPIController(BaseAPIController):
 
     @require_admin
     @expose_api
-    def manager_requirements(self, trans, **kwds):
+    def manager_requirements(self, trans: ProvidesAppContext, **kwds):
         """
         GET /api/dependency_resolvers/requirements
 
@@ -168,7 +170,7 @@ class ToolDependenciesAPIController(BaseAPIController):
 
     @require_admin
     @expose_api
-    def clean(self, trans, id=None, **kwds):
+    def clean(self, trans: ProvidesAppContext, id=None, **kwds):
         """
         POST /api/dependency_resolvers/{index}/clean
 
@@ -187,7 +189,7 @@ class ToolDependenciesAPIController(BaseAPIController):
 
     @expose_api
     @require_admin
-    def summarize_toolbox(self, trans, **kwds):
+    def summarize_toolbox(self, trans: ProvidesAppContext, **kwds):
         """
         GET /api/dependency_resolvers/toolbox
 
@@ -225,7 +227,7 @@ class ToolDependenciesAPIController(BaseAPIController):
 
     @expose_api
     @require_admin
-    def toolbox_install(self, trans, payload, index=None, **kwds):
+    def toolbox_install(self, trans: ProvidesAppContext, payload, index=None, **kwds):
         """
         POST /api/dependency_resolvers/{index}/toolbox/install
         POST /api/dependency_resolvers/toolbox/install
@@ -249,17 +251,17 @@ class ToolDependenciesAPIController(BaseAPIController):
         requirements = {tools_by_id[tid].tool_requirements for tid in tool_ids}
         install_kwds = {}
         for source in [payload, kwds]:
-            if 'include_containers' in source:
-                install_kwds['include_containers'] = source['container_type']
-            if 'container_type' in kwds:
-                install_kwds['container_type'] = source['container_type']
-            if 'resolver_type' in source:
-                install_kwds['resolver_type'] = source['resolver_type']
+            if "include_containers" in source:
+                install_kwds["include_containers"] = source["container_type"]
+            if "container_type" in kwds:
+                install_kwds["container_type"] = source["container_type"]
+            if "resolver_type" in source:
+                install_kwds["resolver_type"] = source["resolver_type"]
         [self._view.install_dependencies(requirements=r, index=index, **install_kwds) for r in requirements]
 
     @expose_api
     @require_admin
-    def toolbox_uninstall(self, trans, payload, index=None, **kwds):
+    def toolbox_uninstall(self, trans: ProvidesAppContext, payload, index=None, **kwds):
         """
         POST /api/dependency_resolvers/{index}/toolbox/uninstall
         POST /api/dependency_resolvers/toolbox/uninstall
@@ -278,23 +280,23 @@ class ToolDependenciesAPIController(BaseAPIController):
         :type   resolver_type:  str
         :param  resolver_type:  restrict to uninstall to specified resolver type
         """
-        tools_by_id = trans.app.toolbox.tools_by_id.copy()
+        tools_by_id = self.app.toolbox.tools_by_id.copy()
         tool_ids = payload.get("tool_ids")
         requirements = {tools_by_id[tid].tool_requirements for tid in tool_ids}
         install_kwds = {}
         for source in [payload, kwds]:
-            if 'include_containers' in source:
-                install_kwds['include_containers'] = source['container_type']
-            if 'container_type' in kwds:
-                install_kwds['container_type'] = source['container_type']
-            if 'resolver_type' in source:
-                install_kwds['resolver_type'] = source['resolver_type']
+            if "include_containers" in source:
+                install_kwds["include_containers"] = source["container_type"]
+            if "container_type" in kwds:
+                install_kwds["container_type"] = source["container_type"]
+            if "resolver_type" in source:
+                install_kwds["resolver_type"] = source["resolver_type"]
 
         [self._view.uninstall_dependencies(index=index, requirements=r, **install_kwds) for r in requirements]
 
     @expose_api
     @require_admin
-    def unused_dependency_paths(self, trans, **kwds):
+    def unused_dependency_paths(self, trans: ProvidesAppContext, **kwds):
         """
         GET /api/dependency_resolvers/unused_paths
         """
@@ -302,7 +304,7 @@ class ToolDependenciesAPIController(BaseAPIController):
 
     @expose_api
     @require_admin
-    def delete_unused_dependency_paths(self, trans, payload, **kwds):
+    def delete_unused_dependency_paths(self, trans: ProvidesAppContext, payload, **kwds):
         """
         PUT /api/dependency_resolvers/unused_paths
         """

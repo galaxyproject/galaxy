@@ -3,7 +3,7 @@
  */
 import _ from "underscore";
 import $ from "jquery";
-import d3 from "d3";
+import * as d3 from "d3v3";
 import Backbone from "backbone";
 import { getAppRoot } from "onload/loadConfig";
 import util from "viz/trackster/util";

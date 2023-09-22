@@ -1,15 +1,40 @@
 <template>
-    <markdown :markdown-config="markdownConfig" :export-link="exportUrl" @onEdit="onEdit" />
+    <config-provider v-slot="{ config, loading }">
+        <Published :item="page">
+            <template v-slot>
+                <div v-if="!loading">
+                    <markdown
+                        v-if="page.content_format == 'markdown'"
+                        :markdown-config="page"
+                        :enable_beta_markdown_export="config.enable_beta_markdown_export"
+                        :download-endpoint="stsUrl(config)"
+                        :export-link="exportUrl"
+                        :read-only="!userOwnsPage"
+                        @onEdit="onEdit" />
+                    <PageHtml v-else :page="page" />
+                </div>
+                <b-alert v-else variant="info" show>Unsupported page format.</b-alert>
+            </template>
+        </Published>
+    </config-provider>
 </template>
 
 <script>
-import { getAppRoot } from "onload/loadConfig";
-import axios from "axios";
-import Markdown from "components/Markdown/Markdown.vue";
+import { urlData } from "utils/url";
+import { withPrefix } from "utils/redirect";
+import ConfigProvider from "components/providers/ConfigProvider";
+import { mapState } from "pinia";
+import { useUserStore } from "@/stores/userStore";
+import Markdown from "components/Markdown/Markdown";
+import Published from "components/Common/Published";
+import PageHtml from "./PageHtml";
 
 export default {
     components: {
+        ConfigProvider,
         Markdown,
+        PageHtml,
+        Published,
     },
     props: {
         pageId: {
@@ -17,38 +42,37 @@ export default {
             required: true,
         },
     },
+    data() {
+        return {
+            page: {},
+        };
+    },
     computed: {
+        ...mapState(useUserStore, ["currentUser"]),
+        userOwnsPage() {
+            return this.currentUser.username === this.page.username;
+        },
         dataUrl() {
-            return `${getAppRoot()}api/pages/${this.pageId}`;
+            return `/api/pages/${this.pageId}`;
         },
         exportUrl() {
             return `${this.dataUrl}.pdf`;
         },
         editUrl() {
-            return `${getAppRoot()}page/edit_content?id=${this.pageId}`;
+            return `/pages/editor?id=${this.pageId}`;
         },
     },
-    data() {
-        return {
-            markdownConfig: {},
-        };
-    },
     created() {
-        this.getContent().then((data) => {
-            this.markdownConfig = { ...data, markdown: data.content };
+        urlData({ url: this.dataUrl }).then((data) => {
+            this.page = data;
         });
     },
     methods: {
         onEdit() {
-            window.location = this.editUrl;
+            window.location = withPrefix(this.editUrl);
         },
-        async getContent() {
-            try {
-                const response = await axios.get(this.dataUrl);
-                return response.data;
-            } catch (e) {
-                return `Failed to retrieve content. ${e}`;
-            }
+        stsUrl(config) {
+            return `${this.dataUrl}/prepare_download`;
         },
     },
 };

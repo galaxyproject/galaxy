@@ -15,7 +15,7 @@ except ImportError:
     # Without sqlparse we use a very weak regex check
     def is_read_only_query(query):
         if re.match("select ", query, re.IGNORECASE):
-            if re.search("^([^\"]|\"[^\"]*\")*?;", query) or re.search("^([^\']|\'[^\']*\')*?;", query):
+            if re.search('^([^"]|"[^"]*")*?;', query) or re.search("^([^']|'[^']*')*?;", query):
                 return False
             else:
                 return True

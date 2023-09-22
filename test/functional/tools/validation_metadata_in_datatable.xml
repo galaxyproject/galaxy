@@ -1,0 +1,37 @@
+<tool id="validation_metadata_in_datatable" name="validation_metadata_in_datatable" profile="21.09" version="0.1">
+    <command><![CDATA[
+echo 'Hello World' > out1
+    ]]></command>
+    <inputs>
+        <!-- test dataset_metadata_in_data_table validator with and without negation
+             we simply use dbkey as metadata field here -->
+        <param name="value" type="data" format="data">
+            <validator type="dataset_metadata_in_data_table" table_name="test_fasta_indexes" metadata_column="1" metadata_name="dbkey"/>
+        </param>
+        <param name="value_neg" type="data" format="data">
+            <validator type="dataset_metadata_in_data_table" table_name="test_fasta_indexes" metadata_column="1" metadata_name="dbkey" negate="true"/>
+        </param>
+        <!-- also test deprecated dataset_metadata_not_in_data_table validator-->
+        <param name="value_neg_deprecated" type="data" format="data">
+            <validator type="dataset_metadata_not_in_data_table" table_name="test_fasta_indexes" metadata_column="1" metadata_name="dbkey"/>
+        </param>
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="txt" from_work_dir="out1"/>
+    </outputs>
+    <tests>
+        <!-- hg19 is in the test data table and hg38 not-->
+        <test expect_failure="false">
+            <param name="value" value="1.fasta" dbkey="hg19"/> 
+            <param name="value_neg" value="2.fasta" dbkey="hg38"/>
+            <param name="value_neg_deprecated" value="3.bed" dbkey="hg38"/>
+        </test>
+        <test expect_failure="true">
+            <param name="value" value="1.fasta" dbkey="hg38"/> <!-- hg38 is not in the test data table-->
+            <param name="value_neg" value="2.fasta" dbkey="hg19"/>
+            <param name="value_neg_deprecated" value="3.bed" dbkey="hg19"/>
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>

@@ -1,0 +1,961 @@
+// ==== Tool form styles ====
+
+div.metadataForm {
+    border: solid #aaaaaa 1px;
+}
+
+div.metadataFormTitle {
+    font-weight: bold;
+    padding: 5px;
+    padding-left: 10px;
+    padding-right: 10px;
+    background: #cccccc;
+    background-repeat: repeat-x;
+    background-position: top;
+    border-bottom: solid #aaaaaa 1px;
+}
+
+div.metadataFormBody {
+    background: #ffffff;
+    padding: 5px 0;
+}
+
+div.metadataFormBody div.metadataFormTitle {
+    background: transparent;
+    border: none;
+    font-weight: bold;
+    border-bottom: solid #dcb790 1px;
+    margin-bottom: 5px;
+}
+
+div.metadataFormDisabled div.metadataFormTitle {
+    background: #eee;
+    border-color: $border-color;
+}
+
+div.metadataFormDisabled {
+    border-color: $border-color;
+}
+
+div.metadataHelpBody {
+    width: 100%;
+    overflow: auto;
+}
+
+// Forms
+div.toolFormBody div.toolFormTitle {
+    background: transparent;
+    border: none;
+    font-weight: bold;
+    border-bottom: solid $form-border 1px;
+    margin-bottom: 5px;
+}
+
+div.toolFormDisabled div.toolFormTitle {
+    background: #f5f5f5;
+    border-color: $border-color;
+}
+
+div.toolFormDisabled {
+    border-color: $border-color;
+}
+
+div.toolHelp {
+    margin-top: 15px;
+    padding: 5px;
+}
+
+div.toolHelpBody {
+    width: 100%;
+}
+
+div.toolFormRow {
+    position: relative;
+}
+
+div.form,
+div.toolForm {
+    border: solid $form-border 1px;
+    @include border-radius($border-radius-base);
+}
+
+div.form-title,
+div.toolFormTitle {
+    // font-size: $font-size-base * 1.25;
+    // line-height: $line-height-base * 1.5;
+    padding: 5px 10px;
+    background: $form-heading-bg;
+    border-bottom: solid $form-border 1px;
+    word-wrap: break-word;
+}
+
+div.form-body {
+    padding: 5px 0;
+}
+
+div.form-row {
+    position: relative;
+    padding: 5px 10px;
+}
+
+div.form-title-row {
+    padding: 5px 10px;
+}
+
+div.repeat-group-item {
+    border-left: solid $form-border 5px;
+    margin-left: 10px;
+    margin-bottom: 10px;
+}
+
+div.form-row-error {
+    background: $state-danger-bg;
+}
+
+div.form-row label {
+    font-weight: bold;
+    display: block;
+    margin-bottom: 0.2em;
+}
+
+div.form-row label.inline {
+    display: inline;
+}
+
+div.form-row-input {
+    width: 90%;
+    float: left;
+}
+
+div.form-row-input label {
+    font-weight: normal;
+    display: inline;
+}
+
+.form-row.form-actions {
+    background: whiteSmoke;
+    border-top: solid #ddd 1px;
+    padding-top: 10px;
+    padding-bottom: 10px;
+    margin-top: 5px;
+}
+
+.form-row {
+    select,
+    textarea,
+    input[type="text"],
+    input[type="file"],
+    input[type="password"] {
+        // -webkit-box-sizing: border-box;
+        max-width: 90%;
+    }
+    display: block;
+}
+
+// Messages
+.form-help {
+    word-break: break-word;
+}
+
+.errormessagelarge,
+.warningmessagelarge,
+.donemessagelarge,
+.infomessagelarge,
+.form-help .error,
+.form-help .warning,
+.form-help .note {
+    @extend .alert;
+    min-height: 36px;
+    padding-left: 52px;
+    background-image: url(../../assets/images/error_large.png);
+    background-repeat: no-repeat;
+    background-position: 10px 5px;
+    .messagerow {
+        padding: 10px 20px;
+    }
+}
+
+.errormessagelarge {
+    @extend .alert-danger;
+    padding-left: 52px;
+}
+
+.warningmessagelarge {
+    @extend .alert-warning;
+    padding-left: 52px;
+    background-image: url(../../assets/images/warn_large.png);
+}
+
+.donemessagelarge {
+    @extend .alert-success;
+    padding-left: 52px;
+    background-image: url(../../assets/images/ok_large.png);
+}
+
+.infomessagelarge {
+    @extend .alert-info;
+    background-image: url(../../assets/images/info_large.png);
+}
+
+.errormessage,
+.warningmessage,
+.donemessage,
+.infomessage,
+.errormessagesmall,
+.warningmessagesmall,
+.donemessagesmall,
+.infomessagesmall,
+.form-help .error,
+.form-help .warning,
+.form-help .note {
+    @extend .alert;
+    padding: 5px;
+    padding-left: 25px;
+    min-height: 15px;
+    background-image: url(../../assets/images/error_small.png);
+    background-repeat: no-repeat;
+    background-position: 5px 6px;
+}
+
+.errormessage,
+.errormessagesmall,
+.form-help .error {
+    @extend .alert-danger;
+}
+
+.warningmessage,
+.warningmessagesmall,
+.form-help .warning {
+    @extend .alert-warning;
+    background-image: url(../../assets/images/warn_small.png);
+}
+
+.donemessage,
+.donemessagesmall {
+    @extend .alert-success;
+    background-image: url(../../assets/images/ok_small.png);
+}
+
+.infomessage,
+.infomessagesmall,
+.form-help .note {
+    @extend .alert-info;
+    background-image: url(../../assets/images/info_small.png);
+}
+
+.errormark,
+.warningmark,
+.donemark,
+.infomark,
+.ok_bgr,
+.err_bgr {
+    padding-left: 20px;
+    min-height: 15px;
+    background: url(../../assets/images/error_small.png) no-repeat;
+}
+
+.warningmark {
+    background-image: url(../../assets/images/warn_small.png);
+}
+
+.donemark {
+    background-image: url(../../assets/images/ok_small.png);
+}
+
+.infomark,
+.ok_bgr {
+    background-image: url(../../assets/images/info_small.png);
+}
+
+/* I think this is only used in view details */
+table.simple {
+    font-size: 12px;
+    background: #fff;
+    margin: 1em;
+    border-collapse: collapse;
+    text-align: left;
+}
+table.simple th {
+    font-size: 14px;
+    font-weight: normal;
+    padding: 10px 8px;
+    border-bottom: 2px solid #333;
+}
+table.simple td {
+    padding: 10px 8px 0px 8px;
+}
+table.simple tbody tr:hover td {
+    color: #333;
+}
+table.tabletip {
+    width: 100%;
+    border-collapse: collapse;
+    text-align: left;
+}
+table.tabletip th {
+    white-space: nowrap;
+    border-bottom: 1px solid #444;
+    padding-right: 3px;
+}
+table.tabletip td {
+    border-bottom: 1px solid #ddd;
+}
+table.tabletip tbody tr:hover td {
+    background-color: #eee;
+}
+
+table.colored {
+    border-top: solid $table-border-color 1px;
+    border-bottom: solid $table-border-color 1px;
+}
+
+table.colored td,
+table.colored th {
+    text-align: left;
+    padding: 5px;
+    line-height: $line-height-base;
+}
+
+table.colored tr.header {
+    background: $table-heading-bg;
+    background-repeat: repeat-x;
+    background-position: top;
+    font-weight: bold;
+}
+
+table.colored tr {
+    background: $white;
+}
+
+table.colored tr.odd_row {
+    background: $table-bg-accent;
+}
+
+div.debug {
+    margin: 10px;
+    padding: 5px;
+    background: #ffff99;
+    border: solid #ffff33 1px;
+    color: black;
+}
+
+// Data grid style
+.grid-table {
+    @extend .w-100;
+}
+.grid-header {
+    @extend .mb-2;
+}
+.grid-header .title {
+    @extend .font-weight-bold;
+}
+.grid {
+    @extend .pt-2;
+    @extend .w-100;
+    border-collapse: collapse;
+}
+.grid tbody td {
+    @extend .border-top;
+    @extend .border-bottom;
+    @extend .p-1;
+}
+.grid tbody td:empty {
+    @extend .p-0;
+}
+.grid thead tr {
+    height: 2em;
+}
+.grid thead th {
+    @extend .p-1;
+    @extend .border-top;
+    @extend .border-bottom;
+    line-height: $line-height-base;
+    background: $brand-light;
+    color: $text-color;
+    text-align: left;
+    white-space: nowrap;
+}
+.grid tfoot td {
+    @extend .border-top;
+    @extend .border-bottom;
+    @extend .p-1;
+    background-color: $brand-light;
+}
+.grid .current {
+    background-color: lighten($brand-success, 20%);
+}
+
+// Pulled out of grid base
+.count-box {
+    min-width: 1.1em;
+    padding: 5px;
+    border-width: 1px;
+    border-style: solid;
+    text-align: center;
+    display: inline-block;
+}
+.text-filter-val {
+    border: solid 1px #aaaaaa;
+    padding: 1px 2px 1px 3px;
+    margin-right: 5px;
+    border-radius: 0.5em;
+    font-style: italic;
+}
+.page-link-grid a,
+.inactive-link {
+    padding: 0px 7px 0px 7px;
+    color: #555;
+}
+.inactive-link,
+.current-filter {
+    font-weight: bold;
+    color: #000;
+}
+#advanced-search td {
+    padding: 3px;
+}
+#advanced-search table {
+    border-collapse: separate;
+}
+.delete-search-icon {
+    background: url(../../assets/images/delete_tag_icon_gray.png) center no-repeat;
+    display: inline-block;
+    width: 10px;
+    cursor: pointer;
+    height: 18px;
+    vertical-align: middle;
+    margin-left: 2px;
+}
+.search-box-input {
+    @extend .ui-input;
+    float: left;
+}
+.search-box {
+    vertical-align: bottom;
+    display: inline-block;
+    padding: 0;
+    white-space: nowrap;
+}
+.gray-background {
+    background-color: #dddddd;
+}
+.loading-elt-overlay {
+    background-color: white;
+    opacity: 0.5;
+    width: 100%;
+    height: 100%;
+    z-index: 14000;
+    position: fixed;
+    display: none;
+}
+
+div.odd_row {
+    background: $table-bg-accent;
+}
+
+#footer {
+    display: none;
+}
+
+// Tool panel stuff
+
+span.toolParameterExpandableCollapsable {
+    font-weight: bold;
+    cursor: pointer;
+}
+ul.toolParameterExpandableCollapsable {
+    list-style: none;
+}
+
+ul.manage-table-actions {
+    float: right;
+    margin-top: -2.5em;
+}
+ul.manage-table-actions li {
+    display: block;
+    float: left;
+    margin-left: 0.5em;
+}
+
+.action-button {
+    @extend .btn;
+    @extend .btn-secondary;
+}
+a.action-button {
+    color: $btn-default-color;
+    background: $btn-default-bg;
+    text-decoration: none;
+}
+.action-button > img {
+    vertical-align: middle;
+}
+
+.action-button:hover {
+    @extend .btn, :hover;
+}
+.action-button:active {
+    @extend .btn, .active;
+}
+
+// A menu button is a button that has an attached popup menu
+
+.menubutton {
+    @extend .btn;
+    @extend .btn-secondary;
+
+    &:hover {
+        @extend .btn, :hover;
+    }
+    &:active {
+        @extend .btn, .active;
+    }
+
+    display: inline-block;
+    cursor: pointer;
+    position: relative;
+    @extend .unselectable;
+
+    a {
+        text-decoration: none;
+    }
+
+    .menubutton-label,
+    > label {
+        position: relative;
+        display: inline-block;
+        border-right: none;
+        text-decoration: none;
+        text-align: left;
+        // The following properties truncate the text and force the button to have one line
+        max-height: 2 * $line-height-base;
+        line-height: $line-height-base;
+        overflow: hidden;
+        text-overflow: ellipsis;
+    }
+
+    &.popup .menubutton-label {
+        margin: -5px 0;
+        border-right: solid $btn-default-border 1px;
+        padding-right: 6px;
+    }
+
+    &.popup,
+    &.popup.split {
+        padding-right: 18px;
+        @include caret();
+        &:after {
+            margin-left: 0.5rem;
+            // top: 45%;
+            // position: absolute;
+            // right: 6px;
+        }
+    }
+}
+
+.menubutton.background-none {
+    background: none;
+}
+
+// Popup menu styles
+div.popmenu-wrapper {
+    position: absolute;
+    top: 100%;
+    z-index: 20000;
+
+    .dropdown-menu {
+        // Since our menus are contained in a positioned div, need to override some styles
+        display: block;
+        position: relative;
+        float: none;
+    }
+}
+
+.popup-arrow {
+    cursor: pointer;
+    text-decoration: none;
+    color: #555;
+}
+
+.popup-arrow:hover {
+    color: black;
+}
+
+div.permissionContainer {
+    padding-left: 20px;
+}
+
+// Styles for areas of text content
+
+.text-content {
+    hr {
+        display: block;
+        width: 100%;
+        height: 1px;
+        border: none;
+        background: #aaa;
+        color: #aaa;
+    }
+
+    table {
+        border-collapse: collapse;
+        border-top: 1px solid #ccc;
+        border-left: 1px solid #ccc;
+    }
+
+    blockquote {
+        color: #666;
+    }
+
+    fieldset {
+        border-color: #ccc;
+        border: 1px solid #ccc;
+    }
+
+    th,
+    td {
+        border-bottom: 1px solid #ddd;
+        border-right: 1px solid #ccc;
+    }
+
+    th,
+    td {
+        padding: 0.8em;
+    }
+}
+
+.preserve-text-breaks {
+    white-space: pre-line;
+}
+
+// Icon buttons.
+
+.icon-button {
+    width: 16px;
+    height: 16px;
+    display: block;
+    float: left;
+    margin-left: 2px;
+    // Allow alt text for screen readers
+    text-indent: 20px;
+    background-repeat: no-repeat;
+    background-position: 0px 0px;
+    padding: 0;
+}
+
+.fa-icon-button {
+    text-align: center;
+    text-decoration: none;
+    display: inline-block;
+    cursor: pointer;
+    width: 16px;
+    height: 16px;
+    &:hover {
+        color: $brand-info;
+    }
+}
+
+.editable-text {
+    cursor: pointer;
+}
+
+.editable-text:hover {
+    cursor: text;
+    border: dotted $border-color 1px;
+}
+
+.icon-button.multiinput {
+    background: url(../../assets/images/documents-stack.png) no-repeat;
+    cursor: pointer;
+    float: none;
+    display: inline-block;
+    margin-left: 10px;
+}
+
+.icon-button.multiinput.disabled {
+    background: url(../../assets/images/documents-stack-faded.png) no-repeat;
+    cursor: pointer;
+}
+
+.icon-button.link {
+    background: url(../../assets/images/silk/link.png) no-repeat;
+    cursor: pointer;
+    float: none;
+    display: inline-block;
+    margin-left: 10px;
+}
+
+.icon-button.link-broken {
+    background: url(../../assets/images/silk/link_break.png) no-repeat;
+    cursor: pointer;
+    float: none;
+    display: inline-block;
+    margin-left: 10px;
+}
+
+.workflow-invocation-complete {
+    border: solid 1px #6a6;
+    border-left-width: 5px;
+    margin: 10px 0;
+    padding-left: 5px;
+}
+
+// ==== Tool menu styles
+.toolMenuContainer {
+    color: $panel-text-color;
+    a {
+        color: $panel-text-color;
+    }
+    background: $panel-bg-color;
+    min-height: 100%;
+}
+
+div.toolSectionTitle {
+    font-weight: 500;
+    font-size: $h4-font-size;
+}
+
+div.toolTitle,
+div.toolSectionTitle {
+    display: block;
+    .labels {
+        float: right;
+    }
+    .title-link {
+        @extend .px-3;
+        @extend .py-1;
+        text-decoration: none;
+        display: block;
+        &:hover {
+            background: darken($panel-bg-color, 5%);
+        }
+    }
+    a.text-muted {
+        &:hover {
+            background: inherit;
+        }
+    }
+}
+
+// ==== Integrated tool form styles
+
+.toolMenuAndView .toolForm {
+    float: left;
+    background-color: $white;
+    margin: 10px;
+}
+
+// @import "base_sprites";
+
+.text-and-autocomplete-select {
+    // -sprite-group: fugue;
+    // -sprite-image: fugue/control-270@extend png;
+    // -sprite-horiz-position: right;
+    background: none;
+    position: relative;
+    padding-right: 18px;
+    &:after {
+        margin-top: 6px;
+        position: absolute;
+        top: 2px;
+        right: 6px;
+        width: 10px;
+        height: 10px;
+        @include caret();
+        @include opacity(80);
+    }
+}
+
+.icon-button.general-question {
+    background: url(../../assets/images/question-octagon-frame.png) no-repeat;
+    float: right;
+    margin-top: 3px;
+    margin-right: 4px;
+}
+
+.icon-button.tag-question {
+    background: url(../../assets/images/question-balloon.png) no-repeat;
+    float: right;
+    margin-top: 3px;
+    margin-right: 4px;
+}
+
+// ==== General Sprites ====
+
+@import "sprite-fugue.scss";
+
+.icon-button.tag {
+    @include sprite($tag-label);
+}
+.icon-button.tags {
+    @include sprite($tags);
+}
+.icon-button.tag--plus {
+    @include sprite($tag-plus);
+}
+.icon-button.toggle-expand {
+    @include sprite($toggle-expand);
+}
+.icon-button.toggle {
+    @include sprite($toggle-bw);
+}
+.icon-button.toggle:hover {
+    @include sprite($toggle);
+}
+.icon-button.arrow-circle {
+    @include sprite($arrow-circle);
+}
+.icon-button.chevron {
+    @include sprite($chevron);
+}
+.icon-button.bug {
+    @include sprite($bug);
+}
+.icon-button.disk {
+    @include sprite($disk);
+}
+.icon-button.information {
+    @include sprite($information-white);
+}
+.icon-button.annotate {
+    @include sprite($sticky-note-text);
+}
+.icon-button.go-to-full-screen {
+    @include sprite($external);
+}
+.icon-button.import {
+    @include sprite($plus-circle);
+}
+.icon-button.plus-button {
+    @include sprite($plus-button-bw);
+}
+.icon-button.plus-button:hover {
+    @include sprite($plus-button);
+}
+.icon-button.gear {
+    @include sprite($gear);
+}
+.icon-button.chart_curve {
+    @include sprite($chart);
+}
+.icon-button.disk--arrow {
+    @include sprite($disk-arrow-bw);
+}
+.icon-button.disk--arrow:hover {
+    @include sprite($disk-arrow);
+}
+.icon-button.cross-circle {
+    @include sprite($cross-circle-bw);
+}
+.icon-button.cross-circle:hover {
+    @include sprite($cross-circle);
+}
+.icon-button.arrow-split {
+    @include sprite($arrow-split-bw);
+}
+.icon-button.arrow-split:hover {
+    @include sprite($arrow-split);
+}
+.icon-button.chevron-expand:hover {
+    @include sprite($chevron-expand);
+}
+.icon-button.chevron-expand {
+    @include sprite($chevron-expand-bw);
+}
+
+// noscript overlay - displayed when javascript is disabled
+.noscript-overlay {
+    position: absolute;
+    width: 100%;
+    height: 100%;
+    background: white;
+    z-index: 10000;
+    & > div {
+        margin: 64px 0px 0px 64px;
+    }
+}
+
+// honeypot for registration form
+#for_bears {
+    display: none;
+}
+
+// password complexity monitor
+#change_password,
+#registrationForm {
+    .progress {
+        width: 200px;
+        margin-left: 20px;
+    }
+    .progress-bar {
+        color: black;
+        text-align: left;
+    }
+}
+
+// workflow
+.wf {
+    overflow: auto;
+    th {
+        white-space: nowrap;
+    }
+    td:first-child {
+        white-space: nowrap;
+    }
+}
+
+.wf-action span {
+    padding-left: 3px;
+    font-family: "Lucida Grande", verdana, arial, helvetica, sans-serif;
+}
+
+.wf-nodata {
+    padding-left: 1%;
+}
+
+.wf-back {
+    margin-left: 0.5%;
+}
+
+.other-options {
+    margin-bottom: 2%;
+}
+
+.hidden_description_layer {
+    position: absolute;
+    top: 0;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    background: rgba(200, 200, 200, 0.6);
+    visibility: hidden;
+    opacity: 0;
+    font-size: 2em;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+
+    /* transition effect. not necessary */
+    transition: opacity 0.2s, visibility 0.2s;
+}
+
+.hidden_description_layer.dragover {
+    visibility: visible;
+    opacity: 1;
+}
+
+/* Toolshed, reports custom styles from mako templates */
+body.toolshed,
+body.reports {
+    margin: 0;
+    padding: 0;
+    overflow: hidden;
+    #left {
+        background: #c1c9e5 url(../../assets/images/menu_bg.png) top repeat-x;
+    }
+    .unified-panel-body {
+        overflow: auto;
+    }
+    .toolMenu {
+        margin-left: 10px;
+    }
+}

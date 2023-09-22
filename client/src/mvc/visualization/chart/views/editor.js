@@ -46,7 +46,7 @@ export default Backbone.View.extend({
         this.setElement("<div class='charts-editor'/>");
         this.$el.append(this.description.$el);
         this.$el.append(this.tabs.$el);
-        this.listenTo(this.chart, "load", () => {
+        this.listenTo(this.chart, "refresh", () => {
             this.title.value(this.chart.get("title"));
         });
     },

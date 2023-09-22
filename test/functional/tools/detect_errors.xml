@@ -11,13 +11,13 @@
        <regex match="^Branch A" level="warning" description="Branch A was taken in execution" />
     </stdio>
     <command><![CDATA[
-        #if str($stdoutmsg)!=""
-            echo "$stdoutmsg"; 
-        #end if
-        #if str($stderrmsg)!=""
-            >2& echo "$stderrmsg"; 
-        #end if
-        sh -c "exit $exit_code"
+#if str($stdoutmsg) != ""
+    echo '$stdoutmsg' &&
+#end if
+#if str($stderrmsg) != ""
+    >2& echo '$stderrmsg' && 
+#end if
+sh -c 'exit $exit_code'
     ]]>
     </command>
     <inputs>

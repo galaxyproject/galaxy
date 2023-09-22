@@ -23,11 +23,11 @@ export default {
             return `${this.nameTags.length} nametags`;
         },
     },
-    methods: {
-        ...mapActions(["updateTags", "initializeTags"]),
-    },
     mounted() {
         this.initializeTags({ key: this.storeKey, tags: this.tags });
+    },
+    methods: {
+        ...mapActions(["updateTags", "initializeTags"]),
     },
 };
 </script>

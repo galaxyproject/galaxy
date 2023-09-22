@@ -7,43 +7,54 @@
             :labels="labels"
             :label-title="selectedLabelTitle"
             @onOk="onOk"
-            @onCancel="onCancel"
-        />
-        <DataDialog v-if="dataShow" :history="dataHistoryId" format="id" @onOk="onData" @onCancel="onCancel" />
+            @onCancel="onCancel" />
+        <MarkdownVisualization
+            v-else-if="visualizationShow"
+            :argument-name="argumentName"
+            :argument-payload="argumentPayload"
+            :labels="labels"
+            :use-labels="useLabels"
+            :history="dataHistoryId"
+            @onOk="onVisualization"
+            @onCancel="onCancel" />
+        <DataDialog v-else-if="dataShow" :history="dataHistoryId" format="id" @onOk="onData" @onCancel="onCancel" />
         <DatasetCollectionDialog
-            v-if="dataCollectionShow"
+            v-else-if="dataCollectionShow"
             :history="dataHistoryId"
             format="id"
             @onOk="onDataCollection"
-            @onCancel="onCancel"
-        />
+            @onCancel="onCancel" />
         <BasicSelectionDialog
-            v-if="jobShow"
+            v-else-if="jobShow"
             :get-data="getJobs"
             :is-encoded="true"
             title="Job"
             label-key="id"
             @onOk="onJob"
-            @onCancel="onCancel"
-        />
+            @onCancel="onCancel" />
         <BasicSelectionDialog
-            v-if="invocationShow"
+            v-else-if="invocationShow"
             :get-data="getInvocations"
             :is-encoded="true"
             title="Invocation"
             label-key="id"
             @onOk="onInvocation"
-            @onCancel="onCancel"
-        />
+            @onCancel="onCancel" />
         <BasicSelectionDialog
-            v-if="workflowShow"
+            v-else-if="workflowShow"
             :get-data="getWorkflows"
             title="Workflow"
             leaf-icon="fa fa-sitemap fa-rotate-270"
             label-key="name"
             @onOk="onWorkflow"
-            @onCancel="onCancel"
-        />
+            @onCancel="onCancel" />
+        <BasicSelectionDialog
+            v-else-if="historyShow"
+            :get-data="getHistories"
+            title="History"
+            label-key="name"
+            @onOk="onHistory"
+            @onCancel="onCancel" />
     </span>
 </template>
 
@@ -54,6 +65,7 @@ import BootstrapVue from "bootstrap-vue";
 import { getAppRoot } from "onload/loadConfig";
 import { getCurrentGalaxyHistory } from "utils/data";
 import MarkdownSelector from "./MarkdownSelector";
+import MarkdownVisualization from "./MarkdownVisualization";
 import DataDialog from "components/DataDialog/DataDialog";
 import DatasetCollectionDialog from "components/SelectionDialog/DatasetCollectionDialog";
 import BasicSelectionDialog from "components/SelectionDialog/BasicSelectionDialog";
@@ -63,6 +75,7 @@ Vue.use(BootstrapVue);
 export default {
     components: {
         MarkdownSelector,
+        MarkdownVisualization,
         BasicSelectionDialog,
         DatasetCollectionDialog,
         DataDialog,
@@ -74,6 +87,10 @@ export default {
         },
         argumentType: {
             type: String,
+            default: null,
+        },
+        argumentPayload: {
+            type: Object,
             default: null,
         },
         labels: {
@@ -104,8 +121,11 @@ export default {
             jobsUrl: `${getAppRoot()}api/jobs`,
             workflowsUrl: `${getAppRoot()}api/workflows`,
             invocationsUrl: `${getAppRoot()}api/invocations`,
+            historiesUrl: `${getAppRoot()}api/histories?view=detailed&q=published&qv=True`,
             selectedShow: false,
+            visualizationShow: false,
             workflowShow: false,
+            historyShow: false,
             jobShow: false,
             invocationShow: false,
             dataShow: false,
@@ -131,6 +151,9 @@ export default {
         getWorkflows() {
             return axios.get(this.workflowsUrl);
         },
+        getHistories() {
+            return axios.get(this.historiesUrl);
+        },
         onData(response) {
             this.dataShow = false;
             this.$emit("onInsert", `${this.argumentName}(history_dataset_id=${response})`);
@@ -147,20 +170,30 @@ export default {
             this.invocationShow = false;
             this.$emit("onInsert", `${this.argumentName}(invocation_id=${response.id})`);
         },
+        onHistory(response) {
+            this.historyShow = false;
+            this.$emit("onInsert", `history_link(history_id=${response.id})`);
+        },
         onWorkflow(response) {
             this.workflowShow = false;
             this.$emit("onInsert", `workflow_display(workflow_id=${response.id})`);
         },
+        onVisualization(response) {
+            this.visualizationShow = false;
+            this.$emit("onInsert", response);
+        },
         onCreate() {
             if (this.argumentType == "workflow_id") {
                 this.workflowShow = true;
+            } else if (this.argumentType == "history_id") {
+                this.historyShow = true;
             } else if (this.argumentType == "history_dataset_id") {
                 if (this.useLabels) {
                     this.selectedShow = true;
                 } else {
                     getCurrentGalaxyHistory().then((historyId) => {
-                        this.dataShow = true;
                         this.dataHistoryId = historyId;
+                        this.dataShow = true;
                     });
                 }
             } else if (this.argumentType == "history_dataset_collection_id") {
@@ -168,8 +201,8 @@ export default {
                     this.selectedShow = true;
                 } else {
                     getCurrentGalaxyHistory().then((historyId) => {
-                        this.dataCollectionShow = true;
                         this.dataHistoryId = historyId;
+                        this.dataCollectionShow = true;
                     });
                 }
             } else if (this.argumentType == "invocation_id") {
@@ -184,6 +217,11 @@ export default {
                 } else {
                     this.jobShow = true;
                 }
+            } else if (this.argumentType == "visualization_id") {
+                getCurrentGalaxyHistory().then((historyId) => {
+                    this.dataHistoryId = historyId;
+                    this.visualizationShow = true;
+                });
             }
         },
         onOk(selectedLabel) {
@@ -225,6 +263,7 @@ export default {
             this.dataCollectionShow = false;
             this.selectedShow = false;
             this.workflowShow = false;
+            this.visualizationShow = false;
             this.jobShow = false;
             this.invocationShow = false;
             this.dataShow = false;

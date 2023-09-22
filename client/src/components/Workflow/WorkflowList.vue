@@ -1,250 +1,306 @@
 <template>
-    <div>
-        <div v-if="error" class="alert alert-danger" show>{{ error }}</div>
-        <div v-else>
-            <span v-if="loading">
-                <font-awesome-icon icon="spinner" spin />
-                Loading workflows...
-            </span>
-            <div v-else>
-                <b-alert :variant="messageVariant" :show="showMessage">{{ message }}</b-alert>
-                <b-row class="mb-3">
-                    <b-col cols="6">
-                        <b-input
-                            id="workflow-search"
-                            class="m-1"
-                            name="query"
-                            placeholder="Search Workflows"
-                            autocomplete="off"
-                            type="text"
-                            v-model="filter"
-                        />
-                    </b-col>
-                    <b-col>
-                        <span class="float-right">
-                            <b-button id="workflow-create" class="m-1" @click="createWorkflow">
-                                <font-awesome-icon icon="plus" />
-                                Create
-                            </b-button>
-                            <b-button id="workflow-import" class="m-1" @click="importWorkflow">
-                                <font-awesome-icon icon="upload" />
-                                Import
-                            </b-button>
-                        </span>
-                    </b-col>
-                </b-row>
-                <b-table
-                    id="workflow-table"
-                    striped
-                    :fields="fields"
-                    :items="workflows"
-                    :filter="filter"
-                    @filtered="filtered"
-                >
-                    <template v-slot:cell(name)="row">
-                        <WorkflowDropdown
-                            :workflow="row.item"
-                            @onAdd="onAdd"
-                            @onRemove="onRemove"
-                            @onUpdate="onUpdate"
-                            @onSuccess="onSuccess"
-                            @onError="onError"
-                        />
-                    </template>
-                    <template v-slot:cell(tags)="row">
-                        <Tags :index="row.index" :tags="row.item.tags" @input="onTags" />
-                    </template>
-                    <template v-slot:cell(published)="row">
-                        <font-awesome-icon v-if="row.item.published" v-b-tooltip.hover title="Published" icon="globe" />
-                        <font-awesome-icon v-if="row.item.shared" v-b-tooltip.hover title="Shared" icon="share-alt" />
-                    </template>
-                    <template v-slot:cell(show_in_tool_panel)="row">
-                        <b-form-checkbox v-model="row.item.show_in_tool_panel" @change="bookmarkWorkflow(row.item)" />
-                    </template>
-                    <template v-slot:cell(update_time)="data">
-                        <UtcDate :date="data.value" mode="elapsed" />
-                    </template>
-                    <template v-slot:cell(execute)="row">
-                        <b-button
-                            v-b-tooltip.hover.bottom
-                            title="Run Workflow"
-                            class="workflow-run btn-sm btn-primary fa fa-play"
-                            @click.stop="executeWorkflow(row.item)"
-                        />
-                    </template>
-                </b-table>
-                <div v-if="showNotFound">
-                    No matching entries found for: <span class="font-weight-bold">{{ this.filter }}</span
-                    >.
-                </div>
-                <div v-if="showNotAvailable">
-                    No workflows found. You may create or import new workflows.
-                </div>
-            </div>
-        </div>
+    <div class="workflows-list" aria-labelledby="workflows-title">
+        <h1 id="workflows-title" class="mb-3 h-lg">
+            {{ title }}
+        </h1>
+        <b-alert class="index-grid-message" :variant="messageVariant" :show="showMessage">{{ message }}</b-alert>
+        <b-alert class="index-grid-message" dismissible :variant="importStatus" :show="Boolean(importMessage)">
+            {{ importMessage }}
+        </b-alert>
+        <b-row class="mb-3">
+            <b-col cols="6" class="m-1">
+                <IndexFilter v-bind="filterAttrs" id="workflow-search" v-model="filter" />
+            </b-col>
+            <b-col>
+                <WorkflowIndexActions :root="root" class="float-right"></WorkflowIndexActions>
+            </b-col>
+        </b-row>
+        <b-table v-model="workflowItemsModel" v-bind="{ ...defaultTableAttrs, ...indexTableAttrs }">
+            <template v-slot:empty>
+                <loading-span v-if="loading" message="Loading workflows" />
+                <b-alert v-else id="no-workflows" variant="info" show>
+                    <div v-if="isFiltered">
+                        No matching entries found for: <span class="font-weight-bold">{{ filter }}</span
+                        >.
+                    </div>
+                    <div v-else>No workflows found. You may create or import new workflows.</div>
+                </b-alert>
+            </template>
+            <template v-slot:cell(name)="row">
+                <WorkflowDropdown
+                    :workflow="row.item"
+                    :details-showing="row.detailsShowing"
+                    @onAdd="onAdd"
+                    @onRemove="onRemove"
+                    @onUpdate="onUpdate"
+                    @onSuccess="onSuccess"
+                    @onError="onError"
+                    @onRestore="onRestore"
+                    @toggleDetails="row.toggleDetails" />
+            </template>
+            <template v-slot:cell(tags)="row">
+                <StatelessTags
+                    clickable
+                    :value="row.item.tags"
+                    :disabled="row.item.deleted || published"
+                    @input="(tags) => onTags(tags, row.index)"
+                    @tag-click="onTagClick" />
+            </template>
+            <template v-slot:cell(published)="row">
+                <SharingIndicators
+                    v-if="!row.item.deleted"
+                    :object="row.item"
+                    @filter="(filter) => appendFilter(filter, true)" />
+                <div v-else>&#8212;</div>
+            </template>
+            <template v-slot:cell(show_in_tool_panel)="row">
+                <WorkflowBookmark
+                    v-if="!row.item.deleted"
+                    :checked="row.item.show_in_tool_panel"
+                    @bookmark="(checked) => bookmarkWorkflow(row.item.id, checked)" />
+                <div v-else>&#8212;</div>
+            </template>
+            <template v-slot:cell(update_time)="data">
+                <UtcDate :date="data.value" mode="elapsed" />
+            </template>
+            <template v-slot:cell(owner)="data">
+                <a class="workflow-filter-link-owner" href="#" @click="appendTagFilter('user', data.value)">{{
+                    data.value
+                }}</a>
+            </template>
+            <template v-slot:cell(execute)="row">
+                <WorkflowRunButton v-if="!row.item.deleted" :id="row.item.id" :root="root" />
+                <div v-else>&#8212;</div>
+            </template>
+            <template v-slot:row-details="data">
+                <b-card>
+                    <p class="workflow-dropdown-description">{{ data.item.description }}</p>
+                </b-card>
+            </template>
+        </b-table>
+        <b-pagination
+            v-show="rows >= perPage"
+            v-model="currentPage"
+            class="gx-workflows-grid-pager"
+            v-bind="paginationAttrs"></b-pagination>
     </div>
 </template>
 <script>
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faPlus } from "@fortawesome/free-solid-svg-icons";
-import { faSpinner } from "@fortawesome/free-solid-svg-icons";
-import { faUpload } from "@fortawesome/free-solid-svg-icons";
-import { faGlobe } from "@fortawesome/free-solid-svg-icons";
-import { faShareAlt } from "@fortawesome/free-solid-svg-icons";
-
-import { getAppRoot } from "onload/loadConfig";
+import _l from "utils/localization";
 import { Services } from "./services";
-import Tags from "components/Common/Tags";
+import { getAppRoot } from "onload/loadConfig";
+import { storedWorkflowsProvider } from "components/providers/StoredWorkflowsProvider";
+import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 import WorkflowDropdown from "./WorkflowDropdown";
 import UtcDate from "components/UtcDate";
+import { getGalaxyInstance } from "app";
+import paginationMixin from "./paginationMixin";
+import filtersMixin from "components/Indices/filtersMixin";
+import WorkflowIndexActions from "./WorkflowIndexActions";
+import WorkflowBookmark from "./WorkflowBookmark";
+import WorkflowRunButton from "./WorkflowRunButton.vue";
+import SharingIndicators from "components/Indices/SharingIndicators";
 
-library.add(faPlus);
-library.add(faUpload);
-library.add(faSpinner);
-library.add(faGlobe);
-library.add(faShareAlt);
+const helpHtml = `<div>
+    <p>This input can be used to filter the workflows displayed.</p>
+
+    <p>
+        Text entered here will be searched against workflow names and workflow
+        tags. Additionally, advanced filtering tags can be used to refine the
+        search more precisely. Filtering tags are of the form
+        <code>&lt;tag_name&gt;:&lt;tag_value&gt;</code> or
+        <code>&lt;tag_name&gt;:'&lt;tag_value&gt;'</code>. For instance to
+        search just for RNAseq in the workflow name,
+        <code>name:rnsseq</code> can be used. Notice by default the search is
+        not case-sensitive. If the quoted version of tag is used, the search is
+        case sensitive and only full matches will be returned. So
+        <code>name:'RNAseq'</code> would show only workflows named exactly
+        <code>RNAseq</code>.
+    </p>
+
+    <p>The available filtering tags are:</p>
+    <dl>
+        <dt><code>name</code></dt>
+        <dd>
+            Shows workflows with the given sequence of characters in their names.
+        </dd>
+        <dt><code>tag</code></dt>
+        <dd>
+            Shows workflows with the given workflow tag. You may also click
+            on a tag to filter on that tag directly.
+        </dd>
+        <dt><code>is:published</code></dt>
+        <dd>
+            Shows published workflows.
+        </dd>
+        <dt><code>is:importable</code></dt>
+        <dd>
+            Shows importable workflows (this also means they have URL generated).
+        </dd>
+        <dt><code>is:shared_with_me</code></dt>
+        <dd>
+            Shows workflows shared by another user directly with you.
+        </dd>
+        <dt><code>is:deleted</code></dt>
+        <dd>Shows deleted workflows.</dd>
+    </dl>
+</div>`;
+
+const NAME_FIELD = { key: "name", label: _l("Name"), sortable: true };
+const TAGS_FIELD = { key: "tags", label: _l("Tags"), sortable: false, thStyle: { width: "20%" } };
+const UPDATED_FIELD = { label: _l("Updated"), key: "update_time", sortable: true, thStyle: { width: "15%" } };
+const SHARING_FIELD = { label: _l("Sharing"), key: "published", sortable: false, thStyle: { width: "10%" } };
+const BOOKMARKED_FIELD = {
+    label: _l("Bookmarked"),
+    key: "show_in_tool_panel",
+    sortable: false,
+    thStyle: { width: "10%" },
+};
+const EXECUTE_FIELD = { key: "execute", label: "Run", thStyle: { width: "10%" } };
+const OWNER_FIELD = { key: "owner", label: _l("Owner"), sortable: false, thStyle: { width: "15%" } };
+
+const PERSONAL_FIELDS = [NAME_FIELD, TAGS_FIELD, UPDATED_FIELD, SHARING_FIELD, BOOKMARKED_FIELD, EXECUTE_FIELD];
+const PUBLISHED_FIELDS = [NAME_FIELD, TAGS_FIELD, UPDATED_FIELD, OWNER_FIELD];
+
 export default {
     components: {
-        FontAwesomeIcon,
         UtcDate,
-        Tags,
+        StatelessTags,
         WorkflowDropdown,
+        WorkflowBookmark,
+        WorkflowIndexActions,
+        SharingIndicators,
+        WorkflowRunButton,
+    },
+    mixins: [paginationMixin, filtersMixin],
+    props: {
+        inputDebounceDelay: {
+            type: Number,
+            default: 500,
+        },
+        importMessage: {
+            type: String,
+            default: null,
+        },
+        importStatus: {
+            type: String,
+            default: "success",
+        },
+        published: {
+            // Render the published workflows version of this grid.
+            type: Boolean,
+            default: false,
+        },
+        query: {
+            type: String,
+            required: false,
+            default: "",
+        },
     },
     data() {
+        const fields = this.published ? PUBLISHED_FIELDS : PERSONAL_FIELDS;
+        const implicitFilter = this.published ? "is:published" : null;
         return {
-            error: null,
-            fields: [
-                {
-                    key: "name",
-                    sortable: true,
-                },
-                {
-                    key: "tags",
-                    sortable: true,
-                },
-                {
-                    label: "Updated",
-                    key: "update_time",
-                    sortable: true,
-                },
-                {
-                    label: "Sharing",
-                    key: "published",
-                    sortable: true,
-                },
-                {
-                    label: "Bookmarked",
-                    key: "show_in_tool_panel",
-                    sortable: true,
-                },
-                {
-                    key: "execute",
-                    label: "",
-                },
-            ],
-            filter: "",
-            loading: true,
-            message: null,
-            messageVariant: null,
-            nWorkflows: 0,
-            workflows: [],
+            tableId: "workflow-table",
+            fields: fields,
+            titleSearch: "search workflows",
+            workflowItemsModel: [],
+            helpHtml: helpHtml,
+            perPage: this.rowsPerPage(this.defaultPerPage || 20),
+            dataProvider: storedWorkflowsProvider,
+            implicitFilter: implicitFilter,
+            defaultTableAttrs: { "sort-by": "update_time", "sort-desc": true, "no-sort-reset": "", fields: fields },
         };
     },
     computed: {
-        showNotFound() {
-            return this.nWorkflows === 0 && this.filter;
+        dataProviderParameters() {
+            const extraParams = { search: this.normalizeTag(this.effectiveFilter), skip_step_counts: true };
+            if (this.published) {
+                extraParams.show_published = true;
+                extraParams.show_shared = false;
+            }
+            return extraParams;
         },
-        showNotAvailable() {
-            return this.nWorkflows === 0 && !this.filter;
+        title() {
+            return this.published ? `Published Workflows` : `Workflows`;
         },
-        showMessage() {
-            return !!this.message;
+    },
+    watch: {
+        filter(val) {
+            this.refresh();
         },
     },
     created() {
         this.root = getAppRoot();
-        this.services = new Services({ root: this.root });
-        this.load();
+        this.services = new Services();
+        if (this.query) {
+            this.filter = this.query;
+        }
     },
     methods: {
-        load() {
-            this.loading = true;
-            this.filter = "";
-            this.services
-                .getWorkflows()
-                .then((workflows) => {
-                    this.workflows = workflows;
-                    this.nWorkflows = workflows.length;
-                    this.loading = false;
-                })
-                .catch((error) => {
-                    this.error = error;
-                });
+        decorateData(item) {
+            this.services._addAttributes(item);
         },
-        filtered: function (items) {
-            this.nWorkflows = items.length;
-        },
-        createWorkflow: function (workflow) {
-            window.location = `${this.root}workflows/create`;
-        },
-        importWorkflow: function (workflow) {
-            window.location = `${this.root}workflows/import`;
-        },
-        executeWorkflow: function (workflow) {
-            window.location = `${this.root}workflows/run?id=${workflow.id}`;
-        },
-        bookmarkWorkflow: function (workflow) {
-            // This reloads the whole page, so that the workflow appears in the tool panel.
-            // Ideally we would notify only the tool panel of a change
-            const id = workflow.id;
-            const show_in_tool_panel = workflow.show_in_tool_panel;
-            const tags = workflow.tags;
+        bookmarkWorkflow: function (id, checked) {
             const data = {
-                show_in_tool_panel: !show_in_tool_panel,
-                tags: tags,
+                show_in_tool_panel: checked,
             };
             this.services
                 .updateWorkflow(id, data)
-                .then(() => {
-                    window.location = `${getAppRoot()}workflows/list`;
+                .then(({ id, name }) => {
+                    if (checked) {
+                        getGalaxyInstance().config.stored_workflow_menu_entries.push({ id: id, name: name });
+                    } else {
+                        const indexToRemove = getGalaxyInstance().config.stored_workflow_menu_entries.findIndex(
+                            (workflow) => workflow.id === id
+                        );
+                        getGalaxyInstance().config.stored_workflow_menu_entries.splice(indexToRemove, 1);
+                    }
+
+                    this.items.find((workflow) => {
+                        if (workflow.id === id) {
+                            workflow.show_in_tool_panel = checked;
+                            return true;
+                        }
+                    });
                 })
                 .catch((error) => {
                     this.onError(error);
                 });
         },
         onTags: function (tags, index) {
-            const workflow = this.workflows[index];
+            const workflow = this.workflowItemsModel[index];
             workflow.tags = tags;
             this.services
                 .updateWorkflow(workflow.id, {
-                    show_in_tool_panel: workflow.show_in_tool_panel,
                     tags: workflow.tags,
                 })
                 .catch((error) => {
                     this.onError(error);
                 });
+            this.$emit("input", workflow.tags);
+        },
+        onTagClick: function (tag) {
+            this.appendTagFilter("tag", tag);
         },
         onAdd: function (workflow) {
-            this.workflows.unshift(workflow);
-            this.nWorkflows = this.workflows.length;
+            if (this.currentPage == 1) {
+                this.refresh();
+            } else {
+                this.currentPage = 1;
+            }
         },
         onRemove: function (id) {
-            this.workflows = this.workflows.filter((item) => item.id !== id);
-            this.nWorkflows = this.workflows.length;
+            this.refresh();
         },
         onUpdate: function (id, data) {
-            const workflow = this.workflows.find((item) => item.id === id);
-            Object.assign(workflow, data);
-            this.workflows = [...this.workflows];
+            this.refresh();
         },
-        onSuccess: function (message) {
-            this.message = message;
-            this.messageVariant = "success";
+        onRestore: function (id) {
+            this.refresh();
         },
-        onError: function (message) {
-            this.message = message;
-            this.messageVariant = "danger";
+        normalizeTag: function (tag) {
+            return tag.replace(/(tag:')#/g, "$1name:");
         },
     },
 };

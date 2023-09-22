@@ -10,10 +10,6 @@ import { getAppRoot } from "onload/loadConfig";
  */
 export var Visualization = Backbone.Model.extend(
     /** @lends Visualization.prototype */ {
-        ///** logger used to record this.log messages, commonly set to console */
-        //// comment this out to suppress log output
-        //logger              : console,
-
         /** default attributes for a model */
         defaults: {
             config: {},
@@ -29,8 +25,6 @@ export var Visualization = Backbone.Model.extend(
          *  @see Backbone.Model#initialize
          */
         initialize: function (data) {
-            //this.log( this + '.initialize', data, this.attributes );
-
             // munge config sub-object here since bbone won't handle defaults with this
             if (_.isObject(data.config) && _.isObject(this.defaults.config)) {
                 _.defaults(data.config, this.defaults.config);
@@ -83,10 +77,6 @@ export var Visualization = Backbone.Model.extend(
 export var VisualizationCollection = Backbone.Collection.extend(
     /** @lends VisualizationCollection.prototype */ {
         model: Visualization,
-
-        ///** logger used to record this.log messages, commonly set to console */
-        //// comment this out to suppress log output
-        //logger              : console,
 
         url: function () {
             return `${getAppRoot()}api/visualizations`;

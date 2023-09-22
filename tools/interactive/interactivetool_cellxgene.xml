@@ -1,6 +1,6 @@
-<tool id="interactive_tool_cellxgene" tool_type="interactive" name="Interactive CellXgene Environment" version="0.1">
+<tool id="interactive_tool_cellxgene" tool_type="interactive" name="Interactive CellXgene Environment" version="0.16.2">
     <requirements>
-        <container type="docker">quay.io/galaxy/cellxgene-galaxy-ie:ie2</container>
+        <container type="docker">quay.io/biocontainers/cellxgene:0.16.2--py_0</container>
     </requirements>
     <entry_points>
         <entry_point name="Cellxgene Single Cell Visualisation on $infile.display_name" requires_domain="True">

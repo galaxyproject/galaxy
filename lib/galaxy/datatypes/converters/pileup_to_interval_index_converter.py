@@ -12,7 +12,6 @@ from bx.interval_index_file import Indexes
 
 
 def main():
-
     # Read options, args.
     parser = optparse.OptionParser()
     (options, args) = parser.parse_args()
@@ -29,7 +28,7 @@ def main():
             index.add(chrom, start, start + 1, offset)
             offset += len(line)
 
-    with open(output_fname, 'wb') as out:
+    with open(output_fname, "wb") as out:
         index.write(out)
 
 

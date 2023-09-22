@@ -1,5 +1,8 @@
 <tool name="Parse parameter value" id="param_value_from_file" version="0.1.0" tool_type="expression">
     <description>from dataset</description>
+    <macros>
+        <import>expression_macros.xml</import>
+    </macros>
     <expression type="ecma5.1">{
 var output;
 if ($job.remove_newlines || $job.param_type != 'text') {
@@ -36,20 +39,7 @@ return {'output': output};
         </param>
         <param name="remove_newlines" checked="true" type="boolean" label="Remove newlines ?" help="Uncheck this only if newlines should be preserved in parameter"/>
     </inputs>
-    <outputs>
-        <output type="text" name="text_param" from="output">
-            <filter>param_type == 'text'</filter>
-        </output>
-        <output type="integer" name="integer_param" from="output">
-            <filter>param_type == 'integer'</filter>
-        </output>
-        <output type="float" name="float_param" from="output">
-            <filter>param_type == 'float'</filter>
-        </output>
-        <output type="boolean" name="boolean_param" from="output">
-            <filter>param_type == 'boolean'</filter>
-        </output>
-     </outputs>
+    <expand macro="typed_outputs" />
     <tests>
         <test expect_num_outputs="1">
             <param name="input1" value="simple_line.txt"/>

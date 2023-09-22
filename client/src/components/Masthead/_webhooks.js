@@ -1,12 +1,11 @@
-import Webhooks from "mvc/webhooks";
+import Webhooks from "utils/webhooks";
 import Utils from "utils/utils";
 
 export function loadWebhookMenuItems(items) {
     Webhooks.load({
         type: "masthead",
         callback: function (webhooks) {
-            webhooks.each((model) => {
-                const webhook = model.toJSON();
+            webhooks.forEach((webhook) => {
                 if (webhook.activate) {
                     const obj = {
                         id: webhook.id,
@@ -15,7 +14,6 @@ export function loadWebhookMenuItems(items) {
                         tooltip: webhook.config.tooltip,
                         /*jslint evil: true */
                         onclick: webhook.config.function && new Function(webhook.config.function),
-                        visible: true,
                         target: "_parent",
                     };
                     items.push(obj);

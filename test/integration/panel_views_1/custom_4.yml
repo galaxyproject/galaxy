@@ -1,0 +1,15 @@
+name: Custom Panel 4
+type: generic
+items:
+- type: label
+  text: The Start
+- type: tool
+  id: empty_list
+- type: label
+  text: The Middle
+- type: tool
+  id: count_list
+- type: label
+  text: The End
+excludes:
+- types: [label]

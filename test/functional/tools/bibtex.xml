@@ -1,6 +1,19 @@
-<tool id="bibtex" name="bibtex" version="0.1.0">
+<tool id="bibtex" name="bibtex" version="0.1.0" license="AFL-3.0">
+    <creator>
+        <person
+            givenName="Björn"
+            familyName="Grüning"
+            url="https://github.com/bgruening"
+            identifier="http://orcid.org/0000-0002-3079-6586" />
+        <organization
+            url="https://galaxyproject.org/iuc/"
+            name="Galaxy IUC" />
+    </creator>
+    <xrefs>
+        <xref type="bio.tools">Citation.js</xref>
+    </xrefs>
     <command><![CDATA[
-      echo "$input1" > "$out_file1"
+echo '$input1' > '$out_file1'
    ]]></command>
     <inputs>
         <param name="input1" type="integer" help="integer" value="8" />
@@ -8,17 +21,18 @@
     <outputs>
         <data name="out_file1" format="txt" />
     </outputs>
-    <help>
-
+    <tests>
+    </tests>
+    <help><![CDATA[
 .. class:: warningmark
 
 **WARNING:** Be careful not to concatenate datasets of different kinds (e.g., sequences with intervals). This tool does not check if the datasets being concatenated are in the same format. 
 
-    </help>
+    ]]></help>
     <citations>
-      <citation type="doi">10.1101/gr.4086505</citation>
-      <citation type="doi">10.6084/m9.figshare.979190</citation>
-      <citation type="bibtex">
+        <citation type="doi">10.1101/gr.4086505</citation>
+        <!--<citation type="doi">10.6084/m9.figshare.979190</citation>-->
+        <citation type="bibtex">
 @misc{Garrison2015,
   author = {Garrison, Erik},
   year = {2015},
@@ -27,8 +41,8 @@
   journal = {GitHub repository},
   url = {https://github.com/ekg/vcflib},
 }
-      </citation>
-      <citation type="bibtex">
+        </citation>
+        <citation type="bibtex">
 @online{lh32017,
   author = {Heng Li},
   year = {2017},
@@ -37,19 +51,19 @@
   journal = {GitHub repository},
   url = {https://github.com/lh3/bwa},
 }
-      </citation>
-      <!-- BibTeX examples taken from:
-      http://www2.galcit.caltech.edu/~jeshep/GraphicsBib/NatBib/node3.html
-      -->
-      <citation type="bibtex">
+        </citation>
+        <!-- BibTeX examples taken from:
+        http://www2.galcit.caltech.edu/~jeshep/GraphicsBib/NatBib/node3.html
+        -->
+        <citation type="bibtex">
 @ARTICLE{article-minimal,
    author = {L[eslie] A. Aamport},
    title = {The Gnats and Gnus Document Preparation System},
    journal = {\mbox{G-Animal's} Journal},
    year = 1986,
 }
-      </citation>
-      <citation type="bibtex">
+        </citation>
+        <citation type="bibtex">
 @ARTICLE{article-full,
    author = {L[eslie] A. Aamport},
    title = {The Gnats and Gnus Document Preparation System},
@@ -61,8 +75,8 @@
    month = jul,
    note = "This is a full ARTICLE entry",
 }
-      </citation>
-      <citation type="bibtex">
+        </citation>
+        <citation type="bibtex">
 @INBOOK{inbook-minimal,
    author = "Donald E. Knuth",
    title = "Fundamental Algorithms",
@@ -70,8 +84,9 @@
    year = "{\noopsort{1973b}}1973",
    chapter = "1.2",
 
-}      </citation>
-      <citation type="bibtex">
+}
+        </citation>
+        <citation type="bibtex">
 @INBOOK{inbook-full,
    author = "Donald E. Knuth",
    title = "Fundamental Algorithms",
@@ -87,16 +102,16 @@
    pages = "10--119",
    note = "This is a full INBOOK entry",
 }
-      </citation>
-      <citation type="bibtex">
+        </citation>
+        <citation type="bibtex">
 @BOOK{book-minimal,
    author = "Donald E. Knuth",
    title = "Seminumerical Algorithms",
    publisher = "Addison-Wesley",
    year = "{\noopsort{1973c}}1981",
 }
-      </citation>
-      <citation type="bibtex">
+        </citation>
+        <citation type="bibtex">
 @BOOK{book-full,
    author = "Donald E. Knuth",
    title = "Seminumerical Algorithms",
@@ -109,8 +124,8 @@
    year = "{\noopsort{1973c}}1981",
    note = "This is a full BOOK entry",
 }
-      </citation>
-      <citation type="bibtex">
+        </citation>
+        <citation type="bibtex">
 @BOOK{whole-set,
    author = "Donald E. Knuth",
    publisher = "Addison-Wesley",
@@ -119,8 +134,8 @@
    year = "{\noopsort{1973a}}{\switchargs{--90}{1968}}",
    note = "Seven volumes planned (this is a cross-referenced set of BOOKs)",
 }
-      </citation>
-      <citation type="bibtex">
+        </citation>
+        <citation type="bibtex">
 @BOOKLET{booklet-full,
    author = "Jill C. Knvth",
    title = "The Programming of Computer Art",
@@ -130,8 +145,8 @@
    year = 1988,
    note = "This is a full BOOKLET entry",
 }
-      </citation>
-      <citation type="bibtex">
+        </citation>
+        <citation type="bibtex">
 @INCOLLECTION{incollection-minimal,
    author = "Daniel D. Lincoll",
    title = "Semigroups of Recurrences",
@@ -139,8 +154,8 @@
    publisher = "Academic Press",
    year = 1977,
 }
-      </citation>
-      <citation type="bibtex">
+        </citation>
+        <citation type="bibtex">
 @INCOLLECTION{incollection-full,
    author = "Daniel D. Lincoll",
    title = "Semigroups of Recurrences",
@@ -158,8 +173,8 @@
    year = 1977,
    note = "This is a full INCOLLECTION entry",
 }
-      </citation>
-      <citation type="bibtex">
+        </citation>
+        <citation type="bibtex">
 @BOOK{whole-collection,
    editor = "David J. Lipcoll and D. H. Lawrie and A. H. Sameh",
    title = "High Speed Computer and Algorithm Organization",
@@ -172,8 +187,8 @@
    month = sep,
    year = 1977,
 }
-      </citation>
-      <citation type="bibtex">
+        </citation>
+        <citation type="bibtex">
 @MANUAL{manual-full,
    author = "Larry Manmaker",
    title = "The Definitive Computer Manual",
@@ -184,16 +199,16 @@
    year = 1986,
    note = "This is a full MANUAL entry",
 }
-      </citation>
-      <citation type="bibtex">
+        </citation>
+        <citation type="bibtex">
 @MASTERSTHESIS{mastersthesis-minimal,
    author = "{\'{E}}douard Masterly",
    title = "Mastering Thesis Writing",
    school = "Stanford University",
    year = 1988,
 }
-      </citation>
-      <citation type="bibtex">
+        </citation>
+        <citation type="bibtex">
 @MASTERSTHESIS{mastersthesis-full,
    author = "{\'{E}}douard Masterly",
    title = "Mastering Thesis Writing",
@@ -204,8 +219,8 @@
    year = 1988,
    note = "This is a full MASTERSTHESIS entry",
 }
-      </citation>
-      <citation type="bibtex">
+        </citation>
+        <citation type="bibtex">
 @MISC{misc-full,
    author = "Joe-Bob Missilany",
    title = "Handing out random pamphlets in airports",
@@ -214,16 +229,16 @@
    year = 1984,
    note = "This is a full MISC entry",
 }
-      </citation>
-      <citation type="bibtex">
+        </citation>
+        <citation type="bibtex">
 @INPROCEEDINGS{inproceedings-minimal,
    author = "Alfred V. Oaho and Jeffrey D. Ullman and Mihalis Yannakakis",
    title = "On Notions of Information Transfer in {VLSI} Circuits",
    booktitle = "Proc. Fifteenth Annual ACM" # STOC,
    year = 1983,
 }
-      </citation>
-      <citation type="bibtex">
+        </citation>
+        <citation type="bibtex">
 @INPROCEEDINGS{inproceedings-full,
    author = "Alfred V. Oaho and Jeffrey D. Ullman and Mihalis Yannakakis",
    title = "On Notions of Information Transfer in {VLSI} Circuits",
@@ -239,8 +254,8 @@
    publisher = "Academic Press",
    note = "This is a full INPROCEDINGS entry",
 }
-      </citation>
-      <citation type="bibtex">
+        </citation>
+        <citation type="bibtex">
 @INPROCEEDINGS{inproceedings-crossref,
    crossref = "whole-proceedings",
    author = "Alfred V. Oaho and Jeffrey D. Ullman and Mihalis Yannakakis",
@@ -249,8 +264,8 @@
    pages = "133--139",
    note = "This is a cross-referencing INPROCEEDINGS entry",
 }
-      </citation>
-      <citation type="bibtex">
+        </citation>
+        <citation type="bibtex">
 @PROCEEDINGS{proceedings-full,
    editor = "Wizard V. Oz and Mihalis Yannakakis",
    title = "Proc. Fifteenth Annual" # STOC,
@@ -263,16 +278,16 @@
    publisher = "Academic Press",
    note = "This is a full PROCEEDINGS entry",
 }
-      </citation>
-      <citation type="bibtex">
+        </citation>
+        <citation type="bibtex">
 @PHDTHESIS{phdthesis-minimal,
    author = "F. Phidias Phony-Baloney",
    title = "Fighting Fire with Fire: Festooning {F}rench Phrases",
    school = "Fanstord University",
    year = 1988,
 }
-      </citation>
-      <citation type="bibtex">
+        </citation>
+        <citation type="bibtex">
 @PHDTHESIS{phdthesis-full,
    author = "F. Phidias Phony-Baloney",
    title = "Fighting Fire with Fire: Festooning {F}rench Phrases",
@@ -283,16 +298,16 @@
    year = 1988,
    note = "This is a full PHDTHESIS entry",
 }
-      </citation>
-      <citation type="bibtex">
+        </citation>
+        <citation type="bibtex">
 @TECHREPORT{techreport-minimal,
    author = "Tom Terrific",
    title = "An {$O(n \log n / \! \log\log n)$} Sorting Algorithm",
    institution = "Fanstord University",
    year = 1988,
 }
-      </citation>
-      <citation type="bibtex">
+        </citation>
+        <citation type="bibtex">
 @TECHREPORT{techreport-full,
    author = "Tom T{\'{e}}rrific",
    title = "An {$O(n \log n / \! \log\log n)$} Sorting Algorithm",
@@ -304,15 +319,15 @@
    year = 1988,
    note = "This is a full TECHREPORT entry",
 }
-      </citation>
-      <citation type="bibtex">
+        </citation>
+        <citation type="bibtex">
 @UNPUBLISHED{unpublished-minimal,
    author = "Ulrich {\"{U}}nderwood and Ned {\~N}et and Paul {\={P}}ot",
    title = "Lower Bounds for Wishful Research Results",
    note = "Talk at Fanstord University (this is a minimal UNPUBLISHED entry)",
 }
-      </citation>
-      <citation type="bibtex">
+        </citation>
+        <citation type="bibtex">
 @UNPUBLISHED{unpublished-full,
    author = "Ulrich {\"{U}}nderwood and Ned {\~N}et and Paul {\={P}}ot",
    title = "Lower Bounds for Wishful Research Results",
@@ -320,6 +335,6 @@
    year = 1988,
    note = "Talk at Fanstord University (this is a full UNPUBLISHED entry)",
 }
-      </citation>
+        </citation>
     </citations>
 </tool>

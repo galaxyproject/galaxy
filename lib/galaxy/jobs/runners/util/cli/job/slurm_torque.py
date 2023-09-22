@@ -2,17 +2,17 @@ import re
 
 from .torque import Torque
 
-__all__ = ('SlurmTorque',)
+__all__ = ("SlurmTorque",)
 
 
 class SlurmTorque(Torque):
-    """ A CLI job executor for Slurm's Torque compatibility mode. This differs
+    """A CLI job executor for Slurm's Torque compatibility mode. This differs
     from real torque CLI in that -x command line is not available so job status
     needs to be parsed from qstat table instead of XML.
     """
 
     def get_status(self, job_ids=None):
-        return 'qstat'
+        return "qstat"
 
     def parse_status(self, status, job_ids):
         rval = {}

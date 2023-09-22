@@ -22,13 +22,13 @@ from galaxy.util.bunch import Bunch
 
 class OffsetList(object):
     def __init__(self, filesize=0, fmt=None):
-        self.file = tempfile.NamedTemporaryFile('w+b')
+        self.file = tempfile.NamedTemporaryFile("w+b")
         if fmt:
             self.fmt = fmt
         elif filesize and filesize <= sys.maxsize * 2:
-            self.fmt = 'I'
+            self.fmt = "I"
         else:
-            self.fmt = 'Q'
+            self.fmt = "Q"
         self.fmt_size = struct.calcsize(self.fmt)
 
     @property
@@ -66,7 +66,7 @@ class OffsetList(object):
         if index >= self.size:
             self.add_offset(offset)
         else:
-            temp_file = tempfile.NamedTemporaryFile('w+b')
+            temp_file = tempfile.NamedTemporaryFile("w+b")
             self.file.seek(0)
             temp_file.write(self.file.read((index) * self.fmt_size))
             for off in offset:
@@ -79,7 +79,7 @@ class SortedOffsets(OffsetList):
     def __init__(self, indexed_filename, column, split=None):
         OffsetList.__init__(self, os.stat(indexed_filename).st_size)
         self.indexed_filename = indexed_filename
-        self.indexed_file = open(indexed_filename, 'r')
+        self.indexed_file = open(indexed_filename)
         self.column = column
         self.split = split
         self.last_identifier = None
@@ -129,10 +129,10 @@ class SortedOffsets(OffsetList):
                     identifier1 = None
                     index1 += 1
 
-# methods to help link offsets to lines, ids, etc
+    # methods to help link offsets to lines, ids, etc
     def get_identifier_by_line(self, line):
         if isinstance(line, str):
-            fields = line.rstrip('\r\n').split(self.split)
+            fields = line.rstrip("\r\n").split(self.split)
             if self.column < len(fields):
                 return fields[self.column]
         return None
@@ -149,7 +149,7 @@ class SortedOffsets(OffsetList):
 class OffsetIndex(object):
     def __init__(self, filename, column, split=None, index_depth=3):
         self.filename = filename
-        self.file = open(filename, 'r')
+        self.file = open(filename)
         self.column = column
         self.split = split
         self._offsets = {}
@@ -162,8 +162,8 @@ class OffsetIndex(object):
             self._index[start_char] = {}
             for i, offset in enumerate(sorted_offsets.get_offsets()):
                 identifier = sorted_offsets.get_identifier_by_offset(offset)
-                if identifier[0:self.index_depth] not in self._index[start_char]:
-                    self._index[start_char][identifier[0:self.index_depth]] = i
+                if identifier[0 : self.index_depth] not in self._index[start_char]:
+                    self._index[start_char][identifier[0 : self.index_depth]] = i
 
     def get_lines_by_identifier(self, identifier):
         if not identifier:
@@ -173,10 +173,10 @@ class OffsetIndex(object):
             self._build_index()
 
         # identifier cannot exist
-        if identifier[0] not in self._index or identifier[0:self.index_depth] not in self._index[identifier[0]]:
+        if identifier[0] not in self._index or identifier[0 : self.index_depth] not in self._index[identifier[0]]:
             return
         # identifier might exist, search for it
-        offset_index = self._index[identifier[0]][identifier[0:self.index_depth]]
+        offset_index = self._index[identifier[0]][identifier[0 : self.index_depth]]
         while True:
             if offset_index >= self._offsets[identifier[0]].size:
                 return
@@ -208,7 +208,7 @@ class OffsetIndex(object):
 
     def get_identifier_by_line(self, line):
         if isinstance(line, str):
-            fields = line.rstrip('\r\n').split(self.split)
+            fields = line.rstrip("\r\n").split(self.split)
             if self.column < len(fields):
                 return fields[self.column]
         return None
@@ -243,7 +243,7 @@ class BufferedIndex(object):
     def __init__(self, filename, column, split=None, buffer=1000000, index_depth=3):
         self.index = OffsetIndex(filename, column, split, index_depth)
         self.buffered_offsets = {}
-        f = open(filename, 'r')
+        f = open(filename)
         offset = f.tell()
         identified_offset_count = 1
         while True:
@@ -281,30 +281,44 @@ def fill_empty_columns(line, split, fill_values):
         else:
             filled_columns.append(fill_values[i])
     if len(fill_values) > len(filled_columns):
-        filled_columns.extend(fill_values[len(filled_columns):])
+        filled_columns.extend(fill_values[len(filled_columns) :])
     return split.join(filled_columns)
 
 
-def join_files(filename1, column1, filename2, column2, out_filename, split=None, buffer=1000000, keep_unmatched=False, keep_partial=False, keep_headers=False, index_depth=3, fill_options=None):
+def join_files(
+    filename1,
+    column1,
+    filename2,
+    column2,
+    out_filename,
+    split=None,
+    buffer=1000000,
+    keep_unmatched=False,
+    keep_partial=False,
+    keep_headers=False,
+    index_depth=3,
+    fill_options=None,
+):
     # return identifier based upon line
     def get_identifier_by_line(line, column, split=None):
         if isinstance(line, str):
-            fields = line.rstrip('\r\n').split(split)
+            fields = line.rstrip("\r\n").split(split)
             if column < len(fields):
                 return fields[column]
         return None
+
     if fill_options is None:
         fill_options = Bunch(fill_unjoined_only=True, file1_columns=None, file2_columns=None)
     keep_headers_done = False
-    out = open(out_filename, 'w')
+    out = open(out_filename, "w")
     index = BufferedIndex(filename2, column2, split, buffer, index_depth)
-    for line1 in open(filename1, 'r'):
+    for line1 in open(filename1):
         if keep_headers and not keep_headers_done:
             header1 = line1
-            with open(filename2, 'r') as file2:
+            with open(filename2) as file2:
                 header2 = file2.readline()
-                header2 = re.sub(r'^#', '', header2)
-            out.write("%s%s%s\n" % (header1.rstrip('\r\n'), split, header2.rstrip('\r\n')))
+                header2 = re.sub(r"^#", "", header2)
+            out.write("%s%s%s\n" % (header1.rstrip("\r\n"), split, header2.rstrip("\r\n")))
             keep_headers_done = True
             continue
         identifier = get_identifier_by_line(line1, column1, split)
@@ -312,18 +326,25 @@ def join_files(filename1, column1, filename2, column2, out_filename, split=None,
             written = False
             for line2 in index.get_lines_by_identifier(identifier):
                 if not fill_options.fill_unjoined_only:
-                    out.write("%s%s%s\n" % (fill_empty_columns(line1.rstrip('\r\n'), split, fill_options.file1_columns), split, fill_empty_columns(line2.rstrip('\r\n'), split, fill_options.file2_columns)))
+                    out.write(
+                        "%s%s%s\n"
+                        % (
+                            fill_empty_columns(line1.rstrip("\r\n"), split, fill_options.file1_columns),
+                            split,
+                            fill_empty_columns(line2.rstrip("\r\n"), split, fill_options.file2_columns),
+                        )
+                    )
                 else:
-                    out.write("%s%s%s\n" % (line1.rstrip('\r\n'), split, line2.rstrip('\r\n')))
+                    out.write("%s%s%s\n" % (line1.rstrip("\r\n"), split, line2.rstrip("\r\n")))
                 written = True
             if not written and keep_unmatched:
-                out.write(fill_empty_columns(line1.rstrip('\r\n'), split, fill_options.file1_columns))
+                out.write(fill_empty_columns(line1.rstrip("\r\n"), split, fill_options.file1_columns))
                 if fill_options:
                     if fill_options.file2_columns:
                         out.write("%s%s" % (split, fill_empty_columns("", split, fill_options.file2_columns)))
                 out.write("\n")
         elif keep_partial:
-            out.write(fill_empty_columns(line1.rstrip('\r\n'), split, fill_options.file1_columns))
+            out.write(fill_empty_columns(line1.rstrip("\r\n"), split, fill_options.file1_columns))
             if fill_options:
                 if fill_options.file2_columns:
                     out.write("%s%s" % (split, fill_empty_columns("", split, fill_options.file2_columns)))
@@ -334,56 +355,66 @@ def join_files(filename1, column1, filename2, column2, out_filename, split=None,
 def main():
     parser = optparse.OptionParser()
     parser.add_option(
-        '-b', '--buffer',
-        dest='buffer',
-        type='int', default=1000000,
-        help='Number of lines to buffer at a time. Default: 1,000,000 lines. A buffer of 0 will attempt to use memory only.'
+        "-b",
+        "--buffer",
+        dest="buffer",
+        type="int",
+        default=1000000,
+        help="Number of lines to buffer at a time. Default: 1,000,000 lines. A buffer of 0 will attempt to use memory only.",
     )
     parser.add_option(
-        '-d', '--index_depth',
-        dest='index_depth',
-        type='int', default=3,
-        help='Depth to use on filebased offset indexing. Default: 3.'
+        "-d",
+        "--index_depth",
+        dest="index_depth",
+        type="int",
+        default=3,
+        help="Depth to use on filebased offset indexing. Default: 3.",
     )
     parser.add_option(
-        '-p', '--keep_partial',
-        action='store_true',
-        dest='keep_partial',
+        "-p",
+        "--keep_partial",
+        action="store_true",
+        dest="keep_partial",
         default=False,
-        help='Keep rows in first input which are missing identifiers.')
+        help="Keep rows in first input which are missing identifiers.",
+    )
     parser.add_option(
-        '-u', '--keep_unmatched',
-        action='store_true',
-        dest='keep_unmatched',
+        "-u",
+        "--keep_unmatched",
+        action="store_true",
+        dest="keep_unmatched",
         default=False,
-        help='Keep rows in first input which are not joined with the second input.')
+        help="Keep rows in first input which are not joined with the second input.",
+    )
     parser.add_option(
-        '-f', '--fill_options_file',
-        dest='fill_options_file',
-        type='str', default=None,
-        help='Fill empty columns with a values from a JSONified file.')
+        "-f",
+        "--fill_options_file",
+        dest="fill_options_file",
+        type="str",
+        default=None,
+        help="Fill empty columns with a values from a JSONified file.",
+    )
     parser.add_option(
-        '-H', '--keep_headers',
-        action='store_true',
-        dest='keep_headers',
-        default=False,
-        help='Keep the headers')
+        "-H", "--keep_headers", action="store_true", dest="keep_headers", default=False, help="Keep the headers"
+    )
 
     options, args = parser.parse_args()
 
     fill_options = None
     if options.fill_options_file is not None:
         try:
-            fill_options = Bunch(**stringify_dictionary_keys(json.load(open(options.fill_options_file))))  # json.load( open( options.fill_options_file ) )
+            fill_options = Bunch(
+                **stringify_dictionary_keys(json.load(open(options.fill_options_file)))
+            )  # json.load( open( options.fill_options_file ) )
         except Exception as e:
             print("Warning: Ignoring fill options due to json error (%s)." % e)
     if fill_options is None:
         fill_options = Bunch()
-    if 'fill_unjoined_only' not in fill_options:
+    if "fill_unjoined_only" not in fill_options:
         fill_options.fill_unjoined_only = True
-    if 'file1_columns' not in fill_options:
+    if "file1_columns" not in fill_options:
         fill_options.file1_columns = None
-    if 'file2_columns' not in fill_options:
+    if "file2_columns" not in fill_options:
         fill_options.file2_columns = None
 
     try:
@@ -399,7 +430,20 @@ def main():
     # Character for splitting fields and joining lines
     split = "\t"
 
-    return join_files(filename1, column1, filename2, column2, out_filename, split, options.buffer, options.keep_unmatched, options.keep_partial, options.keep_headers, options.index_depth, fill_options=fill_options)
+    return join_files(
+        filename1,
+        column1,
+        filename2,
+        column2,
+        out_filename,
+        split,
+        options.buffer,
+        options.keep_unmatched,
+        options.keep_partial,
+        options.keep_headers,
+        options.index_depth,
+        fill_options=fill_options,
+    )
 
 
 if __name__ == "__main__":

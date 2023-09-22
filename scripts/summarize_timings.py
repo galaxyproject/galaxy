@@ -1,11 +1,9 @@
 """Script to parse timings out of a Galaxy log and summarize."""
-from __future__ import print_function
 
 import re
 from argparse import ArgumentParser
 
 import numpy
-
 
 DESCRIPTION = ""
 
@@ -24,7 +22,7 @@ def main(argv=None):
     pattern_str = args.pattern
     filter_pattern = re.compile(pattern_str) if pattern_str is not None else None
     times = []
-    for line in open(args.file, "r"):
+    for line in open(args.file):
         if filter_pattern and not filter_pattern.search(line):
             continue
 
@@ -37,13 +35,7 @@ def main(argv=None):
             print(line.strip())
 
     template = "Summary (ms) - Mean: %f, Median: %f, Max: %f, Min: %f, StdDev: %f"
-    message = template % (
-        numpy.mean(times),
-        numpy.median(times),
-        numpy.max(times),
-        numpy.min(times),
-        numpy.std(times)
-    )
+    message = template % (numpy.mean(times), numpy.median(times), numpy.max(times), numpy.min(times), numpy.std(times))
     print(message)
 
 

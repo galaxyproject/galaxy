@@ -1,96 +1,3 @@
-uwsgi:
-
-  # The address and port on which to listen.  By default, only listen to
-  # localhost (tool_shed will not be accessible over the network).  Use
-  # ':9009' to listen on all available network interfaces.
-  http: 127.0.0.1:9009
-
-  # By default uWSGI allocates a very small buffer (4096 bytes) for the
-  # headers of each request. If you start receiving "invalid request
-  # block size" in your logs, it could mean you need a bigger buffer. We
-  # recommend at least 16384.
-  buffer-size: 16384
-
-  # Number of web server (worker) processes to fork after the
-  # application has loaded. If this is set to greater than 1,
-  # thunder-lock likely should be enabled below.
-  processes: 1
-
-  # Number of threads for each web server process.
-  threads: 4
-
-  # Number of threads for serving static content and handling internal
-  # routing requests.
-  offload-threads: 2
-
-  # Mapping to serve static content.
-  static-map: /static=static
-
-  # Mapping to serve the favicon.
-  static-map: /favicon.ico=static/favicon.ico
-
-  # Allow serving certain assets out of `client`.  Most modern Galaxy
-  # interfaces bundle all of this, but some older pages still serve
-  # these via symlink, requiring this rule.
-  static-safe: client/src/assets
-
-  # Enable the master process manager. Disabled by default for maximum
-  # compatibility with CTRL+C, but should be enabled for use with
-  # --daemon and/or production deployments.
-  master: false
-
-  # Path to the application's Python virtual environment. If using Conda
-  # for Galaxy's framework dependencies (not tools!), do not set this.
-  virtualenv: .venv
-
-  # Path to the application's Python library.
-  pythonpath: lib
-
-  # The entry point which returns the web application (e.g. Galaxy,
-  # Reports, etc.) that you are loading.
-  module: tool_shed.webapp.buildapp:uwsgi_app()
-
-  # Mount the web application (e.g. Galaxy, Reports, etc.) at the given
-  # URL prefix. Cannot be used together with 'module:' above.
-  #mount: /galaxy=tool_shed.webapp.buildapp:uwsgi_app()
-
-  # Make uWSGI rewrite PATH_INFO and SCRIPT_NAME according to
-  # mount-points. Set this to true if a URL prefix is used.
-  manage-script-name: false
-
-  # It is usually a good idea to set this to ``true`` if processes is
-  # greater than 1.
-  thunder-lock: false
-
-  # Cause uWSGI to respect the traditional behavior of dying on SIGTERM
-  # (its default is to brutally reload workers)
-  die-on-term: true
-
-  # Cause uWSGI to gracefully reload workers and mules upon receipt of
-  # SIGINT (its default is to brutally kill workers)
-  hook-master-start: unix_signal:2 gracefully_kill_them_all
-
-  # Cause uWSGI to gracefully reload workers and mules upon receipt of
-  # SIGTERM (its default is to brutally kill workers)
-  hook-master-start: unix_signal:15 gracefully_kill_them_all
-
-  # Feature necessary for proper mule signal handling
-  py-call-osafterfork: true
-
-  # Ensure application threads will run if `threads` is unset.
-  enable-threads: true
-
-  # uWSGI default umask. On some systems uWSGI has a default umask of
-  # 000, for Galaxy a somewhat safer default is chosen. If Galaxy
-  # submits jobs as real user then all users needs to be able to read
-  # the files, i.e. the umask needs to be '022' or the Galaxy users need
-  # to be in the same group as the Galaxy system user
-  umask: 027
-
-  # Task for rebuilding Toolshed search indexes using the uWSGI
-  # cron-like interface.
-  cron: 0 -1 -1 -1 -1 python scripts/tool_shed/build_ts_whoosh_index.py -c config/tool_shed.yml --config-section tool_shed
-
 tool_shed:
 
   # Verbosity of console log messages.  Acceptable values can be found
@@ -176,6 +83,23 @@ tool_shed:
   # your Google Analytics account. Example: UA-XXXXXXXX-Y
   #ga_code: null
 
+  # Please enter the URL for the Plausible server (including https) so
+  # this can be used for tracking with Plausible
+  # (https://plausible.io/).
+  #plausible_server: null
+
+  # Please enter the URL for the Galaxy server so this can be used for
+  # tracking with Plausible (https://plausible.io/).
+  #plausible_domain: null
+
+  # Please enter the URL for the Matomo server (including https) so this
+  # can be used for tracking with Matomo (https://matomo.org/).
+  #matomo_server: null
+
+  # Please enter the site ID for the Matomo server so this can be used
+  # for tracking with Matomo (https://matomo.org/).
+  #matomo_site_id: null
+
   # The Tool Shed encodes various internal values when these values will
   # be output in some format (for example, in a URL or cookie).  You
   # should set a key to be used by the algorithm that encodes and
@@ -219,15 +143,6 @@ tool_shed:
   # If use_remote_user is enabled, you can set this to a URL that will
   # log your users out.
   #remote_user_logout_href: null
-
-  # Configuration for debugging middleware
-  #debug: false
-
-  # Check for WSGI compliance.
-  #use_lint: false
-
-  # Intercept print statements and show them on the returned page.
-  #use_printdebug: true
 
   # Administrative users - set this to a comma-separated list of valid
   # Tool Shed users (email addresses).  These users will have access to
@@ -276,9 +191,6 @@ tool_shed:
   # Write thread status periodically to 'heartbeat.log' (careful, uses
   # disk  space rapidly!)
   #use_heartbeat: true
-
-  # Profiling middleware (cProfile based)
-  #use_profile: true
 
   # Enable creation of Galaxy flavor Docker Image
   #enable_galaxy_flavor_docker_image: false
@@ -376,6 +288,16 @@ tool_shed:
   # store this information.
   #citation_cache_lock_dir: database/citations/lock
 
+  # Url to database used by beaker for citation related caching.
+  #citation_cache_url: null
+
+  # Database table used by beaker for citation related caching.
+  #citation_cache_table_name: beaker_cache
+
+  # Schema of database table used by beaker for citation related
+  # caching.
+  #citation_cache_schema_name: null
+
   # Turn on logging of user actions to the database.  Actions currently
   # logged are grid views, tool searches, and use of "recently" used
   # tools menu.  The log_events and log_actions functionality will
@@ -395,6 +317,20 @@ tool_shed:
   # <project_name> -> Settings -> API Keys.
   #sentry_dsn: null
 
+  # Determines the minimum log level that will be sent as an event to
+  # Sentry. Possible values are DEBUG, INFO, WARNING, ERROR or CRITICAL.
+  #sentry_event_level: ERROR
+
+  # Set to a number between 0 and 1. With this option set, every
+  # transaction created will have that percentage chance of being sent
+  # to Sentry. A value higher than 0 is required to analyze performance.
+  #sentry_traces_sample_rate: 0.0
+
+  # Use this option to provide the path to location of the CA
+  # (Certificate Authority) certificate file if the sentry server uses a
+  # self-signed certificate.
+  #sentry_ca_certs: null
+
   # Galaxy Session Timeout This provides a timeout (in minutes) after
   # which a user will have to log back in. A duration of 0 disables this
   # feature.
@@ -408,7 +344,16 @@ tool_shed:
   # XML config file that allows the use of different authentication
   # providers (e.g. LDAP) instead or in addition to local authentication
   # (.sample is used if default does not exist).
+  # The value of this option will be resolved with respect to
+  # <config_dir>.
   #auth_config_file: auth_conf.xml
+
+  # API key that allows performing some admin actions without actually
+  # having a real admin user in the database and config. Only set this
+  # if you need to bootstrap Galaxy, in particular to create a real
+  # admin user account via API. You should probably not set this on a
+  # production server.
+  #bootstrap_admin_api_key: null
 
   # XML config file that contains additional data table entries for the
   # ToolDataTableManager.  This file is automatically generated based on
@@ -417,6 +362,8 @@ tool_shed:
   # these entries are automatically added to the following file, which
   # is parsed and applied to the ToolDataTableManager at server start
   # up.
+  # The value of this option will be resolved with respect to
+  # <managed_config_dir>.
   #shed_tool_data_table_config: shed_tool_data_table_conf.xml
 
   # Datatypes config file(s), defines what data (file) types are
@@ -424,5 +371,7 @@ tool_shed:
   # a datatype appears in multiple files, the last definition is used
   # (though the first sniffer is used so limit sniffer definitions to
   # one file).
+  # The value of this option will be resolved with respect to
+  # <config_dir>.
   #datatypes_config_file: datatypes_conf.xml
 

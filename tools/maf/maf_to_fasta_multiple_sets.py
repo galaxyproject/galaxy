@@ -19,7 +19,7 @@ def __main__():
     except Exception as e:
         maf_utilities.tool_fail("Error opening input MAF: %s" % e)
     try:
-        file_out = open(sys.argv[2], 'w')
+        file_out = open(sys.argv[2], "w")
     except Exception as e:
         maf_utilities.tool_fail("Error opening file for output: %s" % e)
     try:
@@ -36,7 +36,7 @@ def __main__():
         maf_utilities.tool_fail("Error determining keep partial value: %s" % e)
 
     if species:
-        print("Restricted to species: %s" % ', '.join(species))
+        print("Restricted to species: %s" % ", ".join(species))
     else:
         print("Not restricted to species.")
 
@@ -52,8 +52,11 @@ def __main__():
                 spec_counts[spec] = 0
             else:
                 spec_counts[spec] += 1
-            d = OrderedDict([('block_index', block_num), ('species', spec), ('sequence_index', spec_counts[spec])])
-            file_out.write("%s\n" % maf_utilities.get_fasta_header(component, d, suffix="%s_%i_%i" % (spec, block_num, spec_counts[spec])))
+            d = OrderedDict([("block_index", block_num), ("species", spec), ("sequence_index", spec_counts[spec])])
+            file_out.write(
+                "%s\n"
+                % maf_utilities.get_fasta_header(component, d, suffix="%s_%i_%i" % (spec, block_num, spec_counts[spec]))
+            )
             file_out.write("%s\n" % component.text)
         file_out.write("\n")
     file_out.close()

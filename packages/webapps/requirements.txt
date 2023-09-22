@@ -1,3 +1,0 @@
-galaxy-app
-Cheetah3
-Mako

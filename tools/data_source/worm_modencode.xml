@@ -1,10 +1,13 @@
 <?xml version="1.0"?>
 <tool name="modENCODE worm" id="modENCODEworm" tool_type="data_source" version="1.0.1">
     <description>server</description>
+    <edam_operations>
+        <edam_operation>operation_0224</edam_operation>
+    </edam_operations>
     <command><![CDATA[
 python '$__tool_directory__/data_source.py' '$output' $__app__.config.output_size_limit
     ]]></command>
-    <inputs action="http://gbrowse.modencode.org/fgb2/gbrowse/worm" check_values="false" target="_top"> 
+    <inputs action="http://gbrowse.modencode.org/fgb2/gbrowse/worm" check_values="false" target="_top">
         <display>go to modENCODE worm server $GALAXY_URL</display>
         <param name="GALAXY_URL" type="baseurl" value="/tool_runner?tool_id=modENCODEworm" />
     </inputs>

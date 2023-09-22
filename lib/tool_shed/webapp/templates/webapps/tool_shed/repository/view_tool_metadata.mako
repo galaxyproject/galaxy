@@ -198,11 +198,6 @@
                     <div style="clear: both"></div>
                 </div>
                 <div class="form-row">
-                    <label>Is multi-byte:</label>
-                    ${tool.is_multi_byte | h}
-                    <div style="clear: both"></div>
-                </div>
-                <div class="form-row">
                     <label>Forces a history refresh:</label>
                     ${tool.force_history_refresh | h}
                     <div style="clear: both"></div>

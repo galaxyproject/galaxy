@@ -1,4 +1,4 @@
-from ..objectstore import BaseObjectStore
+from . import BaseObjectStore
 
 try:
     from pulsar.client.manager import ObjectStoreClientManager
@@ -59,7 +59,7 @@ class PulsarObjectStore(BaseObjectStore):
         return None
 
     def __build_kwds(self, obj, **kwds):
-        kwds['object_id'] = obj.id
+        kwds["object_id"] = obj.id
         return kwds
 
     def __build_pulsar_client(self, config_xml):

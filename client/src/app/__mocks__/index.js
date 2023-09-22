@@ -24,6 +24,9 @@ export function getGalaxyInstance() {
             model_class: "User",
             id: "f2db41e1fa331b3e",
             attributes: {},
+            isAdmin: function () {
+                return false;
+            },
         },
         root: "/",
         emit: {

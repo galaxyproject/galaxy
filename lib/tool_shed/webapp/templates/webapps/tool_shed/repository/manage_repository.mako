@@ -38,11 +38,6 @@
     else:
         can_download = False
 
-    if has_metadata and not is_deprecated and trans.app.security_agent.user_can_review_repositories( trans.user ):
-        can_review_repository = True
-    else:
-        can_review_repository = False
-
     if not is_new and not is_deprecated:
         can_set_metadata = True
     else:
@@ -132,11 +127,7 @@ ${render_tool_shed_repository_actions( repository, metadata=metadata, changeset_
                 <div class="form-row">
                     ${render_select(changeset_revision_select_field)} <i>${tip_str}</i>
                     <div class="toolParamHelp" style="clear: both;">
-                        %if can_review_repository:
-                            Select a revision to inspect for adding or managing a review or for download or installation.
-                        %else:
-                            Select a revision to inspect for download or installation.
-                        %endif
+                        Select a revision to inspect for download or installation.
                     </div>
                 </div>
             </form>
@@ -343,47 +334,6 @@ ${render_repository_items( metadata, containers_dict, can_set_metadata=True, ren
         </div>
     </div>
     <p/>
-    <div class="toolForm">
-        <div class="toolFormBody">
-            %if display_reviews:
-                <div class="form-row">
-                    <a href="${h.url_for( controller='repository', action='view_repository', id=trans.security.encode_id( repository.id ), display_reviews=False )}"><label>Hide Reviews</label></a>
-                </div>
-                <div style="clear: both"></div>
-                <div class="form-row">
-                    <table class="grid">
-                        <thead>
-                            <tr>
-                                <th>Rating</th>
-                                <th>Comments</th>
-                                <th>Reviewed</th>
-                                <th>User</th>
-                            </tr>
-                        </thead>
-                        <% count = 0 %>
-                        %for review in repository.ratings:
-                            <%
-                                count += 1
-                                name = 'rating%d' % count
-                            %>
-                            <tr>
-                                <td>${render_star_rating( name, review.rating, disabled=True )}</td>
-                                <td>${render_review_comment( to_html_string( review.comment ) )}</td>
-                                <td>${time_ago( review.update_time )}</td>
-                                <td>${review.user.username | h}</td>
-                            </tr>
-                        %endfor
-                    </table>
-                </div>
-                <div style="clear: both"></div>
-            %else:
-                <div class="form-row">
-                    <a href="${h.url_for( controller='repository', action='view_repository', id=trans.security.encode_id( repository.id ), display_reviews=True )}"><label>Display Reviews</label></a>
-                </div>
-                <div style="clear: both"></div>
-            %endif
-        </div>
-    </div>
 %endif
 <p/>
 %if can_set_malicious:

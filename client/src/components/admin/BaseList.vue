@@ -6,23 +6,21 @@
             <b-button
                 size="sm"
                 :disabled="busy"
-                @click.prevent="executeAll()"
                 :title="tooltipAll"
                 data-placement="bottom"
-            >
+                @click.prevent="executeAll()">
                 <span :class="icon" />
             </b-button>
             {{ plural }} available.
         </div>
-        <b-table v-if="itemsVisible" striped :fields="fields" :items="items">
+        <b-table v-if="itemsVisible" striped no-sort-reset :fields="fields" :items="items">
             <template v-slot:cell(execute)="data">
                 <b-button
                     size="sm"
                     :disabled="busy"
                     :title="tooltip"
                     data-placement="bottom"
-                    @click.prevent="execute([data.item.id])"
-                >
+                    @click.prevent="execute([data.item.id])">
                     <span :class="icon" />
                 </b-button>
             </template>

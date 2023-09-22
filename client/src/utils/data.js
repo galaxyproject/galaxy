@@ -3,11 +3,13 @@ import axios from "axios";
 import Vue from "vue";
 import DataDialog from "components/DataDialog/DataDialog.vue";
 import { FilesDialog } from "components/FilesDialog";
-import WorkflowDialog from "components/SelectionDialog/WorkflowDialog.vue";
 import DatasetCollectionDialog from "components/SelectionDialog/DatasetCollectionDialog.vue";
-import { mountUploadModal } from "components/Upload";
+import { uploadModelsToPayload } from "components/Upload/helpers";
 import { getGalaxyInstance } from "app";
 import { getAppRoot } from "onload/loadConfig";
+import { submitUpload } from "utils/uploadbox";
+import { rewatchHistory } from "store/historyStore/model/watchHistory";
+import { useGlobalUploadModal } from "composables/globalUploadModal";
 
 // This should be moved more centrally (though still hanging off Galaxy for
 // external use?), and populated from the store; just using this as a temporary
@@ -42,23 +44,12 @@ export function dialog(callback, options = {}) {
             history: history_id,
         });
         if (options.new) {
-            options.modalShow = true;
-            mountUploadModal(options);
+            const { openGlobalUploadModal } = useGlobalUploadModal();
+            openGlobalUploadModal(options);
         } else {
             _mountSelectionDialog(DataDialog, options);
         }
     });
-}
-
-/**
- * Opens a modal dialog for workflow selection
- * @param {function} callback - Result function called with selection
- */
-export function workflowDialog(callback, options = {}) {
-    Object.assign(options, {
-        callback: callback,
-    });
-    _mountSelectionDialog(WorkflowDialog, options);
 }
 
 /**
@@ -96,8 +87,6 @@ function _mountSelectionDialog(clazz, options) {
  * TODO: This should live somewhere else.
  */
 export function create(options) {
-    const Galaxy = getGalaxyInstance();
-    const history_panel = Galaxy.currHistoryPanel;
     async function getHistory() {
         if (!options.history_id) {
             return getCurrentGalaxyHistory();
@@ -105,32 +94,26 @@ export function create(options) {
         return options.history_id;
     }
     getHistory().then((history_id) => {
-        $.uploadpost({
-            url: `${getAppRoot()}api/tools`,
+        submitUpload({
+            url: `${getAppRoot()}api/tools/fetch`,
             success: (response) => {
-                if (history_panel) {
-                    history_panel.refreshContents();
-                }
+                refreshContentsWrapper();
                 if (options.success) {
                     options.success(response);
                 }
             },
             error: options.error,
             data: {
-                payload: {
-                    tool_id: "upload1",
-                    history_id: history_id,
-                    inputs: JSON.stringify({
-                        "files_0|type": "upload_dataset",
-                        "files_0|NAME": options.file_name,
-                        "files_0|space_to_tab": options.space_to_tab ? "Yes" : null,
-                        "files_0|to_posix_lines": options.to_posix_lines ? "Yes" : null,
-                        "files_0|dbkey": options.genome || "?",
-                        "files_0|file_type": options.extension || "auto",
-                        "files_0|url_paste": options.url_paste,
-                    }),
-                },
+                payload: uploadModelsToPayload([options], history_id),
             },
         });
     });
+}
+
+export function refreshContentsWrapper() {
+    const Galaxy = getGalaxyInstance();
+    // Legacy Panel Interface. no-op if using new history
+    Galaxy?.currHistoryPanel?.refreshContents();
+    // Will not do anything in legacy interface
+    rewatchHistory();
 }

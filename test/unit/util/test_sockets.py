@@ -8,5 +8,5 @@ def test_unused_free_port_unconstrained():
 
     s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
     # would throw exception if port was not free.
-    s.bind(('localhost', port))
+    s.bind(("localhost", port))
     s.close()

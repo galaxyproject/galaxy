@@ -1,0 +1,25 @@
+.winbox {
+    border-radius: $border-radius-base;
+    margin-top: 3rem;
+}
+
+.winbox.min {
+    @extend .m-0;
+}
+
+.wb-header {
+    border-radius: $border-radius-base;
+    background: $brand-info;
+}
+
+.wb-icon * {
+    opacity: 0.65;
+}
+
+.wb-icon *:hover {
+    opacity: 1;
+}
+
+.wb-full {
+    display: none !important;
+}

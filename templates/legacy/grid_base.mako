@@ -1,29 +1,19 @@
 <%!
-    import six
     from galaxy.util import unicodify
-    from galaxy.webapps.reports.framework.grids import TextColumn
+    from galaxy.web.legacy_framework.grids import TextColumn
 
     def inherit(context):
         kwargs = context.get( 'kwargs', {} )
         if kwargs.get( 'embedded', False ):
             # No inheritance - using only embeddable content (self.body)
             return None
-        if context.get('use_panels'):
-            if context.get('webapp'):
-                app_name = context.get('webapp')
-            elif context.get('app'):
-                app_name = context.get('app').name
-            else:
-                app_name = 'galaxy'
-            return '/webapps/%s/base_panels.mako' % app_name
-        else:
-            return '/base.mako'
+        return '/base.mako'
 %>
 <%inherit file="${inherit(context)}"/>
 <%namespace file="/display_common.mako" import="get_class_plural" />
 
 ##
-## Override methods from base.mako and base_panels.mako
+## Override methods from base.mako
 ##
 
 <%def name="init( embedded=False, insert=None )">
@@ -210,7 +200,7 @@
                 value = column.get_value( trans, grid, item )
 
                 # Handle non-ascii chars.
-                if isinstance(value, six.binary_type):
+                if isinstance(value, bytes):
                     value = unicodify(value, 'utf-8')
                     value = value.replace('/', '//')
                 endif

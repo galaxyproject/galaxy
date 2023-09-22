@@ -2,7 +2,7 @@
     <b-container>
         <b-row>
             <b-col>
-                <h4>Current Custom Builds</h4>
+                <h1 class="h-sm">Current Custom Builds</h1>
             </b-col>
         </b-row>
         <b-row>
@@ -10,11 +10,10 @@
                 <b-table small show-empty class="grid" :items="customBuilds" :fields="fields">
                     <template v-slot:cell(action)="row">
                         <a
-                            href="javascript:void(0)"
                             v-b-tooltip.bottom.hover
+                            href="javascript:void(0)"
                             title="Delete build"
-                            @click="deleteBuild(row.item.id)"
-                        >
+                            @click="deleteBuild(row.item.id)">
                             <i class="icon fa fa-lg fa-trash-o" />
                         </a>
                     </template>
@@ -24,27 +23,26 @@
         <template v-if="installedBuilds.length > 0">
             <b-row class="mt-2">
                 <b-col>
-                    <h4>System Installed Builds</h4>
+                    <h2 class="h-sm">System Installed Builds</h2>
                 </b-col>
             </b-row>
             <b-row>
                 <b-col id="installed-builds" class="mb-4">
                     <multiselect
+                        v-model="selectedInstalledBuilds"
                         multiple
                         taggable
                         label="label"
                         track-by="value"
                         :searchable="false"
-                        :options="installedBuilds"
-                        v-model="selectedInstalledBuilds"
-                    >
+                        :options="installedBuilds">
                     </multiselect>
                 </b-col>
             </b-row>
         </template>
         <b-row>
             <b-col>
-                <h4>Add a Custom Build</h4>
+                <h2 class="h-sm">Add a Custom Build</h2>
             </b-col>
         </b-row>
         <b-row>
@@ -56,43 +54,39 @@
                         :variant="alertType"
                         :show="dismissCountDown"
                         @dismissed="dismissCountDown = 0"
-                        @dismiss-count-down="countDownChanged"
-                    >
+                        @dismiss-count-down="countDownChanged">
                         {{ alertMessage }}
                     </b-alert>
 
                     <b-form @submit.prevent="save">
                         <b-form-group label="Name" description="Specify a build name, e.g. Hamster." label-for="name">
-                            <b-form-input id="name" tour_id="name" v-model="form.name" required />
+                            <b-form-input id="name" v-model="form.name" tour_id="name" required />
                         </b-form-group>
                         <b-form-group label="Key" description="Specify a build key, e.g. hamster_v1." label-for="id">
-                            <b-form-input id="id" tour_id="id" v-model="form.id" required />
+                            <b-form-input id="id" v-model="form.id" tour_id="id" required />
                         </b-form-group>
                         <b-form-group label="Definition" description="Provide the data source." label-for="type">
                             <b-form-select
                                 id="type"
-                                tour_id="type"
                                 v-model="selectedDataSource"
-                                :options="dataSources"
-                            ></b-form-select>
+                                tour_id="type"
+                                :options="dataSources"></b-form-select>
                         </b-form-group>
                         <div>
                             <b-form-group v-if="selectedDataSource === 'fasta'" label="FASTA-file">
                                 <b-form-select
                                     v-model="selectedFastaFile"
                                     :options="fastaFiles"
-                                    :disabled="fastaFilesSelectDisabled"
-                                ></b-form-select>
+                                    :disabled="fastaFilesSelectDisabled"></b-form-select>
                             </b-form-group>
                             <b-form-group v-if="selectedDataSource === 'file'" label="Len-file">
                                 <b-form-file placeholder="Choose a file..." @change="readFile" />
                                 <b-progress
+                                    v-show="fileLoaded !== 0"
                                     animated
                                     show-progress
-                                    v-show="fileLoaded !== 0"
                                     :value="fileLoaded"
-                                    :max="maxFileSize"
-                                />
+                                    :max="maxFileSize" />
                                 <b-form-textarea v-show="form.file" :value="form.file" />
                             </b-form-group>
                             <b-form-group v-if="selectedDataSource === 'text'" label="Edit/Paste">
@@ -102,11 +96,10 @@
 
                         <b-button
                             id="save"
+                            v-b-tooltip.bottom.hover
                             type="submit"
                             variant="primary"
-                            v-b-tooltip.bottom.hover
-                            title="Create new build"
-                        >
+                            title="Create new build">
                             <i class="icon fa fa-save" /> Save
                         </b-button>
                     </b-form>
@@ -114,7 +107,7 @@
             </b-col>
             <b-col>
                 <b-card v-if="selectedDataSource === 'fasta'" class="alert-info">
-                    <h4>FASTA format</h4>
+                    <h2 class="h-sm">FASTA format</h2>
                     <p class="card-text">
                         This is a multi-fasta file from your current history that provides the genome sequences for each
                         chromosome/contig in your build.
@@ -131,7 +124,7 @@ GGCGGCCGCGGCGATATAGAACTACTCATTATATATA...
                     >
                 </b-card>
                 <b-card v-else class="alert-info">
-                    <h4>Length Format</h4>
+                    <h2 class="h-sm">Length Format</h2>
                     <p class="card-text">The length format is two-column, separated by whitespace, of the form:</p>
                     <pre class="card-text">chrom/contig   length of chrom/contig</pre>
                     <p class="card-text">For example, the first few entries of <em>mm9.len</em> are as follows:</p>

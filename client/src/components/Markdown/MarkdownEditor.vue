@@ -1,23 +1,20 @@
 <template>
-    <div>
-        <SidePanel id="left" side="left">
-            <template v-slot:panel>
-                <MarkdownToolBox :nodes="nodes" @onInsert="onInsert" />
-            </template>
-        </SidePanel>
-        <div id="center" class="workflow-markdown-editor">
+    <div id="columns" class="d-flex">
+        <FlexPanel side="left">
+            <MarkdownToolBox :steps="steps" @onInsert="onInsert" />
+        </FlexPanel>
+        <div id="center" class="overflow-auto w-100">
             <div class="markdown-editor h-100">
                 <div class="unified-panel-header" unselectable="on">
                     <div class="unified-panel-header-inner">
                         <div class="panel-header-buttons">
                             <slot name="buttons" />
                             <b-button
+                                v-b-tooltip.hover.bottom
                                 title="Help"
                                 variant="link"
                                 role="button"
-                                v-b-tooltip.hover.bottom
-                                @click="onHelp"
-                            >
+                                @click="onHelp">
                                 <font-awesome-icon icon="question" />
                             </b-button>
                         </div>
@@ -28,15 +25,15 @@
                 </div>
                 <div class="unified-panel-body d-flex">
                     <textarea
-                        class="markdown-textarea"
                         id="workflow-report-editor"
-                        v-model="content"
-                        @input="onUpdate"
                         ref="text-area"
-                    />
+                        v-model="content"
+                        class="markdown-textarea"
+                        @input="onUpdate" />
                 </div>
             </div>
         </div>
+        <MarkdownHelp ref="help" />
     </div>
 </template>
 
@@ -48,8 +45,8 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faQuestion } from "@fortawesome/free-solid-svg-icons";
 import MarkdownToolBox from "./MarkdownToolBox";
-import SidePanel from "components/Panels/SidePanel";
-import { showMarkdownHelp } from "./markdownHelp";
+import FlexPanel from "components/Panels/FlexPanel";
+import MarkdownHelp from "./MarkdownHelp";
 
 Vue.use(BootstrapVue);
 
@@ -60,8 +57,9 @@ const FENCE = "```";
 export default {
     components: {
         MarkdownToolBox,
-        SidePanel,
+        FlexPanel,
         FontAwesomeIcon,
+        MarkdownHelp,
     },
     props: {
         markdownText: {
@@ -72,7 +70,7 @@ export default {
             type: Object,
             default: null,
         },
-        nodes: {
+        steps: {
             type: Object,
             default: null,
         },
@@ -92,13 +90,14 @@ export default {
             const textCursor = textArea.selectionEnd;
             this.content = this.markdownText;
             Vue.nextTick(() => {
-                textArea.focus();
                 textArea.selectionEnd = textCursor;
+                textArea.focus();
             });
         },
     },
     methods: {
         onInsert(markdown) {
+            markdown = markdown.replace(")(", ", ");
             markdown = `${FENCE}galaxy\n${markdown}\n${FENCE}\n`;
             const textArea = this.$refs["text-area"];
             textArea.focus();
@@ -112,7 +111,7 @@ export default {
             this.$emit("onUpdate", this.content);
         }, 300),
         onHelp() {
-            showMarkdownHelp();
+            this.$refs.help.showMarkdownHelp();
         },
     },
 };
