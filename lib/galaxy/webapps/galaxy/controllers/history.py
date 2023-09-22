@@ -516,11 +516,8 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         # Get history.
         session = trans.sa_session
 
-        stmt = select(model.User).filter_by(username=username).limit(1)
-        user = session.scalars(stmt).first()
-
-        stmt = select(model.History).filter_by(user=user, slug=slug, deleted=False).limit(1)
-        history = session.scalars(stmt).first()
+        user = session.scalars(select(model.User).filter_by(username=username).limit(1)).first()
+        history = session.scalars(select(model.History).filter_by(user=user, slug=slug, deleted=False).limit(1)).first()
 
         if history is None:
             raise web.httpexceptions.HTTPNotFound()
