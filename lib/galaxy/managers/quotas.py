@@ -11,20 +11,12 @@ from typing import (
     Union,
 )
 
-from sqlalchemy import (
-    false,
-    select,
-    true,
-)
-from sqlalchemy.orm import Session
-
 from galaxy import (
     model,
     util,
 )
 from galaxy.exceptions import ActionInputError
 from galaxy.managers import base
-from galaxy.model import Quota
 from galaxy.model.base import transaction
 from galaxy.quota import DatabaseQuotaAgent
 from galaxy.quota._schema import (
@@ -281,11 +273,3 @@ class QuotaManager:
 
     def get_quota(self, trans, id: int, deleted: Optional[bool] = None) -> model.Quota:
         return base.get_object(trans, id, "Quota", check_ownership=False, check_accessible=False, deleted=deleted)
-
-
-def get_quotas(session: Session, deleted: bool = False):
-    is_deleted = true()
-    if not deleted:
-        is_deleted = false()
-    stmt = select(Quota).where(Quota.deleted == is_deleted)
-    return session.scalars(stmt)

@@ -1,14 +1,19 @@
 import logging
 from typing import Optional
 
+from sqlalchemy import (
+    false,
+    select,
+    true,
+)
+from sqlalchemy.orm import Session
+
 from galaxy import util
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.groups import get_group_by_name
-from galaxy.managers.quotas import (
-    get_quotas,
-    QuotaManager,
-)
+from galaxy.managers.quotas import QuotaManager
 from galaxy.managers.users import get_user_by_email
+from galaxy.model import Quota
 from galaxy.quota._schema import (
     CreateQuotaParams,
     CreateQuotaResult,
@@ -148,3 +153,11 @@ class QuotasService(ServiceBase):
             raise Exception(msg)
         payload["in_users"] = list(map(str, new_in_users))
         payload["in_groups"] = list(map(str, new_in_groups))
+
+
+def get_quotas(session: Session, deleted: bool = False):
+    is_deleted = true()
+    if not deleted:
+        is_deleted = false()
+    stmt = select(Quota).where(Quota.deleted == is_deleted)
+    return session.scalars(stmt)
