@@ -237,7 +237,7 @@ def setup_galaxy_config(
         logging=LOGGING_CONFIG_DEFAULT,
         monitor_thread_join_timeout=5,
         object_store_store_by="uuid",
-        fetch_url_allowlist="127.0.0.1",
+        fetch_url_allowlist=["127.0.0.0/24"],
         job_handler_monitor_sleep=0.2,
         job_runner_monitor_sleep=0.2,
         workflow_monitor_sleep=0.2,

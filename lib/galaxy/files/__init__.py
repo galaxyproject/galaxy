@@ -13,6 +13,7 @@ from typing import (
 )
 
 from galaxy import exceptions
+from galaxy.config.parsers import parse_allowlist_ips
 from galaxy.util import plugin_config
 from galaxy.util.dictifiable import Dictifiable
 
@@ -235,12 +236,12 @@ class ConfiguredFileSourcesConfig:
         # Formalize what we read in from config to create a more clear interface
         # for this component.
         kwds = {}
-        kwds["symlink_allowlist"] = getattr(config, "user_library_import_symlink_allowlist", [])
-        kwds["fetch_url_allowlist"] = getattr(config, "fetch_url_allowlist", [])
-        kwds["library_import_dir"] = getattr(config, "library_import_dir", None)
-        kwds["user_library_import_dir"] = getattr(config, "user_library_import_dir", None)
-        kwds["ftp_upload_dir"] = getattr(config, "ftp_upload_dir", None)
-        kwds["ftp_upload_purge"] = getattr(config, "ftp_upload_purge", True)
+        kwds["symlink_allowlist"] = config.user_library_import_symlink_allowlist
+        kwds["fetch_url_allowlist"] = [str(ip) for ip in config.fetch_url_allowlist_ips]
+        kwds["library_import_dir"] = config.library_import_dir
+        kwds["user_library_import_dir"] = config.user_library_import_dir
+        kwds["ftp_upload_dir"] = config.ftp_upload_dir
+        kwds["ftp_upload_purge"] = config.ftp_upload_purge
         return ConfiguredFileSourcesConfig(**kwds)
 
     def to_dict(self):
@@ -257,7 +258,7 @@ class ConfiguredFileSourcesConfig:
     def from_dict(as_dict):
         return ConfiguredFileSourcesConfig(
             symlink_allowlist=as_dict["symlink_allowlist"],
-            fetch_url_allowlist=as_dict["fetch_url_allowlist"],
+            fetch_url_allowlist=parse_allowlist_ips(as_dict["fetch_url_allowlist"]),
             library_import_dir=as_dict["library_import_dir"],
             user_library_import_dir=as_dict["user_library_import_dir"],
             ftp_upload_dir=as_dict["ftp_upload_dir"],
