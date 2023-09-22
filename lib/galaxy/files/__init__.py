@@ -13,8 +13,8 @@ from typing import (
 )
 
 from galaxy import exceptions
-from galaxy.config.parsers import parse_allowlist_ips
 from galaxy.util import plugin_config
+from galaxy.util.config_parsers import parse_allowlist_ips
 from galaxy.util.dictifiable import Dictifiable
 
 log = logging.getLogger(__name__)

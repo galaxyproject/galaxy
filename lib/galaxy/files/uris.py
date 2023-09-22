@@ -9,7 +9,6 @@ from typing import (
 )
 from urllib.parse import urlparse
 
-from galaxy.config.parsers import IpAllowedListEntryT
 from galaxy.exceptions import (
     AdminRequiredException,
     ConfigDoesNotAllowException,
@@ -23,6 +22,7 @@ from galaxy.util import (
     stream_to_open_named_file,
     unicodify,
 )
+from galaxy.util.config_parsers import IpAllowedListEntryT
 
 log = logging.getLogger(__name__)
 

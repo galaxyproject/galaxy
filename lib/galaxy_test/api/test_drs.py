@@ -11,12 +11,12 @@ from urllib.parse import (
 
 import requests
 
-from galaxy.config.parsers import parse_allowlist_ips
 from galaxy.files import (
     ConfiguredFileSources,
     ConfiguredFileSourcesConfig,
     DictFileSourcesUserContext,
 )
+from galaxy.util.config_parsers import parse_allowlist_ips
 from galaxy.util.drs import (
     fetch_drs_to_file,
     RetryOptions,
