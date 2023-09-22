@@ -118,11 +118,23 @@ Enhancements
   `Pull Request 16179`_
 .. enhancement_tag_workflows
 
+* Include workflow invocations in default activity
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 16338`_
+* Improve help text for conditional workflow step
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 16355`_
+* Hide conditionally skipped output
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 16356`_
 * e2e test for workflow license selector
   (thanks to `@jmchilton <https://github.com/jmchilton>`__).
   `Pull Request 16243`_
 .. enhancement_tag_ui
 
+* Disable console instead of dropping
+  (thanks to `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`__).
+  `Pull Request 16372`_
 * Stricter typescript config
   (thanks to `@ElectronicBlueberry <https://github.com/ElectronicBlueberry>`__).
   `Pull Request 15311`_
@@ -186,6 +198,15 @@ Enhancements
   `Pull Request 16045`_
 .. enhancement
 
+* Add message showing console disable/enable, along with instructions o…
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 16401`_
+* Add missing archived filter in saved histories
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 16475`_
+* Bump bx-python to 0.10.0
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 16484`_
 * Add Storage Dashboard visualizations for histories
   (thanks to `@davelopez <https://github.com/davelopez>`__).
   `Pull Request 14820`_
@@ -494,6 +515,12 @@ Enhancements
   `Pull Request 16473`_
 .. small_enhancement
 
+* Filter deleted keys from api_keys relationship
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 16321`_
+* Drop expunge_all() call in WebTransactionRequest
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 16606`_
 * Towards decoupling datatypes and model
   (thanks to `@jdavcs <https://github.com/jdavcs>`__).
   `Pull Request 15186`_
@@ -639,6 +666,12 @@ Fixes
 
 .. bug_tag_viz
 
+* H5web updates
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 16509`_
+* Update galaxyproject/charts utilizing visualizations
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 16674`_
 * Fixes the parcel2 build for hdf5 viz when using node18.
   (thanks to `@dannon <https://github.com/dannon>`__).
   `Pull Request 16047`_
@@ -652,11 +685,35 @@ Fixes
   `Pull Request 16092`_
 .. bug_tag_tools
 
+* Remove render.py script from iSEE
+  (thanks to `@neoformit <https://github.com/neoformit>`__).
+  `Pull Request 16616`_
 * FileInput no longer accept 'U' in the file mode
   (thanks to `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 16704`_
 .. bug_tag_workflows
 
+* Fixes for conditional subworkflow steps
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 16632`_
+* Fix invocation progress bar for skipped and deleted jobs
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 16365`_
+* Fix workflow invocation detail reactivity
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 16369`_
+* Fix replacement parameters for subworkflows
+  (thanks to `@jmchilton <https://github.com/jmchilton>`__).
+  `Pull Request 16592`_
+* Backport tool mem fixes
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 16601`_
+* Fix expression evaluation for nested state
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 16656`_
+* Push to object store even if ``set_meta`` fails
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 16667`_
 * Add missing join condition in job search
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 16710`_
@@ -682,6 +739,27 @@ Fixes
   `Pull Request 16166`_
 .. bug_tag_jobs
 
+* Add missing singularity_no_mount prop parsing
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 16367`_
+* Job cache fixes for DCEs
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 16384`_
+* Run through tmp_dir_creation_statement only once
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 16529`_
+* Ignore errors with user-set job resources
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 16579`_
+* make sure that TMP, TEMP, and TMPDIR are set
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 16594`_
+* Ensure Job belongs to current SA session
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 16655`_
+* Fix metadata setting in extended metadata + outputs_to_working_directory mode
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 16678`_
 * Fix closed transaction error on galaxy startup/check jobs
   (thanks to `@jdavcs <https://github.com/jdavcs>`__).
   `Pull Request 16687`_
@@ -696,11 +774,107 @@ Fixes
   `Pull Request 16096`_
 .. bug_tag_admin
 
+* Reload toolbox after forking when using `--preload`
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 16620`_
 * Improve container resolver documentation
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 16280`_
 .. bug
 
+* Update 23.1 release tags for migration scripts
+  (thanks to `@jdavcs <https://github.com/jdavcs>`__).
+  `Pull Request 16294`_
+* Remove pin on ``packaging`` in packages
+  (thanks to `@nsoranzo <https://github.com/nsoranzo>`__).
+  `Pull Request 16322`_
+* Fix 'news' webhook to account for the RC one more time.
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 16328`_
+* Fix disk usage recalculation for distributed object stores
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 16380`_
+* Fix histories count
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 16400`_
+* Fix toolform creator
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 16419`_
+* For display (only) allow control+click for new window opening
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 16432`_
+* Swap datatype&convert tab to a static 'datatypes' tab.
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 16466`_
+* Fix tagging component for anonymous users
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 16481`_
+* Fix up unit tests for local use
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 16483`_
+* Fix history item states help display to apply same styling attributes
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 16500`_
+* fix font-weight disparity between browsers
+  (thanks to `@hujambo-dunia <https://github.com/hujambo-dunia>`__).
+  `Pull Request 16515`_
+* Fix for Accessibility, on Workflows List page Tooltip
+  (thanks to `@hujambo-dunia <https://github.com/hujambo-dunia>`__).
+  `Pull Request 16520`_
+* Fix double-encoding notification content
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 16530`_
+* Exclude selenium version with broken type hints
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 16531`_
+* Limit tool document cache to tool configs with explicit cache path
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 16537`_
+* Fix `multiple` remote test data
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 16542`_
+* Don't use ``docker run`` --user flag on OSX
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 16573`_
+* Fix shared item notification link
+  (thanks to `@davelopez <https://github.com/davelopez>`__).
+  `Pull Request 16581`_
+* Make datatype edit default value a string instead of list of strings
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 16591`_
+* Bump minimum tpv version to 2.3.2
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 16597`_
+* Optimize getting current user session
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 16604`_
+* Drop RecursiveMiddleware
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 16605`_
+* Only reindex tool search once after forking
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 16611`_
+* Account for expires/expires_in when refreshing token
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 16621`_
+* Fix nested conditional workflow steps
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 16641`_
+* Login/Register fixes
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 16652`_
+* Make sort_collection tool require terminal datasets
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 16661`_
+* xsd: allow name attribute of test collections
+  (thanks to `@bernt-matthias <https://github.com/bernt-matthias>`__).
+  `Pull Request 16663`_
+* Only show 'edit' on published pages when viewer is the owner.
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 16680`_
+* Fix regex validation for global inline flags
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 16683`_
 * Fix legend not scrollable in storage overview charts
   (thanks to `@davelopez <https://github.com/davelopez>`__).
   `Pull Request 16703`_

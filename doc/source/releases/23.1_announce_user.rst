@@ -76,6 +76,12 @@ New Visualizations
 ===========================================================
 
 .. visualizations
+* H5web updates
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 16509`_
+* Update galaxyproject/charts utilizing visualizations
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 16674`_
 * Add support for visualizing HDF5 datasets
   (thanks to `@jarrah42 <https://github.com/jarrah42>`__).
   `Pull Request 15394`_
@@ -149,6 +155,9 @@ Builtin Tool Updates
 ===========================================================
 
 .. tools
+* Remove render.py script from iSEE
+  (thanks to `@neoformit <https://github.com/neoformit>`__).
+  `Pull Request 16616`_
 * FileInput no longer accept 'U' in the file mode
   (thanks to `@bgruening <https://github.com/bgruening>`__).
   `Pull Request 16704`_
