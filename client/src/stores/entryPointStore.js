@@ -47,7 +47,9 @@ export const useEntryPointStore = defineStore("entryPointStore", {
         updateEntryPoints(data) {
             let hasChanged = this.entryPoints.length !== data.length ? true : false;
             if (this.entryPoints.length === 0) {
-                this.entryPoints = data;
+                if (hasChanged) {
+                    this.entryPoints = data;
+                }
             } else {
                 const newEntryPoints = [];
                 for (const ep of data) {
