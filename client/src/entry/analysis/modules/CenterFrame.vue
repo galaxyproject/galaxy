@@ -43,7 +43,7 @@ export default {
             const iframe = ev.currentTarget;
             const location = iframe.contentWindow && iframe.contentWindow.location;
             try {
-                if (location && location.host && location.pathname != "/") {
+                if (location && location.pathname !== "/") {
                     this.$emit("load");
                 }
             } catch (err) {
