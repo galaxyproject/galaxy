@@ -2446,10 +2446,12 @@ class Tool(Dictifiable):
         # Add link details.
         if link_details:
             # Add details for creating a hyperlink to the tool.
-            if not isinstance(self, DataSourceTool):
-                link = self.app.url_for(controller="tool_runner", tool_id=self.id)
-            else:
+            if isinstance(self, DataSourceTool):
                 link = self.app.url_for(controller="tool_runner", action="data_source_redirect", tool_id=self.id)
+            elif isinstance(self, InteractiveClientTool):
+                link = self.app.url_for(controller="tool_runner", action="interactive_client_redirect", tool_id=self.id)
+            else:
+                link = self.app.url_for(controller="tool_runner", tool_id=self.id)
 
             # Basic information
             tool_dict.update({"link": link, "min_width": self.uihints.get("minwidth", -1), "target": self.target})
@@ -2563,6 +2565,9 @@ class Tool(Dictifiable):
                 "history_id": trans.security.encode_id(history.id) if history else None,
                 "display": self.display_interface,
                 "action": action,
+                "interactive_service_tool_id": self.interactive_service_tool_id,
+                "interactive_service_tool_version": self.interactive_service_tool_version,
+                "interactive_service_entrypoint_label": self.interactive_service_entrypoint_label,
                 "license": self.license,
                 "creator": self.creator,
                 "method": self.method,
@@ -2748,6 +2753,10 @@ class Tool(Dictifiable):
         external_paths.extend(imported_macro_paths(root))
         # May also need to load external citation files as well at some point.
         return external_paths
+
+
+class InteractiveClientTool(Tool):
+    tool_type = "interactive_client_tool"
 
 
 class OutputParameterJSONTool(Tool):
@@ -3835,6 +3844,7 @@ tool_types = {}
 TOOL_CLASSES: List[Type[Tool]] = [
     Tool,
     SetMetadataTool,
+    InteractiveClientTool,
     OutputParameterJSONTool,
     ExpressionTool,
     InteractiveTool,

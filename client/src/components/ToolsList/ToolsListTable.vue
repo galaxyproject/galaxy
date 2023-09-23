@@ -75,7 +75,7 @@ export default {
         onOpen(tool) {
             if (tool.id === "upload1") {
                 this.openGlobalUploadModal();
-            } else if (tool.form_style === "regular") {
+            } else if (tool.form_style === "regular" || tool.model_class === "InteractiveClientTool") {
                 // encode spaces in tool.id
                 const toolId = tool.id;
                 const toolVersion = tool.version;

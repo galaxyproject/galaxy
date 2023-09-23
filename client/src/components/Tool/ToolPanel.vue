@@ -19,7 +19,7 @@
             </small>
         </b-modal>
 
-        <ToolForm
+        <ToolTypeChooser
             :tool-config="toolConfig"
             :show-tool="showTool"
             :disable-tool="disableTool"
@@ -30,7 +30,7 @@
                 <FormMessage v-if="!errorObj.dialog" variant="danger" :message="errorObj.message" :persistent="true" />
                 <FormMessage v-if="!messageObj.topLevel" :variant="messageObj.variant" :message="messageObj.message" />
             </template>
-        </ToolForm>
+        </ToolTypeChooser>
     </div>
 </template>
 
@@ -43,13 +43,13 @@ import { useUserStore } from "stores/userStore";
 
 import { getToolFormData } from "./services";
 
-import ToolForm from "./ToolForm.vue";
+import ToolTypeChooser from "./ToolTypeChooser.vue";
 
 export default {
     components: {
         LoadingSpan,
         FormMessage,
-        ToolForm,
+        ToolTypeChooser,
     },
     props: {
         id: {

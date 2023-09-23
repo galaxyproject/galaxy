@@ -194,7 +194,7 @@ function onToolClick(tool: Tool, evt: Event) {
         if (tool.id === "upload1") {
             evt.preventDefault();
             openGlobalUploadModal();
-        } else if (tool.form_style === "regular") {
+        } else if (tool.form_style === "regular" || tool.model_class === "InteractiveClientTool") {
             evt.preventDefault();
             // encode spaces in tool.id
             const toolId = tool.id;
@@ -333,9 +333,3 @@ function setButtonText() {
         </div>
     </div>
 </template>
-
-<style scoped>
-.toolTitle {
-    overflow-wrap: anywhere;
-}
-</style>
