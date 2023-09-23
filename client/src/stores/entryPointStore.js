@@ -32,14 +32,12 @@ export const useEntryPointStore = defineStore("entryPointStore", {
             this.stopPollingEntryPoints();
             const url = getAppRoot() + `api/entry_points`;
             const params = { running: true };
-            axios
-                .get(url, { params: params })
-                .then((response) => {
-                    this.updateEntryPoints(response.data);
-                })
-                .catch((e) => {
-                    rethrowSimple(e);
-                });
+            try {
+                const response = await axios.get(url, { params: params });
+                this.updateEntryPoints(response.data);
+            } catch (e) {
+                rethrowSimple(e);
+            }
         },
         updateEntryPoints(data) {
             let hasChanged = this.entryPoints.length !== data.length ? true : false;
