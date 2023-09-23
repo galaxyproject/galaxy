@@ -8,6 +8,7 @@
         title="galaxy frame"
         :width="width"
         :height="height"
+        sandbox="allow-scripts allow-same-origin allow-forms"
         @load="onLoad" />
 </template>
 <script>
