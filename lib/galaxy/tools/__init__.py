@@ -774,6 +774,9 @@ class Tool(Dictifiable):
         self.labels: List = []
         self.check_values = True
         self.nginx_upload = False
+        self.interactive_service_tool_id = None
+        self.interactive_service_tool_version = None
+        self.interactive_service_entrypoint_label = None
         self.input_required = False
         self.display_interface = True
         self.require_login = False
@@ -1407,6 +1410,15 @@ class Tool(Dictifiable):
                 # Handle properties of the input form
                 self.check_values = string_as_bool(input_elem.get("check_values", self.check_values))
                 self.nginx_upload = string_as_bool(input_elem.get("nginx_upload", self.nginx_upload))
+                self.interactive_service_tool_id = input_elem.get(
+                    "interactive_service_tool_id", self.interactive_service_tool_id
+                )
+                self.interactive_service_tool_version = input_elem.get(
+                    "interactive_service_tool_version", self.interactive_service_tool_version
+                )
+                self.interactive_service_entrypoint_label = input_elem.get(
+                    "interactive_service_entrypoint_label", self.interactive_service_entrypoint_label
+                )
                 self.action = input_elem.get("action", self.action)
                 # If we have an nginx upload, save the action as a tuple instead of
                 # a string. The actual action needs to get url_for run to add any
