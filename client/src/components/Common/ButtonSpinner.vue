@@ -1,19 +1,12 @@
 <template>
-    <b-button
-        v-if="wait"
-        v-b-tooltip.hover.bottom
-        disabled
-        variant="info"
-        title="Please Wait..."
-        class="d-flex flex-nowrap align-items-center text-nowrap">
+    <b-button v-if="wait" disabled variant="info" class="d-flex flex-nowrap align-items-center text-nowrap">
         <FontAwesomeIcon icon="spinner" class="mr-2" spin />{{ title }}
     </b-button>
     <b-button
         v-else
-        v-b-tooltip.hover.bottom
+        v-b-tooltip.hover.bottom="wait ? '' : tooltip"
         variant="primary"
         class="d-flex flex-nowrap align-items-center text-nowrap"
-        :title="tooltip"
         @click="$emit('onClick')">
         <FontAwesomeIcon icon="play" class="mr-2" />{{ title }}
     </b-button>
