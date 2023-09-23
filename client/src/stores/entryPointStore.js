@@ -8,6 +8,7 @@ export const useEntryPointStore = defineStore("entryPointStore", {
     state: () => ({
         entryPoints: [],
         pollTimeout: undefined,
+        timeout: undefined,
     }),
     getters: {
         entryPointsForJob: (state) => {
@@ -19,11 +20,15 @@ export const useEntryPointStore = defineStore("entryPointStore", {
         },
     },
     actions: {
-        async ensurePollingEntryPoints() {
+        async ensurePollingEntryPoints(timeout = 10000) {
+            this.timeout = timeout;
             await this.fetchEntryPoints();
-            this.pollTimeout = setTimeout(() => {
-                this.ensurePollingEntryPoints();
-            }, 10000);
+            // Another call to ensurePollingEntryPoints() might change this.timeout while waiting for fetchEntryPoints()
+            if (this.timeout === timeout) {
+                this.pollTimeout = setTimeout(() => {
+                    this.ensurePollingEntryPoints(this.timeout);
+                }, this.timeout);
+            }
         },
         stopPollingEntryPoints() {
             this.pollTimeout = clearTimeout(this.pollTimeout);
