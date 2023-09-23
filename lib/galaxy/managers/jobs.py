@@ -627,6 +627,7 @@ def view_show_job(trans, job, full: bool) -> typing.Dict:
     if full:
         job_dict.update(
             dict(
+                tool_version=job.tool_version,
                 tool_stdout=job.tool_stdout,
                 tool_stderr=job.tool_stderr,
                 job_stdout=job.job_stdout,

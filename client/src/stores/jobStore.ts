@@ -15,6 +15,7 @@ interface Job {
 }
 interface JobDef {
     tool_id: string;
+    tool_version: string;
 }
 interface JobResponse {
     produces_entry_points: boolean;

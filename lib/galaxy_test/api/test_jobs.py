@@ -326,6 +326,7 @@ steps:
             "state",
             "stderr",
             "stdout",
+            "tool_version",
             "tool_stderr",
             "tool_stdout",
             "update_time",
