@@ -115,7 +115,6 @@ def get_app_properties():
 def get_config():
     kwargs = get_app_properties() or {}
     kwargs["override_tempdir"] = False
-    kwargs["fetch_url_allowlist"] = ["127.0.0.0/24"]
     return Configuration(**kwargs)
 
 
