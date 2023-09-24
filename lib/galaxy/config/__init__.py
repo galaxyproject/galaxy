@@ -4,7 +4,6 @@ Universe configuration builder.
 # absolute_import needed for tool_shed package.
 
 import configparser
-import ipaddress
 import json
 import locale
 import logging
@@ -42,6 +41,7 @@ from galaxy.util import (
     string_as_bool,
     unicodify,
 )
+from galaxy.util.config_parsers import parse_allowlist_ips
 from galaxy.util.custom_logging import LOGLV_TRACE
 from galaxy.util.dynamic import HasDynamicProperties
 from galaxy.util.facts import get_facts
@@ -906,13 +906,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self.tool_secret = kwargs.get("tool_secret", "")
         self.metadata_strategy = kwargs.get("metadata_strategy", "directory")
         self.use_remote_user = self.use_remote_user or self.single_user
-        self.fetch_url_allowlist_ips = [
-            ipaddress.ip_network(unicodify(ip.strip()))  # If it has a slash, assume 127.0.0.1/24 notation
-            if "/" in ip
-            else ipaddress.ip_address(unicodify(ip.strip()))  # Otherwise interpret it as an ip address.
-            for ip in kwargs.get("fetch_url_allowlist", "").split(",")
-            if len(ip.strip()) > 0
-        ]
+        self.fetch_url_allowlist_ips = parse_allowlist_ips(listify(kwargs.get("fetch_url_allowlist")))
         self.job_queue_cleanup_interval = int(kwargs.get("job_queue_cleanup_interval", "5"))
 
         # Fall back to legacy job_working_directory config variable if set.

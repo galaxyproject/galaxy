@@ -6,7 +6,6 @@ import tempfile
 from typing import (
     List,
     Optional,
-    Union,
 )
 from urllib.parse import urlparse
 
@@ -23,6 +22,7 @@ from galaxy.util import (
     stream_to_open_named_file,
     unicodify,
 )
+from galaxy.util.config_parsers import IpAllowedListEntryT
 
 log = logging.getLogger(__name__)
 
@@ -64,11 +64,6 @@ def stream_to_file(stream, suffix="", prefix="", dir=None, text=False, **kwd):
     """Writes a stream to a temporary file, returns the temporary file's name"""
     fd, temp_name = tempfile.mkstemp(suffix=suffix, prefix=prefix, dir=dir, text=text)
     return stream_to_open_named_file(stream, fd, temp_name, **kwd)
-
-
-IpAddressT = Union[ipaddress.IPv4Address, ipaddress.IPv6Address]
-IpNetworkT = Union[ipaddress.IPv4Network, ipaddress.IPv6Network]
-IpAllowedListEntryT = Union[IpAddressT, IpNetworkT]
 
 
 def validate_uri_access(uri: str, is_admin: bool, ip_allowlist: List[IpAllowedListEntryT]) -> None:
@@ -128,7 +123,7 @@ def validate_non_local(uri: str, ip_allowlist: List[IpAllowedListEntryT]) -> str
             parsed_url = parsed_url[:idx]
 
     # safe to log out, no credentials/request path, just an IP + port
-    log.debug("parsed url, port: %s : %s", parsed_url, port)
+    log.debug("parsed url %s, port:  %s", parsed_url, port)
     # Call getaddrinfo to resolve hostname into tuples containing IPs.
     addrinfo = socket.getaddrinfo(parsed_url, port)
     # Get the IP addresses that this entry resolves to (uniquely)
