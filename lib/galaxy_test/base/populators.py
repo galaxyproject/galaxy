@@ -269,6 +269,10 @@ def conformance_tests_gen(directory, filename="conformance_tests.yaml"):
 
 def output_to_disk(output, download_folder):
     if isinstance(output, dict):
+        if "secondaryFiles" in output:
+            output["secondaryFiles"] = [
+                output_to_disk(secondary, download_folder=download_folder) for secondary in output["secondaryFiles"]
+            ]
         if "basename" in output:
             download_path = os.path.join(download_folder, output["basename"])
             download_to_file(output["location"], download_path)
