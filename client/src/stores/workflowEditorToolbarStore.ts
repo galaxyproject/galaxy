@@ -15,7 +15,7 @@ interface InputCatcherEventListener {
     callback: (event: InputCatcherEvent) => void;
 }
 
-interface InputCatcherEvent {
+export interface InputCatcherEvent {
     type: InputCatcherEventType;
     position: [number, number];
 }
