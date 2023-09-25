@@ -350,7 +350,7 @@ The following is a generic code snippet for the ``recover`` method.
 .. code-block:: python
 
     ajs = AsynchronousJobState(files_dir=job_wrapper.working_directory, job_wrapper=job_wrapper)
-    ajs.job_id = str(job_wrapper.job_id)
+    asj.job_id = job.get_job_runner_external_id()
     ajs.job_destination = job_wrapper.job_destination
     job_wrapper.command_line = job.command_line
     ajs.job_wrapper = job_wrapper
