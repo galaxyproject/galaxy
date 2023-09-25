@@ -663,6 +663,9 @@ Fixes
 
 .. major_bug
 
+* Copy the collection contents by default when copying a collection
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 16717`_
 
 .. bug_tag_viz
 
@@ -739,6 +742,9 @@ Fixes
   `Pull Request 16166`_
 .. bug_tag_jobs
 
+* Workaround for XML nodes of job resource parameters losing their children
+  (thanks to `@kysrpex <https://github.com/kysrpex>`__).
+  `Pull Request 16728`_
 * Add missing singularity_no_mount prop parsing
   (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
   `Pull Request 16367`_
@@ -782,6 +788,21 @@ Fixes
   `Pull Request 16280`_
 .. bug
 
+* Fix unittest mocks to support us checking geturl()
+  (thanks to `@dannon <https://github.com/dannon>`__).
+  `Pull Request 16726`_
+* Fix allowlist deserialization in file sources
+  (thanks to `@mvdbeek <https://github.com/mvdbeek>`__).
+  `Pull Request 16729`_
+* force wrap long parameter names in the workflow form
+  (thanks to `@martenson <https://github.com/martenson>`__).
+  `Pull Request 16731`_
+* force wrap long parameter names in the workflow form
+  (thanks to `@martenson <https://github.com/martenson>`__).
+  `Pull Request 16732`_
+* prevent toolbox scrollbar
+  (thanks to `@martenson <https://github.com/martenson>`__).
+  `Pull Request 16734`_
 * Update 23.1 release tags for migration scripts
   (thanks to `@jdavcs <https://github.com/jdavcs>`__).
   `Pull Request 16294`_
