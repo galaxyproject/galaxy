@@ -211,3 +211,9 @@ export default {
     },
 };
 </script>
+
+<style scoped>
+.toolTitle {
+    overflow-wrap: anywhere;
+}
+</style>

@@ -239,12 +239,11 @@ class CreateHistoryContentPayloadFromCollection(CreateHistoryContentPayloadFromC
         description="TODO",
     )
     copy_elements: Optional[bool] = Field(
-        default=False,
+        default=True,
         title="Copy Elements",
         description=(
             "If the source is a collection, whether to copy child HDAs into the target "
-            "history as well, defaults to False but this is less than ideal and may "
-            "be changed in future releases."
+            "history as well. Prior to the galaxy release 23.1 this defaulted to false."
         ),
     )
 
