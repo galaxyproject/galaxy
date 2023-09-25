@@ -23,7 +23,6 @@ from typing import (
 )
 
 import yaml
-from galaxy.util import etree
 from packaging.version import Version
 from pulsar.client.staging import COMMAND_VERSION_FILENAME
 
@@ -75,6 +74,7 @@ from galaxy.tools.evaluation import (
     ToolEvaluator,
 )
 from galaxy.util import (
+    etree,
     parse_xml_string,
     RWXRWXRWX,
     safe_makedirs,
