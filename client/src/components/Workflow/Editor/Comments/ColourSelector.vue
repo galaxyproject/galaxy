@@ -21,12 +21,14 @@ function onClickColour(colour: WorkflowCommentColour) {
         <button
             class="colour-button prevent-zoom"
             title="No Colour"
+            data-colour="none"
             :class="{ selected: props.colour === 'none' }"
             @click="() => onClickColour('none')"></button>
         <button
             v-for="(hex, name) in colours"
             :key="name"
             class="colour-button prevent-zoom"
+            :data-colour="name"
             :title="`Colour ${name}`"
             :class="{ selected: props.colour === name }"
             :style="{

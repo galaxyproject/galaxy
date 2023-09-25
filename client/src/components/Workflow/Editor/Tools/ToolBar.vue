@@ -112,6 +112,7 @@ whenever(ctrl_7!, () => (toolbarStore.currentTool = "freehandEraser"));
                 <BButton
                     v-b-tooltip.hover.noninteractive.right
                     class="button"
+                    data-tool="pointer"
                     title="Pointer Tool (Ctrl + 1)"
                     :pressed="currentTool === 'pointer'"
                     variant="outline-primary"
@@ -121,6 +122,7 @@ whenever(ctrl_7!, () => (toolbarStore.currentTool = "freehandEraser"));
                 <BButton
                     v-b-tooltip.hover.noninteractive.right
                     class="button"
+                    data-tool="toggle_snap"
                     :title="snapButtonTitle"
                     :pressed.sync="snapActive"
                     variant="outline-primary">
@@ -132,6 +134,7 @@ whenever(ctrl_7!, () => (toolbarStore.currentTool = "freehandEraser"));
                 <BButton
                     v-b-tooltip.hover.noninteractive.right
                     class="button font-weight-bold"
+                    data-tool="text_comment"
                     title="Text comment (Ctrl + 3)"
                     :pressed="currentTool === 'textComment'"
                     variant="outline-primary"
@@ -141,6 +144,7 @@ whenever(ctrl_7!, () => (toolbarStore.currentTool = "freehandEraser"));
                 <BButton
                     v-b-tooltip.hover.noninteractive.right
                     class="button"
+                    data-tool="markdown_comment"
                     title="Markdown comment (Ctrl + 4)"
                     :pressed="currentTool === 'markdownComment'"
                     variant="outline-primary"
@@ -150,6 +154,7 @@ whenever(ctrl_7!, () => (toolbarStore.currentTool = "freehandEraser"));
                 <BButton
                     v-b-tooltip.hover.noninteractive.right
                     class="button"
+                    data-tool="frame_comment"
                     title="Frame comment (Ctrl + 5)"
                     :pressed="currentTool === 'frameComment'"
                     variant="outline-primary"
@@ -162,6 +167,7 @@ whenever(ctrl_7!, () => (toolbarStore.currentTool = "freehandEraser"));
                 <BButton
                     v-b-tooltip.hover.noninteractive.right
                     title="Freehand Pen (Ctrl + 6)"
+                    data-tool="freehand_pen"
                     :pressed="currentTool === 'freehandComment'"
                     class="button"
                     variant="outline-primary"
@@ -171,6 +177,7 @@ whenever(ctrl_7!, () => (toolbarStore.currentTool = "freehandEraser"));
                 <BButton
                     v-b-tooltip.hover.noninteractive.right
                     title="Freehand Eraser (Ctrl + 7)"
+                    data-tool="freehand_eraser"
                     :pressed="currentTool === 'freehandEraser'"
                     class="button"
                     variant="outline-primary"
@@ -192,6 +199,7 @@ whenever(ctrl_7!, () => (toolbarStore.currentTool = "freehandEraser"));
                 <BFormInput
                     :id="snappingDistanceId"
                     v-model="snappingDistanceRangeValue"
+                    data-option="snapping-distance"
                     type="range"
                     min="1"
                     max="5"
@@ -203,10 +211,15 @@ whenever(ctrl_7!, () => (toolbarStore.currentTool = "freehandEraser"));
                     <BButton
                         :pressed.sync="commentOptions.bold"
                         variant="outline-primary"
-                        class="button font-weight-bold">
+                        class="button font-weight-bold"
+                        data-option="toggle-bold">
                         Bold
                     </BButton>
-                    <BButton :pressed.sync="commentOptions.italic" variant="outline-primary" class="button font-italic">
+                    <BButton
+                        :pressed.sync="commentOptions.italic"
+                        variant="outline-primary"
+                        class="button font-italic"
+                        data-option="toggle-italic">
                         Italic
                     </BButton>
                 </BButtonGroup>
@@ -224,7 +237,14 @@ whenever(ctrl_7!, () => (toolbarStore.currentTool = "freehandEraser"));
                     <span class="font-weight-bold">Text Size</span>
                     {{ commentOptions.textSize }}00%
                 </label>
-                <BFormInput :id="fontSizeId" v-model="fontSize" type="range" min="1" max="5" step="1" />
+                <BFormInput
+                    :id="fontSizeId"
+                    v-model="fontSize"
+                    data-option="font-size"
+                    type="range"
+                    min="1"
+                    max="5"
+                    step="1" />
             </div>
 
             <div v-if="toolbarStore.currentTool === 'freehandComment'" class="option small">
@@ -235,6 +255,7 @@ whenever(ctrl_7!, () => (toolbarStore.currentTool = "freehandEraser"));
                 <BFormInput
                     :id="thicknessId"
                     v-model="commentOptions.lineThickness"
+                    data-option="line-thickness"
                     type="range"
                     min="4"
                     max="20"
@@ -249,6 +270,7 @@ whenever(ctrl_7!, () => (toolbarStore.currentTool = "freehandEraser"));
                 <BFormInput
                     :id="smoothingId"
                     v-model="commentOptions.smoothing"
+                    data-option="smoothing"
                     type="range"
                     min="1"
                     max="10"
@@ -256,7 +278,11 @@ whenever(ctrl_7!, () => (toolbarStore.currentTool = "freehandEraser"));
             </div>
 
             <div v-if="['freehandComment', 'freehandEraser'].includes(toolbarStore.currentTool)" class="option buttons">
-                <BButton class="button" title="Remove all freehand comments" @click="onRemoveAllFreehand">
+                <BButton
+                    class="button"
+                    data-option="remove-freehand"
+                    title="Remove all freehand comments"
+                    @click="onRemoveAllFreehand">
                     Remove all
                 </BButton>
             </div>

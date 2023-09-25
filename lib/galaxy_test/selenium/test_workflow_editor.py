@@ -1084,6 +1084,54 @@ steps:
         self.workflow_editor_destroy_connection("filter#how|filter_source")
         self.assert_node_output_is("filter#output_filtered", "list")
 
+    @selenium_test
+    def test_editor_snapping(self):
+        editor = self.components.workflow_editor
+        self.workflow_create_new(annotation="simple workflow")
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+        editor.tool_menu.wait_for_visible()
+
+        self.tool_open("cat")
+        self.sleep_for(self.wait_types.UX_RENDER)
+        editor.label_input.wait_for_and_send_keys("tool_node")
+
+        # activate snapping and set it to max (200)
+        editor.tool_bar.tool(tool="toggle_snap").wait_for_and_click()
+        editor.tool_bar.snapping_distance.wait_for_and_click()
+        self.action_chains().send_keys(Keys.RIGHT * 10).perform()
+
+        # move the node a bit
+        tool_node = editor.node._(label="tool_node").wait_for_present()
+        self.action_chains().move_to_element(tool_node).click_and_hold().move_by_offset(12, 3).release().perform()
+
+        # check if editor position is snapped
+        top, left = self.get_node_position("tool_node")
+
+        assert top % 200 == 0
+        assert left % 200 == 0
+
+        # move the node a bit more
+        tool_node = editor.node._(label="tool_node").wait_for_present()
+        self.action_chains().move_to_element(tool_node).click_and_hold().move_by_offset(207, -181).release().perform()
+
+        # check if editor position is snapped
+        top, left = self.get_node_position("tool_node")
+
+        assert top % 200 == 0
+        assert left % 200 == 0
+
+    def get_node_position(self, label: str):
+        node = self.components.workflow_editor.node._(label=label).wait_for_present()
+
+        left: str = node.value_of_css_property("left")
+        top: str = node.value_of_css_property("top")
+
+        left_stripped = "".join(char for char in left if char.isdigit())
+        top_stripped = "".join(char for char in top if char.isdigit())
+
+        return (int(left_stripped), int(top_stripped))
+
     def assert_node_output_is(self, label: str, output_type: str, subcollection_type: Optional[str] = None):
         editor = self.components.workflow_editor
         node_label, output_name = label.split("#")
