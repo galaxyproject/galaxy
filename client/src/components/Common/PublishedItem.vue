@@ -6,7 +6,7 @@ import { usePanels } from "@/composables/usePanels";
 import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
-import ToolBox from "@/components/Panels/ProviderAwareToolBox.vue";
+import ToolPanel from "@/components/Panels/ToolPanel.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
 interface Item {
@@ -54,7 +54,7 @@ const { showActivityBar, showToolbox } = usePanels();
     <div id="columns" class="d-flex">
         <ActivityBar v-if="showActivityBar" />
         <FlexPanel v-if="showToolbox" side="left">
-            <ToolBox />
+            <ToolPanel />
         </FlexPanel>
         <div id="center" class="m-3 w-100 overflow-auto d-flex flex-column">
             <slot />

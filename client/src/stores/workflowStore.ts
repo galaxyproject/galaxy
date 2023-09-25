@@ -9,6 +9,8 @@ export interface Workflow {
     name: string;
     [index: string]: any;
     steps: Steps;
+    step_count?: number;
+    latest_id?: string;
 }
 
 export const useWorkflowStore = defineStore("workflowStore", () => {

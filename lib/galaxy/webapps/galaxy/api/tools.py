@@ -169,7 +169,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
 
         # Return everything.
         try:
-            return self.app.toolbox.to_dict(
+            return self.app.toolbox.to_panel_view(
                 trans, in_panel=in_panel, trackster=trackster, tool_help=tool_help, view=view
             )
         except exceptions.MessageException:

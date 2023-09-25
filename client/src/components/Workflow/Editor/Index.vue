@@ -27,10 +27,11 @@
             </b-form-group>
         </b-modal>
         <FlexPanel side="left">
-            <ProviderAwareToolBoxWorkflow
+            <ToolPanel
+                workflow
                 :module-sections="moduleSections"
                 :data-managers="dataManagers"
-                :workflows="workflows"
+                :editor-workflows="workflows"
                 @onInsertTool="onInsertTool"
                 @onInsertModule="onInsertModule"
                 @onInsertWorkflow="onInsertWorkflow"
@@ -186,7 +187,7 @@ import StateUpgradeModal from "./StateUpgradeModal.vue";
 import WorkflowGraph from "./WorkflowGraph.vue";
 import MarkdownEditor from "@/components/Markdown/MarkdownEditor.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
-import ProviderAwareToolBoxWorkflow from "@/components/Panels/ProviderAwareToolBoxWorkflow.vue";
+import ToolPanel from "@/components/Panels/ToolPanel.vue";
 import FormDefault from "@/components/Workflow/Editor/Forms/FormDefault.vue";
 import FormTool from "@/components/Workflow/Editor/Forms/FormTool.vue";
 
@@ -195,7 +196,7 @@ export default {
         MarkdownEditor,
         FlexPanel,
         StateUpgradeModal,
-        ProviderAwareToolBoxWorkflow,
+        ToolPanel,
         FormDefault,
         FormTool,
         WorkflowOptions,

@@ -23,6 +23,7 @@ export default {
     props: {
         query: {
             type: String,
+            required: true,
         },
     },
     data() {
@@ -56,7 +57,7 @@ export default {
             if (this.toggle) {
                 this.$emit("onFavorites", this.searchKey);
             } else {
-                this.$emit("onFavorites", null);
+                this.$emit("onFavorites", "");
             }
         },
     },

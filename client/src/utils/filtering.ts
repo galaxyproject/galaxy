@@ -53,7 +53,12 @@ export type ValidFilter<T> = {
      */
     menuItem: boolean;
     /** Is there a datalist of values for this field */
-    datalist?: string[];
+    datalist?:
+        | string[]
+        | {
+              value: string;
+              text: string;
+          }[];
     /** Is this a `FilterMenu` range filter?
      * (if yes, the `filter` key is taken and aliased into 2 input
      * fields: `filter-gt` & `filter-lt`)
