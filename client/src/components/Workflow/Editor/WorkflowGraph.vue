@@ -94,7 +94,7 @@ const canvas: Ref<HTMLElement | null> = ref(null);
 const elementBounding = useElementBounding(canvas, { windowResize: false, windowScroll: false });
 const scroll = useScroll(canvas);
 const { transform, panBy, setZoom, moveTo } = useD3Zoom(scale.value, minZoom, maxZoom, canvas, scroll, {
-    x: 20,
+    x: 50,
     y: 20,
 });
 const { viewportBoundingBox } = useViewportBoundingBox(elementBounding, scale, transform);
