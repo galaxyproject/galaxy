@@ -4,10 +4,22 @@ import Vue, { computed, ref } from "vue";
 import { CollectionEntry, DCESummary, HDCASummary, HistoryContentItemBase, isHDCA } from "./services";
 import * as Service from "./services/datasetCollection.service";
 
+/**
+ * Represents a dataset collection element that has not been fetched yet.
+ */
+interface DCEPlaceholder extends DCESummary {
+    placeholder: true;
+    fetching: boolean;
+}
+
+type DCEEntry = DCEPlaceholder | DCESummary;
+
+const PLACEHOLDER_TEXT = "Loading...";
+
 export const useCollectionElementsStore = defineStore("collectionElementsStore", () => {
     const storedCollections = ref<{ [key: string]: HDCASummary }>({});
     const loadingCollectionElements = ref<{ [key: string]: boolean }>({});
-    const storedCollectionElements = ref<{ [key: string]: DCESummary[] }>({});
+    const storedCollectionElements = ref<{ [key: string]: DCEEntry[] }>({});
 
     /**
      * Returns a key that can be used to store or retrieve the elements of a collection in the store.
@@ -23,9 +35,10 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
 
     const getCollectionElements = computed(() => {
         return (collection: CollectionEntry, offset = 0, limit = 50) => {
-            const elements = storedCollectionElements.value[getCollectionKey(collection)] ?? [];
-            fetchMissingElements({ collection, offset, limit });
-            return elements ?? null;
+            const storedElements =
+                storedCollectionElements.value[getCollectionKey(collection)] ?? initWithPlaceholderElements(collection);
+            fetchMissingElements({ collection, storedElements, offset, limit });
+            return storedElements;
         };
     });
 
@@ -35,30 +48,40 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
         };
     });
 
-    async function fetchMissingElements(params: { collection: CollectionEntry; offset: number; limit: number }) {
+    async function fetchMissingElements(params: {
+        collection: CollectionEntry;
+        storedElements: DCEEntry[];
+        offset: number;
+        limit: number;
+    }) {
         const collectionKey = getCollectionKey(params.collection);
         try {
-            const maxElementCountInCollection = params.collection.element_count ?? 0;
-            const storedElements = storedCollectionElements.value[collectionKey] ?? [];
-            // Collections are immutable, so there is no need to fetch elements if the range we want is already stored
-            if (params.offset + params.limit <= storedElements.length) {
-                return;
-            }
-            // If we already have items at the offset, we can start fetching from the next offset
-            params.offset = storedElements.length;
+            // We should fetch only missing (placeholder) elements from the range
+            const firstMissingIndex = params.storedElements
+                .slice(params.offset, params.offset + params.limit)
+                .findIndex((element) => "placeholder" in element && element.fetching === false);
 
-            if (params.offset >= maxElementCountInCollection) {
+            if (firstMissingIndex === -1) {
+                // All elements in the range are already stored
                 return;
             }
+            // Adjust the offset to the first missing element
+            params.offset += firstMissingIndex;
 
             Vue.set(loadingCollectionElements.value, collectionKey, true);
+            // Mark all elements in the range as fetching
+            params.storedElements
+                .slice(params.offset, params.offset + params.limit)
+                .forEach((element) => "placeholder" in element && (element.fetching = true));
+
             const fetchedElements = await Service.fetchElementsFromCollection({
                 entry: params.collection,
                 offset: params.offset,
                 limit: params.limit,
             });
-            const updatedElements = [...storedElements, ...fetchedElements];
-            Vue.set(storedCollectionElements.value, collectionKey, updatedElements);
+            // Update only the elements that were fetched
+            params.storedElements.splice(params.offset, fetchedElements.length, ...fetchedElements);
+            Vue.set(storedCollectionElements.value, collectionKey, params.storedElements);
         } finally {
             Vue.delete(loadingCollectionElements.value, collectionKey);
         }
@@ -95,6 +118,35 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
         } finally {
             Vue.delete(loadingCollectionElements.value, params.id);
         }
+    }
+
+    function initWithPlaceholderElements(collection: HDCASummary): DCEPlaceholder[] {
+        const totalElements = collection.element_count ?? 0;
+        const placeholderElements = new Array<DCEPlaceholder>(totalElements)
+            .fill({
+                placeholder: true,
+                fetching: false,
+                element_identifier: PLACEHOLDER_TEXT,
+                element_index: 0,
+                element_type: "hda",
+                id: "placeholder",
+                model_class: "DatasetCollectionElement",
+                object: {
+                    id: "placeholder",
+                    model_class: "HistoryDatasetAssociation",
+                    state: "ok",
+                    hda_ldda: "hda",
+                    history_id: "1",
+                    tags: [],
+                },
+            })
+            .map((placeholder, index) => {
+                return {
+                    ...placeholder,
+                    element_index: index,
+                };
+            });
+        return placeholderElements;
     }
 
     return {
