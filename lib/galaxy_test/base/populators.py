@@ -83,7 +83,6 @@ from typing_extensions import Literal
 
 from galaxy.tool_util.client.staging import InteractorStaging
 from galaxy.tool_util.cwl.util import (
-    download_output,
     GalaxyOutput,
     guess_artifact_type,
     invocation_to_output,
@@ -98,6 +97,7 @@ from galaxy.tool_util.verify.wait import (
 )
 from galaxy.util import (
     DEFAULT_SOCKET_TIMEOUT,
+    download_to_file,
     galaxy_root_path,
     UNKNOWN,
 )
@@ -267,6 +267,28 @@ def conformance_tests_gen(directory, filename="conformance_tests.yaml"):
             yield conformance_test
 
 
+def output_to_disk(output, download_folder):
+    if isinstance(output, dict):
+        if "basename" in output:
+            download_path = os.path.join(download_folder, output["basename"])
+            download_to_file(output["location"], download_path)
+            output["path"] = download_path
+            output["location"] = f"file://{download_path}"
+            return output
+        else:
+            new_output = {}
+            for key, value in output.items():
+                if isinstance(value, dict) and "basename" in value:
+                    new_dir = os.path.join(download_folder, key)
+                    os.makedirs(new_dir, exist_ok=True)
+                    new_output[key] = output_to_disk(value, download_folder=new_dir)
+                else:
+                    new_output[key] = value
+            return new_output
+    else:
+        return output
+
+
 class CwlRun:
     def __init__(self, dataset_populator, history_id):
         self.dataset_populator = dataset_populator
@@ -315,14 +337,13 @@ class CwlRun:
             get_metadata,
             get_dataset,
             get_extra_files,
-            pseudo_location=True,
+            pseudo_location=self.dataset_populator.galaxy_interactor.api_url,
         )
         if download_folder:
-            if isinstance(output, dict) and "basename" in output:
-                download_path = os.path.join(download_folder, output["basename"])
-                download_output(galaxy_output, get_metadata, get_dataset, get_extra_files, download_path)
-                output["path"] = download_path
-                output["location"] = f"file://{download_path}"
+            return output_to_disk(
+                output,
+                download_folder=download_folder,
+            )
         return output
 
     @abstractmethod
