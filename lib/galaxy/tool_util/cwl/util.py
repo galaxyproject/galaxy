@@ -599,7 +599,12 @@ def output_to_cwl_json(
                             if extra_file_class == "File":
                                 ec = get_dataset(output_metadata, filename=path)
                                 ec["basename"] = ec_basename
-                                ec_properties = output_properties(pseudo_location=pseudo_location, **ec)
+                                download_url = (
+                                    output_metadata["download_url"] + f"?filename={urllib.parse.quote_plus(path)}"
+                                )
+                                ec_properties = output_properties(
+                                    pseudo_location=pseudo_location, download_url=download_url, **ec
+                                )
                             elif extra_file_class == "Directory":
                                 ec_properties = {}
                                 ec_properties["class"] = "Directory"
