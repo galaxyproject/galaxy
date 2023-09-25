@@ -23,7 +23,7 @@ from typing import (
 )
 
 import yaml
-from lxml import etree
+from galaxy.util import etree
 from packaging.version import Version
 from pulsar.client.staging import COMMAND_VERSION_FILENAME
 
