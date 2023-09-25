@@ -4,6 +4,7 @@ import urllib.request
 from typing import (
     cast,
     Dict,
+    List,
     Optional,
 )
 
@@ -15,6 +16,7 @@ from galaxy.util import (
     get_charset_from_http_headers,
     stream_to_open_named_file,
 )
+from galaxy.util.config_parsers import IpAllowedListEntryT
 from . import (
     BaseFilesSource,
     FilesSourceOptions,
@@ -28,6 +30,7 @@ log = logging.getLogger(__name__)
 class HTTPFilesSourceProperties(FilesSourceProperties, total=False):
     url_regex: str
     http_headers: Dict[str, str]
+    fetch_url_allowlist: List[IpAllowedListEntryT]
 
 
 class HTTPFilesSource(BaseFilesSource):
@@ -63,7 +66,7 @@ class HTTPFilesSource(BaseFilesSource):
 
         with urllib.request.urlopen(req, timeout=DEFAULT_SOCKET_TIMEOUT) as page:
             # Verify url post-redirects is still allowlisted
-            validate_non_local(page.geturl(), self._allowlist)
+            validate_non_local(page.geturl(), self._allowlist or extra_props.get("fetch_url_allowlist") or [])
             f = open(native_path, "wb")  # fd will be .close()ed in stream_to_open_named_file
             return stream_to_open_named_file(
                 page, f.fileno(), native_path, source_encoding=get_charset_from_http_headers(page.headers)
