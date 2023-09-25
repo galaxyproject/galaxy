@@ -93,6 +93,7 @@ export const useWorkflowCommentStore = (workflowId: string) => {
 
         function $reset() {
             commentsRecord.value = {};
+            localCommentsMetadata.value = {};
         }
 
         const addComments = (commentsArray: WorkflowComment[], defaultPosition: [number, number] = [0, 0]) => {
