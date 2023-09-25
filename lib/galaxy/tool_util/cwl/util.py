@@ -71,6 +71,7 @@ def output_properties(
     basename=None,
     pseudo_location=False,
     cwl_formats: Optional[List[str]] = None,
+    download_url="",
 ) -> OutputPropertiesType:
     checksum = hashlib.sha1()
     properties: OutputPropertiesType = {"class": "File", "checksum": "", "size": 0}
@@ -96,14 +97,14 @@ def output_properties(
     properties["size"] = filesize
     properties["format"] = cwl_formats[0] if cwl_formats else None
     set_basename_and_derived_properties(properties, basename)
-    _handle_pseudo_location(properties, pseudo_location)
+    _handle_pseudo_location(properties, pseudo_location, download_url)
     return properties
 
 
-def _handle_pseudo_location(properties, pseudo_location):
+def _handle_pseudo_location(properties, pseudo_location, download_url):
     if pseudo_location:
         # TODO: should be a URI to the dataset on the server
-        properties["location"] = properties["basename"]
+        properties["location"] = pseudo_location.rstrip("/api") + download_url
 
 
 def abs_path_or_uri(path_or_uri: str, relative_to: str) -> str:
@@ -540,7 +541,10 @@ def output_to_cwl_json(
             if file_or_directory == "File":
                 dataset_dict = get_dataset(output_metadata)
                 properties = output_properties(
-                    pseudo_location=pseudo_location, cwl_formats=output_metadata["cwl_formats"], **dataset_dict
+                    pseudo_location=pseudo_location,
+                    cwl_formats=output_metadata["cwl_formats"],
+                    download_url=output_metadata["download_url"],
+                    **dataset_dict,
                 )
                 basename = properties["basename"]
                 extra_files = get_extra_files(output_metadata)
@@ -646,13 +650,6 @@ def output_to_cwl_json(
         return None
     else:
         raise NotImplementedError("Unknown history content type encountered")
-
-
-def download_output(galaxy_output, get_metadata, get_dataset, get_extra_files, output_path):
-    output_metadata = get_metadata(galaxy_output.history_content_type, galaxy_output.history_content_id)
-    dataset_dict = get_dataset(output_metadata)
-    with open(output_path, "wb") as fh:
-        fh.write(dataset_dict["content"])
 
 
 def guess_artifact_type(path):
