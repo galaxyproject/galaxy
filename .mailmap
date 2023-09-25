@@ -1,3 +1,4 @@
+# Docs: https://git-scm.com/docs/gitmailmap
 # git log --pretty="%aN <%aE>" | sort -u | less
 # 631 as of 2023-09-18
 Ahmed Hamid Awan <aawan@mindgrub.com> # GH user: ahmedhamidawan
@@ -8,8 +9,10 @@ Ahmed Hamid Awan <aawan@mindgrub.com> <78516064+ahmedhamidawan@users.noreply.git
 Ahmed Hamid Awan <aawan@mindgrub.com> <qe66653@umbc.edu>
 Abdulrahman Azab <eng.azab@gmail.com> # GH user: abdulrahmanazab, one-line contribution, rewritten by John Chilton
 Adam Brenner <aebrenne@uci.edu> # GH user: abrenner, only commits to tools moved to tool shed (no longer in galaxy)
-Daniel Bouchard <danieljosephbouchard@gmail.com> <daniel.bouchard@phac-aspc.gc.ca> # GH user: Airistotal 
+Daniel Bouchard <danieljosephbouchard@gmail.com> # GH user: Airistotal
+Daniel Bouchard <danieljosephbouchard@gmail.com> <daniel.bouchard@phac-aspc.gc.ca>
 Daniel Bouchard <danieljosephbouchard@gmail.com> <danieltos.bouchard@gmail.com>
+<danieljosephbouchard@gmail.com> <dbouchard@corefacility.ca>
 A. Soroka <ajs6f@apache.org> # GH user: ajs6f
 Alan Amossé <alan.amosse@gmail.com> # GH user: Alanamosse
 Alan Amossé <alan.amosse@gmail.com> <alanamosse@60-E3-27-12-8C-3F.home>
@@ -48,10 +51,19 @@ Anton Nekrutenko <anton@nekrut.org> <anekrut@gmail.com>
 Anup Kumar <anup.rulez@gmail.com>  # GH user: anuprulez
 Anup Kumar <anup.rulez@gmail.com> <kumara@informatik.uni-freiburg.de>
 
+Sergey Yakubov <yakubovs@ornl.gov>  # GH user: SergeyYakubov
+<yakubovs@ornl.gov> <SergeyYakubov@users.noreply.github.com>
 Steven Shum <weiyanshum@gmail.com>  # GH user: shenweiyan
 Steven Shum <weiyanshum@gmail.com> <ishenweiyan@foxmail.com>
 Steven Shum <weiyanshum@gmail.com> <ishenweiyan@qq.com>
+xiaojay <xiaojay@gmail.com>  # GH user: xiaojay
+xiaojay <xiaojay@gmail.com> <jayyoung@yangyuanjiedeMacBook-Pro.local>
 
+Yi Zhang <yizhang@bx.psu.edu>  # No GH user, last contribution in 2007
+Yo Yehudi <yochannah@gmail.com>  # GH user: yochannah
+Youri Hoogstrate <y.hoogstrate@gmail.com>  # GH user: yhoogstrate
+Youri Hoogstrate <y.hoogstrate@gmail.com> <y.hoogstrate@erasmusmc.nl>
+Yunchen Gong <yunchen.gong@gmail.com>  # GH user: ycgong
 Yvan Le Bras <yvan.le-bras@mnhn.fr>  # GH user: yvanlebras
 <yvan.le-bras@mnhn.fr> <yvan.le_bras@irisa.fr>
 zhuzi <110071444+undergone2345@users.noreply.github.com>  # GH user: undergone2345
