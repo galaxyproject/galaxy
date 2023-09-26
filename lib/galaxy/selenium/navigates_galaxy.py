@@ -17,8 +17,10 @@ from typing import (
     Any,
     cast,
     Dict,
+    List,
     NamedTuple,
     Optional,
+    Tuple,
     Union,
 )
 
@@ -26,6 +28,7 @@ import requests
 import yaml
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
+from selenium.webdriver.remote.webelement import WebElement
 
 from galaxy.navigation.components import (
     Component,
@@ -2245,6 +2248,27 @@ class NavigatesGalaxy(HasDriver):
         search_selector = "#gtn a"
         self.wait_for_and_click_selector(search_selector)
         self.wait_for_selector_visible("#gtn-screen")
+
+    def mouse_drag(
+        self,
+        from_element: WebElement,
+        to_element: Optional[WebElement] = None,
+        from_offset=(0, 0),
+        to_offset=(0, 0),
+        via_offsets: Optional[List[Tuple[int, int]]] = None,
+    ):
+        chain = self.action_chains().move_to_element(from_element).move_by_offset(*from_offset)
+        chain = chain.click_and_hold().pause(self.wait_length(self.wait_types.UX_RENDER))
+
+        if via_offsets is not None:
+            for offset in via_offsets:
+                chain = chain.move_by_offset(*offset).pause(self.wait_length(self.wait_types.UX_RENDER))
+
+        if to_element is not None:
+            chain = chain.move_to_element(to_element)
+
+        chain = chain.move_by_offset(*to_offset).pause(self.wait_length(self.wait_types.UX_RENDER)).release()
+        chain.perform()
 
 
 class NotLoggedInException(SeleniumTimeoutException):

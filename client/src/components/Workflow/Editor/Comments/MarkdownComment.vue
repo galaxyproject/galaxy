@@ -257,7 +257,7 @@ $min-height: 1.5em;
     position: absolute;
     top: $gap-y;
     left: $gap-x;
-    overflow-y: scroll;
+    overflow-y: auto;
     line-height: 1.2;
 
     width: calc(100% - $gap-x - $gap-x);

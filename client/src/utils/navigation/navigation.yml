@@ -698,13 +698,15 @@ workflow_editor:
   comment:
     selectors:
       _: ".workflow-editor-comment"
-      text: ".text-workflow-comment"
-      markdown: ".markdown-workflow-comment"
+      text_comment: ".text-workflow-comment"
+      text_inner: ".text-workflow-comment span"
+      markdown_comment: ".markdown-workflow-comment"
       markdown_rendered: ".markdown-workflow-comment .rendered-markdown"
-      frame: ".frame-workflow-comment"
+      frame_comment: ".frame-workflow-comment"
       frame_title: ".frame-workflow-comment .frame-comment-header"
-      freehand: ".freehand-workflow-comment"
+      freehand_comment: ".freehand-workflow-comment"
       freehand_path: ".freehand-workflow-comment path"
+      delete: "button[title='Delete comment']"
   selectors:
     canvas_body: '#workflow-canvas'
     edit_annotation: '#workflow-annotation'
