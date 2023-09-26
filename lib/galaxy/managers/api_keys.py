@@ -10,7 +10,7 @@ from galaxy.structured_app import BasicSharedApp
 
 
 class IsUserModel(Protocol):
-    id: str
+    id: int
 
 
 class ApiKeyManager:
