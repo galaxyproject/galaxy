@@ -7,7 +7,7 @@ import ExpandedItems from "@/components/History/Content/ExpandedItems";
 import { updateContentFields } from "@/components/History/model/queries";
 import { useCollectionElementsStore } from "@/stores/collectionElementsStore";
 import { HistorySummary } from "@/stores/historyStore";
-import { DCESummary, HDCASummary } from "@/stores/services";
+import { DCESummary, DCObject, HDCASummary } from "@/stores/services";
 
 import CollectionDetails from "./CollectionDetails.vue";
 import CollectionNavigation from "./CollectionNavigation.vue";
@@ -59,19 +59,9 @@ function onScroll(newOffset: number) {
     offset.value = newOffset;
 }
 
-/**
- * Passes a sub-collection i.e a collection element object containing another collection, into
- * a populated object for drill-down without the need for a separate data request. This object
- * is used for breadcrumbs in the navigation component and to render the collection details and
- * description at the top of the collection panel. Details include the collection name, the
- * collection type, and the element count.
- */
-function onViewSubCollection(itemObject: HDCASummary, elementIdentifier: string) {
-    const collectionObject = {
-        name: elementIdentifier,
-        ...itemObject,
-    };
-    emit("view-collection", collectionObject);
+async function onViewSubCollection(itemObject: DCObject) {
+    const collection = await collectionElementsStore.getCollection(itemObject.id);
+    emit("view-collection", collection);
 }
 
 watch(
