@@ -65,11 +65,32 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
         }
     }
 
+    async function getCollection(collectionId: string) {
+        const collection = storedCollections.value[collectionId];
+        if (!collection) {
+            return await fetchCollection({ id: collectionId });
+        }
+        return collection;
+    }
+
+    async function fetchCollection(params: { id: string }) {
+        Vue.set(loadingCollectionElements.value, params.id, true);
+        try {
+            const collection = await Service.fetchCollectionDetails({ hdcaId: params.id });
+            Vue.set(storedCollections.value, collection.id, collection);
+            return collection;
+        } finally {
+            Vue.delete(loadingCollectionElements.value, params.id);
+        }
+    }
+
     return {
         storedCollections,
         storedCollectionElements,
         getCollectionElements,
         isLoadingCollectionElements,
+        getCollection,
+        fetchCollection,
         loadCollectionElements,
         saveCollections,
     };
