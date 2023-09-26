@@ -23,6 +23,8 @@ almahmoud, mahmoudalexandru@gmail.com, https://github.com/galaxyproject/galaxy/p
 itisAliRH, itisalirh@gmail.com, https://github.com/galaxyproject/galaxy/pull/13104
 annefou, annefou@geo.uio.no, https://github.com/galaxyproject/galaxy/pull/11812
 abretaud, anthony.bretaudeau@inria.fr, https://github.com/galaxyproject/galaxy/pull/12159
+assuntad23, assuntad23@gmail.com, https://github.com/galaxyproject/galaxy/pull/11799
+guerler, aysam.guerler@gmail.com, https://github.com/galaxyproject/galaxy/pull/13923
 
 # not yet agreed, needs research
 Daniel Bouchard <danieljosephbouchard@gmail.com> # GH user: Airistotal
@@ -39,6 +41,10 @@ Andrey Tovchigrechko <tovchigrechkoa@medimmune.com> # GH user: andreyto single c
 Anil Thanki <thanki.anil@gmail.com> # GH user: anilthanki
 Ann Loraine <aloraine@uncc.edu> # GH user: aloraine , only one commit, to change a URL: https://github.com/galaxyproject/galaxy/commit/ea22750604bb2b14a437eddc6ab34dd9d4d9fba7
 Anton Nekrutenko <anton@nekrut.org>  # GH user: nekrut
+Arjun Nath <arjun@bx.psu.edu> # no GH user, last contribution in 2007
+Ashok Varadharajan <ashvark@gmail.com>  # GH user: ashvark
+Athos Ribeiro <athoscr@fedoraproject.org>  # GH user: athos-ribeiro single commit contribution: https://github.com/galaxyproject/galaxy/commit/4b531179b0a19a45902f40f49e823cf5260bbd56
+Aurélien Bernard <aurelien.bernard.bioinfo63@gmail.com>  # GH user: arbernard
 
 # not agreed, but contributions no longer present
 Adam Brenner <aebrenne@uci.edu> # GH user: abrenner, only commits to tools moved to tool shed (no longer in galaxy)
