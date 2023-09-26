@@ -65,16 +65,8 @@ class TestRepositoryMultipleOwners(ShedTwillTestCase):
         the datatypes that are defined in datatypes_conf.xml.
         """
         repository = self._get_repository_by_name_and_owner(datatypes_repository_name, common.test_user_2_name)
-        strings_displayed = [
-            "BlastXml",
-            "BlastNucDb",
-            "BlastProtDb",
-            "application/xml",
-            "text/html",
-            "blastxml",
-            "blastdbn",
-            "blastdbp",
-        ]
+        # v2 rightfully doesn't display anything about datatypes...
+        strings_displayed = ["Galaxy datatypes for the BLAST top hit"]
         self.display_manage_repository_page(repository, strings_displayed=strings_displayed)
 
     def test_0015_create_tool_repository(self):
@@ -108,7 +100,9 @@ class TestRepositoryMultipleOwners(ShedTwillTestCase):
         """
         repository = self._get_repository_by_name_and_owner(tool_repository_name, common.test_user_1_name)
         strings_displayed = ["blastxml_to_top_descr_0120", "BLAST top hit descriptions", "Make a table from BLAST XML"]
-        strings_displayed.extend(["0.0.1", "Valid tools"])
+        strings_displayed.append("0.0.1")
+        if not self.is_v2:
+            strings_displayed.append("Valid tools")
         self.display_manage_repository_page(repository, strings_displayed=strings_displayed)
 
     def test_0025_create_repository_dependency(self):

@@ -1,5 +1,6 @@
 import logging
 
+from ..base.api import skip_if_api_v2
 from ..base.twilltestcase import (
     common,
     ShedTwillTestCase,
@@ -21,6 +22,9 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
         self.login(email=common.test_user_2_email, username=common.test_user_2_name)
         self.login(email=common.admin_email, username=common.admin_username)
 
+    @skip_if_api_v2
+    # no replicating the functionality in tool shed 2.0, use Planemo
+    # to create repositories.
     def test_0005_create_repository_without_categories(self):
         """Verify that a repository cannot be created unless at least one category has been defined."""
         strings_displayed = ["No categories have been configured in this instance of the Galaxy Tool Shed"]
@@ -69,6 +73,7 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
             categories_to_remove=["Test 0000 Basic Repository Features 1"],
         )
 
+    @skip_if_api_v2
     def test_0030_grant_write_access(self):
         """Grant write access to another user"""
         repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
@@ -120,6 +125,7 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
             strings_displayed=strings,
         )
 
+    @skip_if_api_v2
     def test_0045_alter_repository_states(self):
         """Test toggling the malicious and deprecated repository flags."""
         repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
@@ -147,13 +153,14 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
         strings_displayed = ["Mark repository as deprecated", "Reset all repository metadata"]
         self.display_manage_repository_page(repository, strings_displayed=strings_displayed)
 
+    @skip_if_api_v2
+    # probably not porting this functionality - just test
+    # with Twill for older UI and drop when that is all dropped
     def test_0050_display_repository_tip_file(self):
         """Display the contents of filtering.xml in the repository tip revision"""
         repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         assert repository
         if self._browser.is_twill:
-            # probably not porting this functionality - just test
-            # with Twill for older UI and drop when that is all dropped
             self.display_repository_file_contents(
                 repository=repository,
                 filename="filtering.xml",
@@ -167,9 +174,7 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
         repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         self.add_file_to_repository(repository, "filtering/filtering_0000.txt")
         expected = self._escape_page_content_if_needed("Readme file for filtering 1.1.0")
-        self.display_manage_repository_page(
-            repository, strings_displayed=[expected]
-        )
+        self.display_manage_repository_page(repository, strings_displayed=[expected])
 
     def test_0060_upload_filtering_test_data(self):
         """Upload filtering test data."""
@@ -197,7 +202,10 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
         repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         tip = self.get_repository_tip(repository)
         self.check_for_valid_tools(repository)
-        strings_displayed = ["Select a revision"]
+        if self.is_v2:
+            strings_displayed = []
+        else:
+            strings_displayed = ["Select a revision"]
         self.display_manage_repository_page(repository, strings_displayed=strings_displayed)
         self.check_count_of_metadata_revisions_associated_with_repository(repository, metadata_count=2)
         tool_guid = f"{self.url.replace('http://', '').rstrip('/')}/repos/user1/filtering_0000/Filter1/2.2.0"
@@ -222,9 +230,7 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
         repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         self.add_file_to_repository(repository, "readme.txt")
         content = self._escape_page_content_if_needed("This is a readme file.")
-        self.display_manage_repository_page(
-            repository, strings_displayed=[content]
-        )
+        self.display_manage_repository_page(repository, strings_displayed=[content])
         # Verify that there is a different readme file for each metadata revision.
         readme_content = self._escape_page_content_if_needed("Readme file for filtering 1.1.0")
         self.display_manage_repository_page(
@@ -241,10 +247,9 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
         self.delete_files_from_repository(repository, filenames=["readme.txt"])
         self.check_count_of_metadata_revisions_associated_with_repository(repository, metadata_count=2)
         readme_content = self._escape_page_content_if_needed("Readme file for filtering 1.1.0")
-        self.display_manage_repository_page(
-            repository, strings_displayed=[readme_content]
-        )
+        self.display_manage_repository_page(repository, strings_displayed=[readme_content])
 
+    @skip_if_api_v2  # not re-implemented in the UI, there are API tests though
     def test_0085_search_for_valid_filter_tool(self):
         """Search for the filtering tool by tool ID, name, and version."""
         repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
@@ -279,16 +284,20 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
         self.login(email="baduser@bx.psu.edu", username="repos")
         test_user_1 = self.test_db_util.get_user("baduser@bx.psu.edu")
         assert test_user_1 is None, 'Creating user with public name "repos" succeeded.'
-        error_message = (
-            "The term 'repos' is a reserved word in the Tool Shed, so it cannot be used as a public user name."
-        )
-        self.check_for_strings(strings_displayed=[error_message])
+        if not self.is_v2:
+            # no longer use this terminology but the above test case ensures
+            # the important thing and caught a bug in v2
+            error_message = (
+                "The term 'repos' is a reserved word in the Tool Shed, so it cannot be used as a public user name."
+            )
+            self.check_for_strings(strings_displayed=[error_message])
 
     def test_0105_contact_repository_owner(self):
         """"""
         # We no longer implement this.
         pass
 
+    @skip_if_api_v2  # v2 doesn't implement repository deleting repositories
     def test_0110_delete_filtering_repository(self):
         """Delete the filtering_0000 repository and verify that it no longer has any downloadable revisions."""
         repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
@@ -303,6 +312,7 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
         # Marking a repository as deleted should result in no metadata revisions being downloadable.
         # assert True not in [metadata.downloadable for metadata in self._db_repository(repository).metadata_revisions]
 
+    @skip_if_api_v2  # v2 doesn't implement repository deleting repositories
     def test_0115_undelete_filtering_repository(self):
         """Undelete the filtering_0000 repository and verify that it now has two downloadable revisions."""
         repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
@@ -316,6 +326,7 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
         assert True in [metadata.downloadable for metadata in self._db_repository(repository).metadata_revisions]
         assert len(self._db_repository(repository).downloadable_revisions) == 2
 
+    @skip_if_api_v2  # not re-implementing in tool shed 2.0
     def test_0120_enable_email_notifications(self):
         """Enable email notifications for test user 2 on filtering_0000."""
         # Log in as test_user_2
@@ -332,9 +343,7 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
         # Upload readme.txt to the filtering_0000 repository and verify that it is now displayed.
         self.add_file_to_repository(repository, "filtering/readme.txt")
         content = self._escape_page_content_if_needed("These characters should not")
-        self.display_manage_repository_page(
-            repository, strings_displayed=[content]
-        )
+        self.display_manage_repository_page(repository, strings_displayed=[content])
 
     def test_0130_verify_handling_of_invalid_characters(self):
         """Load the above changeset in the change log and confirm that there is no server error displayed."""

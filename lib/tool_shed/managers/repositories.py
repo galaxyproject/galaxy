@@ -433,6 +433,7 @@ def get_repository_metadata_dict(app: ToolShedApp, id: str, recursive: bool, dow
             metadata_dict["repository_dependencies"] = []
         if metadata.includes_tools:
             metadata_dict["tools"] = metadata.metadata["tools"]
+        metadata_dict["invalid_tools"] = metadata.metadata.get("invalid_tools", [])
         all_metadata[f"{int(changeset)}:{changehash}"] = metadata_dict
     return all_metadata
 

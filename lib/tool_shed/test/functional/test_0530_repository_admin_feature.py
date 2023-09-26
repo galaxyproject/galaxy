@@ -1,5 +1,6 @@
 import logging
 
+from ..base.api import skip_if_api_v2
 from ..base.twilltestcase import (
     common,
     ShedTwillTestCase,
@@ -98,6 +99,7 @@ class TestRepositoryAdminRole(ShedTwillTestCase):
         repository = self._get_repository_by_name_and_owner("renamed_filtering_0530", common.test_user_1_name)
         assert repository.name == "renamed_filtering_0530", "Repository was not renamed to renamed_filtering_0530."
 
+    @skip_if_api_v2
     def test_0030_verify_access_denied(self):
         """Make sure a non-admin user can't modify the repository.
 

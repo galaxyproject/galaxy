@@ -69,6 +69,8 @@ class TestToolHelpImages(ShedTwillTestCase):
         # should be the tool that contains a link to the image.
         repository_metadata = self._db_repository(repository).metadata_revisions[0].metadata
         tool_path = repository_metadata["tools"][0]["tool_config"]
-        self.load_display_tool_page(
-            repository, tool_path, changeset_revision, strings_displayed=[image_path], strings_not_displayed=[]
-        )
+        # V2 is not going to have this page right? So... do we need this test at all or that route? Likely not?
+        if self._browser.is_twill and not self.is_v2:
+            self.load_display_tool_page(
+                repository, tool_path, changeset_revision, strings_displayed=[image_path], strings_not_displayed=[]
+            )

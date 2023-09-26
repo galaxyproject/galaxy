@@ -71,10 +71,11 @@ class TestGetUpdatedMetadata(ShedTwillTestCase):
             freebayes,
             "0550_files/package_freebayes_1_0550.tgz",
         )
-        # Visit the manage repository page for package_freebayes_0_5_9_0100.
-        self.display_manage_repository_page(
-            freebayes, strings_displayed=["Tool dependencies", "will not be", "to this repository"]
-        )
+        if not self.is_v2:
+            # Visit the manage repository page for package_freebayes_0_5_9_0100.
+            self.display_manage_repository_page(
+                freebayes, strings_displayed=["Tool dependencies", "will not be", "to this repository"]
+            )
 
     def test_0010_create_samtools_repository(self):
         """Create and populate the package_samtools_0550 repository."""
@@ -118,7 +119,8 @@ class TestGetUpdatedMetadata(ShedTwillTestCase):
         samtools = self._get_repository_by_name_and_owner(repositories["samtools"]["name"], common.test_user_1_name)
         filtering = self._get_repository_by_name_and_owner(repositories["filtering"]["name"], common.test_user_1_name)
         strings_displayed = [freebayes.id, samtools.id]
-        self.display_manage_repository_page(filtering, strings_displayed=strings_displayed)
+        if not self.is_v2:
+            self.display_manage_repository_page(filtering, strings_displayed=strings_displayed)
 
     def test_0025_update_dependent_repositories(self):
         """

@@ -736,21 +736,9 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
 
         Caller is responsible for flushing the returned session.
         """
-        session_key = self.security.get_new_guid()
-        galaxy_session = self.app.model.GalaxySession(
-            session_key=session_key,
-            is_valid=True,
-            remote_host=self.request.remote_host,
-            remote_addr=self.request.remote_addr,
-            referer=self.request.headers.get("Referer", None),
+        return create_new_session(
+            self, prev_galaxy_session=prev_galaxy_session, user_for_new_session=user_for_new_session
         )
-        if prev_galaxy_session:
-            # Invalidated an existing session for some reason, keep track
-            galaxy_session.prev_session_id = prev_galaxy_session.id
-        if user_for_new_session:
-            # The new session should be associated with the user
-            galaxy_session.user = user_for_new_session
-        return galaxy_session
 
     @property
     def cookie_path(self):
@@ -1108,6 +1096,31 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
 
     def qualified_url_for_path(self, path):
         return url_for(path, qualified=True)
+
+
+def create_new_session(trans, prev_galaxy_session=None, user_for_new_session=None):
+    """
+    Create a new GalaxySession for this request, possibly with a connection
+    to a previous session (in `prev_galaxy_session`) and an existing user
+    (in `user_for_new_session`).
+
+    Caller is responsible for flushing the returned session.
+    """
+    session_key = trans.security.get_new_guid()
+    galaxy_session = trans.app.model.GalaxySession(
+        session_key=session_key,
+        is_valid=True,
+        remote_host=trans.request.remote_host,
+        remote_addr=trans.request.remote_addr,
+        referer=trans.request.headers.get("Referer", None),
+    )
+    if prev_galaxy_session:
+        # Invalidated an existing session for some reason, keep track
+        galaxy_session.prev_session_id = prev_galaxy_session.id
+    if user_for_new_session:
+        # The new session should be associated with the user
+        galaxy_session.user = user_for_new_session
+    return galaxy_session
 
 
 def default_url_path(path):

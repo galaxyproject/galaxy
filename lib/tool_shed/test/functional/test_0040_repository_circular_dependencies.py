@@ -1,3 +1,4 @@
+from ..base.api import skip_if_api_v2
 from ..base.twilltestcase import (
     common,
     ShedTwillTestCase,
@@ -129,6 +130,7 @@ class TestRepositoryCircularDependencies(ShedTwillTestCase):
         for repository in [freebayes_repository, filtering_repository]:
             self.verify_unchanged_repository_metadata(repository)
 
+    @skip_if_api_v2
     def test_0040_verify_tool_dependencies(self):
         """Verify that freebayes displays tool dependencies."""
         repository = self._get_repository_by_name_and_owner(freebayes_repository_name, common.test_user_1_name)

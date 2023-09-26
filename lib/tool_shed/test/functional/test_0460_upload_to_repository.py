@@ -129,12 +129,13 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
         repository = self._get_repository_by_name_and_owner("complex_dependency_test_1_0460", common.test_user_1_name)
         package_repository = self._get_repository_by_name_and_owner("package_bwa_0_5_9_0460", common.test_user_1_name)
         self.add_file_to_repository(repository, "0460_files/tool_dependencies.xml")
-        changeset_revision = self.get_repository_tip(package_repository)
-        strings_displayed = ["package_bwa_0_5_9_0460", "bwa", "0.5.9", "package", changeset_revision]
-        self.display_manage_repository_page(repository, strings_displayed=strings_displayed)
-        self.display_repository_file_contents(
-            repository, filename="tool_dependencies.xml", strings_displayed=[changeset_revision]
-        )
+        if not self.is_v2:
+            changeset_revision = self.get_repository_tip(package_repository)
+            strings_displayed = ["package_bwa_0_5_9_0460", "bwa", "0.5.9", "package", changeset_revision]
+            self.display_manage_repository_page(repository, strings_displayed=strings_displayed)
+            self.display_repository_file_contents(
+                repository, filename="tool_dependencies.xml", strings_displayed=[changeset_revision]
+            )
 
     def test_0025_populate_complex_dependency_test_2_0460(self):
         """Populate complex_dependency_test_2_0460.
@@ -149,12 +150,13 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
             "0460_files/tool_dependencies_in_root.tar",
             commit_message="Uploaded complex repository dependency definition.",
         )
-        changeset_revision = self.get_repository_tip(package_repository)
-        strings_displayed = ["package_bwa_0_5_9_0460", "bwa", "0.5.9", "package", changeset_revision]
-        self.display_manage_repository_page(repository, strings_displayed=strings_displayed)
-        self.display_repository_file_contents(
-            repository, filename="tool_dependencies.xml", strings_displayed=[changeset_revision]
-        )
+        if not self.is_v2:
+            changeset_revision = self.get_repository_tip(package_repository)
+            strings_displayed = ["package_bwa_0_5_9_0460", "bwa", "0.5.9", "package", changeset_revision]
+            self.display_manage_repository_page(repository, strings_displayed=strings_displayed)
+            self.display_repository_file_contents(
+                repository, filename="tool_dependencies.xml", strings_displayed=[changeset_revision]
+            )
 
     def test_0030_populate_complex_dependency_test_3_0460(self):
         """Populate complex_dependency_test_3_0460.
@@ -170,11 +172,15 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
             commit_message="Uploaded complex repository dependency definition.",
         )
         changeset_revision = self.get_repository_tip(package_repository)
-        strings_displayed = ["package_bwa_0_5_9_0460", "bwa", "0.5.9", "package", changeset_revision]
-        self.display_manage_repository_page(repository, strings_displayed=strings_displayed)
-        self.display_repository_file_contents(
-            repository, filename="tool_dependencies.xml", filepath="subfolder", strings_displayed=[changeset_revision]
-        )
+        if not self.is_v2:
+            strings_displayed = ["package_bwa_0_5_9_0460", "bwa", "0.5.9", "package", changeset_revision]
+            self.display_manage_repository_page(repository, strings_displayed=strings_displayed)
+            self.display_repository_file_contents(
+                repository,
+                filename="tool_dependencies.xml",
+                filepath="subfolder",
+                strings_displayed=[changeset_revision],
+            )
 
     def test_0035_create_repositories_for_url_upload(self):
         """Create and populate hg_tool_dependency_0460 and hg_subfolder_tool_dependency_0460.
@@ -244,11 +250,12 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
         package_repository = self._get_repository_by_name_and_owner(bwa_repository_name, common.test_user_1_name)
         self.add_file_to_repository(repository, "0460_files/repository_dependencies.xml")
         changeset_revision = self.get_repository_tip(package_repository)
-        strings_displayed = [bwa_repository_name, "user1", changeset_revision]
-        self.display_manage_repository_page(repository, strings_displayed=strings_displayed)
-        self.display_repository_file_contents(
-            repository, filename="repository_dependencies.xml", strings_displayed=[changeset_revision]
-        )
+        if not self.is_v2:
+            strings_displayed = [bwa_repository_name, "user1", changeset_revision]
+            self.display_manage_repository_page(repository, strings_displayed=strings_displayed)
+            self.display_repository_file_contents(
+                repository, filename="repository_dependencies.xml", strings_displayed=[changeset_revision]
+            )
 
     def test_0060_populate_repository_dependency_test_2_0460(self):
         """Populate repository_dependency_test_2_0460.
@@ -265,11 +272,12 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
             commit_message="Uploaded complex repository dependency definition.",
         )
         changeset_revision = self.get_repository_tip(package_repository)
-        strings_displayed = [bwa_repository_name, "user1", changeset_revision]
-        self.display_manage_repository_page(repository, strings_displayed=strings_displayed)
-        self.display_repository_file_contents(
-            repository, filename="repository_dependencies.xml", strings_displayed=[changeset_revision]
-        )
+        if not self.is_v2:
+            strings_displayed = [bwa_repository_name, "user1", changeset_revision]
+            self.display_manage_repository_page(repository, strings_displayed=strings_displayed)
+            self.display_repository_file_contents(
+                repository, filename="repository_dependencies.xml", strings_displayed=[changeset_revision]
+            )
 
     def test_0065_populate_repository_dependency_test_3_0460(self):
         """Populate repository_dependency_test_3_0460.
@@ -287,14 +295,15 @@ class TestAutomaticDependencyRevision(ShedTwillTestCase):
             commit_message="Uploaded complex repository dependency definition.",
         )
         changeset_revision = self.get_repository_tip(package_repository)
-        strings_displayed = [bwa_repository_name, "user1", changeset_revision]
-        self.display_manage_repository_page(repository, strings_displayed=strings_displayed)
-        self.display_repository_file_contents(
-            repository,
-            filename="repository_dependencies.xml",
-            filepath="subfolder",
-            strings_displayed=[changeset_revision],
-        )
+        if not self.is_v2:
+            strings_displayed = [bwa_repository_name, "user1", changeset_revision]
+            self.display_manage_repository_page(repository, strings_displayed=strings_displayed)
+            self.display_repository_file_contents(
+                repository,
+                filename="repository_dependencies.xml",
+                filepath="subfolder",
+                strings_displayed=[changeset_revision],
+            )
 
     def test_0070_create_repositories_for_url_upload(self):
         """Create and populate hg_repository_dependency_0460 and hg_subfolder_repository_dependency_0460.

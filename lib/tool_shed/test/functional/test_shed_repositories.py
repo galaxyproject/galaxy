@@ -61,6 +61,14 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         assert only_revision.downloadable
         assert not only_revision.malicious
 
+    def test_metadata_invalid_tools(self):
+        populator = self.populator
+        repository = populator.setup_bismark_repo()
+        repository_metadata = populator.get_metadata(repository)
+        assert repository_metadata
+        for _, value in repository_metadata.__root__.items():
+            assert value.invalid_tools
+
     def test_index_simple(self):
         # Logic and typing is pretty different if given a tool id to search for - this should
         # be tested or dropped in v2.

@@ -7,7 +7,11 @@ from tempfile import (
     mkdtemp,
     NamedTemporaryFile,
 )
-from typing import Optional
+from typing import (
+    Any,
+    Dict,
+    Optional,
+)
 
 import tool_shed.repository_registry
 from galaxy.security.idencoding import IdEncodingHelper
@@ -25,10 +29,12 @@ from tool_shed.test.base.populators import (
 from tool_shed.util.hgweb_config import hgweb_config_manager
 from tool_shed.util.repository_util import create_repository
 from tool_shed.webapp.model import (
+    Category,
     mapping,
     Repository,
     User,
 )
+from tool_shed_client.schema import CreateCategoryRequest
 
 TEST_DATA_FILES = TEST_DATA_REPO_FILES
 TEST_HOST = "localhost"
@@ -78,9 +84,7 @@ class TestToolShedApp(ToolShedApp):
         return self.model.security_agent
 
 
-def user_fixture(
-    app: TestToolShedApp, username: str, password: str = "testpassword", email: Optional[str] = None
-) -> User:
+def user_fixture(app: ToolShedApp, username: str, password: str = "testpassword", email: Optional[str] = None) -> User:
     email = email or f"{username}@galaxyproject.org"
     return create_user(
         app,
@@ -115,10 +119,13 @@ def provides_repositories_fixture(
     return ProvidesRepositoriesImpl(app, user)
 
 
-def repository_fixture(app: ToolShedApp, user: User, name: str) -> Repository:
+def repository_fixture(app: ToolShedApp, user: User, name: str, category: Optional[Category] = None) -> Repository:
     type = rt_util.UNRESTRICTED
     description = f"test repo named {name}"
     long_description = f"test repo named {name} a longer description"
+    category_ids = []
+    if category:
+        category_ids.append(app.security.encode_id(category.id))
     repository, message = create_repository(
         app,
         name,
@@ -126,7 +133,7 @@ def repository_fixture(app: ToolShedApp, user: User, name: str) -> Repository:
         description,
         long_description,
         user.id,
-        category_ids=None,
+        category_ids=category_ids,
         remote_repository_url=None,
         homepage_url=None,
     )
@@ -177,3 +184,10 @@ def upload_directories_to_repository(
 
 def random_name(len: int = 10) -> str:
     return "".join(random.choice(string.ascii_lowercase + string.digits) for _ in range(len))
+
+
+def create_category(provides_repositories: ProvidesRepositoriesContext, create: Dict[str, Any]) -> Category:
+    from tool_shed.managers.categories import CategoryManager
+
+    request = CreateCategoryRequest(**create)
+    return CategoryManager(provides_repositories.app).create(provides_repositories, request)

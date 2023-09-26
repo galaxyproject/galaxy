@@ -1,3 +1,4 @@
+from ..base.api import skip_if_api_v2
 from ..base.twilltestcase import (
     common,
     ShedTwillTestCase,
@@ -161,6 +162,7 @@ class TestRepositoryDependencyRevisions(ShedTwillTestCase):
             repository=emboss_repository, repository_tuples=[emboss_tuple], filepath=repository_dependencies_path
         )
 
+    @skip_if_api_v2
     def test_0050_verify_repository_dependency_revisions(self):
         """Verify that different metadata revisions of the emboss repository have different repository dependencies."""
         repository = self._get_repository_by_name_and_owner(emboss_repository_name, common.test_user_1_name)

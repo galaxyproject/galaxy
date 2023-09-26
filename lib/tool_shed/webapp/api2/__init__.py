@@ -1,3 +1,4 @@
+import logging
 from json import JSONDecodeError
 from typing import (
     AsyncGenerator,
@@ -29,7 +30,9 @@ from galaxy.exceptions import AdminRequiredException
 from galaxy.managers.session import GalaxySessionManager
 from galaxy.managers.users import UserManager
 from galaxy.security.idencoding import IdEncodingHelper
+from galaxy.util import unicodify
 from galaxy.web.framework.decorators import require_admin_message
+from galaxy.webapps.base.webapp import create_new_session
 from galaxy.webapps.galaxy.api import (
     depends as framework_depends,
     FrameworkRouter,
@@ -49,6 +52,8 @@ from tool_shed.webapp.model import (
     User,
 )
 
+log = logging.getLogger(__name__)
+
 
 def get_app() -> ToolShedApp:
     if tool_shed_app_mod.app is None:
@@ -67,10 +72,11 @@ async def get_app_with_request_session() -> AsyncGenerator[ToolShedApp, None]:
 
 
 DependsOnApp = cast(ToolShedApp, Depends(get_app_with_request_session))
+AUTH_COOKIE_NAME = "galaxycommunitysession"
 
 api_key_query = APIKeyQuery(name="key", auto_error=False)
 api_key_header = APIKeyHeader(name="x-api-key", auto_error=False)
-api_key_cookie = APIKeyCookie(name="galaxycommunitysession", auto_error=False)
+api_key_cookie = APIKeyCookie(name=AUTH_COOKIE_NAME, auto_error=False)
 
 
 def depends(dep_type: Type[T]) -> T:
@@ -218,7 +224,7 @@ CommitMessageQueryParam: Optional[str] = Query(
 DownloadableQueryParam: bool = Query(
     default=True,
     title="downloadable_only",
-    description="Include only downable repositories.",
+    description="Include only downloadable repositories.",
 )
 
 CommitMessage: str = Query(
@@ -271,3 +277,79 @@ CategoryRepositoriesInstallableQueryParam: bool = Query(False, title="Installabl
 CategoryRepositoriesSortKeyQueryParam: str = Query("name", title="Sort Key")
 CategoryRepositoriesSortOrderQueryParam: str = Query("asc", title="Sort Order")
 CategoryRepositoriesPageQueryParam: Optional[int] = Query(None, title="Page")
+
+
+def ensure_valid_session(trans: SessionRequestContext) -> None:
+    """
+    Ensure that a valid Galaxy session exists and is available as
+    trans.session (part of initialization)
+    """
+    app = trans.app
+    mapping = app.model
+    session_manager = GalaxySessionManager(mapping)
+    sa_session = app.model.context
+    request = trans.request
+    # Try to load an existing session
+    secure_id = request.get_cookie(AUTH_COOKIE_NAME)
+    galaxy_session = None
+    prev_galaxy_session = None
+    user_for_new_session = None
+    invalidate_existing_session = False
+    # Track whether the session has changed so we can avoid calling flush
+    # in the most common case (session exists and is valid).
+    galaxy_session_requires_flush = False
+    if secure_id:
+        session_key: Optional[str] = app.security.decode_guid(secure_id)
+        if session_key:
+            # We do NOT catch exceptions here, if the database is down the request should fail,
+            # and we should not generate a new session.
+            galaxy_session = session_manager.get_session_from_session_key(session_key=session_key)
+        if not galaxy_session:
+            session_key = None
+
+    if galaxy_session is not None and galaxy_session.user is not None and galaxy_session.user.deleted:
+        invalidate_existing_session = True
+        log.warning(f"User '{galaxy_session.user.email}' is marked deleted, invalidating session")
+    # Do we need to invalidate the session for some reason?
+    if invalidate_existing_session:
+        assert galaxy_session
+        prev_galaxy_session = galaxy_session
+        prev_galaxy_session.is_valid = False
+        galaxy_session = None
+    # No relevant cookies, or couldn't find, or invalid, so create a new session
+    if galaxy_session is None:
+        galaxy_session = create_new_session(trans, prev_galaxy_session, user_for_new_session)
+        galaxy_session_requires_flush = True
+        trans.set_galaxy_session(galaxy_session)
+        set_auth_cookie(trans, galaxy_session)
+    else:
+        trans.set_galaxy_session(galaxy_session)
+    # Do we need to flush the session?
+    if galaxy_session_requires_flush:
+        sa_session.add(galaxy_session)
+        # FIXME: If prev_session is a proper relation this would not
+        #        be needed.
+        if prev_galaxy_session:
+            sa_session.add(prev_galaxy_session)
+        sa_session.flush()
+
+
+def set_auth_cookie(trans: SessionRequestContext, session):
+    cookie_name = AUTH_COOKIE_NAME
+    set_cookie(trans, trans.app.security.encode_guid(session.session_key), cookie_name)
+
+
+def set_cookie(trans: SessionRequestContext, value: str, key, path="/", age=90) -> None:
+    """Convenience method for setting a session cookie"""
+    # In wsgi we were setting both a max_age and and expires, but
+    # all browsers support max_age now.
+    domain: Optional[str] = trans.app.config.cookie_domain
+    trans.response.set_cookie(
+        key,
+        unicodify(value),
+        path=path,
+        max_age=3600 * 24 * age,  # 90 days
+        httponly=True,
+        secure=trans.request.is_secure,
+        domain=domain,
+    )
