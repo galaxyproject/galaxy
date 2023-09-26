@@ -60,7 +60,7 @@
                     :title="`<b>Switch to</b><br>${getHistoryNameById(data.item.history_id)}`"
                     class="truncate">
                     <b-link id="switch-to-history" href="#" @click.stop="switchHistory(data.item.history_id)">
-                        <b>{{ getHistoryNameById(data.item.history_id) }}</b>
+                        {{ getHistoryNameById(data.item.history_id) }}
                     </b-link>
                 </div>
             </template>
