@@ -3,7 +3,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 
 import { eventHub } from "@/components/plugins/eventHub.js";
 import { useConfig } from "@/composables/config";
-import { type Tool as ToolType } from "@/stores/toolStore";
+import { type Tool as ToolType, type ToolSectionLabel as LabelType } from "@/stores/toolStore";
 import { useToolStore } from "@/stores/toolStore";
 import { type Workflow } from "@/stores/workflowStore";
 import ariaAlert from "@/utils/ariaAlert";
@@ -66,7 +66,15 @@ const elems = computed(() => {
         return props.category.elems;
     }
     if (props.category.tools !== undefined && props.category.tools.length > 0) {
-        return props.category.tools.map((toolId: string) => toolStore.getToolForId(toolId));
+        return props.category.tools.map((toolId: string) => {
+            const tool = toolStore.getToolForId(toolId);
+            if (!tool && toolId.startsWith("panel_label_") && props.category.panel_labels) {
+                const labelId = toolId.split("panel_label_")[1];
+                return props.category.panel_labels.find((label: LabelType) => label.id === labelId);
+            } else {
+                return tool;
+            }
+        });
     }
     return [];
 });

@@ -1345,7 +1345,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                 view = self._default_panel_view
             view_contents = {}
             rval[view] = view_contents
-            panel_elts = list(self.tool_panel_contents(trans, view=view, **kwds))
+            panel_elts = self.tool_panel_contents(trans, view=view, **kwds)
             for elt in panel_elts:
                 # Only use cache for objects that are Tools.
                 if hasattr(elt, "tool_type"):

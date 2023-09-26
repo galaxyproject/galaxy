@@ -9,7 +9,7 @@ import { useRouter } from "vue-router/composables";
 import { getGalaxyInstance } from "@/app";
 import { useGlobalUploadModal } from "@/composables/globalUploadModal";
 import { getAppRoot } from "@/onload/loadConfig";
-import { type Tool, type ToolSection as ToolSectionType } from "@/stores/toolStore";
+import { type Tool, type ToolSection as ToolSectionType, type ToolSectionLabel } from "@/stores/toolStore";
 import { useToolStore } from "@/stores/toolStore";
 import { Workflow, type Workflow as WorkflowType } from "@/stores/workflowStore";
 import localize from "@/utils/localization";
@@ -92,14 +92,24 @@ const dataManagerSection = computed(() => {
 
 /** `toolsById` from `toolStore`, except it only has valid tools for `props.workflow` value */
 const localToolsById = computed(() => {
-    // Filter the items with is_compat === true
+    const addedToolTexts: string[] = [];
     if (toolStore.toolsById && Object.keys(toolStore.toolsById).length > 0) {
-        const toolEntries = Object.entries(toolStore.toolsById).filter(
-            ([_, tool]: [string, any]) =>
+        const toolEntries = Object.entries(toolStore.toolsById).filter(([_, tool]: [string, any]) => {
+            // filter out duplicate tools (different ids, same exact name+description)
+            // related ticket: https://github.com/galaxyproject/galaxy/issues/16145
+            const toolText: string = tool.name + tool.description;
+            if (addedToolTexts.includes(toolText)) {
+                return false;
+            } else {
+                addedToolTexts.push(toolText);
+            }
+            // filter on non-hidden, non-disabled, and workflow compatibile (based on props.workflow)
+            return (
                 !tool.hidden &&
                 tool.disabled !== true &&
                 (props.workflow ? tool.is_workflow_compatible : !SECTION_IDS_TO_EXCLUDE.includes(tool.panel_section_id))
-        );
+            );
+        });
         return Object.fromEntries(toolEntries);
     }
     return {};
@@ -111,7 +121,15 @@ const localSectionsById = computed(() => {
     // for all values that are `ToolSection`s, filter out tools that aren't in `localToolsById`
     const sectionEntries = Object.entries(currentPanel.value).map(([id, section]: [string, any]) => {
         if (section.tools && Array.isArray(section.tools)) {
-            section.tools = section.tools.filter((tool: string) => validToolIdsInCurrentView.includes(tool));
+            section.tools = section.tools.filter((toolId: string) => {
+                if (validToolIdsInCurrentView.includes(toolId)) {
+                    return true;
+                } else if (toolId.startsWith("panel_label_") && section.panel_labels) {
+                    // panel_label_ is a special case where there is a label within a section
+                    const labelId = toolId.split("panel_label_")[1];
+                    return section.panel_labels.find((label: ToolSectionLabel) => label.id === labelId) !== undefined;
+                }
+            });
         }
         return [id, section];
     });

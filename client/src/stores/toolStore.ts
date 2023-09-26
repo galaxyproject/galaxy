@@ -36,7 +36,18 @@ export interface ToolSection {
     version?: string;
     description?: string;
     links?: Record<string, string>;
-    tools: string[];
+    tools?: string[];
+    elems?: ToolSection[];
+    panel_labels?: string[];
+}
+
+export interface ToolSectionLabel {
+    model_class: string;
+    id: string;
+    text: string;
+    version?: string;
+    description?: string | null;
+    links?: Record<string, string> | null;
 }
 
 // TODO: Use this in ToolSearch.vue
@@ -147,8 +158,8 @@ export const useToolStore = defineStore("toolStore", () => {
             await axios
                 .get(`${getAppRoot()}api/tools?in_panel=False`)
                 .then(({ data }) => {
-                    loading.value = false;
                     saveAllTools(data.tools);
+                    loading.value = false;
                 })
                 .catch((error) => {
                     console.error(error);
