@@ -9963,7 +9963,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["HDCADetailed"] | components["schemas"]["HDCASummary"];
+                    "application/json": components["schemas"]["HDCADetailed"];
                 };
             };
             /** @description Validation Error */
