@@ -56,7 +56,7 @@ def main(argv: List[str]) -> None:
         {"name": "Invalid Test Tools", "description": "A contains a repository with invalid tools."}
     )
     populator.setup_bismark_repo(category_id=category.id)
-    populator.setup_test_data_repo("0010", category_id=category.id)
+    populator.setup_test_data_repo("0010", category_id=category.id, assert_ok=False)
 
     category = populator.new_category_if_needed({"name": "Test Category", "description": "A longer test description."})
     mirror_main_categories(populator)
@@ -154,7 +154,7 @@ class RemoteToolShedPopulator(ToolShedPopulator):
             return self.categories_by_name[name]
         return self.new_category(name, description)
 
-    def new_user_if_needed(self, as_json) -> Dict[str, Any]:
+    def new_user_if_needed(self, as_json: Dict[str, Any]) -> Dict[str, Any]:
         if "username" not in as_json:
             email = as_json["email"]
             as_json["username"] = email.split("@", 1)[0]
@@ -164,7 +164,8 @@ class RemoteToolShedPopulator(ToolShedPopulator):
         if "email" not in as_json:
             mock_email = f"{username}@galaxyproject.org"
             as_json["email"] = mock_email
-        request = {"username": as_json["username"], "email": as_json["email"]}
+        request = {"username": username, "email": as_json["email"]}
+        print(f"creating user: {username}")
         user = create_user(self._admin_api_interactor, request)
         self.users_by_username[username] = user
         return user
@@ -179,6 +180,7 @@ def mirror_main_categories(populator: RemoteToolShedPopulator):
 def mirror_main_users(populator: RemoteToolShedPopulator):
     main_users = get_main_users()
     for user in main_users:
+        assert isinstance(user, dict)
         populator.new_user_if_needed(user)
 
 
