@@ -9,7 +9,7 @@ log = logging.getLogger(__name__)
 
 repository_name = "filtering_0420"
 repository_description = "Galaxy filtering tool for test 0420"
-repository_long_description = "Long description of Galaxy filtering tool for test 0410"
+repository_long_description = "Long description of Galaxy filtering tool for test 0420"
 
 first_changeset_hash = ""
 
@@ -88,9 +88,12 @@ class TestRepositoryCitableURLs(ShedTwillTestCase):
         # Since twill does not load the contents of an iframe, we need to check that the iframe has been generated correctly,
         # then directly load the url that the iframe should be loading and check for the expected strings.
         # The iframe should point to /repository/browse_repositories?user_id=<encoded user ID>&operation=repositories_by_user
-        strings_displayed = ["/repository/browse_repositories", encoded_user_id, "operation=repositories_by_user"]
-        strings_displayed.append(encoded_user_id)
-        strings_displayed_in_iframe = ["user1", "filtering_0420", "Galaxy filtering tool for test 0420"]
+        if self.is_v2:
+            strings_displayed = []
+        else:
+            strings_displayed = ["/repository/browse_repositories", encoded_user_id, "operation=repositories_by_user"]
+            strings_displayed.append(encoded_user_id)
+        strings_displayed_in_iframe = ["user1", "filtering_0420", repository_description]
         self.load_citable_url(
             username="user1",
             repository_name=None,
@@ -115,11 +118,19 @@ class TestRepositoryCitableURLs(ShedTwillTestCase):
         # Since twill does not load the contents of an iframe, we need to check that the iframe has been generated correctly,
         # then directly load the url that the iframe should be loading and check for the expected strings.
         # The iframe should point to /repository/bview_repository?id=<encoded repository ID>
-        strings_displayed = ["/repository", "view_repository", "id=", encoded_repository_id]
-        strings_displayed_in_iframe = ["user1", "filtering_0420", "Galaxy filtering tool for test 0420"]
+        if self.is_v2:
+            strings_displayed = []
+        else:
+            strings_displayed = ["/repository", "view_repository", "id=", encoded_repository_id]
+        strings_displayed_in_iframe = [
+            "user1",
+            "filtering_0420",
+            self._escape_page_content_if_needed(repository_long_description),
+        ]
         strings_displayed_in_iframe.append(self.get_repository_tip(repository))
-        strings_displayed_in_iframe.append("Link to this repository:")
-        strings_displayed_in_iframe.append(f"{self.url}/view/user1/filtering_0420")
+        if not self.is_v2:
+            strings_displayed_in_iframe.append("Link to this repository:")
+            strings_displayed_in_iframe.append(f"{self.url}/view/user1/filtering_0420")
         self.load_citable_url(
             username="user1",
             repository_name="filtering_0420",
@@ -145,15 +156,19 @@ class TestRepositoryCitableURLs(ShedTwillTestCase):
         # Since twill does not load the contents of an iframe, we need to check that the iframe has been generated correctly,
         # then directly load the url that the iframe should be loading and check for the expected strings.
         # The iframe should point to /repository/view_repository?id=<encoded repository ID>
-        strings_displayed = ["/repository", "view_repository", f"id={encoded_repository_id}"]
+        if self.is_v2:
+            strings_displayed = []
+        else:
+            strings_displayed = ["/repository", "view_repository", f"id={encoded_repository_id}"]
         strings_displayed_in_iframe = [
             "user1",
             "filtering_0420",
-            "Galaxy filtering tool for test 0420",
+            self._escape_page_content_if_needed(repository_long_description),
             first_changeset_hash,
         ]
-        strings_displayed_in_iframe.append("Link to this repository revision:")
-        strings_displayed_in_iframe.append(f"{self.url}/view/user1/filtering_0420/{first_changeset_hash}")
+        if not self.is_v2:
+            strings_displayed_in_iframe.append("Link to this repository revision:")
+            strings_displayed_in_iframe.append(f"{self.url}/view/user1/filtering_0420/{first_changeset_hash}")
         strings_not_displayed_in_iframe = []
         self.load_citable_url(
             username="user1",
@@ -173,13 +188,16 @@ class TestRepositoryCitableURLs(ShedTwillTestCase):
         encoded_user_id = self.security.encode_id(test_user_1.id)
         encoded_repository_id = repository.id
         invalid_changeset_hash = "invalid"
-        # Since twill does not load the contents of an iframe, we need to check that the iframe has been generated correctly,
-        # then directly load the url that the iframe should be loading and check for the expected strings.
-        # The iframe should point to /repository/view_repository?id=<encoded repository ID>&status=error
-        strings_displayed = ["/repository", "view_repository", f"id={encoded_repository_id}"]
-        strings_displayed.extend(
-            ["The+change+log", "does+not+include+revision", invalid_changeset_hash, "status=error"]
-        )
+        if not self.is_v2:
+            # Since twill does not load the contents of an iframe, we need to check that the iframe has been generated correctly,
+            # then directly load the url that the iframe should be loading and check for the expected strings.
+            # The iframe should point to /repository/view_repository?id=<encoded repository ID>&status=error
+            strings_displayed = ["/repository", "view_repository", f"id={encoded_repository_id}"]
+            strings_displayed.extend(
+                ["The+change+log", "does+not+include+revision", invalid_changeset_hash, "status=error"]
+            )
+        else:
+            strings_displayed = ["The change log does not include revision " + invalid_changeset_hash]
         self.load_citable_url(
             username="user1",
             repository_name="filtering_0420",
@@ -200,12 +218,16 @@ class TestRepositoryCitableURLs(ShedTwillTestCase):
         # Since twill does not load the contents of an iframe, we need to check that the iframe has been generated correctly,
         # then directly load the url that the iframe should be loading and check for the expected strings.
         # The iframe should point to /repository/browse_repositories?user_id=<encoded user ID>&operation=repositories_by_user
-        strings_displayed = ["/repository", "browse_repositories", "user1"]
-        strings_displayed.extend(
-            ["list+of+repositories+owned", "does+not+include+one+named", "%21%21invalid%21%21", "status=error"]
-        )
-        strings_displayed_in_iframe = ["user1", "filtering_0420"]
-        strings_displayed_in_iframe.append("Repositories Owned by user1")
+        if not self.is_v2:
+            strings_displayed = ["/repository", "browse_repositories", "user1"]
+            strings_displayed.extend(
+                ["list+of+repositories+owned", "does+not+include+one+named", "%21%21invalid%21%21", "status=error"]
+            )
+            strings_displayed_in_iframe = ["user1", "filtering_0420"]
+            strings_displayed_in_iframe.append("Repositories Owned by user1")
+        else:
+            strings_displayed = ["Repository user1/!!invalid!! is not found"]
+            strings_displayed_in_iframe = []
         self.load_citable_url(
             username="user1",
             repository_name="!!invalid!!",
@@ -222,7 +244,10 @@ class TestRepositoryCitableURLs(ShedTwillTestCase):
         We are at step 8.
         Visit the following url and check for appropriate strings: <tool shed base url>/view/!!invalid!!
         """
-        strings_displayed = ["The tool shed", self.url, "contains no repositories owned by", "!!invalid!!"]
+        if not self.is_v2:
+            strings_displayed = ["The tool shed", self.url, "contains no repositories owned by", "!!invalid!!"]
+        else:
+            strings_displayed = ["No repositories found"]
         self.load_citable_url(
             username="!!invalid!!",
             repository_name=None,

@@ -45,6 +45,7 @@ def get_all_dependencies(app, metadata_entry, processed_dependency_links=None):
         dependency_dict["repository"] = repository.to_dict(value_mapper=value_mapper)
         if dependency_metadata.includes_tools:
             dependency_dict["tools"] = dependency_metadata.metadata["tools"]
+        dependency_dict["invalid_tools"] = dependency_metadata.metadata.get("invalid_tools", [])
         dependency_dict["repository_dependencies"] = []
         if dependency_dict["includes_tool_dependencies"]:
             dependency_dict["tool_dependencies"] = repository.get_tool_dependencies(

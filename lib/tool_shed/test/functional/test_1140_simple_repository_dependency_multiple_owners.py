@@ -84,7 +84,8 @@ class TestInstallRepositoryMultipleOwners(ShedTwillTestCase):
             "blastdbn",
             "blastdbp",
         ]
-        self.display_manage_repository_page(repository, strings_displayed=strings_displayed)
+        if not self.is_v2:
+            self.display_manage_repository_page(repository, strings_displayed=strings_displayed)
 
     def test_0015_create_tool_repository(self):
         """Create and populate the blastxml_to_top_descr_0120 repository
@@ -126,7 +127,7 @@ class TestInstallRepositoryMultipleOwners(ShedTwillTestCase):
         """
         repository = self._get_repository_by_name_and_owner(tool_repository_name, common.test_user_1_name)
         strings_displayed = ["blastxml_to_top_descr_0120", "BLAST top hit descriptions", "Make a table from BLAST XML"]
-        strings_displayed.extend(["0.0.1", "Valid tools"])
+        strings_displayed.extend(["0.0.1"])
         self.display_manage_repository_page(repository, strings_displayed=strings_displayed)
 
     def test_0025_create_repository_dependency(self):

@@ -13,6 +13,13 @@ from .browser import (
 )
 
 
+class Locators:
+    toolbar_login = ".toolbar-login"
+    toolbar_logout = ".toolbar-logout"
+    login_submit_button = '[name="login_button"]'
+    register_link = ".register-link"
+
+
 class PlaywrightShedBrowser(ShedBrowser):
     _page: Page
 
@@ -151,3 +158,17 @@ class PlaywrightShedBrowser(ShedBrowser):
     @property
     def is_twill(self) -> bool:
         return False
+
+    def logout_if_logged_in(self, assert_logged_out=True):
+        self._page.wait_for_selector(f"{Locators.toolbar_login}, {Locators.toolbar_logout}")
+        logout_locator = self._page.locator(Locators.toolbar_logout)
+        if logout_locator.is_visible():
+            logout_locator.click()
+        if assert_logged_out:
+            self.expect_not_logged_in()
+
+    def expect_not_logged_in(self):
+        expect(self._page.locator(Locators.toolbar_logout)).not_to_be_visible()
+
+    def expect_logged_in(self):
+        expect(self._page.locator(Locators.toolbar_logout)).to_be_visible()

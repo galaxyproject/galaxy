@@ -191,6 +191,21 @@ class FastAPIRepositories:
         # return _hack_fastapi_4428(as_dict)
 
     @router.get(
+        "/api_internal/repositories/{encoded_repository_id}/metadata",
+        description="Get information about repository metadata",
+        operation_id="repositories__internal_metadata",
+        response_model=RepositoryMetadata,
+    )
+    def metadata_internal(
+        self,
+        encoded_repository_id: str = RepositoryIdPathParam,
+        downloadable_only: bool = DownloadableQueryParam,
+    ) -> dict:
+        recursive = True
+        as_dict = get_repository_metadata_dict(self.app, encoded_repository_id, recursive, downloadable_only)
+        return _hack_fastapi_4428(as_dict)
+
+    @router.get(
         "/api/repositories/get_ordered_installable_revisions",
         description="Get an ordered list of the repository changeset revisions that are installable",
         operation_id="repositories__get_ordered_installable_revisions",

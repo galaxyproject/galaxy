@@ -131,7 +131,19 @@ class RepositoryUpdate(BaseModel):
 
 
 class RepositoryTool(BaseModel):
-    pass
+    # Added back in post v2 in order for the frontend to render
+    # tool descriptions on the repository page.
+    description: str
+    guid: str
+    id: str
+    name: str
+    requirements: list
+    tool_config: str
+    tool_type: str
+    version: str
+    # add_to_tool_panel: bool
+    # tests: list
+    # version_string_cmd: Optional[str]
 
 
 class RepositoryRevisionMetadata(BaseModel):
@@ -139,6 +151,7 @@ class RepositoryRevisionMetadata(BaseModel):
     repository: Repository
     repository_dependencies: List["RepositoryDependency"]
     tools: Optional[List["RepositoryTool"]]
+    invalid_tools: List[str]  # added for rendering list of invalid tools in 2.0 frontend
     repository_id: str
     numeric_revision: int
     changeset_revision: str
@@ -240,7 +253,10 @@ class RepositoryIndexRequest(BaseModel):
     deleted: str = "false"
 
 
-class RepositoriesByCategory(Category):
+class RepositoriesByCategory(BaseModel):
+    id: str
+    name: str
+    description: str
     repository_count: int
     repositories: List[Repository]
 
@@ -424,7 +440,7 @@ class RepositoryMetadataInstallInfo(BaseModel):
             malicious=as_dict["malicious"],
             repository_id=as_dict["repository_id"],
             url=as_dict["url"],
-            valid_tools=ValidTool.from_legacy_list(as_dict["valid_tools"]),
+            valid_tools=ValidTool.from_legacy_list(as_dict.get("valid_tools", [])),
         )
 
 

@@ -1,5 +1,6 @@
 import logging
 
+from ..base.api import skip_if_api_v2
 from ..base.twilltestcase import (
     common,
     ShedTwillTestCase,
@@ -85,6 +86,7 @@ class TestToolShedBrowseUtilities(ShedTwillTestCase):
             commit_message="Uploaded freebayes.tar.",
         )
 
+    @skip_if_api_v2
     def test_0030_browse_tools(self):
         """Load the page to browse tools.
 
@@ -96,6 +98,7 @@ class TestToolShedBrowseUtilities(ShedTwillTestCase):
         strings_displayed = ["EMBOSS", "antigenic1", "5.0.0", changeset_revision, "user1", "emboss_0430"]
         self.browse_tools(strings_displayed=strings_displayed)
 
+    @skip_if_api_v2
     def test_0040_browse_tool_dependencies(self):
         """Browse tool dependencies and look for the right versions of freebayes and samtools.
 

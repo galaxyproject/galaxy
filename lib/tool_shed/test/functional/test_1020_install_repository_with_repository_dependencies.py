@@ -73,9 +73,12 @@ class TestToolWithRepositoryDependencies(ShedTwillTestCase):
         self.browse_tool_shed(url=self.url, strings_displayed=["Test 0020 Basic Repository Dependencies"])
         category = self.populator.get_category_with_name("Test 0020 Basic Repository Dependencies")
         self.browse_category(category, strings_displayed=[emboss_repository_name])
-        self.preview_repository_in_tool_shed(
-            emboss_repository_name, common.test_user_1_name, strings_displayed=[emboss_repository_name, "Valid tools"]
-        )
+        if not self.is_v2:
+            self.preview_repository_in_tool_shed(
+                emboss_repository_name,
+                common.test_user_1_name,
+                strings_displayed=[emboss_repository_name, "Valid tools"],
+            )
 
     def test_0015_install_emboss_repository(self):
         """Install the emboss repository without installing tool dependencies."""

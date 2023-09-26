@@ -84,6 +84,10 @@ class SessionRequestContext(ProvidesRepositoriesContext, Protocol):
     def get_galaxy_session(self) -> Optional[GalaxySession]:
         ...
 
+    @abc.abstractmethod
+    def set_galaxy_session(self, galaxy_session: GalaxySession):
+        ...
+
     @abc.abstractproperty
     def request(self) -> GalaxyAbstractRequest:
         ...
@@ -94,6 +98,10 @@ class SessionRequestContext(ProvidesRepositoriesContext, Protocol):
 
     @abc.abstractmethod
     def url_builder(self):
+        ...
+
+    @abc.abstractproperty
+    def session_csrf_token(self) -> str:
         ...
 
 
@@ -133,6 +141,11 @@ class SessionRequestContextImpl(SessionRequestContext):
     def get_galaxy_session(self) -> Optional[GalaxySession]:
         return self._galaxy_session
 
+    def set_galaxy_session(self, galaxy_session: GalaxySession):
+        self._galaxy_session = galaxy_session
+        if galaxy_session.user:
+            self._user = galaxy_session.user
+
     @property
     def repositories_hostname(self) -> str:
         return str(self.request.base).rstrip("/")
@@ -148,3 +161,18 @@ class SessionRequestContextImpl(SessionRequestContext):
     @property
     def response(self) -> GalaxyAbstractResponse:
         return self.__response
+
+    # Following three things added v2.0 frontend
+    @property
+    def session_csrf_token(self):
+        token = ""
+        if self._galaxy_session:
+            token = self.security.encode_id(self._galaxy_session.id, kind="csrf")
+        return token
+
+    @property
+    def galaxy_session(self) -> Optional[GalaxySession]:
+        return self._galaxy_session
+
+    def log_event(self, str):
+        pass

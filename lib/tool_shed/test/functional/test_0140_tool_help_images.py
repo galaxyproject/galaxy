@@ -1,5 +1,6 @@
 import logging
 
+from ..base.api import skip_if_api_v2
 from ..base.twilltestcase import (
     common,
     ShedTwillTestCase,
@@ -56,6 +57,7 @@ class TestToolHelpImages(ShedTwillTestCase):
             commit_message="Uploaded htseq_count.tar.",
         )
 
+    @skip_if_api_v2
     def test_0010_load_tool_page(self):
         """Load the tool page and check for the image.
 

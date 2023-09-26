@@ -455,7 +455,9 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             trans.sa_session.add(token_result)
             return user, "Password has been changed. Token has been invalidated."
         else:
-            user = self.by_id(self.app.security.decode_id(id))
+            if not isinstance(id, int):
+                id = self.app.security.decode_id(id)
+            user = self.by_id(id)
             if user:
                 message = self.app.auth_manager.check_change_password(user, current, trans.request)
                 if message:

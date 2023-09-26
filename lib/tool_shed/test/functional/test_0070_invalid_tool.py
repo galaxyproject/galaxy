@@ -32,7 +32,7 @@ class TestBismarkRepository(ShedTwillTestCase):
         )
         self.user_populator().setup_bismark_repo(repository)
         invalid_revision = self.get_repository_first_revision(repository)
-        self.display_manage_repository_page(repository, strings_displayed=["Invalid tools"])
+        self.display_manage_repository_page(repository, strings_displayed=[self.invalid_tools_labels])
         valid_revision = self.get_repository_tip(repository)
         tool_guid = f"{self.url.replace('http://', '').rstrip('/')}/repos/user1/bismark_0070/bismark_methylation_extractor/0.7.7.3"
         tool_metadata_strings_displayed = [

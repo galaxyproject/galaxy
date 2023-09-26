@@ -4,8 +4,14 @@ from sqlalchemy import (
     update,
 )
 
+from typing_extensions import Protocol
+
 from galaxy.model.base import transaction
 from galaxy.structured_app import BasicSharedApp
+
+
+class IsUserModel(Protocol):
+    id: str
 
 
 class ApiKeyManager:
@@ -13,12 +19,12 @@ class ApiKeyManager:
         self.app = app
         self.session = self.app.model.context
 
-    def get_api_key(self, user):
+    def get_api_key(self, user: IsUserModel):
         APIKeys = self.app.model.APIKeys
         stmt = select(APIKeys).filter_by(user_id=user.id, deleted=False).order_by(APIKeys.create_time.desc()).limit(1)
         return self.session.scalars(stmt).first()
 
-    def create_api_key(self, user):
+    def create_api_key(self, user: IsUserModel):
         guid = self.app.security.get_new_guid()
         new_key = self.app.model.APIKeys()
         new_key.user_id = user.id
@@ -28,7 +34,7 @@ class ApiKeyManager:
             self.session.commit()
         return new_key
 
-    def get_or_create_api_key(self, user) -> str:
+    def get_or_create_api_key(self, user: IsUserModel) -> str:
         # Logic Galaxy has always used - but it would appear to have a race
         # condition. Worth fixing? Would kind of need a message queue to fix
         # in multiple process mode.
@@ -36,7 +42,7 @@ class ApiKeyManager:
         key = api_key.key if api_key else self.create_api_key(user).key
         return key
 
-    def delete_api_key(self, user) -> None:
+    def delete_api_key(self, user: IsUserModel) -> None:
         """Marks the current user API key as deleted."""
         # Before it was possible to create multiple API keys for the same user although they were not considered valid
         # So all non-deleted keys are marked as deleted for backward compatibility

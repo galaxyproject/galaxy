@@ -56,6 +56,7 @@ def main(argv: List[str]) -> None:
         {"name": "Invalid Test Tools", "description": "A contains a repository with invalid tools."}
     )
     populator.setup_bismark_repo(category_id=category.id)
+    populator.setup_test_data_repo("0010", category_id=category.id)
 
     category = populator.new_category_if_needed({"name": "Test Category", "description": "A longer test description."})
     mirror_main_categories(populator)
@@ -65,6 +66,7 @@ def main(argv: List[str]) -> None:
     populator.new_user_if_needed({"email": "alice@alicesdomain.com"})
     populator.new_user_if_needed({"email": "thirduser@threeis.com"})
 
+    populator.setup_test_data_repo("column_maker_with_readme", category_id=category.id)
     populator.setup_column_maker_repo(prefix="bootstrap", category_id=category.id)
     populator.setup_column_maker_repo(prefix="bootstrap2", category_id=category.id)
 

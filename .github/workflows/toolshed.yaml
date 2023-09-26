@@ -20,14 +20,23 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        python-version: ['3.7']
-        test-install-client: ['standalone', 'galaxy_api']
-        # v1 is mostly working...
-        shed-api: ['v1']
-        # lets get twill working with twill then try to
-        # make progress on the playwright
-        # shed-browser: ['twill', 'playwright']
-        shed-browser: ['playwright']
+        include:
+        - test-install-client: 'galaxy_api'
+          python-version: '3.7'
+          shed-api: 'v1'
+          shed-browser: 'twill'
+        - test-install-client: 'standalone'
+          python-version: '3.8'
+          shed-api: 'v1'
+          shed-browser: 'twill'
+        - test-install-client: 'galaxy_api'
+          python-version: '3.9'
+          shed-api: 'v2'
+          shed-browser: 'playwright'
+        - test-install-client: 'standalone'
+          python-version: '3.10'
+          shed-api: 'v2'
+          shed-browser: 'playwright'
     services:
       postgres:
         image: postgres:13
