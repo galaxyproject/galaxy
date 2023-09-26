@@ -25,6 +25,7 @@ from galaxy.model import (
     HistoryDatasetAssociationDisplayAtAuthorization,
     Library,
     LibraryDataset,
+    LibraryDatasetDatasetAssociation,
     LibraryDatasetPermissions,
     LibraryPermissions,
     Role,
@@ -1535,17 +1536,14 @@ class GalaxyRBACAgent(RBACAgent):
             return True, ""
         action = self.permitted_actions.DATASET_ACCESS
 
-        lddas = (
-            self.sa_session.query(self.model.LibraryDatasetDatasetAssociation)
-            .join("library_dataset")
-            .filter(self.model.LibraryDataset.folder == folder)
-            .join("dataset")
-            .options(
-                joinedload(self.model.LibraryDatasetDatasetAssociation.dataset).joinedload(self.model.Dataset.actions)
-            )
-            .all()
+        stmt = (
+            select(LibraryDatasetDatasetAssociation)
+            .join(LibraryDatasetDatasetAssociation.library_dataset)
+            .where(LibraryDataset.folder == folder)
+            .join(Dataset)
+            .options(joinedload(LibraryDatasetDatasetAssociation.dataset).joinedload(Dataset.actions))
         )
-
+        lddas = self.sa_session.scalars(stmt).unique()
         for ldda in lddas:
             ldda_access_permissions = self.get_item_actions(action, ldda.dataset)
             if not ldda_access_permissions:
