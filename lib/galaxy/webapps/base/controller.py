@@ -8,7 +8,10 @@ from typing import (
     Optional,
 )
 
-from sqlalchemy import true
+from sqlalchemy import (
+    select,
+    true,
+)
 from webob.exc import (
     HTTPBadRequest,
     HTTPInternalServerError,
@@ -34,6 +37,7 @@ from galaxy.model import (
     ExtendedMetadata,
     ExtendedMetadataIndex,
     HistoryDatasetAssociation,
+    HistoryDatasetCollectionAssociation,
     LibraryDatasetDatasetAssociation,
 )
 from galaxy.model.base import transaction
@@ -444,7 +448,7 @@ class UsesLibraryMixinItems(SharableItemSecurityMixin):
         Fetches the collection identified by `from_hcda_id` and dispatches individual collection elements to
         _copy_hda_to_library_folder
         """
-        hdca = trans.sa_session.query(trans.app.model.HistoryDatasetCollectionAssociation).get(from_hdca_id)
+        hdca = trans.sa_session.get(HistoryDatasetCollectionAssociation, from_hdca_id)
         if hdca.collection.collection_type != "list":
             raise exceptions.NotImplemented(
                 "Cannot add nested collections to library. Please flatten your collection first."
@@ -611,7 +615,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
         """
         # Load workflow from database
         try:
-            visualization = trans.sa_session.query(trans.model.Visualization).get(trans.security.decode_id(id))
+            visualization = trans.sa_session.get(model.Visualization, trans.security.decode_id(id))
         except TypeError:
             visualization = None
         if not visualization:
@@ -619,77 +623,32 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
         else:
             return self.security_check(trans, visualization, check_ownership, check_accessible)
 
-    def get_visualizations_by_user(self, trans, user, order_by=None, query_only=False):
-        """
-        Return query or query results of visualizations filtered by a user.
+    def get_visualizations_by_user(self, trans, user):
+        """Return query results of visualizations filtered by a user."""
+        stmt = select(model.Visualization).filter(model.Visualization.user == user).order_by(model.Visualization.title)
+        return trans.sa_session.scalars(stmt).all()
 
-        Set `order_by` to a column or list of columns to change the order
-        returned. Defaults to `DEFAULT_ORDER_BY`.
-        Set `query_only` to return just the query for further filtering or
-        processing.
-        """
-        # TODO: move into model (as class attr)
-        DEFAULT_ORDER_BY = [model.Visualization.title]
-        if not order_by:
-            order_by = DEFAULT_ORDER_BY
-        if not isinstance(order_by, list):
-            order_by = [order_by]
-        query = trans.sa_session.query(model.Visualization)
-        query = query.filter(model.Visualization.user == user)
-        if order_by:
-            query = query.order_by(*order_by)
-        if query_only:
-            return query
-        return query.all()
+    def get_visualizations_shared_with_user(self, trans, user):
+        """Return query results for visualizations shared with the given user."""
+        # The second `where` clause removes duplicates when a user shares with themselves.
+        stmt = (
+            select(model.Visualization)
+            .join(model.VisualizationUserShareAssociation)
+            .where(model.VisualizationUserShareAssociation.user_id == user.id)
+            .where(model.Visualization.user_id != user.id)
+            .order_by(model.Visualization.title)
+        )
+        return trans.sa_session.scalars(stmt).all()
 
-    def get_visualizations_shared_with_user(self, trans, user, order_by=None, query_only=False):
+    def get_published_visualizations(self, trans, exclude_user=None):
         """
-        Return query or query results for visualizations shared with the given user.
-
-        Set `order_by` to a column or list of columns to change the order
-        returned. Defaults to `DEFAULT_ORDER_BY`.
-        Set `query_only` to return just the query for further filtering or
-        processing.
+        Return query results for published visualizations optionally excluding the user in `exclude_user`.
         """
-        DEFAULT_ORDER_BY = [model.Visualization.title]
-        if not order_by:
-            order_by = DEFAULT_ORDER_BY
-        if not isinstance(order_by, list):
-            order_by = [order_by]
-        query = trans.sa_session.query(model.Visualization).join(model.VisualizationUserShareAssociation)
-        query = query.filter(model.VisualizationUserShareAssociation.user_id == user.id)
-        # remove duplicates when a user shares with themselves?
-        query = query.filter(model.Visualization.user_id != user.id)
-        if order_by:
-            query = query.order_by(*order_by)
-        if query_only:
-            return query
-        return query.all()
-
-    def get_published_visualizations(self, trans, exclude_user=None, order_by=None, query_only=False):
-        """
-        Return query or query results for published visualizations optionally excluding
-        the user in `exclude_user`.
-
-        Set `order_by` to a column or list of columns to change the order
-        returned. Defaults to `DEFAULT_ORDER_BY`.
-        Set `query_only` to return just the query for further filtering or
-        processing.
-        """
-        DEFAULT_ORDER_BY = [model.Visualization.title]
-        if not order_by:
-            order_by = DEFAULT_ORDER_BY
-        if not isinstance(order_by, list):
-            order_by = [order_by]
-        query = trans.sa_session.query(model.Visualization)
-        query = query.filter(model.Visualization.published == true())
+        stmt = select(model.Visualization).filter(model.Visualization.published == true())
         if exclude_user:
-            query = query.filter(model.Visualization.user != exclude_user)
-        if order_by:
-            query = query.order_by(*order_by)
-        if query_only:
-            return query
-        return query.all()
+            stmt = stmt.filter(model.Visualization.user != exclude_user)
+        stmt = stmt.order_by(model.Visualization.title)
+        return trans.sa_session.scalars(stmt).all()
 
     # TODO: move into model (to_dict)
     def get_visualization_summary_dict(self, visualization):
@@ -834,7 +793,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
             vis = self._create_visualization(trans, title, type, dbkey, slug, annotation)
         else:
             decoded_id = trans.security.decode_id(id)
-            vis = session.query(trans.model.Visualization).get(decoded_id)
+            vis = session.get(model.Visualization, decoded_id)
             # TODO: security check?
 
         # Create new VisualizationRevision that will be attached to the viz
@@ -1068,7 +1027,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
             raise HTTPBadRequest(f"Invalid dataset id: {str(dataset_id)}.")
 
         try:
-            data = trans.sa_session.query(trans.app.model.HistoryDatasetAssociation).get(int(dataset_id))
+            data = trans.sa_session.get(HistoryDatasetAssociation, int(dataset_id))
         except Exception:
             raise HTTPBadRequest(f"Invalid dataset id: {str(dataset_id)}.")
 

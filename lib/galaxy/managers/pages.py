@@ -18,9 +18,13 @@ from typing import (
 from sqlalchemy import (
     false,
     or_,
+    select,
     true,
 )
-from sqlalchemy.orm import aliased
+from sqlalchemy.orm import (
+    aliased,
+    Session,
+)
 
 from galaxy import (
     exceptions,
@@ -38,6 +42,7 @@ from galaxy.managers.markdown_util import (
     ready_galaxy_markdown_for_export,
     ready_galaxy_markdown_for_import,
 )
+from galaxy.model import PageRevision
 from galaxy.model.base import transaction
 from galaxy.model.index_filter_util import (
     append_user_filter,
@@ -621,3 +626,8 @@ def placeholderRenderForSave(trans: ProvidesHistoryContext, item_class, item_id,
         item_id=item_id,
         item_name=item_name,
     )
+
+
+def get_page_revision(session: Session, page_id: int):
+    stmt = select(PageRevision).filter_by(page_id=page_id)
+    return session.scalars(stmt)

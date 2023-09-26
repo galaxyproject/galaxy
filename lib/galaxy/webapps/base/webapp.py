@@ -21,6 +21,7 @@ from apispec import APISpec
 from paste.urlmap import URLMap
 from sqlalchemy import (
     and_,
+    select,
     true,
 )
 from sqlalchemy.orm.exc import NoResultFound
@@ -865,13 +866,14 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         self.sa_session.add_all((prev_galaxy_session, self.galaxy_session))
         galaxy_user_id = prev_galaxy_session.user_id
         if logout_all and galaxy_user_id is not None:
-            for other_galaxy_session in self.sa_session.query(self.app.model.GalaxySession).filter(
+            stmt = select(self.app.model.GalaxySession).filter(
                 and_(
-                    self.app.model.GalaxySession.table.c.user_id == galaxy_user_id,
-                    self.app.model.GalaxySession.table.c.is_valid == true(),
-                    self.app.model.GalaxySession.table.c.id != prev_galaxy_session.id,
+                    self.app.model.GalaxySession.user_id == galaxy_user_id,
+                    self.app.model.GalaxySession.is_valid == true(),
+                    self.app.model.GalaxySession.id != prev_galaxy_session.id,
                 )
-            ):
+            )
+            for other_galaxy_session in self.sa_session.scalars(stmt):
                 other_galaxy_session.is_valid = False
                 self.sa_session.add(other_galaxy_session)
         with transaction(self.sa_session):
@@ -932,9 +934,10 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         # Look for default history that (a) has default name + is not deleted and
         # (b) has no datasets. If suitable history found, use it; otherwise, create
         # new history.
-        unnamed_histories = self.sa_session.query(self.app.model.History).filter_by(
+        stmt = select(self.app.model.History).filter_by(
             user=self.galaxy_session.user, name=self.app.model.History.default_name, deleted=False
         )
+        unnamed_histories = self.sa_session.scalars(stmt)
         default_history = None
         for history in unnamed_histories:
             if history.empty:
@@ -961,12 +964,13 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         if not user:
             return None
         try:
-            recent_history = (
-                self.sa_session.query(self.app.model.History)
+            stmt = (
+                select(self.app.model.History)
                 .filter_by(user=user, deleted=False)
                 .order_by(self.app.model.History.update_time.desc())
-                .first()
+                .limit(1)
             )
+            recent_history = self.sa_session.scalars(stmt).first()
         except NoResultFound:
             return None
         self.set_history(recent_history)

@@ -3,15 +3,17 @@ from typing import Optional
 
 from sqlalchemy import (
     false,
+    select,
     true,
 )
+from sqlalchemy.orm import Session
 
-from galaxy import (
-    model,
-    util,
-)
+from galaxy import util
 from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.groups import get_group_by_name
 from galaxy.managers.quotas import QuotaManager
+from galaxy.managers.users import get_user_by_email
+from galaxy.model import Quota
 from galaxy.quota._schema import (
     CreateQuotaParams,
     CreateQuotaResult,
@@ -39,14 +41,13 @@ class QuotasService(ServiceBase):
     def index(self, trans: ProvidesUserContext, deleted: bool = False) -> QuotaSummaryList:
         """Displays a list of quotas."""
         rval = []
-        query = trans.sa_session.query(model.Quota)
         if deleted:
             route = "deleted_quota"
-            query = query.filter(model.Quota.deleted == true())
+            quotas = get_quotas(trans.sa_session, deleted=True)
         else:
             route = "quota"
-            query = query.filter(model.Quota.deleted == false())
-        for quota in query:
+            quotas = get_quotas(trans.sa_session, deleted=False)
+        for quota in quotas:
             item = quota.to_dict(value_mapper={"id": DecodedDatabaseIdField.encode})
             encoded_id = DecodedDatabaseIdField.encode(quota.id)
             item["url"] = url_for(route, id=encoded_id)
@@ -119,25 +120,29 @@ class QuotasService(ServiceBase):
         For convenience, in_users and in_groups can be encoded IDs or emails/group names in the API.
         """
 
-        def get_id(item, model_class, column):
+        def get_user_id(item):
             try:
                 return trans.security.decode_id(item)
             except Exception:
-                pass  # maybe an email/group name
-            # this will raise if the item is invalid
-            return trans.sa_session.query(model_class).filter(column == item).first().id
+                return get_user_by_email(trans.sa_session, item).id
+
+        def get_group_id(item):
+            try:
+                return trans.security.decode_id(item)
+            except Exception:
+                return get_group_by_name(trans.sa_session, item).id
 
         new_in_users = []
         new_in_groups = []
         invalid = []
         for item in util.listify(payload.get("in_users", [])):
             try:
-                new_in_users.append(get_id(item, model.User, model.User.email))
+                new_in_users.append(get_user_id(item))
             except Exception:
                 invalid.append(item)
         for item in util.listify(payload.get("in_groups", [])):
             try:
-                new_in_groups.append(get_id(item, model.Group, model.Group.name))
+                new_in_groups.append(get_group_id(item))
             except Exception:
                 invalid.append(item)
         if invalid:
@@ -148,3 +153,11 @@ class QuotasService(ServiceBase):
             raise Exception(msg)
         payload["in_users"] = list(map(str, new_in_users))
         payload["in_groups"] = list(map(str, new_in_groups))
+
+
+def get_quotas(session: Session, deleted: bool = False):
+    is_deleted = true()
+    if not deleted:
+        is_deleted = false()
+    stmt = select(Quota).where(Quota.deleted == is_deleted)
+    return session.scalars(stmt)

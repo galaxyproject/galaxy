@@ -23,6 +23,7 @@ from kombu.pools import producers
 import galaxy.queues
 from galaxy import util
 from galaxy.config import reload_config_options
+from galaxy.model import User
 from galaxy.tools import ToolBox
 from galaxy.tools.data_manager.manager import DataManagers
 from galaxy.tools.special_tools import load_lib_tools
@@ -219,7 +220,7 @@ def recalculate_user_disk_usage(app, **kwargs):
     user_id = kwargs.get("user_id", None)
     sa_session = app.model.context
     if user_id:
-        user = sa_session.query(app.model.User).get(user_id)
+        user = sa_session.get(User, user_id)
         if user:
             user.calculate_and_set_disk_usage(app.object_store)
         else:

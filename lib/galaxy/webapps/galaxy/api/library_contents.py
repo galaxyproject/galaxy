@@ -4,11 +4,6 @@ API operations on the contents of a data library.
 import logging
 from typing import Optional
 
-from sqlalchemy.orm.exc import (
-    MultipleResultsFound,
-    NoResultFound,
-)
-
 from galaxy import (
     exceptions,
     managers,
@@ -25,7 +20,9 @@ from galaxy.managers.collections_util import (
 from galaxy.model import (
     ExtendedMetadata,
     ExtendedMetadataIndex,
+    Library,
     LibraryDataset,
+    LibraryFolder,
     tags,
 )
 from galaxy.model.base import transaction
@@ -101,19 +98,9 @@ class LibraryContentsController(
                     rval.append(ld)
             return rval
 
-        decoded_library_id = self.decode_id(library_id)
-        try:
-            library = (
-                trans.sa_session.query(trans.app.model.Library)
-                .filter(trans.app.model.Library.table.c.id == decoded_library_id)
-                .one()
-            )
-        except MultipleResultsFound:
-            raise exceptions.InconsistentDatabase("Multiple libraries found with the same id.")
-        except NoResultFound:
+        library = trans.sa_session.get(Library, self.decode_id(library_id))
+        if not library:
             raise exceptions.RequestParameterInvalidException("No library found with the id provided.")
-        except Exception as e:
-            raise exceptions.InternalServerError(f"Error loading from the database.{util.unicodify(e)}")
         if not (trans.user_is_admin or trans.app.security_agent.can_access_library(current_user_roles, library)):
             raise exceptions.RequestParameterInvalidException("No library found with the id provided.")
         encoded_id = f"F{trans.security.encode_id(library.root_folder.id)}"
@@ -348,7 +335,7 @@ class LibraryContentsController(
         roles = kwd.get("roles", "")
         is_admin = trans.user_is_admin
         current_user_roles = trans.get_current_user_roles()
-        folder = trans.sa_session.query(trans.app.model.LibraryFolder).get(folder_id)
+        folder = trans.sa_session.get(LibraryFolder, folder_id)
         self._check_access(trans, is_admin, folder, current_user_roles)
         self._check_add(trans, is_admin, folder, current_user_roles)
         library = folder.parent_library

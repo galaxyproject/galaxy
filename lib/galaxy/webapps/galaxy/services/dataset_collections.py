@@ -210,7 +210,7 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
         return rval
 
     def dce_content(self, trans: ProvidesHistoryContext, dce_id: DecodedDatabaseIdField) -> DCESummary:
-        dce: Optional[DatasetCollectionElement] = trans.model.session.query(DatasetCollectionElement).get(dce_id)
+        dce: Optional[DatasetCollectionElement] = trans.model.session.get(DatasetCollectionElement, dce_id)
         if not dce:
             raise exceptions.ObjectNotFound("No DatasetCollectionElement found")
         if not trans.user_is_admin:
