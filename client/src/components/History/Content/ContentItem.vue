@@ -9,7 +9,7 @@
         @keydown="onKeyDown">
         <div class="p-1 cursor-pointer" draggable @dragstart="onDragStart" @dragend="onDragEnd" @click.stop="onClick">
             <div class="d-flex justify-content-between">
-                <span class="p-1 font-weight-bold" data-description="content item header info">
+                <span class="p-1" data-description="content item header info">
                     <b-button v-if="selectable" class="selector p-0" @click.stop="$emit('update:selected', !selected)">
                         <icon v-if="selected" fixed-width size="lg" :icon="['far', 'check-square']" />
                         <icon v-else fixed-width size="lg" :icon="['far', 'square']" />
@@ -46,7 +46,7 @@
                         <icon fixed-width :icon="contentState.icon" :spin="contentState.spin" />
                     </span>
                     <span class="id hid">{{ id }}:</span>
-                    <span class="content-title name">{{ name }}</span>
+                    <span class="content-title name font-weight-bold">{{ name }}</span>
                 </span>
                 <span v-if="item.purged" class="align-self-start btn-group p-1">
                     <b-badge variant="secondary" title="This dataset has been permanently deleted">
