@@ -194,5 +194,3 @@ export const StoreProvider = (storeAction, storeGetter) => {
         },
     };
 };
-
-export const ToolsProvider = StoreProvider("fetchAllTools", "getTools");
