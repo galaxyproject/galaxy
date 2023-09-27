@@ -1397,6 +1397,13 @@ class JobIndexQueryPayload(Model):
     offset: int = 0
 
 
+class InvocationUpdatePayload(Model):
+    action: bool = Field(
+        title="Action",
+        description="Whether to take action.",
+    )
+
+
 class InvocationSortByEnum(str, Enum):
     create_time = "create_time"
     update_time = "update_time"

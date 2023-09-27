@@ -49,6 +49,7 @@ from galaxy.schema.invocation import InvocationMessageResponseModel
 from galaxy.schema.schema import (
     AsyncFile,
     AsyncTaskResultSummary,
+    InvocationUpdatePayload,
     SetSlugPayload,
     ShareWithPayload,
     ShareWithStatus,
@@ -1419,9 +1420,9 @@ class FastAPIInvocations:
         trans: ProvidesUserContext = DependsOnTrans,
         invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
         step_id: DecodedDatabaseIdField = WorkflowInvocationStepIDPathParam,
-        action: bool = True,
+        payload: InvocationUpdatePayload = Body(...),
     ):
-        return self.invocations_service.update_invocation_step(trans, step_id, action)
+        return self.invocations_service.update_invocation_step(trans, step_id, payload.action)
 
     @router.put(
         "/api/workflows/{workflow_id}/invocations/{invocation_id}/steps/{step_id}",
@@ -1438,10 +1439,10 @@ class FastAPIInvocations:
         workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
         invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
         step_id: DecodedDatabaseIdField = WorkflowInvocationStepIDPathParam,
-        action: bool = True,
+        payload: InvocationUpdatePayload = Body(...),
     ):
         """A wrapper for multiple API endpoints providing the same logic."""
-        return self.update_invocation_step(trans, step_id=step_id, action=action)
+        return self.update_invocation_step(trans, step_id=step_id, payload=payload)
 
     @router.get(
         "/api/invocations/{invocation_id}/step_jobs_summary",
