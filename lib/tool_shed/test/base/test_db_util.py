@@ -8,6 +8,7 @@ from sqlalchemy import (
     and_,
     false,
     true,
+    select,
 )
 
 import galaxy.model
@@ -53,42 +54,46 @@ def get_all_repositories():
 def get_all_installed_repositories(session=None) -> List[galaxy.model.tool_shed_install.ToolShedRepository]:
     if session is None:
         session = install_session()
-    return list(
-        session.query(galaxy.model.tool_shed_install.ToolShedRepository)
-        .filter(
-            and_(
-                galaxy.model.tool_shed_install.ToolShedRepository.table.c.deleted == false(),
-                galaxy.model.tool_shed_install.ToolShedRepository.table.c.uninstalled == false(),
-                galaxy.model.tool_shed_install.ToolShedRepository.table.c.status
-                == galaxy.model.tool_shed_install.ToolShedRepository.installation_status.INSTALLED,
+    return session.scalars(
+        session.execute(
+            select(galaxy.model.tool_shed_install.ToolShedRepository).where(
+                and_(
+                    galaxy.model.tool_shed_install.ToolShedRepository.deleted == false(),
+                    galaxy.model.tool_shed_install.ToolShedRepository.uninstalled == false(),
+                    galaxy.model.tool_shed_install.ToolShedRepository.status
+                    == galaxy.model.tool_shed_install.ToolShedRepository.installation_status.INSTALLED,
+                )
             )
         )
-        .all()
-    )
+    ).all()
 
 
 def get_galaxy_repository_by_name_owner_changeset_revision(repository_name, owner, changeset_revision):
-    return (
-        install_session()
-        .query(galaxy.model.tool_shed_install.ToolShedRepository)
-        .filter(
-            and_(
-                galaxy.model.tool_shed_install.ToolShedRepository.table.c.name == repository_name,
-                galaxy.model.tool_shed_install.ToolShedRepository.table.c.owner == owner,
-                galaxy.model.tool_shed_install.ToolShedRepository.table.c.changeset_revision == changeset_revision,
+    session = install_session()
+    return session.scalars(
+        session.execute(
+            select(galaxy.model.tool_shed_install.ToolShedRepository)
+            .where(
+                and_(
+                    galaxy.model.tool_shed_install.ToolShedRepository.name == repository_name,
+                    galaxy.model.tool_shed_install.ToolShedRepository.owner == owner,
+                    galaxy.model.tool_shed_install.ToolShedRepository.changeset_revision == changeset_revision,
+                )
             )
+            .limit(1)
         )
-        .first()
-    )
+    ).first()
 
 
 def get_installed_repository_by_id(repository_id):
-    return (
-        install_session()
-        .query(galaxy.model.tool_shed_install.ToolShedRepository)
-        .filter(galaxy.model.tool_shed_install.ToolShedRepository.table.c.id == repository_id)
-        .first()
-    )
+    session = install_session()
+    return session.scalars(
+        session.execute(
+            select(galaxy.model.tool_shed_install.ToolShedRepository)
+            .where(galaxy.model.tool_shed_install.ToolShedRepository.id == repository_id)
+            .limit(1)
+        )
+    ).first()
 
 
 def get_installed_repository_by_name_owner(repository_name, owner, return_multiple=False, session=None):

@@ -19,6 +19,7 @@ from pydantic import BaseModel
 from sqlalchemy import (
     and_,
     false,
+    select,
 )
 
 from galaxy import web
@@ -204,14 +205,14 @@ def guid_to_repository(app: ToolShedApp, tool_id: str) -> "Repository":
     shed, _, owner, name, rest = tool_id.split("/", 5)
     clause_list = [
         and_(
-            app.model.Repository.table.c.deprecated == false(),
-            app.model.Repository.table.c.deleted == false(),
-            app.model.Repository.table.c.name == name,
-            app.model.User.table.c.username == owner,
-            app.model.Repository.table.c.user_id == app.model.User.table.c.id,
+            app.model.Repository.deprecated == false(),
+            app.model.Repository.deleted == false(),
+            app.model.Repository.name == name,
+            app.model.User.username == owner,
+            app.model.Repository.user_id == app.model.User.id,
         )
     ]
-    repository = app.model.context.query(app.model.Repository).filter(*clause_list).first()
+    repository = app.model.context.scalars(select(app.model.Repository).where(*clause_list).limit(1)).first()
     return repository
 
 
@@ -224,14 +225,16 @@ def index_tool_ids(app: ToolShedApp, tool_ids: List[str]) -> Dict[str, Any]:
         name = repository.name
         clause_list = [
             and_(
-                app.model.Repository.table.c.deprecated == false(),
-                app.model.Repository.table.c.deleted == false(),
-                app.model.Repository.table.c.name == name,
-                app.model.User.table.c.username == owner,
-                app.model.Repository.table.c.user_id == app.model.User.table.c.id,
+                app.model.Repository.deprecated == false(),
+                app.model.Repository.deleted == false(),
+                app.model.Repository.name == name,
+                app.model.User.username == owner,
+                app.model.Repository.user_id == app.model.User.id,
             )
         ]
-        repository = app.model.context.current.sa_session.query(app.model.Repository).filter(*clause_list).first()
+        repository = app.model.context.current.sa_session.scalars(
+            select(app.model.Repository).where(*clause_list).limit(1)
+        ).first()
         if not repository:
             log.warning(f"Repository {owner}/{name} does not exist, skipping")
             continue
@@ -275,22 +278,22 @@ def index_tool_ids(app: ToolShedApp, tool_ids: List[str]) -> Dict[str, Any]:
 def index_repositories(app: ToolShedApp, name: Optional[str], owner: Optional[str], deleted: bool):
     clause_list = [
         and_(
-            app.model.Repository.table.c.deprecated == false(),
-            app.model.Repository.table.c.deleted == deleted,
+            app.model.Repository.deprecated == false(),
+            app.model.Repository.deleted == deleted,
         )
     ]
     if owner is not None:
         clause_list.append(
             and_(
-                app.model.User.table.c.username == owner,
-                app.model.Repository.table.c.user_id == app.model.User.table.c.id,
+                app.model.User.username == owner,
+                app.model.Repository.user_id == app.model.User.id,
             )
         )
     if name is not None:
-        clause_list.append(app.model.Repository.table.c.name == name)
+        clause_list.append(app.model.Repository.name == name)
     repositories = []
     for repository in (
-        app.model.context.query(app.model.Repository).filter(*clause_list).order_by(app.model.Repository.table.c.name)
+        app.model.context.query(app.model.Repository).filter(*clause_list).order_by(app.model.Repository.name)
     ):
         repositories.append(repository)
     return repositories

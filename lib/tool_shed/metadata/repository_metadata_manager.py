@@ -11,6 +11,7 @@ from sqlalchemy import (
     and_,
     false,
     or_,
+    select,
 )
 
 from galaxy import util
@@ -164,16 +165,14 @@ class ToolShedMetadataGenerator(BaseMetadataGenerator):
                 is_valid = False
                 return repository_dependency_tup, is_valid, error_message
             try:
-                repository = (
-                    self.sa_session.query(self.app.model.Repository)
-                    .filter(
+                repository = self.sa_session.execute(
+                    select(self.app.model.Repository).where(
                         and_(
                             self.app.model.Repository.table.c.name == name,
                             self.app.model.Repository.table.c.user_id == user.id,
                         )
                     )
-                    .one()
-                )
+                ).scalar_one()
             except Exception:
                 error_message = f"Ignoring repository dependency definition for tool shed {toolshed},"
                 error_message += f"name {name}, owner {owner}, "
