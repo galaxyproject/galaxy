@@ -207,6 +207,9 @@ export default {
                 visualize: `/visualizations?dataset_id=${id}`,
             };
         },
+        isPlaceholder() {
+            return this.item.id === "placeholder";
+        },
     },
     methods: {
         onKeyDown(event) {
@@ -219,6 +222,9 @@ export default {
             }
         },
         onClick() {
+            if (this.isPlaceholder) {
+                return;
+            }
             if (this.isDataset) {
                 this.$emit("update:expand-dataset", !this.expandDataset);
             } else {
