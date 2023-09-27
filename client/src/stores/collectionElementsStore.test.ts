@@ -49,7 +49,10 @@ describe("useCollectionElementsStore", () => {
         const collection1Key = store.getCollectionKey(collection1);
         const elements = store.storedCollectionElements[collection1Key];
         expect(elements).toBeDefined();
-        expect(elements).toHaveLength(limit);
+        // The total number of elements (including placeholders) is 10, but only the first 5 are fetched (real elements)
+        expect(elements).toHaveLength(10);
+        const nonPlaceholderElements = getRealElements(elements);
+        expect(nonPlaceholderElements).toHaveLength(limit);
     });
 
     it("should not fetch collection elements if they are already in the store", async () => {
@@ -62,7 +65,14 @@ describe("useCollectionElementsStore", () => {
 
         const offset = 0;
         const limit = 5;
-        // Getting collection elements should not trigger a fetch in this case
+        // Getting collection elements should trigger a fetch
+        store.getCollectionElements(collection1, offset, limit);
+        await flushPromises();
+        expect(fetchCollectionElements).toHaveBeenCalled();
+
+        fetchCollectionElements.mockClear();
+
+        // Getting the same collection elements range should not trigger a fetch
         store.getCollectionElements(collection1, offset, limit);
         expect(store.isLoadingCollectionElements(collection1)).toEqual(false);
         expect(fetchCollectionElements).not.toHaveBeenCalled();
@@ -70,11 +80,15 @@ describe("useCollectionElementsStore", () => {
 
     it("should fetch only missing elements if the requested range is not already stored", async () => {
         const store = useCollectionElementsStore();
-        const storedCount = 3;
-        const expectedStoredElements = Array.from({ length: storedCount }, (_, i) => mockElement(collection1.id, i));
-        const collection1Key = store.getCollectionKey(collection1);
-        store.storedCollectionElements[collection1Key] = expectedStoredElements;
-        expect(store.storedCollectionElements[collection1Key]).toHaveLength(storedCount);
+
+        const initialElements = 3;
+        store.getCollectionElements(collection1, 0, initialElements);
+        await flushPromises();
+        expect(fetchCollectionElements).toHaveBeenCalled();
+        let elements = store.storedCollectionElements[collection1.id];
+        // The first call will initialize the 10 placeholders and fetch the first 3 elements out of 10
+        expect(elements).toHaveLength(10);
+        expect(getRealElements(elements)).toHaveLength(initialElements);
 
         const offset = 2;
         const limit = 5;
@@ -85,11 +99,13 @@ describe("useCollectionElementsStore", () => {
         expect(store.isLoadingCollectionElements(collection1)).toEqual(false);
         expect(fetchCollectionElements).toHaveBeenCalled();
 
-        const elements = store.storedCollectionElements[collection1Key];
+        const collection1Key = store.getCollectionKey(collection1);
+        elements = store.storedCollectionElements[collection1Key];
         expect(elements).toBeDefined();
+        expect(elements).toHaveLength(10);
         // The offset was overlapping with the stored elements, so it was increased by the number of stored elements
-        // so it fetches the next "limit" number of elements
-        expect(elements).toHaveLength(storedCount + limit);
+        // and it fetches the next "limit" number of elements
+        expect(getRealElements(elements)).toHaveLength(initialElements + limit);
     });
 });
 
@@ -154,4 +170,8 @@ function fakeCollectionElementsApiResponse(params: ApiRequest) {
     return {
         data: elements,
     };
+}
+
+function getRealElements(elements?: DCESummary[]): DCESummary[] | undefined {
+    return elements?.filter((element) => element.id !== "placeholder");
 }

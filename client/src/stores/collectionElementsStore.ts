@@ -8,13 +8,14 @@ import * as Service from "./services/datasetCollection.service";
  * Represents a dataset collection element that has not been fetched yet.
  */
 interface DCEPlaceholder extends DCESummary {
-    placeholder: true;
+    id: "placeholder";
     fetching: boolean;
 }
 
 type DCEEntry = DCEPlaceholder | DCESummary;
 
 const PLACEHOLDER_TEXT = "Loading...";
+const FETCH_LIMIT = 50;
 
 export const useCollectionElementsStore = defineStore("collectionElementsStore", () => {
     const storedCollections = ref<{ [key: string]: HDCASummary }>({});
@@ -34,7 +35,7 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
     }
 
     const getCollectionElements = computed(() => {
-        return (collection: CollectionEntry, offset = 0, limit = 50) => {
+        return (collection: CollectionEntry, offset = 0, limit = FETCH_LIMIT) => {
             const storedElements =
                 storedCollectionElements.value[getCollectionKey(collection)] ?? initWithPlaceholderElements(collection);
             fetchMissingElements({ collection, storedElements, offset, limit });
@@ -57,23 +58,22 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
         const collectionKey = getCollectionKey(params.collection);
         try {
             // We should fetch only missing (placeholder) elements from the range
-            const firstMissingIndex = params.storedElements
+            const firstMissingIndexInRange = params.storedElements
                 .slice(params.offset, params.offset + params.limit)
-                .findIndex((element) => "placeholder" in element && element.fetching === false);
+                .findIndex((element) => isPlaceholder(element) && element.fetching === false);
 
-            if (firstMissingIndex === -1) {
-                // All elements in the range are already stored
+            if (firstMissingIndexInRange === -1) {
+                // All elements in the range are already stored or being fetched
                 return;
             }
             // Adjust the offset to the first missing element
-            params.offset += firstMissingIndex;
+            params.offset += firstMissingIndexInRange;
 
             Vue.set(loadingCollectionElements.value, collectionKey, true);
             // Mark all elements in the range as fetching
             params.storedElements
                 .slice(params.offset, params.offset + params.limit)
-                .forEach((element) => "placeholder" in element && (element.fetching = true));
-
+                .forEach((element) => isPlaceholder(element) && (element.fetching = true));
             const fetchedElements = await Service.fetchElementsFromCollection({
                 entry: params.collection,
                 offset: params.offset,
@@ -120,16 +120,19 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
         }
     }
 
-    function initWithPlaceholderElements(collection: HDCASummary): DCEPlaceholder[] {
+    function isPlaceholder(element: DCEEntry): element is DCEPlaceholder {
+        return element.id === "placeholder";
+    }
+
+    function initWithPlaceholderElements(collection: CollectionEntry): DCEPlaceholder[] {
         const totalElements = collection.element_count ?? 0;
         const placeholderElements = new Array<DCEPlaceholder>(totalElements)
             .fill({
-                placeholder: true,
+                id: "placeholder",
                 fetching: false,
                 element_identifier: PLACEHOLDER_TEXT,
                 element_index: 0,
                 element_type: "hda",
-                id: "placeholder",
                 model_class: "DatasetCollectionElement",
                 object: {
                     id: "placeholder",
