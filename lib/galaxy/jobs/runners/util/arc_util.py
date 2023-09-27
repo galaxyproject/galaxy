@@ -28,6 +28,7 @@ except ImportError:
 
 log = logging.getLogger(__name__)
 
+
 def ensure_pyarc() -> None:
     if ARCHTTPError is None:
         raise Exception(
@@ -73,16 +74,15 @@ class ARCJobBuilder:
         for file_name, file_remote_source in self.inputs.items():
             sub_el = SubElement(datastaging, "InputFile")
             SubElement(sub_el, "Name").text = file_name
-            if 'file://' not in file_remote_source:
-                """ Only supply url for remote files, not local ones - local ones are handled by the ARC client on the client side (Galaxy)"""
-                source_el = SubElement(sub_el,"Source")
-                SubElement(source_el,"URI").text = file_remote_source
-            
+            if "file://" not in file_remote_source:
+                """Only supply url for remote files, not local ones - local ones are handled by the ARC client on the client side (Galaxy)"""
+                source_el = SubElement(sub_el, "Source")
+                SubElement(source_el, "URI").text = file_remote_source
+
         for file_name in self.outputs:
             sub_el = SubElement(datastaging, "OutputFile")
             SubElement(sub_el, "Name").text = file_name
         """----------- End datastaging ---------"""
-            
 
         SubElement(resources, "IndividualCPUTime").text = self.cpu_time
         SubElement(resources, "IndividualPhysicalMemory").text = self.memory
