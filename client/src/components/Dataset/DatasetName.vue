@@ -2,7 +2,7 @@
     <div>
         <b-link
             id="dataset-dropdown"
-            class="workflow-dropdown font-weight-bold p-2"
+            class="workflow-dropdown p-2"
             data-toggle="dropdown"
             aria-haspopup="true"
             aria-expanded="false">
