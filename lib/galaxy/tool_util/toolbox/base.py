@@ -1343,7 +1343,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         if in_panel:
             if view is None:
                 view = self._default_panel_view
-            view_contents = {}
+            view_contents: Dict[str, Dict] = {}
             rval[view] = view_contents
             panel_elts = self.tool_panel_contents(trans, view=view, **kwds)
             for elt in panel_elts:
@@ -1354,7 +1354,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                     kwargs = dict(trans=trans, link_details=True, tool_help=tool_help, toolbox=self, only_ids=True)
                     view_contents[elt.id] = elt.to_dict(**kwargs)
         else:
-            returned_tools = {}
+            returned_tools: Dict[str, Dict] = {}
             rval["tools"] = returned_tools
             filter_method = self._build_filter_method(trans)
             for tool in self._tools_by_id.values():
