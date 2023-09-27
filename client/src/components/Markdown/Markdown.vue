@@ -22,12 +22,22 @@
                     Edit
                     <FontAwesomeIcon icon="edit" />
                 </b-button>
+                <b-button
+                    v-b-tooltip.hover
+                    class="float-right markdown-edit mr-2"
+                    role="button"
+                    size="sm"
+                    title="Run Workflow Again"
+                    @click="rerunWorkflow()">
+                    Run Again
+                    <FontAwesomeIcon icon="redo" />
+                </b-button>
                 <h1 class="float-right align-middle mr-2 mt-1 h-md">Galaxy {{ markdownConfig.model_class }}</h1>
                 <span class="float-left font-weight-light">
                     <h1 class="text-break align-middle">
                         Title: {{ markdownConfig.title || markdownConfig.model_class }}
                     </h1>
-                    <h3 class="text-break align-middle">Workflow Version: {{ workflowVersions }}</h3>
+                    <h3 v-if="workflowVersions" class="text-break align-middle">Workflow Checkpoint: {{ workflowVersions.version }}</h3>
                 </span>
             </div>
             <b-badge variant="info" class="w-100 rounded mb-3 white-space-normal">
@@ -68,6 +78,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import BootstrapVue from "bootstrap-vue";
 import MarkdownIt from "markdown-it";
 import markdownItRegexp from "markdown-it-regexp";
+import { getAppRoot } from "onload";
 import { mapActions } from "pinia";
 import store from "store";
 import Vue from "vue";
@@ -136,6 +147,7 @@ export default {
             invocations: {},
             loading: true,
             workflowVersion: null,
+            workflowID: "",
         };
     },
     computed: {
@@ -157,7 +169,7 @@ export default {
             return "unavailable";
         },
         workflowVersions() {
-            return this.workflowVersion;
+            return this.getStoredWorkflowByInstanceId(this.workflowID);
         },
         version() {
             return this.markdownConfig.generate_version || "Unknown Galaxy Version";
@@ -170,12 +182,7 @@ export default {
     },
     created() {
         this.initConfig();
-        this.fetchWorkflowForInstanceId(Object.keys(this.markdownConfig.workflows)[0]).then((data) => {
-            var workflow = this.getStoredWorkflowByInstanceId(Object.keys(this.markdownConfig.workflows)[0]);
-            if (workflow) {
-                this.workflowVersion = workflow.version;
-            }
-        });
+        this.getWFversion();
     },
     methods: {
         ...mapActions(useWorkflowStore, ["getStoredWorkflowByInstanceId", "fetchWorkflowForInstanceId"]),
@@ -192,7 +199,11 @@ export default {
                 this.jobs = config.jobs || {};
                 this.invocations = config.invocations || {};
                 this.loading = false;
+                this.workflowID = Object.keys(this.markdownConfig.workflows)[0];
             }
+        },
+        getWFversion() {
+            this.fetchWorkflowForInstanceId(this.workflowID);
         },
         splitMarkdown(markdown) {
             const sections = [];
@@ -236,6 +247,9 @@ export default {
                 }
             }
             return sections;
+        },
+        rerunWorkflow() {
+            window.location.assign(`${getAppRoot()}workflows/run?id=${this.workflowID}`);
         },
         getArgs(content) {
             const galaxy_function = FUNCTION_CALL_LINE_TEMPLATE.exec(content);
