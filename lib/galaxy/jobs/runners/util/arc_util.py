@@ -1,3 +1,4 @@
+import logging
 from typing import (
     Dict,
     List,
@@ -25,6 +26,7 @@ except ImportError:
     ARCRest_1_1 = None
     ARCJob = None
 
+log = logging.getLogger(__name__)
 
 def ensure_pyarc() -> None:
     if ARCHTTPError is None:
@@ -60,35 +62,30 @@ class ARCJobBuilder:
         resources = SubElement(descr, "Resources")
         datastaging = SubElement(descr, "DataStaging")
 
-        actid_name = SubElement(actid, "Name")
-        actid_name.text = "galaxy_arc_hello_test"
-
-        app_out = SubElement(app, "Output")
-        app_out.text = self.stdout
-
-        app_err = SubElement(app, "Error")
-        app_err.text = self.stderr
+        SubElement(actid, "Name").text = "galaxy_arc_hello_test"
+        SubElement(app, "Output").text = self.stdout
+        SubElement(app, "Error").text = self.stderr
 
         app_exe = SubElement(app, "Executable")
-        app_exe_path = SubElement(app_exe, "Path")
-        app_exe_path.text = self.exe_path
+        SubElement(app_exe, "Path").text = self.exe_path
 
-        for arc_input in self.inputs:
-            """Datastaging tag"""
+        """----------- Begin datastaging ---------"""
+        for file_name, file_remote_source in self.inputs.items():
             sub_el = SubElement(datastaging, "InputFile")
-            subsub_el = SubElement(sub_el, "Name")
-            subsub_el.text = arc_input
-
-        for arc_output in self.outputs:
+            SubElement(sub_el, "Name").text = file_name
+            if 'file://' not in file_remote_source:
+                """ Only supply url for remote files, not local ones - local ones are handled by the ARC client on the client side (Galaxy)"""
+                source_el = SubElement(sub_el,"Source")
+                SubElement(source_el,"URI").text = file_remote_source
+            
+        for file_name in self.outputs:
             sub_el = SubElement(datastaging, "OutputFile")
-            subsub_el = SubElement(sub_el, "Name")
-            subsub_el.text = arc_output
+            SubElement(sub_el, "Name").text = file_name
+        """----------- End datastaging ---------"""
+            
 
-        sub_el = SubElement(resources, "IndividualCPUTime")
-        sub_el.text = self.cpu_time
-
-        sub_el = SubElement(resources, "IndividualPhysicalMemory")
-        sub_el.text = self.memory
+        SubElement(resources, "IndividualCPUTime").text = self.cpu_time
+        SubElement(resources, "IndividualPhysicalMemory").text = self.memory
 
         return tostring(descr, encoding="unicode", method="xml")
 
