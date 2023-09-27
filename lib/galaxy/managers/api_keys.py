@@ -3,7 +3,6 @@ from sqlalchemy import (
     select,
     update,
 )
-
 from typing_extensions import Protocol
 
 from galaxy.model.base import transaction
