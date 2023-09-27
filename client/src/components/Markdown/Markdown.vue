@@ -37,7 +37,9 @@
                     <h1 class="text-break align-middle">
                         Title: {{ markdownConfig.title || markdownConfig.model_class }}
                     </h1>
-                    <h3 v-if="workflowVersions" class="text-break align-middle">Workflow Checkpoint: {{ workflowVersions.version }}</h3>
+                    <h3 v-if="workflowVersions" class="text-break align-middle">
+                        Workflow Checkpoint: {{ workflowVersions.version }}
+                    </h3>
                 </span>
             </div>
             <b-badge variant="info" class="w-100 rounded mb-3 white-space-normal">
