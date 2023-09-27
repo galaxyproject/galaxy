@@ -8364,7 +8364,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
                 # TODO: does this work correctly if outputs are mapped over?
                 label = output_assoc.workflow_output.label
                 if not label:
-                    continue
+                    label = f"{output_assoc.workflow_output.output_name} (Step {output_assoc.workflow_output.workflow_step.order_index + 1})"
 
                 outputs[label] = {
                     "src": "hda",
@@ -8376,7 +8376,9 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
             for output_assoc in self.output_dataset_collections:
                 label = output_assoc.workflow_output.label
                 if not label:
-                    continue
+                    label = (
+                        label
+                    ) = f"{output_assoc.workflow_output.output_name} (Step {output_assoc.workflow_output.workflow_step.order_index + 1})"
 
                 output_collections[label] = {
                     "src": "hdca",
