@@ -13,6 +13,7 @@ import { getCurrentHistoryFromServer } from "stores/services/history.services";
 import { loadSet } from "utils/setCache";
 import { urlData } from "utils/url";
 
+import { useCollectionElementsStore } from "@/stores/collectionElementsStore";
 import { useDatasetStore } from "@/stores/datasetStore";
 
 const limit = 1000;
@@ -44,6 +45,7 @@ export async function watchHistoryOnce(store) {
     const historyStore = useHistoryStore();
     const historyItemsStore = useHistoryItemsStore();
     const datasetStore = useDatasetStore();
+    const collectionElementsStore = useCollectionElementsStore();
     // "Reset" watchTimeout so we don't queue up watchHistory calls in rewatchHistory.
     watchTimeout = null;
     // get current history
@@ -82,7 +84,7 @@ export async function watchHistoryOnce(store) {
         historyStore.setHistory(history);
         datasetStore.saveDatasets(payload);
         historyItemsStore.saveHistoryItems(historyId, payload);
-        store.commit("saveCollectionObjects", { payload });
+        collectionElementsStore.saveCollections(payload);
         // trigger changes in legacy handler
         const Galaxy = getGalaxyInstance();
         if (Galaxy) {

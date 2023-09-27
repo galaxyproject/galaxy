@@ -13,7 +13,6 @@ import { collectionAttributesStore } from "./collectionAttributesStore";
 import { datasetExtFilesStore } from "./datasetExtFilesStore";
 import { datasetPathDestinationStore } from "./datasetPathDestinationStore";
 import { gridSearchStore } from "./gridSearchStore";
-import { collectionElementsStore } from "./historyStore";
 import { invocationStore } from "./invocationStore";
 import { jobDestinationParametersStore } from "./jobDestinationParametersStore";
 import { panelStore } from "./panelStore";
@@ -47,7 +46,6 @@ export function createStore() {
         plugins: [createCache(), panelsPersistence.plugin],
         modules: {
             collectionAttributesStore: collectionAttributesStore,
-            collectionElements: collectionElementsStore,
             destinationParameters: jobDestinationParametersStore,
             datasetExtFiles: datasetExtFilesStore,
             datasetPathDestination: datasetPathDestinationStore,

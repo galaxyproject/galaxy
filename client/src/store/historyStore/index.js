@@ -1,1 +1,0 @@
-export { collectionElementsStore } from "./collectionElementsStore";

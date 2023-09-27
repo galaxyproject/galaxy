@@ -6695,7 +6695,8 @@ class HistoryDatasetCollectionAssociation(
                             dbkeys.add(dbkey)
                     else:
                         dbkeys.add(dbkey_field)
-                    extensions.add(row.extension)
+                    if row.extension:
+                        extensions.add(row.extension)
             self._dataset_dbkeys_and_extensions_summary = (dbkeys, extensions)
         return self._dataset_dbkeys_and_extensions_summary
 
