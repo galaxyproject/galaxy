@@ -66,6 +66,7 @@ import { errorMessageAsString } from "utils/simple-error";
 import Vue from "vue";
 
 import { useConfig } from "@/composables/config";
+import { useCollectionAttributesStore } from "@/stores/collectionAttributesStore";
 import { useHistoryStore } from "@/stores/historyStore";
 
 import { DatatypesProvider, DbKeyProvider, SuitableConvertersProvider } from "../../providers";
@@ -101,7 +102,6 @@ export default {
     },
     data: function () {
         return {
-            attributesData: {},
             errorMessage: null,
             jobError: null,
             noQuotaIncrease: true,
@@ -114,6 +114,10 @@ export default {
     },
     computed: {
         ...mapState(useHistoryStore, ["currentHistoryId"]),
+        ...mapState(useCollectionAttributesStore, ["getAttributes"]),
+        attributesData() {
+            return this.getAttributes(this.collectionId);
+        },
         databaseKeyFromElements: function () {
             return this.attributesData.dbkey;
         },
@@ -121,20 +125,9 @@ export default {
             return this.attributesData.extension;
         },
     },
-    created() {
-        this.getCollectionDataAndAttributes();
-    },
     methods: {
         updateInfoMessage: function (strMessage) {
             this.infoMessage = strMessage;
-        },
-        getCollectionDataAndAttributes: async function () {
-            let attributesGet = this.$store.getters.getCollectionAttributes(this.collectionId);
-            if (attributesGet == null) {
-                await this.$store.dispatch("fetchCollectionAttributes", this.collectionId);
-                attributesGet = this.$store.getters.getCollectionAttributes(this.collectionId);
-            }
-            this.attributesData = attributesGet;
         },
         clickedSave: function (attribute, newValue) {
             const url = prependPath(`/api/dataset_collections/${this.collectionId}/copy`);
