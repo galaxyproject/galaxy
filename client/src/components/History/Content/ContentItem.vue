@@ -54,7 +54,7 @@
                     </b-badge>
                 </span>
                 <ContentOptions
-                    v-else
+                    v-else-if="!isPlaceholder"
                     :writable="writable"
                     :is-dataset="isDataset"
                     :is-deleted="item.deleted"
@@ -138,6 +138,7 @@ export default {
         selected: { type: Boolean, default: false },
         selectable: { type: Boolean, default: false },
         filterable: { type: Boolean, default: false },
+        isPlaceholder: { type: Boolean, default: false },
     },
     computed: {
         jobState() {
@@ -206,9 +207,6 @@ export default {
                 rerun: `/tool_runner/rerun?id=${id}`,
                 visualize: `/visualizations?dataset_id=${id}`,
             };
-        },
-        isPlaceholder() {
-            return this.item.id === "placeholder";
         },
     },
     methods: {
