@@ -1,8 +1,8 @@
 import { defineStore } from "pinia";
-import Vue, { computed, ref } from "vue";
+import { computed, del, ref, set } from "vue";
 
 import { DatasetCollectionAttributes } from "./services";
-import * as Service from "./services/datasetCollection.service";
+import { fetchCollectionAttributes } from "./services/datasetCollection.service";
 
 export const useCollectionAttributesStore = defineStore("collectionAttributesStore", () => {
     const storedAttributes = ref<{ [key: string]: DatasetCollectionAttributes }>({});
@@ -11,7 +11,7 @@ export const useCollectionAttributesStore = defineStore("collectionAttributesSto
     const getAttributes = computed(() => {
         return (hdcaId: string) => {
             if (!storedAttributes.value[hdcaId]) {
-                Vue.set(storedAttributes.value, hdcaId, {});
+                set(storedAttributes.value, hdcaId, {});
                 fetchAttributes({ hdcaId });
             }
             return storedAttributes.value[hdcaId];
@@ -25,13 +25,13 @@ export const useCollectionAttributesStore = defineStore("collectionAttributesSto
     });
 
     async function fetchAttributes(params: { hdcaId: string }) {
-        Vue.set(loadingAttributes.value, params.hdcaId, true);
+        set(loadingAttributes.value, params.hdcaId, true);
         try {
-            const attributes = await Service.fetchCollectionAttributes(params);
-            Vue.set(storedAttributes.value, params.hdcaId, attributes);
+            const attributes = await fetchCollectionAttributes(params);
+            set(storedAttributes.value, params.hdcaId, attributes);
             return attributes;
         } finally {
-            Vue.delete(loadingAttributes.value, params.hdcaId);
+            del(loadingAttributes.value, params.hdcaId);
         }
     }
 
