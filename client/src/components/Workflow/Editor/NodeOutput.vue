@@ -320,16 +320,16 @@ const removeTagsAction = computed(() => {
                     @click="onToggleVisible">
                     <i :class="['mark-terminal', visibleClass]" />
                 </div>
-                <span class="flex-gapx-1">
+                <span>
                     <span
                         v-b-tooltip
                         :title="labelToolTipTitle"
+                        class="d-inline-block rounded"
                         :class="labelClass"
-                        :disabled="!isDuplicateLabel"
-                        style="display: inline-block">
+                        :disabled="!isDuplicateLabel">
                         {{ label }}
                     </span>
-                    <span style="display: inline-block"> ({{ extensions.join(", ") }}) </span>
+                    <span> ({{ extensions.join(", ") }}) </span>
                 </span>
             </div>
 
