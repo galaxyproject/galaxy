@@ -23,7 +23,7 @@ export interface ContentPlaceholder {
     fetching?: boolean;
 }
 
-type DCEEntry = ContentPlaceholder | DCESummary;
+export type DCEEntry = ContentPlaceholder | DCESummary;
 
 const FETCH_LIMIT = 50;
 

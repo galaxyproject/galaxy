@@ -2,7 +2,7 @@ import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
 
 import { mockFetcher } from "@/schema/__mocks__";
-import { useCollectionElementsStore } from "@/stores/collectionElementsStore";
+import { DCEEntry, useCollectionElementsStore } from "@/stores/collectionElementsStore";
 import { DCESummary, HDCASummary } from "@/stores/services";
 
 jest.mock("@/schema");
@@ -172,6 +172,6 @@ function fakeCollectionElementsApiResponse(params: ApiRequest) {
     };
 }
 
-function getRealElements(elements?: DCESummary[]): DCESummary[] | undefined {
-    return elements?.filter((element) => element.id !== "placeholder");
+function getRealElements(elements?: DCEEntry[]): DCESummary[] | undefined {
+    return elements?.filter((element) => "id" in element === true) as DCESummary[];
 }
