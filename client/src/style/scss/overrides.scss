@@ -218,3 +218,8 @@ table.info_data_table th:nth-child(1) {
 .sticky-top {
     z-index: 800;
 }
+
+// remove margin for labels with for attribute
+label[for] {
+    margin-bottom: 0;
+}
