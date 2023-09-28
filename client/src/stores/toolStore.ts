@@ -10,25 +10,28 @@ import { createWhooshQuery, filterTools } from "@/components/Panels/utilities";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import { getAppRoot } from "@/onload/loadConfig";
 
-/* interfaces */
 export interface Tool {
     model_class: string;
     id: string;
     name: string;
+    version: string;
     description: string;
-    hidden: boolean;
+    labels: string[];
+    edam_operations: string[];
+    edam_topics: string[];
+    hidden: "" | boolean;
     is_workflow_compatible: boolean;
-    panel_section_name: string;
-    panel_section_id: string;
+    xrefs: string[];
+    config_file: string;
+    link: string;
+    min_width: number;
+    target: string;
+    panel_section_id: string | null;
+    panel_section_name: string | null;
     form_style: string;
-    text?: string;
-    current_section_ids?: string[]; // for purely setting it = currentPanelView section id
-    title?: string;
-    latest_id?: string;
-    step_count?: number;
+    disabled?: boolean;
 }
 
-/* interfaces */
 export interface ToolSection {
     model_class: string;
     id: string;
@@ -37,8 +40,8 @@ export interface ToolSection {
     description?: string;
     links?: Record<string, string>;
     tools?: string[];
-    elems?: ToolSection[];
-    panel_labels?: string[];
+    elems?: (Tool | ToolSection)[];
+    panel_labels?: any[];
 }
 
 export interface ToolSectionLabel {
@@ -50,7 +53,6 @@ export interface ToolSectionLabel {
     links?: Record<string, string> | null;
 }
 
-// TODO: Use this in ToolSearch.vue
 export interface FilterSettings {
     [key: string]: any;
     name?: string;
@@ -89,8 +91,7 @@ export const useToolStore = defineStore("toolStore", () => {
                 return toolsById.value;
             } else {
                 const q = createWhooshQuery(filterSettings);
-                console.log("getToolsById", toolResults.value[q]);
-                return filterTools(toolsById.value, toolResults.value[q]);
+                return filterTools(toolsById.value, toolResults.value[q] || []);
             }
         };
     });

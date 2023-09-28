@@ -7,7 +7,7 @@ import type { Steps } from "@/stores/workflowStepStore";
 
 export interface Workflow {
     name: string;
-    [index: string]: any;
+    id: string;
     steps: Steps;
     step_count?: number;
     latest_id?: string;

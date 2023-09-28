@@ -3,24 +3,24 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faEye, faEyeSlash } from "@fortawesome/free-regular-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
-import { computed, type PropType, type Ref, ref } from "vue";
+import { computed, ComputedRef, type PropType, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { getGalaxyInstance } from "@/app";
 import { useGlobalUploadModal } from "@/composables/globalUploadModal";
 import { getAppRoot } from "@/onload/loadConfig";
-import { type Tool, type ToolSection as ToolSectionType, type ToolSectionLabel } from "@/stores/toolStore";
+import { type Tool, type ToolSection as ToolSectionType } from "@/stores/toolStore";
 import { useToolStore } from "@/stores/toolStore";
 import { Workflow, type Workflow as WorkflowType } from "@/stores/workflowStore";
 import localize from "@/utils/localization";
 
-import { filterTools, isToolObject } from "./utilities.js";
+import { filterTools, getValidPanelItems, getValidToolsInCurrentView, getValidToolsInEachSection } from "./utilities";
 
 import ToolSearch from "./Common/ToolSearch.vue";
 import ToolSection from "./Common/ToolSection.vue";
 import UploadButton from "@/components/Upload/UploadButton.vue";
 
-const SECTION_IDS_TO_EXCLUDE = ["expression_tools"];
+const SECTION_IDS_TO_EXCLUDE = ["expression_tools"]; // if this isn't the Workflow Editor panel
 
 const { openGlobalUploadModal } = useGlobalUploadModal();
 const router = useRouter();
@@ -41,7 +41,7 @@ const props = defineProps({
     panelQuery: { type: String, required: true },
     editorWorkflows: { type: Array, default: null },
     dataManagers: { type: Array, default: null },
-    moduleSections: { type: Array as PropType<Tool[]>, default: null },
+    moduleSections: { type: Array as PropType<Record<string, any>>, default: null },
 });
 
 library.add(faEye, faEyeSlash);
@@ -92,25 +92,12 @@ const dataManagerSection = computed(() => {
 
 /** `toolsById` from `toolStore`, except it only has valid tools for `props.workflow` value */
 const localToolsById = computed(() => {
-    const addedToolTexts: string[] = [];
     if (toolStore.toolsById && Object.keys(toolStore.toolsById).length > 0) {
-        const toolEntries = Object.entries(toolStore.toolsById).filter(([_, tool]: [string, any]) => {
-            // filter out duplicate tools (different ids, same exact name+description)
-            // related ticket: https://github.com/galaxyproject/galaxy/issues/16145
-            const toolText: string = tool.name + tool.description;
-            if (addedToolTexts.includes(toolText)) {
-                return false;
-            } else {
-                addedToolTexts.push(toolText);
-            }
-            // filter on non-hidden, non-disabled, and workflow compatibile (based on props.workflow)
-            return (
-                !tool.hidden &&
-                tool.disabled !== true &&
-                (props.workflow ? tool.is_workflow_compatible : !SECTION_IDS_TO_EXCLUDE.includes(tool.panel_section_id))
-            );
-        });
-        return Object.fromEntries(toolEntries);
+        return getValidToolsInCurrentView(
+            toolStore.toolsById,
+            props.workflow,
+            !props.workflow ? SECTION_IDS_TO_EXCLUDE : []
+        );
     }
     return {};
 });
@@ -118,37 +105,16 @@ const localToolsById = computed(() => {
 /** `currentPanel` from `toolStore`, except it only has valid tools and sections for `props.workflow` value */
 const localSectionsById = computed(() => {
     const validToolIdsInCurrentView = Object.keys(localToolsById.value);
-    // for all values that are `ToolSection`s, filter out tools that aren't in `localToolsById`
-    const sectionEntries = Object.entries(currentPanel.value).map(([id, section]: [string, any]) => {
-        if (section.tools && Array.isArray(section.tools)) {
-            section.tools = section.tools.filter((toolId: string) => {
-                if (validToolIdsInCurrentView.includes(toolId)) {
-                    return true;
-                } else if (toolId.startsWith("panel_label_") && section.panel_labels) {
-                    // panel_label_ is a special case where there is a label within a section
-                    const labelId = toolId.split("panel_label_")[1];
-                    return section.panel_labels.find((label: ToolSectionLabel) => label.id === labelId) !== undefined;
-                }
-            });
-        }
-        return [id, section];
-    });
 
-    const updatedSectionEntries = sectionEntries.filter(([id, section]) => {
-        if (isToolObject(section) && validToolIdsInCurrentView.includes(id)) {
-            // is a `Tool` and is in `localToolsById`
-            return true;
-        } else if (section.tools === undefined) {
-            // is neither a `Tool` nor a `ToolSection`, maybe a `ToolSectionLabel`
-            return true;
-        } else if (section.tools.length > 0 && (props.workflow || !SECTION_IDS_TO_EXCLUDE.includes(id))) {
-            // is a `ToolSection` with tools; check workflow compatibility (based on props.workflow)
-            return true;
-        } else {
-            return false;
-        }
-    });
-    return Object.fromEntries(updatedSectionEntries);
+    // Looking within each `ToolSection`, and filtering on child elements
+    const sectionEntries = getValidToolsInEachSection(validToolIdsInCurrentView, currentPanel.value);
+
+    // Looking at each item in the panel now (not within each child)
+    return getValidPanelItems(
+        sectionEntries,
+        validToolIdsInCurrentView,
+        !props.workflow ? SECTION_IDS_TO_EXCLUDE : []
+    ) as Record<string, Tool | ToolSectionType>;
 });
 
 const toolsList = computed(() => Object.values(localToolsById.value));
@@ -159,73 +125,69 @@ const toolsList = computed(() => Object.values(localToolsById.value));
  * If we have results for search, we show tools in sections or just tools,
  * based on whether `showSections` is true or false
  */
-const localPanel = computed(() => {
+const localPanel: ComputedRef<Record<string, Tool | ToolSectionType> | null> = computed(() => {
     if (hasResults.value) {
         if (showSections.value) {
             return resultPanel.value;
         } else {
-            return filterTools(localToolsById.value, results.value);
+            return filterTools(localToolsById.value, results.value) as Record<string, Tool | ToolSectionType>;
         }
     } else {
         return localSectionsById.value;
     }
 });
 
-const sectionIds = computed(() => Object.keys(localPanel.value));
+const sectionIds = computed(() => Object.keys(localPanel.value || {}));
 
 const workflows = computed(() => {
-    if (props.workflow && props.editorWorkflows) {
-        return props.editorWorkflows;
-    } else {
-        const Galaxy = getGalaxyInstance();
-        const storedWorkflowMenuEntries = Galaxy && Galaxy.config.stored_workflow_menu_entries;
-        if (storedWorkflowMenuEntries) {
-            const returnedWfs = [];
-            if (!props.workflow) {
-                returnedWfs.push({
-                    title: localize("All workflows"),
-                    href: `${getAppRoot()}workflows/list`,
-                    id: "list",
-                });
-            }
-            const storedWfs = [
-                ...storedWorkflowMenuEntries.map((menuEntry: Workflow) => {
-                    return {
-                        id: menuEntry.id,
-                        title: menuEntry.name,
-                        href: `${getAppRoot()}workflows/run?id=${menuEntry.id}`,
-                    };
-                }),
-            ];
-            return returnedWfs.concat(storedWfs);
-        } else {
-            return [];
+    const Galaxy = getGalaxyInstance();
+    const storedWorkflowMenuEntries = Galaxy && Galaxy.config.stored_workflow_menu_entries;
+    if (storedWorkflowMenuEntries) {
+        const returnedWfs = [];
+        if (!props.workflow) {
+            returnedWfs.push({
+                title: localize("All workflows") as string,
+                href: `${getAppRoot()}workflows/list`,
+                id: "list",
+            });
         }
+        const storedWfs = [
+            ...storedWorkflowMenuEntries.map((menuEntry: Workflow) => {
+                return {
+                    id: menuEntry.id,
+                    title: menuEntry.name,
+                    href: `${getAppRoot()}workflows/run?id=${menuEntry.id}`,
+                };
+            }),
+        ];
+        return returnedWfs.concat(storedWfs);
+    } else {
+        return [];
     }
 });
 
 const workflowSection = computed(() => {
     return {
         name: localize("Workflows"),
-        elems: workflows.value,
+        elems: props.workflow && props.editorWorkflows,
     };
 });
 
-function onInsertModule(module: Tool, event: Event) {
+function onInsertModule(module: Record<string, any>, event: Event) {
     event.preventDefault();
     emit("onInsertModule", module.name, module.title);
 }
 
-function onInsertWorkflow(workflow: WorkflowType | Tool, event: Event) {
+function onInsertWorkflow(workflow: WorkflowType, event: Event) {
     event.preventDefault();
     emit("onInsertWorkflow", workflow.latest_id, workflow.name);
 }
 
-function onInsertWorkflowSteps(workflow: WorkflowType | Tool) {
+function onInsertWorkflowSteps(workflow: WorkflowType) {
     emit("onInsertWorkflowSteps", workflow.id, workflow.step_count);
 }
 
-function onToolClick(tool: Tool | WorkflowType, evt: Event) {
+function onToolClick(tool: Tool, evt: Event) {
     if (!props.workflow) {
         if (tool.id === "upload1") {
             evt.preventDefault();
@@ -324,21 +286,21 @@ function setButtonText() {
                             :category="category"
                             tool-key="name"
                             :section-name="category.name"
-                            :query-filter="queryFilter"
+                            :query-filter="queryFilter || undefined"
                             :disable-filter="true"
                             @onClick="onInsertModule" />
                     </div>
                     <ToolSection
                         v-if="hasDataManagerSection"
                         :category="dataManagerSection"
-                        :query-filter="queryFilter"
+                        :query-filter="queryFilter || undefined"
                         :disable-filter="true"
                         @onClick="onToolClick" />
                     <div v-for="(sectionId, key) in sectionIds" :key="key">
                         <ToolSection
                             v-if="localPanel[sectionId]"
                             :category="localPanel[sectionId] || {}"
-                            :query-filter="queryFilter"
+                            :query-filter="queryFilter || undefined"
                             @onClick="onToolClick" />
                     </div>
                 </div>
@@ -351,7 +313,7 @@ function setButtonText() {
                         :sort-items="false"
                         operation-icon="fa fa-files-o"
                         operation-title="Insert individual steps."
-                        :query-filter="queryFilter"
+                        :query-filter="queryFilter || undefined"
                         :disable-filter="true"
                         @onClick="onInsertWorkflow"
                         @onOperation="onInsertWorkflowSteps" />
@@ -360,7 +322,9 @@ function setButtonText() {
                         <div id="internal-workflows" class="toolSectionBody">
                             <div class="toolSectionBg" />
                             <div v-for="wf in workflows" :key="wf.id" class="toolTitle">
-                                <a class="title-link" :href="wf.href">{{ wf.title }}</a>
+                                <a class="title-link" href="javascript:void(0)" @click="router.push(wf.href)">{{
+                                    wf.title
+                                }}</a>
                             </div>
                         </div>
                     </div>

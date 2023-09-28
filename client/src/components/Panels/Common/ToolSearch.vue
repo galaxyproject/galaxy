@@ -7,12 +7,16 @@ import { type Tool, type ToolSection, useToolStore } from "@/stores/toolStore";
 import Filtering, { contains, type ValidFilter } from "@/utils/filtering";
 import _l from "@/utils/localization";
 
+import { type ToolSearchKeys } from "../utilities";
+
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
 
 const router = useRouter();
 
-const KEYS = { exact: 4, startsWith: 3, name: 2, description: 1, combined: 0 };
+// Note: These are ordered by result priority (exact matches very top; words matches very bottom)
+const KEYS: ToolSearchKeys = { exact: 5, startsWith: 4, name: 3, description: 2, combined: 1, wordMatch: 0 };
+
 const FAVORITES = ["#favs", "#favorites", "#favourites"];
 const MIN_QUERY_LENGTH = 3;
 

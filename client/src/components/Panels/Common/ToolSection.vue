@@ -3,9 +3,8 @@ import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 
 import { eventHub } from "@/components/plugins/eventHub.js";
 import { useConfig } from "@/composables/config";
-import { type Tool as ToolType, type ToolSectionLabel as LabelType } from "@/stores/toolStore";
+import { ToolSectionLabel } from "@/stores/toolStore";
 import { useToolStore } from "@/stores/toolStore";
-import { type Workflow } from "@/stores/workflowStore";
 import ariaAlert from "@/utils/ariaAlert";
 
 import Tool from "./Tool.vue";
@@ -13,8 +12,8 @@ import ToolPanelLabel from "./ToolPanelLabel.vue";
 import ToolPanelLinks from "./ToolPanelLinks.vue";
 
 const emit = defineEmits<{
-    (e: "onClick", tool: ToolType | Workflow, evt: Event): void;
-    (e: "onOperation", tool: ToolType | Workflow, evt: Event): void;
+    (e: "onClick", tool: any, evt: Event): void;
+    (e: "onOperation", tool: any, evt: Event): void;
 }>();
 
 const props = defineProps({
@@ -70,7 +69,7 @@ const elems = computed(() => {
             const tool = toolStore.getToolForId(toolId);
             if (!tool && toolId.startsWith("panel_label_") && props.category.panel_labels) {
                 const labelId = toolId.split("panel_label_")[1];
-                return props.category.panel_labels.find((label: LabelType) => label.id === labelId);
+                return props.category.panel_labels.find((label: ToolSectionLabel) => label.id === labelId);
             } else {
                 return tool;
             }
@@ -97,7 +96,7 @@ const sortedElements = computed(() => {
         isConfigLoaded.value &&
         config.value.toolbox_auto_sort === true &&
         props.sortItems === true &&
-        !elems.value.some((el: ToolType) => el.text !== undefined && el.text !== "")
+        !elems.value.some((el: ToolSectionLabel) => el.text !== undefined && el.text !== "")
     ) {
         const elements = [...elems.value];
         const sorted = elements.sort((a, b) => {
@@ -150,10 +149,10 @@ function openToolSection(sectionId: string) {
 function checkFilter() {
     return !props.disableFilter && !!props.queryFilter;
 }
-function onClick(tool: ToolType | Workflow, evt: Event) {
+function onClick(tool: any, evt: Event) {
     emit("onClick", tool, evt);
 }
-function onOperation(tool: ToolType | Workflow, evt: Event) {
+function onOperation(tool: any, evt: Event) {
     emit("onOperation", tool, evt);
 }
 function toggleMenu(nextState = !opened.value) {
@@ -175,7 +174,7 @@ function toggleMenu(nextState = !opened.value) {
             </a>
         </div>
         <transition name="slide">
-            <div v-if="opened">
+            <div v-if="opened" data-description="opened tool panel section">
                 <template v-for="[key, el] in sortedElements">
                     <ToolPanelLabel
                         v-if="category.text || el.model_class === 'ToolSectionLabel'"
