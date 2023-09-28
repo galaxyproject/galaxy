@@ -325,7 +325,7 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
 
 .ui-form-element {
     margin-top: $margin-v * 0.25;
-    margin-bottom: $margin-v * 0.25;
+    margin-bottom: $margin-v * 0.5;
     overflow: visible;
     clear: both;
 
