@@ -39,9 +39,8 @@ export interface ToolSection {
     version?: string;
     description?: string;
     links?: Record<string, string>;
-    tools?: string[];
+    tools?: (string | ToolSectionLabel)[];
     elems?: (Tool | ToolSection)[];
-    panel_labels?: any[];
 }
 
 export interface ToolSectionLabel {
@@ -54,7 +53,7 @@ export interface ToolSectionLabel {
 }
 
 export interface FilterSettings {
-    [key: string]: any;
+    [key: string]: string | undefined;
     name?: string;
     section?: string;
     ontology?: string;

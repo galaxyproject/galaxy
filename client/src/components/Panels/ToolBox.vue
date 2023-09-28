@@ -76,9 +76,7 @@ const query = computed({
 });
 
 const { currentPanel } = storeToRefs(toolStore);
-// const localPanelView = computed(() => (props.setDefault ? props.panelView.value : props.panelView));
 const hasResults = computed(() => results.value.length > 0);
-// const panelLoaded = computed(() => !!props.panelView && toolStore.panel[props.panelView] !== undefined);
 const queryTooShort = computed(() => query.value && query.value.length < 3);
 const queryFinished = computed(() => query.value && queryPending.value != true);
 
@@ -237,7 +235,7 @@ function setButtonText() {
 </script>
 
 <template>
-    <div class="unified-panel">
+    <div class="unified-panel" data-description="panel toolbox">
         <div class="unified-panel-controls">
             <ToolSearch
                 :enable-advanced="!props.workflow"

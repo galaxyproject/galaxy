@@ -54,7 +54,7 @@ const filterSettings = computed(() => {
     const newFilterSettings: FilterSettings = {};
     Object.entries(props).forEach(([filter, value]) => {
         if (value && value !== "") {
-            newFilterSettings[filter] = value;
+            newFilterSettings[filter] = value as string;
         }
     });
     return newFilterSettings;

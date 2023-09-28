@@ -53,8 +53,8 @@ watchEffect(async () => {
     }
 });
 
-function updatePanelView(panelView: string) {
-    toolStore.setCurrentPanelView(panelView);
+async function updatePanelView(panelView: string) {
+    await toolStore.setCurrentPanelView(panelView);
 }
 
 function onInsertTool(toolId: string, toolName: string) {
@@ -75,8 +75,8 @@ function onInsertWorkflowSteps(workflowId: string, workflowStepCount: number | u
 </script>
 
 <template>
-    <div class="unified-panel" aria-labelledby="toolbox-heading">
-        <div v-if="isConfigLoaded" unselectable="on">
+    <div v-if="isConfigLoaded" class="unified-panel" aria-labelledby="toolbox-heading">
+        <div unselectable="on">
             <div class="unified-panel-header-inner">
                 <nav class="d-flex justify-content-between mx-3 my-2">
                     <Heading v-if="!showAdvanced" id="toolbox-heading" h2 inline size="sm">{{

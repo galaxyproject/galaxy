@@ -77,14 +77,16 @@ export function createWhooshQuery(filterSettings: ToolFilters) {
     }
     query += ") AND (";
     for (const [key, filterValue] of Object.entries(filterSettings)) {
-        if (key === "ontology" && filterValue.includes("operation")) {
-            query += "edam_operations:(" + filterValue + ") AND ";
-        } else if (key === "ontology" && filterValue.includes("topic")) {
-            query += "edam_topics:(" + filterValue + ") AND ";
-        } else if (key == "id") {
-            query += "id_exact:(" + filterValue + ") AND ";
-        } else if (key != "name") {
-            query += key + ":(" + filterValue + ") AND ";
+        if (filterValue) {
+            if (key === "ontology" && filterValue.includes("operation")) {
+                query += "edam_operations:(" + filterValue + ") AND ";
+            } else if (key === "ontology" && filterValue.includes("topic")) {
+                query += "edam_topics:(" + filterValue + ") AND ";
+            } else if (key == "id") {
+                query += "id_exact:(" + filterValue + ") AND ";
+            } else if (key != "name") {
+                query += key + ":(" + filterValue + ") AND ";
+            }
         }
     }
     query += ")";
@@ -167,14 +169,13 @@ export function getValidToolsInEachSection(
     return Object.entries(currentPanel).map(([id, section]) => {
         const validatedSection = { ...section } as ToolSection;
         if (validatedSection.tools && Array.isArray(validatedSection.tools)) {
-            // filter on valid tools and panel_labels in this section
+            // filter on valid tools and panel labels in this section
             validatedSection.tools = validatedSection.tools.filter((toolId) => {
-                if (validToolIdsInCurrentView.includes(toolId)) {
+                if (typeof toolId === "string" && validToolIdsInCurrentView.includes(toolId)) {
                     return true;
-                } else if (toolId.startsWith("panel_label_") && validatedSection.panel_labels) {
-                    // panel_label_ is a special id where there is a label within a section
-                    const labelId = toolId.split("panel_label_")[1];
-                    return validatedSection.panel_labels.find((label) => label.id === labelId) !== undefined;
+                } else if (typeof toolId !== "string") {
+                    // is a special case where there is a label within a section
+                    return true;
                 }
             });
         }

@@ -3,8 +3,7 @@ import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 
 import { eventHub } from "@/components/plugins/eventHub.js";
 import { useConfig } from "@/composables/config";
-import { ToolSectionLabel } from "@/stores/toolStore";
-import { useToolStore } from "@/stores/toolStore";
+import { type ToolSectionLabel, useToolStore } from "@/stores/toolStore";
 import ariaAlert from "@/utils/ariaAlert";
 
 import Tool from "./Tool.vue";
@@ -67,9 +66,8 @@ const elems = computed(() => {
     if (props.category.tools !== undefined && props.category.tools.length > 0) {
         return props.category.tools.map((toolId: string) => {
             const tool = toolStore.getToolForId(toolId);
-            if (!tool && toolId.startsWith("panel_label_") && props.category.panel_labels) {
-                const labelId = toolId.split("panel_label_")[1];
-                return props.category.panel_labels.find((label: ToolSectionLabel) => label.id === labelId);
+            if (!tool && typeof toolId !== "string") {
+                return toolId as ToolSectionLabel;
             } else {
                 return tool;
             }
