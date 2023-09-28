@@ -1,8 +1,8 @@
 import { defineStore } from "pinia";
-import Vue, { computed, ref } from "vue";
+import { computed, del, ref, set } from "vue";
 
 import { CollectionEntry, DCESummary, HDCASummary, HistoryContentItemBase, isHDCA } from "./services";
-import * as Service from "./services/datasetCollection.service";
+import { fetchCollectionDetails, fetchElementsFromCollection } from "./services/datasetCollection.service";
 
 /**
  * Represents a dataset collection element that has not been fetched yet.
@@ -69,27 +69,27 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
             // Adjust the offset to the first missing element
             params.offset += firstMissingIndexInRange;
 
-            Vue.set(loadingCollectionElements.value, collectionKey, true);
+            set(loadingCollectionElements.value, collectionKey, true);
             // Mark all elements in the range as fetching
             params.storedElements
                 .slice(params.offset, params.offset + params.limit)
                 .forEach((element) => isPlaceholder(element) && (element.fetching = true));
-            const fetchedElements = await Service.fetchElementsFromCollection({
+            const fetchedElements = await fetchElementsFromCollection({
                 entry: params.collection,
                 offset: params.offset,
                 limit: params.limit,
             });
             // Update only the elements that were fetched
             params.storedElements.splice(params.offset, fetchedElements.length, ...fetchedElements);
-            Vue.set(storedCollectionElements.value, collectionKey, params.storedElements);
+            set(storedCollectionElements.value, collectionKey, params.storedElements);
         } finally {
-            Vue.delete(loadingCollectionElements.value, collectionKey);
+            del(loadingCollectionElements.value, collectionKey);
         }
     }
 
     async function loadCollectionElements(collection: CollectionEntry) {
-        const elements = await Service.fetchElementsFromCollection({ entry: collection });
-        Vue.set(storedCollectionElements.value, getCollectionKey(collection), elements);
+        const elements = await fetchElementsFromCollection({ entry: collection });
+        set(storedCollectionElements.value, getCollectionKey(collection), elements);
     }
 
     function saveCollections(historyContentsPayload: HistoryContentItemBase[]) {
@@ -97,7 +97,7 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
             (entry) => entry.history_content_type === "dataset_collection"
         ) as HDCASummary[];
         for (const collection of collectionsInHistory) {
-            Vue.set<HDCASummary>(storedCollections.value, collection.id, collection);
+            set<HDCASummary>(storedCollections.value, collection.id, collection);
         }
     }
 
@@ -110,13 +110,13 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
     }
 
     async function fetchCollection(params: { id: string }) {
-        Vue.set(loadingCollectionElements.value, params.id, true);
+        set(loadingCollectionElements.value, params.id, true);
         try {
-            const collection = await Service.fetchCollectionDetails({ hdcaId: params.id });
-            Vue.set(storedCollections.value, collection.id, collection);
+            const collection = await fetchCollectionDetails({ hdcaId: params.id });
+            set(storedCollections.value, collection.id, collection);
             return collection;
         } finally {
-            Vue.delete(loadingCollectionElements.value, params.id);
+            del(loadingCollectionElements.value, params.id);
         }
     }
 
