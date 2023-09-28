@@ -5,16 +5,26 @@ import { CollectionEntry, DCESummary, HDCASummary, HistoryContentItemBase, isHDC
 import { fetchCollectionDetails, fetchElementsFromCollection } from "./services/datasetCollection.service";
 
 /**
- * Represents a dataset collection element that has not been fetched yet.
+ * Represents an element in a collection that has not been fetched yet.
  */
-interface DCEPlaceholder extends DCESummary {
-    id: "placeholder";
-    fetching: boolean;
+export interface ContentPlaceholder {
+    /**
+     * The index of the element in the containing collection.
+     *
+     * This is used to determine the offset to fetch the element from when
+     * scrolling through the collection.
+     */
+    element_index?: number;
+    /**
+     * Whether the element is currently being fetched.
+     *
+     * This is used to prevent fetching the same element multiple times.
+     */
+    fetching?: boolean;
 }
 
-type DCEEntry = DCEPlaceholder | DCESummary;
+type DCEEntry = ContentPlaceholder | DCESummary;
 
-const PLACEHOLDER_TEXT = "Loading...";
 const FETCH_LIMIT = 50;
 
 export const useCollectionElementsStore = defineStore("collectionElementsStore", () => {
@@ -60,7 +70,7 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
             // We should fetch only missing (placeholder) elements from the range
             const firstMissingIndexInRange = params.storedElements
                 .slice(params.offset, params.offset + params.limit)
-                .findIndex((element) => isPlaceholder(element) && element.fetching === false);
+                .findIndex((element) => isPlaceholder(element) && !element.fetching);
 
             if (firstMissingIndexInRange === -1) {
                 // All elements in the range are already stored or being fetched
@@ -120,35 +130,15 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
         }
     }
 
-    function isPlaceholder(element: DCEEntry): element is DCEPlaceholder {
-        return element.id === "placeholder";
+    function isPlaceholder(element: DCEEntry): element is ContentPlaceholder {
+        return "id" in element === false;
     }
 
-    function initWithPlaceholderElements(collection: CollectionEntry): DCEPlaceholder[] {
+    function initWithPlaceholderElements(collection: CollectionEntry): ContentPlaceholder[] {
         const totalElements = collection.element_count ?? 0;
-        const placeholderElements = new Array<DCEPlaceholder>(totalElements)
-            .fill({
-                id: "placeholder",
-                fetching: false,
-                element_identifier: PLACEHOLDER_TEXT,
-                element_index: 0,
-                element_type: "hda",
-                model_class: "DatasetCollectionElement",
-                object: {
-                    id: "placeholder",
-                    model_class: "HistoryDatasetAssociation",
-                    state: "ok",
-                    hda_ldda: "hda",
-                    history_id: "1",
-                    tags: [],
-                },
-            })
-            .map((placeholder, index) => {
-                return {
-                    ...placeholder,
-                    element_index: index,
-                };
-            });
+        const placeholderElements = new Array<ContentPlaceholder>(totalElements).fill({}).map((_, index) => ({
+            element_index: index,
+        }));
         return placeholderElements;
     }
 
