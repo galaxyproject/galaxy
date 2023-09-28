@@ -809,7 +809,7 @@ invocations:
     step_output_collection_toggle: '[data-step="${order_index}"] .invocation-step-output-collection-details .name'
     step_output_collection_element_identifier:
       type: xpath
-      selector: '//span[@class="content-title name"][text()="${element_identifier}"]'
+      selector: '//span[contains(@class, "content-title name")][text()="${element_identifier}"]'
     step_output_collection_element_datatype: '[data-step="${order_index}"] .invocation-step-output-collection-details .not-loading .datatype .value'
     step_job_details: '[data-step="${order_index}"] .invocation-step-job-details'
     step_job_table: '[data-step="${order_index}"] .invocation-step-job-details table'
