@@ -62,12 +62,43 @@ Athos Ribeiro <athoscr@fedoraproject.org>  # GH user: athos-ribeiro
 Aurélien Bernard <aurelien.bernard.bioinfo63@gmail.com>  # GH user: arbernard
 Aysam Guerler <aysam.guerler@gmail.com>  # GH user: guerler
 
+BalthazarPavot <balthazar.pavot@hotmail.fr>  # GH user: BalthazarPavot (account deleted)
+balto <balto_59@hotmail.fr>  # same as BalthazarPavot (only commits from both are in the same PR) ? GH user appears to be "the-nidhogg"
+Beatriz Serrano-Solano <bebatut@gmail.com>  # GH user: beatrizserrano
+Beatriz Serrano-Solano <bebatut@gmail.com> <beatrizserrano@users.noreply.github.com>
+Beatriz Serrano-Solano <bebatut@gmail.com> <berenice.batut@gmail.com>
+Ben Fulton <benmarkfulton@gmail.com>  # GH user: benfulton
+Ben Fulton <benmarkfulton@gmail.com> <befulton@iu.edu>
+Benjamin Carr <BenjaminHCCarr@users.noreply.github.com>  # GH user: BenjaminHCCarr
+Benno Weiss <benno.weiss@gmail.com>  # GH user: Paprikant
+bensellak <bensellak@ensat.ac.ma>  # GH user: bensellak
+Bert Droesbeke <bedro@psb.ugent.be>  # GH user: bedroesb
+Bert Droesbeke <bedro@psb.ugent.be> <44875756+bedroesb@users.noreply.github.com>
+Bioinformatics Platform (Belgian Institute of Public Health) <bioit@sciensano.be> <bioit@scien                                                                                                                      sano.be> # GH user: BioinformaticsPlatformWIV-ISP
+Björn Grüning <bjoern@gruenings.eu>  # GH user: bgruening
+Björn Grüning <bjoern@gruenings.eu> <bjoern.gruening@gmail.com>
+Björn Grüning <bjoern@gruenings.eu> Bjoern Gruening <devnull@localhost>
+Björn Grüning <bjoern@gruenings.eu> BjoernGruening <devnull@localhost>
+Brad Chapman <chapmanb@50mail.com>  # GH user: chapmanb
+Brad Holmes <holmesbr@ncbi.nlm.nih.gov>  # GH user: BradHolmes
+Brad Langhorst <brad@langhorst.com> <langhorst@neb.com>  # GH user: bwlang
+Brian Wheeler <bdwheele@iu.edu>  # GH user: bdwheele
+Bryan Raubenolt <braubeno@uno.edu> <bryanraubenolt@Bryans-MBP.home>  # GH user: thepineapplepirate
+
+Dave Trudgian <dave@trudgian.net> # GH user: dtrudg
+Dave Trudgian <dave@trudgian.net> <david.trudgian@utsouthwestern.edu>
+Dave Trudgian <dave@trudgian.net> <biohpc-help@utsouthwestern.edu>
+
 Henk van den Toorn <vdtoorn@hotmail.com> # GH user: vdtoorn
+
+Matthias Bernt <bernt@informatik.uni-leipzig.de>  # GH user: bernt-matthias
+
 Sergey Yakubov <yakubovs@ornl.gov>  # GH user: SergeyYakubov
 <yakubovs@ornl.gov> <SergeyYakubov@users.noreply.github.com>
 Steven Shum <weiyanshum@gmail.com>  # GH user: shenweiyan
 Steven Shum <weiyanshum@gmail.com> <ishenweiyan@foxmail.com>
 Steven Shum <weiyanshum@gmail.com> <ishenweiyan@qq.com>
+
 Tim Thompson <tim.thompson@xdbio.com>  # GH user: XDtim
 
 Vahid Jalili <jalili.vahid@gmail.com> # GH user: VJalili
@@ -79,6 +110,7 @@ Varun Shankar S <varunshankar55@gmail.com> # GH user: varunshankar
 Vimalkumar Velayudhan <vimalkumarvelayudhan@gmail.com> # GH user: vimalkvn
 Volodymyr Savchenko <Volodymyr.Savchenko@epfl.ch> # GH user: volodymyrss
 Volodymyr Savchenko <Volodymyr.Savchenko@epfl.ch> <volodymyrss@users.noreply.github.com>
+
 Wendi Bacon <44605769+nomadscientist@users.noreply.github.com>  # GH user: nomadscientist
 Wen-Yu Chung <wychung@bx.psu.edu>  # No GH user, last contribution in 2009
 William Holden <theappdev@protonmail.com>  # GH user: WilliamHolden
@@ -86,12 +118,14 @@ William Holden <theappdev@protonmail.com>  # GH user: WilliamHolden
 Will Simpson <wsimpson@email.arizona.edu>  # GH user: simpsonw
 Wolfgang Maier <maierw@informatik.uni-freiburg.de>  # GH user: wm75
 <maierw@informatik.uni-freiburg.de> <wolfgang.maier@biologie.uni-freiburg.de>
+
 Xavier Garnier <xgaia@gmx.com>  # GH user: xgaia
 Xavier Garnier <xgaia@gmx.com> <xavier.garnier@irisa.fr>
 <xgaia@gmx.com> <xgarnier@lougre.irisa.fr>
 xiaojay <xiaojay@gmail.com>  # GH user: xiaojay
 xiaojay <xiaojay@gmail.com> <jayyoung@yangyuanjiedeMacBook-Pro.local>
 Xiaoqian Jiang <jxq198409@hotmail.com>  # GH user: xiaoqian1984
+
 Yi Zhang <yizhang@bx.psu.edu>  # No GH user, last contribution in 2007
 Yo Yehudi <yochannah@gmail.com>  # GH user: yochannah
 Youri Hoogstrate <y.hoogstrate@gmail.com>  # GH user: yhoogstrate
@@ -99,6 +133,7 @@ Youri Hoogstrate <y.hoogstrate@gmail.com> <y.hoogstrate@erasmusmc.nl>
 Yunchen Gong <yunchen.gong@gmail.com>  # GH user: ycgong
 Yvan Le Bras <yvan.le-bras@mnhn.fr>  # GH user: yvanlebras
 <yvan.le-bras@mnhn.fr> <yvan.le_bras@irisa.fr>
+
 zhuzi <110071444+undergone2345@users.noreply.github.com>  # GH user: undergone2345
 Zipho Mashologu <zipho.m@gmail.com>  # GH user: zipho
 <zipho.m@gmail.com> <zipho@trustpay.biz>

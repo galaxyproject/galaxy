@@ -25,6 +25,11 @@ annefou, annefou@geo.uio.no, https://github.com/galaxyproject/galaxy/pull/11812
 abretaud, anthony.bretaudeau@inria.fr, https://github.com/galaxyproject/galaxy/pull/12159
 assuntad23, assuntad23@gmail.com, https://github.com/galaxyproject/galaxy/pull/11799
 guerler, aysam.guerler@gmail.com, https://github.com/galaxyproject/galaxy/pull/13923
+beatrizserrano, bebatut@gmail.com, https://github.com/galaxyproject/galaxy/pull/13616
+Paprikant, benno.weiss@gmail.com, https://github.com/galaxyproject/galaxy/pull/15131
+bernt-matthias, bernt@informatik.uni-leipzig.de, https://github.com/galaxyproject/galaxy/pull/16668
+bdwheele, bdwheele@iu.edu, https://github.com/galaxyproject/galaxy/pull/16443
+thepineapplepirate, braubeno@uno.edu, https://github.com/galaxyproject/galaxy/pull/13126
 
 # not yet agreed, needs research
 Daniel Bouchard <danieljosephbouchard@gmail.com> # GH user: Airistotal
@@ -45,9 +50,21 @@ Arjun Nath <arjun@bx.psu.edu> # no GH user, last contribution in 2007
 Ashok Varadharajan <ashvark@gmail.com>  # GH user: ashvark
 Athos Ribeiro <athoscr@fedoraproject.org>  # GH user: athos-ribeiro single commit contribution: https://github.com/galaxyproject/galaxy/commit/4b531179b0a19a45902f40f49e823cf5260bbd56
 Aurélien Bernard <aurelien.bernard.bioinfo63@gmail.com>  # GH user: arbernard
+BalthazarPavot <balthazar.pavot@hotmail.fr>  # GH user: BalthazarPavot (GitHub account deleted)
+balto <balto_59@hotmail.fr>  # ¿ same as BalthazarPavot (only commits from both are in the same PR) ? GH user appears to be "the-nidhogg"
+Bert Droesbeke <bedro@psb.ugent.be>  # GH user: bedroesb
+Ben Fulton <benmarkfulton@gmail.com>  # GH user: benfulton
+bensellak <bensellak@ensat.ac.ma>  # GH user: bensellak
+Dave Trudgian <dave@trudgian.net> # GH user: dtrudg
+Bioinformatics Platform (Belgian Institute of Public Health) <bioit@sciensano.be> # GH user: BioinformaticsPlatformWIV-ISP
+Brad Chapman <chapmanb@50mail.com>  # GH user: chapmanb
+Brad Holmes <holmesbr@ncbi.nlm.nih.gov>  # GH user: BradHolmes
+Brad Langhorst <brad@langhorst.com> <langhorst@neb.com>  # GH user: bwlang
+
 
 # not agreed, but contributions no longer present
 Adam Brenner <aebrenne@uci.edu> # GH user: abrenner, only commits to tools moved to tool shed (no longer in galaxy)
 Abdulrahman Azab <eng.azab@gmail.com> # GH user: abdulrahmanazab, one-line contribution, rewritten by John Chilton
 Andrea Sbardellati <andrea.sbardellati@crs4.it>  # only one commit to bowtie2 wrapper, since moved to the tool shed
+Benjamin Carr <BenjaminHCCarr@users.noreply.github.com>  # GH user: BenjaminHCCarr, single line change, no longer present
 
