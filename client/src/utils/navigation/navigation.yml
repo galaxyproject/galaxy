@@ -671,7 +671,7 @@ workflow_editor:
       clone: '${_} .node-clone'
       output_data_row:
         type: xpath
-        selector: '//div[contains(@class, "output-data-row") and contains(string(), "${output_name} (${extension})")]'
+        selector: '//div[@data-output-name="${output_name}"]//span[contains(text(), "(${extension})")]'
       output_terminal: "${_} [output-name='${name}']"
       input_terminal: "${_} [input-name='${name}']"
       input_mapping_icon: "${_} [input-name='${name}'].multiple"
