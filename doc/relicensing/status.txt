@@ -25,8 +25,9 @@ annefou, annefou@geo.uio.no, https://github.com/galaxyproject/galaxy/pull/11812
 abretaud, anthony.bretaudeau@inria.fr, https://github.com/galaxyproject/galaxy/pull/12159
 assuntad23, assuntad23@gmail.com, https://github.com/galaxyproject/galaxy/pull/11799
 guerler, aysam.guerler@gmail.com, https://github.com/galaxyproject/galaxy/pull/13923
-beatrizserrano, bebatut@gmail.com, https://github.com/galaxyproject/galaxy/pull/13616
+beatrizserrano, beatrizserrano@users.noreply.github.com, https://github.com/galaxyproject/galaxy/pull/13616
 Paprikant, benno.weiss@gmail.com, https://github.com/galaxyproject/galaxy/pull/15131
+bebatut, bebatut@gmail.com, https://github.com/galaxyproject/galaxy/pull/15068
 bernt-matthias, bernt@informatik.uni-leipzig.de, https://github.com/galaxyproject/galaxy/pull/16668
 bdwheele, bdwheele@iu.edu, https://github.com/galaxyproject/galaxy/pull/16443
 thepineapplepirate, braubeno@uno.edu, https://github.com/galaxyproject/galaxy/pull/13126
