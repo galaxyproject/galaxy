@@ -3393,35 +3393,36 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
     def __dataset_contents_iter(self, **kwds):
         return self.__filter_contents(HistoryDatasetAssociation, **kwds)
 
+    def __collection_contents_iter(self, **kwds):
+        return self.__filter_contents(HistoryDatasetCollectionAssociation, **kwds)
+
     def __filter_contents(self, content_class, **kwds):
-        db_session = object_session(self)
-        assert db_session is not None
-        query = db_session.query(content_class).filter(content_class.table.c.history_id == self.id)
-        query = query.order_by(content_class.table.c.hid.asc())
+        session = object_session(self)
+        stmt = select(content_class).where(content_class.history_id == self.id).order_by(content_class.hid.asc())
+
         deleted = galaxy.util.string_as_bool_or_none(kwds.get("deleted", None))
         if deleted is not None:
-            query = query.filter(content_class.deleted == deleted)
+            stmt = stmt.where(content_class.deleted == deleted)
+
         visible = galaxy.util.string_as_bool_or_none(kwds.get("visible", None))
         if visible is not None:
-            query = query.filter(content_class.visible == visible)
+            stmt = stmt.where(content_class.visible == visible)
+
         if "object_store_ids" in kwds:
             if content_class == HistoryDatasetAssociation:
-                query = query.join(content_class.dataset).filter(
-                    Dataset.table.c.object_store_id.in_(kwds.get("object_store_ids"))
-                )
+                stmt = stmt.join(content_class.dataset).where(Dataset.object_store_id.in_(kwds.get("object_store_ids")))
             # else ignoring object_store_ids on HDCAs...
+
         if "ids" in kwds:
             assert "object_store_ids" not in kwds
             ids = kwds["ids"]
             max_in_filter_length = kwds.get("max_in_filter_length", MAX_IN_FILTER_LENGTH)
             if len(ids) < max_in_filter_length:
-                query = query.filter(content_class.id.in_(ids))
+                stmt = stmt.where(content_class.id.in_(ids))
             else:
-                query = (content for content in query if content.id in ids)
-        return query
+                return (content for content in session.scalars(stmt) if content.id in ids)
 
-    def __collection_contents_iter(self, **kwds):
-        return self.__filter_contents(HistoryDatasetCollectionAssociation, **kwds)
+        return session.scalars(stmt)
 
 
 class UserShareAssociation(RepresentById):
