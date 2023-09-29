@@ -3,7 +3,7 @@
         <b-alert v-if="showHistoryStateInfo" variant="info" show data-description="history state info">
             {{ historyStateInfoMessage }}
         </b-alert>
-        <div v-else class="flex-row flex-grow-0 pb-3">
+        <div class="flex-row flex-grow-0 pb-3">
             <b-button
                 v-if="userOwnsHistory"
                 size="sm"
@@ -15,7 +15,7 @@
                 Switch to this history
             </b-button>
             <b-button
-                v-else
+                v-if="canImportHistory"
                 v-b-modal:copy-history-modal
                 size="sm"
                 variant="outline-info"
@@ -81,18 +81,24 @@ export default {
         canEditHistory() {
             return this.userOwnsHistory && !this.history.archived && !this.history.purged;
         },
+        showHistoryArchived() {
+            return this.history.archived && this.userOwnsHistory;
+        },
         showHistoryStateInfo() {
-            return this.history.archived || this.history.purged;
+            return this.showHistoryArchived || this.history.purged;
         },
         historyStateInfoMessage() {
-            if (this.history.archived && this.history.purged) {
+            if (this.showHistoryArchived && this.history.purged) {
                 return "This history has been archived and purged.";
-            } else if (this.history.archived) {
+            } else if (this.showHistoryArchived) {
                 return "This history has been archived.";
             } else if (this.history.purged) {
                 return "This history has been purged.";
             }
             return "";
+        },
+        canImportHistory() {
+            return !this.userOwnsHistory && !this.history.purged;
         },
     },
     created() {
