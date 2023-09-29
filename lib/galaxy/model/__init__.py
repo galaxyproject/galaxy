@@ -3263,8 +3263,8 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
 
     @property
     def paused_jobs(self):
-        db_session = object_session(self)
-        return db_session.query(Job).filter(Job.history_id == self.id, Job.state == Job.states.PAUSED).all()
+        stmt = select(Job).where(Job.history_id == self.id, Job.state == Job.states.PAUSED)
+        return object_session(self).scalars(stmt).all()
 
     @hybrid.hybrid_property
     def disk_size(self):
