@@ -53,8 +53,11 @@
                         <icon icon="burn" /> Purged
                     </b-badge>
                 </span>
+                <span v-else-if="isPlaceholder" class="align-self-start btn-group p-1">
+                    <FontAwesomeIcon icon="spinner" spin />
+                </span>
                 <ContentOptions
-                    v-else-if="!isPlaceholder"
+                    v-else
                     :writable="writable"
                     :is-dataset="isDataset"
                     :is-deleted="item.deleted"
@@ -102,7 +105,7 @@
 
 <script>
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faArrowCircleDown, faArrowCircleUp, faCheckCircle } from "@fortawesome/free-solid-svg-icons";
+import { faArrowCircleDown, faArrowCircleUp, faCheckCircle, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { updateContentFields } from "components/History/model/queries";
 import StatelessTags from "components/TagsMultiselect/StatelessTags";
@@ -116,7 +119,7 @@ import ContentOptions from "./ContentOptions";
 import DatasetDetails from "./Dataset/DatasetDetails";
 import { HIERARCHICAL_COLLECTION_JOB_STATES, STATES } from "./model/states";
 
-library.add(faArrowCircleUp, faArrowCircleDown, faCheckCircle);
+library.add(faArrowCircleUp, faArrowCircleDown, faCheckCircle, faSpinner);
 export default {
     components: {
         CollectionDescription,
