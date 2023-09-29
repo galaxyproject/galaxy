@@ -2434,7 +2434,7 @@ class WorkflowStepToExportBase(Model):
         description="Layout position of this step in the graph",
     )
     workflow_outputs: List[WorkflowOutput] = Field(
-        [], title="Workflow Outputs", description="The version of the tool associated with this step."
+        [], title="Workflow Outputs", description="Workflow outputs associated with this step."
     )
 
 
