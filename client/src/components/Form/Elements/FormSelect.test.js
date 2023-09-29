@@ -65,6 +65,7 @@ describe("FormSelect", () => {
 
     it("multiple values", async () => {
         const wrapper = createTarget({
+            optional: true,
             multiple: true,
             options: defaultOptions,
             value: ["value_1", "", 99],
