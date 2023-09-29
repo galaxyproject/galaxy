@@ -3273,23 +3273,17 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
         all non-purged, unique datasets within it.
         """
         # non-.expression part of hybrid.hybrid_property: called when an instance is the namespace (not the class)
-        db_session = object_session(self)
-        rval = db_session.query(
-            func.sum(
-                db_session.query(HistoryDatasetAssociation.dataset_id, Dataset.total_size)
-                .join(Dataset)
-                .filter(HistoryDatasetAssociation.table.c.history_id == self.id)
-                .filter(HistoryDatasetAssociation.purged != true())
-                .filter(Dataset.purged != true())
-                # unique datasets only
-                .distinct()
-                .subquery()
-                .c.total_size
-            )
-        ).first()[0]
-        if rval is None:
-            rval = 0
-        return rval
+        subq = (
+            select(HistoryDatasetAssociation.dataset_id, Dataset.total_size)
+            .join(Dataset)
+            .where(HistoryDatasetAssociation.history_id == self.id)
+            .where(HistoryDatasetAssociation.purged != true())
+            .where(Dataset.purged != true())
+            .distinct()  # unique datasets only
+            .subquery()
+        )
+        stmt = select(func.sum(subq.c.total_size))
+        return object_session(self).scalar(stmt) or 0
 
     @disk_size.expression  # type: ignore[no-redef]
     def disk_size(cls):
