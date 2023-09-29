@@ -2838,12 +2838,12 @@ class HistoryAudit(Base, RepresentById):
     @classmethod
     def prune(cls, sa_session):
         latest_subq = (
-            sa_session.query(cls.history_id, func.max(cls.update_time).label("max_update_time"))
+            select(cls.history_id, func.max(cls.update_time).label("max_update_time"))
             .group_by(cls.history_id)
             .subquery()
         )
         not_latest_query = (
-            sa_session.query(cls.history_id, cls.update_time)
+            select(cls.history_id, cls.update_time)
             .select_from(latest_subq)
             .join(
                 cls,
