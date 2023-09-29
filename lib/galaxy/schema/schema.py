@@ -504,7 +504,7 @@ class TagCollection(Model):
         default=...,
         title="Tags",
         description="The collection of tags associated with an item.",
-        example=['COVID-19', '#myFancyTag', 'covid19.galaxyproject.org'],
+        example=["COVID-19", "#myFancyTag", "covid19.galaxyproject.org"],
     )
 
 
