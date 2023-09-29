@@ -3325,14 +3325,12 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
         """Returns human readable size of history on disk."""
         return galaxy.util.nice_size(self.disk_size)
 
-    @property
-    def active_dataset_and_roles_query(self):
-        db_session = object_session(self)
+    def _active_dataset_and_roles_query(self):
         return (
-            db_session.query(HistoryDatasetAssociation)
-            .filter(HistoryDatasetAssociation.table.c.history_id == self.id)
-            .filter(not_(HistoryDatasetAssociation.deleted))
-            .order_by(HistoryDatasetAssociation.table.c.hid.asc())
+            select(HistoryDatasetAssociation)
+            .where(HistoryDatasetAssociation.history_id == self.id)
+            .where(not_(HistoryDatasetAssociation.deleted))
+            .order_by(HistoryDatasetAssociation.hid.asc())
             .options(
                 joinedload(HistoryDatasetAssociation.dataset)
                 .joinedload(Dataset.actions)
@@ -3344,15 +3342,15 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
     @property
     def active_datasets_and_roles(self):
         if not hasattr(self, "_active_datasets_and_roles"):
-            self._active_datasets_and_roles = self.active_dataset_and_roles_query.all()
+            stmt = self._active_dataset_and_roles_query()
+            self._active_datasets_and_roles = object_session(self).scalars(stmt).unique().all()
         return self._active_datasets_and_roles
 
     @property
     def active_visible_datasets_and_roles(self):
         if not hasattr(self, "_active_visible_datasets_and_roles"):
-            self._active_visible_datasets_and_roles = self.active_dataset_and_roles_query.filter(
-                HistoryDatasetAssociation.visible
-            ).all()
+            stmt = self._active_dataset_and_roles_query().where(HistoryDatasetAssociation.visible)
+            self._active_visible_datasets_and_roles = object_session(self).scalars(stmt).unique().all()
         return self._active_visible_datasets_and_roles
 
     @property
