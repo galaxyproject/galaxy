@@ -2646,7 +2646,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
         tool_ids = []
         for id, tool_or_section in tools_index.items():
             if "tools" in tool_or_section:
-                tool_ids.extend(tool_or_section["tools"])
+                tool_ids.extend([t for t in tool_or_section["tools"] if isinstance(t, str)])
             else:
                 tool_ids.append(id)
 

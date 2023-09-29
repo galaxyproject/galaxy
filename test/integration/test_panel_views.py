@@ -59,9 +59,12 @@ class TestPanelViewsFromDirectoryIntegration(integration_util.IntegrationTestCas
         section = list(index_panel.values())[0]
         section_elems = section["tools"]
         assert len(section_elems) == 4
-        assert section_elems == ["panel_label_the-start", "empty_list", "panel_label_the-middle", "count_list"]
-        section_labels = section["panel_labels"]
-        assert len(section_labels) == 2
+        assert [section_elems[1], section_elems[3]] == ["empty_list", "count_list"]
+        assert [section_elems[0]["id"], section_elems[2]["id"]] == ["the-start", "the-middle"]
+        assert [section_elems[0]["model_class"], section_elems[2]["model_class"]] == [
+            "ToolSectionLabel",
+            "ToolSectionLabel",
+        ]
 
     def test_section_embed(self):
         index = self.galaxy_interactor.get("tools", data=dict(in_panel=True, view="custom_5"))
@@ -78,7 +81,7 @@ class TestPanelViewsFromDirectoryIntegration(integration_util.IntegrationTestCas
         assert len(section_elems) == 5
         assert section_elems[0:3] == ["multi_data_optional", "paths_as_file", "param_text_option"]
         assert section_elems[4] == "Filter1"
-        assert len(section["panel_labels"]) == 1
+        assert section_elems[3]["model_class"] == "ToolSectionLabel"
 
     def test_section_reference_by_name(self):
         index = self.galaxy_interactor.get("tools", data=dict(in_panel=True, view="custom_8"))
