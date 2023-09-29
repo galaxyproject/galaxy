@@ -1,5 +1,8 @@
 <tool id="Condense characters1" name="Condense" version="1.0.0">
   <description>consecutive characters</description>
+  <requirements>
+    <requirement type="package" version="5.26">perl</requirement>
+  </requirements>
   <command><![CDATA[
 perl '$__tool_directory__/condense_characters.pl'
 '$input'
