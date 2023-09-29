@@ -3356,19 +3356,18 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
     @property
     def active_visible_dataset_collections(self):
         if not hasattr(self, "_active_visible_dataset_collections"):
-            db_session = object_session(self)
-            query = (
-                db_session.query(HistoryDatasetCollectionAssociation)
-                .filter(HistoryDatasetCollectionAssociation.table.c.history_id == self.id)
-                .filter(not_(HistoryDatasetCollectionAssociation.deleted))
-                .filter(HistoryDatasetCollectionAssociation.visible)
-                .order_by(HistoryDatasetCollectionAssociation.table.c.hid.asc())
+            stmt = (
+                select(HistoryDatasetCollectionAssociation)
+                .where(HistoryDatasetCollectionAssociation.history_id == self.id)
+                .where(not_(HistoryDatasetCollectionAssociation.deleted))
+                .where(HistoryDatasetCollectionAssociation.visible)
+                .order_by(HistoryDatasetCollectionAssociation.hid.asc())
                 .options(
                     joinedload(HistoryDatasetCollectionAssociation.collection),
                     joinedload(HistoryDatasetCollectionAssociation.tags),
                 )
             )
-            self._active_visible_dataset_collections = query.all()
+            self._active_visible_dataset_collections = object_session(self).scalars(stmt).unique().all()
         return self._active_visible_dataset_collections
 
     @property
