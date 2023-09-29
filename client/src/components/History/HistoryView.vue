@@ -8,7 +8,7 @@
                 v-if="userOwnsHistory"
                 size="sm"
                 variant="outline-info"
-                title="Switch to this history"
+                :title="setAsCurrentTitle"
                 :disabled="isSetAsCurrentDisabled"
                 data-description="switch to history button"
                 @click="setCurrentHistory(history.id)">
@@ -75,8 +75,23 @@ export default {
         userOwnsHistory() {
             return this.currentUser.id == this.history.user_id;
         },
+        isCurrentHistory() {
+            return this.currentHistory?.id == this.history?.id;
+        },
         isSetAsCurrentDisabled() {
-            return this.currentHistory?.id == this.history?.id || this.history.archived || this.history.purged;
+            return this.isCurrentHistory || this.history.archived || this.history.purged;
+        },
+        setAsCurrentTitle() {
+            if (this.isCurrentHistory) {
+                return "This history is already your current history.";
+            }
+            if (this.history.archived) {
+                return "This history has been archived and cannot be set as your current history. Unarchive it first.";
+            }
+            if (this.history.purged) {
+                return "This history has been purged and cannot be set as your current history.";
+            }
+            return "Switch to this history";
         },
         canEditHistory() {
             return this.userOwnsHistory && !this.history.archived && !this.history.purged;
