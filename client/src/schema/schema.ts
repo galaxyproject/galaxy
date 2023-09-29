@@ -8667,6 +8667,11 @@ export interface components {
         /**
          * TagCollection
          * @description The collection of tags associated with an item.
+         * @example [
+         *   "COVID-19",
+         *   "#myFancyTag",
+         *   "covid19.galaxyproject.org"
+         * ]
          */
         TagCollection: string[];
         /**
