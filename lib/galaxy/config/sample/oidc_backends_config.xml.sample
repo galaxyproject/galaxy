@@ -158,7 +158,7 @@ Please mind `http` and `https`.
         <client_secret>...</client_secret>
         <redirect_uri>http://localhost:8080/authnz/elixir/callback</redirect_uri>
         <prompt>consent</prompt>
-        <icon>https://elixir-europe.org/sites/default/files/images/login-button-orange.png</icon>
+        <icon>https://lifescience-ri.eu/fileadmin/lifescience-ri/media/Images/button-login-small.png</icon>
         <!-- (Optional) Extra scopes you need to request for your implementation -->
         <!-- <extra_scopes>offline_access,something-else</extra_scopes> -->
     </provider>
