@@ -5876,6 +5876,44 @@ input1:
             ), details_collection_without_tag
             assert len(details_collection_without_tag["tags"]) == 0, details_collection_without_tag
 
+    @skip_without_tool("collection_creates_pair")
+    @skip_without_tool("cat")
+    def test_run_add_tag_on_database_operation_output(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs(
+                """
+class: GalaxyWorkflow
+inputs:
+  input1: data_collection
+steps:
+  extrat:
+    tool_id: __EXTRACT_DATASET__
+    in:
+      input: input1
+    outputs:
+      output:
+        add_tags:
+          - "name:foo"
+""",
+                test_data="""
+input1:
+  collection_type: list
+  name: the_dataset_list
+  elements:
+    - identifier: el1
+      value: 1.fastq
+      type: File
+""",
+                history_id=history_id,
+                round_trip_format_conversion=True,
+            )
+            details_dataset_with_tag = self.dataset_populator.get_history_dataset_details(
+                history_id, hid=3, wait=True, assert_ok=True
+            )
+
+            assert details_dataset_with_tag["history_content_type"] == "dataset", details_dataset_with_tag
+            assert details_dataset_with_tag["tags"][0] == "name:foo", details_dataset_with_tag
+
     @skip_without_tool("cat1")
     def test_run_with_runtime_pja(self):
         workflow = self.workflow_populator.load_workflow(name="test_for_pja_runtime")
