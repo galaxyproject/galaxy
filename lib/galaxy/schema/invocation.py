@@ -13,6 +13,7 @@ from typing import (
 from pydantic import (
     BaseModel,
     Field,
+    UUID4,
 )
 from pydantic.generics import GenericModel
 from pydantic.utils import GetterDict
@@ -26,6 +27,7 @@ from galaxy.schema.fields import (
     DecodedDatabaseIdField,
     EncodedDatabaseIdField,
     literal_to_value,
+    ModelClassField
 )
 from galaxy.schema.schema import Model
 
@@ -267,7 +269,7 @@ class InvocationStepOutput(Model):
         title="Dataset ID",
         description="Dataset ID of the workflow step output.",
     )
-    uuid: Optional[schema.UUID4] = Field(
+    uuid: Optional[UUID4] = Field(
         None,
         title="UUID",
         description="Universal unique identifier of the workflow step output dataset.",
@@ -292,7 +294,7 @@ class InvocationStepCollectionOutput(Model):
 class InvocationStep(Model):
     """Information about Workflow Invocation Step"""
 
-    model_class: schema.INVOCATION_STEP_MODEL_CLASS = schema.ModelClassField(schema.INVOCATION_STEP_MODEL_CLASS)
+    model_class: schema.INVOCATION_STEP_MODEL_CLASS = ModelClassField(schema.INVOCATION_STEP_MODEL_CLASS)
     id: DecodedDatabaseIdField = schema.EntityIdField
     update_time: Optional[datetime] = schema.UpdateTimeField
     job_id: Optional[DecodedDatabaseIdField] = Field(
@@ -323,7 +325,7 @@ class InvocationStep(Model):
         title="Step label",
         description="The label of the workflow step",
     )
-    workflow_step_uuid: Optional[schema.UUID4] = Field(
+    workflow_step_uuid: Optional[UUID4] = Field(
         None,
         title="UUID",
         description="Universal unique identifier of the workflow step.",
