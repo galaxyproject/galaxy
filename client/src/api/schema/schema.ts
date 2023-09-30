@@ -852,6 +852,10 @@ export interface paths {
         /** Prepare history for export-style download and write to supplied URI. */
         post: operations["write_store_api_histories__history_id__write_store_post"];
     };
+    "/api/invocations/steps/{step_id}": {
+        /** Show details of workflow invocation step. */
+        get: operations["step_api_invocations_steps__step_id__get"];
+    };
     "/api/invocations/{invocation_id}": {
         /** Get detailed description of a workflow invocation. */
         get: operations["show_invocation_api_invocations__invocation_id__get"];
@@ -937,7 +941,10 @@ export interface paths {
         get: operations["invocation_step_jobs_summary_api_invocations__invocation_id__step_jobs_summary_get"];
     };
     "/api/invocations/{invocation_id}/steps/{step_id}": {
-        /** Show details of workflow invocation step. */
+        /**
+         * Show details of workflow invocation step.
+         * @description An alias for `GET /api/invocations/steps/{step_id}`. `invocation_id` is ignored.
+         */
         get: operations["invocation_step_api_invocations__invocation_id__steps__step_id__get"];
         /** Update state of running workflow step invocation - still very nebulous but this would be for stuff like confirming paused steps can proceed etc. */
         put: operations["update_invocation_step_api_invocations__invocation_id__steps__step_id__put"];
@@ -1741,49 +1748,52 @@ export interface paths {
     "/api/workflows/{workflow_id}/invocations/{invocation_id}": {
         /**
          * Get detailed description of a workflow invocation.
-         * @description A wrapper for multiple API endpoints providing the same logic.
+         * @description An alias for `GET /api/invocations/{invocation_id}`. `workflow_id` is ignored.
          */
         get: operations["show_workflow_invocation_api_workflows__workflow_id__invocations__invocation_id__get"];
         /**
          * Cancel the specified workflow invocation.
-         * @description A wrapper for multiple API endpoints providing the same logic.
+         * @description An alias for `DELETE /api/invocations/{invocation_id}`. `workflow_id` is ignored.
          */
         delete: operations["cancel_workflow_invocation_api_workflows__workflow_id__invocations__invocation_id__delete"];
     };
     "/api/workflows/{workflow_id}/invocations/{invocation_id}/jobs_summary": {
         /**
          * Get job state summary info aggregated across all current jobs of the workflow invocation.
-         * @description A wrapper for multiple API endpoints providing the same logic.
+         * @description An alias for `GET /api/invocations/{invocation_id}/jobs_summary`. `workflow_id` is ignored.
          */
         get: operations["workflow_invocation_jobs_summary_api_workflows__workflow_id__invocations__invocation_id__jobs_summary_get"];
     };
     "/api/workflows/{workflow_id}/invocations/{invocation_id}/report": {
         /**
          * Get JSON summarizing invocation for reporting.
-         * @description A wrapper for multiple API endpoints providing the same logic.
+         * @description An alias for `GET /api/invocations/{invocation_id}/report`. `workflow_id` is ignored.
          */
         get: operations["show_workflow_invocation_report_api_workflows__workflow_id__invocations__invocation_id__report_get"];
     };
     "/api/workflows/{workflow_id}/invocations/{invocation_id}/report.pdf": {
         /**
          * Get PDF summarizing invocation for reporting.
-         * @description A wrapper for multiple API endpoints providing the same logic.
+         * @description An alias for `GET /api/invocations/{invocation_id}/report.pdf`. `workflow_id` is ignored.
          */
         get: operations["show_workflow_invocation_report_pdf_api_workflows__workflow_id__invocations__invocation_id__report_pdf_get"];
     };
     "/api/workflows/{workflow_id}/invocations/{invocation_id}/step_jobs_summary": {
         /**
          * Get job state summary info aggregated per step of the workflow invocation.
-         * @description A wrapper for multiple API endpoints providing the same logic.
+         * @description An alias for `GET /api/invocations/{invocation_id}/step_jobs_summary`. `workflow_id` is ignored.
          */
         get: operations["workflow_invocation_step_jobs_summary_api_workflows__workflow_id__invocations__invocation_id__step_jobs_summary_get"];
     };
     "/api/workflows/{workflow_id}/invocations/{invocation_id}/steps/{step_id}": {
-        /** Show details of workflow invocation step. */
+        /**
+         * Show details of workflow invocation step.
+         * @description An alias for `GET /api/invocations/{invocation_id}/steps/{step_id}`. `workflow_id` and `invocation_id` are ignored.
+         */
         get: operations["workflow_invocation_step_api_workflows__workflow_id__invocations__invocation_id__steps__step_id__get"];
         /**
          * Update state of running workflow step invocation.
-         * @description A wrapper for multiple API endpoints providing the same logic.
+         * @description An alias for `PUT /api/invocations/{invocation_id}/steps/{step_id}`. `workflow_id` is ignored.
          */
         put: operations["update_workflow_invocation_step_api_workflows__workflow_id__invocations__invocation_id__steps__step_id__put"];
     };
@@ -1795,13 +1805,13 @@ export interface paths {
         /**
          * Get detailed description of a workflow invocation.
          * @deprecated
-         * @description A wrapper for multiple API endpoints providing the same logic.
+         * @description An alias for `GET /api/invocations/{invocation_id}`. `workflow_id` is ignored.
          */
         get: operations["show_workflow_invocation_api_workflows__workflow_id__usage__invocation_id__get"];
         /**
          * Cancel the specified workflow invocation.
          * @deprecated
-         * @description A wrapper for multiple API endpoints providing the same logic.
+         * @description An alias for `DELETE /api/invocations/{invocation_id}`. `workflow_id` is ignored.
          */
         delete: operations["cancel_workflow_invocation_api_workflows__workflow_id__usage__invocation_id__delete"];
     };
@@ -1809,7 +1819,7 @@ export interface paths {
         /**
          * Get job state summary info aggregated across all current jobs of the workflow invocation.
          * @deprecated
-         * @description A wrapper for multiple API endpoints providing the same logic.
+         * @description An alias for `GET /api/invocations/{invocation_id}/jobs_summary`. `workflow_id` is ignored.
          */
         get: operations["workflow_invocation_jobs_summary_api_workflows__workflow_id__usage__invocation_id__jobs_summary_get"];
     };
@@ -1817,7 +1827,7 @@ export interface paths {
         /**
          * Get JSON summarizing invocation for reporting.
          * @deprecated
-         * @description A wrapper for multiple API endpoints providing the same logic.
+         * @description An alias for `GET /api/invocations/{invocation_id}/report`. `workflow_id` is ignored.
          */
         get: operations["show_workflow_invocation_report_api_workflows__workflow_id__usage__invocation_id__report_get"];
     };
@@ -1825,7 +1835,7 @@ export interface paths {
         /**
          * Get PDF summarizing invocation for reporting.
          * @deprecated
-         * @description A wrapper for multiple API endpoints providing the same logic.
+         * @description An alias for `GET /api/invocations/{invocation_id}/report.pdf`. `workflow_id` is ignored.
          */
         get: operations["show_workflow_invocation_report_pdf_api_workflows__workflow_id__usage__invocation_id__report_pdf_get"];
     };
@@ -1833,7 +1843,7 @@ export interface paths {
         /**
          * Get job state summary info aggregated per step of the workflow invocation.
          * @deprecated
-         * @description A wrapper for multiple API endpoints providing the same logic.
+         * @description An alias for `GET /api/invocations/{invocation_id}/step_jobs_summary`. `workflow_id` is ignored.
          */
         get: operations["workflow_invocation_step_jobs_summary_api_workflows__workflow_id__usage__invocation_id__step_jobs_summary_get"];
     };
@@ -1841,12 +1851,13 @@ export interface paths {
         /**
          * Show details of workflow invocation step.
          * @deprecated
+         * @description An alias for `GET /api/invocations/{invocation_id}/steps/{step_id}`. `workflow_id` and `invocation_id` are ignored.
          */
         get: operations["workflow_invocation_step_api_workflows__workflow_id__usage__invocation_id__steps__step_id__get"];
         /**
          * Update state of running workflow step invocation.
          * @deprecated
-         * @description A wrapper for multiple API endpoints providing the same logic.
+         * @description An alias for `PUT /api/invocations/{invocation_id}/steps/{step_id}`. `workflow_id` is ignored.
          */
         put: operations["update_workflow_invocation_step_api_workflows__workflow_id__usage__invocation_id__steps__step_id__put"];
     };
@@ -6256,13 +6267,152 @@ export interface components {
             uninstalled: boolean;
         };
         /**
+         * InvocationStep
+         * @description Information about Workflow Invocation Step
+         */
+        InvocationStep: {
+            /**
+             * Action
+             * @description Whether to take action on the invocation step.
+             */
+            action: boolean;
+            /**
+             * ID
+             * @description The encoded ID of this entity.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Job ID
+             * @description The encoded ID of the job associated with this workflow invocation step.
+             * @example 0123456789ABCDEF
+             */
+            job_id?: string;
+            /**
+             * Jobs
+             * @description Jobs associated with the workflow invocation step.
+             * @default []
+             */
+            jobs?: components["schemas"]["JobBaseModel"][];
+            /**
+             * Model class
+             * @description The name of the database model class.
+             * @default WorkflowInvocationStep
+             * @enum {string}
+             */
+            model_class: "WorkflowInvocationStep";
+            /**
+             * Order index
+             * @description The index of the workflow step in the workflow.
+             */
+            order_index: number;
+            /**
+             * Output collections
+             * @description The dataset collection outputs of the workflow invocation step.
+             * @default {}
+             */
+            output_collections?: {
+                [key: string]: components["schemas"]["InvocationStepCollectionOutput"] | undefined;
+            };
+            /**
+             * Outputs
+             * @description The outputs of the workflow invocation step.
+             * @default {}
+             */
+            outputs?: {
+                [key: string]: components["schemas"]["InvocationStepOutput"] | undefined;
+            };
+            /**
+             * State of the invocation step
+             * @description Describes where in the scheduling process the workflow invocation step is.
+             */
+            state: components["schemas"]["InvocationStepState"];
+            /**
+             * Subworkflow invocation ID
+             * @description The encoded ID of the subworkflow invocation.
+             * @example 0123456789ABCDEF
+             */
+            subworkflow_invocation_id: string;
+            /**
+             * Update Time
+             * Format: date-time
+             * @description The last time and date this item was updated.
+             */
+            update_time?: string;
+            /**
+             * Workflow step ID
+             * @description The encoded ID of the workflow step associated with this workflow invocation step.
+             * @example 0123456789ABCDEF
+             */
+            workflow_step_id: string;
+            /**
+             * Step label
+             * @description The label of the workflow step
+             */
+            workflow_step_label: string;
+            /**
+             * UUID
+             * Format: uuid4
+             * @description Universal unique identifier of the workflow step.
+             */
+            workflow_step_uuid?: string;
+        };
+        /**
+         * InvocationStepCollectionOutput
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        InvocationStepCollectionOutput: {
+            /**
+             * Dataset Collection ID
+             * @description Dataset Collection ID of the workflow step output.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * src
+             * @description The source model of the output.
+             * @default hdca
+             */
+            src: string;
+        };
+        /**
+         * InvocationStepOutput
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        InvocationStepOutput: {
+            /**
+             * Dataset ID
+             * @description Dataset ID of the workflow step output.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * src
+             * @description The source model of the output.
+             * @default hda
+             */
+            src: string;
+            /**
+             * UUID
+             * Format: uuid4
+             * @description Universal unique identifier of the workflow step output dataset.
+             */
+            uuid?: string;
+        };
+        /**
+         * InvocationStepState
+         * @description An enumeration.
+         * @enum {string}
+         */
+        InvocationStepState: "new" | "ready" | "scheduled";
+        /**
          * InvocationUpdatePayload
          * @description Base model definition with common configuration used by all derived models.
          */
         InvocationUpdatePayload: {
             /**
              * Action
-             * @description Whether to take action.
+             * @description Whether to take action on the invocation step.
              */
             action: boolean;
         };
@@ -6294,6 +6444,73 @@ export interface components {
          * @enum {string}
          */
         ItemsFromSrc: "url" | "files" | "path" | "ftp_import" | "server_dir";
+        /**
+         * JobBaseModel
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        JobBaseModel: {
+            /**
+             * Create Time
+             * Format: date-time
+             * @description The time and date this item was created.
+             */
+            create_time: string;
+            /**
+             * Exit Code
+             * @description The exit code returned by the tool. Can be unset if the job is not completed yet.
+             */
+            exit_code?: number;
+            /**
+             * Galaxy Version
+             * @description The (major) version of Galaxy used to create this job.
+             * @example 21.05
+             */
+            galaxy_version: string;
+            /**
+             * History ID
+             * @description The encoded ID of the history associated with this item.
+             * @example 0123456789ABCDEF
+             */
+            history_id?: string;
+            /**
+             * ID
+             * @description The encoded ID of this entity.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Model class
+             * @description The name of the database model class.
+             * @default Job
+             * @enum {string}
+             */
+            model_class: "Job";
+            /**
+             * State
+             * @description Current state of the job.
+             */
+            state: components["schemas"]["JobState"];
+            /**
+             * Tool ID
+             * @description Identifier of the tool that generated this job.
+             */
+            tool_id: string;
+            /**
+             * Update Time
+             * Format: date-time
+             * @description The last time and date this item was updated.
+             */
+            update_time: string;
+        };
+        /**
+         * JobExportHistoryArchiveListResponse
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        JobExportHistoryArchiveListResponse: components["schemas"]["JobExportHistoryArchiveModel"][];
+        /**
+         * JobExportHistoryArchiveModel
+         * @description Base model definition with common configuration used by all derived models.
+         */
         /** JobDestinationParams */
         JobDestinationParams: {
             /**
@@ -14734,9 +14951,43 @@ export interface operations {
             };
         };
     };
+    step_api_invocations_steps__step_id__get: {
+        /** Show details of workflow invocation step. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The encoded database identifier of the WorkflowInvocationStep. */
+            path: {
+                step_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["InvocationStep"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     show_invocation_api_invocations__invocation_id__get: {
         /** Get detailed description of a workflow invocation. */
         parameters: {
+            /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
+            /**
+             * @description Populate the invocation step state with the job state instead of the invocation step state.
+             *         This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
+             *         Partially scheduled steps may provide incomplete information and the listed steps outputs
+             *         are not the mapped over step outputs but the individual job outputs.
+             */
             query?: {
                 step_details?: boolean;
                 legacy_job_state?: boolean;
@@ -14768,6 +15019,13 @@ export interface operations {
     cancel_invocation_api_invocations__invocation_id__delete: {
         /** Cancel the specified workflow invocation. */
         parameters: {
+            /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
+            /**
+             * @description Populate the invocation step state with the job state instead of the invocation step state.
+             *         This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
+             *         Partially scheduled steps may provide incomplete information and the listed steps outputs
+             *         are not the mapped over step outputs but the individual job outputs.
+             */
             query?: {
                 step_details?: boolean;
                 legacy_job_state?: boolean;
@@ -15039,7 +15297,10 @@ export interface operations {
         };
     };
     invocation_step_api_invocations__invocation_id__steps__step_id__get: {
-        /** Show details of workflow invocation step. */
+        /**
+         * Show details of workflow invocation step.
+         * @description An alias for `GET /api/invocations/steps/{step_id}`. `invocation_id` is ignored.
+         */
         parameters: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
@@ -19531,9 +19792,16 @@ export interface operations {
     show_workflow_invocation_api_workflows__workflow_id__invocations__invocation_id__get: {
         /**
          * Get detailed description of a workflow invocation.
-         * @description A wrapper for multiple API endpoints providing the same logic.
+         * @description An alias for `GET /api/invocations/{invocation_id}`. `workflow_id` is ignored.
          */
         parameters: {
+            /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
+            /**
+             * @description Populate the invocation step state with the job state instead of the invocation step state.
+             *         This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
+             *         Partially scheduled steps may provide incomplete information and the listed steps outputs
+             *         are not the mapped over step outputs but the individual job outputs.
+             */
             query?: {
                 step_details?: boolean;
                 legacy_job_state?: boolean;
@@ -19567,9 +19835,16 @@ export interface operations {
     cancel_workflow_invocation_api_workflows__workflow_id__invocations__invocation_id__delete: {
         /**
          * Cancel the specified workflow invocation.
-         * @description A wrapper for multiple API endpoints providing the same logic.
+         * @description An alias for `DELETE /api/invocations/{invocation_id}`. `workflow_id` is ignored.
          */
         parameters: {
+            /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
+            /**
+             * @description Populate the invocation step state with the job state instead of the invocation step state.
+             *         This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
+             *         Partially scheduled steps may provide incomplete information and the listed steps outputs
+             *         are not the mapped over step outputs but the individual job outputs.
+             */
             query?: {
                 step_details?: boolean;
                 legacy_job_state?: boolean;
@@ -19603,7 +19878,7 @@ export interface operations {
     workflow_invocation_jobs_summary_api_workflows__workflow_id__invocations__invocation_id__jobs_summary_get: {
         /**
          * Get job state summary info aggregated across all current jobs of the workflow invocation.
-         * @description A wrapper for multiple API endpoints providing the same logic.
+         * @description An alias for `GET /api/invocations/{invocation_id}/jobs_summary`. `workflow_id` is ignored.
          */
         parameters: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
@@ -19635,7 +19910,7 @@ export interface operations {
     show_workflow_invocation_report_api_workflows__workflow_id__invocations__invocation_id__report_get: {
         /**
          * Get JSON summarizing invocation for reporting.
-         * @description A wrapper for multiple API endpoints providing the same logic.
+         * @description An alias for `GET /api/invocations/{invocation_id}/report`. `workflow_id` is ignored.
          */
         parameters: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
@@ -19667,7 +19942,7 @@ export interface operations {
     show_workflow_invocation_report_pdf_api_workflows__workflow_id__invocations__invocation_id__report_pdf_get: {
         /**
          * Get PDF summarizing invocation for reporting.
-         * @description A wrapper for multiple API endpoints providing the same logic.
+         * @description An alias for `GET /api/invocations/{invocation_id}/report.pdf`. `workflow_id` is ignored.
          */
         parameters: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
@@ -19695,7 +19970,7 @@ export interface operations {
     workflow_invocation_step_jobs_summary_api_workflows__workflow_id__invocations__invocation_id__step_jobs_summary_get: {
         /**
          * Get job state summary info aggregated per step of the workflow invocation.
-         * @description A wrapper for multiple API endpoints providing the same logic.
+         * @description An alias for `GET /api/invocations/{invocation_id}/step_jobs_summary`. `workflow_id` is ignored.
          */
         parameters: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
@@ -19725,7 +20000,10 @@ export interface operations {
         };
     };
     workflow_invocation_step_api_workflows__workflow_id__invocations__invocation_id__steps__step_id__get: {
-        /** Show details of workflow invocation step. */
+        /**
+         * Show details of workflow invocation step.
+         * @description An alias for `GET /api/invocations/{invocation_id}/steps/{step_id}`. `workflow_id` and `invocation_id` are ignored.
+         */
         parameters: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
@@ -19758,7 +20036,7 @@ export interface operations {
     update_workflow_invocation_step_api_workflows__workflow_id__invocations__invocation_id__steps__step_id__put: {
         /**
          * Update state of running workflow step invocation.
-         * @description A wrapper for multiple API endpoints providing the same logic.
+         * @description An alias for `PUT /api/invocations/{invocation_id}/steps/{step_id}`. `workflow_id` is ignored.
          */
         parameters: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
@@ -19825,9 +20103,16 @@ export interface operations {
         /**
          * Get detailed description of a workflow invocation.
          * @deprecated
-         * @description A wrapper for multiple API endpoints providing the same logic.
+         * @description An alias for `GET /api/invocations/{invocation_id}`. `workflow_id` is ignored.
          */
         parameters: {
+            /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
+            /**
+             * @description Populate the invocation step state with the job state instead of the invocation step state.
+             *         This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
+             *         Partially scheduled steps may provide incomplete information and the listed steps outputs
+             *         are not the mapped over step outputs but the individual job outputs.
+             */
             query?: {
                 step_details?: boolean;
                 legacy_job_state?: boolean;
@@ -19862,9 +20147,16 @@ export interface operations {
         /**
          * Cancel the specified workflow invocation.
          * @deprecated
-         * @description A wrapper for multiple API endpoints providing the same logic.
+         * @description An alias for `DELETE /api/invocations/{invocation_id}`. `workflow_id` is ignored.
          */
         parameters: {
+            /** @description Include details for individual invocation steps and populate a steps attribute in the resulting dictionary. */
+            /**
+             * @description Populate the invocation step state with the job state instead of the invocation step state.
+             *         This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
+             *         Partially scheduled steps may provide incomplete information and the listed steps outputs
+             *         are not the mapped over step outputs but the individual job outputs.
+             */
             query?: {
                 step_details?: boolean;
                 legacy_job_state?: boolean;
@@ -19899,7 +20191,7 @@ export interface operations {
         /**
          * Get job state summary info aggregated across all current jobs of the workflow invocation.
          * @deprecated
-         * @description A wrapper for multiple API endpoints providing the same logic.
+         * @description An alias for `GET /api/invocations/{invocation_id}/jobs_summary`. `workflow_id` is ignored.
          */
         parameters: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
@@ -19932,7 +20224,7 @@ export interface operations {
         /**
          * Get JSON summarizing invocation for reporting.
          * @deprecated
-         * @description A wrapper for multiple API endpoints providing the same logic.
+         * @description An alias for `GET /api/invocations/{invocation_id}/report`. `workflow_id` is ignored.
          */
         parameters: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
@@ -19965,7 +20257,7 @@ export interface operations {
         /**
          * Get PDF summarizing invocation for reporting.
          * @deprecated
-         * @description A wrapper for multiple API endpoints providing the same logic.
+         * @description An alias for `GET /api/invocations/{invocation_id}/report.pdf`. `workflow_id` is ignored.
          */
         parameters: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
@@ -19994,7 +20286,7 @@ export interface operations {
         /**
          * Get job state summary info aggregated per step of the workflow invocation.
          * @deprecated
-         * @description A wrapper for multiple API endpoints providing the same logic.
+         * @description An alias for `GET /api/invocations/{invocation_id}/step_jobs_summary`. `workflow_id` is ignored.
          */
         parameters: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
@@ -20027,6 +20319,7 @@ export interface operations {
         /**
          * Show details of workflow invocation step.
          * @deprecated
+         * @description An alias for `GET /api/invocations/{invocation_id}/steps/{step_id}`. `workflow_id` and `invocation_id` are ignored.
          */
         parameters: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
@@ -20061,7 +20354,7 @@ export interface operations {
         /**
          * Update state of running workflow step invocation.
          * @deprecated
-         * @description A wrapper for multiple API endpoints providing the same logic.
+         * @description An alias for `PUT /api/invocations/{invocation_id}/steps/{step_id}`. `workflow_id` is ignored.
          */
         parameters: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
