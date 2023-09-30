@@ -847,10 +847,13 @@ class DefaultToolAction(ToolAction):
             # If we're submitting from the API, there won't be a session.
             if type(galaxy_session) == trans.model.GalaxySession:
                 job.session_id = model.cached_id(galaxy_session)
+                job.session = galaxy_session
         if trans.user is not None:
             job.user_id = model.cached_id(trans.user)
+            job.user = trans.user
         if history:
             job.history_id = model.cached_id(history)
+            job.history = history
         job.tool_id = tool.id
         try:
             # For backward compatibility, some tools may not have versions yet.
