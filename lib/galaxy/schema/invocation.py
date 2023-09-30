@@ -27,7 +27,7 @@ from galaxy.schema.fields import (
     DecodedDatabaseIdField,
     EncodedDatabaseIdField,
     literal_to_value,
-    ModelClassField
+    ModelClassField,
 )
 from galaxy.schema.schema import Model
 
