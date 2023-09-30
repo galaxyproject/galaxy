@@ -498,7 +498,7 @@ class RemoveTagDatasetAction(TagDatasetAction):
 
     @classmethod
     def _execute(cls, tag_handler, user, output, tags):
-        tag_handler.remove_tags_from_list(user, output, tags)
+        tag_handler.remove_tags_from_list(user, output, tags, flush=False)
 
 
 class ActionBox:
