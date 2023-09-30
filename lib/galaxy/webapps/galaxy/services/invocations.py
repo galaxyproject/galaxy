@@ -37,7 +37,10 @@ from galaxy.model.store import (
     get_export_store_factory,
 )
 from galaxy.schema.fields import DecodedDatabaseIdField
-from galaxy.schema.invocation import InvocationMessageResponseModel
+from galaxy.schema.invocation import (
+    InvocationMessageResponseModel,
+    InvocationStep,
+)
 from galaxy.schema.schema import (
     AsyncFile,
     AsyncTaskResultSummary,
@@ -86,15 +89,10 @@ class InvocationSerializationParams(BaseModel):
     )
     legacy_job_state: bool = Field(
         default=False,
-        description="""If step_details is true, and this is set to true
-        populate the invocation step state with the job state
-        instead of the invocation step state. This will also
-        produce one step per job in mapping jobs to mimic the
-        older behavior with respect to collections. Partially
-        scheduled steps may provide incomplete information
-        and the listed steps outputs are the mapped over
-        step outputs but the individual job outputs
-        when this is set - at least for now.""",
+        description="""Populate the invocation step state with the job state instead of the invocation step state.
+        This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
+        Partially scheduled steps may provide incomplete information and the listed steps outputs
+        are not the mapped over step outputs but the individual job outputs.""",
         deprecated=True,
     )
 
@@ -176,7 +174,7 @@ class InvocationsService(ServiceBase):
         wfi_report = self._workflows_manager.get_invocation_report(trans, invocation_id, format=format)
         return wfi_report
 
-    def show_invocation_step(self, trans, step_id):
+    def show_invocation_step(self, trans, step_id) -> InvocationStep:
         wfi_step = self._workflows_manager.get_invocation_step(trans, step_id)
         return self.serialize_workflow_invocation_step(wfi_step)
 

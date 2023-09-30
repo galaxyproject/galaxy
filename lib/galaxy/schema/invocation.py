@@ -1,7 +1,10 @@
+from datetime import datetime
 from enum import Enum
 from typing import (
     Any,
+    Dict,
     Generic,
+    List,
     Optional,
     TypeVar,
     Union,
@@ -18,7 +21,21 @@ from typing_extensions import (
     Literal,
 )
 
-from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.schema import schema
+from galaxy.schema.fields import (
+    DecodedDatabaseIdField,
+    EncodedDatabaseIdField,
+    literal_to_value,
+)
+from galaxy.schema.schema import Model
+
+INVOCATION_STEP_OUTPUT_SRC = Literal["hda"]
+INVOCATION_STEP_COLLECTION_OUTPUT_SRC = Literal["hdca"]
+
+InvocationStepAction: bool = Field(
+    title="Action",
+    description="Whether to take action on the invocation step.",
+)
 
 
 class WarningReason(str, Enum):
@@ -218,3 +235,115 @@ class InvocationMessageResponseModel(BaseModel):
 
     class Config:
         orm_mode = True
+
+
+class InvocationState(str, Enum):
+    NEW = "new"  # Brand new workflow invocation... maybe this should be same as READY
+    READY = "ready"  # Workflow ready for another iteration of scheduling.
+    SCHEDULED = "scheduled"  # Workflow has been scheduled.
+    CANCELLED = "cancelled"
+    CANCELLING = "cancelling"  # invocation scheduler will cancel job in next iteration.
+    FAILED = "failed"
+
+
+class InvocationStepState(str, Enum):
+    NEW = "new"  # Brand new workflow invocation step
+    READY = "ready"  # Workflow invocation step ready for another iteration of scheduling.
+    SCHEDULED = "scheduled"  # Workflow invocation step has been scheduled.
+    # CANCELLED = 'cancelled',  TODO: implement and expose
+    # FAILED = 'failed',  TODO: implement and expose
+
+
+class InvocationStepOutput(Model):
+    src: str = Field(
+        literal_to_value(INVOCATION_STEP_OUTPUT_SRC),
+        title="src",
+        description="The source model of the output.",
+        const=True,
+        mark_required_in_schema=True,
+    )
+    id: DecodedDatabaseIdField = Field(
+        ...,
+        title="Dataset ID",
+        description="Dataset ID of the workflow step output.",
+    )
+    uuid: Optional[schema.UUID4] = Field(
+        None,
+        title="UUID",
+        description="Universal unique identifier of the workflow step output dataset.",
+    )
+
+
+class InvocationStepCollectionOutput(Model):
+    src: str = Field(
+        literal_to_value(INVOCATION_STEP_COLLECTION_OUTPUT_SRC),
+        title="src",
+        description="The source model of the output.",
+        const=True,
+        mark_required_in_schema=True,
+    )
+    id: DecodedDatabaseIdField = Field(
+        ...,
+        title="Dataset Collection ID",
+        description="Dataset Collection ID of the workflow step output.",
+    )
+
+
+class InvocationStep(Model):
+    """Information about Workflow Invocation Step"""
+
+    model_class: schema.INVOCATION_STEP_MODEL_CLASS = schema.ModelClassField(schema.INVOCATION_STEP_MODEL_CLASS)
+    id: DecodedDatabaseIdField = schema.EntityIdField
+    update_time: Optional[datetime] = schema.UpdateTimeField
+    job_id: Optional[DecodedDatabaseIdField] = Field(
+        title="Job ID",
+        description="The encoded ID of the job associated with this workflow invocation step.",
+    )
+    workflow_step_id: DecodedDatabaseIdField = Field(
+        ...,
+        title="Workflow step ID",
+        description="The encoded ID of the workflow step associated with this workflow invocation step.",
+    )
+    subworkflow_invocation_id: DecodedDatabaseIdField = Field(
+        title="Subworkflow invocation ID",
+        description="The encoded ID of the subworkflow invocation.",
+    )
+    state: InvocationStepState = Field(
+        ...,
+        title="State of the invocation step",
+        description="Describes where in the scheduling process the workflow invocation step is.",
+    )
+    action: bool = InvocationStepAction
+    order_index: int = Field(
+        ...,
+        title="Order index",
+        description="The index of the workflow step in the workflow.",
+    )
+    workflow_step_label: str = Field(
+        title="Step label",
+        description="The label of the workflow step",
+    )
+    workflow_step_uuid: Optional[schema.UUID4] = Field(
+        None,
+        title="UUID",
+        description="Universal unique identifier of the workflow step.",
+    )
+    outputs: Dict[str, InvocationStepOutput] = Field(
+        {},
+        title="Outputs",
+        description="The outputs of the workflow invocation step.",
+    )
+    output_collections: Dict[str, InvocationStepCollectionOutput] = Field(
+        {},
+        title="Output collections",
+        description="The dataset collection outputs of the workflow invocation step.",
+    )
+    jobs: List[schema.JobBaseModel] = Field(
+        [],
+        title="Jobs",
+        description="Jobs associated with the workflow invocation step.",
+    )
+
+
+class InvocationUpdatePayload(Model):
+    action: bool = InvocationStepAction

@@ -56,6 +56,7 @@ HISTORY_MODEL_CLASS = Literal["History"]
 JOB_MODEL_CLASS = Literal["Job"]
 STORED_WORKFLOW_MODEL_CLASS = Literal["StoredWorkflow"]
 PAGE_MODEL_CLASS = Literal["Page"]
+INVOCATION_STEP_MODEL_CLASS = Literal["WorkflowInvocationStep"]
 
 OptionalNumberT = Optional[Union[int, float]]
 
@@ -1395,13 +1396,6 @@ class JobIndexQueryPayload(Model):
     search: Optional[str] = None
     limit: int = 500
     offset: int = 0
-
-
-class InvocationUpdatePayload(Model):
-    action: bool = Field(
-        title="Action",
-        description="Whether to take action.",
-    )
 
 
 class InvocationSortByEnum(str, Enum):

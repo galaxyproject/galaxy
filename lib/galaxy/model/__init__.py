@@ -139,7 +139,11 @@ from galaxy.model.item_attrs import (
 from galaxy.model.orm.now import now
 from galaxy.model.orm.util import add_object_to_object_session
 from galaxy.objectstore import ObjectStore
-from galaxy.schema.invocation import InvocationCancellationUserRequest
+from galaxy.schema.invocation import (
+    InvocationCancellationUserRequest,
+    InvocationState,
+    InvocationStepState,
+)
 from galaxy.schema.schema import (
     DatasetCollectionPopulatedState,
     DatasetState,
@@ -8261,14 +8265,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         "state",
     ]
 
-    class states(str, Enum):
-        NEW = "new"  # Brand new workflow invocation... maybe this should be same as READY
-        READY = "ready"  # Workflow ready for another iteration of scheduling.
-        SCHEDULED = "scheduled"  # Workflow has been scheduled.
-        CANCELLED = "cancelled"
-        CANCELLING = "cancelling"  # invocation scheduler will cancel job in next iteration
-        FAILED = "failed"
-
+    states = InvocationState
     non_terminal_states = [states.NEW, states.READY]
 
     def create_subworkflow_invocation_for_step(self, step):
@@ -8902,12 +8899,7 @@ class WorkflowInvocationStep(Base, Dictifiable, Serializable):
         "action",
     ]
 
-    class states(str, Enum):
-        NEW = "new"  # Brand new workflow invocation step
-        READY = "ready"  # Workflow invocation step ready for another iteration of scheduling.
-        SCHEDULED = "scheduled"  # Workflow invocation step has been scheduled.
-        # CANCELLED = 'cancelled',  TODO: implement and expose
-        # FAILED = 'failed',  TODO: implement and expose
+    states = InvocationStepState
 
     @property
     def is_new(self):

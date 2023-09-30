@@ -24,6 +24,7 @@ from gxformat2._yaml import ordered_dump
 from markupsafe import escape
 from pydantic import Extra
 from starlette.responses import StreamingResponse
+from typing_extensions import Annotated
 
 from galaxy import (
     exceptions,
@@ -45,11 +46,14 @@ from galaxy.model.base import transaction
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.model.store import BcoExportOptions
 from galaxy.schema.fields import DecodedDatabaseIdField
-from galaxy.schema.invocation import InvocationMessageResponseModel
+from galaxy.schema.invocation import (
+    InvocationMessageResponseModel,
+    InvocationStep,
+    InvocationUpdatePayload,
+)
 from galaxy.schema.schema import (
     AsyncFile,
     AsyncTaskResultSummary,
-    InvocationUpdatePayload,
     SetSlugPayload,
     ShareWithPayload,
     ShareWithStatus,
@@ -1208,6 +1212,29 @@ class FastAPIWorkflows:
         )
 
 
+StepDetailQueryParam = Annotated[
+    bool,
+    Query(
+        title="Include step details",
+        description=(
+            "Include details for individual invocation steps and populate a steps attribute in the resulting dictionary."
+        ),
+    ),
+]
+LegacyJobStateQueryParam = Annotated[
+    bool,
+    Query(
+        title="Replace with job state",
+        description=(
+            """Populate the invocation step state with the job state instead of the invocation step state.
+        This will also produce one step per job in mapping jobs to mimic the older behavior with respect to collections.
+        Partially scheduled steps may provide incomplete information and the listed steps outputs
+        are not the mapped over step outputs but the individual job outputs."""
+        ),
+    ),
+]
+
+
 @router.cbv
 class FastAPIInvocations:
     invocations_service: InvocationsService = depends(InvocationsService)
@@ -1250,8 +1277,8 @@ class FastAPIInvocations:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
-        step_details: Optional[bool] = False,
-        legacy_job_state: Optional[bool] = False,
+        step_details: StepDetailQueryParam = False,
+        legacy_job_state: LegacyJobStateQueryParam = False,
     ):
         serialization_params = InvocationSerializationParams(
             step_details=step_details, legacy_job_state=legacy_job_state
@@ -1273,10 +1300,10 @@ class FastAPIInvocations:
         trans: ProvidesUserContext = DependsOnTrans,
         workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
         invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
-        step_details: Optional[bool] = False,
-        legacy_job_state: Optional[bool] = False,
+        step_details: StepDetailQueryParam = False,
+        legacy_job_state: LegacyJobStateQueryParam = False,
     ):
-        """A wrapper for multiple API endpoints providing the same logic."""
+        """An alias for `GET /api/invocations/{invocation_id}`. `workflow_id` is ignored."""
         return self.show_invocation(trans, invocation_id, step_details, legacy_job_state)
 
     @router.delete("/api/invocations/{invocation_id}", summary="Cancel the specified workflow invocation.")
@@ -1284,8 +1311,8 @@ class FastAPIInvocations:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
-        step_details: Optional[bool] = False,
-        legacy_job_state: Optional[bool] = False,
+        step_details: StepDetailQueryParam = False,
+        legacy_job_state: LegacyJobStateQueryParam = False,
     ):
         serialization_params = InvocationSerializationParams(
             step_details=step_details, legacy_job_state=legacy_job_state
@@ -1306,10 +1333,11 @@ class FastAPIInvocations:
         trans: ProvidesUserContext = DependsOnTrans,
         workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
         invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
-        step_details: Optional[bool] = False,
-        legacy_job_state: Optional[bool] = False,
+        step_details: StepDetailQueryParam = False,
+        legacy_job_state: LegacyJobStateQueryParam = False,
     ):
-        """A wrapper for multiple API endpoints providing the same logic."""
+        """An alias for `DELETE /api/invocations/{invocation_id}`. `workflow_id` is ignored."""
+
         return self.cancel_invocation(trans, invocation_id, step_details, legacy_job_state)
 
     @router.get(
@@ -1338,7 +1366,7 @@ class FastAPIInvocations:
         workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
         invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
     ):
-        """A wrapper for multiple API endpoints providing the same logic."""
+        """An alias for `GET /api/invocations/{invocation_id}/report`. `workflow_id` is ignored."""
         return self.show_invocation_report(trans, invocation_id)
 
     @router.get(
@@ -1378,8 +1406,19 @@ class FastAPIInvocations:
         workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
         invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
     ):
-        """A wrapper for multiple API endpoints providing the same logic."""
+        """An alias for `GET /api/invocations/{invocation_id}/report.pdf`. `workflow_id` is ignored."""
         return self.show_invocation_report_pdf(trans, invocation_id)
+
+    @router.get(
+        "/api/invocations/steps/{step_id}",
+        summary="Show details of workflow invocation step.",
+    )
+    def step(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        step_id: DecodedDatabaseIdField = WorkflowInvocationStepIDPathParam,
+    ) -> InvocationStep:
+        return self.invocations_service.show_invocation_step(trans, step_id)
 
     @router.get(
         "/api/invocations/{invocation_id}/steps/{step_id}",
@@ -1391,7 +1430,8 @@ class FastAPIInvocations:
         invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
         step_id: DecodedDatabaseIdField = WorkflowInvocationStepIDPathParam,
     ):
-        return self.invocations_service.show_invocation_step(trans, step_id)
+        """An alias for `GET /api/invocations/steps/{step_id}`. `invocation_id` is ignored."""
+        return self.step(trans, step_id)
 
     @router.get(
         "/api/workflows/{workflow_id}/invocations/{invocation_id}/steps/{step_id}",
@@ -1409,6 +1449,7 @@ class FastAPIInvocations:
         invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
         step_id: DecodedDatabaseIdField = WorkflowInvocationStepIDPathParam,
     ):
+        """An alias for `GET /api/invocations/{invocation_id}/steps/{step_id}`. `workflow_id` and `invocation_id` are ignored."""
         return self.invocation_step(trans, step_id=step_id)
 
     @router.put(
@@ -1441,7 +1482,7 @@ class FastAPIInvocations:
         step_id: DecodedDatabaseIdField = WorkflowInvocationStepIDPathParam,
         payload: InvocationUpdatePayload = Body(...),
     ):
-        """A wrapper for multiple API endpoints providing the same logic."""
+        """An alias for `PUT /api/invocations/{invocation_id}/steps/{step_id}`. `workflow_id` is ignored."""
         return self.update_invocation_step(trans, step_id=step_id, payload=payload)
 
     @router.get(
@@ -1476,7 +1517,7 @@ class FastAPIInvocations:
         workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
         invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
     ):
-        """A wrapper for multiple API endpoints providing the same logic."""
+        """An alias for `GET /api/invocations/{invocation_id}/step_jobs_summary`. `workflow_id` is ignored."""
         return self.invocation_step_jobs_summary(trans, invocation_id)
 
     @router.get(
@@ -1511,7 +1552,7 @@ class FastAPIInvocations:
         workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
         invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
     ):
-        """A wrapper for multiple API endpoints providing the same logic."""
+        """An alias for `GET /api/invocations/{invocation_id}/jobs_summary`. `workflow_id` is ignored."""
         return self.invocation_jobs_summary(trans, invocation_id)
 
     # TODO: remove this endpoint after 23.1 release
