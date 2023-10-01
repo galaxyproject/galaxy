@@ -106,7 +106,15 @@
             icon="fa-sign-out"
             title="Sign Out"
             description="Click here to sign out of all sessions."
-            @click="signOut" />
+            @click="toggleLogout = !toggleLogout" />
+        <b-modal
+            v-model="toggleLogout"
+            title="Sign out"
+            title-class="font-weight-bold"
+            ok-title="Sign out"
+            @ok="signOut">
+            <span v-localize> Do you want to continue and sign out of all active sessions? </span>
+        </b-modal>
     </b-container>
 </template>
 
@@ -166,6 +174,7 @@ export default {
             messageVariant: null,
             message: null,
             toggleActivityBar: false,
+            toggleLogout: false,
             toggleTheme: false,
         };
     },
@@ -232,17 +241,7 @@ export default {
             }
         },
         signOut() {
-            const Galaxy = getGalaxyInstance();
-            Galaxy.modal.show({
-                title: _l("Sign out"),
-                body: "Do you want to continue and sign out of all active sessions?",
-                buttons: {
-                    Cancel: function () {
-                        Galaxy.modal.hide();
-                    },
-                    "Sign out": userLogoutAll,
-                },
-            });
+            userLogoutAll();
         },
     },
 };
