@@ -9510,18 +9510,19 @@ class UserAuthnzToken(Base, UserMixin, RepresentById):
     def get_social_auth(cls, provider, uid):
         uid = str(uid)
         try:
-            return cls.sa_session.query(cls).filter_by(provider=provider, uid=uid)[0]
+            stmt = select(UserAuthnzToken).filter_by(provider=provider, uid=uid).limit(1)
+            return cls.sa_session.scalars(stmt).first()
         except IndexError:
             return None
 
     @classmethod
     def get_social_auth_for_user(cls, user, provider=None, id=None):
-        qs = cls.sa_session.query(cls).filter_by(user_id=user.id)
+        stmt = select(UserAuthnzToken).filter_by(user_id=user.id)
         if provider:
-            qs = qs.filter_by(provider=provider)
+            stmt = stmt.filter_by(provider=provider)
         if id:
-            qs = qs.filter_by(id=id)
-        return qs
+            stmt = stmt.filter_by(id=id)
+        return cls.sa_session.scalars(stmt)
 
     @classmethod
     def create_social_auth(cls, user, uid, provider):
