@@ -9364,7 +9364,8 @@ class PSANonce(Base, NonceMixin, RepresentById):
     @classmethod
     def use(cls, server_url, timestamp, salt):
         try:
-            return cls.sa_session.query(cls).filter_by(server_url=server_url, timestamp=timestamp, salt=salt)[0]
+            stmt = select(PSANonce).where(server_url=server_url, timestamp=timestamp, salt=salt).limit(1)
+            return cls.sa_session.scalars(stmt).first()
         except IndexError:
             instance = cls(server_url=server_url, timestamp=timestamp, salt=salt)
             cls.sa_session.add(instance)
