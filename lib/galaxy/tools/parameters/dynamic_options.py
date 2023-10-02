@@ -565,6 +565,7 @@ class DynamicOptions:
         dataset_file = elem.get("from_dataset", None)
         from_parameter = elem.get("from_parameter", None)
         self.tool_data_table_name = elem.get("from_data_table", None)
+        self.from_url = elem.get("from_url", None)
         # Options are defined from a data table loaded by the app
         self._tool_data_table = None
         self.elem = elem
@@ -767,6 +768,18 @@ class DynamicOptions:
         return rval
 
     def get_options(self, trans, other_values):
+        def to_triple(values):
+            if len(values) == 2:
+                return [str(values[0]), str(values[1]), False]
+            else:
+                return [str(values[0]), str(values[1]), bool(values[2])]
+
+        if self.from_url:
+            import requests
+
+            data = requests.get(self.from_url).json()
+            # We only support the very specific ["name", "value", "selected"] format for now.
+            return [to_triple(d) for d in data]
         rval = []
         if (
             self.file_fields is not None

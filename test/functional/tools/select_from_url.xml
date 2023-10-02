@@ -1,0 +1,14 @@
+<tool id="select_from_url" name="select_from_url" version="0.1.0" profile="23.1">
+    <command>
+echo '$url_param_value' > '$the_value'
+    </command>
+    <inputs>
+        <param name="url_param_value" type="select">
+            <options from_url="http://localhost:8000/data">
+            </options>
+        </param>
+    </inputs>
+    <outputs>
+        <data format="txt" name="the_value"></data>
+    </outputs>
+</tool>

@@ -4227,8 +4227,8 @@ For data parameters this tag can be used to restrict possible input datasets to 
 instance here: [/tools/maf/interval2maf.xml](https://github.com/galaxyproject/galaxy/blob/dev/tools/maf/interval2maf.xml)
 
 For select parameters this tag set dynamically creates a list of options whose
-values can be obtained from a predefined file stored locally or a dataset
-selected from the current history.
+values can be obtained from a predefined file stored locally, a dataset
+selected from the current history or data fetched from a URL.
 
 There are at least five basic ways to use this tag - four of these correspond to
 a ``from_XXX`` attribute on the ``options`` directive and the other is to
@@ -4237,6 +4237,7 @@ exclusively use ``filter``s to populate options.
 * ``from_data_table`` - The options for the select list are dynamically obtained
   from a file specified in the Galaxy configuration file
   ``tool_data_table_conf.xml`` or from a Tool Shed installed data manager.
+* `from_url` - Fetches a list of available options from a remote server.
 * ``from_dataset`` - The options for the select list are dynamically obtained
   from input dataset selected for the tool from the current history.
 * ``from_file`` - The options for the select list are dynamically obtained from
@@ -4390,7 +4391,7 @@ used to generate dynamic options.
 </xs:documentation>
     </xs:annotation>
     <xs:sequence>
-      <xs:group ref="OptionsElement" minOccurs="0" maxOccurs="unbounded"/>
+      <xs:group ref="OptionsElement" minOccurs="0" maxOccurs="unbounded" />
     </xs:sequence>
     <xs:attribute name="from_dataset" type="xs:string">
       <xs:annotation>
@@ -4405,6 +4406,11 @@ used to generate dynamic options.
     <xs:attribute name="from_data_table" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">Determine options from a data table. </xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="from_url" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Determine options from data hosted at specified URL. </xs:documentation>
       </xs:annotation>
     </xs:attribute>
     <xs:attribute name="from_parameter" type="xs:string">
