@@ -18,7 +18,6 @@ from typing import (
     Union,
 )
 
-from cwl_utils.expression import do_eval
 from typing_extensions import TypedDict
 
 from galaxy import (
@@ -59,6 +58,7 @@ from galaxy.tools.execute import (
     MappingParameters,
     PartialJobExecution,
 )
+from galaxy.tools.expressions import do_eval
 from galaxy.tools.parameters import (
     check_param,
     params_to_incoming,
@@ -226,10 +226,6 @@ def evaluate_value_from_expressions(progress, step, execution_state, extra_step_
             as_cwl_value = do_eval(
                 when_expression,
                 step_state,
-                [{"class": "InlineJavascriptRequirement"}],
-                None,
-                None,
-                {},
             )
         except Exception:
             # Exception contains script and traceback, which could be helpful for debugging workflows,

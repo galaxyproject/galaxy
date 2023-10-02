@@ -9,8 +9,6 @@ import os
 import re
 from io import StringIO
 
-from cwl_utils.expression import do_eval
-
 from galaxy.model import (
     DatasetCollectionElement,
     HistoryDatasetAssociation,
@@ -18,6 +16,7 @@ from galaxy.model import (
     MetadataFile,
     User,
 )
+from galaxy.tools.expressions import do_eval
 from galaxy.util import string_as_bool
 from galaxy.util.template import fill_template
 from . import validation
@@ -792,11 +791,6 @@ class DynamicOptions:
                 data = do_eval(
                     self.from_url_postprocess,
                     data,
-                    [{"class": "InlineJavascriptRequirement"}],
-                    None,
-                    None,
-                    {},
-                    cwlVersion="v1.2.1",
                 )
 
             # We only support the very specific ["name", "value", "selected"] format for now.
