@@ -60,6 +60,7 @@ from sqlalchemy import (
     Column,
     column,
     DateTime,
+    delete,
     desc,
     event,
     false,
@@ -9286,7 +9287,8 @@ class PSAAssociation(Base, AssociationMixin, RepresentById):
     @classmethod
     def store(cls, server_url, association):
         try:
-            assoc = cls.sa_session.query(cls).filter_by(server_url=server_url, handle=association.handle)[0]
+            stmt = select(PSAAssociation).filter_by(server_url=server_url, handle=association.handle).limit(1)
+            assoc = cls.sa_session.scalars(stmt).first()
         except IndexError:
             assoc = cls(server_url=server_url, handle=association.handle)
         assoc.secret = base64.encodebytes(association.secret).decode()
@@ -9299,11 +9301,17 @@ class PSAAssociation(Base, AssociationMixin, RepresentById):
 
     @classmethod
     def get(cls, *args, **kwargs):
-        return cls.sa_session.query(cls).filter_by(*args, **kwargs)
+        stmt = select(PSAAssociation).filter_by(*args, **kwargs)
+        return cls.sa_session.scalars(stmt)
 
     @classmethod
     def remove(cls, ids_to_delete):
-        cls.sa_session.query(cls).filter(cls.id.in_(ids_to_delete)).delete(synchronize_session="fetch")
+        stmt = (
+            delete(PSAAssociation)
+            .where(PSAAssociation.id.in_(ids_to_delete))
+            .execution_options(synchronize_session="fetch")
+        )
+        PSAAssociation.sa_session.execute(stmt)
 
 
 class PSACode(Base, CodeMixin, RepresentById):
