@@ -19,6 +19,7 @@ from collections import defaultdict
 from collections.abc import Callable
 from datetime import timedelta
 from enum import Enum
+from itertools import chain
 from string import Template
 from typing import (
     Any,
@@ -4487,10 +4488,9 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
         # prevent modifying metadata when dataset is queued or running as input/output
         # This code could be more efficient, i.e. by using mappers, but to prevent slowing down loading a History panel, we'll leave the code here for now
         sa_session = object_session(self)
-        for job_to_dataset_association in (
-            sa_session.query(JobToInputDatasetAssociation).filter_by(dataset_id=self.id).all()
-            + sa_session.query(JobToOutputDatasetAssociation).filter_by(dataset_id=self.id).all()
-        ):
+        stmt1 = select(JobToInputDatasetAssociation).filter_by(dataset_id=self.id)
+        stmt2 = select(JobToOutputDatasetAssociation).filter_by(dataset_id=self.id)
+        for job_to_dataset_association in chain(sa_session.scalars(stmt1), sa_session.scalars(stmt2)):
             if job_to_dataset_association.job.state not in Job.terminal_states:
                 return False
         return True
