@@ -9461,22 +9461,10 @@ class UserAuthnzToken(Base, UserMixin, RepresentById):
         return 255
 
     @classmethod
-    def user_model(cls):
-        return User
-
-    @classmethod
     def changed(cls, user):
         cls.sa_session.add(user)
         with transaction(cls.sa_session):
             cls.sa_session.commit()
-
-    @classmethod
-    def user_query(cls):
-        return cls.sa_session.query(cls.user_model())
-
-    @classmethod
-    def user_exists(cls, *args, **kwargs):
-        return cls.user_query().filter_by(*args, **kwargs).count() > 0
 
     @classmethod
     def get_username(cls, user):
@@ -9488,9 +9476,8 @@ class UserAuthnzToken(Base, UserMixin, RepresentById):
         This is used by PSA authnz, do not use directly.
         Prefer using the user manager.
         """
-        model = cls.user_model()
-        instance = model(*args, **kwargs)
-        if cls.get_users_by_email(instance.email).first():
+        instance = User(*args, **kwargs)
+        if cls.email_exists(instance.email):
             raise Exception(f"User with this email '{instance.email}' already exists.")
         instance.set_random_password()
         cls.sa_session.add(instance)
@@ -9500,11 +9487,12 @@ class UserAuthnzToken(Base, UserMixin, RepresentById):
 
     @classmethod
     def get_user(cls, pk):
-        return cls.user_query().get(pk)
+        return UserAuthnzToken.sa_session.get(User, pk)
 
     @classmethod
-    def get_users_by_email(cls, email):
-        return cls.user_query().filter(func.lower(User.email) == email.lower())
+    def email_exists(cls, email):
+        stmt = select(User).where(func.lower(User.email) == email.lower()).limit(1)
+        return bool(cls.sa_session.scalars(stmt).first())
 
     @classmethod
     def get_social_auth(cls, provider, uid):
