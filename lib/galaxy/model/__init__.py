@@ -9399,13 +9399,17 @@ class PSAPartial(Base, PartialMixin, RepresentById):
 
     @classmethod
     def load(cls, token):
-        return cls.sa_session.query(cls).filter(cls.token == token).first()
+        stmt = select(PSAPartial).where(PSAPartial.token == token).limit(1)
+        return cls.sa_session.scalars(stmt).first()
 
     @classmethod
     def destroy(cls, token):
         partial = cls.load(token)
         if partial:
-            cls.sa_session.delete(partial)
+            session = cls.sa_session
+            session.execute(delete(partial))
+            with transaction(session):
+                session.commit()
 
 
 class UserAuthnzToken(Base, UserMixin, RepresentById):
