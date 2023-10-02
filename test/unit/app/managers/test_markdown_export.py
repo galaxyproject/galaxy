@@ -413,7 +413,9 @@ invocation_time(invocation_id=1)
         result, extra_data = self._ready_export(example)
         assert "invocations" in extra_data
         assert "create_time" in extra_data["invocations"]["be8be0fd2ce547f6"]
-        assert extra_data["invocations"]["be8be0fd2ce547f6"]["create_time"] == invocation.create_time.strftime("%m/%d/%Y, %H:%M:%S")
+        assert extra_data["invocations"]["be8be0fd2ce547f6"]["create_time"] == invocation.create_time.strftime(
+            "%m/%d/%Y, %H:%M:%S"
+        )
 
     def _ready_export(self, example):
         return ready_galaxy_markdown_for_export(self.trans, example)
