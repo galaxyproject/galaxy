@@ -4486,12 +4486,12 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
 
     def ok_to_edit_metadata(self):
         # prevent modifying metadata when dataset is queued or running as input/output
-        # This code could be more efficient, i.e. by using mappers, but to prevent slowing down loading a History panel, we'll leave the code here for now
         sa_session = object_session(self)
-        stmt1 = select(JobToInputDatasetAssociation).filter_by(dataset_id=self.id)
-        stmt2 = select(JobToOutputDatasetAssociation).filter_by(dataset_id=self.id)
-        for job_to_dataset_association in chain(sa_session.scalars(stmt1), sa_session.scalars(stmt2)):
-            if job_to_dataset_association.job.state not in Job.terminal_states:
+        stmt1 = select(JobToInputDatasetAssociation.job_id).filter_by(dataset_id=self.id)
+        stmt2 = select(JobToOutputDatasetAssociation.job_id).filter_by(dataset_id=self.id)
+        for job_id in chain(sa_session.scalars(stmt1), sa_session.scalars(stmt2)):
+            state = sa_session.scalar(select(Job.state).where(Job.id == job_id))
+            if state not in Job.terminal_states:
                 return False
         return True
 
