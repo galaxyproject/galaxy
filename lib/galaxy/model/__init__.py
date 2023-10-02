@@ -8142,16 +8142,13 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
 
     @staticmethod
     def poll_unhandled_workflow_ids(sa_session):
-        and_conditions = [
-            WorkflowInvocation.state == WorkflowInvocation.states.NEW,
-            WorkflowInvocation.handler.is_(None),
-        ]
-        query = (
-            sa_session.query(WorkflowInvocation.id)
-            .filter(and_(*and_conditions))
-            .order_by(WorkflowInvocation.table.c.id.asc())
+        stmt = (
+            select(WorkflowInvocation.id)
+            .where(WorkflowInvocation.state == WorkflowInvocation.states.NEW)
+            .where(WorkflowInvocation.handler.is_(None))
+            .order_by(WorkflowInvocation.id.asc())
         )
-        return [wid for wid in query.all()]
+        return [wid for wid in sa_session.scalars(stmt)]
 
     @staticmethod
     def poll_active_workflow_ids(engine, scheduler=None, handler=None):
