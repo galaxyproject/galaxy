@@ -17,6 +17,7 @@ from galaxy.model import (
     User,
 )
 from galaxy.util import string_as_bool
+from galaxy.util.template import fill_template
 from . import validation
 
 log = logging.getLogger(__name__)
@@ -777,7 +778,10 @@ class DynamicOptions:
         if self.from_url:
             import requests
 
-            data = requests.get(self.from_url).json()
+            context = User.user_template_environment(trans.user)
+            url = fill_template(self.from_url, context)
+            data = requests.get(url).json()
+
             # We only support the very specific ["name", "value", "selected"] format for now.
             return [to_triple(d) for d in data]
         rval = []

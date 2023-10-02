@@ -7,6 +7,10 @@ echo '$url_param_value' > '$the_value'
             <options from_url="http://localhost:8000/data">
             </options>
         </param>
+        <param name="url_param_value_templated" type="select">
+            <options from_url="http://localhost:8000/data?user=$__user_id__">
+            </options>
+        </param>
     </inputs>
     <outputs>
         <data format="txt" name="the_value"></data>
