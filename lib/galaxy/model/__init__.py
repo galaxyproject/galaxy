@@ -9336,7 +9336,8 @@ class PSACode(Base, CodeMixin, RepresentById):
 
     @classmethod
     def get_code(cls, code):
-        return cls.sa_session.query(cls).filter(cls.code == code).first()
+        stmt = select(PSACode).where(PSACode.code == code).limit(1)
+        return cls.sa_session.scalars(stmt).first()
 
 
 class PSANonce(Base, NonceMixin, RepresentById):
