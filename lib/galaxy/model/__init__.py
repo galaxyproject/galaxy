@@ -7331,14 +7331,13 @@ class StoredWorkflow(Base, HasTags, Dictifiable, RepresentById):
 
     def show_in_tool_panel(self, user_id):
         sa_session = object_session(self)
-        return bool(
-            sa_session.query(StoredWorkflowMenuEntry)
-            .filter(
-                StoredWorkflowMenuEntry.stored_workflow_id == self.id,
-                StoredWorkflowMenuEntry.user_id == user_id,
-            )
-            .count()
+        stmt = (
+            select(func.count())
+            .select_from(StoredWorkflowMenuEntry)
+            .where(StoredWorkflowMenuEntry.stored_workflow_id == self.id)
+            .where(StoredWorkflowMenuEntry.user_id == user_id)
         )
+        return bool(sa_session.scalar(stmt))
 
     def copy_tags_from(self, target_user, source_workflow):
         # Override to only copy owner tags.
