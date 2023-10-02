@@ -3073,7 +3073,7 @@ export interface components {
             annotation?: string;
             /**
              * Content
-             * @description Raw text contents of the first page revision (type dependent on content_format).
+             * @description Raw text contents of the last page revision (type dependent on content_format).
              * @default
              */
             content?: string;
@@ -6267,8 +6267,66 @@ export interface components {
             uninstalled: boolean;
         };
         /**
+         * InvocationReport
+         * @description Report describing workflow invocation
+         */
+        InvocationReport: {
+            /**
+             * Galaxy Version
+             * @description The version of Galaxy this object was generated with.
+             */
+            generate_time?: string;
+            /**
+             * Galaxy Version
+             * @description The version of Galaxy this object was generated with.
+             */
+            generate_version?: string;
+            /**
+             * Workflow ID
+             * @description The workflow this invocation has been triggered for.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Markdown
+             * @description Raw galaxy-flavored markdown contents of the report.
+             * @default
+             */
+            invocation_markdown?: string;
+            /**
+             * Markdown
+             * @description Raw galaxy-flavored markdown contents of the report.
+             * @default
+             */
+            markdown?: string;
+            /**
+             * Model class
+             * @description The name of the database model class.
+             * @default Report
+             * @enum {string}
+             */
+            model_class: "Report";
+            /**
+             * Render format
+             * @description Format of the invocation report.
+             * @default markdown
+             * @enum {string}
+             */
+            render_format?: "markdown";
+            /**
+             * Title
+             * @description The name of the report.
+             */
+            title: string;
+            /**
+             * Username
+             * @description The name of the user who owns this report.
+             */
+            username: string;
+        };
+        /**
          * InvocationStep
-         * @description Information about Workflow Invocation Step
+         * @description Information about workflow invocation step
          */
         InvocationStep: {
             /**
@@ -6372,8 +6430,9 @@ export interface components {
              * src
              * @description The source model of the output.
              * @default hdca
+             * @enum {string}
              */
-            src: string;
+            src?: "hdca";
         };
         /**
          * InvocationStepOutput
@@ -6390,8 +6449,9 @@ export interface components {
              * src
              * @description The source model of the output.
              * @default hda
+             * @enum {string}
              */
-            src: string;
+            src?: "hda";
             /**
              * UUID
              * Format: uuid4
@@ -8014,7 +8074,7 @@ export interface components {
         PageDetails: {
             /**
              * Content
-             * @description Raw text contents of the first page revision (type dependent on content_format).
+             * @description Raw text contents of the last page revision (type dependent on content_format).
              * @default
              */
             content?: string;
@@ -8041,13 +8101,13 @@ export interface components {
              */
             email_hash: string;
             /**
-             * Generate Date
-             * @description The date this page was generated.
+             * Galaxy Version
+             * @description The version of Galaxy this object was generated with.
              */
             generate_time?: string;
             /**
              * Galaxy Version
-             * @description The version of Galaxy this page was generated with.
+             * @description The version of Galaxy this object was generated with.
              */
             generate_version?: string;
             /**
@@ -15005,7 +15065,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["InvocationReport"];
                 };
             };
             /** @description Validation Error */
@@ -15092,7 +15152,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["InvocationStep"];
                 };
             };
             /** @description Validation Error */
@@ -15170,7 +15230,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["InvocationStep"];
                 };
             };
             /** @description Validation Error */
@@ -19535,7 +19595,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["InvocationReport"];
                 };
             };
             /** @description Validation Error */
@@ -19778,7 +19838,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["InvocationStep"];
                 };
             };
             /** @description Validation Error */
@@ -19821,7 +19881,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["InvocationStep"];
                 };
             };
             /** @description Validation Error */
@@ -19864,7 +19924,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["InvocationReport"];
                 };
             };
             /** @description Validation Error */
@@ -19896,7 +19956,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["InvocationStep"];
                 };
             };
             /** @description Validation Error */
@@ -19928,7 +19988,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["InvocationStep"];
                 };
             };
             /** @description Validation Error */

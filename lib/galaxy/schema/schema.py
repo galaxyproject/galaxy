@@ -57,6 +57,7 @@ JOB_MODEL_CLASS = Literal["Job"]
 STORED_WORKFLOW_MODEL_CLASS = Literal["StoredWorkflow"]
 PAGE_MODEL_CLASS = Literal["Page"]
 INVOCATION_STEP_MODEL_CLASS = Literal["WorkflowInvocationStep"]
+INVOCATION_REPORT_MODEL_CLASS = Literal["Report"]
 
 OptionalNumberT = Optional[Union[int, float]]
 
@@ -3482,7 +3483,7 @@ ContentFormatField: PageContentFormat = Field(
 ContentField: Optional[str] = Field(
     default="",
     title="Content",
-    description="Raw text contents of the first page revision (type dependent on content_format).",
+    description="Raw text contents of the last page revision (type dependent on content_format).",
 )
 
 
@@ -3611,19 +3612,23 @@ class PageSummary(PageSummaryBase):
     tags: TagCollection
 
 
+GenerateVersionField = Field(
+    None,
+    title="Galaxy Version",
+    description="The version of Galaxy this object was generated with.",
+)
+GenerateTimeField = Field(
+    None,
+    title="Galaxy Version",
+    description="The version of Galaxy this object was generated with.",
+)
+
+
 class PageDetails(PageSummary):
     content_format: PageContentFormat = ContentFormatField
     content: Optional[str] = ContentField
-    generate_version: Optional[str] = Field(
-        None,
-        title="Galaxy Version",
-        description="The version of Galaxy this page was generated with.",
-    )
-    generate_time: Optional[str] = Field(
-        None,
-        title="Generate Date",
-        description="The date this page was generated.",
-    )
+    generate_version: Optional[str] = GenerateVersionField
+    generate_time: Optional[str] = GenerateTimeField
 
     class Config:
         extra = Extra.allow  # Allow any other extra fields

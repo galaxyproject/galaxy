@@ -12,6 +12,7 @@ from typing import (
 
 from pydantic import (
     BaseModel,
+    Extra,
     Field,
     UUID4,
 )
@@ -24,7 +25,6 @@ from typing_extensions import (
 
 from galaxy.schema import schema
 from galaxy.schema.fields import (
-    DecodedDatabaseIdField,
     EncodedDatabaseIdField,
     literal_to_value,
     ModelClassField,
@@ -33,8 +33,9 @@ from galaxy.schema.schema import Model
 
 INVOCATION_STEP_OUTPUT_SRC = Literal["hda"]
 INVOCATION_STEP_COLLECTION_OUTPUT_SRC = Literal["hdca"]
+REPORT_RENDER_FORMAT_MARKDOWN = Literal["markdown"]
 
-InvocationStepAction: bool = Field(
+InvocationStepActionField: bool = Field(
     title="Action",
     description="Whether to take action on the invocation step.",
 )
@@ -257,14 +258,12 @@ class InvocationStepState(str, Enum):
 
 
 class InvocationStepOutput(Model):
-    src: str = Field(
+    src: INVOCATION_STEP_OUTPUT_SRC = Field(
         literal_to_value(INVOCATION_STEP_OUTPUT_SRC),
         title="src",
         description="The source model of the output.",
-        const=True,
-        mark_required_in_schema=True,
     )
-    id: DecodedDatabaseIdField = Field(
+    id: EncodedDatabaseIdField = Field(
         ...,
         title="Dataset ID",
         description="Dataset ID of the workflow step output.",
@@ -277,14 +276,12 @@ class InvocationStepOutput(Model):
 
 
 class InvocationStepCollectionOutput(Model):
-    src: str = Field(
+    src: INVOCATION_STEP_COLLECTION_OUTPUT_SRC = Field(
         literal_to_value(INVOCATION_STEP_COLLECTION_OUTPUT_SRC),
         title="src",
         description="The source model of the output.",
-        const=True,
-        mark_required_in_schema=True,
     )
-    id: DecodedDatabaseIdField = Field(
+    id: EncodedDatabaseIdField = Field(
         ...,
         title="Dataset Collection ID",
         description="Dataset Collection ID of the workflow step output.",
@@ -292,21 +289,21 @@ class InvocationStepCollectionOutput(Model):
 
 
 class InvocationStep(Model):
-    """Information about Workflow Invocation Step"""
+    """Information about workflow invocation step"""
 
     model_class: schema.INVOCATION_STEP_MODEL_CLASS = ModelClassField(schema.INVOCATION_STEP_MODEL_CLASS)
-    id: DecodedDatabaseIdField = schema.EntityIdField
+    id: EncodedDatabaseIdField = schema.EntityIdField
     update_time: Optional[datetime] = schema.UpdateTimeField
-    job_id: Optional[DecodedDatabaseIdField] = Field(
+    job_id: Optional[EncodedDatabaseIdField] = Field(
         title="Job ID",
         description="The encoded ID of the job associated with this workflow invocation step.",
     )
-    workflow_step_id: DecodedDatabaseIdField = Field(
+    workflow_step_id: EncodedDatabaseIdField = Field(
         ...,
         title="Workflow step ID",
         description="The encoded ID of the workflow step associated with this workflow invocation step.",
     )
-    subworkflow_invocation_id: DecodedDatabaseIdField = Field(
+    subworkflow_invocation_id: EncodedDatabaseIdField = Field(
         title="Subworkflow invocation ID",
         description="The encoded ID of the subworkflow invocation.",
     )
@@ -315,7 +312,7 @@ class InvocationStep(Model):
         title="State of the invocation step",
         description="Describes where in the scheduling process the workflow invocation step is.",
     )
-    action: bool = InvocationStepAction
+    action: bool = InvocationStepActionField
     order_index: int = Field(
         ...,
         title="Order index",
@@ -347,5 +344,48 @@ class InvocationStep(Model):
     )
 
 
+class InvocationReport(Model):
+    """Report describing workflow invocation"""
+
+    render_format: REPORT_RENDER_FORMAT_MARKDOWN = Field(
+        literal_to_value(REPORT_RENDER_FORMAT_MARKDOWN),
+        title="Render format",
+        description="Format of the invocation report.",
+    )
+    markdown: Optional[str] = Field(
+        default="",
+        title="Markdown",
+        description="Raw galaxy-flavored markdown contents of the report.",
+    )
+    invocation_markdown: Optional[str] = Field(
+        default="",
+        title="Markdown",
+        description="Raw galaxy-flavored markdown contents of the report.",
+    )
+    model_class: schema.INVOCATION_REPORT_MODEL_CLASS = ModelClassField(schema.INVOCATION_REPORT_MODEL_CLASS)
+    id: EncodedDatabaseIdField = Field(
+        ...,
+        title="Workflow ID",
+        description="The workflow this invocation has been triggered for.",
+    )
+    username: str = Field(
+        ...,
+        title="Username",
+        description="The name of the user who owns this report.",
+    )
+    title: str = Field(
+        ...,
+        title="Title",
+        description="The name of the report.",
+    )
+    generate_time: str = schema.GenerateTimeField
+    generate_version: str = schema.GenerateVersionField
+
+    class Config:
+        # Galaxy Report/Page response can contain many extra_rendering_data
+        # Allow any other extra fields
+        extra = Extra.allow
+
+
 class InvocationUpdatePayload(Model):
-    action: bool = InvocationStepAction
+    action: bool = InvocationStepActionField

@@ -48,6 +48,7 @@ from galaxy.model.store import BcoExportOptions
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.invocation import (
     InvocationMessageResponseModel,
+    InvocationReport,
     InvocationStep,
     InvocationUpdatePayload,
 )
@@ -1348,7 +1349,7 @@ class FastAPIInvocations:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
-    ):
+    ) -> InvocationReport:
         return self.invocations_service.show_invocation_report(trans, invocation_id)
 
     @router.get(
@@ -1365,7 +1366,7 @@ class FastAPIInvocations:
         trans: ProvidesUserContext = DependsOnTrans,
         workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
         invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
-    ):
+    ) -> InvocationReport:
         """An alias for `GET /api/invocations/{invocation_id}/report`. `workflow_id` is ignored."""
         return self.show_invocation_report(trans, invocation_id)
 
@@ -1429,7 +1430,7 @@ class FastAPIInvocations:
         trans: ProvidesUserContext = DependsOnTrans,
         invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
         step_id: DecodedDatabaseIdField = WorkflowInvocationStepIDPathParam,
-    ):
+    ) -> InvocationStep:
         """An alias for `GET /api/invocations/steps/{step_id}`. `invocation_id` is ignored."""
         return self.step(trans, step_id)
 
@@ -1448,7 +1449,7 @@ class FastAPIInvocations:
         workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
         invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
         step_id: DecodedDatabaseIdField = WorkflowInvocationStepIDPathParam,
-    ):
+    ) -> InvocationStep:
         """An alias for `GET /api/invocations/{invocation_id}/steps/{step_id}`. `workflow_id` and `invocation_id` are ignored."""
         return self.invocation_step(trans, step_id=step_id)
 
@@ -1462,7 +1463,7 @@ class FastAPIInvocations:
         invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
         step_id: DecodedDatabaseIdField = WorkflowInvocationStepIDPathParam,
         payload: InvocationUpdatePayload = Body(...),
-    ):
+    ) -> InvocationStep:
         return self.invocations_service.update_invocation_step(trans, step_id, payload.action)
 
     @router.put(
@@ -1481,7 +1482,7 @@ class FastAPIInvocations:
         invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
         step_id: DecodedDatabaseIdField = WorkflowInvocationStepIDPathParam,
         payload: InvocationUpdatePayload = Body(...),
-    ):
+    ) -> InvocationStep:
         """An alias for `PUT /api/invocations/{invocation_id}/steps/{step_id}`. `workflow_id` is ignored."""
         return self.update_invocation_step(trans, step_id=step_id, payload=payload)
 
