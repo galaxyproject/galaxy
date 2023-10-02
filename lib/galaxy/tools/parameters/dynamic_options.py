@@ -9,6 +9,8 @@ import os
 import re
 from io import StringIO
 
+from cwl_utils.expression import do_eval
+
 from galaxy.model import (
     DatasetCollectionElement,
     HistoryDatasetAssociation,
@@ -566,7 +568,11 @@ class DynamicOptions:
         dataset_file = elem.get("from_dataset", None)
         from_parameter = elem.get("from_parameter", None)
         self.tool_data_table_name = elem.get("from_data_table", None)
-        self.from_url = elem.get("from_url", None)
+        self.from_url = elem.get("from_url")
+        self.from_url_postprocess = None
+        from_url_postprocess = elem.find("postprocess_expression")
+        if from_url_postprocess is not None:
+            self.from_url_postprocess = from_url_postprocess.text.strip()
         # Options are defined from a data table loaded by the app
         self._tool_data_table = None
         self.elem = elem
@@ -781,6 +787,17 @@ class DynamicOptions:
             context = User.user_template_environment(trans.user)
             url = fill_template(self.from_url, context)
             data = requests.get(url).json()
+
+            if self.from_url_postprocess:
+                data = do_eval(
+                    self.from_url_postprocess,
+                    data,
+                    [{"class": "InlineJavascriptRequirement"}],
+                    None,
+                    None,
+                    {},
+                    cwlVersion="v1.2.1",
+                )
 
             # We only support the very specific ["name", "value", "selected"] format for now.
             return [to_triple(d) for d in data]
