@@ -1,0 +1,139 @@
+# Docs: https://git-scm.com/docs/gitmailmap
+# git log --pretty="%aN <%aE>" | sort -u | less
+# 631 as of 2023-09-18
+Ahmed Hamid Awan <aawan@mindgrub.com> # GH user: ahmedhamidawan
+Ahmed Hamid Awan <aawan@mindgrub.com> Ahmed Awan <newadmin@galaxyc.local>
+Ahmed Hamid Awan <aawan@mindgrub.com> Ahmed Awan <newadmin@galaxyc.win.ad.jhu.edu>
+Ahmed Hamid Awan <aawan@mindgrub.com> Ahmed Awan <qe66653@umbc.edu>
+Ahmed Hamid Awan <aawan@mindgrub.com> <78516064+ahmedhamidawan@users.noreply.github.com>
+Ahmed Hamid Awan <aawan@mindgrub.com> <qe66653@umbc.edu>
+Abdulrahman Azab <eng.azab@gmail.com> # GH user: abdulrahmanazab, one-line contribution, rewritten by John Chilton
+Adam Brenner <aebrenne@uci.edu> # GH user: abrenner, only commits to tools moved to tool shed (no longer in galaxy)
+Daniel Bouchard <danieljosephbouchard@gmail.com> # GH user: Airistotal
+Daniel Bouchard <danieljosephbouchard@gmail.com> <daniel.bouchard@phac-aspc.gc.ca>
+Daniel Bouchard <danieljosephbouchard@gmail.com> <danieltos.bouchard@gmail.com>
+<danieljosephbouchard@gmail.com> <dbouchard@corefacility.ca>
+A. Soroka <ajs6f@apache.org> # GH user: ajs6f
+Alan Amossé <alan.amosse@gmail.com> # GH user: Alanamosse
+Alan Amossé <alan.amosse@gmail.com> <alanamosse@60-E3-27-12-8C-3F.home>
+Alexander Lenail <lenail@mit.edu> <alexander.lenail@tufts.edu> # GH user: alexlenail
+Alex Ostrovsky <a.ostrovsky@mac.com> # GH user: astrovsky01
+Alex Ostrovsky <a.ostrovsky@mac.com> Alexander OSTROVSKY <alexanderostrovsky@Alexanders-MacBook-Pro.local>
+Alex Ostrovsky <a.ostrovsky@mac.com> Alexander OSTROVSKY <alexanderostrovsky@Caroline.local>
+Alex Ostrovsky <a.ostrovsky@mac.com> Alexander OSTROVSKY <alexanderostrovsky@Chell.local>
+Alex Ostrovsky <a.ostrovsky@mac.com> Alexander OSTROVSKY <alexanderostrovsky@infra04-wg396.visitor.eduroam.wireless.umn.edu>
+Alex Ostrovsky <a.ostrovsky@mac.com> Alexander OSTROVSKY <alexanderostrovsky@p-body.win.ad.jhu.edu>
+Alex Ostrovsky <a.ostrovsky@mac.com> <40246333+astrovsky01@users.noreply.github.com>
+Alexandru Mahmoud <mahmoudalexandru@gmail.com> # GH user: almahmoud
+Alexandru Mahmoud <mahmoudalexandru@gmail.com> <amahmou4@jhu.edu> 
+Alexandru Mahmoud <mahmoudalexandru@gmail.com> <almahmoud@jhu.edu>
+Alireza Heidari <itisalirh@gmail.com> # GH user: itisAliRH
+Ott Oopkaup <ott.oopkaup@gmail.com> # GH user: ooobik
+Anastasia Tyryshkina <atyryshkina@gmail.com> # GH user: atyryshkina
+Evgeny Anatskiy <evgeny.anatskiy@gmail.com> # GH user: anatskiy
+Andrea Bagnacani <andrea.bagnacani@gmail.com> # GH user: bagnacan
+<andrea.bagnacani@gmail.com> <andrea.bagnacani@uni-rostock.de>
+Andrea Sbardellati <andrea.sbardellati@crs4.it>
+Andreas Skorczyk <me@andreas-sk.de> # GH user: AndreasSko
+Andrew Robinson <Andrew.Robinson@latrobe.edu.au> Andrew Robinson <none@none> # GH user: andrewjrobinson
+Andrew Warren <anwarren@vbi.vt.edu> # GH user: aswarren
+Andrey Tovchigrechko <tovchigrechkoa@medimmune.com> # GH user: andreyto
+Anil Thanki <thanki.anil@gmail.com> # GH user: anilthanki
+Anne Fouilloux <annefou@geo.uio.no> <annefou@uio.no> # GH user: annefou
+Ann Loraine <aloraine@uncc.edu>  # GH user: aloraine 
+Anthony Bretaudeau <anthony.bretaudeau@inria.fr> # GH user: abretaud
+Anthony Bretaudeau <anthony.bretaudeau@inria.fr> <abretaud@irisa.fr>
+Anthony Bretaudeau <anthony.bretaudeau@inria.fr> <anthony.bretaudeau@rennes.inra.fr>
+<anthony.bretaudeau@inria.fr> <anthony.bretaudeau@irisa.fr>
+Anton Nekrutenko <anton@nekrut.org>  # GH user: nekrut
+Anton Nekrutenko <anton@nekrut.org> <anekrut@gmail.com>
+<anton@nekrut.org> <anton@bx.psu.edu>
+<anton@nekrut.org> <anton@Antons-MacBook-Air.local>
+Anup Kumar <anup.rulez@gmail.com>  # GH user: anuprulez
+Anup Kumar <anup.rulez@gmail.com> <kumara@informatik.uni-freiburg.de>
+Arjun Nath <arjun@bx.psu.edu>  # no GH user, last contribution in 2007
+Ashok Varadharajan <ashvark@gmail.com>  # GH user: ashvark
+Ashok Varadharajan <ashvark@gmail.com> <ashok@localhost.localdomain>
+Ashok Varadharajan <ashvark@gmail.com> <ashvark@users.noreply.github.com>
+Assunta DeSanto <assuntad23@gmail.com>  # GH user: assuntad23
+Assunta DeSanto <assuntad23@gmail.com> <adesanto@lhup.edu>
+Assunta DeSanto <assuntad23@gmail.com> <assuntad@localhost.localdomain>
+Athos Ribeiro <athoscr@fedoraproject.org>  # GH user: athos-ribeiro
+Aurélien Bernard <aurelien.bernard.bioinfo63@gmail.com>  # GH user: arbernard
+Aysam Guerler <aysam.guerler@gmail.com>  # GH user: guerler
+
+BalthazarPavot <balthazar.pavot@hotmail.fr>  # GH user: BalthazarPavot (account deleted)
+balto <balto_59@hotmail.fr>  # same as BalthazarPavot (only commits from both are in the same PR) ? GH user appears to be "the-nidhogg"
+Beatriz Serrano-Solano <beatrizserrano@users.noreply.github.com>  # GH user: beatrizserrano
+Ben Fulton <benmarkfulton@gmail.com>  # GH user: benfulton
+Ben Fulton <benmarkfulton@gmail.com> <befulton@iu.edu>
+Benjamin Carr <BenjaminHCCarr@users.noreply.github.com>  # GH user: BenjaminHCCarr
+Benno Weiss <benno.weiss@gmail.com>  # GH user: Paprikant
+bensellak <bensellak@ensat.ac.ma>  # GH user: bensellak
+Bérénice Batut <bebatut@gmail.com>  # GH user: bebatut
+<bebatut@gmail.com> <berenice.batut@gmail.com>
+Bert Droesbeke <bedro@psb.ugent.be>  # GH user: bedroesb
+Bert Droesbeke <bedro@psb.ugent.be> <44875756+bedroesb@users.noreply.github.com>
+Bioinformatics Platform (Belgian Institute of Public Health) <bioit@sciensano.be> <bioit@scien                                                                                                                      sano.be> # GH user: BioinformaticsPlatformWIV-ISP
+Björn Grüning <bjoern@gruenings.eu>  # GH user: bgruening
+Björn Grüning <bjoern@gruenings.eu> <bjoern.gruening@gmail.com>
+Björn Grüning <bjoern@gruenings.eu> Bjoern Gruening <devnull@localhost>
+Björn Grüning <bjoern@gruenings.eu> BjoernGruening <devnull@localhost>
+Brad Chapman <chapmanb@50mail.com>  # GH user: chapmanb
+Brad Holmes <holmesbr@ncbi.nlm.nih.gov>  # GH user: BradHolmes
+Brad Langhorst <brad@langhorst.com> <langhorst@neb.com>  # GH user: bwlang
+Brian Wheeler <bdwheele@iu.edu>  # GH user: bdwheele
+Bryan Raubenolt <braubeno@uno.edu> <bryanraubenolt@Bryans-MBP.home>  # GH user: thepineapplepirate
+
+Dave Trudgian <dave@trudgian.net> # GH user: dtrudg
+Dave Trudgian <dave@trudgian.net> <david.trudgian@utsouthwestern.edu>
+Dave Trudgian <dave@trudgian.net> <biohpc-help@utsouthwestern.edu>
+
+Henk van den Toorn <vdtoorn@hotmail.com> # GH user: vdtoorn
+
+Matthias Bernt <bernt@informatik.uni-leipzig.de>  # GH user: bernt-matthias
+
+Sergey Yakubov <yakubovs@ornl.gov>  # GH user: SergeyYakubov
+<yakubovs@ornl.gov> <SergeyYakubov@users.noreply.github.com>
+Steven Shum <weiyanshum@gmail.com>  # GH user: shenweiyan
+Steven Shum <weiyanshum@gmail.com> <ishenweiyan@foxmail.com>
+Steven Shum <weiyanshum@gmail.com> <ishenweiyan@qq.com>
+
+Tim Thompson <tim.thompson@xdbio.com>  # GH user: XDtim
+
+Vahid Jalili <jalili.vahid@gmail.com> # GH user: VJalili
+Vahid Jalili <jalili.vahid@gmail.com> <VJalili@users.noreply.github.com>
+Vahid Jalili <jalili.vahid@gmail.com> <LetMeIn%#01>
+Valentin Chambon <chavaldranis@gmail.com> # GH user: ValentinChCloud
+Valentin Marcon <v.marcon@outlook.fr> # GH user: ValentinMarcon
+Varun Shankar S <varunshankar55@gmail.com> # GH user: varunshankar
+Vimalkumar Velayudhan <vimalkumarvelayudhan@gmail.com> # GH user: vimalkvn
+Volodymyr Savchenko <Volodymyr.Savchenko@epfl.ch> # GH user: volodymyrss
+Volodymyr Savchenko <Volodymyr.Savchenko@epfl.ch> <volodymyrss@users.noreply.github.com>
+
+Wendi Bacon <44605769+nomadscientist@users.noreply.github.com>  # GH user: nomadscientist
+Wen-Yu Chung <wychung@bx.psu.edu>  # No GH user, last contribution in 2009
+William Holden <theappdev@protonmail.com>  # GH user: WilliamHolden
+<theappdev@protonmail.com> <wholden1@jhu.edu>
+Will Simpson <wsimpson@email.arizona.edu>  # GH user: simpsonw
+Wolfgang Maier <maierw@informatik.uni-freiburg.de>  # GH user: wm75
+<maierw@informatik.uni-freiburg.de> <wolfgang.maier@biologie.uni-freiburg.de>
+
+Xavier Garnier <xgaia@gmx.com>  # GH user: xgaia
+Xavier Garnier <xgaia@gmx.com> <xavier.garnier@irisa.fr>
+<xgaia@gmx.com> <xgarnier@lougre.irisa.fr>
+xiaojay <xiaojay@gmail.com>  # GH user: xiaojay
+xiaojay <xiaojay@gmail.com> <jayyoung@yangyuanjiedeMacBook-Pro.local>
+Xiaoqian Jiang <jxq198409@hotmail.com>  # GH user: xiaoqian1984
+
+Yi Zhang <yizhang@bx.psu.edu>  # No GH user, last contribution in 2007
+Yo Yehudi <yochannah@gmail.com>  # GH user: yochannah
+Youri Hoogstrate <y.hoogstrate@gmail.com>  # GH user: yhoogstrate
+Youri Hoogstrate <y.hoogstrate@gmail.com> <y.hoogstrate@erasmusmc.nl>
+Yunchen Gong <yunchen.gong@gmail.com>  # GH user: ycgong
+Yvan Le Bras <yvan.le-bras@mnhn.fr>  # GH user: yvanlebras
+<yvan.le-bras@mnhn.fr> <yvan.le_bras@irisa.fr>
+
+zhuzi <110071444+undergone2345@users.noreply.github.com>  # GH user: undergone2345
+Zipho Mashologu <zipho.m@gmail.com>  # GH user: zipho
+<zipho.m@gmail.com> <zipho@trustpay.biz>
