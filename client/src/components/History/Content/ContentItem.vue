@@ -53,11 +53,8 @@
                         <icon icon="burn" /> Purged
                     </b-badge>
                 </span>
-                <span v-else-if="isPlaceholder" class="align-self-start btn-group p-1">
-                    <FontAwesomeIcon icon="spinner" spin />
-                </span>
                 <ContentOptions
-                    v-else
+                    v-if="!isPlaceholder && !item.purged"
                     :writable="writable"
                     :is-dataset="isDataset"
                     :is-deleted="item.deleted"
@@ -170,6 +167,9 @@ export default {
             return this.contentState && this.contentState.icon;
         },
         state() {
+            if (this.isPlaceholder) {
+                return "placeholder";
+            }
             if (this.item.job_state_summary) {
                 for (const state of HIERARCHICAL_COLLECTION_JOB_STATES) {
                     if (this.item.job_state_summary[state] > 0) {
