@@ -32,7 +32,6 @@ from galaxy.managers.context import (
     ProvidesUserContext,
 )
 from galaxy.managers.jobs import (
-    JobLock,
     JobManager,
     JobSearch,
     summarize_destination_params,
@@ -171,6 +170,7 @@ SearchQueryParam: Optional[str] = search_query_param(
 @router.cbv
 class FastAPIJobs:
     service: JobsService = depends(JobsService)
+    manager: JobManager = depends(JobManager)
 
     @router.get("/api/jobs/{id}")
     def show(
@@ -547,23 +547,3 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
         )
 
         return {"messages": messages}
-
-    @require_admin
-    @expose_api
-    def show_job_lock(self, trans: ProvidesUserContext, **kwd):
-        """
-        * GET /api/job_lock
-            return boolean indicating if job lock active.
-        """
-        return self.job_manager.job_lock()
-
-    @require_admin
-    @expose_api
-    def update_job_lock(self, trans: ProvidesUserContext, payload, **kwd):
-        """
-        * PUT /api/job_lock
-            return boolean indicating if job lock active.
-        """
-        active = payload.get("active")
-        job_lock = JobLock(active=active)
-        return self.job_manager.update_job_lock(job_lock)
