@@ -347,7 +347,9 @@ class ReadyForExportMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHand
         pass
 
     def handle_invocation_time(self, line, invocation):
-        self.ensure_rendering_data_for("invocations", invocation)["create_time"] = invocation.create_time.strftime("%m/%d/%Y, %H:%M:%S")
+        self.ensure_rendering_data_for("invocations", invocation)["create_time"] = invocation.create_time.strftime(
+            "%m/%d/%Y, %H:%M:%S"
+        )
 
     def handle_dataset_type(self, line, hda):
         self.extend_history_dataset_rendering_data(hda, "ext", hda.ext, "*Unknown dataset type*")
