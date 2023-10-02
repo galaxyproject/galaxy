@@ -4837,13 +4837,9 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
         # Check dataset state and return any messages.
         msg = None
         if converted_dataset and converted_dataset.state == Dataset.states.ERROR:
-            job_id = (
-                trans.sa_session.query(JobToOutputDatasetAssociation)
-                .filter_by(dataset_id=converted_dataset.id)
-                .first()
-                .job_id
-            )
-            job = trans.sa_session.query(Job).get(job_id)
+            stmt = select(JobToOutputDatasetAssociation.job_id).filter_by(dataset_id=converted_dataset.id).limit(1)
+            job_id = trans.sa_session.scalars(stmt).first()
+            job = trans.sa_session.get(Job, job_id)
             msg = {"kind": self.conversion_messages.ERROR, "message": job.stderr}
         elif not converted_dataset or converted_dataset.state != Dataset.states.OK:
             msg = self.conversion_messages.PENDING
