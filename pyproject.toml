@@ -5,6 +5,7 @@ include = '\.pyi?$'
 extend-exclude = '''
 ^/(
   | packages
+  | lib/tool_shed/test/test_data/repos
 )/
 '''
 
@@ -61,6 +62,7 @@ fastapi-utils = "*"
 fs = "*"
 future = "*"
 galaxy_sequence_utils = "*"
+graphene-sqlalchemy = "3.0.0b3"  # need a beta release to be compat. with starlette plugin
 gravity = ">=1.0"
 gunicorn = "*"
 gxformat2 = "*"
@@ -111,6 +113,7 @@ sqlitedict = "*"
 sqlparse = "*"
 starlette = "*"
 starlette-context = "*"
+starlette-graphene3 = "*"
 svgwrite = "*"
 tifffile = "*"
 tuswsgi = "*"
@@ -146,6 +149,7 @@ pytest-httpserver = "*"
 python-irodsclient = "!=1.1.2"  # https://github.com/irods/python-irodsclient/issues/356
 pytest-json-report = "*"
 pytest-mock = "*"
+pytest-playwright = "*"
 pytest-postgresql = "!=3.0.0"  # https://github.com/ClearcodeHQ/pytest-postgresql/issues/426
 pytest-shard = "*"
 responses = "*"
@@ -201,3 +205,5 @@ relative-imports-order = "closest-to-furthest"
 # Don't check some pyupgrade rules on generated files
 "lib/galaxy/schema/bco/*" = ["UP006", "UP007"]
 "lib/galaxy/schema/drs/*" = ["UP006", "UP007"]
+"lib/tool_shed_client/schema/trs.py" = ["UP006", "UP007"]
+"lib/tool_shed_client/schema/trs_service_info.py" = ["UP006", "UP007"]

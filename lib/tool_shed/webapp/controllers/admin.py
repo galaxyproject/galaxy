@@ -362,7 +362,7 @@ class AdminController(BaseUIController, Admin):
     @web.expose
     @web.require_admin
     def reset_metadata_on_selected_repositories_in_tool_shed(self, trans, **kwd):
-        rmm = repository_metadata_manager.RepositoryMetadataManager(trans.app, trans.user)
+        rmm = repository_metadata_manager.RepositoryMetadataManager(trans)
         if "reset_metadata_on_selected_repositories_button" in kwd:
             message, status = rmm.reset_metadata_on_selected_repositories(**kwd)
         else:

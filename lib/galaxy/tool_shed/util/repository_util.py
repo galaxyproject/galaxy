@@ -21,10 +21,7 @@ from sqlalchemy import (
 )
 from sqlalchemy.orm import joinedload
 
-from galaxy import (
-    util,
-    web,
-)
+from galaxy import util
 from galaxy.model.base import transaction
 from galaxy.model.scoped_session import install_model_scoped_session
 from galaxy.model.tool_shed_install import ToolShedRepository
@@ -229,6 +226,8 @@ def generate_tool_shed_repository_install_dir(repository_clone_url, changeset_re
     # Now tmp_url is something like: bx.psu.edu:9009/repos/some_username/column
     items = tmp_url.split("/repos/")
     tool_shed_url = items[0]
+    if len(items) == 1:
+        raise Exception(f"Processing an invalid tool shed clone URL {repository_clone_url} - tmp_url {tmp_url}")
     repo_path = items[1]
     tool_shed_url = common_util.remove_port_from_tool_shed_url(tool_shed_url)
     return "/".join((tool_shed_url, "repos", repo_path, changeset_revision))
@@ -724,7 +723,6 @@ def repository_was_previously_installed(app, tool_shed_url, repository_name, rep
     # Get all previous changeset revisions from the tool shed for the repository back to, but excluding,
     # the previous valid changeset revision to see if it was previously installed using one of them.
     params = dict(
-        galaxy_url=web.url_for("/", qualified=True),
         name=repository_name,
         owner=repository_owner,
         changeset_revision=changeset_revision,

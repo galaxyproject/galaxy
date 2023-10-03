@@ -47,6 +47,7 @@ from starlette.routing import (
     NoMatchFound,
 )
 from starlette.types import Scope
+from typing_extensions import Literal
 
 try:
     from starlette_context import context as request_context
@@ -109,7 +110,7 @@ class GalaxyTypeDepends(Depends):
         self.galaxy_type_depends = dep_type
 
 
-def depends(dep_type: Type[T]) -> T:
+def depends(dep_type: Type[T], get_app=get_app) -> T:
     def _do_resolve(request: Request):
         return get_app().resolve(dep_type)
 
@@ -178,7 +179,10 @@ class UrlBuilder:
         query_params = path_params.pop("query_params", None)
         try:
             if qualified:
-                url = str(self.request.url_for(name, **path_params))
+                if name == "/":
+                    url = str(self.request.base_url)
+                else:
+                    url = str(self.request.url_for(name, **path_params))
             else:
                 url = self.request.app.url_path_for(name, **path_params)
             if query_params:
@@ -196,6 +200,8 @@ class GalaxyASGIRequest(GalaxyAbstractRequest):
 
     Implements the GalaxyAbstractRequest interface to provide access to some properties
     of the request commonly used."""
+
+    __request: Request
 
     def __init__(self, request: Request):
         self.__request = request
@@ -229,6 +235,28 @@ class GalaxyASGIRequest(GalaxyAbstractRequest):
             self.__environ = build_environ(self.__request.scope, None)  # type: ignore[arg-type]
         return self.__environ
 
+    @property
+    def headers(self):
+        return self.__request.headers
+
+    @property
+    def remote_host(self) -> str:
+        # was available in wsgi and is used create_new_session
+        return self.host
+
+    @property
+    def remote_addr(self) -> Optional[str]:
+        # was available in wsgi and is used create_new_session
+        # not sure what to do here...
+        return None
+
+    @property
+    def is_secure(self) -> bool:
+        return self.__request.url.scheme == "https"
+
+    def get_cookie(self, name):
+        return self.__request.cookies.get(name)
+
 
 class GalaxyASGIResponse(GalaxyAbstractResponse):
     """Wrapper around Starlette/FastAPI Response object.
@@ -242,6 +270,31 @@ class GalaxyASGIResponse(GalaxyAbstractResponse):
     @property
     def headers(self):
         return self.__response.headers
+
+    def set_cookie(
+        self,
+        key: str,
+        value: str = "",
+        max_age: Optional[int] = None,
+        expires: Optional[int] = None,
+        path: str = "/",
+        domain: Optional[str] = None,
+        secure: bool = False,
+        httponly: bool = False,
+        samesite: Optional[Literal["lax", "strict", "none"]] = "lax",
+    ) -> None:
+        """Set a cookie."""
+        self.__response.set_cookie(
+            key,
+            value,
+            max_age=max_age,
+            expires=expires,
+            path=path,
+            domain=domain,
+            secure=secure,
+            httponly=httponly,
+            samesite=samesite,
+        )
 
 
 DependsOnUser = cast(Optional[User], Depends(get_user))
@@ -301,8 +354,10 @@ class RestVerb(str, Enum):
     options = "OPTIONS"
 
 
-class Router(InferringRouter):
+class FrameworkRouter(InferringRouter):
     """A FastAPI Inferring Router tailored to Galaxy."""
+
+    admin_user_dependency: Any
 
     def wrap_with_alias(self, verb: RestVerb, *args, alias: Optional[str] = None, **kwd):
         """
@@ -382,9 +437,9 @@ class Router(InferringRouter):
         require_admin = kwd.pop("require_admin", False)
         if require_admin:
             if "dependencies" in kwd:
-                kwd["dependencies"].append(AdminUserRequired)
+                kwd["dependencies"].append(self.admin_user_dependency)
             else:
-                kwd["dependencies"] = [AdminUserRequired]
+                kwd["dependencies"] = [self.admin_user_dependency]
 
         return kwd
 
@@ -396,6 +451,10 @@ class Router(InferringRouter):
         https://fastapi-utils.davidmontague.xyz/user-guide/class-based-views/
         """
         return cbv(self)
+
+
+class Router(FrameworkRouter):
+    admin_user_dependency = AdminUserRequired
 
 
 class APIContentTypeRoute(APIRoute):

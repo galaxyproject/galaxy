@@ -48,7 +48,7 @@ from galaxy.tool_shed.util.repository_util import (
     repository_was_previously_installed,
     set_repository_attributes,
 )
-from galaxy.util.tool_shed import common_util
+from tool_shed.util.common_util import generate_clone_url_for
 from tool_shed.util.hg_util import (
     changeset2rev,
     create_hgrc_file,
@@ -58,10 +58,14 @@ from tool_shed.util.hg_util import (
 from tool_shed.util.metadata_util import (
     get_next_downloadable_changeset_revision,
     get_repository_metadata_by_changeset_revision,
+    repository_metadata_by_changeset_revision,
 )
 
 if TYPE_CHECKING:
-    from tool_shed.context import ProvidesUserContext
+    from tool_shed.context import (
+        ProvidesRepositoriesContext,
+        ProvidesUserContext,
+    )
     from tool_shed.structured_app import ToolShedApp
     from tool_shed.webapp.model import Repository
 
@@ -82,6 +86,7 @@ def create_repo_info_dict(
     repository_metadata=None,
     tool_dependencies=None,
     repository_dependencies=None,
+    trans=None,
 ):
     """
     Return a dictionary that includes all of the information needed to install a repository into a local
@@ -109,15 +114,16 @@ def create_repo_info_dict(
     repository = get_repository_by_name_and_owner(app, repository_name, repository_owner)
     if app.name == "tool_shed":
         # We're in the tool shed.
-        repository_metadata = get_repository_metadata_by_changeset_revision(
-            app, app.security.encode_id(repository.id), changeset_revision
-        )
+        repository_metadata = repository_metadata_by_changeset_revision(app.model, repository.id, changeset_revision)
         if repository_metadata:
             metadata = repository_metadata.metadata
             if metadata:
-                tool_shed_url = web.url_for("/", qualified=True).rstrip("/")
+                if trans is not None:
+                    tool_shed_url = trans.repositories_hostname
+                else:
+                    tool_shed_url = web.url_for("/", qualified=True).rstrip("/")
                 rb = tool_shed.dependencies.repository.relation_builder.RelationBuilder(
-                    app, repository, repository_metadata, tool_shed_url
+                    app, repository, repository_metadata, tool_shed_url, trans=trans
                 )
                 # Get a dictionary of all repositories upon which the contents of the received repository depends.
                 repository_dependencies = rb.get_repository_dependencies_for_changeset_revision()
@@ -258,9 +264,10 @@ def get_repository_in_tool_shed(app, id, eagerload_columns=None):
     return q.get(app.security.decode_id(id))
 
 
-def get_repo_info_dict(app: "ToolShedApp", user, repository_id, changeset_revision):
+def get_repo_info_dict(trans: "ProvidesRepositoriesContext", repository_id, changeset_revision):
+    app = trans.app
     repository = get_repository_in_tool_shed(app, repository_id)
-    repository_clone_url = common_util.generate_clone_url_for_repository_in_tool_shed(user, repository)
+    repository_clone_url = generate_clone_url_for(trans, repository)
     repository_metadata = get_repository_metadata_by_changeset_revision(app, repository_id, changeset_revision)
     if not repository_metadata:
         # The received changeset_revision is no longer installable, so get the next changeset_revision
@@ -313,6 +320,7 @@ def get_repo_info_dict(app: "ToolShedApp", user, repository_id, changeset_revisi
         repository_metadata=repository_metadata,
         tool_dependencies=None,
         repository_dependencies=None,
+        trans=trans,
     )
     return (
         repo_info_dict,
@@ -368,8 +376,7 @@ def get_repositories_by_category(
         repository_dict = repository.to_dict(value_mapper=default_value_mapper)
         repository_dict["metadata"] = {}
         for changeset, changehash in repository.installable_revisions(app):
-            encoded_id = app.security.encode_id(repository.id)
-            metadata = get_repository_metadata_by_changeset_revision(app, encoded_id, changehash)
+            metadata = repository_metadata_by_changeset_revision(app.model, repository.id, changehash)
             assert metadata
             repository_dict["metadata"][f"{changeset}:{changehash}"] = metadata.to_dict(
                 value_mapper=default_value_mapper

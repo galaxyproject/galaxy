@@ -182,17 +182,22 @@ endif
 
 build-api-schema:
 	$(IN_VENV) python scripts/dump_openapi_schema.py _schema.yaml
+	$(IN_VENV) python scripts/dump_openapi_schema.py --app shed _shed_schema.yaml
 
 remove-api-schema:
 	rm _schema.yaml
+	rm _shed_schema.yaml
 
 update-client-api-schema: client-node-deps build-api-schema
 	$(IN_VENV) cd client && node openapi_to_schema.mjs ../_schema.yaml > src/schema/schema.ts && npx prettier --write src/schema/schema.ts
+	$(IN_VENV) cd client && node openapi_to_schema.mjs ../_shed_schema.yaml > ../lib/tool_shed/webapp/frontend/src/schema/schema.ts && npx prettier --write ../lib/tool_shed/webapp/frontend/src/schema/schema.ts
 	$(MAKE) remove-api-schema
 
 lint-api-schema: build-api-schema
 	$(IN_VENV) npx --yes @redocly/cli lint _schema.yaml
+	$(IN_VENV) npx --yes @redocly/cli lint _shed_schema.yaml
 	$(IN_VENV) codespell -I .ci/ignore-spelling.txt _schema.yaml
+	$(IN_VENV) codespell -I .ci/ignore-spelling.txt _shed_schema.yaml
 	$(MAKE) remove-api-schema
 
 update-navigation-schema: client-node-deps

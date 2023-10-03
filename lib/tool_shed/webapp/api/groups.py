@@ -22,16 +22,17 @@ from galaxy.web import (
     expose_api_anonymous_and_sessionless,
     require_admin,
 )
-from galaxy.webapps.base.controller import BaseAPIController
 from tool_shed.managers import groups
+from tool_shed.structured_app import ToolShedApp
+from . import BaseShedAPIController
 
 log = logging.getLogger(__name__)
 
 
-class GroupsController(BaseAPIController):
+class GroupsController(BaseShedAPIController):
     """RESTful controller for interactions with groups in the Tool Shed."""
 
-    def __init__(self, app):
+    def __init__(self, app: ToolShedApp):
         super().__init__(app)
         self.group_manager = groups.GroupManager()
 
