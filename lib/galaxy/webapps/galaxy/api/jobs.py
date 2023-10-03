@@ -19,8 +19,10 @@ from typing import (
 
 from fastapi import (
     Depends,
+    Path,
     Query,
 )
+from typing_extensions import Annotated
 
 from galaxy import (
     exceptions,
@@ -39,7 +41,10 @@ from galaxy.managers.jobs import (
     summarize_job_parameters,
 )
 from galaxy.schema.fields import DecodedDatabaseIdField
-from galaxy.schema.schema import JobIndexSortByEnum
+from galaxy.schema.schema import (
+    JobIndexSortByEnum,
+    JobInputSummary,
+)
 from galaxy.schema.types import OffsetNaiveDatetime
 from galaxy.web import (
     expose_api,
@@ -166,6 +171,8 @@ SearchQueryParam: Optional[str] = search_query_param(
     free_text_fields=["user", "tool", "handler", "runner"],
 )
 
+JobIdPathParam: DecodedDatabaseIdField = Path(title="Job ID", description="TODO")
+
 
 @router.cbv
 class FastAPIJobs:
@@ -227,19 +234,17 @@ class FastAPIJobs:
         )
         return self.service.index(trans, payload)
 
-
-class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
-    job_manager = depends(JobManager)
-    job_search = depends(JobSearch)
-    hda_manager = depends(hdas.HDAManager)
-
-    @expose_api
-    def common_problems(self, trans: ProvidesUserContext, id, **kwd):
-        """
-        * GET /api/jobs/{id}/common_problems
-            check inputs and job for common potential problems to aid in error reporting
-        """
-        job = self.__get_job(trans, id)
+    @router.get(
+        "/api/jobs/{id}/common_problems",
+        name="check_common_problems",
+        summary="Check inputs and job for common potential problems to aid in error reporting",
+    )
+    def common_problems(
+        self,
+        id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> JobInputSummary:
+        job = self.service.get_job(trans=trans, job_id=id)
         seen_ids = set()
         has_empty_inputs = False
         has_duplicate_inputs = False
@@ -257,7 +262,13 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
         # TODO: check percent of failing jobs around a window on job.update_time for handler - report if high.
         # TODO: check percent of failing jobs around a window on job.update_time for destination_id - report if high.
         # TODO: sniff inputs (add flag to allow checking files?)
-        return {"has_empty_inputs": has_empty_inputs, "has_duplicate_inputs": has_duplicate_inputs}
+        return JobInputSummary(has_empty_inputs=has_empty_inputs, has_duplicate_inputs=has_duplicate_inputs)
+
+
+class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
+    job_manager = depends(JobManager)
+    job_search = depends(JobSearch)
+    hda_manager = depends(hdas.HDAManager)
 
     @expose_api
     def inputs(self, trans: ProvidesUserContext, id, **kwd) -> List[dict]:
