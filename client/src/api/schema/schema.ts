@@ -904,6 +904,10 @@ export interface paths {
          */
         get: operations["show_api_jobs__id__get"];
     };
+    "/api/jobs/{id}/common_problems": {
+        /** Check inputs and job for common potential problems to aid in error reporting */
+        get: operations["check_common_problems_api_jobs__id__common_problems_get"];
+    };
     "/api/jobs/{job_id}/oidc-tokens": {
         /**
          * Get a fresh OIDC token
@@ -6248,6 +6252,16 @@ export interface components {
          * @enum {string}
          */
         JobIndexViewEnum: "collection" | "admin_job_list";
+        /**
+         * JobInputSummary
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        JobInputSummary: {
+            /** Has Duplicate Inputs */
+            has_duplicate_inputs: boolean;
+            /** Has Empty Inputs */
+            has_empty_inputs: boolean;
+        };
         /** JobLock */
         JobLock: {
             /**
@@ -14693,6 +14707,33 @@ export interface operations {
             200: {
                 content: {
                     "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    check_common_problems_api_jobs__id__common_problems_get: {
+        /** Check inputs and job for common potential problems to aid in error reporting */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description TODO */
+            path: {
+                id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["JobInputSummary"];
                 };
             };
             /** @description Validation Error */
