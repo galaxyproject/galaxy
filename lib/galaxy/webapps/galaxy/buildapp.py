@@ -945,13 +945,13 @@ def populate_api_routes(webapp, app):
     webapp.mapper.connect(
         "job_error", "/api/jobs/{id}/error", controller="jobs", action="error", conditions=dict(method=["POST"])
     )
-    webapp.mapper.connect(
-        "common_problems",
-        "/api/jobs/{id}/common_problems",
-        controller="jobs",
-        action="common_problems",
-        conditions=dict(method=["GET"]),
-    )
+    # webapp.mapper.connect(
+    #     "common_problems",
+    #     "/api/jobs/{id}/common_problems",
+    #     controller="jobs",
+    #     action="common_problems",
+    #     conditions=dict(method=["GET"]),
+    # )
     # Job metrics and parameters by job id or dataset id (for slightly different accessibility checking)
     webapp.mapper.connect(
         "destination_params",
