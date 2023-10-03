@@ -360,8 +360,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             user = get_user_by_email(self.session(), identity, self.model_class)
             if not user:
                 # Try a case-insensitive match on the email
-                stmt = select(self.model_class).where(func.lower(self.model_class.email) == identity.lower()).limit(1)
-                user = self.session().scalars(stmt).first()
+                user = self._get_user_by_email_case_insensitive(self.session(), identity)
         else:
             user = get_user_by_username(self.session(), identity, self.model_class)
         return user
@@ -575,8 +574,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
     def get_reset_token(self, trans, email):
         reset_user = get_user_by_email(trans.sa_session, email, self.app.model.User)
         if not reset_user and email != email.lower():
-            stmt = select(self.app.model.User).where(func.lower(self.app.model.User.email) == email.lower()).limit(1)
-            reset_user = trans.sa_session.scalars(stmt).first()
+            reset_user = self._get_user_by_email_case_insensitive(trans.sa_session, email)
         if reset_user:
             prt = self.app.model.PasswordResetToken(reset_user)
             trans.sa_session.add(prt)
@@ -652,6 +650,10 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
                 self.app.security_agent.user_set_default_permissions(user)
             # self.log_event( "Automatically created account '%s'", user.email )
         return user
+
+    def _get_user_by_email_case_insensitive(self, session, email):
+        stmt = select(self.app.model.User).where(func.lower(self.app.model.User.email) == email.lower()).limit(1)
+        return session.scalars(stmt).first()
 
 
 class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
