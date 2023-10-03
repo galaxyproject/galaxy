@@ -19,7 +19,6 @@ from collections import defaultdict
 from collections.abc import Callable
 from datetime import timedelta
 from enum import Enum
-from itertools import chain
 from string import Template
 from typing import (
     Any,
@@ -4485,15 +4484,27 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
     dbkey = property(get_dbkey, set_dbkey)
 
     def ok_to_edit_metadata(self):
-        # prevent modifying metadata when dataset is queued or running as input/output
-        sa_session = object_session(self)
-        stmt1 = select(JobToInputDatasetAssociation.job_id).filter_by(dataset_id=self.id)
-        stmt2 = select(JobToOutputDatasetAssociation.job_id).filter_by(dataset_id=self.id)
-        for job_id in chain(sa_session.scalars(stmt1), sa_session.scalars(stmt2)):
-            state = sa_session.scalar(select(Job.state).where(Job.id == job_id))
-            if state not in Job.terminal_states:
-                return False
-        return True
+        """
+        Prevent modifying metadata when dataset is queued or running as input/output:
+        return `False` if there exists an associated job with a non-terminal state.
+        """
+
+        def exists_clause(assoc_model):
+            return (
+                select(assoc_model.job_id)
+                .join(Job)
+                .where(assoc_model.dataset_id == self.id)
+                .where(Job.state.not_in(Job.terminal_states))
+                .exists()
+            )
+
+        stmt = select(
+            or_(
+                exists_clause(JobToInputDatasetAssociation),
+                exists_clause(JobToOutputDatasetAssociation),
+            )
+        )
+        return not object_session(self).scalar(stmt)
 
     def change_datatype(self, new_ext):
         self.clear_associated_files()
