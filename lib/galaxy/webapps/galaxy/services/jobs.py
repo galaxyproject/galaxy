@@ -92,3 +92,21 @@ class JobsService:
             raise exceptions.AdminRequiredException("Only admins can index the jobs with user details enabled")
         if decoded_user_id is not None and decoded_user_id != trans_user_id:
             raise exceptions.AdminRequiredException("Only admins can index the jobs of others")
+
+    def get_job(
+        self,
+        trans: ProvidesUserContext,
+        job_id: Optional[int] = None,
+        dataset_id: Optional[int] = None,
+        hda_ldda: str = "hda",
+    ):
+        if job_id is not None:
+            return self.job_manager.get_accessible_job(trans, decoded_job_id=job_id)
+        elif dataset_id is not None:
+            # Following checks dataset accessible
+            if hda_ldda == "hda":
+                dataset_instance = self.hda_manager.get_accessible(id=dataset_id, user=trans.user)
+            else:
+                dataset_instance = self.hda_manager.ldda_manager.get(trans, id=dataset_id)
+        # TODO Raise error if no ID passed? Never happens when called from Job API endpoints
+        return dataset_instance
