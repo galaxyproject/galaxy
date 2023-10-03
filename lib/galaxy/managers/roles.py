@@ -4,7 +4,10 @@ Manager and Serializer for Roles.
 import logging
 from typing import List
 
-from sqlalchemy import false
+from sqlalchemy import (
+    false,
+    select,
+)
 from sqlalchemy.orm import exc as sqlalchemy_exceptions
 
 import galaxy.exceptions
@@ -44,7 +47,8 @@ class RoleManager(base.ModelManager[model.Role]):
         :raises: InconsistentDatabase, RequestParameterInvalidException, InternalServerError
         """
         try:
-            role = self.session().query(self.model_class).filter(self.model_class.id == role_id).one()
+            stmt = select(self.model_class).where(self.model_class.id == role_id)
+            role = self.session().execute(stmt).scalar_one()
         except sqlalchemy_exceptions.MultipleResultsFound:
             raise galaxy.exceptions.InconsistentDatabase("Multiple roles found with the same id.")
         except sqlalchemy_exceptions.NoResultFound:
@@ -59,7 +63,8 @@ class RoleManager(base.ModelManager[model.Role]):
 
     def list_displayable_roles(self, trans: ProvidesUserContext) -> List[Role]:
         roles = []
-        for role in trans.sa_session.query(Role).filter(Role.deleted == false()):
+        stmt = select(Role).where(Role.deleted == false())
+        for role in trans.sa_session.scalars(stmt):
             if trans.user_is_admin or trans.app.security_agent.ok_to_display(trans.user, role):
                 roles.append(role)
         return roles
@@ -70,15 +75,16 @@ class RoleManager(base.ModelManager[model.Role]):
         user_ids = role_definition_model.user_ids or []
         group_ids = role_definition_model.group_ids or []
 
-        if trans.sa_session.query(Role).filter(Role.name == name).first():
+        stmt = select(Role).where(Role.name == name).limit(1)
+        if trans.sa_session.scalars(stmt).first():
             raise RequestParameterInvalidException(f"A role with that name already exists [{name}]")
 
         role_type = Role.types.ADMIN  # TODO: allow non-admins to create roles
 
         role = Role(name=name, description=description, type=role_type)
         trans.sa_session.add(role)
-        users = [trans.sa_session.query(model.User).get(i) for i in user_ids]
-        groups = [trans.sa_session.query(model.Group).get(i) for i in group_ids]
+        users = [trans.sa_session.get(model.User, i) for i in user_ids]
+        groups = [trans.sa_session.get(model.Group, i) for i in group_ids]
 
         # Create the UserRoleAssociations
         for user in users:
