@@ -902,10 +902,8 @@ class Admin:
     @web.require_admin
     def name_autocomplete_data(self, trans, q=None, limit=None, timestamp=None):
         """Return autocomplete data for user emails"""
-        ac_data = ""
-        for user in get_user_by_email_prefix(trans.sa_session, trans.app.model.User, q):
-            ac_data = f"{ac_data + user.email}\n"
-        return ac_data
+        emails = get_user_emails_by_prefix(trans.sa_session, trans.app.model.User, q)
+        return "\n".join(emails)
 
     @web.expose
     @web.require_admin
@@ -1050,10 +1048,10 @@ def get_library_by_folder(session, folder_id):
     return session.scalars(stmt).first()
 
 
-def get_user_by_email_prefix(session, user_model, email_prefix):
+def get_user_emails_by_prefix(session, user_model, prefix):
     stmt = (
-        select(user_model)
+        select(user_model.email)
         .where(user_model.deleted == false())
-        .where(func.lower(user_model.email).like(f"{email_prefix.lower()}%"))
+        .where(func.lower(user_model.email).like(f"{prefix.lower()}%"))
     )
     return session.scalars(stmt)
