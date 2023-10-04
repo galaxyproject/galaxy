@@ -1293,11 +1293,6 @@ galaxy:
   # interactive tools
   #interactivetools_prefix: interactivetool
 
-  # Shorten the uuid portion of the subdomain or path for interactive
-  # tools. Especially useful for avoiding the need for wildcard
-  # certificates by keeping subdomain under 63 chars
-  #interactivetools_shorten_url: false
-
   # Galaxy Interactive Tools (GxITs) can be stopped from within the
   # Galaxy interface, killing the GxIT job without completing its
   # metadata setting post-job steps. In such a case it may be desirable

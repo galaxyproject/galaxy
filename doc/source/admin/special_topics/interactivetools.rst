@@ -117,7 +117,7 @@ section (serving port 443):
 .. code-block:: nginx
 
         # Route all path-based interactive tool requests to the InteractiveTool proxy application
-        location ~* ^/(interactivetool/access/.+)$ {
+        location ~* ^/(interactivetool/.+)$ {
             proxy_redirect off;
             proxy_http_version 1.1;
             proxy_set_header X-Real-IP $remote_addr;
@@ -127,8 +127,7 @@ section (serving port 443):
         }
 
 This example config works for default values of ``interactivetools_base_path`` and ``interactivetools_prefix`` as defined in
-``galaxy.yml``. For other values, you will need to adjust the location patterns accordingly. This solution also
-requires ``interactivetools_shorten_url`` to be set to ``false`` (default).
+``galaxy.yml``. For other values, you will need to adjust the location patterns accordingly.
 
 In both nginx config examples, you might want to replace localhost with your server domain (or possibly
 ``127.0.0.1``), depending on your server setup.
