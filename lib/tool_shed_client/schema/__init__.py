@@ -61,6 +61,10 @@ class User(BaseModel):
     username: str
 
 
+class UserV2(User):
+    is_admin: bool
+
+
 class Category(BaseModel):
     id: str
     name: str

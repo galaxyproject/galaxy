@@ -8,13 +8,11 @@ defineProps({
         required: true,
     },
 })
-// TODO: recover from the API
-const ADMINS = ["jmchilton"]
 
 const authStore = useAuthStore()
 void authStore.setup()
 
-const admin = computed(() => authStore.user && ADMINS.indexOf(authStore.user.username) > -1)
+const admin = computed(() => authStore.user && authStore.user.is_admin)
 </script>
 <template>
     <q-toolbar class="bg-primary glossy text-white">

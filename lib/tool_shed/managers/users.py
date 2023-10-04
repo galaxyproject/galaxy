@@ -12,7 +12,7 @@ from tool_shed.structured_app import ToolShedApp
 from tool_shed.webapp.model import User
 from tool_shed_client.schema import (
     CreateUserRequest,
-    User as ApiUser,
+    UserV2 as ApiUser,
 )
 
 
@@ -58,9 +58,11 @@ def api_create_user(trans: ProvidesUserContext, request: CreateUserRequest) -> A
 
 
 def get_api_user(app: ToolShedApp, user: User) -> ApiUser:
+    admin = app.config.is_admin_user(user)
     return ApiUser(
         id=app.security.encode_id(user.id),
         username=user.username,
+        is_admin=admin,
     )
 
 
