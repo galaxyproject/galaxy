@@ -180,7 +180,15 @@ export default {
             this.queryPending = true;
         },
         onResults(results, closestTerm = null) {
+            const Galaxy = getGalaxyInstance();
             this.results = results;
+            if (!this.hasResults) {
+                Galaxy.Sentry.captureMessage("ClientSearchMiss", {
+                    extra: {
+                        query: this.query,
+                    },
+                });
+            }
             this.closestTerm = closestTerm;
             this.queryFilter = this.hasResults ? this.query : null;
             this.setButtonText();
