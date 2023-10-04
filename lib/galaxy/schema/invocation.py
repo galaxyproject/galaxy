@@ -378,8 +378,8 @@ class InvocationReport(Model):
         title="Title",
         description="The name of the report.",
     )
-    generate_time: str = schema.GenerateTimeField
-    generate_version: str = schema.GenerateVersionField
+    generate_time: Optional[str] = schema.GenerateTimeField
+    generate_version: Optional[str] = schema.GenerateVersionField
 
     class Config:
         # Galaxy Report/Page response can contain many extra_rendering_data
