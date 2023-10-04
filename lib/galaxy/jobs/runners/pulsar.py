@@ -1122,7 +1122,7 @@ class PulsarComputeEnvironment(ComputeEnvironment):
         if local_input_path_rewrite is not None:
             local_input_path = local_input_path_rewrite
         else:
-            local_input_path = dataset.file_name
+            local_input_path = dataset.get_file_name()
         remote_path = self.path_mapper.remote_input_path_rewrite(local_input_path)
         return remote_path
 
@@ -1131,7 +1131,7 @@ class PulsarComputeEnvironment(ComputeEnvironment):
         if local_output_path_rewrite is not None:
             local_output_path = local_output_path_rewrite
         else:
-            local_output_path = dataset.file_name
+            local_output_path = dataset.get_file_name()
         remote_path = self.path_mapper.remote_output_path_rewrite(local_output_path)
         return remote_path
 

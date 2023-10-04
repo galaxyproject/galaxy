@@ -1908,7 +1908,7 @@ class DirectoryModelExportStore(ModelExportStore):
 
         file_name, extra_files_path = None, None
         try:
-            _file_name = dataset.file_name
+            _file_name = dataset.get_file_name()
             if os.path.exists(_file_name):
                 file_name = _file_name
         except ObjectNotFound:
@@ -1972,7 +1972,7 @@ class DirectoryModelExportStore(ModelExportStore):
         for dataset in self.included_datasets:
             for metadata_element in dataset.metadata.values():
                 if isinstance(metadata_element, model.MetadataFile):
-                    metadata_element.update_from_file(metadata_element.file_name)
+                    metadata_element.update_from_file(metadata_element.get_file_name())
 
     def export_job(self, job: model.Job, tool=None, include_job_data=True):
         self.export_jobs([job], include_job_data=include_job_data)
@@ -2230,7 +2230,7 @@ class DirectoryModelExportStore(ModelExportStore):
 
     def _ensure_dataset_file_exists(self, dataset: model.DatasetInstance) -> None:
         state = dataset.dataset.state
-        if state in [model.Dataset.states.OK] and not dataset.file_name:
+        if state in [model.Dataset.states.OK] and not dataset.get_file_name():
             log.error(
                 f"Dataset [{dataset.id}] does not exists on on object store [{dataset.dataset.object_store_id or 'None'}], while trying to export."
             )

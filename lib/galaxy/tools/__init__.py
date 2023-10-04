@@ -2850,7 +2850,7 @@ class ExpressionTool(Tool):
                 # Skip filtered outputs
                 continue
             if val.output_type == "data":
-                with open(out_data[key].file_name) as f:
+                with open(out_data[key].get_file_name()) as f:
                     src = json.load(f)
                 assert isinstance(src, dict), f"Expected dataset 'src' to be a dictionary - actual type is {type(src)}"
                 dataset_id = src["id"]
@@ -3491,7 +3491,7 @@ class FilterEmptyDatasetsTool(FilterDatasetsTool):
         dataset_instance: model.DatasetInstance = element.element_object
         if dataset_instance.has_data():
             # We have data, but it might just be a compressed archive of nothing
-            file_name = dataset_instance.file_name
+            file_name = dataset_instance.get_file_name()
             _, fh = get_fileobj_raw(file_name, mode="rb")
             if len(fh.read(1)):
                 return True
@@ -3551,7 +3551,7 @@ class SortTool(DatabaseOperationTool):
                 for element in elements:
                     old_elements_dict[element.element_identifier] = element
                 try:
-                    with open(hda.file_name) as fh:
+                    with open(hda.get_file_name()) as fh:
                         sorted_elements = [old_elements_dict[line.strip()] for line in fh]
                 except KeyError:
                     hdca_history_name = f"{hdca.hid}: {hdca.name}"
@@ -3602,7 +3602,7 @@ class RelabelFromFileTool(DatabaseOperationTool):
                 copied_value = dce_object.copy()
             new_elements[new_label] = copied_value
 
-        new_labels_path = new_labels_dataset_assoc.file_name
+        new_labels_path = new_labels_dataset_assoc.get_file_name()
         with open(new_labels_path) as fh:
             new_labels = fh.readlines(1024 * 1000000)
         if strict and len(hdca.collection.elements) != len(new_labels):
@@ -3726,7 +3726,7 @@ class TagFromFileTool(DatabaseOperationTool):
                     )
             new_elements[dce.element_identifier] = copied_value
 
-        new_tags_path = new_tags_dataset_assoc.file_name
+        new_tags_path = new_tags_dataset_assoc.get_file_name()
         with open(new_tags_path) as fh:
             new_tags = fh.readlines(1024 * 1000000)
         # We have a tabular file, where the first column is an existing element identifier,
@@ -3751,7 +3751,7 @@ class FilterFromFileTool(DatabaseOperationTool):
         filtered_elements = {}
         discarded_elements = {}
 
-        filtered_path = filter_dataset_assoc.file_name
+        filtered_path = filter_dataset_assoc.get_file_name()
         with open(filtered_path) as fh:
             filtered_identifiers = [i.strip() for i in fh.readlines(1024 * 1000000)]
 

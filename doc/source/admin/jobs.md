@@ -254,7 +254,7 @@ def ncbi_blastn_wrapper(job):
     # Allocate extra time
     inp_data = dict( [ ( da.name, da.dataset ) for da in job.input_datasets ] )
     inp_data.update( [ ( da.name, da.dataset ) for da in job.input_library_datasets ] )
-    query_file = inp_data[ "query" ].file_name
+    query_file = inp_data[ "query" ].get_file_name()
     query_size = os.path.getsize( query_file )
     if query_size > 1024 * 1024:
         walltime_str = "walltime=24:00:00/"

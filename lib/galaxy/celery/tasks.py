@@ -152,7 +152,7 @@ def change_datatype(
         log.info(f"Changing datatype is not allowed for {model_class} {dataset_instance.id}")
         return
     if datatype == "auto":
-        path = dataset_instance.dataset.file_name
+        path = dataset_instance.dataset.get_file_name()
         datatype = sniff.guess_ext(path, datatypes_registry.sniff_order)
     datatypes_registry.change_datatype(dataset_instance, datatype)
     with transaction(sa_session):

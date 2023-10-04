@@ -313,7 +313,7 @@ class Genomes:
                 # If there's a fasta for genome, convert to 2bit for later use.
                 if "fasta" in dbkey_attributes:
                     build_fasta = session.get(HistoryDatasetAssociation, dbkey_attributes["fasta"])
-                    len_file = build_fasta.get_converted_dataset(trans, "len").file_name
+                    len_file = build_fasta.get_converted_dataset(trans, "len").get_file_name()
                     build_fasta.get_converted_dataset(trans, "twobit")
                     # HACK: set twobit_file to True rather than a file name because
                     # get_converted_dataset returns null during conversion even though
@@ -321,7 +321,7 @@ class Genomes:
                     twobit_file = True
                 # Backwards compatibility: look for len file directly.
                 elif "len" in dbkey_attributes:
-                    len_file = session.get(HistoryDatasetAssociation, user_keys[dbkey]["len"]).file_name
+                    len_file = session.get(HistoryDatasetAssociation, user_keys[dbkey]["len"]).get_file_name()
                 if len_file:
                     genome = Genome(dbkey, dbkey_name, len_file=len_file, twobit_file=twobit_file)
 
@@ -330,7 +330,7 @@ class Genomes:
             # Look in history for chromosome len file.
             len_ds = trans.db_dataset_for(dbkey)
             if len_ds:
-                genome = Genome(dbkey, dbkey_name, len_file=len_ds.file_name)
+                genome = Genome(dbkey, dbkey_name, len_file=len_ds.get_file_name())
             # Look in system builds.
             elif dbkey in self.genomes:
                 genome = self.genomes[dbkey]
@@ -393,7 +393,7 @@ class Genomes:
                 return msg
             else:
                 twobit_dataset = fasta_dataset.get_converted_dataset(trans, "twobit")
-                twobit_file_name = twobit_dataset.file_name
+                twobit_file_name = twobit_dataset.get_file_name()
 
         return self._get_reference_data(twobit_file_name, chrom, low, high)
 

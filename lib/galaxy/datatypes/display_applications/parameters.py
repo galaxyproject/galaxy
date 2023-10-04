@@ -106,7 +106,7 @@ class DisplayApplicationDataParameter(DisplayApplicationParameter):
         if self.metadata:
             rval = getattr(data.metadata, self.metadata, None)
             assert rval, f'Unknown metadata name "{self.metadata}" provided for dataset type "{data.ext}".'
-            return Bunch(file_name=rval.file_name, state=data.state, states=data.states, extension="data")
+            return Bunch(file_name=rval.get_file_name(), state=data.state, states=data.states, extension="data")
         elif self.extensions and (self.force_conversion or not isinstance(data.datatype, self.formats)):
             for ext in self.extensions:
                 rval = data.get_converted_files_by_type(ext)
@@ -261,7 +261,7 @@ class DisplayDataValueWrapper(DisplayParameterValueWrapper):
 
     def __str__(self):
         # string of data param is filename
-        return str(self.value.file_name)
+        return str(self.value.get_file_name())
 
     def mime_type(self, action_param_extra=None):
         if self.parameter.mime_type is not None:

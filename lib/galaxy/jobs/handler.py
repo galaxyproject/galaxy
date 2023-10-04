@@ -767,7 +767,7 @@ class JobHandlerQueue(BaseJobHandlerQueue):
             # don't run jobs for which the input dataset was deleted
             if idata.deleted:
                 self.job_wrappers.pop(job.id, self.job_wrapper(job)).fail(
-                    f"input data {idata.hid} (file: {idata.file_name}) was deleted before the job started"
+                    f"input data {idata.hid} (file: {idata.get_file_name()}) was deleted before the job started"
                 )
                 return JOB_INPUT_DELETED
             # an error in the input data causes us to bail immediately
