@@ -1007,10 +1007,12 @@ export interface components {
             /** Email */
             email: string
         }
-        /** User */
-        User: {
+        /** UserV2 */
+        UserV2: {
             /** Id */
             id: string
+            /** Is Admin */
+            is_admin: boolean
             /** Username */
             username: string
         }
@@ -1786,7 +1788,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["User"][]
+                    "application/json": components["schemas"]["UserV2"][]
                 }
             }
         }
@@ -1805,7 +1807,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["User"]
+                    "application/json": components["schemas"]["UserV2"]
                 }
             }
             /** @description Validation Error */
@@ -1825,7 +1827,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["User"]
+                    "application/json": components["schemas"]["UserV2"]
                 }
             }
         }
@@ -1845,7 +1847,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["User"]
+                    "application/json": components["schemas"]["UserV2"]
                 }
             }
             /** @description Validation Error */

@@ -34,7 +34,7 @@ from tool_shed.structured_app import ToolShedApp
 from tool_shed.webapp.model import User as SaUser
 from tool_shed_client.schema import (
     CreateUserRequest,
-    User,
+    UserV2 as User,
 )
 from . import (
     depends,
