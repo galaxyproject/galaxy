@@ -62,7 +62,7 @@ log = logging.getLogger(__name__)
 def inject_validates(inject):
     if inject == "api_key":
         return True
-    elif inject == "entry_point_path":
+    elif inject == "entry_point_path_for_label":
         return True
     p = re.compile("^oidc_(id|access|refresh)_token_(.*)$")
     match = p.match(inject)
@@ -234,10 +234,10 @@ class XmlToolSource(ToolSource):
             inject = environment_variable_el.get("inject")
             if inject:
                 assert inject_validates(inject)
-            if inject == "entry_point_path":
+            if inject == "entry_point_path_for_label":
                 assert (
                     template
-                ), 'Environment variable value must contain entry point label when inject="entry_point_path".'
+                ), 'Environment variable value must contain entry point label when inject="entry_point_path_for_label".'
             else:
                 assert not (template and inject), "Cannot specify inject and environment variable template."
             definition = {
