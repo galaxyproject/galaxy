@@ -1882,3 +1882,21 @@ def enum_values(enum_class):
     Values are in member definition order.
     """
     return [value.value for value in enum_class.__members__.values()]
+
+
+def hex_to_lowercase_alphanum(hex_string: str) -> str:
+    """
+    Convert a hexadecimal string encoding into a lowercase 36-base alphanumeric string using the
+    characters a-z and 0-9
+    """
+    import numpy as np
+    return np.base_repr(int(hex_string, 16), 36).lower()
+
+
+def lowercase_alphanum_to_hex(lowercase_alphanum: str) -> str:
+    """
+    Convert a lowercase 36-base alphanumeric string encoding using the characters a-z and 0-9 to a
+    hexadecimal string
+    """
+    import numpy as np
+    return np.base_repr(int(lowercase_alphanum, 36), 16).lower()

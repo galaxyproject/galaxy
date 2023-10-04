@@ -13,6 +13,7 @@ from galaxy.model import (
     Job,
 )
 from galaxy.model.base import transaction
+from galaxy.security.idencoding import IdAsLowercaseAlphanumEncodingHelper
 from galaxy.util.filelock import FileLock
 
 log = logging.getLogger(__name__)
@@ -163,7 +164,8 @@ class InteractiveToolManager:
         self.security = app.security
         self.sa_session = app.model.context
         self.job_manager = app.job_manager
-        self.propagator = InteractiveToolSqlite(app.config.interactivetools_map, app.security.encode_id)
+        self.encoder = IdAsLowercaseAlphanumEncodingHelper(app.security)
+        self.propagator = InteractiveToolSqlite(app.config.interactivetools_map, self.encoder.encode_id)
 
     def create_entry_points(self, job, tool, entry_points=None, flush=True):
         entry_points = entry_points or tool.ports
@@ -177,7 +179,6 @@ class InteractiveToolManager:
                 requires_domain=entry["requires_domain"],
                 requires_path_in_url=entry["requires_path_in_url"],
                 requires_path_in_header_named=entry["requires_path_in_header_named"],
-                short_token=self.app.config.interactivetools_shorten_url,
             )
             self.sa_session.add(ep)
         if flush:
@@ -310,26 +311,24 @@ class InteractiveToolManager:
                     rval = f"{protocol}//{request_host}{rval}"
             return rval
 
+    def _get_entry_point_url_elements(self, trans, entry_point):
+        encoder = IdAsLowercaseAlphanumEncodingHelper(trans.security)
+        ep_encoded_id = encoder.encode_id(entry_point.id)
+        ep_class_id = entry_point.class_id
+        ep_prefix = self.app.config.interactivetools_prefix
+        ep_token = entry_point.token
+        return ep_encoded_id, ep_class_id, ep_prefix, ep_token
+
     def get_entry_point_subdomain(self, trans, entry_point):
-        entry_point_encoded_id = trans.security.encode_id(entry_point.id)
-        entry_point_class = entry_point.__class__.__name__.lower()
-        entry_point_prefix = self.app.config.interactivetools_prefix
-        entry_point_token = entry_point.token
-        if self.app.config.interactivetools_shorten_url:
-            return f"{entry_point_encoded_id}-{entry_point_token[:10]}.{entry_point_prefix}"
-        return f"{entry_point_encoded_id}-{entry_point_token}.{entry_point_class}.{entry_point_prefix}"
+        ep_encoded_id, ep_class_id, ep_prefix, ep_token = self._get_entry_point_url_elements(trans, entry_point)
+        return f"{ep_encoded_id}-{ep_token}.{ep_class_id}.{ep_prefix}"
 
     def get_entry_point_path(self, trans, entry_point):
-        entry_point_encoded_id = trans.security.encode_id(entry_point.id)
-        entry_point_class = entry_point.__class__.__name__.lower()
-        entry_point_prefix = self.app.config.interactivetools_prefix
+        ep_encoded_id, ep_class_id, ep_prefix, ep_token = self._get_entry_point_url_elements(trans, entry_point)
         rval = "/"
         if not entry_point.requires_domain:
             rval = str(self.app.config.interactivetools_base_path).rstrip("/").lstrip("/")
-            if self.app.config.interactivetools_shorten_url:
-                rval = f"/{rval}/{entry_point_prefix}/{entry_point_encoded_id}/{entry_point.token[:10]}/"
-            else:
-                rval = f"/{rval}/{entry_point_prefix}/access/{entry_point_class}/{entry_point_encoded_id}/{entry_point.token}/"
+            rval = f"/{rval}/{ep_prefix}/{ep_class_id}/{ep_encoded_id}/{ep_token}/"
         if entry_point.entry_url:
             rval = f"{rval.rstrip('/')}/{entry_point.entry_url.lstrip('/')}"
         rval = "/" + rval.lstrip("/")

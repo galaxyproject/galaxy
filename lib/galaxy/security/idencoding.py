@@ -13,6 +13,8 @@ import galaxy.exceptions
 from galaxy.util import (
     smart_str,
     unicodify,
+    hex_to_lowercase_alphanum,
+    lowercase_alphanum_to_hex,
 )
 
 log = logging.getLogger(__name__)
@@ -146,3 +148,18 @@ def _last_bits(secret):
     if len(last_bits) > MAXIMUM_ID_SECRET_LENGTH:
         last_bits = last_bits[-MAXIMUM_ID_SECRET_LENGTH:]
     return last_bits
+
+
+class IdAsLowercaseAlphanumEncodingHelper:
+    """
+    Helper class to encode IDs as lowercase alphanumeric strings, and vice versa
+    """
+
+    def __init__(self, security: IdEncodingHelper):
+        self.security = security
+
+    def encode_id(self, id: int) -> str:
+        return hex_to_lowercase_alphanum(self.security.encode_id(id))
+
+    def decode_id(self, id: str) -> int:
+        return self.security.decode_id(lowercase_alphanum_to_hex(id).rjust(16, "0"))
