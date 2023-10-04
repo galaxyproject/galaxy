@@ -303,6 +303,20 @@ $min-height: 1.5em;
     &:deep(p) {
         margin-bottom: 0.5rem;
     }
+
+    &:deep(blockquote) {
+        padding-left: 0.5rem;
+        border-left: 2px solid var(--primary-colour);
+        margin-bottom: 0.5rem;
+
+        p {
+            margin-bottom: 0;
+        }
+    }
+
+    &:deep(a) {
+        text-decoration: underline;
+    }
 }
 
 .resize-container {
