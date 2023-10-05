@@ -940,19 +940,8 @@ def populate_api_routes(webapp, app):
         conditions=dict(method=["GET"]),
     )
     webapp.mapper.connect(
-        "resume", "/api/jobs/{id}/resume", controller="jobs", action="resume", conditions=dict(method=["PUT"])
-    )
-    webapp.mapper.connect(
         "job_error", "/api/jobs/{id}/error", controller="jobs", action="error", conditions=dict(method=["POST"])
     )
-    # webapp.mapper.connect(
-    #     "common_problems",
-    #     "/api/jobs/{id}/common_problems",
-    #     controller="jobs",
-    #     action="common_problems",
-    #     conditions=dict(method=["GET"]),
-    # )
-    # Job metrics and parameters by job id or dataset id (for slightly different accessibility checking)
     webapp.mapper.connect(
         "destination_params",
         "/api/jobs/{job_id}/destination_params",
