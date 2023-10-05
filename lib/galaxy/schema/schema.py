@@ -3631,8 +3631,3 @@ class DatasetSummary(Model):
     file_size: int
     total_size: int
     uuid: UUID4 = UuidField
-
-
-class JobInputSummary(Model):
-    has_empty_inputs: bool
-    has_duplicate_inputs: bool
