@@ -18,8 +18,11 @@ from galaxy.managers.jobs import (
     view_show_job,
 )
 from galaxy.schema.fields import DecodedDatabaseIdField
-from galaxy.schema.schema import EncodedDatasetSourceId, JobIndexQueryPayload
 from galaxy.schema.jobs import JobAssociation
+from galaxy.schema.schema import (
+    EncodedDatasetSourceId,
+    JobIndexQueryPayload,
+)
 
 
 class JobIndexViewEnum(str, Enum):
@@ -114,7 +117,7 @@ class JobsService:
         return dataset_instance
 
     def dictify_associations(self, trans, *association_lists) -> List[JobAssociation]:
-        rval: List[dict] = []
+        rval: List[JobAssociation] = []
         for association_list in association_lists:
             rval.extend(self.__dictify_association(trans, a) for a in association_list)
         return rval
