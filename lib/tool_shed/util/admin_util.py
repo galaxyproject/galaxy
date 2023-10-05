@@ -438,8 +438,7 @@ class Admin:
                 message = "Enter a valid name"
                 status = "error"
             else:
-                existing_group = get_group_by_name(trans.sa_session, trans.app.model.Group, new_name)
-                if existing_group and existing_group.id != group.id:
+                if get_group_id(trans.sa_session, trans.app.model.Group, new_name) != group.id:
                     message = "A group with that name already exists"
                     status = "error"
                 else:
@@ -530,7 +529,7 @@ class Admin:
                 message = "Enter a valid name."
                 status = "error"
                 ok = False
-            elif get_group_by_name(trans.sa_session, trans.app.model.Group, name):
+            elif get_group_id(trans.sa_session, trans.app.model.Group, name):
                 message = (
                     "Group names must be unique and a group with that name already exists, so choose another name."
                 )
@@ -1017,8 +1016,8 @@ def get_role_id(session, role_model, name):
     return session.scalars(stmt).first()
 
 
-def get_group_by_name(session, group_model, name):
-    stmt = select(group_model).where(group_model.name == name).limit(1)
+def get_group_id(session, group_model, name):
+    stmt = select(group_model.id).where(group_model.name == name).limit(1)
     return session.scalars(stmt).first()
 
 
