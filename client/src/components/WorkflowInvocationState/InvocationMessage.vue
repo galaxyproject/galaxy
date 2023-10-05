@@ -146,6 +146,9 @@ const infoString = computed(() => {
             invocationMessage.workflow_step_id + 1
         } is a conditional step and the result of the when expression is not a boolean type.`;
     } else if (reason === "unexpected_failure") {
+        if (invocationMessage.details) {
+            return `${failFragment} an unexpected failure occurred: '${invocationMessage.details}'`;
+        }
         return `${failFragment} an unexpected failure occurred.`;
     } else if (reason === "workflow_output_not_found") {
         return `Defined workflow output '${invocationMessage.output_name}' was not found in step ${
