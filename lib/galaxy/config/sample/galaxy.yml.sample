@@ -333,9 +333,12 @@ gravity:
     # names.
     # environment: {}
 
-  # Configure dynamic handlers in this section.
+  # Configure dynamic handlers in this section. Below is a simple example
   # See https://docs.galaxyproject.org/en/latest/admin/scaling.html#dynamically-defined-handlers for details.
-  # handlers: {}
+  #handlers:
+  #  handler:
+  #    processes: 3
+
 galaxy:
 
   # The directory that will be prepended to relative paths in options
