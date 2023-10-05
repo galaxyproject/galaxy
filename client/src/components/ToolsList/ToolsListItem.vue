@@ -20,7 +20,7 @@ library.add(faWrench, faExternalLinkAlt, faCheck, faTimes, faAngleDown, faAngleU
 const props = defineProps({
     id: { type: String, required: true },
     name: { type: String, required: true },
-    section: { type: String, required: true },
+    section: { type: String, required: false, default: null },
     description: { type: String, default: null },
     summary: { type: String, default: null },
     help: { type: String, default: null },

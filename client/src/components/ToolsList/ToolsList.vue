@@ -86,6 +86,10 @@ export default {
             type: String,
             default: "",
         },
+        inputs: {
+            type: String,
+            default: "",
+        },
         help: {
             type: String,
             default: "",

@@ -57,6 +57,7 @@ from whoosh.scoring import (
 from whoosh.writing import AsyncWriter
 
 from galaxy.config import GalaxyAppConfiguration
+from galaxy.tools.parameters.basic import BaseDataToolParameter
 from galaxy.util import ExecutionTimer
 from galaxy.web.framework.helpers import to_unicode
 
@@ -169,6 +170,8 @@ class ToolPanelViewSearch:
             # Help text parsed from the tool XML
             "help": TEXT(field_boost=config.tool_help_boost, analyzer=analysis.StemmingAnalyzer()),
             "labels": KEYWORD(field_boost=float(config.tool_label_boost)),
+            # Input parameters defined in the tool XML, converted into a list in _create_doc
+            "inputs": KEYWORD(field_boost=float(config.tool_label_boost)),
         }
 
         if config.tool_enable_ngram_search:
@@ -297,6 +300,7 @@ class ToolPanelViewSearch:
             "repository": to_unicode(tool.repository_name),
             "owner": to_unicode(tool.repository_owner),
             "help": to_unicode(""),
+            "inputs": to_unicode(""),
         }
         if tool.guid:
             # Create a stub consisting of owner, repo, and tool from guid
@@ -305,6 +309,13 @@ class ToolPanelViewSearch:
             add_doc_kwds["stub"] = clean(id_stub)
         else:
             add_doc_kwds["stub"] = to_unicode(id)
+        if tool.inputs:
+            input_extensions = set()
+            for tool_input in tool.inputs.values():
+                if isinstance(tool_input, BaseDataToolParameter):
+                    for extension in tool_input.extensions:
+                        input_extensions.add(extension)
+            add_doc_kwds["inputs"] = to_unicode(" ".join(input_extensions))
         if tool.labels:
             add_doc_kwds["labels"] = to_unicode(" ".join(tool.labels))
         if index_help:
@@ -346,6 +357,7 @@ class ToolPanelViewSearch:
             "owner",
             "help",
             "labels",
+            "inputs",
             "stub",
         ]
         self.parser = MultifieldParser(
