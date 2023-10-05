@@ -141,9 +141,9 @@ class Admin:
                     web.url_for(controller="admin", action="roles", message=util.sanitize_text(message), status="done")
                 )
         if ok:
-            for user in get_not_deleted_users(trans.sa_session, trans.app.model.User):
+            for user in get_current_users(trans.sa_session, trans.app.model.User):
                 out_users.append((user.id, user.email))
-            for group in get_not_deleted_groups(trans.sa_session, trans.app.model.Group):
+            for group in get_current_groups(trans.sa_session, trans.app.model.Group):
                 out_groups.append((group.id, group.name))
         return trans.fill_template(
             "/webapps/tool_shed/admin/dataset_security/role/role_create.mako",
@@ -244,12 +244,12 @@ class Admin:
         out_users = []
         in_groups = []
         out_groups = []
-        for user in get_not_deleted_users(trans.sa_session, trans.app.model.User):
+        for user in get_current_users(trans.sa_session, trans.app.model.User):
             if user in [x.user for x in role.users]:
                 in_users.append((user.id, user.email))
             else:
                 out_users.append((user.id, user.email))
-        for group in get_not_deleted_groups(trans.sa_session, trans.app.model.Group):
+        for group in get_current_groups(trans.sa_session, trans.app.model.Group):
             if group in [x.group for x in role.groups]:
                 in_groups.append((group.id, group.name))
             else:
@@ -484,12 +484,12 @@ class Admin:
         out_roles = []
         in_users = []
         out_users = []
-        for role in get_not_deleted_roles(trans.sa_session, trans.app.model.Role):
+        for role in get_current_roles(trans.sa_session, trans.app.model.Role):
             if role in [x.role for x in group.roles]:
                 in_roles.append((role.id, role.name))
             else:
                 out_roles.append((role.id, role.name))
-        for user in get_not_deleted_users(trans.sa_session, trans.app.model.User):
+        for user in get_current_users(trans.sa_session, trans.app.model.User):
             if user in [x.user for x in group.users]:
                 in_users.append((user.id, user.email))
             else:
@@ -574,9 +574,9 @@ class Admin:
                     web.url_for(controller="admin", action="groups", message=util.sanitize_text(message), status="done")
                 )
         if ok:
-            for user in get_not_deleted_users(trans.sa_session, trans.app.model.User):
+            for user in get_current_users(trans.sa_session, trans.app.model.User):
                 out_users.append((user.id, user.email))
-            for role in get_not_deleted_roles(trans.sa_session, trans.app.model.Role):
+            for role in get_current_roles(trans.sa_session, trans.app.model.Role):
                 out_roles.append((role.id, role.name))
         return trans.fill_template(
             "/webapps/tool_shed/admin/dataset_security/group/group_create.mako",
@@ -947,7 +947,7 @@ class Admin:
         out_roles = []
         in_groups = []
         out_groups = []
-        for role in get_not_deleted_roles(trans.sa_session, trans.app.model.Role):
+        for role in get_current_roles(trans.sa_session, trans.app.model.Role):
             if role in [x.role for x in user.roles]:
                 in_roles.append((role.id, role.name))
             elif role.type != trans.app.model.Role.types.PRIVATE:
@@ -956,7 +956,7 @@ class Admin:
                 # role, which should always be in in_roles.  The check above is added as an additional
                 # precaution, since for a period of time we were including private roles in the form fields.
                 out_roles.append((role.id, role.name))
-        for group in get_not_deleted_groups(trans.sa_session, trans.app.model.Group):
+        for group in get_current_groups(trans.sa_session, trans.app.model.Group):
             if group in [x.group for x in user.groups]:
                 in_groups.append((group.id, group.name))
             else:
@@ -1021,17 +1021,17 @@ def get_group_id(session, group_model, name):
     return session.scalars(stmt).first()
 
 
-def get_not_deleted_users(session, user_model):
+def get_current_users(session, user_model):
     stmt = select(user_model).where(user_model.deleted == false()).order_by(user_model.email)
     return session.scalars(stmt)
 
 
-def get_not_deleted_groups(session, group_model):
+def get_current_groups(session, group_model):
     stmt = select(group_model).where(group_model.deleted == false()).order_by(group_model.name)
     return session.scalars(stmt)
 
 
-def get_not_deleted_roles(session, role_model):
+def get_current_roles(session, role_model):
     stmt = select(role_model).where(role_model.deleted == false()).order_by(role_model.name)
     return session.scalars(stmt)
 
