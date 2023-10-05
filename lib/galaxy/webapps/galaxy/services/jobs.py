@@ -2,6 +2,7 @@ from enum import Enum
 from typing import (
     Any,
     Dict,
+    List,
     Optional,
 )
 
@@ -17,7 +18,8 @@ from galaxy.managers.jobs import (
     view_show_job,
 )
 from galaxy.schema.fields import DecodedDatabaseIdField
-from galaxy.schema.schema import JobIndexQueryPayload
+from galaxy.schema.schema import EncodedDatasetSourceId, JobIndexQueryPayload
+from galaxy.schema.jobs import JobAssociation
 
 
 class JobIndexViewEnum(str, Enum):
@@ -110,3 +112,19 @@ class JobsService:
                 dataset_instance = self.hda_manager.ldda_manager.get(trans, id=dataset_id)
         # TODO Raise error if no ID passed? Never happens when called from Job API endpoints
         return dataset_instance
+
+    def dictify_associations(self, trans, *association_lists) -> List[JobAssociation]:
+        rval: List[dict] = []
+        for association_list in association_lists:
+            rval.extend(self.__dictify_association(trans, a) for a in association_list)
+        return rval
+
+    def __dictify_association(self, trans, job_dataset_association) -> JobAssociation:
+        dataset_dict = None
+        dataset = job_dataset_association.dataset
+        if dataset:
+            if isinstance(dataset, model.HistoryDatasetAssociation):
+                dataset_dict = EncodedDatasetSourceId(src="hda", id=dataset.id)
+            else:
+                dataset_dict = EncodedDatasetSourceId(src="ldda", id=dataset.id)
+        return JobAssociation(name=job_dataset_association.name, dataset=dataset_dict)
