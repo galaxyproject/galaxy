@@ -100,7 +100,7 @@ class Admin:
                 message = "Enter a valid name and a description."
                 status = "error"
                 ok = False
-            elif get_role_by_name(trans.sa_session, trans.app.model.Role, name):
+            elif get_role_id(trans.sa_session, trans.app.model.Role, name):
                 message = "Role names must be unique and a role with that name already exists, so choose another name."
                 status = "error"
                 ok = False
@@ -179,8 +179,7 @@ class Admin:
                 message = "Enter a valid name"
                 status = "error"
             else:
-                existing_role = get_role_by_name(trans.sa_session, trans.app.model.Role, new_name)
-                if existing_role and existing_role.id != role.id:
+                if get_role_id(trans.sa_session, trans.app.model.Role, new_name) != role.id:
                     message = "A role with that name already exists"
                     status = "error"
                 else:
@@ -1013,8 +1012,8 @@ def get_group(trans, id):
     return group
 
 
-def get_role_by_name(session, role_model, name):
-    stmt = select(role_model).where(role_model.name == name).limit(1)
+def get_role_id(session, role_model, name):
+    stmt = select(role_model.id).where(role_model.name == name).limit(1)
     return session.scalars(stmt).first()
 
 
