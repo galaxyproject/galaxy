@@ -41,7 +41,10 @@ from galaxy.managers.jobs import (
     summarize_job_parameters,
 )
 from galaxy.schema.fields import DecodedDatabaseIdField
-from galaxy.schema.jobs import JobAssociation, JobInputSummary
+from galaxy.schema.jobs import (
+    JobAssociation,
+    JobInputSummary,
+)
 from galaxy.schema.schema import JobIndexSortByEnum
 from galaxy.schema.types import OffsetNaiveDatetime
 from galaxy.web import (

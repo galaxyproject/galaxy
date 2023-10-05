@@ -1,4 +1,7 @@
-from galaxy.schema.schema import EncodedDatasetSourceId, Model
+from galaxy.schema.schema import (
+    EncodedDatasetSourceId,
+    Model,
+)
 
 
 class JobInputSummary(Model):
