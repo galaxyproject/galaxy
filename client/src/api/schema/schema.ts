@@ -908,6 +908,10 @@ export interface paths {
         /** Check inputs and job for common potential problems to aid in error reporting */
         get: operations["check_common_problems_api_jobs__id__common_problems_get"];
     };
+    "/api/jobs/{id}/resume": {
+        /** Resumes a paused job. */
+        put: operations["resume_paused_job_api_jobs__id__resume_put"];
+    };
     "/api/jobs/{job_id}/oidc-tokens": {
         /**
          * Get a fresh OIDC token
@@ -6110,6 +6114,15 @@ export interface components {
          * @enum {string}
          */
         ItemsFromSrc: "url" | "files" | "path" | "ftp_import" | "server_dir";
+        /**
+         * JobAssociation
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        JobAssociation: {
+            dataset: components["schemas"]["EncodedDatasetSourceId"];
+            /** Name */
+            name: string;
+        };
         /**
          * JobExportHistoryArchiveListResponse
          * @description Base model definition with common configuration used by all derived models.
@@ -14724,7 +14737,7 @@ export interface operations {
             header?: {
                 "run-as"?: string;
             };
-            /** @description TODO */
+            /** @description The ID of the job */
             path: {
                 id: string;
             };
@@ -14734,6 +14747,33 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["JobInputSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resume_paused_job_api_jobs__id__resume_put: {
+        /** Resumes a paused job. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The ID of the job */
+            path: {
+                id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["JobAssociation"][];
                 };
             };
             /** @description Validation Error */
