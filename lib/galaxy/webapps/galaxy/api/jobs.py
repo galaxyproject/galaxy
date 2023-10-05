@@ -41,10 +41,8 @@ from galaxy.managers.jobs import (
     summarize_job_parameters,
 )
 from galaxy.schema.fields import DecodedDatabaseIdField
-from galaxy.schema.schema import (
-    JobIndexSortByEnum,
-    JobInputSummary,
-)
+from galaxy.schema.jobs import JobAssociation, JobInputSummary
+from galaxy.schema.schema import JobIndexSortByEnum
 from galaxy.schema.types import OffsetNaiveDatetime
 from galaxy.web import (
     expose_api,
@@ -171,7 +169,7 @@ SearchQueryParam: Optional[str] = search_query_param(
     free_text_fields=["user", "tool", "handler", "runner"],
 )
 
-JobIdPathParam: DecodedDatabaseIdField = Path(title="Job ID", description="TODO")
+JobIdPathParam: DecodedDatabaseIdField = Path(title="Job ID", description="The ID of the job")
 
 
 @router.cbv
@@ -264,10 +262,30 @@ class FastAPIJobs:
         # TODO: sniff inputs (add flag to allow checking files?)
         return JobInputSummary(has_empty_inputs=has_empty_inputs, has_duplicate_inputs=has_duplicate_inputs)
 
+    @router.put(
+        "/api/jobs/{id}/resume",
+        name="resume_paused_job",
+        summary="Resumes a paused job.",
+    )
+    def resume(
+        self,
+        id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> List[JobAssociation]:
+        job = self.service.get_job(trans, job_id=id)
+        if not job:
+            raise exceptions.ObjectNotFound("Could not access job with the given id")
+        if job.state == job.states.PAUSED:
+            job.resume()
+        else:
+            exceptions.RequestParameterInvalidException(f"Job with id '{job.tool_id}' is not paused")
+        return self.service.dictify_associations(trans, job.output_datasets, job.output_library_datasets)
+
 
 class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
     job_manager = depends(JobManager)
     job_search = depends(JobSearch)
+    service = depends(JobsService)
     hda_manager = depends(hdas.HDAManager)
 
     @expose_api
@@ -318,27 +336,6 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
         job = self.__get_job(trans, id)
         message = payload.get("message", None)
         return self.job_manager.stop(job, message=message)
-
-    @expose_api
-    def resume(self, trans: ProvidesUserContext, id, **kwd) -> List[dict]:
-        """
-        * PUT /api/jobs/{id}/resume
-            Resumes a paused job
-
-        :type   id: string
-        :param  id: Encoded job id
-
-        :rtype:     list of dicts
-        :returns:   list of dictionaries containing output dataset associations
-        """
-        job = self.__get_job(trans, id)
-        if not job:
-            raise exceptions.ObjectNotFound("Could not access job with the given id")
-        if job.state == job.states.PAUSED:
-            job.resume()
-        else:
-            exceptions.RequestParameterInvalidException(f"Job with id '{job.tool_id}' is not paused")
-        return self.__dictify_associations(trans, job.output_datasets, job.output_library_datasets)
 
     @expose_api_anonymous
     def metrics(self, trans: ProvidesUserContext, **kwd):
