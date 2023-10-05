@@ -1,3 +1,4 @@
+import json
 import logging
 import sqlite3
 
@@ -138,7 +139,12 @@ class InteractiveToolSqlite:
             entry_point.token,
             entry_point.host,
             entry_point.port,
-            None,
+            json.dumps(
+                {
+                    "requires_path_in_url": entry_point.requires_path_in_url,
+                    "requires_path_in_header_named": entry_point.requires_path_in_header_named,
+                }
+            ),
         )
 
     def remove_entry_point(self, entry_point):

@@ -3,7 +3,7 @@
         <container type="docker">quay.io/bgruening/docker-jupyter-notebook:2021-03-05</container>
     </requirements>
     <entry_points>
-        <entry_point name="JupyTool interactive tool" label="jupytool" requires_domain="False">
+        <entry_point name="JupyTool interactive tool" label="jupytool" requires_domain="False" requires_path_in_url="True">
             <port>8888</port>
             <url>ipython/lab</url>
         </entry_point>
