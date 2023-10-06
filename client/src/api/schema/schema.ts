@@ -451,9 +451,14 @@ export interface paths {
          */
         delete: operations["delete_api_groups__group_id__users__user_id__delete"];
     };
-    "/api/help/search": {
-        /** Search the Galaxy Help forum. */
-        get: operations["search_forum_api_help_search_get"];
+    "/api/help/forum/search": {
+        /**
+         * Search the Galaxy Help forum.
+         * @description Search the Galaxy Help forum using the Discourse API.
+         *
+         * **Note**: This endpoint is for **INTERNAL USE ONLY** and is not part of the public Galaxy API.
+         */
+        get: operations["search_forum_api_help_forum_search_get"];
     };
     "/api/histories": {
         /** Returns histories for the current user. */
@@ -5627,7 +5632,53 @@ export interface components {
          * HelpForumPost
          * @description Model for a post in the help forum.
          */
-        HelpForumPost: Record<string, never>;
+        HelpForumPost: {
+            /**
+             * Avatar Template
+             * @description The avatar template of the user.
+             */
+            avatar_template: string;
+            /**
+             * Blurb
+             * @description The blurb of the post.
+             */
+            blurb: string;
+            /**
+             * Created At
+             * @description The creation date of the post.
+             */
+            created_at: string;
+            /**
+             * Id
+             * @description The ID of the post.
+             */
+            id: number;
+            /**
+             * Like Count
+             * @description The number of likes of the post.
+             */
+            like_count: number;
+            /**
+             * Name
+             * @description The name of the post.
+             */
+            name: string;
+            /**
+             * Post Number
+             * @description The post number of the post.
+             */
+            post_number: number;
+            /**
+             * Topic Id
+             * @description The ID of the topic of the post.
+             */
+            topic_id: number;
+            /**
+             * Username
+             * @description The username of the post author.
+             */
+            username: string;
+        };
         /**
          * HelpForumTag
          * @description Model for a tag in the help forum.
@@ -5652,7 +5703,7 @@ export interface components {
              * Bookmarked
              * @description Whether the topic is bookmarked.
              */
-            bookmarked: boolean;
+            bookmarked?: boolean;
             /**
              * Bumped
              * @description Whether the topic was bumped.
@@ -5707,7 +5758,7 @@ export interface components {
              * Liked
              * @description Whether the topic is liked.
              */
-            liked: boolean;
+            liked?: boolean;
             /**
              * Pinned
              * @description Whether the topic is pinned.
@@ -5737,7 +5788,7 @@ export interface components {
              * Tags Descriptions
              * @description The descriptions of the tags of the topic.
              */
-            tags_descriptions: string[];
+            tags_descriptions?: Record<string, never>;
             /**
              * Title
              * @description The title of the topic.
@@ -5747,7 +5798,7 @@ export interface components {
              * Unpinned
              * @description Whether the topic is unpinned.
              */
-            unpinned: boolean;
+            unpinned?: boolean;
             /**
              * Unseen
              * @description Whether the topic is unseen.
@@ -12232,14 +12283,17 @@ export interface operations {
             };
         };
     };
-    search_forum_api_help_search_get: {
-        /** Search the Galaxy Help forum. */
+    search_forum_api_help_forum_search_get: {
+        /**
+         * Search the Galaxy Help forum.
+         * @description Search the Galaxy Help forum using the Discourse API.
+         *
+         * **Note**: This endpoint is for **INTERNAL USE ONLY** and is not part of the public Galaxy API.
+         */
         parameters: {
-            /** @description Search term to use for searching the Galaxy Help forum. */
-            /** @description List of tags to filter the search results by. */
+            /** @description Search query to use for searching the Galaxy Help forum. */
             query: {
-                term: string;
-                tags: string[];
+                query: string;
             };
         };
         responses: {
