@@ -4,7 +4,7 @@ from typing import List
 from fastapi import Query
 from typing_extensions import Annotated
 
-from galaxy.schema.help import HelpSearchResponse
+from galaxy.schema.help import HelpForumSearchResponse
 from galaxy.webapps.galaxy.services.help import HelpService
 from . import (
     depends,
@@ -28,7 +28,7 @@ class HelpAPI:
     def search_forum(
         self,
         query: Annotated[str, Query(description="Search query to use for searching the Galaxy Help forum.")],
-    ) -> HelpSearchResponse:
+    ) -> HelpForumSearchResponse:
         """Search the Galaxy Help forum using the Discourse API.
 
         **Note**: This endpoint is for **INTERNAL USE ONLY** and is not part of the public Galaxy API.

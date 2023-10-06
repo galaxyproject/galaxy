@@ -5,7 +5,7 @@ import requests
 
 from galaxy.config import GalaxyAppConfiguration
 from galaxy.exceptions import ServerNotConfiguredForRequest
-from galaxy.schema.help import HelpSearchResponse
+from galaxy.schema.help import HelpForumSearchResponse
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.webapps.galaxy.services.base import ServiceBase
 
@@ -27,7 +27,7 @@ class HelpService(ServiceBase):
         super().__init__(security)
         self.config = config
 
-    def search_forum(self, query: str) -> HelpSearchResponse:
+    def search_forum(self, query: str) -> HelpForumSearchResponse:
         """Search the Galaxy Help forum using the Discourse API."""
         if not self.config.help_forum_api_url:
             raise ServerNotConfiguredForRequest("Help forum API URL is not configured.")
@@ -38,4 +38,4 @@ class HelpService(ServiceBase):
                 "q": query,
             },
         )
-        return HelpSearchResponse(**response.json())
+        return HelpForumSearchResponse(**response.json())

@@ -86,13 +86,13 @@ class HelpForumGroup(HelpTempBaseModel):
     pass
 
 
-class GroupedSearchResult(HelpTempBaseModel):
+class HelpForumGroupedSearchResult(HelpTempBaseModel):
     """Model for a grouped search result."""
 
     pass
 
 
-class HelpSearchResponse(Model):
+class HelpForumSearchResponse(Model):
     """Response model for the help search API endpoint.
 
     This model is based on the Discourse API response for the search endpoint.
@@ -104,4 +104,4 @@ class HelpSearchResponse(Model):
     categories: Optional[List[HelpForumCategory]]
     tags: Optional[List[HelpForumTag]]
     groups: Optional[List[HelpForumGroup]]
-    grouped_search_result: Optional[GroupedSearchResult]
+    grouped_search_result: Optional[HelpForumGroupedSearchResult]

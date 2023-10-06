@@ -4780,11 +4780,6 @@ export interface components {
             url: string;
         };
         /**
-         * GroupedSearchResult
-         * @description Model for a grouped search result.
-         */
-        GroupedSearchResult: Record<string, never>;
-        /**
          * HDADetailed
          * @description History Dataset Association detailed information.
          */
@@ -5629,6 +5624,11 @@ export interface components {
          */
         HelpForumGroup: Record<string, never>;
         /**
+         * HelpForumGroupedSearchResult
+         * @description Model for a grouped search result.
+         */
+        HelpForumGroupedSearchResult: Record<string, never>;
+        /**
          * HelpForumPost
          * @description Model for a post in the help forum.
          */
@@ -5678,6 +5678,27 @@ export interface components {
              * @description The username of the post author.
              */
             username: string;
+        };
+        /**
+         * HelpForumSearchResponse
+         * @description Response model for the help search API endpoint.
+         *
+         * This model is based on the Discourse API response for the search endpoint.
+         */
+        HelpForumSearchResponse: {
+            /** Categories */
+            categories?: components["schemas"]["HelpForumCategory"][];
+            grouped_search_result?: components["schemas"]["HelpForumGroupedSearchResult"];
+            /** Groups */
+            groups?: components["schemas"]["HelpForumGroup"][];
+            /** Posts */
+            posts?: components["schemas"]["HelpForumPost"][];
+            /** Tags */
+            tags?: components["schemas"]["HelpForumTag"][];
+            /** Topics */
+            topics?: components["schemas"]["HelpForumTopic"][];
+            /** Users */
+            users?: components["schemas"]["HelpForumUser"][];
         };
         /**
          * HelpForumTag
@@ -5815,27 +5836,6 @@ export interface components {
          * @description Model for a user in the help forum.
          */
         HelpForumUser: Record<string, never>;
-        /**
-         * HelpSearchResponse
-         * @description Response model for the help search API endpoint.
-         *
-         * This model is based on the Discourse API response for the search endpoint.
-         */
-        HelpSearchResponse: {
-            /** Categories */
-            categories?: components["schemas"]["HelpForumCategory"][];
-            grouped_search_result?: components["schemas"]["GroupedSearchResult"];
-            /** Groups */
-            groups?: components["schemas"]["HelpForumGroup"][];
-            /** Posts */
-            posts?: components["schemas"]["HelpForumPost"][];
-            /** Tags */
-            tags?: components["schemas"]["HelpForumTag"][];
-            /** Topics */
-            topics?: components["schemas"]["HelpForumTopic"][];
-            /** Users */
-            users?: components["schemas"]["HelpForumUser"][];
-        };
         /**
          * HistoryContentBulkOperationPayload
          * @description Base model definition with common configuration used by all derived models.
@@ -12300,7 +12300,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["HelpSearchResponse"];
+                    "application/json": components["schemas"]["HelpForumSearchResponse"];
                 };
             };
             /** @description Validation Error */
