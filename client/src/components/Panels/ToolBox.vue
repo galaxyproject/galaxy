@@ -183,7 +183,7 @@ export default {
             const Galaxy = getGalaxyInstance();
             this.results = results;
             if (!this.hasResults) {
-                Galaxy.Sentry.captureMessage("ClientSearchMiss", {
+                Galaxy.Sentry?.captureMessage("ClientSearchMiss", {
                     extra: {
                         query: this.query,
                     },
