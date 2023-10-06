@@ -93,7 +93,7 @@ pykwalify = "*"
 pylibmagic = "*"
 pyparsing = "*"
 pysam = ">=0.21"  # for Python 3.11 support on macOS
-python = ">=3.8,<3.12"  # Keep maximum version strict to appease numpy and scipy
+python = ">=3.8,<3.13"  # Keep maximum version strict to appease numpy and scipy
 python-dateutil = "*"
 python-magic = "*"
 python-multipart = "*"  # required to support form parsing in FastAPI/Starlette
