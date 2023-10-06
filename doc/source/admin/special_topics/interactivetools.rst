@@ -62,7 +62,7 @@ The following configuration is only recommended for local testing, as users will
 In a production setup an upstream proxy should route requests to the proxy via the ``*.interactivetool.yourdomain`` subdomain,
 or use path-based proxying for interactive tools that support it (``requires_domain=False``, see below for more details).
 
-Set these values in ```galaxy.yml``:
+Set these values in ``galaxy.yml``:
 
 .. code-block:: yaml
 
@@ -98,8 +98,8 @@ Set these values in ```galaxy.yml``:
       interactivetools_proxy_host: localhost:4002
 
 
-The `gx-it-proxy` config relates to an important service in the InteractiveTool infrastructure: the InteractiveTool
-proxy. `gx-it-proxy` runs as a separate process listening at port 4002 (by default). HTTP requests are decoded based on
+The ``gx-it-proxy`` config relates to an important service in the InteractiveTool infrastructure: the InteractiveTool
+proxy. ``gx-it-proxy`` runs as a separate process listening at port 4002 (by default). HTTP requests are decoded based on
 the URL and headers, then somewhat massaged, and finally forwarded to the correct entry point port of the target InteractiveTool.
 
 You will also need to enable a docker destination in the job_conf.xml file.

@@ -338,6 +338,9 @@ gravity:
   #handlers:
   #  handler:
   #    processes: 3
+  #    pools:
+  #      - job-handlers
+  #      - workflow-schedulers
 
 galaxy:
 
