@@ -1,5 +1,4 @@
 import logging
-from typing import List
 
 from fastapi import Query
 from typing_extensions import Annotated
