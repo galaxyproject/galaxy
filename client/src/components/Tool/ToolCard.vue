@@ -100,6 +100,8 @@ function onUpdatePreferredObjectStoreId(selectedToolPreferredObjectStoreId) {
     toolPreferredObjectStoreId.value = selectedToolPreferredObjectStoreId;
     emit("updatePreferredObjectStoreId", selectedToolPreferredObjectStoreId);
 }
+
+const showHelpForum = computed(() => true);
 </script>
 
 <template>
@@ -181,7 +183,7 @@ function onUpdatePreferredObjectStoreId(selectedToolPreferredObjectStoreId) {
                 :version="props.options.version"
                 :owner="props.options.tool_shed_repository?.owner" />
 
-            <ToolHelpForum />
+            <ToolHelpForum v-if="showHelpForum" />
 
             <ToolFooter
                 :id="props.id"
