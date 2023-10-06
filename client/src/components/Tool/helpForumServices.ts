@@ -27,8 +27,20 @@ export interface HelpForumTopic {
     has_accepted_answer: boolean;
 }
 
+export interface HelpForumPost {
+    id: number;
+    name: string;
+    username: string;
+    avatar_template: string;
+    created_at: string;
+    like_count: number;
+    blurb: string;
+    post_number: number;
+    topic_id: number;
+}
+
 export interface HelpForumSearchResponseData {
-    posts: unknown;
+    posts: HelpForumPost[];
     topics: HelpForumTopic[];
     users: unknown;
     categories: unknown;
