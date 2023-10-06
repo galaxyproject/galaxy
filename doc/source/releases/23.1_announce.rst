@@ -200,6 +200,8 @@ Deprecation Notices
 
 The first Galaxy release of 2024 (24.0) will drop support for Python 3.7, which has already reached end of life (EOL).
 
+The **api/search** API endpoint is deprecated and will be removed in the next release.
+
 Release Notes
 ===========================================================
 

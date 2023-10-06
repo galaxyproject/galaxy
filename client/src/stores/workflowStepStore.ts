@@ -183,6 +183,23 @@ export const useWorkflowStepStore = (workflowId: string) => {
                 });
                 return workflowOutputs;
             },
+            duplicateLabels(state: State) {
+                const duplicateLabels: Set<string> = new Set();
+                const labels: Set<string> = new Set();
+                Object.values(state.steps).forEach((step) => {
+                    if (step.workflow_outputs?.length) {
+                        step.workflow_outputs.forEach((workflowOutput) => {
+                            if (workflowOutput.label) {
+                                if (labels.has(workflowOutput.label)) {
+                                    duplicateLabels.add(workflowOutput.label);
+                                }
+                                labels.add(workflowOutput.label);
+                            }
+                        });
+                    }
+                });
+                return duplicateLabels;
+            },
         },
         actions: {
             addStep(newStep: NewStep): Step {
