@@ -1294,6 +1294,9 @@ galaxy:
   # The value of this option will be resolved with respect to
   # <data_dir>.
   #interactivetools_map: interactivetools_map.sqlite
+  # Note: the following config should still be used due to lack of
+  # support of data_dir resolution in gx-it-proxy and gravity:
+  #interactivetools_map: database/interactivetools_map.sqlite
 
   # Prefix to use in the formation of the subdomain or path for
   # interactive tools
