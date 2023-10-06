@@ -123,9 +123,7 @@ class TestRepositoryInstallIntegrationTestCase(integration_util.IntegrationTestC
         assert tool["version"] == "0.0.2"
         self.uninstall_repository(REPO.owner, REPO.name, REPO.changeset)
         response = self.get_tool(assert_ok=False)
-        assert (
-            "err_msg" in response
-        ), f"Expected an error message after tool install but response was {response.content}"
+        assert "err_msg" in response, f"Expected an error message after tool install but response was {response}"
         assert response["err_msg"]
         assert self.get_installed_repository_for(REPO.owner, REPO.name, REPO.changeset) is None
 
