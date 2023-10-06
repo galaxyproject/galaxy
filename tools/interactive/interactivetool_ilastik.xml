@@ -1,0 +1,44 @@
+<tool id="interactive_tool_ilastik" tool_type="interactive" name="Ilastik" version="@VERSION@" profile="23.0">
+    <description>interactive learning and segmentation toolkit</description>
+    <macros>
+        <token name="@VERSION@">1.4.0</token>
+    </macros>
+    <requirements>
+        <container type="docker">quay.io/galaxy/ilastik:@VERSION@</container>
+    </requirements>
+    <entry_points>
+        <entry_point name="Ilastik on $infile.display_name" requires_domain="True">
+            <port>5800</port>
+        </entry_point>
+    </entry_points>
+    <command detect_errors="exit_code">
+    <![CDATA[
+        ## export HOME=\$PWD &&
+        mkdir -p ./galaxy_outputs ./galaxy_inputs &&
+        #for input in $infile:
+            ln -s '$input' ./galaxy_inputs/'$input.name' &&
+        #end for
+        /init
+    ]]>
+    </command>
+    <inputs>
+        <param name="infile" type="data" format="tiff" multiple="true" label="Input files in TIFF format"/>
+    </inputs>
+    
+    <outputs>
+        <data name="ilastik_project" format="h5" label="Ilastik project file">
+            <discover_datasets pattern=".*.ilp" directory="galaxy_outputs" visible="true" assign_primary_output="true"/>
+        </data>
+    </outputs>
+    
+    <tests>
+    </tests>
+    
+    <help><![CDATA[
+        Leverage machine learning algorithms to easily segment, classify, track and count your cells or other experimental data. Most operations are interactive, even on large datasets: you just draw the labels and immediately see the result. No machine learning expertise required.
+]]>
+    </help>
+    <citations>
+        <citation type="doi">10.1038/s41592-019-0582-9</citation>
+    </citations>
+</tool>
