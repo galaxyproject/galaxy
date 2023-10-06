@@ -48,3 +48,32 @@ export interface HelpForumSearchResponseData {
     groups: unknown;
     grouped_search_result: unknown;
 }
+
+/**
+ * Generate a url that link to the galaxy help forum to create a new topic with pre defined fields
+ * @param title title of the new topic
+ * @param caregory optional - pre defined category
+ * @param tags optional - pre defined tags
+ * @param body optional - pre defined body
+ */
+export function generateCreateNewTopicUrl(title: string, category = "", tags: string[] = [], body = ""): string {
+	const configStore = useConfigStore();
+
+	const url = new URL("/new-topic", configStore.config.help_forum_api_url);
+
+	url.searchParams.append("title", encodeURIComponent(title));
+	
+	if (category.length > 0) {
+		url.searchParams.append("category", category);
+	}
+
+	if (tags.length > 0) {
+		url.searchParams.append("tags", tags.join(","));
+	}
+
+	if (body.length > 0) {
+		url.searchParams.append("body", encodeURIComponent(body));
+	}
+
+	return url.href;
+}
