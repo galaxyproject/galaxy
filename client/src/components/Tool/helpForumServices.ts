@@ -104,3 +104,9 @@ export function useHelpURLs(options: {
         searchTopicUrl,
     };
 }
+
+export function createTopicUrl(topicId: number, slug: string): URL {
+    const configStore = useConfigStore();
+
+    return new URL(`/t/${slug}/${topicId}`, configStore.config.help_forum_api_url);
+}

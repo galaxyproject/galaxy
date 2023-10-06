@@ -1,12 +1,12 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BCard, BCardText } from "bootstrap-vue";
+import { BButton, BCard } from "bootstrap-vue";
 import { computed, onMounted, ref } from "vue";
 
 import { fetcher } from "@/schema";
 import { useConfigStore } from "@/stores/configurationStore";
 
-import { type HelpForumPost, type HelpForumTopic, useHelpURLs } from "./helpForumServices";
+import { createTopicUrl, type HelpForumPost, type HelpForumTopic, useHelpURLs } from "./helpForumServices";
 
 import Heading from "@/components/Common/Heading.vue";
 import ExternalLink from "@/components/ExternalLink.vue";
@@ -71,8 +71,10 @@ const configStore = useConfigStore();
         </p>
 
         <BCard v-for="topic in displayedTopics" :key="topic.id" class="mb-2">
-            <Heading h3 size="sm"> {{ topic.title }} </Heading>
-            <BCardText> {{ blurbForTopic(topic.id) }} </BCardText>
+            <ExternalLink :href="createTopicUrl(topic.id, topic.slug).href">
+                <Heading h3 inline size="sm"> {{ topic.title }} </Heading>
+            </ExternalLink>
+            <p class="mb-0 mt-2">{{ blurbForTopic(topic.id) }}</p>
         </BCard>
 
         <a v-if="hasMore" :href="searchTopicUrl.href" target="_blank" class="d-block mb-2">Show all...</a>
