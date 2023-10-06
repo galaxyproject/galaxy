@@ -10,6 +10,11 @@ import { type HelpForumPost, type HelpForumTopic, useCreateNewTopicUrl } from ".
 import Heading from "@/components/Common/Heading.vue";
 import ExternalLink from "@/components/ExternalLink.vue";
 
+const props = defineProps<{
+    toolId: string;
+    toolName: string;
+}>();
+
 const helpFetcher = fetcher.path("/api/help/search").method("get").create();
 
 const helpAvailable = computed(() => true);
@@ -38,7 +43,11 @@ function blurbForTopic(topicId: number): string {
     return firstPost?.blurb ?? "no content";
 }
 
-const { createNewTopicUrl } = useCreateNewTopicUrl(ref(""));
+const { createNewTopicUrl } = useCreateNewTopicUrl(
+    computed(() => props.toolName),
+    undefined,
+    computed(() => [props.toolId])
+);
 </script>
 
 <template>

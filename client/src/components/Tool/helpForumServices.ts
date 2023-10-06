@@ -69,7 +69,7 @@ export function useCreateNewTopicUrl(
     const createNewTopicUrl = computed(() => {
         const url = new URL("/new-topic", configStore.config.help_forum_api_url);
 
-        url.searchParams.append("title", encodeURIComponent(title.value));
+        url.searchParams.append("title", title.value);
 
         if (category?.value) {
             url.searchParams.append("category", category.value);
@@ -80,7 +80,7 @@ export function useCreateNewTopicUrl(
         }
 
         if (body?.value) {
-            url.searchParams.append("body", encodeURIComponent(body.value));
+            url.searchParams.append("body", body.value);
         }
 
         return url;

@@ -185,7 +185,7 @@ const showHelpForum = computed(() => isConfigLoaded.value && config.value.help_f
                 :version="props.options.version"
                 :owner="props.options.tool_shed_repository?.owner" />
 
-            <ToolHelpForum v-if="showHelpForum" />
+            <ToolHelpForum v-if="showHelpForum" :tool-id="props.id" :tool-name="props.title" />
 
             <ToolFooter
                 :id="props.id"
