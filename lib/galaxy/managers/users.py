@@ -121,12 +121,12 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             message = self.send_subscription_email(email)
             if message:
                 return None, message
-        user = self.create(email=email, username=username, password=password)
+        user = self.create(email=email, username=username, password=password, orcid_id=orcid_id)
         if self.app.config.user_activation_on:
             self.send_activation_email(trans, email, username)
         return user, None
 
-    def create(self, email=None, username=None, password=None, **kwargs):
+    def create(self, email=None, username=None, password=None, orcid_id=None, **kwargs):
         """
         Create a new user.
         """
@@ -137,6 +137,8 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         else:
             user.set_random_password()
         user.username = username
+        if orcid_id:
+            user.orcid_id = orcid_id
         if self.app.config.user_activation_on:
             user.active = False
         else:
@@ -199,6 +201,9 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         # Delete UserAddresses
         for address in user.addresses:
             self.session().delete(address)
+        # Wipe user's ORCID ID
+        user.orcid_id = ""
+
         compliance_log = logging.getLogger("COMPLIANCE")
         compliance_log.info(f"delete-user-event: {user.username}")
         # Maybe there is some case in the future where an admin needs

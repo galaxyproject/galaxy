@@ -921,8 +921,8 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             if user.username != username:
                 user.username = username
         # Update ORCID ID
-        if "orcid_id" in payload:
-            orcid_id = payload.get("orcid_id")
+        if "orcidId" in payload:
+            orcid_id = payload.get("orcidId")
             message = validate_orcid_id(trans, orcid_id)
             if message:
                 raise exceptions.RequestParameterInvalidException(message)
