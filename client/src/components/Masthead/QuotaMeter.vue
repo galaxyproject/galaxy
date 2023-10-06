@@ -40,6 +40,8 @@ import { useConfigStore } from "@/stores/configurationStore";
 import { useHelpModeTextStore } from "@/stores/helpmode/helpModeTextStore";
 import { useUserStore } from "@/stores/userStore";
 
+import { logSentryEvent } from "utils/sentry";
+
 export default {
     name: "QuotaMeter",
     data() {
@@ -95,6 +97,7 @@ export default {
     },
     methods: {
         callHelpMode() {
+            logSentryEvent("hover", "quotaMeterHelpString");
             this.helpModeTextStore.addHelpModeText("quotaMeterHelpString");
         },
     },
