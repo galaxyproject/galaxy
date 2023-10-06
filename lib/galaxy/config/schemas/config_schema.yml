@@ -3920,3 +3920,19 @@ mapping:
         default: 86400
         desc: |
           The interval in seconds between attempts to delete all expired notifications from the database (every 24 hours by default). Runs in a Celery task.
+
+      help_forum_api_url:
+        type: str
+        required: false
+        default: https://help.galaxyproject.org/
+        per_host: true
+        desc: |
+          The URL pointing to the Galaxy Help Forum API base URL. The API must be compatible with Discourse API (https://docs.discourse.org/).
+      
+      help_forum_tool_integration:
+        type: bool
+        required: false
+        default: false
+        per_host: true
+        desc: |
+          Enable the integration of the Galaxy Help Forum in the tool panel. This requires the help_forum_api_url to be set.
