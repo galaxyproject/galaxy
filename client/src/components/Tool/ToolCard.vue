@@ -12,6 +12,7 @@ import { useUserStore } from "@/stores/userStore";
 import ToolSelectPreferredObjectStore from "./ToolSelectPreferredObjectStore";
 import ToolTargetPreferredObjectStorePopover from "./ToolTargetPreferredObjectStorePopover";
 
+import ToolHelpForum from "./ToolHelpForum.vue";
 import ToolTutorialRecommendations from "./ToolTutorialRecommendations.vue";
 import ToolFavoriteButton from "components/Tool/Buttons/ToolFavoriteButton.vue";
 import ToolOptionsButton from "components/Tool/Buttons/ToolOptionsButton.vue";
@@ -179,6 +180,8 @@ function onUpdatePreferredObjectStoreId(selectedToolPreferredObjectStoreId) {
                 :name="props.options.name"
                 :version="props.options.version"
                 :owner="props.options.tool_shed_repository?.owner" />
+
+            <ToolHelpForum />
 
             <ToolFooter
                 :id="props.id"
