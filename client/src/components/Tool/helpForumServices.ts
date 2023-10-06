@@ -57,23 +57,23 @@ export interface HelpForumSearchResponseData {
  * @param body optional - pre defined body
  */
 export function generateCreateNewTopicUrl(title: string, category = "", tags: string[] = [], body = ""): string {
-	const configStore = useConfigStore();
+    const configStore = useConfigStore();
 
-	const url = new URL("/new-topic", configStore.config.help_forum_api_url);
+    const url = new URL("/new-topic", configStore.config.help_forum_api_url);
 
-	url.searchParams.append("title", encodeURIComponent(title));
-	
-	if (category.length > 0) {
-		url.searchParams.append("category", category);
-	}
+    url.searchParams.append("title", encodeURIComponent(title));
 
-	if (tags.length > 0) {
-		url.searchParams.append("tags", tags.join(","));
-	}
+    if (category.length > 0) {
+        url.searchParams.append("category", category);
+    }
 
-	if (body.length > 0) {
-		url.searchParams.append("body", encodeURIComponent(body));
-	}
+    if (tags.length > 0) {
+        url.searchParams.append("tags", tags.join(","));
+    }
 
-	return url.href;
+    if (body.length > 0) {
+        url.searchParams.append("body", encodeURIComponent(body));
+    }
+
+    return url.href;
 }
