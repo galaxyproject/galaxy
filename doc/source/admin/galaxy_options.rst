@@ -5389,9 +5389,9 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``help_forum_tool_integration``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``help_forum_tool_panel_integration_enabled``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 
 :Description:
     Enable the integration of the Galaxy Help Forum in the tool panel.

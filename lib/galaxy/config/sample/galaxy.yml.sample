@@ -2867,5 +2867,5 @@ galaxy:
 
   # Enable the integration of the Galaxy Help Forum in the tool panel.
   # This requires the help_forum_api_url to be set.
-  #help_forum_tool_integration: false
+  #help_forum_tool_panel_integration_enabled: false
 
