@@ -48,27 +48,3 @@ export interface HelpForumSearchResponseData {
     groups: unknown;
     grouped_search_result: unknown;
 }
-
-/**
- * Fetch search results from the galaxy help forum
- * https://docs.discourse.org/#tag/Search/operation/search
- * @param term plaintext search
- * @param tags forum tags
- */
-export async function search(term: string, tags: string[] = []): Promise<HelpForumSearchResponseData> {
-    const configStore = useConfigStore();
-    const apiBaseUrl = configStore.config.help_forum_api_url;
-    const apiUrl = new URL("/search.json", apiBaseUrl);
-
-    let query = `${term} order:latest_topic`;
-
-    if (tags.length > 0) {
-        query += `tags:${tags.join(",")}`;
-    }
-
-    apiUrl.searchParams.append("q", encodeURIComponent(query));
-
-    const res = await fetch(apiUrl);
-
-    return (await res.json()) as HelpForumSearchResponseData;
-}
