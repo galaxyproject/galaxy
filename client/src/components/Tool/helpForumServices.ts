@@ -1,3 +1,5 @@
+import { computed, Ref } from "vue";
+
 import { useConfigStore } from "@/stores/configurationStore";
 
 export interface HelpForumTopic {
@@ -56,24 +58,35 @@ export interface HelpForumSearchResponseData {
  * @param tags optional - pre defined tags
  * @param body optional - pre defined body
  */
-export function generateCreateNewTopicUrl(title: string, category = "", tags: string[] = [], body = ""): string {
+export function useCreateNewTopicUrl(
+    title: Ref<string>,
+    category?: Ref<string>,
+    tags?: Ref<string[]>,
+    body?: Ref<string>
+) {
     const configStore = useConfigStore();
 
-    const url = new URL("/new-topic", configStore.config.help_forum_api_url);
+    const createNewTopicUrl = computed(() => {
+        const url = new URL("/new-topic", configStore.config.help_forum_api_url);
 
-    url.searchParams.append("title", encodeURIComponent(title));
+        url.searchParams.append("title", encodeURIComponent(title.value));
 
-    if (category.length > 0) {
-        url.searchParams.append("category", category);
-    }
+        if (category?.value) {
+            url.searchParams.append("category", category.value);
+        }
 
-    if (tags.length > 0) {
-        url.searchParams.append("tags", tags.join(","));
-    }
+        if (tags?.value) {
+            url.searchParams.append("tags", tags.value.join(","));
+        }
 
-    if (body.length > 0) {
-        url.searchParams.append("body", encodeURIComponent(body));
-    }
+        if (body?.value) {
+            url.searchParams.append("body", encodeURIComponent(body.value));
+        }
 
-    return url.href;
+        return url;
+    });
+
+    return {
+        createNewTopicUrl,
+    };
 }

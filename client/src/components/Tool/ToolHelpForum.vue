@@ -5,7 +5,7 @@ import { computed, onMounted, ref } from "vue";
 
 import { fetcher } from "@/schema";
 
-import { type HelpForumPost, type HelpForumTopic } from "./helpForumServices";
+import { type HelpForumPost, type HelpForumTopic, useCreateNewTopicUrl } from "./helpForumServices";
 
 import Heading from "@/components/Common/Heading.vue";
 import ExternalLink from "@/components/ExternalLink.vue";
@@ -37,6 +37,8 @@ function blurbForTopic(topicId: number): string {
     const firstPost = posts.value.find((post) => post.topic_id === topicId && post.post_number === 1);
     return firstPost?.blurb ?? "no content";
 }
+
+const { createNewTopicUrl } = useCreateNewTopicUrl(ref(""));
 </script>
 
 <template>
@@ -60,7 +62,7 @@ function blurbForTopic(topicId: number): string {
 
         <div v-if="hasMore">more...</div>
 
-        <BButton variant="primary" class="font-weight-bold" target="blank" href="help forum new question link here">
+        <BButton variant="primary" class="font-weight-bold" target="blank" :href="createNewTopicUrl.href">
             <FontAwesomeIcon :icon="['gxd', 'galaxyLogo']" /> Ask a new question
         </BButton>
     </div>
