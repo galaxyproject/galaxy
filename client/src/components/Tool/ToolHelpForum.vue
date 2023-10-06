@@ -1,9 +1,10 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton } from "bootstrap-vue";
+import { BButton, BCard, BCardText } from "bootstrap-vue";
 import { computed, onMounted, ref } from "vue";
 
-import { type HelpForumTopic, search } from "./helpForumServices";
+import { type HelpForumTopic } from "./helpForumServices";
+import testResponse from "./testResponse.json";
 
 import Heading from "@/components/Common/Heading.vue";
 import ExternalLink from "@/components/ExternalLink.vue";
@@ -14,9 +15,9 @@ const topics = ref<HelpForumTopic[]>([]);
 const root = ref(null);
 
 onMounted(async () => {
-    const response = await search("workflows");
+    //const response = await search("workflows");
 
-    topics.value = response.topics;
+    topics.value = testResponse.topics;
 });
 </script>
 
@@ -34,9 +35,12 @@ onMounted(async () => {
             about this tool.
         </p>
 
-        <div v-for="topic in topics" :key="topic.id">
-            {{ topic.title }}
-        </div>
+        <BCard v-for="topic in topics" :key="topic.id">
+            <template v-slot:header>
+                <Heading h3 size="sm">{{ topic.title }}</Heading>
+            </template>
+            <BCardText> hello world </BCardText>
+        </BCard>
 
         <BButton variant="primary" class="font-weight-bold" target="blank" href="help forum new question link here">
             <FontAwesomeIcon :icon="['gxd', 'galaxyLogo']" /> Ask a new question
