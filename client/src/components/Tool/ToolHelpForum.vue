@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import Heading from "@components/Common/Heading.vue";
+import Heading from "@/components/Common/Heading.vue";
 </script>
 
 <template>
