@@ -12,9 +12,13 @@ from mercurial import (
     patch,
 )
 from sqlalchemy import (
-    and_,
     false,
     null,
+    select,
+)
+from toolshed.webapp.model import (
+    Repository,
+    RepositoryMetadata,
 )
 
 import tool_shed.grids.repository_grids as repository_grids
@@ -1498,7 +1502,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         message = escape(kwd.get("message", ""))
         status = kwd.get("status", "done")
         # See if there are any RepositoryMetadata records since menu items require them.
-        repository_metadata = trans.sa_session.query(trans.model.RepositoryMetadata).first()
+        repository_metadata = get_first_repository_metadata(trans.sa_session)
         current_user = trans.user
         # TODO: move the following to some in-memory register so these queries can be done once
         # at startup.  The in-memory register can then be managed during the current session.
@@ -1515,9 +1519,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                 if current_user.active_repositories:
                     can_administer_repositories = True
                 else:
-                    for repository in trans.sa_session.query(trans.model.Repository).filter(
-                        trans.model.Repository.table.c.deleted == false()
-                    ):
+                    for repository in get_current_repositories(trans.sa_session):
                         if trans.app.security_agent.user_can_administer_repository(current_user, repository):
                             can_administer_repositories = True
                             break
@@ -1615,16 +1617,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         checked = new_repo_alert_checked or (user and user.new_repo_alert)
         new_repo_alert_check_box = CheckboxField("new_repo_alert", value=checked)
         email_alert_repositories = []
-        for repository in (
-            trans.sa_session.query(trans.model.Repository)
-            .filter(
-                and_(
-                    trans.model.Repository.table.c.deleted == false(),
-                    trans.model.Repository.table.c.email_alerts != null(),
-                )
-            )
-            .order_by(trans.model.Repository.table.c.name)
-        ):
+        for repository in get_current_email_alert_repositories(trans.sa_session):
             if user.email in repository.email_alerts:
                 email_alert_repositories.append(repository)
         return trans.fill_template(
@@ -2660,3 +2653,23 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                         status="error",
                     )
                 )
+
+
+def get_first_repository_metadata(session):
+    stmt = select(RepositoryMetadata).limit(1)
+    return session.select(stmt).first()
+
+
+def get_current_repositories(session):
+    stmt = select(Repository).where(Repository.deleted == false())
+    return session.scalars(stmt)
+
+
+def get_current_email_alert_repositories(session):
+    stmt = (
+        select(Repository)
+        .where(Repository.deleted == false())
+        .where(Repository.email_alerts != null())
+        .order_by(Repository.name)
+    )
+    return session.scalars(stmt)
