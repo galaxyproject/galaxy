@@ -165,6 +165,7 @@ describe("test helpers in tool searching utilities", () => {
     it("test tool fuzzy search", async () => {
         const expectedResults = ["__FILTER_FAILED_DATASETS__", "__FILTER_EMPTY_DATASETS__"];
         const keys = { description: 1, name: 2, combined: 0 };
+        // Testing if just names work with DL search
         const filterQueries = ["Fillter", "FILYER", " Fitler", " filtr"];
         filterQueries.forEach((q) => {
             const { results, closestTerm } = searchToolsByKeys(
@@ -177,7 +178,20 @@ describe("test helpers in tool searching utilities", () => {
             expect(results).toEqual(expectedResults);
             expect(closestTerm).toEqual("filter");
         });
-        const queries = ["datases from a collection", "from a colleection"];
+        // Testing if names and description function with DL search
+        let queries = ["datases from a collection", "from a colleection", "from a colleection"];
+        queries.forEach((q) => {
+            const { results } = searchToolsByKeys(
+                Object.values(toolsList.tools),
+                keys,
+                q,
+                "default",
+                toolsListInPanel.default
+            );
+            expect(results).toEqual(expectedResults);
+        });
+        // Testing if different length queries correctly trigger changes in max DL distance
+        queries = ["datae", "ppasetsfrom", "datass from a cppollection"];
         queries.forEach((q) => {
             const { results } = searchToolsByKeys(
                 Object.values(toolsList.tools),

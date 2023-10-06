@@ -443,22 +443,25 @@ function getPanelSectionsForTool(tool: Tool, panelView: string) {
  * @returns substring with smallest DL distance, or null
  */
 function closestSubstring(query: string, actualStr: string) {
+    // Create max distance
     // Max distance a query and substring can be apart
-    const maxDistance = 1;
+    const maxDistance = Math.floor(query.length / 5);
     // Create an array of all actualStr substrings that are query length, query length -1, and query length + 1
-    const substrings = Array.from({ length: actualStr.length - query.length + 1 }, (_, i) =>
+    const substrings = Array.from({ length: actualStr.length - query.length + maxDistance }, (_, i) =>
         actualStr.substr(i, query.length)
     );
     if (query.length > 1) {
         substrings.push(
-            ...Array.from({ length: actualStr.length - query.length + 2 }, (_, i) =>
-                actualStr.substr(i, query.length - 1)
+            ...Array.from({ length: actualStr.length - query.length + maxDistance + 1 }, (_, i) =>
+                actualStr.substr(i, query.length - maxDistance)
             )
         );
     }
     if (actualStr.length > query.length) {
         substrings.push(
-            ...Array.from({ length: actualStr.length - query.length }, (_, i) => actualStr.substr(i, query.length + 1))
+            ...Array.from({ length: actualStr.length - query.length }, (_, i) =>
+                actualStr.substr(i, query.length + maxDistance)
+            )
         );
     }
     // check to see if any substrings have a levenshtein distance less than the max distance
