@@ -3,11 +3,14 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BCard, BCardText } from "bootstrap-vue";
 import { computed, onMounted, ref } from "vue";
 
+import { fetcher } from "@/schema";
+
 import { type HelpForumPost, type HelpForumTopic } from "./helpForumServices";
-import testResponse from "./testResponse.json";
 
 import Heading from "@/components/Common/Heading.vue";
 import ExternalLink from "@/components/ExternalLink.vue";
+
+const helpFetcher = fetcher.path("/api/help/search").method("get").create();
 
 const helpAvailable = computed(() => true);
 const topics = ref<HelpForumTopic[]>([]);
@@ -16,10 +19,13 @@ const posts = ref<HelpForumPost[]>([]);
 const root = ref(null);
 
 onMounted(async () => {
+    const response = await helpFetcher({ query: "workflows" });
     //const response = await search("workflows");
 
-    topics.value = testResponse.topics;
-    posts.value = testResponse.posts;
+    const data = response.data;
+
+    topics.value = data.topics as HelpForumTopic[];
+    posts.value = data.posts as unknown as HelpForumPost[];
 });
 
 const displayCount = 5;
