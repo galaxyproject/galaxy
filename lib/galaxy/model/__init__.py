@@ -150,11 +150,11 @@ from galaxy.security.validate_user_input import validate_password_str
 from galaxy.util import (
     directory_hash_id,
     enum_values,
+    hex_to_lowercase_alphanum,
     listify,
     ready_name_for_url,
     unicodify,
     unique_id,
-    hex_to_lowercase_alphanum,
 )
 from galaxy.util.dictifiable import (
     dict_for,
