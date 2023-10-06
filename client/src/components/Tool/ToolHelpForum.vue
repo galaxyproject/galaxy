@@ -6,7 +6,7 @@ import { computed, onMounted, ref } from "vue";
 import { fetcher } from "@/schema";
 import { useConfigStore } from "@/stores/configurationStore";
 
-import { type HelpForumPost, type HelpForumTopic, useCreateNewTopicUrl } from "./helpForumServices";
+import { type HelpForumPost, type HelpForumTopic, useHelpURLs } from "./helpForumServices";
 
 import Heading from "@/components/Common/Heading.vue";
 import ExternalLink from "@/components/ExternalLink.vue";
@@ -16,7 +16,7 @@ const props = defineProps<{
     toolName: string;
 }>();
 
-const helpFetcher = fetcher.path("/api/help/search").method("get").create();
+const helpFetcher = fetcher.path("/api/help/forum/search").method("get").create();
 
 const topics = ref<HelpForumTopic[]>([]);
 const posts = ref<HelpForumPost[]>([]);
@@ -24,8 +24,10 @@ const helpAvailable = computed(() => topics.value.length > 0);
 
 const root = ref(null);
 
+const query = computed(() => `${props.toolName} ${props.toolId}`);
+
 onMounted(async () => {
-    const response = await helpFetcher({ query: "workflows" });
+    const response = await helpFetcher({ query: `${query.value} min_posts:2` });
     //const response = await search("workflows");
 
     const data = response.data;
@@ -44,11 +46,11 @@ function blurbForTopic(topicId: number): string {
     return firstPost?.blurb ?? "no content";
 }
 
-const { createNewTopicUrl } = useCreateNewTopicUrl(
-    computed(() => props.toolName),
-    undefined,
-    computed(() => [props.toolId])
-);
+const { createNewTopicUrl } = useHelpURLs({
+    title: computed(() => props.toolName),
+    tags: computed(() => [props.toolId]),
+    query,
+});
 
 const configStore = useConfigStore();
 </script>
