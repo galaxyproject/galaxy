@@ -52,11 +52,9 @@ export interface HelpForumSearchResponseData {
 }
 
 /**
- * Generate a url that link to the galaxy help forum to create a new topic with pre defined fields
- * @param title title of the new topic
- * @param category optional - pre defined category
- * @param tags optional - pre defined tags
- * @param body optional - pre defined body
+ * Composable for urls to the galaxy help forum
+ * @param options object with options needed to create the urls
+ * @returns computed url to create a new topic and computed url to link to the search page
  */
 export function useHelpURLs(options: {
     title: Ref<string>;
@@ -105,6 +103,12 @@ export function useHelpURLs(options: {
     };
 }
 
+/**
+ * Create a url that link to the related topic in the galaxy help forum
+ * @param topicId id of the topic
+ * @param slug slug of the topic
+ * @returns url object
+ */
 export function createTopicUrl(topicId: number, slug: string): URL {
     const configStore = useConfigStore();
 
