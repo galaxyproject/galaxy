@@ -24,10 +24,10 @@ const helpAvailable = computed(() => topics.value.length > 0);
 
 const root = ref(null);
 
-const query = computed(() => `${props.toolName} ${props.toolId}`);
+const query = computed(() => `${props.toolName} min_posts:2`);
 
 onMounted(async () => {
-    const response = await helpFetcher({ query: `${query.value} min_posts:2` });
+    const response = await helpFetcher({ query: query.value });
     //const response = await search("workflows");
 
     const data = response.data;
@@ -42,11 +42,11 @@ const displayedTopics = computed(() => topics.value.slice(0, displayCount - 1));
 const hasMore = computed(() => topics.value.length > displayCount);
 
 function blurbForTopic(topicId: number): string {
-    const firstPost = posts.value.find((post) => post.topic_id === topicId && post.post_number === 1);
+    const firstPost = posts.value.find((post) => post.topic_id === topicId);
     return firstPost?.blurb ?? "no content";
 }
 
-const { createNewTopicUrl } = useHelpURLs({
+const { createNewTopicUrl, searchTopicUrl } = useHelpURLs({
     title: computed(() => props.toolName),
     tags: computed(() => [props.toolId]),
     query,
@@ -61,7 +61,8 @@ const configStore = useConfigStore();
 
         <p v-if="helpAvailable">
             Following questions on the
-            <ExternalLink :href="configStore.config.help_forum_api_url"> Help Forum </ExternalLink> mention this tool:
+            <ExternalLink :href="configStore.config.help_forum_api_url"> Help Forum </ExternalLink> may be related to
+            this tool:
         </p>
         <p v-else>
             There are no questions on the
@@ -74,7 +75,7 @@ const configStore = useConfigStore();
             <BCardText> {{ blurbForTopic(topic.id) }} </BCardText>
         </BCard>
 
-        <div v-if="hasMore">more...</div>
+        <a v-if="hasMore" :href="searchTopicUrl.href" target="_blank" class="d-block mb-2">Show all...</a>
 
         <BButton variant="primary" class="font-weight-bold" target="blank" :href="createNewTopicUrl.href">
             <FontAwesomeIcon :icon="['gxd', 'galaxyLogo']" /> Ask a new question
