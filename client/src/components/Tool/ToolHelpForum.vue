@@ -4,6 +4,7 @@ import { BButton, BCard, BCardText } from "bootstrap-vue";
 import { computed, onMounted, ref } from "vue";
 
 import { fetcher } from "@/schema";
+import { useConfigStore } from "@/stores/configurationStore";
 
 import { type HelpForumPost, type HelpForumTopic, useCreateNewTopicUrl } from "./helpForumServices";
 
@@ -17,9 +18,9 @@ const props = defineProps<{
 
 const helpFetcher = fetcher.path("/api/help/search").method("get").create();
 
-const helpAvailable = computed(() => true);
 const topics = ref<HelpForumTopic[]>([]);
 const posts = ref<HelpForumPost[]>([]);
+const helpAvailable = computed(() => topics.value.length > 0);
 
 const root = ref(null);
 
@@ -48,6 +49,8 @@ const { createNewTopicUrl } = useCreateNewTopicUrl(
     undefined,
     computed(() => [props.toolId])
 );
+
+const configStore = useConfigStore();
 </script>
 
 <template>
@@ -55,12 +58,12 @@ const { createNewTopicUrl } = useCreateNewTopicUrl(
         <Heading h2 separator bold size="sm">Help Forum</Heading>
 
         <p v-if="helpAvailable">
-            Following questions on the <ExternalLink href="help forum link here"> Help Forum </ExternalLink> mention
-            this tool:
+            Following questions on the
+            <ExternalLink :href="configStore.config.help_forum_api_url"> Help Forum </ExternalLink> mention this tool:
         </p>
         <p v-else>
             There are no questions on the
-            <ExternalLink href="help forum link here"> Help Forum </ExternalLink>
+            <ExternalLink :href="configStore.config.help_forum_api_url"> Help Forum </ExternalLink>
             about this tool.
         </p>
 
