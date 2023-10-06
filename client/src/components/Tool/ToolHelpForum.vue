@@ -7,7 +7,7 @@ import ExternalLink from "@/components/ExternalLink.vue";
 </script>
 
 <template>
-    <div class="tool-help-forum">
+    <div class="tool-help-forum mt-2 mb-4">
         <Heading h2 separator bold size="sm">Help Forum</Heading>
 
         <p>
