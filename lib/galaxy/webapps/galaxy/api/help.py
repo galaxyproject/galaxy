@@ -27,7 +27,10 @@ class HelpAPI:
     )
     def search_forum(
         self,
-        term: Annotated[str, Query(description="Search term to use for searching the Galaxy Help forum.")],
-        tags: Annotated[List[str], Query(description="List of tags to filter the search results by.")],
+        query: Annotated[str, Query(description="Search query to use for searching the Galaxy Help forum.")],
     ) -> HelpSearchResponse:
-        return self.service.search_forum(term=term, tags=tags)
+        """Search the Galaxy Help forum using the Discourse API.
+
+        **Note**: This endpoint is for **INTERNAL USE ONLY** and is not part of the public Galaxy API.
+        """
+        return self.service.search_forum(query)
