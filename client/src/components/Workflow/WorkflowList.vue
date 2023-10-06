@@ -78,6 +78,17 @@
                 </b-card>
             </template>
         </b-table>
+        <b-alert class="search-more-workflows" variant="info" show>
+            <div>
+                <b-button
+                    class="px-1"
+                    title="Search workflows from other sources"
+                    variant="link"
+                    @click.prevent.stop="onSearchMore">
+                    Get more workflows
+                </b-button>
+            </div>
+        </b-alert>
         <b-pagination
             v-show="rows >= perPage"
             v-model="currentPage"
@@ -303,6 +314,12 @@ export default {
         },
         normalizeTag: function (tag) {
             return tag.replace(/(tag:')#/g, "$1name:");
+        },
+        onSearchMore: function () {
+            const query = this.filter;
+            const path = "/workflows/trs_search";
+            const routerParams = query ? { path, query: { query } } : { path };
+            this.$router.push(routerParams);
         },
     },
 };

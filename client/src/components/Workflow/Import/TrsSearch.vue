@@ -14,6 +14,13 @@ import TrsServerSelection from "./TrsServerSelection.vue";
 import TrsTool from "./TrsTool.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 
+const props = defineProps({
+    search: {
+        type: String,
+        default: null,
+    },
+});
+
 type TrsSearchData = {
     id: string;
     name: string;
@@ -71,7 +78,7 @@ watch(query, async () => {
 function onTrsSelection(selection: TrsSelection) {
     trsSelection.value = selection;
     trsServer.value = selection.id;
-    query.value = "";
+    query.value = props.search ? props.search : "";
 }
 
 function onTrsSelectionError(message: string) {
