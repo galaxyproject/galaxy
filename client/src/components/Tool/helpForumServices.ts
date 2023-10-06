@@ -52,7 +52,7 @@ export interface HelpForumSearchResponseData {
 /**
  * Generate a url that link to the galaxy help forum to create a new topic with pre defined fields
  * @param title title of the new topic
- * @param caregory optional - pre defined category
+ * @param category optional - pre defined category
  * @param tags optional - pre defined tags
  * @param body optional - pre defined body
  */
