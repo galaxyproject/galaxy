@@ -32,8 +32,8 @@ onMounted(async () => {
 
     const data = response.data;
 
-    topics.value = data.topics as HelpForumTopic[];
-    posts.value = data.posts as unknown as HelpForumPost[];
+    topics.value = data.topics || [];
+    posts.value = data.posts || [];
 });
 
 const displayCount = 5;
