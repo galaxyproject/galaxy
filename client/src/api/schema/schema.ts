@@ -451,6 +451,10 @@ export interface paths {
          */
         delete: operations["delete_api_groups__group_id__users__user_id__delete"];
     };
+    "/api/help/search": {
+        /** Search the Galaxy Help forum. */
+        get: operations["search_forum_api_help_search_get"];
+    };
     "/api/histories": {
         /** Returns histories for the current user. */
         get: operations["index_api_histories_get"];
@@ -4771,6 +4775,11 @@ export interface components {
             url: string;
         };
         /**
+         * GroupedSearchResult
+         * @description Model for a grouped search result.
+         */
+        GroupedSearchResult: Record<string, never>;
+        /**
          * HDADetailed
          * @description History Dataset Association detailed information.
          */
@@ -5604,7 +5613,182 @@ export interface components {
              */
             type: "hdca";
         };
-        /** HistoryContentBulkOperationPayload */
+        /**
+         * HelpForumCategory
+         * @description Model for a category in the help forum.
+         */
+        HelpForumCategory: Record<string, never>;
+        /**
+         * HelpForumGroup
+         * @description Model for a group in the help forum.
+         */
+        HelpForumGroup: Record<string, never>;
+        /**
+         * HelpForumPost
+         * @description Model for a post in the help forum.
+         */
+        HelpForumPost: Record<string, never>;
+        /**
+         * HelpForumTag
+         * @description Model for a tag in the help forum.
+         */
+        HelpForumTag: Record<string, never>;
+        /**
+         * HelpForumTopic
+         * @description Model for a topic in the help forum compatible with Discourse API.
+         */
+        HelpForumTopic: {
+            /**
+             * Archetype
+             * @description The archetype of the topic.
+             */
+            archetype?: Record<string, never>;
+            /**
+             * Archived
+             * @description Whether the topic is archived.
+             */
+            archived: boolean;
+            /**
+             * Bookmarked
+             * @description Whether the topic is bookmarked.
+             */
+            bookmarked: boolean;
+            /**
+             * Bumped
+             * @description Whether the topic was bumped.
+             */
+            bumped: boolean;
+            /**
+             * Bumped At
+             * @description The date of the last bump of the topic.
+             */
+            bumped_at: string;
+            /**
+             * Category Id
+             * @description The ID of the category of the topic.
+             */
+            category_id: number;
+            /**
+             * Closed
+             * @description Whether the topic is closed.
+             */
+            closed: boolean;
+            /**
+             * Created At
+             * @description The creation date of the topic.
+             */
+            created_at: string;
+            /**
+             * Fancy Title
+             * @description The fancy title of the topic.
+             */
+            fancy_title: string;
+            /**
+             * Has Accepted Answer
+             * @description Whether the topic has an accepted answer.
+             */
+            has_accepted_answer: boolean;
+            /**
+             * Highest Post Number
+             * @description The highest post number in the topic.
+             */
+            highest_post_number: number;
+            /**
+             * Id
+             * @description The ID of the topic.
+             */
+            id: number;
+            /**
+             * Last Posted At
+             * @description The date of the last post in the topic.
+             */
+            last_posted_at: string;
+            /**
+             * Liked
+             * @description Whether the topic is liked.
+             */
+            liked: boolean;
+            /**
+             * Pinned
+             * @description Whether the topic is pinned.
+             */
+            pinned: boolean;
+            /**
+             * Posts Count
+             * @description The number of posts in the topic.
+             */
+            posts_count: number;
+            /**
+             * Reply Count
+             * @description The number of replies in the topic.
+             */
+            reply_count: number;
+            /**
+             * Slug
+             * @description The slug of the topic.
+             */
+            slug: string;
+            /**
+             * Tags
+             * @description The tags of the topic.
+             */
+            tags: string[];
+            /**
+             * Tags Descriptions
+             * @description The descriptions of the tags of the topic.
+             */
+            tags_descriptions: string[];
+            /**
+             * Title
+             * @description The title of the topic.
+             */
+            title: string;
+            /**
+             * Unpinned
+             * @description Whether the topic is unpinned.
+             */
+            unpinned: boolean;
+            /**
+             * Unseen
+             * @description Whether the topic is unseen.
+             */
+            unseen: boolean;
+            /**
+             * Visible
+             * @description Whether the topic is visible.
+             */
+            visible: boolean;
+        };
+        /**
+         * HelpForumUser
+         * @description Model for a user in the help forum.
+         */
+        HelpForumUser: Record<string, never>;
+        /**
+         * HelpSearchResponse
+         * @description Response model for the help search API endpoint.
+         *
+         * This model is based on the Discourse API response for the search endpoint.
+         */
+        HelpSearchResponse: {
+            /** Categories */
+            categories?: components["schemas"]["HelpForumCategory"][];
+            grouped_search_result?: components["schemas"]["GroupedSearchResult"];
+            /** Groups */
+            groups?: components["schemas"]["HelpForumGroup"][];
+            /** Posts */
+            posts?: components["schemas"]["HelpForumPost"][];
+            /** Tags */
+            tags?: components["schemas"]["HelpForumTag"][];
+            /** Topics */
+            topics?: components["schemas"]["HelpForumTopic"][];
+            /** Users */
+            users?: components["schemas"]["HelpForumUser"][];
+        };
+        /**
+         * HistoryContentBulkOperationPayload
+         * @description Base model definition with common configuration used by all derived models.
+         */
         HistoryContentBulkOperationPayload: {
             /** Items */
             items?: components["schemas"]["HistoryContentItem"][];
@@ -12038,6 +12222,31 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["GroupUserResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    search_forum_api_help_search_get: {
+        /** Search the Galaxy Help forum. */
+        parameters: {
+            /** @description Search term to use for searching the Galaxy Help forum. */
+            /** @description List of tags to filter the search results by. */
+            query: {
+                term: string;
+                tags: string[];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["HelpSearchResponse"];
                 };
             };
             /** @description Validation Error */
