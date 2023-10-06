@@ -1,16 +1,27 @@
 <script setup lang="ts">
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
-import { computed } from "vue";
+import { computed, onMounted, ref } from "vue";
+
+import { type HelpForumTopic, search } from "./helpForumServices";
 
 import Heading from "@/components/Common/Heading.vue";
 import ExternalLink from "@/components/ExternalLink.vue";
 
 const helpAvailable = computed(() => true);
+const topics = ref<HelpForumTopic[]>([]);
+
+const root = ref(null);
+
+onMounted(async () => {
+    const response = await search("workflows");
+
+    topics.value = response.topics;
+});
 </script>
 
 <template>
-    <div class="tool-help-forum mt-2 mb-4">
+    <div ref="root" class="tool-help-forum mt-2 mb-4">
         <Heading h2 separator bold size="sm">Help Forum</Heading>
 
         <p v-if="helpAvailable">
@@ -22,6 +33,10 @@ const helpAvailable = computed(() => true);
             <ExternalLink href="help forum link here"> Help Forum </ExternalLink>
             about this tool.
         </p>
+
+        <div v-for="topic in topics" :key="topic.id">
+            {{ topic.title }}
+        </div>
 
         <BButton variant="primary" class="font-weight-bold" target="blank" href="help forum new question link here">
             <FontAwesomeIcon :icon="['gxd', 'galaxyLogo']" /> Ask a new question

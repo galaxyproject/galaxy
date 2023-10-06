@@ -1,7 +1,5 @@
 import { useConfigStore } from "@/stores/configurationStore";
 
-const configStore = useConfigStore();
-
 export interface HelpForumTopic {
     id: number;
     title: string;
@@ -46,6 +44,7 @@ export interface HelpForumSearchResponseData {
  * @param tags forum tags
  */
 export async function search(term: string, tags: string[] = []): Promise<HelpForumSearchResponseData> {
+    const configStore = useConfigStore();
     const apiBaseUrl = configStore.config.help_forum_api_url;
     const apiUrl = new URL("/search.json", apiBaseUrl);
 
