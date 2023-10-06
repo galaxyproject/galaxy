@@ -22,7 +22,7 @@ class HelpAPI:
     service: HelpService = depends(HelpService)
 
     @router.get(
-        "/api/help/search",
+        "/api/help/forum/search",
         summary="Search the Galaxy Help forum.",
     )
     def search_forum(
