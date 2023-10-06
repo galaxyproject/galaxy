@@ -14,21 +14,58 @@
     <command detect_errors="exit_code">
     <![CDATA[
         ## export HOME=\$PWD &&
-        mkdir -p ./galaxy_outputs ./galaxy_inputs &&
-        #for input in $infile:
+        ## Make a copy of the existing project if exists
+        #if str($input_type.existing) == "existing":
+            cp $input_type.project ./MyProject.ilp &&
+        #end if
+
+        mkdir -p ./galaxy_inputs &&
+        #for input in $infiles:
             ln -s '$input' ./galaxy_inputs/'$input.name' &&
         #end for
-        /init
+        ilastik
+        #if str($input_type.existing) == "new":
+            --new_project ./MyProject.ilp --workflow '$input_type.Workflow'
+        #else:
+            --project ./MyProject.ilp
+        #end if
     ]]>
     </command>
     <inputs>
-        <param name="infile" type="data" format="tiff" multiple="true" label="Input files in TIFF format"/>
+        <conditional name="input_type">
+            <param name="existing" type="select" label="Which project you want to work on?">
+                <option value="new">Start a new project</option>
+                <option value="existing">Modify an existing project</option>
+            </param>
+            <when value="new">
+                <param name="Workflow" type="select" label="Type of Workflow" >
+                    <option value="PixelClassificationWorkflow">Pixel Classification</option>
+                    <option value="AutocontextTwoStage">Autocontext (2-stage)</option>
+                    <option value="ObjectClassificationWorkflowPixel">Pixel Classification + Object Classification</option>
+                    <option value="ObjectClassificationWorkflowPrediction">Object Classification [Inputs: Raw Data, Pixel Prediction Map]</option>
+                    <option value="ObjectClassificationWorkflowBinary">Object Classification [Inputs: Raw Data, Segmentation]</option>
+                    <option value="ConservationTrackingWorkflowFromBinary">Tracking [Inputs: Raw Data, Segmentation Image]</option>
+                    <option value="ConservationTrackingWorkflowFromPrediction">Tracking [Inputs: Raw Data, Pixel Prediction Map]</option>
+                    <option value="AnimalConservationTrackingWorkflowFromBinary">Animal Tracking [Inputs: Raw Data, Segmentation Image]</option>
+                    <option value="AnimalConservationTrackingWorkflowFromPrediction">Animal Tracking [Inputs: Raw Data, Pixel Prediction Map]</option>
+                    <option value="StructuredTrackingWorkflowFromBinary">Tracking with Learning [Inputs: Raw Data, Segmentation Image]</option>
+                    <option value="StructuredTrackingWorkflowFromPrediction">Tracking with Learning [Inputs: Raw Data, Pixel Prediction Map]</option>
+                    <option value="EdgeTrainingWithMulticutWorkflow">Bounary-based Segmentation with Multicut</option>
+                    <option value="CountingWorkflow">Cell Density Counting</option>
+                    <option value="DataConversionWorkflow">Data Conversion</option>
+                    <option value="neuralNetwork.RemoteWorkflow">Neural Network Classification (Remote)</option>
+                    <option value="neuralNetwork.LocalWorkflow">Neural Network Classification (Local)</option>
+                </param>
+            </when>
+            <when value="existing">
+                <param argument="--project" type="data" format="h5" label="Existing ilastik project" />
+            </when>
+        </conditional>
+        <param name="infiles" type="data" format="tiff" multiple="true" label="Input files in TIFF format"/>
     </inputs>
     
     <outputs>
-        <data name="ilastik_project" format="h5" label="Ilastik project file">
-            <discover_datasets pattern=".*.ilp" directory="galaxy_outputs" visible="true" assign_primary_output="true"/>
-        </data>
+        <data name="ilastik_project" format="h5" label="Ilastik project file" from_work_dir="./MyProject.ilp"/>
     </outputs>
     
     <tests>
@@ -36,6 +73,8 @@
     
     <help><![CDATA[
         Leverage machine learning algorithms to easily segment, classify, track and count your cells or other experimental data. Most operations are interactive, even on large datasets: you just draw the labels and immediately see the result. No machine learning expertise required.
+
+        Please, check the documentation at https://www.ilastik.org/documentation/.
 ]]>
     </help>
     <citations>
