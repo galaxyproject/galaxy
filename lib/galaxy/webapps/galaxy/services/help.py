@@ -32,11 +32,10 @@ class HelpService(ServiceBase):
         if not self.config.help_forum_api_url:
             raise ServerNotConfiguredForRequest("Help forum API URL is not configured.")
         forum_search_url = f"{self.config.help_forum_api_url}/search.json"
-        forum_query = f"{query} order:latest_topic"
         response = requests.get(
             url=forum_search_url,
             params={
-                "q": forum_query,
+                "q": query,
             },
         )
         return HelpSearchResponse(**response.json())
