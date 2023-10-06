@@ -849,8 +849,11 @@ def get_users_by_ids(session: Session, user_ids):
 # the tool_shed app, which has its own User model, which is different from
 # galaxy.model.User. In that case, the tool_shed user model should be passed as
 # the model_class argument.
-def get_user_by_email(session, email: str, model_class=User):
-    stmt = select(model_class).filter(model_class.email == email).limit(1)
+def get_user_by_email(session, email: str, model_class=User, case_sensitive=True):
+    filter_clause = model_class.email == email
+    if not case_sensitive:
+        filter_clause = func.lower(model_class.email) == func.lower(email)
+    stmt = select(model_class).where(filter_clause).limit(1)
     return session.scalars(stmt).first()
 
 
