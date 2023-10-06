@@ -69,7 +69,7 @@
                                     <b-input-group prepend="https://orcid.org/">
                                         <b-form-input
                                             id="register-form-orcid"
-                                            v-model="orcid"
+                                            v-model="orcidId"
                                             name="orcidId"
                                             placeholder="xxxx-xxxx-xxxx-xxxx"
                                             type="text" />
