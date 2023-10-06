@@ -95,7 +95,8 @@ class ToolBoxRegistryImpl(ToolBoxRegistry):
         self.__toolbox = toolbox
 
     def has_tool(self, tool_id: str) -> bool:
-        return tool_id in self.__toolbox._tools_by_id
+        toolbox = self.__toolbox
+        return tool_id in toolbox._tools_by_id or tool_id in toolbox._tools_by_old_id
 
     def get_tool(self, tool_id: str):
         return self.__toolbox.get_tool(tool_id)
@@ -161,6 +162,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         # so each will be present once in the above dictionary. The following
         # dictionary can instead hold multiple tools with different versions.
         self._tool_versions_by_id = {}
+        self._tools_by_old_id = {}
         self._workflows_by_id = {}
         # Cache for tool's to_dict calls specific to toolbox. Invalidates on toolbox reload.
         self._tool_to_dict_cache = {}
@@ -718,9 +720,8 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                         rval.append(lineage_tool)
             if not rval:
                 # still no tool, do a deeper search and try to match by old ids
-                for tool in self._tools_by_id.values():
-                    if tool.old_id == tool_id:
-                        rval.append(tool)
+                if tool_id in self._tools_by_old_id:
+                    rval.extend(self._tools_by_old_id[tool_id])
                 if get_all_versions and tool_id in self._tool_versions_by_id:
                     for tool in self._tool_versions_by_id[tool_id].values():
                         if tool not in rval:
@@ -1160,6 +1161,10 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                 self._tools_by_id[tool_id] = tool
         else:
             self._tools_by_id[tool_id] = tool
+        old_id = tool.old_id
+        if old_id not in self._tools_by_old_id:
+            self._tools_by_old_id[old_id] = []
+        self._tools_by_old_id[old_id].append(tool)
 
     def package_tool(self, trans, tool_id):
         """
@@ -1219,6 +1224,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         else:
             tool = self._tools_by_id[tool_id]
             del self._tools_by_id[tool_id]
+            self._tools_by_old_id[tool.old_id].remove(tool)
             tool_cache = getattr(self.app, "tool_cache", None)
             if tool_cache:
                 tool_cache.expire_tool(tool_id)

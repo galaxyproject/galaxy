@@ -62,7 +62,7 @@ export default {
         };
     },
     computed: {
-        ...mapState(useUserStore, ["isAnonymous"]),
+        ...mapState(useUserStore, ["currentUser", "isAnonymous"]),
         title() {
             return `Copying History: ${this.history.name}`;
         },
@@ -72,9 +72,12 @@ export default {
         saveVariant() {
             return this.loading ? "info" : this.formValid ? "primary" : "secondary";
         },
+        userOwnsHistory() {
+            return this.currentUser.id == this.history.user_id;
+        },
         newNameValid() {
-            if (this.name == this.history.name) {
-                return null;
+            if (this.userOwnsHistory && this.name == this.history.name) {
+                return false;
             }
             return this.name.length > 0;
         },
