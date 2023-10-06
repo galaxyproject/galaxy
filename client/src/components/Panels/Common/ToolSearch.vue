@@ -202,16 +202,11 @@ function onAdvancedSearch(filters: any) {
                         <dt><code>name</code></dt>
                         <dd>The tool name (stored as tool.name + tool.description in the XML)</dd>
                         <dt><code>section</code></dt>
+                        <dd>The tool section is based on the default tool panel view</dd>
+                        <dt><code>ontology</code></dt>
                         <dd>
-                            The tool section is based on the current view you have selected for the panel. <br />
-                            When this field is active, you will be able to see a datalist showing the available sections
-                            you can filter from. <br />
-                            By default, Galaxy tool panel sections are filterable if you are currently on the
-                            <i>Full Tool Panel</i> view, and it will show EDAM ontologies or EDAM topics if you have
-                            either of those options selected. <br />
-                            Change panel views by clicking on the
-                            <icon icon="caret-down" />
-                            icon at the top right of the tool panel.
+                            This is the EDAM ontology term that is associated with the tool. Example inputs:
+                            <i>"topic_3174"</i> or <i>"operation_0324"</i>
                         </dd>
                         <dt><code>id</code></dt>
                         <dd>The tool id (taken from its XML)</dd>
