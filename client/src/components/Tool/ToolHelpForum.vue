@@ -37,7 +37,7 @@ onMounted(async () => {
 
         <BCard v-for="topic in topics" :key="topic.id">
             <template v-slot:header>
-                <Heading h3 size="sm">{{ topic.title }}</Heading>
+                <Heading h3 inline size="sm">{{ topic.title }}</Heading>
             </template>
             <BCardText> hello world </BCardText>
         </BCard>
