@@ -58,16 +58,19 @@ export interface HelpForumSearchResponseData {
  * @param tags optional - pre defined tags
  * @param body optional - pre defined body
  */
-export function useCreateNewTopicUrl(
-    title: Ref<string>,
-    category?: Ref<string>,
-    tags?: Ref<string[]>,
-    body?: Ref<string>
-) {
+export function useHelpURLs(options: {
+    title: Ref<string>;
+    category?: Ref<string>;
+    tags?: Ref<string[]>;
+    body?: Ref<string>;
+    query: Ref<string>;
+}) {
     const configStore = useConfigStore();
 
     const createNewTopicUrl = computed(() => {
         const url = new URL("/new-topic", configStore.config.help_forum_api_url);
+
+        const { title, category, tags, body } = options;
 
         url.searchParams.append("title", title.value);
 
@@ -86,7 +89,18 @@ export function useCreateNewTopicUrl(
         return url;
     });
 
+    const searchTopicUrl = computed(() => {
+        const url = new URL("/search", configStore.config.help_forum_api_url);
+
+        const { query } = options;
+
+        url.searchParams.append("q", query.value);
+
+        return url;
+    });
+
     return {
         createNewTopicUrl,
+        searchTopicUrl,
     };
 }
