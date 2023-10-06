@@ -65,6 +65,16 @@
                                         dashes ('.', '_', '-').
                                     </b-form-text>
                                 </b-form-group>
+                                <b-form-group :label="labelOrcidId" label-for="register-form-orcid">
+                                    <b-input-group prepend="https://orcid.org/">
+                                        <b-form-input
+                                            id="register-form-orcid"
+                                            v-model="orcid"
+                                            name="orcidId"
+                                            placeholder="xxxx-xxxx-xxxx-xxxx"
+                                            type="text" />
+                                </b-input-group>
+                                </b-form-group>
                                 <b-form-group v-if="mailingJoinAddr && serverMailConfigured">
                                     <b-form-checkbox
                                         id="register-form-subscribe"
@@ -157,6 +167,7 @@ export default {
             disableCreate: false,
             email: null,
             password: null,
+            orcidId: null,
             username: null,
             confirm: null,
             subscribe: null,
@@ -166,6 +177,7 @@ export default {
             labelPassword: _l("Password"),
             labelConfirmPassword: _l("Confirm password"),
             labelPublicName: _l("Public name"),
+            labelOrcidId: _l("ORCID ID (optional)"),
             labelSubscribe: _l("Subscribe to mailing list"),
         };
     },
@@ -185,6 +197,7 @@ export default {
                     email: this.email,
                     username: this.username,
                     password: this.password,
+                    orcidId: this.orcidId,
                     confirm: this.confirm,
                     subscribe: this.subscribe,
                     session_csrf_token: this.sessionCsrfToken,

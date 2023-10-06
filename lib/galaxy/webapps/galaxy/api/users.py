@@ -64,6 +64,7 @@ from galaxy.schema.schema import (
 )
 from galaxy.security.validate_user_input import (
     validate_email,
+    validate_orcid_id,
     validate_password,
     validate_publicname,
 )
@@ -750,10 +751,13 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
         user = self._get_user(trans, id)
         email = user.email
         username = user.username
+        orcid_id = "1111-2222-3333-4444"
+        # orcid_id = user.orcid_id
         inputs = list()
         user_info = {
             "email": email,
             "username": username,
+            "orcid_id": orcid_id
         }
         is_galaxy_app = trans.webapp.name == "galaxy"
         if trans.app.config.enable_account_interface or not is_galaxy_app:
@@ -779,6 +783,16 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                         "help": 'Your public name is an identifier that will be used to generate addresses for information you share publicly. Public names must be at least three characters in length and contain only lower-case letters, numbers, dots, underscores, and dashes (".", "_", "-").',
                     }
                 )
+            inputs.append(
+                {
+                    "id": "orcid_id_input",
+                    "name": "orcid_id",
+                    "type": "text",
+                    "label": "ORCID ID",
+                    "value": orcid_id,
+                    "help": 'xxxx-xxxx-xxxx-xxxx',
+                }
+            )
             info_form_models = self.get_all_forms(
                 trans, filter=dict(deleted=False), form_type=FormDefinition.types.USER_INFO
             )
@@ -906,6 +920,14 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
                 raise exceptions.RequestParameterInvalidException(message)
             if user.username != username:
                 user.username = username
+        # Update ORCID ID
+        if "orcid_id" in payload:
+            orcid_id = payload.get("orcid_id")
+            message = validate_orcid_id(trans, orcid_id)
+            if message:
+                raise exceptions.RequestParameterInvalidException(message)
+            if user.orcid_id != orcid_id:
+                user.orcid_id = orcid_id
         # Update user custom form
         user_info_form_id = payload.get("info|form_id")
         if user_info_form_id:
