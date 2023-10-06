@@ -20,6 +20,7 @@ from fastapi import (
 from starlette.datastructures import UploadFile as StarletteUploadFile
 
 from galaxy.exceptions import InsufficientPermissionsException
+from galaxy.model.base import transaction
 from galaxy.webapps.galaxy.api import as_form
 from tool_shed.context import SessionRequestContext
 from tool_shed.managers.repositories import (
@@ -357,7 +358,8 @@ class FastAPIRepositories:
         repository_metadata = get_repository_metadata_for_management(trans, encoded_repository_id, changeset_revision)
         repository_metadata.malicious = True
         trans.sa_session.add(repository_metadata)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.delete(
@@ -374,7 +376,8 @@ class FastAPIRepositories:
         repository_metadata = get_repository_metadata_for_management(trans, encoded_repository_id, changeset_revision)
         repository_metadata.malicious = False
         trans.sa_session.add(repository_metadata)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.put(
@@ -392,7 +395,8 @@ class FastAPIRepositories:
             raise InsufficientPermissionsException("You do not have permission to update this repository.")
         repository.deprecated = True
         trans.sa_session.add(repository)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.delete(
@@ -410,7 +414,8 @@ class FastAPIRepositories:
             raise InsufficientPermissionsException("You do not have permission to update this repository.")
         repository.deprecated = False
         trans.sa_session.add(repository)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     @router.delete(
