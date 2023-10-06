@@ -7,6 +7,7 @@ import { getAppRoot } from "onload/loadConfig";
 import { storeToRefs } from "pinia";
 import { computed, ref, watch } from "vue";
 
+import { useConfigStore } from "@/stores/configurationStore";
 import { useUserStore } from "@/stores/userStore";
 
 import ToolSelectPreferredObjectStore from "./ToolSelectPreferredObjectStore";
@@ -83,6 +84,7 @@ function onSetError(e) {
 }
 
 const { currentUser, isAnonymous } = storeToRefs(useUserStore());
+const { config, isLoaded: isConfigLoaded } = storeToRefs(useConfigStore());
 const hasUser = computed(() => !isAnonymous.value);
 const versions = computed(() => props.options.versions);
 const showVersions = computed(() => props.options.versions?.length > 1);
@@ -101,7 +103,7 @@ function onUpdatePreferredObjectStoreId(selectedToolPreferredObjectStoreId) {
     emit("updatePreferredObjectStoreId", selectedToolPreferredObjectStoreId);
 }
 
-const showHelpForum = computed(() => true);
+const showHelpForum = computed(() => isConfigLoaded.value && config.value.help_forum_tool_panel_integration_enabled);
 </script>
 
 <template>
