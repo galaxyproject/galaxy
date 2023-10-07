@@ -36,7 +36,7 @@
         <div slot="modal-footer" slot-scope="{ ok, cancel }">
             <div>
                 <b-button class="mr-3" @click="cancel()"> Cancel </b-button>
-                <b-button :variant="saveVariant" :disabled="!formValid" @click="copy(ok)">
+                <b-button :variant="saveVariant" :disabled="loading || !formValid" @click="copy(ok)">
                     {{ saveTitle | localize }}
                 </b-button>
             </div>
