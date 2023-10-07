@@ -664,7 +664,7 @@ class BamNative(CompressedArchive, _BamOrSam):
                             break
 
                         offset = bamfile.tell()
-                        bamline = alignment.to_string(bamfile)
+                        bamline = alignment.to_string()
                         # With multiple tags, Galaxy would display each as a separate column
                         # because the 'to_string()' function uses tabs also between tags.
                         # Below code will turn these extra tabs into spaces.
