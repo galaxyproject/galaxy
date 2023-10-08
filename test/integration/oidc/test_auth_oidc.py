@@ -177,3 +177,15 @@ class TestGalaxyOIDCLoginIntegration(AbstractTestCases.BaseKeycloakIntegrationTe
         self._assert_status_code_is(response, 200)
         assert response.json()["email"] == "gxyuser@galaxy.org"
 
+    def test_oidc_logout(self):
+        # login
+        session, response = self._login_via_keycloak(KEYCLOAK_TEST_USERNAME, KEYCLOAK_TEST_PASSWORD)
+        # get the user
+        response = session.get(self._api_url("users/current"))
+        self._assert_status_code_is(response, 200)
+        # now logout
+        response = session.get(self._api_url("../authnz/logout"))
+        response = session.get(response.json()["redirect_uri"], verify=False)
+        # make sure we can no longer request the user
+        response = session.get(self._api_url("users/current"))
+        self._assert_status_code_is(response, 400)
