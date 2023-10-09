@@ -7,7 +7,7 @@
         <container type="docker">quay.io/galaxy/ilastik:@VERSION@</container>
     </requirements>
     <entry_points>
-        <entry_point name="Ilastik on $infile.display_name" requires_domain="True">
+        <entry_point name="Ilastik" requires_domain="True">
             <port>5800</port>
         </entry_point>
     </entry_points>
