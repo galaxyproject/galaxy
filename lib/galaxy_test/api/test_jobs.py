@@ -488,7 +488,7 @@ steps:
         job_id = run_response["jobs"][0]["id"]
         self.dataset_populator.wait_for_job(job_id)
         dataset_id = run_response["outputs"][0]["id"]
-        response = self._post(f"jobs/{job_id}/error", data={"dataset_id": dataset_id})
+        response = self._post(f"jobs/{job_id}/error", data={"dataset_id": dataset_id}, json=True)
         assert response.status_code == 200, response.text
 
     @skip_without_tool("detect_errors_aggressive")
