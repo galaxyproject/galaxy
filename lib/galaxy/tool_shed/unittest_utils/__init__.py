@@ -87,6 +87,7 @@ class TestTool:
         self.tool_shed_repository = tool_shed_repository
         self.guid = guid
         self.id = guid
+        self.old_id = guid
         self.version = "1.0.0"
         self.hidden = False
         self._lineage = None
