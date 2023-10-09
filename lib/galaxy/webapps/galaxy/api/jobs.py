@@ -180,22 +180,6 @@ class FastAPIJobs:
     service: JobsService = depends(JobsService)
     manager: JobManager = depends(JobManager)
 
-    @router.get("/api/jobs/{id}")
-    def show(
-        self,
-        id: DecodedDatabaseIdField,
-        trans: ProvidesUserContext = DependsOnTrans,
-        full: Optional[bool] = False,
-    ) -> Dict[str, Any]:
-        """
-        Return dictionary containing description of job data
-
-        Parameters
-        - id: ID of job to return
-        - full: Return extra information ?
-        """
-        return self.service.show(trans, id, bool(full))
-
     @router.get("/api/jobs")
     def index(
         self,
@@ -283,6 +267,22 @@ class FastAPIJobs:
         else:
             exceptions.RequestParameterInvalidException(f"Job with id '{job.tool_id}' is not paused")
         return self.service.dictify_associations(trans, job.output_datasets, job.output_library_datasets)
+
+    @router.get("/api/jobs/{id}")
+    def show(
+        self,
+        id: DecodedDatabaseIdField,
+        trans: ProvidesUserContext = DependsOnTrans,
+        full: Optional[bool] = False,
+    ) -> Dict[str, Any]:
+        """
+        Return dictionary containing description of job data
+
+        Parameters
+        - id: ID of job to return
+        - full: Return extra information ?
+        """
+        return self.service.show(trans, id, bool(full))
 
 
 class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
