@@ -908,6 +908,14 @@ export interface paths {
         /** Check inputs and job for common potential problems to aid in error reporting */
         get: operations["check_common_problems_api_jobs__id__common_problems_get"];
     };
+    "/api/jobs/{id}/error": {
+        /**
+         * Submits a bug report via the API.
+         * @description :rtype:     dictionary
+         * :returns:   dictionary containing information regarding where the error report was sent.
+         */
+        post: operations["report_error_api_jobs__id__error_post"];
+    };
     "/api/jobs/{id}/resume": {
         /** Resumes a paused job. */
         put: operations["resume_paused_job_api_jobs__id__resume_put"];
@@ -6124,6 +6132,14 @@ export interface components {
             name: string;
         };
         /**
+         * JobErrorSummary
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        JobErrorSummary: {
+            /** Messages */
+            messages: string[][];
+        };
+        /**
          * JobExportHistoryArchiveListResponse
          * @description Base model definition with common configuration used by all derived models.
          */
@@ -8141,6 +8157,21 @@ export interface components {
              * @description Email of the user
              */
             remote_user_email: string;
+        };
+        /**
+         * ReportJobErrorPayload
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        ReportJobErrorPayload: {
+            /**
+             * Dataset Id
+             * @example 0123456789ABCDEF
+             */
+            dataset_id: string;
+            /** Email */
+            email?: string;
+            /** Message */
+            message?: string;
         };
         /**
          * RequestDataType
@@ -14747,6 +14778,42 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["JobInputSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    report_error_api_jobs__id__error_post: {
+        /**
+         * Submits a bug report via the API.
+         * @description :rtype:     dictionary
+         * :returns:   dictionary containing information regarding where the error report was sent.
+         */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The ID of the job */
+            path: {
+                id: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReportJobErrorPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["JobErrorSummary"];
                 };
             };
             /** @description Validation Error */
