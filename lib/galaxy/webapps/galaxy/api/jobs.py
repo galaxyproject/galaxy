@@ -18,10 +18,12 @@ from typing import (
 )
 
 from fastapi import (
+    Body,
     Depends,
     Path,
     Query,
 )
+from pydantic import Required
 from typing_extensions import Annotated
 
 from galaxy import (
@@ -33,6 +35,7 @@ from galaxy.managers.context import (
     ProvidesHistoryContext,
     ProvidesUserContext,
 )
+from galaxy.managers.hdas import HDAManager
 from galaxy.managers.jobs import (
     JobManager,
     JobSearch,
@@ -43,7 +46,9 @@ from galaxy.managers.jobs import (
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.jobs import (
     JobAssociation,
+    JobErrorSummary,
     JobInputSummary,
+    ReportJobErrorPayload,
 )
 from galaxy.schema.schema import JobIndexSortByEnum
 from galaxy.schema.types import OffsetNaiveDatetime
@@ -174,11 +179,14 @@ SearchQueryParam: Optional[str] = search_query_param(
 
 JobIdPathParam: DecodedDatabaseIdField = Path(title="Job ID", description="The ID of the job")
 
+ReportErrorBody = Body(default=Required, title="Report error", description="The values to report an Error")
+
 
 @router.cbv
 class FastAPIJobs:
     service: JobsService = depends(JobsService)
     manager: JobManager = depends(JobManager)
+    hda_manager: HDAManager = depends(HDAManager)
 
     @router.get("/api/jobs")
     def index(
@@ -267,6 +275,46 @@ class FastAPIJobs:
         else:
             exceptions.RequestParameterInvalidException(f"Job with id '{job.tool_id}' is not paused")
         return self.service.dictify_associations(trans, job.output_datasets, job.output_library_datasets)
+
+    @router.post(
+        "/api/jobs/{id}/error",
+        name="report_error",
+        summary="Submits a bug report via the API.",
+    )
+    def error(
+        self,
+        payload: Annotated[ReportJobErrorPayload, ReportErrorBody],
+        id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
+        # payload: Any = {"dataset_id": 1, "email": None, "message": None},
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> JobErrorSummary:
+        """
+        :rtype:     dictionary
+        :returns:   dictionary containing information regarding where the error report was sent.
+        """
+        # Get dataset on which this error was triggered
+        dataset_id = payload.dataset_id
+        # if not dataset_id:
+        #     raise exceptions.RequestParameterMissingException("No dataset_id")
+        dataset = self.hda_manager.get_accessible(id=dataset_id, user=trans.user)
+        # Get job
+        job = self.service.get_job(trans, id)
+        if dataset.creating_job.id != job.id:
+            raise exceptions.RequestParameterInvalidException("dataset_id was not created by job_id")
+        tool = trans.app.toolbox.get_tool(job.tool_id, tool_version=job.tool_version) or None
+        email = payload.email
+        if not email and not trans.anonymous:
+            email = trans.user.email
+        messages = trans.app.error_reports.default_error_plugin.submit_report(
+            dataset=dataset,
+            job=job,
+            tool=tool,
+            user_submission=True,
+            user=trans.user,
+            email=email,
+            message=payload.message,
+        )
+        return JobErrorSummary(messages=messages)
 
     @router.get("/api/jobs/{id}")
     def show(
@@ -518,43 +566,3 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
             if job:
                 jobs.append(job)
         return [self.encode_all_ids(trans, single_job.to_dict("element"), True) for single_job in jobs]
-
-    @expose_api_anonymous
-    def error(self, trans: ProvidesUserContext, id, payload, **kwd):
-        """
-        error( trans, id )
-        * POST /api/jobs/{id}/error
-            submits a bug report via the API.
-
-        :type   id: string
-        :param  id: Encoded job id
-
-        :rtype:     dictionary
-        :returns:   dictionary containing information regarding where the error report was sent.
-        """
-        # Get dataset on which this error was triggered
-        dataset_id = payload.get("dataset_id")
-        if not dataset_id:
-            raise exceptions.RequestParameterMissingException("No dataset_id")
-        decoded_dataset_id = self.decode_id(dataset_id)
-        dataset = self.hda_manager.get_accessible(decoded_dataset_id, trans.user)
-
-        # Get job
-        job = self.__get_job(trans, id)
-        if dataset.creating_job.id != job.id:
-            raise exceptions.RequestParameterInvalidException("dataset_id was not created by job_id")
-        tool = trans.app.toolbox.get_tool(job.tool_id, tool_version=job.tool_version) or None
-        email = payload.get("email")
-        if not email and not trans.anonymous:
-            email = trans.user.email
-        messages = trans.app.error_reports.default_error_plugin.submit_report(
-            dataset=dataset,
-            job=job,
-            tool=tool,
-            user_submission=True,
-            user=trans.user,
-            email=email,
-            message=payload.get("message"),
-        )
-
-        return {"messages": messages}
