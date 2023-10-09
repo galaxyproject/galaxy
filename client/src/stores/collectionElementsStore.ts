@@ -9,9 +9,16 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
     const loadingCollectionElements = ref<{ [key: string]: boolean }>({});
     const storedCollectionElements = ref<{ [key: string]: DCESummary[] }>({});
 
+    /**
+     * Returns a key that can be used to store or retrieve the elements of a collection in the store.
+     */
+    function getCollectionKey(collection: HDCASummary) {
+        return `${collection.id}-${collection.collection_id}`;
+    }
+
     const getCollectionElements = computed(() => {
         return (collection: HDCASummary, offset = 0, limit = 50) => {
-            const elements = storedCollectionElements.value[collection.id] ?? [];
+            const elements = storedCollectionElements.value[getCollectionKey(collection)] ?? [];
             fetchMissingElements({ collection, offset, limit });
             return elements ?? null;
         };
@@ -19,14 +26,15 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
 
     const isLoadingCollectionElements = computed(() => {
         return (collection: HDCASummary) => {
-            return loadingCollectionElements.value[collection.id] ?? false;
+            return loadingCollectionElements.value[getCollectionKey(collection)] ?? false;
         };
     });
 
     async function fetchMissingElements(params: { collection: HDCASummary; offset: number; limit: number }) {
+        const collectionKey = getCollectionKey(params.collection);
         try {
             const maxElementCountInCollection = params.collection.element_count ?? 0;
-            const storedElements = storedCollectionElements.value[params.collection.id] ?? [];
+            const storedElements = storedCollectionElements.value[collectionKey] ?? [];
             // Collections are immutable, so there is no need to fetch elements if the range we want is already stored
             if (params.offset + params.limit <= storedElements.length) {
                 return;
@@ -38,22 +46,22 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
                 return;
             }
 
-            Vue.set(loadingCollectionElements.value, params.collection.id, true);
+            Vue.set(loadingCollectionElements.value, collectionKey, true);
             const fetchedElements = await Service.fetchElementsFromHDCA({
                 hdca: params.collection,
                 offset: params.offset,
                 limit: params.limit,
             });
             const updatedElements = [...storedElements, ...fetchedElements];
-            Vue.set(storedCollectionElements.value, params.collection.id, updatedElements);
+            Vue.set(storedCollectionElements.value, collectionKey, updatedElements);
         } finally {
-            Vue.delete(loadingCollectionElements.value, params.collection.id);
+            Vue.delete(loadingCollectionElements.value, collectionKey);
         }
     }
 
     async function loadCollectionElements(collection: HDCASummary) {
         const elements = await Service.fetchElementsFromHDCA({ hdca: collection });
-        Vue.set(storedCollectionElements.value, collection.id, elements);
+        Vue.set(storedCollectionElements.value, getCollectionKey(collection), elements);
     }
 
     function saveCollections(historyContentsPayload: HistoryContentItemBase[]) {
@@ -93,5 +101,6 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
         fetchCollection,
         loadCollectionElements,
         saveCollections,
+        getCollectionKey,
     };
 });
