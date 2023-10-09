@@ -216,7 +216,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         # Deleting multiple times will re-hash the username/email
         email_hash = new_secure_hash_v2(user.email + pseudorandom_value)
         uname_hash = new_secure_hash_v2(user.username + pseudorandom_value)
-        # We must also redact username
+        # Redact all roles user has
         for role in user.all_roles():
             if self.app.config.redact_username_during_deletion:
                 role.name = role.name.replace(user.username, uname_hash)
@@ -225,11 +225,12 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             if self.app.config.redact_email_during_deletion:
                 role.name = role.name.replace(user.email, email_hash)
                 role.description = role.description.replace(user.email, email_hash)
-            user.email = email_hash
-            user.username = uname_hash
             private_role.name = email_hash
             private_role.description = f"Private Role for {email_hash}"
             self.session().add(private_role)
+        # Redact user's email and username
+        user.email = email_hash
+        user.username = uname_hash
         # Redact user addresses as well
         if self.app.config.redact_user_address_during_deletion:
             user_addresses = (
