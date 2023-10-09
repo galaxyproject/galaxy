@@ -940,9 +940,6 @@ def populate_api_routes(webapp, app):
         conditions=dict(method=["GET"]),
     )
     webapp.mapper.connect(
-        "job_error", "/api/jobs/{id}/error", controller="jobs", action="error", conditions=dict(method=["POST"])
-    )
-    webapp.mapper.connect(
         "destination_params",
         "/api/jobs/{job_id}/destination_params",
         controller="jobs",
