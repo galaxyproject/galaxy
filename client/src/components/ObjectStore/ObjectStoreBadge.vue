@@ -18,7 +18,7 @@ const MESSAGES = {
     no_quota: "No Galaxy quota is enabled for this object store.",
     faster: "This storage has been marked as a faster option by the Galaxy administrator.",
     slower: "This storage has been marked as a slower option by the Galaxy administrator.",
-    short_term: "This storage has been marked routinely purged by the Galaxy administrator.",
+    short_term: "This storage has been marked as routinely purged by the Galaxy administrator.",
     backed_up: "This storage has been marked as backed up by the Galaxy administrator.",
     not_backed_up: "This storage has been marked as not backed up by the Galaxy administrator.",
     more_secure:
