@@ -7,7 +7,7 @@ import ExpandedItems from "@/components/History/Content/ExpandedItems";
 import { updateContentFields } from "@/components/History/model/queries";
 import { useCollectionElementsStore } from "@/stores/collectionElementsStore";
 import { HistorySummary } from "@/stores/historyStore";
-import { DCESummary, DCObject, HDCASummary } from "@/stores/services";
+import { CollectionEntry, DCESummary, DCObject, HDCASummary } from "@/stores/services";
 
 import CollectionDetails from "./CollectionDetails.vue";
 import CollectionNavigation from "./CollectionNavigation.vue";
@@ -17,7 +17,7 @@ import ListingLayout from "@/components/History/Layout/ListingLayout.vue";
 
 interface Props {
     history: HistorySummary;
-    selectedCollections: HDCASummary[];
+    selectedCollections: CollectionEntry[];
     showControls?: boolean;
     filterable?: boolean;
 }
@@ -30,8 +30,8 @@ const props = withDefaults(defineProps<Props>(), {
 const collectionElementsStore = useCollectionElementsStore();
 
 const emit = defineEmits<{
-    (e: "view-collection", collection: HDCASummary): void;
-    (e: "update:selected-collections", collections: HDCASummary[]): void;
+    (e: "view-collection", collection: CollectionEntry): void;
+    (e: "update:selected-collections", collections: CollectionEntry[]): void;
 }>();
 
 const offset = ref(0);
@@ -40,7 +40,7 @@ const dsc = computed(() => props.selectedCollections[props.selectedCollections.l
 const collectionElements = computed(() => collectionElementsStore.getCollectionElements(dsc.value, offset.value));
 const loading = computed(() => collectionElementsStore.isLoadingCollectionElements(dsc.value));
 const jobState = computed(() => dsc.value?.job_state_summary);
-const rootCollection = computed(() => props.selectedCollections[0]);
+const rootCollection = computed(() => props.selectedCollections[0] as HDCASummary);
 const isRoot = computed(() => dsc.value == rootCollection.value);
 
 function updateDsc(collection: any, fields: Object | undefined) {
@@ -59,9 +59,16 @@ function onScroll(newOffset: number) {
     offset.value = newOffset;
 }
 
-async function onViewSubCollection(itemObject: DCObject) {
-    const collection = await collectionElementsStore.getCollection(itemObject.id);
-    emit("view-collection", collection);
+async function onViewSubCollection(itemObject: DCObject, name: string) {
+    // We need to convert the DCO to a CollectionEntry in order
+    // to be able to fetch the contents of a nested collection.
+    const collectionEntry: CollectionEntry = {
+        id: rootCollection.value.id,
+        name,
+        collection_id: itemObject.id,
+        collection_type: itemObject.collection_type,
+    };
+    emit("view-collection", collectionEntry);
 }
 
 watch(

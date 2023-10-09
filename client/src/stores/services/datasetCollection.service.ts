@@ -1,6 +1,6 @@
 import { fetcher } from "@/schema";
 
-import { DCESummary, HDCADetailed, HDCASummary } from ".";
+import { CollectionEntry, DCESummary, HDCADetailed } from ".";
 
 const DEFAULT_LIMIT = 50;
 
@@ -33,7 +33,7 @@ export async function fetchCollectionElements(params: {
 }
 
 export async function fetchElementsFromHDCA(params: {
-    hdca: HDCASummary;
+    hdca: CollectionEntry;
     offset?: number;
     limit?: number;
 }): Promise<DCESummary[]> {
