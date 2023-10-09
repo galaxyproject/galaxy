@@ -46,7 +46,8 @@ describe("useCollectionElementsStore", () => {
         expect(store.isLoadingCollectionElements(collection1)).toEqual(false);
         expect(fetchCollectionElements).toHaveBeenCalled();
 
-        const elements = store.storedCollectionElements[collection1.id];
+        const collection1Key = store.getCollectionKey(collection1);
+        const elements = store.storedCollectionElements[collection1Key];
         expect(elements).toBeDefined();
         expect(elements).toHaveLength(limit);
     });
@@ -55,8 +56,9 @@ describe("useCollectionElementsStore", () => {
         const store = useCollectionElementsStore();
         const storedCount = 5;
         const expectedStoredElements = Array.from({ length: storedCount }, (_, i) => mockElement(collection1.id, i));
-        store.storedCollectionElements[collection1.id] = expectedStoredElements;
-        expect(store.storedCollectionElements[collection1.id]).toHaveLength(storedCount);
+        const collection1Key = store.getCollectionKey(collection1);
+        store.storedCollectionElements[collection1Key] = expectedStoredElements;
+        expect(store.storedCollectionElements[collection1Key]).toHaveLength(storedCount);
 
         const offset = 0;
         const limit = 5;
@@ -70,8 +72,9 @@ describe("useCollectionElementsStore", () => {
         const store = useCollectionElementsStore();
         const storedCount = 3;
         const expectedStoredElements = Array.from({ length: storedCount }, (_, i) => mockElement(collection1.id, i));
-        store.storedCollectionElements[collection1.id] = expectedStoredElements;
-        expect(store.storedCollectionElements[collection1.id]).toHaveLength(storedCount);
+        const collection1Key = store.getCollectionKey(collection1);
+        store.storedCollectionElements[collection1Key] = expectedStoredElements;
+        expect(store.storedCollectionElements[collection1Key]).toHaveLength(storedCount);
 
         const offset = 2;
         const limit = 5;
@@ -82,7 +85,7 @@ describe("useCollectionElementsStore", () => {
         expect(store.isLoadingCollectionElements(collection1)).toEqual(false);
         expect(fetchCollectionElements).toHaveBeenCalled();
 
-        const elements = store.storedCollectionElements[collection1.id];
+        const elements = store.storedCollectionElements[collection1Key];
         expect(elements).toBeDefined();
         // The offset was overlapping with the stored elements, so it was increased by the number of stored elements
         // so it fetches the next "limit" number of elements
