@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import Vue, { computed, ref } from "vue";
 
-import { DCESummary, HDCASummary, HistoryContentItemBase } from "./services";
+import { CollectionEntry, DCESummary, HDCASummary, HistoryContentItemBase, isHDCA } from "./services";
 import * as Service from "./services/datasetCollection.service";
 
 export const useCollectionElementsStore = defineStore("collectionElementsStore", () => {
@@ -11,9 +11,14 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
 
     /**
      * Returns a key that can be used to store or retrieve the elements of a collection in the store.
+     *
+     * It consistently returns a DatasetCollection ID for (top level) HDCAs or sub-collections.
      */
-    function getCollectionKey(collection: HDCASummary): string {
-        return collection.collection_id;
+    function getCollectionKey(collection: CollectionEntry): string {
+        if (isHDCA(collection)) {
+            return collection.collection_id;
+        }
+        return collection.id;
     }
 
     const getCollectionElements = computed(() => {
@@ -47,8 +52,8 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
             }
 
             Vue.set(loadingCollectionElements.value, collectionKey, true);
-            const fetchedElements = await Service.fetchElementsFromHDCA({
-                hdca: params.collection,
+            const fetchedElements = await Service.fetchElementsFromCollection({
+                entry: params.collection,
                 offset: params.offset,
                 limit: params.limit,
             });
@@ -60,7 +65,7 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
     }
 
     async function loadCollectionElements(collection: HDCASummary) {
-        const elements = await Service.fetchElementsFromHDCA({ hdca: collection });
+        const elements = await Service.fetchElementsFromCollection({ entry: collection });
         Vue.set(storedCollectionElements.value, getCollectionKey(collection), elements);
     }
 
