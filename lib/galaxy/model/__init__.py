@@ -4484,16 +4484,27 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
     dbkey = property(get_dbkey, set_dbkey)
 
     def ok_to_edit_metadata(self):
-        # prevent modifying metadata when dataset is queued or running as input/output
-        # This code could be more efficient, i.e. by using mappers, but to prevent slowing down loading a History panel, we'll leave the code here for now
-        sa_session = object_session(self)
-        for job_to_dataset_association in (
-            sa_session.query(JobToInputDatasetAssociation).filter_by(dataset_id=self.id).all()
-            + sa_session.query(JobToOutputDatasetAssociation).filter_by(dataset_id=self.id).all()
-        ):
-            if job_to_dataset_association.job.state not in Job.terminal_states:
-                return False
-        return True
+        """
+        Prevent modifying metadata when dataset is queued or running as input/output:
+        return `False` if there exists an associated job with a non-terminal state.
+        """
+
+        def exists_clause(assoc_model):
+            return (
+                select(assoc_model.job_id)
+                .join(Job)
+                .where(assoc_model.dataset_id == self.id)
+                .where(Job.state.not_in(Job.terminal_states))
+                .exists()
+            )
+
+        stmt = select(
+            or_(
+                exists_clause(JobToInputDatasetAssociation),
+                exists_clause(JobToOutputDatasetAssociation),
+            )
+        )
+        return not object_session(self).scalar(stmt)
 
     def change_datatype(self, new_ext):
         self.clear_associated_files()
