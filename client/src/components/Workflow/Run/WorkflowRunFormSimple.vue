@@ -26,7 +26,7 @@
                             >Attempt to re-use jobs with identical parameters?</b-form-checkbox
                         >
                         <b-form-checkbox v-if="config.object_store_allows_id_selection" v-model="splitObjectStore"
-                            >Send outputs and intermediate to different object stores?</b-form-checkbox
+                            >Send outputs and intermediate to different storage locations?</b-form-checkbox
                         >
                         <WorkflowStorageConfiguration
                             v-if="config.object_store_allows_id_selection"

@@ -35,7 +35,7 @@ watch(
     }
 );
 fetch();
-const loadingMessage = "Loading object store details";
+const loadingMessage = "Loading storage location details";
 </script>
 
 <template>

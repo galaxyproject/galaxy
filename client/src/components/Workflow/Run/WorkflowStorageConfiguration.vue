@@ -14,7 +14,7 @@
         </WorkflowTargetPreferredObjectStorePopover>
         <b-modal
             v-model="showPreferredObjectStoreModal"
-            title="Invocation Preferred Object Store"
+            title="Invocation Preferred Storage Location"
             v-bind="modalProps"
             hide-footer>
             <WorkflowSelectPreferredObjectStore
@@ -37,7 +37,7 @@
         </WorkflowTargetPreferredObjectStorePopover>
         <b-modal
             v-model="showIntermediatePreferredObjectStoreModal"
-            title="Invocation Preferred Object Store (Intermediate Datasets)"
+            title="Invocation Preferred Storage Location (Intermediate Datasets)"
             v-bind="modalProps"
             hide-footer>
             <WorkflowSelectPreferredObjectStore
