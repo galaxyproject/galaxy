@@ -332,6 +332,12 @@ class WorkflowRequestMonitor(Monitors):
             workflow_invocation = session.get(model.WorkflowInvocation, invocation_id)
 
             try:
+                if workflow_invocation.state == workflow_invocation.states.CANCELLING:
+                    workflow_invocation.cancel_invocation_steps()
+                    workflow_invocation.state = workflow_invocation.states.CANCELLED
+                    session.commit()
+                    return False
+
                 if not workflow_invocation or not workflow_invocation.active:
                     return False
 

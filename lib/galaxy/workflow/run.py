@@ -640,6 +640,8 @@ class WorkflowProgress:
         when_values=None,
     ) -> WorkflowInvoker:
         subworkflow_invocation = self._subworkflow_invocation(step)
+        subworkflow_invocation.handler = self.workflow_invocation.handler
+        subworkflow_invocation.scheduler = self.workflow_invocation.scheduler
         workflow_run_config = workflow_request_to_run_config(subworkflow_invocation, use_cached_job)
         subworkflow_progress = self.subworkflow_progress(
             subworkflow_invocation,

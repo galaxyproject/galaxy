@@ -135,6 +135,7 @@ from galaxy.model.item_attrs import (
 from galaxy.model.orm.now import now
 from galaxy.model.orm.util import add_object_to_object_session
 from galaxy.objectstore import ObjectStore
+from galaxy.schema.invocation import InvocationCancellationUserRequest
 from galaxy.schema.schema import (
     DatasetCollectionPopulatedState,
     DatasetState,
@@ -1642,12 +1643,13 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
             # Nothing changed, no action needed
             return False
         session = object_session(self)
-        if session and self.id and not state in Job.terminal_states:
+        if session and self.id and state not in Job.terminal_states:
             # generate statement that will not revert DELETING or DELETED back to anything non-terminal
-            rval = session.execute(update(Job.table).where(
-                Job.table.c.id == self.id,
-                ~Job.table.c.state.in_((Job.states.DELETING, Job.states.DELETED))
-            ).values(state=state))
+            rval = session.execute(
+                update(Job.table)
+                .where(Job.table.c.id == self.id, ~Job.table.c.state.in_((Job.states.DELETING, Job.states.DELETED)))
+                .values(state=state)
+            )
             if rval.rowcount == 1:
                 self.state_history.append(JobStateHistory(self))
                 return True
@@ -8170,6 +8172,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         READY = "ready"  # Workflow ready for another iteration of scheduling.
         SCHEDULED = "scheduled"  # Workflow has been scheduled.
         CANCELLED = "cancelled"
+        CANCELLING = "cancelling"  # invocation scheduler will cancel job in next iteration
         FAILED = "failed"
 
     non_terminal_states = [states.NEW, states.READY]
@@ -8215,11 +8218,54 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         return self.state in [states.NEW, states.READY]
 
     def cancel(self):
-        if not self.active:
-            return False
-        else:
-            self.state = WorkflowInvocation.states.CANCELLED
+        if self.state not in [WorkflowInvocation.states.CANCELLING, WorkflowInvocation.states.CANCELLED]:
+            # No use cancelling workflow again, for all others we may still want to be able to cancel
+            # remaining tool and workflow steps
+            self.state = WorkflowInvocation.states.CANCELLING
             return True
+        return False
+
+    def cancel_invocation_steps(self):
+        sa_session = object_session(self)
+        job_subq = (
+            sa_session.query(Job.id)
+            .join(WorkflowInvocationStep)
+            .filter(WorkflowInvocationStep.workflow_invocation_id == self.id)
+            .filter(~Job.table.c.state.in_(Job.terminal_states))
+            .with_for_update()
+            .scalar_subquery()
+        )
+        sa_session.execute(update(Job.table).where(Job.id == job_subq).values({"state": Job.states.DELETING}))
+
+        job_collection_subq = (
+            sa_session.query(Job.id)
+            .join(ImplicitCollectionJobsJobAssociation)
+            .join(ImplicitCollectionJobs)
+            .join(
+                WorkflowInvocationStep, WorkflowInvocationStep.implicit_collection_jobs_id == ImplicitCollectionJobs.id
+            )
+            .filter(WorkflowInvocationStep.workflow_invocation_id == self.id)
+            .filter(~Job.table.c.state.in_(Job.terminal_states))
+            .with_for_update()
+            .subquery()
+        )
+
+        sa_session.execute(
+            update(Job.table)
+            .where(Job.table.c.id.in_(job_collection_subq.element))
+            .values({"state": Job.states.DELETING})
+        )
+
+        for invocation in self.subworkflow_invocations:
+            subworkflow_invocation = invocation.subworkflow_invocation
+            cancelled = subworkflow_invocation.cancel()
+            if cancelled:
+                subworkflow_invocation.add_message(InvocationCancellationUserRequest(reason="user_request"))
+            sa_session.add(subworkflow_invocation)
+        sa_session.commit()
+
+    def mark_cancelled(self):
+        self.state = WorkflowInvocation.states.CANCELLED
 
     def fail(self):
         self.state = WorkflowInvocation.states.FAILED
@@ -8269,6 +8315,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
             or_(
                 WorkflowInvocation.state == WorkflowInvocation.states.NEW,
                 WorkflowInvocation.state == WorkflowInvocation.states.READY,
+                WorkflowInvocation.state == WorkflowInvocation.states.CANCELLING,
             ),
         ]
         if scheduler is not None:

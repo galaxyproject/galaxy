@@ -31,7 +31,6 @@ from sqlalchemy import (
     or_,
     select,
     true,
-    update,
 )
 from sqlalchemy.orm import (
     aliased,
@@ -422,44 +421,16 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
             target_format=target_format,
         )
 
-    def cancel_invocation(self, trans, decoded_invocation_id: int):
+    def request_invocation_cancellation(self, trans, decoded_invocation_id: int):
         workflow_invocation = self.get_invocation(trans, decoded_invocation_id)
         cancelled = workflow_invocation.cancel()
 
         if cancelled:
             workflow_invocation.add_message(InvocationCancellationUserRequest(reason="user_request"))
             trans.sa_session.add(workflow_invocation)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
-
-        job_subq = (
-            trans.sa_session.query(model.Job.id)
-            .join(model.WorkflowInvocationStep)
-            .filter(model.WorkflowInvocationStep.workflow_invocation_id == decoded_invocation_id)
-            .filter(~model.Job.table.c.state.in_(model.Job.terminal_states))
-            .with_for_update().scalar_subquery()
-        )
-        log.debug("CANCEL STEP JOBS")
-        trans.sa_session.execute(update(model.Job.table).where(model.Job.id == job_subq).values({"state": model.Job.states.DELETING}))
-
-        job_collection_subq = (
-            trans.sa_session.query(model.Job.id)
-            .join(model.ImplicitCollectionJobsJobAssociation)
-            .join(model.ImplicitCollectionJobs)
-            .join(model.WorkflowInvocationStep, model.WorkflowInvocationStep.implicit_collection_jobs_id == model.ImplicitCollectionJobs.id)
-            .filter(model.WorkflowInvocationStep.workflow_invocation_id == decoded_invocation_id)
-            .filter(~model.Job.table.c.state.in_(model.Job.terminal_states))
-            .with_for_update().subquery()
-        )
-
-        log.debug("CANCEL STEP IMPLICIT JOBS")
-        trans.sa_session.execute(update(model.Job.table).where(model.Job.table.c.id.in_(job_collection_subq.element)).values({"state": model.Job.states.DELETING}))
 
         with transaction(trans.sa_session):
             trans.sa_session.commit()
-
-        for invocation in workflow_invocation.subworkflow_invocations:
-            self.cancel_invocation(trans, invocation.subworkflow_invocation_id)
 
         return workflow_invocation
 

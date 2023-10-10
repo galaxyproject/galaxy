@@ -4090,12 +4090,18 @@ test_data:
             assert invocation_before_cancellation["state"] == "scheduled"
             subworkflow_invocation_id = invocation_before_cancellation["steps"][2]["subworkflow_invocation_id"]
             self.workflow_populator.cancel_invocation(summary.invocation_id)
+            self.workflow_populator.wait_for_invocation_and_jobs(
+                history_id=history_id,
+                workflow_id=summary.workflow_id,
+                invocation_id=summary.invocation_id,
+                assert_ok=False,
+            )
             invocation_jobs = self.workflow_populator.get_invocation_jobs(summary.invocation_id)
             for job in invocation_jobs:
-                assert job["state"] == "deleted" or job["state"] == "deleting"
+                assert job["state"] == "deleted"
             subworkflow_invocation_jobs = self.workflow_populator.get_invocation_jobs(subworkflow_invocation_id)
             for job in subworkflow_invocation_jobs:
-                assert job["state"] == "deleted" or job["state"] == "deleting"
+                assert job["state"] == "deleted"
 
     def test_workflow_failed_output_not_found(self, history_id):
         summary = self._run_workflow(
