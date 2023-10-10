@@ -7,7 +7,7 @@ import ExpandedItems from "@/components/History/Content/ExpandedItems";
 import { updateContentFields } from "@/components/History/model/queries";
 import { useCollectionElementsStore } from "@/stores/collectionElementsStore";
 import { HistorySummary } from "@/stores/historyStore";
-import { CollectionEntry, DCESummary, DCObject, HDCASummary } from "@/stores/services";
+import { CollectionEntry, DCESummary, DCObject, HDCASummary, SubCollection } from "@/stores/services";
 
 import CollectionDetails from "./CollectionDetails.vue";
 import CollectionNavigation from "./CollectionNavigation.vue";
@@ -60,13 +60,13 @@ function onScroll(newOffset: number) {
 }
 
 async function onViewSubCollection(itemObject: DCObject, name: string) {
-    // We need to convert the DCO to a CollectionEntry in order
-    // to be able to fetch the contents of a nested collection.
-    const collectionEntry: CollectionEntry = {
-        id: rootCollection.value.id,
+    // We need to convert the DCO to a SubCollection by providing
+    // some more context to represent the collection in the UI and
+    // fetch the elements of the collection in a consistent way.
+    const collectionEntry: SubCollection = {
+        ...itemObject,
         name,
-        collection_id: itemObject.id,
-        collection_type: itemObject.collection_type,
+        hdca_id: rootCollection.value.id,
     };
     emit("view-collection", collectionEntry);
 }
