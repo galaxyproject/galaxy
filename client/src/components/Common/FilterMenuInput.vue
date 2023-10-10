@@ -1,8 +1,8 @@
 <script setup lang="ts">
 import { capitalize } from "lodash";
-import { computed, type PropType, ref, watch } from 'vue';
+import { computed, type PropType, ref, watch } from "vue";
 
-import { ValidFilter } from '@/utils/filtering';
+import { ValidFilter } from "@/utils/filtering";
 
 const props = defineProps({
     name: { type: String, required: true },
@@ -25,12 +25,18 @@ const localValue = ref(propValue.value);
 const helpToggle = ref(false);
 const modalTitle = `${capitalize(props.filter.placeholder)} Help`;
 
-watch(() => localValue.value, (newFilter: string) => {
-    emit("change", props.name, newFilter);
-});
-watch(() => propValue.value, (newFilter: string) => {
-    localValue.value = newFilter;
-});
+watch(
+    () => localValue.value,
+    (newFilter: string) => {
+        emit("change", props.name, newFilter);
+    }
+);
+watch(
+    () => propValue.value,
+    (newFilter: string) => {
+        localValue.value = newFilter;
+    }
+);
 
 function hasError(field: string) {
     if (props.error && props.error.index == field) {
@@ -66,11 +72,7 @@ function onHelp(_: string, value: string) {
                 :options="props.filter.datalist"></b-form-datalist>
             <!-- append Help Modal for filter if included or/and datepciker if type: Date -->
             <b-input-group-append>
-                <b-button
-                    v-if="props.filter.helpInfo"
-                    :title="modalTitle"
-                    size="sm"
-                    @click="helpToggle = true">
+                <b-button v-if="props.filter.helpInfo" :title="modalTitle" size="sm" @click="helpToggle = true">
                     <icon icon="question" />
                 </b-button>
                 <b-form-datepicker
@@ -83,10 +85,7 @@ function onHelp(_: string, value: string) {
         </b-input-group>
         <!-- if a filter has help component, place it within a modal -->
         <span v-if="props.filter.helpInfo">
-            <b-modal
-                v-model="helpToggle"
-                :title="modalTitle"
-                ok-only>
+            <b-modal v-model="helpToggle" :title="modalTitle" ok-only>
                 <component
                     :is="props.filter.helpInfo"
                     v-if="typeof props.filter.helpInfo == 'object'"

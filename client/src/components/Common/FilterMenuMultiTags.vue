@@ -1,7 +1,7 @@
 <script setup lang="ts">
-import { computed, type PropType, ref, watch } from 'vue';
+import { computed, type PropType, ref, watch } from "vue";
 
-import { ValidFilter } from '@/utils/filtering';
+import { ValidFilter } from "@/utils/filtering";
 
 import StatelessTags from "../Tags/StatelessTags.vue";
 
@@ -20,12 +20,18 @@ const propValue = computed(() => props.filters[props.name]);
 
 const localValue = ref(propValue.value);
 
-watch(() => localValue.value, (newFilter: string) => {
-    emit("change", props.name, newFilter);
-});
-watch(() => propValue.value, (newFilter: string) => {
-    localValue.value = newFilter;
-});
+watch(
+    () => localValue.value,
+    (newFilter: string) => {
+        emit("change", props.name, newFilter);
+    }
+);
+watch(
+    () => propValue.value,
+    (newFilter: string) => {
+        localValue.value = newFilter;
+    }
+);
 </script>
 
 <template>
@@ -35,7 +41,7 @@ watch(() => propValue.value, (newFilter: string) => {
             <StatelessTags
                 :value="localValue"
                 :placeholder="`any ${props.filter.placeholder}`"
-                @input="(tags) => localValue = tags" />
+                @input="(tags) => (localValue = tags)" />
         </b-input-group>
     </div>
 </template>

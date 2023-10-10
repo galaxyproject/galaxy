@@ -125,10 +125,7 @@ function updateFilterText(newFilterText: string) {
 watch(
     () => props.filterText,
     (newFilterText: string) => {
-        const defaultBackendFilter = props.filterClass.getFilterText(
-            props.filterClass.defaultFilters,
-            true
-        );
+        const defaultBackendFilter = props.filterClass.getFilterText(props.filterClass.defaultFilters, true);
         const currentBackendFilter = props.filterClass.getFilterText(filters.value, true);
 
         const backendFilter =
