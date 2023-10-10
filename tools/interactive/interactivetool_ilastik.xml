@@ -13,7 +13,7 @@
     </entry_points>
     <command detect_errors="exit_code">
     <![CDATA[
-        ## export HOME=\$PWD &&
+        export HOME=\$PWD &&
         ## Make a copy of the existing project if exists
         #if str($input_type.existing) == "existing":
             cp $input_type.project ./MyProject.ilp &&
@@ -23,12 +23,14 @@
         #for input in $infiles:
             ln -s '$input' ./galaxy_inputs/'$input.name' &&
         #end for
-        ilastik
         #if str($input_type.existing) == "new":
-            --new_project ./MyProject.ilp --workflow '$input_type.Workflow'
+            echo "ilastik --new_project \$HOME/MyProject.ilp --workflow '$input_type.Workflow'" > run_ilastik &&
         #else:
-            --project ./MyProject.ilp
+            echo "ilastik --project \$HOME/MyProject.ilp" > run_ilastik &&
         #end if
+        chmod +x run_ilastik &&
+        cp run_ilastik '/bin/' &&
+        /init
     ]]>
     </command>
     <inputs>
@@ -65,7 +67,7 @@
     </inputs>
     
     <outputs>
-        <data name="ilastik_project" format="h5" label="Ilastik project file" from_work_dir="./MyProject.ilp"/>
+        <data name="ilastik_project" format="h5" label="Ilastik project file" from_work_dir="MyProject.ilp"/>
     </outputs>
     
     <tests>
