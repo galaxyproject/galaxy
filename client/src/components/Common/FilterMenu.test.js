@@ -201,7 +201,7 @@ describe("FilterMenu", () => {
         // only add name filter in the advanced menu
         let filterName = wrapper.find("[placeholder='any name']");
         if (filterName.vm && filterName.props().type == "text") {
-            filterName.setValue("sample name");
+            await filterName.setValue("sample name");
         }
 
         // -------- Test keyup.enter key:  ---------

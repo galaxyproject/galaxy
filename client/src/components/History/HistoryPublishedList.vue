@@ -81,15 +81,6 @@ const onTagsUpdate = (newTags, row) => {
     updateTags(row.item.id, "History", row.item.tags);
 };
 
-const onToggle = () => {
-    showAdvanced.value = !showAdvanced.value;
-};
-
-const onSearch = () => {
-    onToggle();
-    updateFilter(filters.getFilterText(filterSettings.value));
-};
-
 const scrollToTop = () => {
     scrollableDiv.value.scrollTo({ top: 0, behavior: "smooth" });
 };

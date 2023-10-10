@@ -68,7 +68,7 @@ describe("ToolSearch", () => {
         // Test: we route to the list with filters
         const mockMethod = jest.fn();
         $router.push = mockMethod;
-        wrapper.find("[data-description='apply filters']").trigger("click");
+        await wrapper.find("[data-description='apply filters']").trigger("click");
         const filterSettings = {
             name: "name-filter",
             section: "section-filter",
