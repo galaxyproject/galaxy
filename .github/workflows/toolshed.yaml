@@ -68,7 +68,6 @@ jobs:
         with:
           path: 'galaxy root/.venv'
           key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-toolshed
-          key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy_root/requirements.txt') }}-toolshed
       - name: Install dependencies
         run: ./scripts/common_startup.sh --skip-client-build
         working-directory: 'galaxy root'
