@@ -11,8 +11,9 @@ from fastapi import (
 )
 from pydantic import BaseModel
 from sqlalchemy import (
-    and_,
+    false,
     true,
+    update,
 )
 
 import tool_shed.util.shed_util_common as suc
@@ -23,6 +24,7 @@ from galaxy.exceptions import (
 )
 from galaxy.managers.api_keys import ApiKeyManager
 from galaxy.managers.users import UserManager
+from galaxy.model.base import transaction
 from galaxy.webapps.base.webapp import create_new_session
 from tool_shed.context import SessionRequestContext
 from tool_shed.managers.users import (
@@ -31,7 +33,10 @@ from tool_shed.managers.users import (
     index,
 )
 from tool_shed.structured_app import ToolShedApp
-from tool_shed.webapp.model import User as SaUser
+from tool_shed.webapp.model import (
+    GalaxySession,
+    User as SaUser,
+)
 from tool_shed_client.schema import (
     CreateUserRequest,
     UserV2 as User,
@@ -299,42 +304,43 @@ def ensure_csrf_token(trans: SessionRequestContext, request: HasCsrfToken):
 
 def handle_user_login(trans: SessionRequestContext, user: SaUser) -> None:
     trans.app.security_agent.create_user_role(user, trans.app)
-    # Set the previous session
-    prev_galaxy_session = trans.get_galaxy_session()
-    if prev_galaxy_session:
-        prev_galaxy_session.is_valid = False
-    # Define a new current_session
-    new_session = create_new_session(trans, prev_galaxy_session, user)
-    trans.set_galaxy_session(new_session)
-    trans.sa_session.add_all((prev_galaxy_session, new_session))
-    trans.sa_session.flush()
-    set_auth_cookie(trans, new_session)
+    replace_previous_session(trans, user)
 
 
 def handle_user_logout(trans, logout_all=False):
     """
     Logout the current user:
-        - invalidate the current session
+        - invalidate current session + previous sessions (optional)
         - create a new session with no user associated
     """
+    if logout_all:
+        prev_session = trans.get_galaxy_session()
+        if prev_session and prev_session.user_id:
+            invalidate_user_sessions(trans.sa_session, prev_session.user_id)
+    replace_previous_session(trans, None)
+
+
+def replace_previous_session(trans, user):
     prev_galaxy_session = trans.get_galaxy_session()
+    # Invalidate previous session
     if prev_galaxy_session:
         prev_galaxy_session.is_valid = False
-    new_session = create_new_session(trans, prev_galaxy_session, None)
+    # Create new session
+    new_session = create_new_session(trans, prev_galaxy_session, user)
     trans.set_galaxy_session(new_session)
     trans.sa_session.add_all((prev_galaxy_session, new_session))
-    trans.sa_session.flush()
-
-    galaxy_user_id = prev_galaxy_session.user_id
-    if logout_all and galaxy_user_id is not None:
-        for other_galaxy_session in trans.sa_session.query(trans.app.model.GalaxySession).filter(
-            and_(
-                trans.app.model.GalaxySession.table.c.user_id == galaxy_user_id,
-                trans.app.model.GalaxySession.table.c.is_valid == true(),
-                trans.app.model.GalaxySession.table.c.id != prev_galaxy_session.id,
-            )
-        ):
-            other_galaxy_session.is_valid = False
-            trans.sa_session.add(other_galaxy_session)
-    trans.sa_session.flush()
+    with transaction(trans.sa_session):
+        trans.sa_session.commit()
     set_auth_cookie(trans, new_session)
+
+
+def invalidate_user_sessions(session, user_id):
+    stmt = (
+        update(GalaxySession)
+        .values(is_valid=false())
+        .where(GalaxySession.user_id == user_id)
+        .where(GalaxySession.is_valid == true())
+    )
+    session.execute(stmt)
+    with transaction(session):
+        session.commit()

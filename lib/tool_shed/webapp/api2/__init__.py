@@ -29,6 +29,7 @@ from starlette_context import context as request_context
 from galaxy.exceptions import AdminRequiredException
 from galaxy.managers.session import GalaxySessionManager
 from galaxy.managers.users import UserManager
+from galaxy.model.base import transaction
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util import unicodify
 from galaxy.web.framework.decorators import require_admin_message
@@ -331,7 +332,8 @@ def ensure_valid_session(trans: SessionRequestContext) -> None:
         #        be needed.
         if prev_galaxy_session:
             sa_session.add(prev_galaxy_session)
-        sa_session.flush()
+        with transaction(sa_session):
+            sa_session.commit()
 
 
 def set_auth_cookie(trans: SessionRequestContext, session):
