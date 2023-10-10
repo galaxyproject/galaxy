@@ -1,13 +1,10 @@
 <script setup lang="ts">
-/**
- * REFACTOR CODE HERE, `ANY` FILTER SHOULD BE SET TO UNDEFINED ...
- */
 import { computed } from "vue";
 
 const props = defineProps({
     filter: { type: Object, required: true },
     name: { type: String, required: true },
-    settings: { type: Object, required: true },
+    filters: { type: Object, required: true },
 });
 
 const boolType = computed(() => props.filter.boolType || "default");
@@ -26,11 +23,13 @@ const options =
 
 const emit = defineEmits<{
     (e: "change", name: string, value: boolean | string | undefined): void;
+    (e: "on-enter"): void;
+    (e: "on-esc"): void;
 }>();
 
 const value = computed({
     get: () => {
-        const value = props.settings[props.name];
+        const value = props.filters[props.name];
         return value !== undefined ? value : "any";
     },
     set: (newVal: boolean | string | undefined) => {
@@ -41,12 +40,16 @@ const value = computed({
 </script>
 
 <template>
-    <b-form-group class="m-0">
-        <b-form-radio-group
-            v-model="value"
-            :options="options"
-            size="sm"
-            buttons
-            :data-description="`filter ${props.name}`" />
-    </b-form-group>
+    <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
+    <div @keyup.enter="emit('on-enter')" @keyup.esc="emit('on-esc')">
+        <small>{{ props.filter.placeholder }}:</small>
+        <b-form-group class="m-0">
+            <b-form-radio-group
+                v-model="value"
+                :options="options"
+                size="sm"
+                buttons
+                :data-description="`filter ${props.name}`" />
+        </b-form-group>
+    </div>
 </template>
