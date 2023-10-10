@@ -1548,9 +1548,10 @@ class MinimalJobWrapper(HasResourceParameters):
             return
         if info:
             job.info = info
-        job.set_state(state)
+        state_changed = job.set_state(state)
         self.sa_session.add(job)
-        job.update_output_states(self.app.application_stack.supports_skip_locked())
+        if state_changed:
+            job.update_output_states(self.app.application_stack.supports_skip_locked())
         if flush:
             with transaction(self.sa_session):
                 self.sa_session.commit()

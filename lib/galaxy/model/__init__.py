@@ -1636,10 +1636,27 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
 
     def set_state(self, state):
         """
-        Save state history
+        Save state history. Returns True if stat has changed, else False
         """
-        self.state = state
-        self.state_history.append(JobStateHistory(self))
+        if self.state == state:
+            # Nothing changed, no action needed
+            return False
+        session = object_session(self)
+        if session and self.id and not state in Job.terminal_states:
+            # generate statement that will not revert DELETING or DELETED back to anything non-terminal
+            rval = session.execute(update(Job.table).where(
+                Job.table.c.id == self.id,
+                ~Job.table.c.state.in_((Job.states.DELETING, Job.states.DELETED))
+            ).values(state=state))
+            if rval.rowcount == 1:
+                self.state_history.append(JobStateHistory(self))
+                return True
+            else:
+                return False
+        else:
+            self.state = state
+            self.state_history.append(JobStateHistory(self))
+            return True
 
     def get_param_values(self, app, ignore_errors=False):
         """
