@@ -60,6 +60,10 @@ from tool_shed.util import (
 from tool_shed.util.web_util import escape
 from tool_shed.utility_containers import ToolShedUtilityContainerManager
 from tool_shed.webapp.framework.decorators import require_login
+from tool_shed.webapp.model import (
+    Category,
+    RepositoryCategoryAssociation,
+)
 from tool_shed.webapp.util import ratings_util
 
 log = logging.getLogger(__name__)
@@ -1685,8 +1689,8 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             if category_ids:
                 # Create category associations
                 for category_id in category_ids:
-                    category = trans.sa_session.query(trans.model.Category).get(trans.security.decode_id(category_id))
-                    rca = trans.app.model.RepositoryCategoryAssociation(repository, category)
+                    category = trans.sa_session.get(Category, trans.security.decode_id(category_id))
+                    rca = RepositoryCategoryAssociation(repository, category)
                     trans.sa_session.add(rca)
                     with transaction(trans.sa_session):
                         trans.sa_session.commit()
@@ -1700,7 +1704,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                     user_ids = util.listify(allow_push)
                     usernames = []
                     for user_id in user_ids:
-                        user = trans.sa_session.query(trans.model.User).get(trans.security.decode_id(user_id))
+                        user = trans.sa_session.get(trans.model.User, trans.security.decode_id(user_id))
                         usernames.append(user.username)
                     usernames = ",".join(usernames)
                 repository.set_allow_push(usernames, remove_auth=remove_auth)
@@ -1731,7 +1735,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         else:
             current_allow_push_list = []
         options = []
-        for user in trans.sa_session.query(trans.model.User):
+        for user in trans.sa_session.scalars(select(trans.model.User)):
             if user.username not in current_allow_push_list:
                 options.append(user)
         for obj in options:
