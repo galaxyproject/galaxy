@@ -1,6 +1,6 @@
 import { fetcher } from "@/schema";
 
-import { CollectionEntry, DCESummary, HDCADetailed } from ".";
+import { CollectionEntry, DCESummary, HDCADetailed, isHDCA } from ".";
 
 const DEFAULT_LIMIT = 50;
 
@@ -17,9 +17,13 @@ const getCollectionContents = fetcher
     .create();
 
 export async function fetchCollectionElements(params: {
+    /** The ID of the top level HDCA that associates this collection with the History it belongs to. */
     hdcaId: string;
+    /** The ID of the collection itself. */
     collectionId: string;
+    /** The offset to start fetching elements from. */
     offset?: number;
+    /** The maximum number of elements to fetch. */
     limit?: number;
 }): Promise<DCESummary[]> {
     const { data } = await getCollectionContents({
@@ -32,14 +36,19 @@ export async function fetchCollectionElements(params: {
     return data;
 }
 
-export async function fetchElementsFromHDCA(params: {
-    hdca: CollectionEntry;
+export async function fetchElementsFromCollection(params: {
+    /** The HDCA or sub-collection to fetch elements from. */
+    entry: CollectionEntry;
+    /** The offset to start fetching elements from. */
     offset?: number;
+    /** The maximum number of elements to fetch. */
     limit?: number;
 }): Promise<DCESummary[]> {
+    const hdcaId = isHDCA(params.entry) ? params.entry.id : params.entry.hdca_id;
+    const collectionId = isHDCA(params.entry) ? params.entry.collection_id : params.entry.id;
     return fetchCollectionElements({
-        hdcaId: params.hdca.id,
-        collectionId: params.hdca.collection_id,
+        hdcaId: hdcaId,
+        collectionId: collectionId,
         offset: params.offset ?? 0,
         limit: params.limit ?? DEFAULT_LIMIT,
     });
