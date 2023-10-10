@@ -22,7 +22,7 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
     }
 
     const getCollectionElements = computed(() => {
-        return (collection: HDCASummary, offset = 0, limit = 50) => {
+        return (collection: CollectionEntry, offset = 0, limit = 50) => {
             const elements = storedCollectionElements.value[getCollectionKey(collection)] ?? [];
             fetchMissingElements({ collection, offset, limit });
             return elements ?? null;
@@ -30,12 +30,12 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
     });
 
     const isLoadingCollectionElements = computed(() => {
-        return (collection: HDCASummary) => {
+        return (collection: CollectionEntry) => {
             return loadingCollectionElements.value[getCollectionKey(collection)] ?? false;
         };
     });
 
-    async function fetchMissingElements(params: { collection: HDCASummary; offset: number; limit: number }) {
+    async function fetchMissingElements(params: { collection: CollectionEntry; offset: number; limit: number }) {
         const collectionKey = getCollectionKey(params.collection);
         try {
             const maxElementCountInCollection = params.collection.element_count ?? 0;
@@ -64,7 +64,7 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
         }
     }
 
-    async function loadCollectionElements(collection: HDCASummary) {
+    async function loadCollectionElements(collection: CollectionEntry) {
         const elements = await Service.fetchElementsFromCollection({ entry: collection });
         Vue.set(storedCollectionElements.value, getCollectionKey(collection), elements);
     }

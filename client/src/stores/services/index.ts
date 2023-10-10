@@ -31,6 +31,14 @@ export type DatasetEntry = DatasetSummary | DatasetDetails;
 export type DCESummary = components["schemas"]["DCESummary"];
 
 /**
+ * DatasetCollectionElement specific type for collections.
+ */
+export interface DCECollection extends DCESummary {
+    element_type: "dataset_collection";
+    object: DCObject;
+}
+
+/**
  * Contains summary information about a HDCA (HistoryDatasetCollectionAssociation).
  *
  * HDCAs are (top level only) history items that contains information about the association
@@ -51,7 +59,8 @@ export type HDCADetailed = components["schemas"]["HDCADetailed"];
 export type DCObject = components["schemas"]["DCObject"];
 
 /**
- * Represents a SubCollection as a DatasetCollection with additional information to simplify its handling.
+ * A SubCollection is a DatasetCollectionElement of type `dataset_collection`
+ * with additional information to simplify its handling.
  *
  * This is used to be able to distinguish between top level HDCAs and sub-collections.
  * It helps simplify both, the representation of sub-collections in the UI, and fetching of elements.
@@ -71,6 +80,15 @@ export type CollectionEntry = HDCASummary | SubCollection;
 /**
  * Returns true if the given entry is a top level HDCA and false for sub-collections.
  */
-export function isHDCA(entry: CollectionEntry): entry is HDCASummary {
-    return "history_content_type" in entry && entry.history_content_type === "dataset_collection";
+export function isHDCA(entry?: CollectionEntry): entry is HDCASummary {
+    return (
+        entry !== undefined && "history_content_type" in entry && entry.history_content_type === "dataset_collection"
+    );
+}
+
+/**
+ * Returns true if the given element of a collection is a DatasetCollection.
+ */
+export function isCollectionElement(element: DCESummary): element is DCECollection {
+    return element.element_type === "dataset_collection";
 }

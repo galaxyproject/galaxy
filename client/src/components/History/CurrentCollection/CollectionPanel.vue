@@ -7,7 +7,7 @@ import ExpandedItems from "@/components/History/Content/ExpandedItems";
 import { updateContentFields } from "@/components/History/model/queries";
 import { useCollectionElementsStore } from "@/stores/collectionElementsStore";
 import { HistorySummary } from "@/stores/historyStore";
-import { CollectionEntry, DCESummary, DCObject, HDCASummary, SubCollection } from "@/stores/services";
+import { CollectionEntry, DCESummary, isCollectionElement, isHDCA, SubCollection } from "@/stores/services";
 
 import CollectionDetails from "./CollectionDetails.vue";
 import CollectionNavigation from "./CollectionNavigation.vue";
@@ -36,11 +36,23 @@ const emit = defineEmits<{
 
 const offset = ref(0);
 
-const dsc = computed(() => props.selectedCollections[props.selectedCollections.length - 1] as HDCASummary);
+const dsc = computed(() => {
+    const currentCollection = props.selectedCollections[props.selectedCollections.length - 1];
+    if (currentCollection === undefined) {
+        throw new Error("No collection selected");
+    }
+    return currentCollection;
+});
 const collectionElements = computed(() => collectionElementsStore.getCollectionElements(dsc.value, offset.value));
 const loading = computed(() => collectionElementsStore.isLoadingCollectionElements(dsc.value));
-const jobState = computed(() => dsc.value?.job_state_summary);
-const rootCollection = computed(() => props.selectedCollections[0] as HDCASummary);
+const jobState = computed(() => ("job_state_summary" in dsc.value ? dsc.value.job_state_summary : undefined));
+const rootCollection = computed(() => {
+    if (isHDCA(props.selectedCollections[0])) {
+        return props.selectedCollections[0];
+    } else {
+        throw new Error("Root collection must be an HistoryDatasetCollectionAssociation");
+    }
+});
 const isRoot = computed(() => dsc.value == rootCollection.value);
 
 function updateDsc(collection: any, fields: Object | undefined) {
@@ -59,16 +71,16 @@ function onScroll(newOffset: number) {
     offset.value = newOffset;
 }
 
-async function onViewSubCollection(itemObject: DCObject, name: string) {
-    // We need to convert the DCO to a SubCollection by providing
-    // some more context to represent the collection in the UI and
-    // fetch the elements of the collection in a consistent way.
-    const collectionEntry: SubCollection = {
-        ...itemObject,
-        name,
+async function onViewDatasetCollectionElement(element: DCESummary) {
+    if (!isCollectionElement(element)) {
+        return;
+    }
+    const collection: SubCollection = {
+        ...element.object,
+        name: element.element_identifier,
         hdca_id: rootCollection.value.id,
     };
-    emit("view-collection", collectionEntry);
+    emit("view-collection", collection);
 }
 
 watch(
@@ -113,7 +125,7 @@ watch(
                                 :is-dataset="item.element_type == 'hda'"
                                 :filterable="filterable"
                                 @update:expand-dataset="setExpanded(item, $event)"
-                                @view-collection="onViewSubCollection" />
+                                @view-collection="onViewDatasetCollectionElement(item)" />
                         </template>
                     </ListingLayout>
                 </div>
