@@ -164,7 +164,7 @@ class TestStorageCleaner(integration_util.IntegrationTestCase):
             history_ids.append(history_id)
             # Create a dataset with content equal to the expected size of the history
             if history_data.size:
-                self.dataset_populator.new_dataset(history_id, content=f"{'0'*(history_data.size-1)}\n")
+                self.dataset_populator.new_dataset(history_id, content=f"{'0' * (history_data.size - 1)}\n")
         if wait_for_histories:
             for history_id in history_ids:
                 self.dataset_populator.wait_for_history(history_id)
@@ -176,7 +176,7 @@ class TestStorageCleaner(integration_util.IntegrationTestCase):
         dataset_ids = []
         for dataset_data in test_datasets:
             dataset = self.dataset_populator.new_dataset(
-                history_id, name=dataset_data.name, content=f"{'0'*(dataset_data.size-1)}\n"
+                history_id, name=dataset_data.name, content=f"{'0' * (dataset_data.size - 1)}\n"
             )
             dataset_ids.append(dataset["id"])
         if wait_for_history:

@@ -409,7 +409,7 @@ class DatasetEmptyValidator(Validator):
         message = elem.get("message")
         negate = elem.get("negate", "false")
         if not message:
-            message = f"The selected dataset is {'non-' if negate == 'true' else ''}empty, this tool expects {'non-' if negate=='false' else ''}empty files."
+            message = f"The selected dataset is {'non-' if negate == 'true' else ''}empty, this tool expects {'non-' if negate == 'false' else ''}empty files."
         return cls(message, negate)
 
     def validate(self, value, trans=None):

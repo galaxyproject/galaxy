@@ -757,7 +757,7 @@ class DefaultToolAction(ToolAction):
                 assert (
                     old_job.user_id == trans.user.id
                 ), f"({old_job.id}/{current_job.id}): Old user id ({old_job.user_id}) does not match rerun user id ({trans.user.id})"
-            elif trans.user is None and type(galaxy_session) == trans.model.GalaxySession:
+            elif trans.user is None and isinstance(galaxy_session, trans.model.GalaxySession):
                 assert (
                     old_job.session_id == galaxy_session.id
                 ), f"({old_job.id}/{current_job.id}): Old session id ({old_job.session_id}) does not match rerun session id ({galaxy_session.id})"
@@ -847,7 +847,7 @@ class DefaultToolAction(ToolAction):
         if hasattr(trans, "get_galaxy_session"):
             galaxy_session = trans.get_galaxy_session()
             # If we're submitting from the API, there won't be a session.
-            if type(galaxy_session) == trans.model.GalaxySession:
+            if isinstance(galaxy_session, trans.model.GalaxySession):
                 job.session_id = model.cached_id(galaxy_session)
         if trans.user is not None:
             job.user_id = model.cached_id(trans.user)

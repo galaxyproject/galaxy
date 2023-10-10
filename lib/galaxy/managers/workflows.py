@@ -1435,13 +1435,12 @@ class WorkflowContentsManager(UsesAnnotations):
                 if name:
                     input_dicts.append({"name": name, "description": annotation_str})
             for name, val in step_state.items():
-                input_type = type(val)
-                if input_type == RuntimeValue:
+                if isinstance(val, RuntimeValue):
                     input_dicts.append({"name": name, "description": f"runtime parameter for tool {module.get_name()}"})
-                elif input_type == dict:
+                elif isinstance(val, dict):
                     # Input type is described by a dict, e.g. indexed parameters.
                     for partval in val.values():
-                        if type(partval) == RuntimeValue:
+                        if isinstance(partval, RuntimeValue):
                             input_dicts.append(
                                 {"name": name, "description": f"runtime parameter for tool {module.get_name()}"}
                             )
