@@ -2,7 +2,7 @@ import axios from "axios"
 import { RawAxiosRequestConfig } from "axios"
 import { components } from "@/schema"
 
-type User = components["schemas"]["User"]
+type User = components["schemas"]["UserV2"]
 
 export async function getCurrentUser(): Promise<User | null> {
     const conf: RawAxiosRequestConfig<unknown> = {}
