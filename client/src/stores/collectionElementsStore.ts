@@ -12,8 +12,8 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
     /**
      * Returns a key that can be used to store or retrieve the elements of a collection in the store.
      */
-    function getCollectionKey(collection: HDCASummary) {
-        return `${collection.id}-${collection.collection_id}`;
+    function getCollectionKey(collection: HDCASummary): string {
+        return collection.collection_id;
     }
 
     const getCollectionElements = computed(() => {
