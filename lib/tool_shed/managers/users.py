@@ -1,5 +1,7 @@
 from typing import List
 
+from sqlalchemy import select
+
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.model.base import transaction
 from galaxy.security.validate_user_input import (
@@ -18,11 +20,7 @@ from tool_shed_client.schema import (
 
 def index(app: ToolShedApp, deleted: bool) -> List[ApiUser]:
     users: List[ApiUser] = []
-    for user in (
-        app.model.context.query(app.model.User)
-        .filter(app.model.User.table.c.deleted == deleted)
-        .order_by(app.model.User.table.c.username)
-    ):
+    for user in get_users_by_deleted(app.model.context, app.model.User, deleted):
         users.append(get_api_user(app, user))
     return users
 
@@ -77,3 +75,8 @@ def _validate(trans: ProvidesUserContext, email: str, password: str, confirm: st
         )
     ).rstrip()
     return message
+
+
+def get_users_by_deleted(session, user_model, deleted):
+    stmt = select(user_model).where(user_model.deleted == deleted).order_by(user_model.username)
+    return session.scalars(stmt)
