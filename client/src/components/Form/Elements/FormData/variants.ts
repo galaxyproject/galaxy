@@ -45,6 +45,7 @@ export const VARIANTS: Record<string, Array<VariantInterface>> = {
             src: SOURCE.DATASET,
             icon: "fa-copy",
             tooltip: "Multiple datasets",
+            library: true,
             multiple: true,
             batch: BATCH.DISABLED,
         },
