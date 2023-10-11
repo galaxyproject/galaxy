@@ -14,6 +14,7 @@ from typing import (
     Union,
 )
 
+from sqlalchemy import select
 from sqlalchemy.sql.expression import null
 
 import tool_shed.repository_types.util as rt_util
@@ -25,10 +26,10 @@ from tool_shed.util import (
     hg_util,
     shed_util_common as suc,
 )
+from tool_shed.webapp.model import Repository
 
 if TYPE_CHECKING:
     from tool_shed.structured_app import ToolShedApp
-    from tool_shed.webapp.model import Repository
 
 log = logging.getLogger(__name__)
 
@@ -99,9 +100,7 @@ def check_file_contents_for_email_alerts(app: "ToolShedApp"):
     """
     sa_session = app.model.session
     admin_users = app.config.get("admin_users", "").split(",")
-    for repository in sa_session.query(app.model.Repository).filter(
-        app.model.Repository.table.c.email_alerts != null()
-    ):
+    for repository in get_repositories_with_alerts(sa_session, app.model.Repository):
         email_alerts = json.loads(repository.email_alerts)
         for user_email in email_alerts:
             if user_email in admin_users:
@@ -266,3 +265,8 @@ def uncompress(repository, uploaded_file_name, uploaded_file_filename, isgzip=Fa
     if isbz2:
         handle_bz2(repository, uploaded_file_name)
         return uploaded_file_filename.rstrip(".bz2")
+
+
+def get_repositories_with_alerts(session, repository_model):
+    stmt = select(repository_model).where(repository_model.email_alerts != null())
+    return session.scalars(stmt)
