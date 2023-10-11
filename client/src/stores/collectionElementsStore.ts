@@ -14,7 +14,7 @@ export interface ContentPlaceholder {
      * This is used to determine the offset to fetch the element from when
      * scrolling through the collection.
      */
-    element_index?: number;
+    element_index: number;
     /**
      * Whether the element is currently being fetched.
      *
@@ -136,9 +136,10 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
 
     function initWithPlaceholderElements(collection: CollectionEntry): ContentPlaceholder[] {
         const totalElements = collection.element_count ?? 0;
-        const placeholderElements = new Array<ContentPlaceholder>(totalElements).fill({}).map((_, index) => ({
-            element_index: index,
-        }));
+        const placeholderElements = new Array<ContentPlaceholder>(totalElements);
+        for (let i = 0; i < totalElements; i++) {
+            placeholderElements[i] = { element_index: i };
+        }
         return placeholderElements;
     }
 
