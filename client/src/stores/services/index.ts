@@ -58,6 +58,8 @@ export type HDCADetailed = components["schemas"]["HDCADetailed"];
  */
 export type DCObject = components["schemas"]["DCObject"];
 
+export type DatasetCollectionAttributes = components["schemas"]["DatasetCollectionAttributesResult"];
+
 /**
  * A SubCollection is a DatasetCollectionElement of type `dataset_collection`
  * with additional information to simplify its handling.
