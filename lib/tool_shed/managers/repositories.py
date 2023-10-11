@@ -17,8 +17,8 @@ from typing import (
 
 from pydantic import BaseModel
 from sqlalchemy import (
-    and_,
     false,
+    select,
 )
 
 from galaxy import web
@@ -202,17 +202,7 @@ def check_updates(app: ToolShedApp, request: UpdatesRequest) -> Union[str, Dict[
 def guid_to_repository(app: ToolShedApp, tool_id: str) -> "Repository":
     # tool_id = remove_protocol_and_user_from_clone_url(tool_id)
     shed, _, owner, name, rest = tool_id.split("/", 5)
-    clause_list = [
-        and_(
-            app.model.Repository.table.c.deprecated == false(),
-            app.model.Repository.table.c.deleted == false(),
-            app.model.Repository.table.c.name == name,
-            app.model.User.table.c.username == owner,
-            app.model.Repository.table.c.user_id == app.model.User.table.c.id,
-        )
-    ]
-    repository = app.model.context.query(app.model.Repository).filter(*clause_list).first()
-    return repository
+    return _get_repository_by_name_and_owner(app.model.context, name, owner, app.model.User)
 
 
 def index_tool_ids(app: ToolShedApp, tool_ids: List[str]) -> Dict[str, Any]:
@@ -222,16 +212,7 @@ def index_tool_ids(app: ToolShedApp, tool_ids: List[str]) -> Dict[str, Any]:
         repository = guid_to_repository(app, tool_id)
         owner = repository.user.username
         name = repository.name
-        clause_list = [
-            and_(
-                app.model.Repository.table.c.deprecated == false(),
-                app.model.Repository.table.c.deleted == false(),
-                app.model.Repository.table.c.name == name,
-                app.model.User.table.c.username == owner,
-                app.model.Repository.table.c.user_id == app.model.User.table.c.id,
-            )
-        ]
-        repository = app.model.context.current.sa_session.query(app.model.Repository).filter(*clause_list).first()
+        repository = _get_repository_by_name_and_owner(app.model.context.current, name, owner, app.model.User)
         if not repository:
             log.warning(f"Repository {owner}/{name} does not exist, skipping")
             continue
@@ -273,27 +254,7 @@ def index_tool_ids(app: ToolShedApp, tool_ids: List[str]) -> Dict[str, Any]:
 
 
 def index_repositories(app: ToolShedApp, name: Optional[str], owner: Optional[str], deleted: bool):
-    clause_list = [
-        and_(
-            app.model.Repository.table.c.deprecated == false(),
-            app.model.Repository.table.c.deleted == deleted,
-        )
-    ]
-    if owner is not None:
-        clause_list.append(
-            and_(
-                app.model.User.table.c.username == owner,
-                app.model.Repository.table.c.user_id == app.model.User.table.c.id,
-            )
-        )
-    if name is not None:
-        clause_list.append(app.model.Repository.table.c.name == name)
-    repositories = []
-    for repository in (
-        app.model.context.query(app.model.Repository).filter(*clause_list).order_by(app.model.Repository.table.c.name)
-    ):
-        repositories.append(repository)
-    return repositories
+    return list(_get_repository_by_name_and_owner_and_deleted(app.model.context, name, owner, deleted, app.model.User))
 
 
 def can_manage_repo(trans: ProvidesUserContext, repository: Repository) -> bool:
@@ -616,3 +577,27 @@ def upload_tar_and_set_metadata(
     else:
         raise InternalServerError(message)
     return message
+
+
+def _get_repository_by_name_and_owner(session, name, owner, user_model):
+    stmt = (
+        select(Repository)
+        .where(Repository.deprecated == false())
+        .where(Repository.deleted == false())
+        .where(Repository.name == name)
+        .where(user_model.username == owner)
+        .where(Repository.user_id == user_model.id)
+        .limit(1)
+    )
+    return session.scalars(stmt).first()
+
+
+def _get_repository_by_name_and_owner_and_deleted(session, name, owner, deleted, user_model):
+    stmt = select(Repository).where(Repository.deprecated == false()).where(Repository.deleted == deleted)
+    if owner is not None:
+        stmt = stmt.where(user_model.username == owner)
+        stmt = stmt.where(Repository.user_id == user_model.id)
+    if name is not None:
+        stmt = stmt.where(Repository.name == name)
+    stmt = stmt.order_by(Repository.name).limit(1)
+    return session.scalars(stmt).first()
