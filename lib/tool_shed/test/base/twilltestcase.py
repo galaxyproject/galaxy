@@ -1487,9 +1487,9 @@ class ShedTwillTestCase(ShedApiTestCase):
         return [metadata_revision for metadata_revision in repository.metadata_revisions]
 
     def get_repository_metadata_by_changeset_revision(self, repository_id: int, changeset_revision):
-        return test_db_util.get_repository_metadata_for_changeset_revision(
+        return test_db_util.get_repository_metadata_by_repository_id_changeset_revision(
             repository_id, changeset_revision
-        ) or test_db_util.get_repository_metadata_for_changeset_revision(repository_id, None)
+        ) or test_db_util.get_repository_metadata_by_repository_id_changeset_revision(repository_id, None)
 
     def get_repository_metadata_revisions(self, repository: Repository) -> List[str]:
         return [
