@@ -6,7 +6,6 @@ import $ from "jquery";
 import Buttons from "mvc/ui/ui-buttons";
 import Modal from "mvc/ui/ui-modal";
 import Options from "mvc/ui/ui-options";
-import Select from "mvc/ui/ui-select-default";
 import _ from "underscore";
 
 /** Displays messages used e.g. in the tool form */
@@ -135,7 +134,6 @@ export const ButtonLink = Buttons.ButtonLink;
 export const Checkbox = Options.Checkbox;
 export const RadioButton = Options.RadioButton;
 export const Radio = Options.Radio;
-export { Select };
 
 export default {
     Button: Buttons.Button,
@@ -149,5 +147,4 @@ export default {
     RadioButton: Options.RadioButton,
     Checkbox: Options.Checkbox,
     Radio: Options.Radio,
-    Select: Select,
 };
