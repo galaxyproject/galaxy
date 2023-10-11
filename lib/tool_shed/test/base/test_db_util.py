@@ -30,17 +30,6 @@ def install_session():
     return install_session
 
 
-def delete_obj(obj):
-    sa_session().delete(obj)
-    sa_session().flush()
-
-
-def delete_user_roles(user):
-    for ura in user.roles:
-        sa_session().delete(ura)
-    sa_session().flush()
-
-
 def flush(obj):
     sa_session().add(obj)
     sa_session().flush()
@@ -64,21 +53,6 @@ def get_all_installed_repositories(session=None) -> List[galaxy.model.tool_shed_
             )
         )
         .all()
-    )
-
-
-def get_galaxy_repository_by_name_owner_changeset_revision(repository_name, owner, changeset_revision):
-    return (
-        install_session()
-        .query(galaxy.model.tool_shed_install.ToolShedRepository)
-        .filter(
-            and_(
-                galaxy.model.tool_shed_install.ToolShedRepository.table.c.name == repository_name,
-                galaxy.model.tool_shed_install.ToolShedRepository.table.c.owner == owner,
-                galaxy.model.tool_shed_install.ToolShedRepository.table.c.changeset_revision == changeset_revision,
-            )
-        )
-        .first()
     )
 
 
@@ -131,21 +105,6 @@ def get_repository_by_id(repository_id):
     return sa_session().query(model.Repository).filter(model.Repository.table.c.id == repository_id).first()
 
 
-def get_repository_downloadable_revisions(repository_id):
-    revisions = (
-        sa_session()
-        .query(model.RepositoryMetadata)
-        .filter(
-            and_(
-                model.RepositoryMetadata.table.c.repository_id == repository_id,
-                model.RepositoryMetadata.table.c.downloadable == true(),
-            )
-        )
-        .all()
-    )
-    return revisions
-
-
 def get_repository_metadata_for_changeset_revision(
     repository_id: int, changeset_revision: Optional[str]
 ) -> model.RepositoryMetadata:
@@ -163,18 +122,8 @@ def get_repository_metadata_for_changeset_revision(
     return repository_metadata
 
 
-def get_role_by_name(role_name):
-    return sa_session().query(model.Role).filter(model.Role.table.c.name == role_name).first()
-
-
 def get_user(email):
     return sa_session().query(model.User).filter(model.User.table.c.email == email).first()
-
-
-def mark_obj_deleted(obj):
-    obj.deleted = True
-    sa_session().add(obj)
-    sa_session().flush()
 
 
 def refresh(obj):
