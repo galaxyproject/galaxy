@@ -7,7 +7,7 @@ import ExpandedItems from "@/components/History/Content/ExpandedItems";
 import { updateContentFields } from "@/components/History/model/queries";
 import { useCollectionElementsStore } from "@/stores/collectionElementsStore";
 import { HistorySummary } from "@/stores/historyStore";
-import { DCESummary, DCObject, HDCASummary } from "@/stores/services";
+import { CollectionEntry, DCESummary, isCollectionElement, isHDCA, SubCollection } from "@/stores/services";
 
 import CollectionDetails from "./CollectionDetails.vue";
 import CollectionNavigation from "./CollectionNavigation.vue";
@@ -17,7 +17,7 @@ import ListingLayout from "@/components/History/Layout/ListingLayout.vue";
 
 interface Props {
     history: HistorySummary;
-    selectedCollections: HDCASummary[];
+    selectedCollections: CollectionEntry[];
     showControls?: boolean;
     filterable?: boolean;
 }
@@ -30,17 +30,29 @@ const props = withDefaults(defineProps<Props>(), {
 const collectionElementsStore = useCollectionElementsStore();
 
 const emit = defineEmits<{
-    (e: "view-collection", collection: HDCASummary): void;
-    (e: "update:selected-collections", collections: HDCASummary[]): void;
+    (e: "view-collection", collection: CollectionEntry): void;
+    (e: "update:selected-collections", collections: CollectionEntry[]): void;
 }>();
 
 const offset = ref(0);
 
-const dsc = computed(() => props.selectedCollections[props.selectedCollections.length - 1] as HDCASummary);
+const dsc = computed(() => {
+    const currentCollection = props.selectedCollections[props.selectedCollections.length - 1];
+    if (currentCollection === undefined) {
+        throw new Error("No collection selected");
+    }
+    return currentCollection;
+});
 const collectionElements = computed(() => collectionElementsStore.getCollectionElements(dsc.value, offset.value));
 const loading = computed(() => collectionElementsStore.isLoadingCollectionElements(dsc.value));
-const jobState = computed(() => dsc.value?.job_state_summary);
-const rootCollection = computed(() => props.selectedCollections[0]);
+const jobState = computed(() => ("job_state_summary" in dsc.value ? dsc.value.job_state_summary : undefined));
+const rootCollection = computed(() => {
+    if (isHDCA(props.selectedCollections[0])) {
+        return props.selectedCollections[0];
+    } else {
+        throw new Error("Root collection must be an HistoryDatasetCollectionAssociation");
+    }
+});
 const isRoot = computed(() => dsc.value == rootCollection.value);
 
 function updateDsc(collection: any, fields: Object | undefined) {
@@ -59,8 +71,15 @@ function onScroll(newOffset: number) {
     offset.value = newOffset;
 }
 
-async function onViewSubCollection(itemObject: DCObject) {
-    const collection = await collectionElementsStore.getCollection(itemObject.id);
+async function onViewDatasetCollectionElement(element: DCESummary) {
+    if (!isCollectionElement(element)) {
+        return;
+    }
+    const collection: SubCollection = {
+        ...element.object,
+        name: element.element_identifier,
+        hdca_id: rootCollection.value.id,
+    };
     emit("view-collection", collection);
 }
 
@@ -106,7 +125,7 @@ watch(
                                 :is-dataset="item.element_type == 'hda'"
                                 :filterable="filterable"
                                 @update:expand-dataset="setExpanded(item, $event)"
-                                @view-collection="onViewSubCollection" />
+                                @view-collection="onViewDatasetCollectionElement(item)" />
                         </template>
                     </ListingLayout>
                 </div>
