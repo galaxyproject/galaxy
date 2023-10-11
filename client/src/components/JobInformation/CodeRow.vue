@@ -14,7 +14,7 @@
                     <pre :class="codeClass">{{ codeItem }}</pre>
                 </b-col>
                 <b-col class="nopadding pointer">
-                    <font-awesome-icon :icon="iconClass" />
+                    <FontAwesomeIcon :icon="iconClass" />
                 </b-col>
             </b-row>
         </td>
@@ -22,8 +22,8 @@
     </tr>
 </template>
 <script>
-import { faCompressAlt, faExpandAlt } from "@fortawesome/free-solid-svg-icons";
 import { library } from "@fortawesome/fontawesome-svg-core";
+import { faCompressAlt, faExpandAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 library.add(faCompressAlt, faExpandAlt);

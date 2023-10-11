@@ -1,27 +1,20 @@
 <template>
     <div class="ui-portlet-section">
-        <div class="portlet-header">
+        <div :tabindex="collapsible ? 0 : -1" :class="portletHeaderClasses" @keydown="onKeyDown" @click="onCollapse">
             <div class="portlet-operations">
                 <slot name="operations" />
-                <b-button
+                <span
                     v-if="collapsible"
                     v-b-tooltip.hover.bottom
-                    role="button"
                     title="Collapse/Expand"
                     variant="link"
                     size="sm"
-                    class="float-right"
-                    @click="onCollapse">
-                    <font-awesome-icon v-if="expanded" icon="eye-slash" class="fa-fw" />
-                    <font-awesome-icon v-else icon="eye" class="fa-fw" />
-                </b-button>
+                    class="float-right">
+                    <FontAwesomeIcon v-if="expanded" icon="chevron-up" class="fa-fw" />
+                    <FontAwesomeIcon v-else icon="chevron-down" class="fa-fw" />
+                </span>
             </div>
-            <b-link v-if="collapsible" class="portlet-title" href="#" @click="onCollapse">
-                <span v-if="icon" :class="['portlet-title-icon fa mr-1', icon]" />
-                <b class="portlet-title-text" itemprop="name">{{ title }}</b>
-                <span class="portlet-title-description" itemprop="description">{{ description }}</span>
-            </b-link>
-            <span v-else class="portlet-title">
+            <span class="portlet-title">
                 <span v-if="icon" :class="['portlet-title-icon fa mr-1', icon]" />
                 <b class="portlet-title-text" itemprop="name">{{ title }}</b>
                 <span class="portlet-title-description" itemprop="description">{{ description }}</span>
@@ -33,12 +26,12 @@
     </div>
 </template>
 <script>
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faEye, faEyeSlash } from "@fortawesome/free-solid-svg-icons";
+import { faChevronDown, faChevronUp } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
-library.add(faEye);
-library.add(faEyeSlash);
+library.add(faChevronUp);
+library.add(faChevronDown);
 
 export default {
     components: {
@@ -69,7 +62,20 @@ export default {
     data() {
         return {};
     },
+    computed: {
+        portletHeaderClasses() {
+            return {
+                "portlet-header": true,
+                "cursor-pointer": this.collapsible,
+            };
+        },
+    },
     methods: {
+        onKeyDown(event) {
+            if (event.key === "Enter" || event.key === " ") {
+                this.onCollapse();
+            }
+        },
         onCollapse() {
             if (this.collapsible) {
                 this.$emit("update:expanded", !this.expanded);

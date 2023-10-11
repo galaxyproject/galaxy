@@ -6,6 +6,7 @@ from galaxy.datatypes.data import (
     Text,
 )
 from galaxy.datatypes.metadata import MetadataElement
+from galaxy.datatypes.protocols import DatasetProtocol
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
     FilePrefix,
@@ -21,13 +22,13 @@ log = logging.getLogger(__name__)
 class Smat(Text):
     file_ext = "smat"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: DatasetProtocol) -> str:
         try:
             return dataset.peek
         except Exception:
             return f"ESTScan scores matrices ({nice_size(dataset.get_size())})"
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "ESTScan scores matrices"
@@ -35,7 +36,7 @@ class Smat(Text):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disc"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         The use of ESTScan implies the creation of scores matrices which
         reflect the codons preferences in the studied organisms.  The
@@ -93,18 +94,18 @@ class PlantTribesKsComponents(Tabular):
         no_value=0,
     )
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: DatasetProtocol) -> str:
         try:
             return dataset.peek
         except Exception:
             return f"Significant components in the Ks distribution ({nice_size(dataset.get_size())})"
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         """
         Set the number of significant components in the Ks distribution.
         The dataset will always be on the order of less than 10 lines.
         """
-        super().set_meta(dataset, **kwd)
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
         significant_components = []
         with open(dataset.file_name) as fh:
             for i, line in enumerate(fh):
@@ -121,7 +122,7 @@ class PlantTribesKsComponents(Tabular):
         if len(significant_components) > 0:
             dataset.metadata.number_comp = max(significant_components)
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             if dataset.metadata.number_comp == 1:
@@ -132,7 +133,7 @@ class PlantTribesKsComponents(Tabular):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def sniff(self, filename):
+    def sniff(self, filename: str) -> bool:
         """
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname('test_tab.bed')

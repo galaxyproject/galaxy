@@ -1,76 +1,48 @@
-import * as Phylocanvas from "phylocanvas";
-_.extend(window.bundleEntries || {}, {
-    load: function(options) {
-        var chart = options.chart;
-        var dataset = options.dataset;
-        var settings = options.chart.settings;
-        $.ajax( {
-            url     : dataset.download_url,
-            success : function( content ) {
-                try {
-                    var tree = Phylocanvas.default.createTree( options.target ),
-                        node_size = 20,
-                        text_size = 20,
-                        line_width = 2;
+import * as phylocanvas from "@phylocanvas/phylocanvas.gl";
 
-                    // Set different properties of the tree
-                    tree.setTreeType( settings.get( 'tree_type' ) );
-                    // Set properties related to labels
-                    tree.showLabels = settings.get( 'show_labels' ) === "true" ? true : false;
-                    tree.alignLabels = settings.get( 'align_labels' ) === "true" ? true : false;
-                    // Set properties related to colors
-                    tree.branchColour = settings.get( 'edge_color' );
-                    tree.highlightColour = settings.get( 'highlighted_color' );
-                    tree.selectedColour = settings.get( 'selected_color' );
-                    // Set properties related to size
-                    tree.setNodeSize( node_size );
-                    tree.setTextSize( text_size );
-                    tree.lineWidth = line_width;
-                    // Show bootstrap confidence levels
-                    tree.showBootstrap = settings.get( 'show_bootstrap' ) === "true" ? true : false;
-                    tree.showInternalNodeLabels = tree.showBootstrap;
-                    // Update font and color for internal nodel labels
-                    tree.internalLabelStyle.colour = tree.branchColour;
-                    tree.internalLabelStyle.font = tree.font;
-                    tree.internalLabelStyle.textSize = tree.textSize;
+/* This will be part of the charts/viz standard lib in 23.1 */
+const slashCleanup = /(\/)+/g;
+function prefixedDownloadUrl(root, path) {
+    return `${root}/${path}`.replace(slashCleanup, "/");
+}
+window.bundleEntries = window.bundleEntries || {};
+window.bundleEntries.load = function (options) {
+    const chart = options.chart;
+    const dataset = options.dataset;
+    const settings = options.chart.settings;
+    fetch(prefixedDownloadUrl(options.root, dataset.download_url)).then((response) => {
+        if (response.ok) {
+            response.text().then((content) => {
+                const container = document.getElementById(options.target);
+                const tree = new phylocanvas.PhylocanvasGL(
+                    container,
+                    {
+                        source: content,
+                        showLabels: settings.get("show_labels") === "true" ? true : false,
+                        showLeafLabels: settings.get("show_labels") === "true" ? true : false,
+                        interactive: true,
+                        nodeShape: settings.get("node_shape"),
+                        type: settings.get("tree_type"),
+                        alignLabels: settings.get("align_labels") === "true" ? true : false,
+                        strokeColour: settings.get("edge_color"),
+                        highlightColour: settings.get("highlighted_color"),
+                        fillColour: settings.get("node_color"),
+                        showInternalNodeLabels: settings.get("show_bootstrap") === "true" ? true : false,
+                    },
+                    [phylocanvas.plugins.scalebar]
+                );
 
-                    // Register click event on tree
-                    tree.on( 'click', function ( e ) {
-                        var node = tree.getNodeAtMousePosition( e );
-                        // Here collapse action is taking preference.
-                        // Whenver collapse and prune both are selected true,
-                        // collapse action will be performed
-                        // Collapse the selected branch
-                        if( settings.get( 'collapse_branch' ) === "true" ) {
-                            tree.branches[ node.id ].collapsed = true;
-                            tree.draw();
-                        }// Prune the selected branch
-                        else if( settings.get( 'prune_branch' ) === "true" ) {
-                            tree.branches[ node.id ].pruned = true;
-                            tree.draw();
-                        }
-                    });
-                    // Draw the phylogenetic tree
-                    tree.load( content );
-                    // Set node shape
-                    for(var j = 0, length = tree.leaves.length; j < length; j++) {
-                        tree.leaves[ j ].nodeShape = settings.get( 'node_shape' );
-                    }
-                    tree.draw();
-                    chart.state( 'ok', 'Done.' );
-                    options.process.resolve();
-                    // Adjust the size of tree on window resize
-                    $( window ).resize( function() {
-                        tree.fitInPanel( tree.leaves ); tree.draw();
-                    } );
-                } catch( err ) {
-                    chart.state( 'failed', err );
-                }
-            },
-            error: function() {
-                chart.state( 'failed', 'Failed to access dataset.' );
+                tree.resize(container.parentElement.clientWidth, container.parentElement.clientHeight);
+                chart.state("ok", "Done.");
                 options.process.resolve();
-            }
-        });
-    }
-});
+                // resize tree on window resize
+                window.addEventListener("resize", () => {
+                    tree.resize(container.parentElement.clientWidth, container.parentElement.clientHeight);
+                });
+            });
+        } else {
+            chart.state("failed", "Failed to access dataset.");
+            options.process.resolve();
+        }
+    });
+};

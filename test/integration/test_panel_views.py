@@ -7,7 +7,6 @@ PANEL_VIEWS_DIR_1 = os.path.join(THIS_DIR, "panel_views_1")
 
 
 class TestPanelViewsFromDirectoryIntegration(integration_util.IntegrationTestCase):
-
     framework_tool_and_types = True
     allow_tool_conf_override = False
 
@@ -113,7 +112,6 @@ class TestPanelViewsFromDirectoryIntegration(integration_util.IntegrationTestCas
 
 
 class TestPanelViewsFromConfigIntegration(integration_util.IntegrationTestCase):
-
     framework_tool_and_types = True
 
     @classmethod

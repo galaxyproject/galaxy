@@ -1,12 +1,13 @@
 /**
  *  This class creates/wraps a default html select field as backbone class.
  */
-import $ from "jquery";
-import _ from "underscore";
 import Backbone from "backbone";
-import Utils from "utils/utils";
-import { keyedColorScheme } from "utils/color";
+import $ from "jquery";
 import Buttons from "mvc/ui/ui-buttons";
+import _ from "underscore";
+import { keyedColorScheme } from "utils/color";
+import Utils from "utils/utils";
+
 var View = Backbone.View.extend({
     initialize: function (options) {
         this.data = [];
@@ -42,6 +43,11 @@ var View = Backbone.View.extend({
         this.listenTo(this.model, "change:value", this._changeValue, this);
         this.listenTo(this.model, "change:multiple change:searchable change:cls change:id", this.render, this);
         this.render();
+    },
+
+    remove: function () {
+        this.$select.select2("destroy");
+        Backbone.View.prototype.remove.call(this);
     },
 
     render: function () {

@@ -8,4 +8,4 @@ def is_datasource(tool_xml):
 
 def is_valid_cheetah_placeholder(name):
     """Returns true if name is a valid Cheetah placeholder"""
-    return not re.match(r"^[a-zA-Z_]\w*$", name) is None
+    return re.match(r"^[a-zA-Z_]\w*$", name) is not None

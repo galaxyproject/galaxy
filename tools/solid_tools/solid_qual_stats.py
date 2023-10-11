@@ -27,7 +27,6 @@ def unzip(filename):
 def __main__():
     infile_score_name = sys.argv[1].strip()
     with open(sys.argv[2].strip(), "w") as fout:
-
         if zipfile.is_zipfile(infile_score_name):
             infile_name = unzip(infile_score_name)
         else:

@@ -83,7 +83,7 @@ class Uploader:
         ids = self.recursively_build_path(path_parts, base_folder)
 
         # These are then associated with the paths.
-        for (key, fid) in zip(nfk, ids):
+        for key, fid in zip(nfk, ids):
             self.memo_path[key] = fid
         return ids[-1]
 

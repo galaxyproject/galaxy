@@ -4,6 +4,7 @@ from galaxy.datatypes import data
 from galaxy.datatypes.binary import Cel  # noqa: F401
 from galaxy.datatypes.data import get_file_peek
 from galaxy.datatypes.metadata import MetadataElement
+from galaxy.datatypes.protocols import DatasetProtocol
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
     FilePrefix,
@@ -76,7 +77,7 @@ class GenericMicroarrayFile(data.Text):
         name="block_type", default=0, desc="Type of block", readonly=True, visible=True, optional=True, no_value=0
     )
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             if dataset.metadata.block_count == 1:
                 dataset.blurb = f"{dataset.metadata.file_type} {dataset.metadata.version_number}: Format {dataset.metadata.file_format}, 1 block, {dataset.metadata.number_of_optional_header_records} headers and {dataset.metadata.number_of_data_columns} columns"
@@ -87,7 +88,7 @@ class GenericMicroarrayFile(data.Text):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def get_mime(self):
+    def get_mime(self) -> str:
         return "text/plain"
 
 
@@ -101,7 +102,7 @@ class Gal(GenericMicroarrayFile):
     edam_data = "data_3110"
     file_ext = "gal"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Try to guess if the file is a Gal file.
 
@@ -116,11 +117,11 @@ class Gal(GenericMicroarrayFile):
         headers = get_headers(file_prefix, sep="\t", count=3)
         return "ATF" in headers[0][0] and "GenePix ArrayList" in headers[2][0]
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         """
         Set metadata for Gal file.
         """
-        super().set_meta(dataset, **kwd)
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
         headers = get_headers(dataset.file_name, sep="\t", count=5)
         dataset.metadata.file_format = headers[0][0]
         dataset.metadata.version_number = headers[0][1]
@@ -143,7 +144,7 @@ class Gpr(GenericMicroarrayFile):
     edam_data = "data_3110"
     file_ext = "gpr"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Try to guess if the file is a Gpr file.
 
@@ -158,11 +159,11 @@ class Gpr(GenericMicroarrayFile):
         headers = get_headers(file_prefix, sep="\t", count=3)
         return "ATF" in headers[0][0] and "GenePix Results" in headers[2][0]
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         """
         Set metadata for Gpr file.
         """
-        super().set_meta(dataset, **kwd)
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
         headers = get_headers(dataset.file_name, sep="\t", count=5)
         dataset.metadata.file_format = headers[0][0]
         dataset.metadata.version_number = headers[0][1]

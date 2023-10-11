@@ -24,6 +24,8 @@ from galaxy import (
     util,
     web,
 )
+from galaxy.managers.users import get_user_by_username
+from galaxy.model.base import transaction
 from galaxy.tool_shed.util import dependency_display
 from galaxy.tools.repositories import ValidationContext
 from galaxy.web.form_builder import (
@@ -33,6 +35,7 @@ from galaxy.web.form_builder import (
 from galaxy.web.legacy_framework import grids
 from galaxy.webapps.base.controller import BaseUIController
 from tool_shed.dependencies.repository import relation_builder
+from tool_shed.managers.repositories import readmes
 from tool_shed.metadata import repository_metadata_manager
 from tool_shed.tools import (
     tool_validator,
@@ -73,7 +76,6 @@ def get_mercurial_default_options_dict(command):
 
 
 class RepositoryController(BaseUIController, ratings_util.ItemRatings):
-
     category_grid = repository_grids.CategoryGrid()
     datatypes_grid = repository_grids.DatatypesGrid()
     deprecated_repositories_i_own_grid = repository_grids.DeprecatedRepositoriesIOwnGrid()
@@ -645,26 +647,6 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         return self.valid_repository_grid(trans, **kwd)
 
     @web.expose
-    def contact_owner(self, trans, id, **kwd):
-        message = escape(kwd.get("message", ""))
-        status = kwd.get("status", "done")
-        repository = repository_util.get_repository_in_tool_shed(trans.app, id)
-        metadata = metadata_util.get_repository_metadata_by_repository_id_changeset_revision(
-            trans.app, id, repository.tip(), metadata_only=True
-        )
-        if trans.user and trans.user.email:
-            return trans.fill_template(
-                "/webapps/tool_shed/repository/contact_owner.mako",
-                repository=repository,
-                metadata=metadata,
-                message=message,
-                status=status,
-            )
-        else:
-            # Do all we can to eliminate spam.
-            return trans.show_error_message("You must be logged in to contact the owner of a repository.")
-
-    @web.expose
     def create_galaxy_docker_image(self, trans, **kwd):
         message = escape(kwd.get("message", ""))
         status = kwd.get("status", "done")
@@ -801,7 +783,8 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         mark_deprecated = util.string_as_bool(kwd.get("mark_deprecated", False))
         repository.deprecated = mark_deprecated
         trans.sa_session.add(repository)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         if mark_deprecated:
             # Update the repository registry.
             trans.app.repository_registry.remove_entry(repository)
@@ -919,7 +902,8 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         file_type_str = basic_util.get_file_type_str(changeset_revision, file_type)
         repository.times_downloaded += 1
         trans.sa_session.add(repository)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         tool_shed_url = web.url_for("/", qualified=True)
         pathspec = ["repos", str(repository.user.username), str(repository.name), "archive", file_type_str]
         download_url = util.build_url(tool_shed_url, pathspec=pathspec)
@@ -995,14 +979,13 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                     self.install_matched_repository_grid.operations = operations
                     return self.install_matched_repository_grid(trans, **kwd)
                 else:
-                    kwd["message"] = (
-                        "tool id: <b>%s</b><br/>tool name: <b>%s</b><br/>tool version: <b>%s</b><br/>exact matches only: <b>%s</b>"
-                        % (
-                            basic_util.stringify(tool_ids),
-                            escape(basic_util.stringify(tool_names)),
-                            escape(basic_util.stringify(tool_versions)),
-                            str(exact_matches_checked),
-                        )
+                    kwd[
+                        "message"
+                    ] = "tool id: <b>{}</b><br/>tool name: <b>{}</b><br/>tool version: <b>{}</b><br/>exact matches only: <b>{}</b>".format(
+                        basic_util.stringify(tool_ids),
+                        escape(basic_util.stringify(tool_names)),
+                        escape(basic_util.stringify(tool_versions)),
+                        exact_matches_checked,
                     )
                     self.matched_repository_grid.title = "Repositories with matching tools"
                     return self.matched_repository_grid(trans, **kwd)
@@ -1200,16 +1183,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         changeset_revision = kwd.get("changeset_revision", None)
         if repository_name is not None and repository_owner is not None and changeset_revision is not None:
             repository = repository_util.get_repository_by_name_and_owner(trans.app, repository_name, repository_owner)
-            if repository:
-                repository_metadata = metadata_util.get_repository_metadata_by_changeset_revision(
-                    trans.app, trans.security.encode_id(repository.id), changeset_revision
-                )
-                if repository_metadata:
-                    metadata = repository_metadata.metadata
-                    if metadata:
-                        return readme_util.build_readme_files_dict(
-                            trans.app, repository, changeset_revision, repository_metadata.metadata
-                        )
+            return readmes(trans.app, repository, changeset_revision)
         return {}
 
     @web.json
@@ -1261,7 +1235,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                 cur_includes_tools_for_display_in_tool_panel,
                 cur_has_repository_dependencies,
                 cur_has_repository_dependencies_only_if_compiling_contained_td,
-            ) = repository_util.get_repo_info_dict(trans.app, trans.user, repository_id, changeset_revision)
+            ) = repository_util.get_repo_info_dict(trans, repository_id, changeset_revision)
             if cur_has_repository_dependencies and not has_repository_dependencies:
                 has_repository_dependencies = True
             if (
@@ -1632,7 +1606,8 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         if kwd.get("new_repo_alert_button", False):
             user.new_repo_alert = new_repo_alert_checked
             trans.sa_session.add(user)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
             if new_repo_alert_checked:
                 message = "You will receive email alerts for all new valid tool shed repositories."
             else:
@@ -1699,7 +1674,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                 type=repository_type,
             )
 
-            repository, message = repository_util.update_repository(app=trans.app, trans=trans, id=id, **update_kwds)
+            repository, message = repository_util.update_repository(trans=trans, id=id, **update_kwds)
             if repository is None:
                 return trans.response.send_redirect(
                     web.url_for(
@@ -1712,14 +1687,16 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             # Delete all currently existing categories.
             for rca in repository.categories:
                 trans.sa_session.delete(rca)
-                trans.sa_session.flush()
+                with transaction(trans.sa_session):
+                    trans.sa_session.commit()
             if category_ids:
                 # Create category associations
                 for category_id in category_ids:
                     category = trans.sa_session.query(trans.model.Category).get(trans.security.decode_id(category_id))
                     rca = trans.app.model.RepositoryCategoryAssociation(repository, category)
                     trans.sa_session.add(rca)
-                    trans.sa_session.flush()
+                    with transaction(trans.sa_session):
+                        trans.sa_session.commit()
             message = "The repository information has been updated."
         elif kwd.get("user_access_button", False):
             if allow_push not in ["none"]:
@@ -1749,7 +1726,8 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                     flush_needed = True
             if flush_needed:
                 trans.sa_session.add(repository)
-                trans.sa_session.flush()
+                with transaction(trans.sa_session):
+                    trans.sa_session.commit()
             message = "The repository information has been updated."
         if error:
             status = "error"
@@ -2141,7 +2119,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         # This method is called only from the ~/templates/webapps/tool_shed/repository/manage_repository.mako template.
         repository = repository_util.get_repository_in_tool_shed(trans.app, id)
         rmm = repository_metadata_manager.RepositoryMetadataManager(
-            app=trans.app, user=trans.user, repository=repository, resetting_all_metadata_on_repository=True
+            trans, repository=repository, resetting_all_metadata_on_repository=True
         )
         rmm.reset_all_metadata_on_repository_in_tool_shed()
         rmm_metadata_dict = rmm.get_metadata_dict()
@@ -2160,9 +2138,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
 
     @web.expose
     def reset_metadata_on_my_writable_repositories_in_tool_shed(self, trans, **kwd):
-        rmm = repository_metadata_manager.RepositoryMetadataManager(
-            trans.app, trans.user, resetting_all_metadata_on_repository=True
-        )
+        rmm = repository_metadata_manager.RepositoryMetadataManager(trans, resetting_all_metadata_on_repository=True)
         if "reset_metadata_on_selected_repositories_button" in kwd:
             message, status = rmm.reset_metadata_on_selected_repositories(**kwd)
         else:
@@ -2176,44 +2152,6 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             repositories_select_field=repositories_select_field,
             message=message,
             status=status,
-        )
-
-    @web.expose
-    def send_to_owner(self, trans, id, message=""):
-        repository = repository_util.get_repository_in_tool_shed(trans.app, id)
-        if not message:
-            message = "Enter a message"
-            status = "error"
-        elif trans.user and trans.user.email:
-            smtp_server = trans.app.config.smtp_server
-            from_address = trans.app.config.email_from
-            if smtp_server is None or from_address is None:
-                return trans.show_error_message("Mail is not configured for this Galaxy tool shed instance")
-            to_address = repository.user.email
-            # Get the name of the server hosting the tool shed instance.
-            host = trans.request.host
-            # Build the email message
-            body = string.Template(suc.contact_owner_template).safe_substitute(
-                username=trans.user.username,
-                repository_name=repository.name,
-                email=trans.user.email,
-                message=message,
-                host=host,
-            )
-            subject = f"Regarding your tool shed repository named {repository.name}"
-            # Send it
-            try:
-                util.send_mail(from_address, to_address, subject, body, trans.app.config)
-                message = "Your message has been sent"
-                status = "done"
-            except Exception as e:
-                message = f"An error occurred sending your message by email: {util.unicodify(e)}"
-                status = "error"
-        else:
-            # Do all we can to eliminate spam.
-            return trans.show_error_message("You must be logged in to contact the owner of a repository.")
-        return trans.response.send_redirect(
-            web.url_for(controller="repository", action="contact_owner", id=id, message=message, status=status)
         )
 
     @web.expose
@@ -2247,7 +2185,8 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                     flush_needed = True
                     total_alerts_added += 1
             if flush_needed:
-                trans.sa_session.flush()
+                with transaction(trans.sa_session):
+                    trans.sa_session.commit()
             message = "Total alerts added: %d, total alerts removed: %d" % (total_alerts_added, total_alerts_removed)
             kwd["message"] = message
             kwd["status"] = "done"
@@ -2263,7 +2202,8 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             malicious_checked = CheckboxField.is_checked(malicious)
             repository_metadata.malicious = malicious_checked
             trans.sa_session.add(repository_metadata)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
             if malicious_checked:
                 message = "The repository tip has been defined as malicious."
             else:
@@ -2285,7 +2225,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
     def sharable_owner(self, trans, owner):
         """Support for sharable URL for each repository owner's tools, e.g. http://example.org/view/owner."""
         try:
-            user = common_util.get_user_by_username(trans, owner)
+            user = get_user_by_username(trans.model.session, owner, trans.model.User)
         except Exception:
             user = None
         if user:
@@ -2293,8 +2233,9 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
             return trans.response.send_redirect(web.url_for(controller="repository", action="index", user_id=user_id))
         else:
             return trans.show_error_message(
-                "The tool shed <b>%s</b> contains no repositories owned by <b>%s</b>."
-                % (web.url_for("/", qualified=True).rstrip("/"), str(owner))
+                "The tool shed <b>{}</b> contains no repositories owned by <b>{}</b>.".format(
+                    web.url_for("/", qualified=True).rstrip("/"), owner
+                )
             )
 
     @web.expose
@@ -2312,12 +2253,14 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         else:
             # If the owner is valid, then show all of their repositories.
             try:
-                user = common_util.get_user_by_username(trans, owner)
+                user = get_user_by_username(trans.model.session, owner, trans.model.User)
             except Exception:
                 user = None
             if user:
                 user_id = trans.security.encode_id(user.id)
-                message = f"This list of repositories owned by <b>{str(owner)}</b>, does not include one named <b>{str(name)}</b>."
+                message = (
+                    f"This list of repositories owned by <b>{owner}</b>, does not include one named <b>{name}</b>."
+                )
                 return trans.response.send_redirect(
                     web.url_for(
                         controller="repository", action="index", user_id=user_id, message=message, status="error"
@@ -2325,8 +2268,9 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                 )
             else:
                 return trans.show_error_message(
-                    "The tool shed <b>%s</b> contains no repositories named <b>%s</b> with owner <b>%s</b>."
-                    % (web.url_for("/", qualified=True).rstrip("/"), str(name), str(owner))
+                    "The tool shed <b>{}</b> contains no repositories named <b>{}</b> with owner <b>{}</b>.".format(
+                        web.url_for("/", qualified=True).rstrip("/"), name, owner
+                    )
                 )
 
     @web.expose
@@ -2361,10 +2305,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                     )
                 )
             else:
-                message = (
-                    "The change log for the repository named <b>%s</b> owned by <b>%s</b> does not include revision <b>%s</b>."
-                    % (escape(str(name)), escape(str(owner)), escape(str(changeset_revision)))
-                )
+                message = f"The change log for the repository named <b>{escape(str(name))}</b> owned by <b>{escape(str(owner))}</b> does not include revision <b>{escape(str(changeset_revision))}</b>."
                 return trans.response.send_redirect(
                     web.url_for(
                         controller="repository",
@@ -2567,7 +2508,8 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                     flush_needed = True
             if flush_needed:
                 trans.sa_session.add(repository)
-                trans.sa_session.flush()
+                with transaction(trans.sa_session):
+                    trans.sa_session.commit()
         checked = alerts_checked or (user and user.email in email_alerts)
         alerts_check_box = CheckboxField("alerts", value=checked)
         changeset_revision_select_field = grids_util.build_changeset_revision_select_field(

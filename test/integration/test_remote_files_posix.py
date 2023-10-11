@@ -18,6 +18,15 @@ from galaxy_test.driver.integration_setup import (
 class TestPosixFileSourceIntegration(PosixFileSourceSetup, integration_util.IntegrationTestCase):
     dataset_populator: DatasetPopulator
 
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        PosixFileSourceSetup.handle_galaxy_config_kwds(
+            config,
+            cls,
+            required_role_expression=REQUIRED_ROLE_EXPRESSION,
+            required_group_expression=REQUIRED_GROUP_EXPRESSION,
+        )
+
     def setUp(self):
         super().setUp()
         self._write_file_fixtures()

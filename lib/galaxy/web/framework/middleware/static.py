@@ -18,7 +18,10 @@ class CacheableStaticURLParser(StaticURLParser):
 
     def __call__(self, environ, start_response):
         path_info = environ.get("PATH_INFO", "")
-        if not path_info:
+        script_name = environ.get("SCRIPT_NAME", "")
+        if script_name == "/robots.txt" or script_name == "/favicon.ico":
+            filename = script_name.replace("/", "")
+        elif not path_info:
             # See if this is a static file hackishly mapped.
             if os.path.exists(self.directory) and os.path.isfile(self.directory):
                 app = FileApp(self.directory)
@@ -26,7 +29,7 @@ class CacheableStaticURLParser(StaticURLParser):
                     app.cache_control(max_age=int(self.cache_seconds))
                 return app(environ, start_response)
             return self.add_slash(environ, start_response)
-        if path_info == "/":
+        elif path_info == "/":
             # @@: This should obviously be configurable
             filename = "index.html"
         else:
@@ -36,11 +39,15 @@ class CacheableStaticURLParser(StaticURLParser):
         host = environ.get("HTTP_HOST")
         if self.directory_per_host and host:
             for host_key, host_val in self.directory_per_host.items():
-                if host_key in host:
+                if host_key == host:
                     directory = host_val
                     break
 
-        full = os.path.join(directory, filename)
+        full = self.normpath(os.path.join(directory, filename))
+        if not full.startswith(directory):
+            # Out of bounds
+            return self.not_found(environ, start_response)
+
         if not os.path.exists(full):
             return self.not_found(environ, start_response)
         if os.path.isdir(full):

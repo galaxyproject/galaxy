@@ -1,3 +1,4 @@
+import contextlib
 import io
 import json
 import os
@@ -14,26 +15,37 @@ from logging import getLogger
 from typing import (
     Any,
     Callable,
+    cast,
     Dict,
+    Generator,
     List,
+    NamedTuple,
     Optional,
+    Union,
 )
 
 import requests
-from packaging.version import (
-    parse as parse_version,
-    Version,
-)
+from packaging.version import Version
 from requests import Response
 from requests.cookies import RequestsCookieJar
-from typing_extensions import Protocol
+from typing_extensions import (
+    Literal,
+    NotRequired,
+    Protocol,
+    TypedDict,
+)
 
 from galaxy import util
 from galaxy.tool_util.parser.interface import (
+    AssertionList,
     TestCollectionDef,
     TestCollectionOutputDef,
 )
 from galaxy.util.bunch import Bunch
+from galaxy.util.hash_util import (
+    memory_bound_hexdigest,
+    parse_checksum_hash,
+)
 from . import verify
 from .asserts import verify_assertions
 from .wait import wait_on
@@ -47,6 +59,8 @@ VERBOSE_ERRORS = util.asbool(os.environ.get("GALAXY_TEST_VERBOSE_ERRORS", False)
 UPLOAD_ASYNC = util.asbool(os.environ.get("GALAXY_TEST_UPLOAD_ASYNC", True))
 ERROR_MESSAGE_DATASET_SEP = "--------------------------------------"
 DEFAULT_TOOL_TEST_WAIT = int(os.environ.get("GALAXY_TEST_DEFAULT_WAIT", 86400))
+CLEANUP_TEST_HISTORIES = "GALAXY_TEST_NO_CLEANUP" not in os.environ
+DEFAULT_TARGET_HISTORY = os.environ.get("GALAXY_TEST_HISTORY_ID", None)
 
 DEFAULT_FTYPE = "auto"
 # This following default dbkey was traditionally hg17 before Galaxy 18.05,
@@ -73,8 +87,42 @@ class OutputsDict(dict):
 
 JobDataT = Dict[str, Any]
 JobDataCallbackT = Callable[[JobDataT], None]
-ToolTestDictT = Dict[str, Any]
-ToolTestDictsT = List[ToolTestDictT]
+
+
+class ValidToolTestDict(TypedDict):
+    inputs: Any
+    outputs: Any
+    output_collections: List[Dict[str, Any]]
+    stdout: NotRequired[AssertionList]
+    stderr: NotRequired[AssertionList]
+    expect_exit_code: NotRequired[int]
+    expect_failure: NotRequired[bool]
+    expect_test_failure: NotRequired[bool]
+    maxseconds: NotRequired[int]
+    num_outputs: NotRequired[int]
+    command_line: NotRequired[AssertionList]
+    command_version: NotRequired[AssertionList]
+    required_files: NotRequired[List[Any]]
+    required_data_tables: NotRequired[List[Any]]
+    required_loc_files: NotRequired[List[str]]
+    error: Literal[False]
+    tool_id: str
+    tool_version: str
+    test_index: int
+
+
+class InvalidToolTestDict(TypedDict):
+    error: Literal[True]
+    tool_id: str
+    tool_version: str
+    test_index: int
+    inputs: Any
+    exception: str
+    maxseconds: Optional[int]
+
+
+ToolTestDict = Union[ValidToolTestDict, InvalidToolTestDict]
+ToolTestDictsT = List[ToolTestDict]
 
 
 def stage_data_in_history(
@@ -118,6 +166,13 @@ def stage_data_in_history(
             upload_wait()
 
 
+class RunToolResponse(NamedTuple):
+    inputs: Dict[str, Any]
+    outputs: OutputsDict
+    output_collections: Dict[str, Any]
+    jobs: List[Dict[str, Any]]
+
+
 class GalaxyInteractorApi:
     # api_key and cookies can also be manually set by UsesApiTestCaseMixin._different_user()
     api_key: Optional[str]
@@ -128,7 +183,7 @@ class GalaxyInteractorApi:
         self.api_url = f"{kwds['galaxy_url'].rstrip('/')}/api"
         self.cookies = None
         self.master_api_key = kwds["master_api_key"]
-        self.api_key = self.__get_user_key(
+        self.api_key = self._get_user_key(
             kwds.get("api_key"), kwds.get("master_api_key"), test_user=kwds.get("test_user")
         )
         if kwds.get("user_api_key_is_admin_key", False):
@@ -146,14 +201,16 @@ class GalaxyInteractorApi:
     @property
     def target_galaxy_version(self):
         if self._target_galaxy_version is None:
-            self._target_galaxy_version = parse_version(self._get("version").json()["version_major"])
+            self._target_galaxy_version = Version(self._get("version").json()["version_major"])
         return self._target_galaxy_version
 
     @property
     def supports_test_data_download(self):
         return self.target_galaxy_version >= Version("19.01")
 
-    def __get_user_key(self, user_key: Optional[str], admin_key: Optional[str], test_user: Optional[str] = None) -> str:
+    def _get_user_key(
+        self, user_key: Optional[str], admin_key: Optional[str], test_user: Optional[str] = None
+    ) -> Optional[str]:
         if not test_user:
             test_user = "test@bx.psu.edu"
         if user_key:
@@ -262,7 +319,7 @@ class GalaxyInteractorApi:
 
     def verify_output_dataset(self, history_id, hda_id, outfile, attributes, tool_id, tool_version=None):
         fetcher = self.__dataset_fetcher(history_id)
-        test_data_downloader = self.__test_data_downloader(tool_id, tool_version)
+        test_data_downloader = self.__test_data_downloader(tool_id, tool_version, attributes)
         verify_hid(
             outfile,
             hda_id=hda_id,
@@ -354,12 +411,31 @@ class GalaxyInteractorApi:
         except IndexError:
             return None
 
+    @contextlib.contextmanager
+    def test_history(
+        self, require_new: bool = True, cleanup_callback: Optional[Callable[[str], None]] = None
+    ) -> Generator[str, None, None]:
+        history_id = None
+        if not require_new:
+            history_id = DEFAULT_TARGET_HISTORY
+
+        cleanup = CLEANUP_TEST_HISTORIES
+        history_id = history_id or self.new_history()
+        try:
+            yield history_id
+        except Exception:
+            self._summarize_history(history_id)
+            raise
+        finally:
+            if cleanup and cleanup_callback is not None:
+                cleanup_callback(history_id)
+
     def new_history(self, history_name="test_history", publish_history=False):
         create_response = self._post("histories", {"name": history_name})
         try:
             create_response.raise_for_status()
         except Exception as e:
-            raise Exception(f"Error occured while creating history with name '{history_name}': {e}")
+            raise Exception(f"Error occurred while creating history with name '{history_name}': {e}")
         history_id = create_response.json()["id"]
         if publish_history:
             self.publish_history(history_id)
@@ -372,7 +448,10 @@ class GalaxyInteractorApi:
     def test_data_path(self, tool_id, filename, tool_version=None):
         version_fragment = f"&tool_version={tool_version}" if tool_version else ""
         response = self._get(f"tools/{tool_id}/test_data_path?filename={filename}{version_fragment}", admin=True)
-        return response.json()
+        result = response.json()
+        if response.status_code in [200, 404]:
+            return result
+        raise Exception(result["err_msg"])
 
     def test_data_download(self, tool_id, filename, mode="file", is_output=True, tool_version=None):
         result = None
@@ -380,9 +459,7 @@ class GalaxyInteractorApi:
 
         if self.supports_test_data_download:
             version_fragment = f"&tool_version={tool_version}" if tool_version else ""
-            response = self._get(
-                f"tools/{tool_id}/test_data_download?filename={filename}{version_fragment}", admin=True
-            )
+            response = self._get(f"tools/{tool_id}/test_data_download?filename={filename}{version_fragment}")
             if response.status_code == 200:
                 if mode == "file":
                     result = response.content
@@ -403,10 +480,7 @@ class GalaxyInteractorApi:
             local_path = self.test_data_path(tool_id, filename, tool_version=tool_version)
 
         if result is None and (local_path is None or not os.path.exists(local_path)):
-            for test_data_directory in self.test_data_directories:
-                local_path = os.path.join(test_data_directory, filename)
-                if os.path.exists(local_path):
-                    break
+            local_path = self._find_in_test_data_directories(filename)
 
         if result is None and local_path is not None and os.path.exists(local_path):
             if mode == "file":
@@ -427,6 +501,14 @@ class GalaxyInteractorApi:
                 raise AssertionError(f"Test input file ({filename}) cannot be found.")
 
         return result
+
+    def _find_in_test_data_directories(self, filename: str) -> Optional[str]:
+        local_path = None
+        for test_data_directory in self.test_data_directories:
+            local_path = os.path.join(test_data_directory, filename)
+            if os.path.exists(local_path):
+                break
+        return local_path
 
     def __output_id(self, output_data):
         # Allow data structure coming out of tools API - {id: <id>, output_name: <name>, etc...}
@@ -476,7 +558,14 @@ class GalaxyInteractorApi:
                 )
             name = test_data["name"]
         else:
-            name = os.path.basename(fname)
+            file_name = None
+            file_name_exists = False
+            location = self._ensure_valid_location_in(test_data)
+            if fname:
+                file_name = self.test_data_path(tool_id, fname, tool_version=tool_version)
+                file_name_exists = os.path.exists(f"{file_name}")
+            upload_from_location = not file_name_exists and location is not None
+            name = os.path.basename(location if upload_from_location else fname)
             tool_input.update(
                 {
                     "files_0|NAME": name,
@@ -484,7 +573,9 @@ class GalaxyInteractorApi:
                 }
             )
             files = {}
-            if force_path_paste:
+            if upload_from_location:
+                tool_input.update({"files_0|url_paste": location})
+            elif force_path_paste:
                 file_name = self.test_data_path(tool_id, fname, tool_version=tool_version)
                 tool_input.update({"files_0|url_paste": f"file://{file_name}"})
             else:
@@ -509,7 +600,14 @@ class GalaxyInteractorApi:
         assert len(jobs) > 0, f"Invalid response from server [{submit_response}], expecting a job."
         return lambda: self.wait_for_job(jobs[0]["id"], history_id, maxseconds=maxseconds)
 
-    def run_tool(self, testdef, history_id, resource_parameters=None):
+    def _ensure_valid_location_in(self, test_data: dict) -> Optional[str]:
+        location: Optional[str] = test_data.get("location")
+        has_valid_location = location and util.is_url(location)
+        if location and not has_valid_location:
+            raise ValueError(f"Invalid `location` URL: `{location}`")
+        return location
+
+    def run_tool(self, testdef, history_id, resource_parameters=None) -> RunToolResponse:
         # We need to handle the case where we've uploaded a valid compressed file since the upload
         # tool will have uncompressed it on the fly.
         resource_parameters = resource_parameters or {}
@@ -550,14 +648,16 @@ class GalaxyInteractorApi:
                 break
         submit_response_object = ensure_tool_run_response_okay(submit_response, "execute tool", inputs_tree)
         try:
-            return Bunch(
+            return RunToolResponse(
                 inputs=inputs_tree,
                 outputs=self.__dictify_outputs(submit_response_object),
                 output_collections=self.__dictify_output_collections(submit_response_object),
                 jobs=submit_response_object["jobs"],
             )
         except KeyError:
-            message = f"Error creating a job for these tool inputs - {submit_response_object['err_msg']}"
+            message = (
+                f"Error creating a job for these tool inputs - {submit_response_object.get('err_msg', 'unknown error')}"
+            )
             raise RunToolException(message, inputs_tree)
 
     def _create_collection(self, history_id, collection_def):
@@ -591,13 +691,13 @@ class GalaxyInteractorApi:
             element_identifiers.append(element)
         return element_identifiers
 
-    def __dictify_output_collections(self, submit_response):
+    def __dictify_output_collections(self, submit_response) -> Dict[str, Any]:
         output_collections_dict = {}
         for output_collection in submit_response["output_collections"]:
-            output_collections_dict[output_collection.get("output_name")] = output_collection
+            output_collections_dict[output_collection["output_name"]] = output_collection
         return output_collections_dict
 
-    def __dictify_outputs(self, datasets_object):
+    def __dictify_outputs(self, datasets_object) -> OutputsDict:
         # Convert outputs list to a dictionary that can be accessed by
         # output_name so can be more flexible about ordering of outputs
         # but also allows fallback to legacy access as list mode.
@@ -623,7 +723,7 @@ class GalaxyInteractorApi:
                 self._summarize_history(history_id)
             raise
 
-    def _summarize_history(self, history_id):
+    def _summarize_history(self, history_id: str):
         if history_id is None:
             raise ValueError("_summarize_history passed empty history_id")
         print(f"Problem in history with id {history_id} - summary of history's datasets and jobs below.")
@@ -634,7 +734,6 @@ class GalaxyInteractorApi:
             return
 
         for history_content in history_contents:
-
             dataset = history_content
 
             print(ERROR_MESSAGE_DATASET_SEP)
@@ -746,14 +845,50 @@ class GalaxyInteractorApi:
                 password=password,
                 username=username,
             )
-            test_user = self._post("users", data, key=admin_key).json()
+            test_user = self._post("users", data, key=admin_key, json=True).json()
         return test_user
 
-    def __test_data_downloader(self, tool_id, tool_version=None):
-        def test_data_download(filename, mode="file"):
+    def __test_data_downloader(self, tool_id, tool_version=None, attributes: Optional[dict] = None):
+        location = None
+        checksum = attributes.get("checksum") if attributes else None
+
+        def test_data_download_from_galaxy(filename, mode="file"):
             return self.test_data_download(tool_id, filename, mode=mode, tool_version=tool_version)
 
-        return test_data_download
+        def test_data_download_from_location(filename: str):
+            # try to find the file in the test data directories first
+            local_path = self._find_in_test_data_directories(filename)
+            if local_path and os.path.exists(local_path):
+                with open(local_path, mode="rb") as f:
+                    return f.read()
+            # if not found, try to download it from the location to the test data directory
+            # to be reused in subsequent tests
+            if local_path:
+                util.download_to_file(location, local_path)
+                self._verify_checksum(local_path, checksum)
+                with open(local_path, mode="rb") as f:
+                    return f.read()
+            # otherwise, download it to a temporary file
+            with tempfile.NamedTemporaryFile() as file_handle:
+                util.download_to_file(location, file_handle.name)
+                self._verify_checksum(file_handle.name, checksum)
+                return file_handle.file.read()
+
+        if attributes:
+            location = self._ensure_valid_location_in(attributes)
+            if location:
+                return test_data_download_from_location
+        return test_data_download_from_galaxy
+
+    def _verify_checksum(self, file_path: str, checksum: Optional[str] = None):
+        if checksum is None:
+            return
+        hash_function, expected_hash_value = parse_checksum_hash(checksum)
+        calculated_hash_value = memory_bound_hexdigest(hash_func_name=hash_function, path=file_path)
+        if calculated_hash_value != expected_hash_value:
+            raise AssertionError(
+                f"Failed to verify checksum with [{hash_function}] - expected [{expected_hash_value}] got [{calculated_hash_value}]"
+            )
 
     def __dataset_fetcher(self, history_id):
         def fetcher(hda_id, base_name=None):
@@ -1195,16 +1330,16 @@ def verify_tool(
     publish_history: bool = False,
     force_path_paste: bool = False,
     maxseconds: int = DEFAULT_TOOL_TEST_WAIT,
-    tool_test_dicts: Optional[ToolTestDictsT] = None,
     client_test_config: Optional[TestConfig] = None,
     skip_with_reference_data: bool = False,
     skip_on_dynamic_param_errors: bool = False,
+    _tool_test_dicts: Optional[ToolTestDictsT] = None,  # extension point only for tests
 ):
     if resource_parameters is None:
         resource_parameters = {}
     if client_test_config is None:
         client_test_config = NullClientTestConfig()
-    tool_test_dicts = tool_test_dicts or galaxy_interactor.get_tool_tests(tool_id, tool_version=tool_version)
+    tool_test_dicts = _tool_test_dicts or galaxy_interactor.get_tool_tests(tool_id, tool_version=tool_version)
     tool_test_dict = tool_test_dicts[test_index]
     if "test_index" not in tool_test_dict:
         tool_test_dict["test_index"] = test_index
@@ -1239,7 +1374,7 @@ def verify_tool(
         return
 
     tool_test_dict.setdefault("maxseconds", maxseconds)
-    testdef = ToolTestDescription(tool_test_dict)
+    testdef = ToolTestDescription(cast(ToolTestDict, tool_test_dict))
     _handle_def_errors(testdef)
 
     created_history = False
@@ -1487,6 +1622,9 @@ def _verify_outputs(testdef, history, jobs, data_list, data_collection_list, gal
 
     if found_exceptions and not testdef.expect_test_failure:
         raise JobOutputsError(found_exceptions, job_stdio)
+    elif not found_exceptions and testdef.expect_test_failure:
+        register_exception(AssertionError("Expected job to miss at least one test assumption but all were met."))
+        raise JobOutputsError(found_exceptions, job_stdio)
     else:
         return job_stdio
 
@@ -1517,15 +1655,21 @@ class ToolTestDescription:
     doing dynamic tests in this way allows better integration)
     """
 
-    def __init__(self, processed_test_dict):
+    def __init__(self, processed_test_dict: ToolTestDict):
         assert (
             "test_index" in processed_test_dict
         ), "Invalid processed test description, must have a 'test_index' for naming, etc.."
         test_index = processed_test_dict["test_index"]
         name = processed_test_dict.get("name", f"Test-{test_index + 1}")
-        maxseconds = processed_test_dict.get("maxseconds", DEFAULT_TOOL_TEST_WAIT)
-        if maxseconds is not None:
-            maxseconds = int(maxseconds)
+        error_in_test_definition = processed_test_dict["error"]
+        if not error_in_test_definition:
+            processed_test_dict = cast(ValidToolTestDict, processed_test_dict)
+            maxseconds = int(processed_test_dict.get("maxseconds") or DEFAULT_TOOL_TEST_WAIT or 86400)
+            output_collections = processed_test_dict.get("output_collections", [])
+        else:
+            processed_test_dict = cast(InvalidToolTestDict, processed_test_dict)
+            maxseconds = DEFAULT_TOOL_TEST_WAIT
+            output_collections = []
 
         self.test_index = test_index
         assert (
@@ -1554,9 +1698,7 @@ class ToolTestDescription:
         self.error = processed_test_dict.get("error", False)
         self.exception = processed_test_dict.get("exception", None)
 
-        self.output_collections = [
-            TestCollectionOutputDef.from_dict(d) for d in processed_test_dict.get("output_collections", [])
-        ]
+        self.output_collections = [TestCollectionOutputDef.from_dict(d) for d in output_collections]
         self.command_line = processed_test_dict.get("command_line", None)
         self.command_version = processed_test_dict.get("command_version", None)
         self.stdout = processed_test_dict.get("stdout", None)
@@ -1611,6 +1753,7 @@ def test_data_iter(required_files):
             composite_data=extra.get("composite_data", []),
             ftype=extra.get("ftype", DEFAULT_FTYPE),
             dbkey=extra.get("dbkey", DEFAULT_DBKEY),
+            location=extra.get("location", None),
         )
         edit_attributes = extra.get("edit_attributes", [])
 

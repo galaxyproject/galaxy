@@ -11,7 +11,9 @@ from typing import (
 
 from sqlalchemy import (
     and_,
+    asc,
     false,
+    func,
     not_,
     or_,
     true,
@@ -28,6 +30,7 @@ from galaxy.model import (
     Library,
     Role,
 )
+from galaxy.model.base import transaction
 from galaxy.util import (
     pretty_print_time_interval,
     unicodify,
@@ -80,7 +83,8 @@ class LibraryManager:
             root_folder = trans.app.model.LibraryFolder(name=name, description="")
             library.root_folder = root_folder
             trans.sa_session.add_all((library, root_folder))
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
             return library
 
     def update(
@@ -117,7 +121,8 @@ class LibraryManager:
             changed = True
         if changed:
             trans.sa_session.add(library)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
         return library
 
     def delete(self, trans, library: Library, undelete: Optional[bool] = False) -> Library:
@@ -131,7 +136,8 @@ class LibraryManager:
         else:
             library.deleted = True
         trans.sa_session.add(library)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         return library
 
     def list(self, trans, deleted: Optional[bool] = False) -> Tuple[Query, Dict[str, Set]]:
@@ -204,6 +210,7 @@ class LibraryManager:
                 prefetched_ids["allowed_library_add_ids"] = allowed_library_add_ids
                 prefetched_ids["allowed_library_modify_ids"] = allowed_library_modify_ids
                 prefetched_ids["allowed_library_manage_ids"] = allowed_library_manage_ids
+        query = query.order_by(asc(func.lower(Library.name)))
         return query, prefetched_ids
 
     def secure(self, trans, library: Library, check_accessible: bool = True) -> Library:
@@ -255,9 +262,7 @@ class LibraryManager:
         allowed_library_add_ids = prefetched_ids.get("allowed_library_add_ids", None) if prefetched_ids else None
         allowed_library_modify_ids = prefetched_ids.get("allowed_library_modify_ids", None) if prefetched_ids else None
         allowed_library_manage_ids = prefetched_ids.get("allowed_library_manage_ids", None) if prefetched_ids else None
-        library_dict = library.to_dict(
-            view="element", value_mapper={"id": trans.security.encode_id, "root_folder_id": trans.security.encode_id}
-        )
+        library_dict = library.to_dict(view="element")
         library_dict["public"] = False if (restricted_library_ids and library.id in restricted_library_ids) else True
         library_dict["create_time_pretty"] = pretty_print_time_interval(library.create_time, precise=True)
         if not trans.user_is_admin:

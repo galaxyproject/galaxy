@@ -92,7 +92,7 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
     for compute using the docker image specified by a Galaxy tool. As AWS EFS is designed to
     be able to mount at multiple places with read and write capabilities, Galaxy and Batch
     containers share the same EFS drive as a local device. Sample configurations can be found
-    in `config/job_conf.xml.sample_advanced`.
+    in `config/job_conf.sample.yml`.
     """
 
     runner_name = "AWSBatchRunner"
@@ -597,6 +597,7 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
             "exit_code_path": exit_code_path,
             "working_directory": job_wrapper.working_directory,
             "shell": job_wrapper.shell,
+            "galaxy_virtual_env": None,
         }
         job_file_contents = self.get_job_file(job_wrapper, **job_script_props)
         self.write_executable_script(job_file, job_file_contents, job_io=job_wrapper.job_io)

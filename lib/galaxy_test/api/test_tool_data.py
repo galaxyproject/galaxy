@@ -7,6 +7,7 @@ since these tests can mutate the server config state.
 
 import operator
 
+from galaxy.util import UNKNOWN
 from ._framework import ApiTestCase
 
 
@@ -75,7 +76,7 @@ class TestToolDataApi(ApiTestCase):
         self._assert_status_code_is(delete_response, 400)
 
     def test_delete_without_values_raises_400(self):
-        payload = {"unknown": "test"}
+        payload = {UNKNOWN: "test"}
         delete_response = self._delete("tool_data/testbeta", data=payload, admin=True)
         self._assert_status_code_is(delete_response, 400)
 

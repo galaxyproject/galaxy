@@ -1,8 +1,9 @@
 import axios from "axios";
-import { getAppRoot } from "onload/loadConfig";
-import { cleanPaginationParameters } from "./utils";
 import { SingleQueryProvider } from "components/providers/SingleQueryProvider";
+import { getAppRoot } from "onload/loadConfig";
 import { rethrowSimple } from "utils/simple-error";
+
+import { cleanPaginationParameters } from "./utils";
 
 export function storedWorkflowsProvider(ctx, callback, extraParams = {}) {
     const { root, ...requestParams } = ctx;

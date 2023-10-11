@@ -24,7 +24,7 @@ JOB_RESUBMISSION_JOB_RESOURCES_CONFIG_FILE = os.path.join(
 JOB_RESUBMISSION_PULSAR_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "resubmission_pulsar_job_conf.xml")
 
 
-class _BaseResubmissionIntegerationTestCase(integration_util.IntegrationTestCase):
+class _BaseResubmissionIntegrationTestCase(integration_util.IntegrationTestCase):
     framework_tool_and_types = True
 
     def _assert_job_passes(self, tool_id="exit_code_oom", resource_parameters=None):
@@ -42,8 +42,7 @@ class _BaseResubmissionIntegerationTestCase(integration_util.IntegrationTestCase
         assert exception_thrown
 
 
-class TestJobResubmissionIntegration(_BaseResubmissionIntegerationTestCase):
-
+class TestJobResubmissionIntegration(_BaseResubmissionIntegrationTestCase):
     framework_tool_and_types = True
 
     @classmethod
@@ -175,8 +174,7 @@ class TestJobResubmissionIntegration(_BaseResubmissionIntegerationTestCase):
         )
 
 
-class TestJobResubmissionDefaultIntegration(_BaseResubmissionIntegerationTestCase):
-
+class TestJobResubmissionDefaultIntegration(_BaseResubmissionIntegrationTestCase):
     framework_tool_and_types = True
 
     @classmethod
@@ -190,8 +188,7 @@ class TestJobResubmissionDefaultIntegration(_BaseResubmissionIntegerationTestCas
         self._assert_job_passes(resource_parameters={"test_name": "test_default_resubmission"})
 
 
-class TestJobResubmissionDynamicIntegration(_BaseResubmissionIntegerationTestCase):
-
+class TestJobResubmissionDynamicIntegration(_BaseResubmissionIntegrationTestCase):
     framework_tool_and_types = True
 
     @classmethod
@@ -204,7 +201,7 @@ class TestJobResubmissionDynamicIntegration(_BaseResubmissionIntegerationTestCas
 
 
 # Verify the test tool fails if only a small amount of memory is allocated.
-class TestJobResubmissionSmallMemoryIntegration(_BaseResubmissionIntegerationTestCase):
+class TestJobResubmissionSmallMemoryIntegration(_BaseResubmissionIntegrationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
@@ -216,7 +213,7 @@ class TestJobResubmissionSmallMemoryIntegration(_BaseResubmissionIntegerationTes
 
 # Verify the test tool will resubmit on failure tested above and will then pass with
 # proper resubmission condition.
-class TestJobResubmissionSmallMemoryResubmitsToLargeIntegration(_BaseResubmissionIntegerationTestCase):
+class TestJobResubmissionSmallMemoryResubmitsToLargeIntegration(_BaseResubmissionIntegrationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
@@ -227,7 +224,7 @@ class TestJobResubmissionSmallMemoryResubmitsToLargeIntegration(_BaseResubmissio
 
 
 # Verify the test tool fails with an exit code issue.
-class TestJobResubmissionToolDetectedErrorIntegration(_BaseResubmissionIntegerationTestCase):
+class TestJobResubmissionToolDetectedErrorIntegration(_BaseResubmissionIntegrationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
@@ -239,7 +236,7 @@ class TestJobResubmissionToolDetectedErrorIntegration(_BaseResubmissionIntegerat
 
 # Verify the test tool will resubmit on failure tested above and will then pass in
 # an environment without a tool indicated error.
-class TestJobResubmissionToolDetectedErrorResubmitsIntegration(_BaseResubmissionIntegerationTestCase):
+class TestJobResubmissionToolDetectedErrorResubmitsIntegration(_BaseResubmissionIntegrationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)
@@ -250,7 +247,7 @@ class TestJobResubmissionToolDetectedErrorResubmitsIntegration(_BaseResubmission
 
 
 # Verify that a failure to connect to pulsar can trigger a resubmit
-class TestJobResubmissionPulsarIntegration(_BaseResubmissionIntegerationTestCase):
+class TestJobResubmissionPulsarIntegration(_BaseResubmissionIntegrationTestCase):
     @classmethod
     def handle_galaxy_config_kwds(cls, config):
         super().handle_galaxy_config_kwds(config)

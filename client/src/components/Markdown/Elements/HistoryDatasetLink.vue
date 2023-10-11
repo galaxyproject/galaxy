@@ -8,6 +8,7 @@
 
 <script>
 import DatasetLink from "components/Dataset/DatasetLink/DatasetLink";
+
 export default {
     components: {
         DatasetLink,

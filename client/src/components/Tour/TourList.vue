@@ -1,5 +1,5 @@
 <template>
-    <div class="ui-thumbnails">
+    <div>
         <h1 class="h-lg">Galaxy Tours</h1>
         <p>
             This page presents a list of interactive tours available on this Galaxy server. Select any tour to get
@@ -28,10 +28,10 @@
 </template>
 
 <script>
-import _l from "utils/localization";
-import { getAppRoot } from "onload/loadConfig";
-import { urlData } from "utils/url";
 import DelayedInput from "components/Common/DelayedInput";
+import { getAppRoot } from "onload/loadConfig";
+import _l from "utils/localization";
+import { urlData } from "utils/url";
 
 export default {
     components: {

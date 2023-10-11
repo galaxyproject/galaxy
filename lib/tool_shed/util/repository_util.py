@@ -2,6 +2,11 @@ import configparser
 import logging
 import os
 import re
+from typing import (
+    Optional,
+    Tuple,
+    TYPE_CHECKING,
+)
 
 from markupsafe import escape
 from sqlalchemy import false
@@ -13,6 +18,7 @@ from galaxy import (
     util,
     web,
 )
+from galaxy.model.base import transaction
 from galaxy.tool_shed.util.repository_util import (
     create_or_update_tool_shed_repository,
     extract_components_from_tuple,
@@ -42,7 +48,7 @@ from galaxy.tool_shed.util.repository_util import (
     repository_was_previously_installed,
     set_repository_attributes,
 )
-from galaxy.util.tool_shed import common_util
+from tool_shed.util.common_util import generate_clone_url_for
 from tool_shed.util.hg_util import (
     changeset2rev,
     create_hgrc_file,
@@ -52,7 +58,17 @@ from tool_shed.util.hg_util import (
 from tool_shed.util.metadata_util import (
     get_next_downloadable_changeset_revision,
     get_repository_metadata_by_changeset_revision,
+    repository_metadata_by_changeset_revision,
 )
+
+if TYPE_CHECKING:
+    from tool_shed.context import (
+        ProvidesRepositoriesContext,
+        ProvidesUserContext,
+    )
+    from tool_shed.structured_app import ToolShedApp
+    from tool_shed.webapp.model import Repository
+
 
 log = logging.getLogger(__name__)
 
@@ -60,7 +76,7 @@ VALID_REPOSITORYNAME_RE = re.compile(r"^[a-z0-9\_]+$")
 
 
 def create_repo_info_dict(
-    app,
+    app: "ToolShedApp",
     repository_clone_url,
     changeset_revision,
     ctx_rev,
@@ -70,6 +86,7 @@ def create_repo_info_dict(
     repository_metadata=None,
     tool_dependencies=None,
     repository_dependencies=None,
+    trans=None,
 ):
     """
     Return a dictionary that includes all of the information needed to install a repository into a local
@@ -97,15 +114,16 @@ def create_repo_info_dict(
     repository = get_repository_by_name_and_owner(app, repository_name, repository_owner)
     if app.name == "tool_shed":
         # We're in the tool shed.
-        repository_metadata = get_repository_metadata_by_changeset_revision(
-            app, app.security.encode_id(repository.id), changeset_revision
-        )
+        repository_metadata = repository_metadata_by_changeset_revision(app.model, repository.id, changeset_revision)
         if repository_metadata:
             metadata = repository_metadata.metadata
             if metadata:
-                tool_shed_url = web.url_for("/", qualified=True).rstrip("/")
+                if trans is not None:
+                    tool_shed_url = trans.repositories_hostname
+                else:
+                    tool_shed_url = web.url_for("/", qualified=True).rstrip("/")
                 rb = tool_shed.dependencies.repository.relation_builder.RelationBuilder(
-                    app, repository, repository_metadata, tool_shed_url
+                    app, repository, repository_metadata, tool_shed_url, trans=trans
                 )
                 # Get a dictionary of all repositories upon which the contents of the received repository depends.
                 repository_dependencies = rb.get_repository_dependencies_for_changeset_revision()
@@ -139,7 +157,7 @@ def create_repo_info_dict(
     return repo_info_dict
 
 
-def create_repository_admin_role(app, repository):
+def create_repository_admin_role(app: "ToolShedApp", repository: "Repository"):
     """
     Create a new role with name-spaced name based on the repository name and its owner's public user
     name.  This will ensure that the tole name is unique.
@@ -149,27 +167,30 @@ def create_repository_admin_role(app, repository):
     description = "A user or group member with this role can administer this repository."
     role = app.model.Role(name=name, description=description, type=app.model.Role.types.SYSTEM)
     sa_session.add(role)
-    sa_session.flush()
+    session = sa_session()
+    with transaction(session):
+        session.commit()
     # Associate the role with the repository owner.
     app.model.UserRoleAssociation(repository.user, role)
     # Associate the role with the repository.
     rra = app.model.RepositoryRoleAssociation(repository, role)
     sa_session.add(rra)
-    sa_session.flush()
+    with transaction(session):
+        session.commit()
     return role
 
 
 def create_repository(
-    app,
-    name,
-    type,
+    app: "ToolShedApp",
+    name: str,
+    type: str,
     description,
     long_description,
     user_id,
     category_ids=None,
     remote_repository_url=None,
     homepage_url=None,
-):
+) -> Tuple["Repository", str]:
     """Create a new ToolShed repository"""
     category_ids = category_ids or []
     sa_session = app.model.session
@@ -185,7 +206,9 @@ def create_repository(
     )
     # Flush to get the id.
     sa_session.add(repository)
-    sa_session.flush()
+    session = sa_session()
+    with transaction(session):
+        session.commit()
     # Create an admin role for the repository.
     create_repository_admin_role(app, repository)
     # Determine the repository's repo_path on disk.
@@ -214,14 +237,17 @@ def create_repository(
             sa_session.add(rca)
             flush_needed = True
     if flush_needed:
-        sa_session.flush()
+        with transaction(session):
+            session.commit()
     # Update the repository registry.
     app.repository_registry.add_entry(repository)
     message = f"Repository <b>{escape(str(repository.name))}</b> has been created."
     return repository, message
 
 
-def generate_sharable_link_for_repository_in_tool_shed(repository, changeset_revision=None):
+def generate_sharable_link_for_repository_in_tool_shed(
+    repository: "Repository", changeset_revision: Optional[str] = None
+) -> str:
     """Generate the URL for sharing a repository that is in the tool shed."""
     base_url = web.url_for("/", qualified=True).rstrip("/")
     sharable_url = f"{base_url}/view/{repository.user.username}/{repository.name}"
@@ -238,9 +264,10 @@ def get_repository_in_tool_shed(app, id, eagerload_columns=None):
     return q.get(app.security.decode_id(id))
 
 
-def get_repo_info_dict(app, user, repository_id, changeset_revision):
+def get_repo_info_dict(trans: "ProvidesRepositoriesContext", repository_id, changeset_revision):
+    app = trans.app
     repository = get_repository_in_tool_shed(app, repository_id)
-    repository_clone_url = common_util.generate_clone_url_for_repository_in_tool_shed(user, repository)
+    repository_clone_url = generate_clone_url_for(trans, repository)
     repository_metadata = get_repository_metadata_by_changeset_revision(app, repository_id, changeset_revision)
     if not repository_metadata:
         # The received changeset_revision is no longer installable, so get the next changeset_revision
@@ -293,6 +320,7 @@ def get_repo_info_dict(app, user, repository_id, changeset_revision):
         repository_metadata=repository_metadata,
         tool_dependencies=None,
         repository_dependencies=None,
+        trans=trans,
     )
     return (
         repo_info_dict,
@@ -305,7 +333,7 @@ def get_repo_info_dict(app, user, repository_id, changeset_revision):
 
 
 def get_repositories_by_category(
-    app, category_id, installable=False, sort_order="asc", sort_key="name", page=None, per_page=25
+    app: "ToolShedApp", category_id, installable=False, sort_order="asc", sort_key="name", page=None, per_page=25
 ):
     sa_session = app.model.session
     query = (
@@ -318,7 +346,7 @@ def get_repositories_by_category(
         .filter(app.model.RepositoryCategoryAssociation.category_id == category_id)
     )
     if installable:
-        subquery = select([app.model.RepositoryMetadata.table.c.repository_id])
+        subquery = select(app.model.RepositoryMetadata.table.c.repository_id)
         query = query.filter(app.model.Repository.id.in_(subquery))
     if sort_key == "owner":
         query = (
@@ -348,8 +376,8 @@ def get_repositories_by_category(
         repository_dict = repository.to_dict(value_mapper=default_value_mapper)
         repository_dict["metadata"] = {}
         for changeset, changehash in repository.installable_revisions(app):
-            encoded_id = app.security.encode_id(repository.id)
-            metadata = get_repository_metadata_by_changeset_revision(app, encoded_id, changehash)
+            metadata = repository_metadata_by_changeset_revision(app.model, repository.id, changehash)
+            assert metadata
             repository_dict["metadata"][f"{changeset}:{changehash}"] = metadata.to_dict(
                 value_mapper=default_value_mapper
             )
@@ -361,7 +389,7 @@ def get_repositories_by_category(
     return repositories
 
 
-def handle_role_associations(app, role, repository, **kwd):
+def handle_role_associations(app: "ToolShedApp", role, repository, **kwd):
     sa_session = app.model.session
     message = escape(kwd.get("message", ""))
     status = kwd.get("status", "done")
@@ -425,7 +453,7 @@ def handle_role_associations(app, role, repository, **kwd):
     return associations_dict
 
 
-def change_repository_name_in_hgrc_file(hgrc_file, new_name):
+def change_repository_name_in_hgrc_file(hgrc_file: str, new_name: str) -> None:
     config = configparser.ConfigParser()
     config.read(hgrc_file)
     config.set("web", "name", new_name)
@@ -433,8 +461,9 @@ def change_repository_name_in_hgrc_file(hgrc_file, new_name):
         config.write(fh)
 
 
-def update_repository(app, trans, id, **kwds):
+def update_repository(trans: "ProvidesUserContext", id: str, **kwds) -> Tuple[Optional["Repository"], Optional[str]]:
     """Update an existing ToolShed repository"""
+    app = trans.app
     message = None
     flush_needed = False
     sa_session = app.model.session
@@ -500,14 +529,15 @@ def update_repository(app, trans, id, **kwds):
 
     if flush_needed:
         trans.sa_session.add(repository)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         message = "The repository information has been updated."
     else:
         message = None
     return repository, message
 
 
-def validate_repository_name(app, name, user):
+def validate_repository_name(app: "ToolShedApp", name, user):
     """
     Validate whether the given name qualifies as a new TS repo name.
     Repository names must be unique for each user, must be at least two characters

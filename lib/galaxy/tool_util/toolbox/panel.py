@@ -230,11 +230,11 @@ class ToolPanelElements(odict, HasPanelItems):
                 yield (key, item)
 
     def closest_section(self, target_section_id: Optional[str], target_section_name: Optional[str]):
-        for (section_id, section) in self.walk_sections():
+        for section_id, section in self.walk_sections():
             if section_id == target_section_id:
                 return section
 
-        for (_, section) in self.walk_sections():
+        for _, section in self.walk_sections():
             if section.name == target_section_name:
                 return section
 

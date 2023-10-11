@@ -1,9 +1,14 @@
-<tool id="CONVERTER_vcf_bgzip_to_tabix_0" name="Convert BGZ VCF to tabix" version="1.0.1" hidden="true" profile="16.04">
+<tool id="CONVERTER_vcf_bgzip_to_tabix_0" name="Convert BGZ VCF to tabix" version="1.0.2" hidden="true" profile="16.04">
     <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
     <requirements>
-        <requirement type="package" version="0.15.4">pysam</requirement>
+        <requirement type="package" version="1.16">htslib</requirement>
     </requirements>
-    <command>python '$__tool_directory__/interval_to_tabix_converter.py' -P 'vcf' '' '$input1' '$output1'</command>
+    <command><![CDATA[
+        cp '$input1.metadata.tabix_index' '$output1' &&
+        ln -s '$input1' test.bgzip &&
+        ln -s '$output1' test.bgzip.tbi &&
+        tabix -l test.bgzip
+    ]]></command>
     <inputs>
         <param format="vcf_bgzip" name="input1" type="data" label="Choose BGZIP'd VCF file"/>
     </inputs>
@@ -13,7 +18,14 @@
     <tests>
         <test>
             <param name="input1" ftype="vcf_bgzip" value="vcf_bgzip_to_maf_in.vcf_bgzip"/>
-            <output name="output1" ftype="tabix" value="tabix_to_maf_in_to_tabix.tabix"/>
+            <output name="output1" ftype="tabix">
+                <assert_contents>
+                    <has_size value="148" delta="10"/>
+                </assert_contents>
+            </output>
+            <assert_stdout>
+                <has_line line="20"/>
+            </assert_stdout>
         </test>
     </tests>
     <help>

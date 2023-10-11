@@ -131,7 +131,7 @@ class TestMaterializeDatasetInstanceTasaksIntegration(IntegrationTestCase, UsesC
 
     @pytest.mark.require_new_history
     def test_upload_vs_materialize_simplest_upload(self, history_id: str):
-        item = {"src": "url", "url": "gxfiles://testdatafiles//simple_line_no_newline.txt", "ext": "txt"}
+        item = {"src": "url", "url": "gxfiles://testdatafiles/simple_line_no_newline.txt", "ext": "txt"}
         output = self.dataset_populator.fetch_hda(history_id, item)
         uploaded_details = self.dataset_populator.get_history_dataset_details(
             history_id, dataset=output, assert_ok=True
@@ -148,7 +148,7 @@ class TestMaterializeDatasetInstanceTasaksIntegration(IntegrationTestCase, UsesC
     def test_upload_vs_materialize_to_posix_lines(self, history_id: str):
         item = {
             "src": "url",
-            "url": "gxfiles://testdatafiles//simple_line_no_newline.txt",
+            "url": "gxfiles://testdatafiles/simple_line_no_newline.txt",
             "ext": "txt",
             "to_posix_lines": True,
         }
@@ -174,7 +174,7 @@ class TestMaterializeDatasetInstanceTasaksIntegration(IntegrationTestCase, UsesC
     def test_upload_vs_materialize_space_to_tab(self, history_id: str):
         item = {
             "src": "url",
-            "url": "gxfiles://testdatafiles//simple_line_no_newline.txt",
+            "url": "gxfiles://testdatafiles/simple_line_no_newline.txt",
             "ext": "txt",
             "space_to_tab": True,
         }
@@ -200,7 +200,7 @@ class TestMaterializeDatasetInstanceTasaksIntegration(IntegrationTestCase, UsesC
     def test_upload_vs_materialize_to_posix_and_space_to_tab(self, history_id: str):
         item = {
             "src": "url",
-            "url": "gxfiles://testdatafiles//simple_line_no_newline.txt",
+            "url": "gxfiles://testdatafiles/simple_line_no_newline.txt",
             "ext": "txt",
             "space_to_tab": True,
             "to_posix_lines": True,

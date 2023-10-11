@@ -1,0 +1,36 @@
+@mixin node-terminal-style($side) {
+    position: absolute;
+    #{$side}: -0.65rem;
+    border-radius: 50%;
+    background-color: $white;
+    display: grid;
+    place-items: center;
+    width: 11px;
+    height: 11px;
+    margin-top: 0.25rem;
+
+    color: $brand-primary;
+
+    &.mapped-over {
+        width: 20px;
+        height: 20px;
+        margin-top: 0;
+        #{$side}: -0.8rem;
+
+        .terminal-icon {
+            top: -1px;
+            left: -1px;
+            width: 22px;
+            height: 22px;
+        }
+    }
+
+    .terminal-icon {
+        position: absolute;
+        top: -1px;
+        left: -1px;
+        width: 13px;
+        height: 13px;
+        pointer-events: none;
+    }
+}

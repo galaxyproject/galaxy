@@ -4,6 +4,10 @@ from typing import (
 )
 
 from galaxy_test.api._framework import ApiTestCase
+from galaxy_test.base.decorators import (
+    requires_admin,
+    using_requirement,
+)
 from galaxy_test.base.populators import DatasetPopulator
 
 
@@ -14,6 +18,7 @@ class TestGroupUsersApi(ApiTestCase):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
 
+    @requires_admin
     def test_index(self, group_name: Optional[str] = None):
         group_name = group_name or "test-group_users"
         group = self._create_group(group_name)
@@ -31,11 +36,13 @@ class TestGroupUsersApi(ApiTestCase):
         response = self._get(f"groups/{encoded_group_id}/users")
         self._assert_status_code_is(response, 403)
 
+    @requires_admin
     def test_index_unknown_group_raises_400(self):
         encoded_group_id = "unknown-group-id"
         response = self._get(f"groups/{encoded_group_id}/users", admin=True)
         self._assert_status_code_is(response, 400)
 
+    @requires_admin
     def test_show(self):
         encoded_user_id = self.dataset_populator.user_id()
         group = self._create_group("test-group-show-user", encoded_user_ids=[encoded_user_id])
@@ -51,6 +58,7 @@ class TestGroupUsersApi(ApiTestCase):
         response = self._get(f"groups/{encoded_group_id}/users/{encoded_user_id}")
         self._assert_status_code_is(response, 403)
 
+    @requires_admin
     def test_show_unknown_raises_400(self):
         group = self._create_group("test-group-with-unknown-user")
         encoded_group_id = group["id"]
@@ -58,6 +66,7 @@ class TestGroupUsersApi(ApiTestCase):
         response = self._get(f"groups/{encoded_group_id}/users/{encoded_user_id}", admin=True)
         self._assert_status_code_is(response, 400)
 
+    @requires_admin
     def test_update(self):
         group_name = "group-without-users"
         group = self._create_group(group_name, encoded_user_ids=[])
@@ -79,6 +88,7 @@ class TestGroupUsersApi(ApiTestCase):
         response = self._put(f"groups/{encoded_group_id}/users/{encoded_user_id}")
         self._assert_status_code_is(response, 403)
 
+    @requires_admin
     def test_delete(self):
         group_name = "group-with-user-to-delete"
         encoded_user_id = self.dataset_populator.user_id()
@@ -102,6 +112,7 @@ class TestGroupUsersApi(ApiTestCase):
         response = self._delete(f"groups/{encoded_group_id}/users/{encoded_user_id}")
         self._assert_status_code_is(response, 403)
 
+    @requires_admin
     def test_delete_unknown_raises_400(self):
         group_name = "group-without-user-to-delete"
         group = self._create_group(group_name, encoded_user_ids=[])
@@ -122,12 +133,14 @@ class TestGroupUsersApi(ApiTestCase):
             "name": group_name,
             "user_ids": user_ids,
         }
+        using_requirement("admin")
         response = self._post("groups", payload, admin=True, json=True)
         self._assert_status_code_is(response, 200)
         group = response.json()[0]  # POST /api/groups returns a list
         return group
 
     def _get_group_users(self, encoded_group_id: str):
+        using_requirement("admin")
         response = self._get(f"groups/{encoded_group_id}/users", admin=True)
         self._assert_status_code_is(response, 200)
         group_users = response.json()

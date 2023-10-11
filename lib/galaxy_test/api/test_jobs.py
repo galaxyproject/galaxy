@@ -975,7 +975,7 @@ steps:
         jobs_response = self._get("jobs", data=dict(state=states))
         self._assert_status_code_is(jobs_response, 200)
         jobs = jobs_response.json()
-        assert not [j for j in jobs if not j["state"] in states]
+        assert not [j for j in jobs if j["state"] not in states]
         return [j for j in jobs if j["tool_id"] == "__DATA_FETCH__"]
 
     def __history_with_new_dataset(self, history_id):

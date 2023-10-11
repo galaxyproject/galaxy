@@ -12,9 +12,9 @@
             </div>
         </div>
         <b>{{ l("Database/Build") }}: </b>
-        <multiselect
-            class="database-dropdown"
+        <Multiselect
             v-model="selectedGenome"
+            class="database-dropdown"
             deselect-label="Can't remove this value"
             track-by="id"
             label="text"
@@ -22,7 +22,7 @@
             :searchable="true"
             :allow-empty="false">
             {{ selectedGenome.text }}
-        </multiselect>
+        </Multiselect>
     </div>
 </template>
 <script>

@@ -3,9 +3,13 @@ XML format classes
 """
 import logging
 import re
+from typing import List
 
 from galaxy import util
+from galaxy.datatypes.dataproviders.dataset import DatasetDataProvider
+from galaxy.datatypes.dataproviders.hierarchy import XMLDataProvider
 from galaxy.datatypes.metadata import MetadataElement
+from galaxy.datatypes.protocols import DatasetProtocol
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
     disable_parent_class_sniffing,
@@ -30,7 +34,7 @@ class GenericXml(data.Text):
     edam_format = "format_2332"
     file_ext = "xml"
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -39,7 +43,7 @@ class GenericXml(data.Text):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def _has_root_element_in_prefix(self, file_prefix: FilePrefix, root):
+    def _has_root_element_in_prefix(self, file_prefix: FilePrefix, root: str) -> bool:
         for line in file_prefix.line_iterator():
             if not line.startswith("<?"):
                 break
@@ -47,7 +51,7 @@ class GenericXml(data.Text):
         pattern = r"^<(\w*:)?%s" % root
         return re.match(pattern, line) is not None
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines whether the file is XML or not
 
@@ -62,7 +66,7 @@ class GenericXml(data.Text):
         return file_prefix.startswith("<?xml ")
 
     @staticmethod
-    def merge(split_files, output_file):
+    def merge(split_files: List[str], output_file: str) -> None:
         """Merging multiple XML files is non-trivial and must be done in subclasses."""
         if len(split_files) > 1:
             raise NotImplementedError(
@@ -71,10 +75,10 @@ class GenericXml(data.Text):
         # For one file only, use base class method (move/copy)
         data.Text.merge(split_files, output_file)
 
-    @dataproviders.decorators.dataprovider_factory("xml", dataproviders.hierarchy.XMLDataProvider.settings)
-    def xml_dataprovider(self, dataset, **settings):
-        dataset_source = dataproviders.dataset.DatasetDataProvider(dataset)
-        return dataproviders.hierarchy.XMLDataProvider(dataset_source, **settings)
+    @dataproviders.decorators.dataprovider_factory("xml", XMLDataProvider.settings)
+    def xml_dataprovider(self, dataset: DatasetProtocol, **settings) -> XMLDataProvider:
+        dataset_source = DatasetDataProvider(dataset)
+        return XMLDataProvider(dataset_source, **settings)
 
 
 @disable_parent_class_sniffing
@@ -83,7 +87,7 @@ class MEMEXml(GenericXml):
 
     file_ext = "memexml"
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -99,7 +103,7 @@ class CisML(GenericXml):
 
     file_ext = "cisml"
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -143,7 +147,7 @@ class Dzi(GenericXml):
     def __init__(self, **kwd):
         super().__init__(**kwd)
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         tree = util.parse_xml(dataset.file_name)
         root = tree.getroot()
         dataset.metadata.format = root.get("Format")
@@ -160,11 +164,7 @@ class Dzi(GenericXml):
                 dataset.metadata.width = elem.get("Width")
                 dataset.metadata.height = elem.get("Height")
 
-    def get_visualizations(self, dataset):
-        """Returns a list of visualizations for datatype"""
-        return ["openseadragon"]
-
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
             dataset.blurb = "Deep Zoom Image"
@@ -172,7 +172,7 @@ class Dzi(GenericXml):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disc"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Checking for keyword - 'Collection' or 'Image' in the first 200 lines.
         >>> from galaxy.datatypes.sniff import get_test_fname
@@ -197,7 +197,7 @@ class Phyloxml(GenericXml):
     edam_format = "format_3159"
     file_ext = "phyloxml"
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -206,7 +206,7 @@ class Phyloxml(GenericXml):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """ "Checking for keyword - 'phyloxml' always in lowercase in the first few lines.
 
         >>> from galaxy.datatypes.sniff import get_test_fname
@@ -222,13 +222,6 @@ class Phyloxml(GenericXml):
         """
         return self._has_root_element_in_prefix(file_prefix, "phyloxml")
 
-    def get_visualizations(self, dataset):
-        """
-        Returns a list of visualizations for datatype.
-        """
-
-        return ["phyloviz"]
-
 
 class Owl(GenericXml):
     """
@@ -239,7 +232,7 @@ class Owl(GenericXml):
     edam_format = "format_3262"
     file_ext = "owl"
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
             dataset.blurb = "Web Ontology Language OWL"
@@ -247,7 +240,7 @@ class Owl(GenericXml):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disc"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Checking for keyword - '<owl' in the first 200 lines.
         """
@@ -264,7 +257,7 @@ class Sbml(GenericXml):
     edam_data = "data_2024"
     edam_format = "format_2585"
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
             dataset.blurb = "System Biology Markup Language SBML"
@@ -272,7 +265,7 @@ class Sbml(GenericXml):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disc"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Checking for keyword - '<sbml' in the first 200 lines.
         """

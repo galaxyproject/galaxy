@@ -1,17 +1,12 @@
 import os
-from typing import (
-    Any,
-    Dict,
-)
 
-import pytest
-
+from galaxy.tool_util.deps.mulled.get_tests import main_test_search
 from galaxy.tool_util.deps.mulled.mulled_update_singularity_containers import (
     docker_to_singularity,
     get_list_from_file,
     singularity_container_test,
 )
-from galaxy.util import which
+from galaxy.util.unittest_utils import skip_unless_executable
 from ..util import external_dependency_management
 
 
@@ -29,28 +24,21 @@ def test_get_list_from_file(tmp_path) -> None:
 
 
 @external_dependency_management
-@pytest.mark.skipif(not which("singularity"), reason="requires singularity but singularity not on PATH")
+@skip_unless_executable("singularity")
 def test_docker_to_singularity(tmp_path) -> None:
     docker_to_singularity("abundancebin:1.0.1--0", "singularity", tmp_path, no_sudo=True)
     assert tmp_path.joinpath("abundancebin:1.0.1--0").exists()
 
 
 @external_dependency_management
-@pytest.mark.skipif(not which("singularity"), reason="requires singularity but singularity not on PATH")
+@skip_unless_executable("singularity")
 def test_singularity_container_test(tmp_path) -> None:
-    tests: Dict[str, Dict[str, Any]] = {
-        "pybigwig:0.1.11--py36_0": {
-            "imports": ["pyBigWig"],
-            "commands": ['python -c "import pyBigWig; assert(pyBigWig.numpy == 1); assert(pyBigWig.remote == 1)"'],
-            "import_lang": "python -c",
-        },
-        "samtools:1.0--1": {
-            "commands": ["samtools --help"],
-            "import_lang": "python -c",
-            "container": "samtools:1.0--1",
-        },
-        "yasm:1.3.0--0": {},
-    }
+    containers = [
+        "pybigwig:0.3.22--py36h54a71a5_0",  # test Python imports
+        "samtools:1.0--1",
+        "yasm:1.3.0--0",  # test missing tests
+    ]
+    tests = {container: main_test_search(container) for container in containers}
     for n in tests.keys():
         docker_to_singularity(n, "singularity", tmp_path, no_sudo=True)
     results = singularity_container_test(
@@ -59,5 +47,5 @@ def test_singularity_container_test(tmp_path) -> None:
         tmp_path,
     )
     assert "samtools:1.0--1" in results["passed"]
-    assert results["failed"][0]["imports"] == ["pyBigWig"]
+    assert "pybigwig:0.3.22--py36h54a71a5_0" in results["passed"]
     assert "yasm:1.3.0--0" in results["notest"]

@@ -63,7 +63,6 @@ def _sniffnfix_pg9_hex(value):
 
 
 class GalaxyLargeBinary(LargeBinary):
-
     # This hack is necessary because the LargeBinary result processor
     # does not specify an encoding in the `bytes` call ,
     # likely because `result` should be binary.
@@ -115,6 +114,17 @@ class JSONType(TypeDecorator):
 
     def compare_values(self, x, y):
         return x == y
+
+
+class DoubleEncodedJsonType(JSONType):
+    def process_result_value(self, value, dialect):
+        value = super().process_result_value(value, dialect)
+        if isinstance(value, str):
+            try:
+                return json.loads(value)
+            except ValueError:
+                return value
+        return value
 
 
 class MutableJSONType(JSONType):

@@ -11,7 +11,6 @@ from .framework import (
 
 
 class TestHistoryPanelCollections(SeleniumTestCase):
-
     ensure_registered = True
 
     @selenium_test
@@ -123,6 +122,24 @@ class TestHistoryPanelCollections(SeleniumTestCase):
         finally:
             for job in payload["jobs"]:
                 self.dataset_populator.cancel_job(job["id"])
+
+    @selenium_test
+    def test_collection_job_details(self):
+        ok_collection_hid, failed_collection_hid = self._generate_ok_and_failed_collections()
+        ok_collection_element = self.history_panel_wait_for_hid_state(ok_collection_hid, "ok")
+        failed_collection_element = self.history_panel_wait_for_hid_state(failed_collection_hid, "error")
+
+        ok_collection_element.collection_job_details_button.wait_for_and_click()
+        self.components.job_details.galaxy_tool_with_id(tool_id="collection_creates_list").wait_for_visible()
+        tool_exit_code_component = self.components.job_details.tool_exit_code.wait_for_visible()
+        self.screenshot("history_panel_collections_job_details_ok")
+        assert int(tool_exit_code_component.text) == 0
+
+        failed_collection_element.collection_job_details_button.wait_for_and_click()
+        self.components.job_details.galaxy_tool_with_id(tool_id="collection_creates_list_fail").wait_for_visible()
+        tool_exit_code_component = self.components.job_details.tool_exit_code.wait_for_visible()
+        self.screenshot("history_panel_collections_job_details_failed")
+        assert int(tool_exit_code_component.text) > 0
 
     @selenium_test
     def test_back_to_history_button(self):
@@ -250,3 +267,16 @@ class TestHistoryPanelCollections(SeleniumTestCase):
         collection_hid = input_collection["hid"]
         self.history_panel_wait_for_hid_state(collection_hid, "ok")
         return input_collection
+
+    def _generate_ok_and_failed_collections(self):
+        history_id = self.current_history_id()
+        fetch_response = self.dataset_collection_populator.create_list_in_history(
+            history_id, contents=["0", "1", "0", "1"]
+        ).json()
+        hdca_id = self.dataset_collection_populator.wait_for_fetched_collection(fetch_response)["id"]
+        collection_input = {"input1": {"src": "hdca", "id": hdca_id}}
+        ok_response = self.dataset_populator.run_tool("collection_creates_list", collection_input, history_id)
+        failed_response = self.dataset_populator.run_tool("collection_creates_list_fail", collection_input, history_id)
+        ok_collection_hid = ok_response["output_collections"][0]["hid"]
+        failed_collection_hid = failed_response["output_collections"][0]["hid"]
+        return ok_collection_hid, failed_collection_hid

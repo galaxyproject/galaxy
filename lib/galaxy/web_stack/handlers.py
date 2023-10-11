@@ -13,6 +13,7 @@ from typing import Tuple
 from sqlalchemy.orm import object_session
 
 from galaxy.exceptions import HandlerAssignmentError
+from galaxy.model.base import transaction
 from galaxy.util import (
     ExecutionTimer,
     listify,
@@ -335,7 +336,7 @@ class ConfiguresHandlers:
                 HANDLER_ASSIGNMENT_METHODS.MEM_SELF,
                 configured,
             )
-        if flush():
+        if flush:
             _timed_flush_obj(obj)
         queue_callback()
         return self.app.config.server_name
@@ -461,5 +462,6 @@ class ConfiguresHandlers:
 def _timed_flush_obj(obj):
     obj_flush_timer = ExecutionTimer()
     sa_session = object_session(obj)
-    sa_session.flush()
+    with transaction(sa_session):
+        sa_session.commit()
     log.info(f"Flushed transaction for {obj.log_str()} {obj_flush_timer}")

@@ -9,7 +9,8 @@ import abc
 class AuthProvider(metaclass=abc.ABCMeta):
     """A base class for all Auth Providers."""
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def plugin_type(self):
         """Short string providing labelling this plugin"""
 

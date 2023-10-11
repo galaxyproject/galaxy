@@ -1,6 +1,6 @@
 <template>
     <span itemprop="creator" itemscope itemtype="https://schema.org/Organization">
-        <font-awesome-icon ref="button" icon="building" />
+        <FontAwesomeIcon ref="button" icon="building" />
         <b-popover
             triggers="click blur"
             :placement="hoverPlacement"
@@ -18,9 +18,9 @@
         <span v-else-if="email" itemprop="email" :content="organization.email">
             {{ email }}
         </span>
-        <a v-if="url" :href="url" target="_blank">
+        <a v-if="url" v-b-tooltip.hover title="Organization URL" :href="url" target="_blank">
             <link itemprop="url" :href="url" />
-            <font-awesome-icon v-b-tooltip.hover title="Organization URL" icon="external-link-alt" />
+            <FontAwesomeIcon icon="external-link-alt" />
         </a>
         <meta
             v-for="attribute in explicitMetaAttributes"
@@ -32,12 +32,11 @@
 </template>
 
 <script>
-import ThingViewerMixin from "./ThingViewerMixin";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
+import { faBuilding, faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
-// maybe faUsers instead of faBuilding?
-import { faExternalLinkAlt, faBuilding } from "@fortawesome/free-solid-svg-icons";
+import ThingViewerMixin from "./ThingViewerMixin";
 
 library.add(faExternalLinkAlt, faBuilding);
 

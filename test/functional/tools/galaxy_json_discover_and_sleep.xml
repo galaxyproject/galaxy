@@ -1,0 +1,28 @@
+<tool id="galaxy_json_sleep" name="galaxy_json_sleep" version="1.0.0" profile="22.05">
+    <command><![CDATA[ 
+        touch out &&
+        sleep $sleep_time &&
+        cp '$c1' galaxy.json
+    ]]></command>
+    <configfiles>
+        <configfile name="c1">{"output_tool_supplied_metadata": {
+            "name": "my dynamic name",
+            "ext": "txt",
+            "info": "my dynamic info"
+            }}
+</configfile>
+    </configfiles>
+    <inputs>
+        <param name="sleep_time" type="integer" value="0" />
+    </inputs>
+    <outputs>
+        <data name="output" format="txt" from_work_dir="out" />
+    </outputs>
+    <tests>
+        <test>
+            <param name="input" value="7" />
+            <output name="output" md5="d41d8cd98f00b204e9800998ecf8427e">
+            </output>
+        </test>
+    </tests>
+</tool>

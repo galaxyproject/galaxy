@@ -13,6 +13,12 @@ import { saveAs } from "file-saver";
 import shp from "shpjs";
 import axios from "axios";
 
+/* This will be part of the charts/viz standard lib in 23.1 */
+const slashCleanup = /(\/)+/g;
+function prefixedDownloadUrl(root, path) {
+    return `${root}/${path}`.replace(slashCleanup, "/");
+}
+
 var MapViewer = (function(mv) {
     mv.gMap = null;
 
@@ -240,10 +246,11 @@ window.bundleEntries = window.bundleEntries || {};
 window.bundleEntries.load = function (options) {
     const chart = options.chart;
     const dataset = options.dataset;
+    const downloadUrl = prefixedDownloadUrl(options.root, dataset.download_url);
     $.ajax({
-        url: dataset.download_url,
+        url: downloadUrl,
         success: () => {
-            MapViewer.loadFile(dataset.download_url, dataset.extension, options, chart);
+            MapViewer.loadFile(downloadUrl, dataset.extension, options, chart);
         },
         error: () => {
             chart.state("failed", "Failed to access dataset.");

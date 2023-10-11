@@ -1,4 +1,5 @@
 from .framework import (
+    managed_history,
     selenium_test,
     SeleniumTestCase,
     UsesHistoryItemAssertions,
@@ -11,6 +12,7 @@ class TestHistoryDatasetState(SeleniumTestCase, UsesHistoryItemAssertions):
     ensure_registered = True
 
     @selenium_test
+    @managed_history
     def test_dataset_metadata_download(self):
         self._prepare_dataset()
         item = self.history_panel_item_component(hid=FIRST_HID)

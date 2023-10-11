@@ -1,4 +1,8 @@
 import logging
+from typing import (
+    Callable,
+    Dict,
+)
 
 from sqlalchemy import and_
 
@@ -6,22 +10,21 @@ from galaxy import (
     util,
     web,
 )
-from galaxy.webapps.base.controller import (
-    BaseAPIController,
-    HTTPBadRequest,
-)
+from galaxy.model.base import transaction
+from galaxy.webapps.base.controller import HTTPBadRequest
 from tool_shed.util import (
     metadata_util,
     repository_util,
 )
+from . import BaseShedAPIController
 
 log = logging.getLogger(__name__)
 
 
-class RepositoryRevisionsController(BaseAPIController):
+class RepositoryRevisionsController(BaseShedAPIController):
     """RESTful controller for interactions with tool shed repository revisions."""
 
-    def __get_value_mapper(self, trans):
+    def __get_value_mapper(self, trans) -> Dict[str, Callable]:
         value_mapper = {
             "id": trans.security.encode_id,
             "repository_id": trans.security.encode_id,
@@ -195,18 +198,22 @@ class RepositoryRevisionsController(BaseAPIController):
                 # log information when setting attributes associated with the Tool Shed's install and test framework.
                 if key in ["includes_tools", "missing_test_components"]:
                     log.debug(
-                        "Setting repository_metadata column %s to value %s for changeset_revision %s via the Tool Shed API."
-                        % (str(key), str(new_value), str(repository_metadata.changeset_revision))
+                        "Setting repository_metadata column %s to value %s for changeset_revision %s via the Tool Shed API.",
+                        key,
+                        new_value,
+                        repository_metadata.changeset_revision,
                     )
                 setattr(repository_metadata, key, new_value)
                 flush_needed = True
         if flush_needed:
             log.debug(
-                "Updating repository_metadata record with id %s and changeset_revision %s."
-                % (str(decoded_repository_metadata_id), str(repository_metadata.changeset_revision))
+                "Updating repository_metadata record with id %s and changeset_revision %s.",
+                decoded_repository_metadata_id,
+                repository_metadata.changeset_revision,
             )
             trans.sa_session.add(repository_metadata)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
             trans.sa_session.refresh(repository_metadata)
         repository_metadata_dict = repository_metadata.to_dict(
             view="element", value_mapper=self.__get_value_mapper(trans)

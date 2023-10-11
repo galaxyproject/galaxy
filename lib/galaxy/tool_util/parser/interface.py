@@ -7,18 +7,58 @@ from abc import (
 )
 from os.path import join
 from typing import (
+    Any,
     Dict,
     List,
     Optional,
     Tuple,
+    TYPE_CHECKING,
+    Union,
 )
 
 import packaging.version
+from typing_extensions import TypedDict
 
 from galaxy.util.path import safe_walk
 from .util import _parse_name
 
+if TYPE_CHECKING:
+    from galaxy.tool_util.deps.requirements import (
+        ContainerDescription,
+        ResourceRequirement,
+        ToolRequirements,
+    )
+
 NOT_IMPLEMENTED_MESSAGE = "Galaxy tool format does not yet support this tool feature."
+
+
+class AssertionDict(TypedDict):
+    tag: str
+    attributes: Dict[str, Any]
+    children: Optional[List[Dict[str, Any]]]
+
+
+AssertionList = Optional[List[AssertionDict]]
+XmlInt = Union[str, int]
+
+
+class ToolSourceTest(TypedDict):
+    inputs: Any
+    outputs: Any
+    output_collections: List[Any]
+    stdout: AssertionList
+    stderr: AssertionList
+    expect_exit_code: Optional[XmlInt]
+    expect_failure: bool
+    expect_test_failure: bool
+    maxseconds: Optional[XmlInt]
+    expect_num_outputs: Optional[XmlInt]
+    command: AssertionList
+    command_version: AssertionList
+
+
+class ToolSourceTests(TypedDict):
+    tests: List[ToolSourceTest]
 
 
 class ToolSource(metaclass=ABCMeta):
@@ -185,7 +225,9 @@ class ToolSource(metaclass=ABCMeta):
         return None
 
     @abstractmethod
-    def parse_requirements_and_containers(self) -> Tuple:
+    def parse_requirements_and_containers(
+        self,
+    ) -> Tuple["ToolRequirements", List["ContainerDescription"], List["ResourceRequirement"]]:
         """Return triple of ToolRequirement, ContainerDescription and ResourceRequirement lists."""
 
     @abstractmethod
@@ -228,7 +270,7 @@ class ToolSource(metaclass=ABCMeta):
         return [], []
 
     @abstractmethod
-    def parse_help(self):
+    def parse_help(self) -> Optional[str]:
         """Return RST definition of help text for tool or None if the tool
         doesn't define help text.
         """
@@ -268,7 +310,7 @@ class ToolSource(metaclass=ABCMeta):
             paths_and_modtimes[self.source_path] = os.path.getmtime(self.source_path)
         return paths_and_modtimes
 
-    def parse_tests_to_dict(self):
+    def parse_tests_to_dict(self) -> ToolSourceTests:
         return {"tests": []}
 
     def __str__(self):
@@ -512,7 +554,7 @@ class RequiredFiles:
             excludes.append({"path": ".hg", "path_type": "prefix"})
 
         files: List[str] = []
-        for (dirpath, _, filenames) in safe_walk(tool_directory):
+        for dirpath, _, filenames in safe_walk(tool_directory):
             for filename in filenames:
                 rel_path = join(dirpath, filename).replace(tool_directory + os.path.sep, "")
                 if matches(self.includes, rel_path) and not matches(self.excludes, rel_path):

@@ -2,11 +2,12 @@
 // use this instead of your own mount function so that all vue components get
 // the same plugins and events.
 
+import BootstrapVue from "bootstrap-vue";
+import { eventHubPlugin, iconPlugin, localizationPlugin, vueRxShortcutPlugin } from "components/plugins";
 import Vue from "vue";
 import Vuex from "vuex";
-import BootstrapVue from "bootstrap-vue";
+
 import store from "../store";
-import { eventHubPlugin, localizationPlugin, vueRxShortcutPlugin, iconPlugin } from "components/plugins";
 
 Vue.use(Vuex);
 
@@ -32,9 +33,9 @@ export const mountVueComponent = (ComponentDefinition) => {
     return (propsData, el) => new component({ store, propsData, el });
 };
 
-export const appendVueComponent = ($el, ComponentDefinition, propsData = {}) => {
+export const replaceChildrenWithComponent = (el, ComponentDefinition, propsData = {}) => {
     const container = document.createElement("div");
-    $el.empty().append(container);
+    el.replaceChildren(container);
     const component = Vue.extend(ComponentDefinition);
     const mountFn = (propsData, el) => new component({ propsData, el });
     return mountFn(propsData, container);

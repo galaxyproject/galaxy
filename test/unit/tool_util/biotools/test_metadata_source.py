@@ -4,7 +4,7 @@ from galaxy.tool_util.biotools.source import (
     get_biotools_metadata_source,
     GitContentBiotoolsMetadataSource,
 )
-from galaxy.tool_util.unittest_utils import skip_if_site_down
+from galaxy.util.unittest_utils import skip_if_site_down
 from ._util import content_dir
 
 

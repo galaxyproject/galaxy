@@ -2,7 +2,8 @@
 
 #######
 # Use this script to manage Tool Shed database migrations.
-# NOTE: If your database is empty, use create_toolshed_db.sh instead.
+# For help, run `sh manage_db.sh -h`. 
+# For detailed help, see documentation at https://docs.galaxyproject.org/en/master/admin/db_migration.html
 #######
 
 cd "$(dirname "$0")" || exit
@@ -11,4 +12,4 @@ cd "$(dirname "$0")" || exit
 
 setup_python
 
-python ./scripts/migrate_toolshed_db.py "$@" tool_shed
+python ./scripts/toolshed_db.py "$@"

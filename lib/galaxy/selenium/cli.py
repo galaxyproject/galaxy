@@ -77,6 +77,12 @@ class DriverWrapper(NavigatesGalaxy):
     def build_url(self, url=""):
         return urljoin(self.target_url, url)
 
+    def screenshot(self, label: str) -> None:
+        """No-op in this context, not saving debugging/testing screenshots.
+
+        Consider a verbose or debug option for saving these.
+        """
+
     @property
     def default_timeout(self):
         return 15

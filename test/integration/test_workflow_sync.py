@@ -14,7 +14,6 @@ from galaxy_test.driver import integration_util
 
 
 class TestWorkflowSync(integration_util.IntegrationTestCase):
-
     framework_tool_and_types = True
     require_admin_user = True
 

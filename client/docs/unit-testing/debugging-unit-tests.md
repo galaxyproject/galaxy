@@ -9,7 +9,7 @@ code updates its test extensions again.
 
 #### To debug a single Jest test:
 
-1. Open a jest test (a file that ends with *.test.js)
+1. Open a jest test (a file that ends with \*.test.js)
 
 1. Make sure the test file is selected, especially if you have multiple files open. This process
    will fail confusingly and without obvious error if you have not launched the debugger with the
@@ -34,8 +34,6 @@ code updates its test extensions again.
    variables near your breakpoint and see their values in the "Variables" section of the Run and
    Debug pane.
 
-
-
 ```json
 // sample launch.json
 {
@@ -45,16 +43,16 @@ code updates its test extensions again.
             "type": "node",
             "name": "debug selected jest test",
             "request": "launch",
-            
+
             // launches version of jest from inside the node_modules
             // this means you need to have run yarn first
             "program": "${workspaceFolder}/client/node_modules/jest/bin/jest",
             "args": [
-                // Alias -i. 
+                // Alias -i.
                 // Normally jest opens up a bunch of workers to run all your tests faster
                 // but we don't want that right now.
                 "--runInBand",
-                
+
                 // finds jest config
                 "--config",
                 "${workspaceFolder}/client/tests/jest/jest.config.js",
@@ -68,9 +66,8 @@ code updates its test extensions again.
             "console": "integratedTerminal",
 
             // allows you to place breakpoints right in vscode's gutter
-            "disableOptimisticBPs": true,
-        },
-        
+            "disableOptimisticBPs": true
+        }
     ]
 }
 ```

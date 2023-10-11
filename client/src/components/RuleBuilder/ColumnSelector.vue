@@ -3,9 +3,9 @@
         <label class="d-flex justify-content-end align-items-center">
             <span v-b-tooltip.hover class="mr-auto" :title="help">{{ label }}</span>
             <div v-b-tooltip.hover class="mr-1" :title="title">
-                <select2 :value="target" :multiple="multiple" @input="handleInput">
+                <Select2 :value="target" :multiple="multiple" @input="handleInput">
                     <option v-for="(col, index) in colHeaders" :key="col" :value="index">{{ col }}</option>
-                </select2>
+                </Select2>
             </div>
             <slot></slot>
         </label>
@@ -28,11 +28,11 @@
                     <i @click="$emit('update:orderedEdit', true)">... {{ l("Assign Another Column") }}</i>
                 </span>
                 <span v-else class="rule-column-selector-target-select">
-                    <select2 placeholder="Select a column" @input="handleAdd">
+                    <Select2 placeholder="Select a column" @input="handleAdd">
                         <option />
                         <!-- empty option selection for placeholder -->
                         <option v-for="(col, index) in remainingHeaders" :key="col" :value="index">{{ col }}</option>
-                    </select2>
+                    </Select2>
                 </span>
             </li>
         </ol>
@@ -40,9 +40,10 @@
 </template>
 
 <script>
-import Vue from "vue";
-import _l from "utils/localization";
 import Select2 from "components/Select2";
+import _l from "utils/localization";
+import Vue from "vue";
+
 export default {
     components: {
         Select2,

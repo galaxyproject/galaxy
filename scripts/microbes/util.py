@@ -258,7 +258,7 @@ def get_bed_from_glimmer3(glimmer3_filename, chr):
     if min_score < 0:
         delta = min_score * -1
     regions = []
-    for (chr, start, end, name, score, strand) in orfs:
+    for chr, start, end, name, score, strand in orfs:
         # need to cast to str because was having the case where 1000.0 was rounded to 999 by int, some sort of precision bug?
         my_score = int(float(str(((score + delta) * (1000 - 0 - (min_score + delta))) / ((max_score + delta) + 0))))
 

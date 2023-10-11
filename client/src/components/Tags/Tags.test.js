@@ -1,9 +1,10 @@
-import Vuex from "vuex";
 import { mount } from "@vue/test-utils";
+import { tagStore } from "store/tagStore";
+import { getLocalVue } from "tests/jest/helpers";
+import Vuex from "vuex";
+
 import Tags from "./Tags";
 import { TagService } from "./tagService";
-import { tagStore } from "store/tagStore";
-import { getLocalVue } from "jest/helpers";
 
 jest.mock("./tagService");
 

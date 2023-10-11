@@ -24,6 +24,7 @@ class DynamicArguments:
 
 
 DYNAMIC_ARGUMENTS = DynamicArguments()
+SHARED_ARGUMENTS: List[str] = ["collapse"]
 VALID_ARGUMENTS: Dict[str, Union[List[str], DynamicArguments]] = {
     "history_link": ["history_id"],
     "history_dataset_display": ["input", "output", "history_dataset_id"],
@@ -73,13 +74,13 @@ def validate_galaxy_markdown(galaxy_markdown, internal=True):
     def _validate_arg(arg_str, valid_args, line_no):
         if arg_str is not None:
             arg_name = arg_str.split("=", 1)[0].strip()
-            if arg_name not in valid_args:
+            if arg_name not in valid_args and arg_name not in SHARED_ARGUMENTS:
                 invalid_line("Invalid argument to Galaxy directive [{argument}]", line_no, argument=arg_name)
 
     expecting_container_close_for = None
     last_line_no = 0
     function_calls = 0
-    for (line, fenced, open_fence, line_no) in _split_markdown_lines(galaxy_markdown):
+    for line, fenced, open_fence, line_no in _split_markdown_lines(galaxy_markdown):
         last_line_no = line_no
 
         expecting_container_close = expecting_container_close_for is not None

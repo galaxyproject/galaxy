@@ -4,6 +4,7 @@ from json import dumps
 
 from galaxy.job_execution.datasets import DatasetPath
 from galaxy.metadata import get_metadata_compute_strategy
+from galaxy.model.base import transaction
 from galaxy.util import asbool
 from . import ToolAction
 
@@ -99,7 +100,8 @@ class SetMetadataToolAction(ToolAction):
             job.states.WAITING
         )  # we need to set job state to something other than NEW, or else when tracking jobs in db it will be picked up before we have added input / output parameters
         sa_session.add(job)
-        sa_session.flush()  # ensure job.id is available
+        with transaction(sa_session):  # ensure job.id is available
+            sa_session.commit()
 
         # add parameters to job_parameter table
         # Store original dataset state, so we can restore it. A separate table might be better (no chance of 'losing' the original state)?
@@ -145,7 +147,8 @@ class SetMetadataToolAction(ToolAction):
         # i.e. if state was set to 'running' the set metadata job would never run, as it would wait for input (the dataset to set metadata on) to be in a ready state
         dataset._state = dataset.states.SETTING_METADATA
         job.state = start_job_state  # job inputs have been configured, restore initial job state
-        sa_session.flush()
+        with transaction(sa_session):
+            sa_session.commit()
 
         # clear e.g. converted files
         dataset.datatype.before_setting_metadata(dataset)

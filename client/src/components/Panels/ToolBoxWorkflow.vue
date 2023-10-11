@@ -5,7 +5,7 @@
                 <nav class="d-flex justify-content-between mx-3 my-2">
                     <h2 v-localize class="m-1 h-sm">Tools</h2>
                     <div class="panel-header-buttons">
-                        <panel-view-button
+                        <PanelViewButton
                             v-if="panelViews && Object.keys(panelViews).length > 1"
                             :panel-views="panelViews"
                             :current-panel-view="currentPanelView"
@@ -15,14 +15,26 @@
             </div>
         </div>
         <div class="unified-panel-controls">
-            <tool-search
+            <ToolSearch
+                v-b-tooltip.hover
+                aria-haspopup="true"
                 :current-panel-view="currentPanelView"
                 placeholder="search tools"
-                :toolbox="toolbox"
+                :toolbox="workflowTools"
                 :query="query"
+                :query-pending="queryPending"
                 @onQuery="onQuery"
                 @onResults="onResults" />
-            <div v-if="queryTooShort" class="pb-2">
+            <div v-if="closestTerm" class="pb-2">
+                <b-badge class="alert-danger w-100">
+                    Did you mean:
+                    <i>
+                        <a href="javascript:void(0)" @click="onQuery(closestTerm)">{{ closestTerm }}</a>
+                    </i>
+                    ?
+                </b-badge>
+            </div>
+            <div v-else-if="queryTooShort" class="pb-2">
                 <b-badge class="alert-danger w-100">Search string too short!</b-badge>
             </div>
             <div v-else-if="noResults" class="pb-2">
@@ -31,37 +43,38 @@
         </div>
         <div class="unified-panel-body">
             <div class="toolMenuContainer">
-                <tool-section
+                <ToolSection
                     v-for="category in moduleSections"
                     :key="category.name"
                     :hide-name="true"
                     :category="category"
                     tool-key="name"
                     :section-name="category.name"
-                    :query-filter="query"
+                    :query-filter="queryFilter"
                     :disable-filter="true"
                     @onClick="onInsertModule" />
-                <tool-section
+                <ToolSection
                     v-if="hasDataManagerSection"
                     :key="dataManagerSection.id"
                     :category="dataManagerSection"
-                    :query-filter="query"
+                    :query-filter="queryFilter"
                     :disable-filter="true"
                     @onClick="onInsertTool" />
-                <tool-section
+                <ToolSection
                     v-for="section in sections"
                     :key="section.id"
                     :category="section"
-                    :query-filter="query"
+                    :query-filter="queryFilter"
                     @onClick="onInsertTool" />
-                <tool-section
+                <ToolSection
                     v-if="hasWorkflowSection"
                     :key="workflowSection.name"
                     :category="workflowSection"
                     section-name="workflows"
+                    :sort-items="false"
                     operation-icon="fa fa-files-o"
                     operation-title="Insert individual steps."
-                    :query-filter="query"
+                    :query-filter="queryFilter"
                     :disable-filter="true"
                     @onClick="onInsertWorkflow"
                     @onOperation="onInsertWorkflowSteps" />
@@ -72,10 +85,11 @@
 
 <script>
 import _l from "utils/localization";
-import ToolSection from "./Common/ToolSection";
-import ToolSearch from "./Common/ToolSearch";
-import { filterToolSections } from "./utilities";
+
 import PanelViewButton from "./Buttons/PanelViewButton";
+import ToolSearch from "./Common/ToolSearch";
+import ToolSection from "./Common/ToolSection";
+import { filterToolSections, removeDisabledTools } from "./utilities";
 
 export default {
     name: "ToolBox",
@@ -110,7 +124,10 @@ export default {
     },
     data() {
         return {
+            closestTerm: null,
             query: null,
+            queryPending: false,
+            queryFilter: null,
             results: null,
         };
     },
@@ -119,7 +136,7 @@ export default {
             return this.query && this.query.length < 3;
         },
         noResults() {
-            return this.query && this.results.length === 0;
+            return this.query && (!this.results || this.results.length === 0);
         },
         hasWorkflowSection() {
             return this.workflows.length > 0;
@@ -140,12 +157,13 @@ export default {
             };
         },
         sections() {
-            return filterToolSections(this.toolsLayout, this.results);
+            return filterToolSections(this.workflowTools, this.results);
         },
         toolsLayout() {
             return this.toolbox.map((section) => {
                 return {
                     ...section,
+                    disabled: !section.elems && !section.is_workflow_compatible,
                     elems:
                         section.elems &&
                         section.elems.map((el) => {
@@ -155,13 +173,20 @@ export default {
                 };
             });
         },
+        workflowTools() {
+            return removeDisabledTools(this.toolsLayout);
+        },
     },
     methods: {
         onQuery(query) {
             this.query = query;
+            this.queryPending = true;
         },
-        onResults(results) {
+        onResults(results, closestTerm = null) {
             this.results = results;
+            this.closestTerm = closestTerm;
+            this.queryFilter = !this.noResults ? this.query : null;
+            this.queryPending = false;
         },
         onInsertTool(tool, evt) {
             evt.preventDefault();

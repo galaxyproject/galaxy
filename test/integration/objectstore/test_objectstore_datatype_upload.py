@@ -10,6 +10,7 @@ import pytest
 from galaxy_test.driver import integration_util
 from ..test_datatype_upload import (
     TEST_CASES,
+    TestData,
     upload_datatype_helper,
     UploadTestDatatypeDataTestCase,
 )
@@ -117,7 +118,6 @@ def stop_irods(container_name):
 
 
 class BaseObjectstoreUploadTest(UploadTestDatatypeDataTestCase):
-
     object_store_template: Optional[string.Template] = None
 
     @classmethod
@@ -126,7 +126,7 @@ class BaseObjectstoreUploadTest(UploadTestDatatypeDataTestCase):
         cls.object_stores_parent = temp_directory
         cls.object_store_config_path = os.path.join(temp_directory, "object_store_conf.xml")
         config["metadata_strategy"] = "extended"
-        config["outpus_to_working_dir"] = True
+        config["outputs_to_working_directory"] = True
         config["retry_metadata_internally"] = False
         config["object_store_store_by"] = "uuid"
         with open(cls.object_store_config_path, "w") as f:
@@ -139,7 +139,6 @@ class BaseObjectstoreUploadTest(UploadTestDatatypeDataTestCase):
 
 
 class IrodsUploadTestDatatypeDataTestCase(BaseObjectstoreUploadTest):
-
     object_store_template = IRODS_OBJECT_STORE_CONFIG
 
     @classmethod
@@ -170,12 +169,10 @@ class IrodsUploadTestDatatypeDataTestCase(BaseObjectstoreUploadTest):
 
 
 class IrodsIdleConnectionUploadTestCase(IrodsUploadTestDatatypeDataTestCase):
-
     object_store_template = IRODS_OBJECT_STORE_CONFIG
 
 
 class UploadTestDosDiskAndDiskTestCase(BaseObjectstoreUploadTest):
-
     object_store_template = DISTRIBUTED_OBJECT_STORE_CONFIG
 
     @classmethod
@@ -184,7 +181,6 @@ class UploadTestDosDiskAndDiskTestCase(BaseObjectstoreUploadTest):
 
 
 class UploadTestDosIrodsAndDiskTestCase(IrodsUploadTestDatatypeDataTestCase):
-
     object_store_template = DISTRIBUTED_IRODS_OBJECT_STORE_CONFIG
 
 
@@ -195,26 +191,38 @@ idle_connection_irods_instance = integration_util.integration_module_instance(Ir
 
 
 @pytest.mark.parametrize("test_data", TEST_CASES.values(), ids=list(TEST_CASES.keys()))
-def test_upload_datatype_dos_disk_and_disk(distributed_instance, test_data, temp_file):
-    upload_datatype_helper(distributed_instance, test_data, temp_file)
+def test_upload_datatype_dos_disk_and_disk(
+    distributed_instance: UploadTestDosDiskAndDiskTestCase, test_data: TestData, temp_file
+) -> None:
+    with distributed_instance.dataset_populator.test_history() as history_id:
+        upload_datatype_helper(distributed_instance, test_data, temp_file, history_id)
 
 
 @pytest.mark.parametrize("test_data", TEST_CASES.values(), ids=list(TEST_CASES.keys()))
-def test_upload_datatype_irods(irods_instance, test_data, temp_file):
-    upload_datatype_helper(irods_instance, test_data, temp_file, True)
+def test_upload_datatype_irods(
+    irods_instance: IrodsUploadTestDatatypeDataTestCase, test_data: TestData, temp_file
+) -> None:
+    with irods_instance.dataset_populator.test_history() as history_id:
+        upload_datatype_helper(irods_instance, test_data, temp_file, history_id, True)
 
 
 @pytest.mark.parametrize("test_data", TEST_CASES.values(), ids=list(TEST_CASES.keys()))
-def test_upload_datatype_dos_irods_and_disk(distributed_and_irods_instance, test_data, temp_file):
-    upload_datatype_helper(distributed_and_irods_instance, test_data, temp_file)
+def test_upload_datatype_dos_irods_and_disk(
+    distributed_and_irods_instance: UploadTestDosIrodsAndDiskTestCase, test_data: TestData, temp_file
+) -> None:
+    with distributed_and_irods_instance.dataset_populator.test_history() as history_id:
+        upload_datatype_helper(distributed_and_irods_instance, test_data, temp_file, history_id)
 
 
 @pytest.mark.parametrize("test_data", SINGLE_TEST_CASE.values(), ids=list(SINGLE_TEST_CASE.keys()))
-def test_upload_datatype_irods_idle_connections(idle_connection_irods_instance, test_data, temp_file):
-    # Upload a file to iRods
-    upload_datatype_helper(idle_connection_irods_instance, test_data, temp_file, True)
+def test_upload_datatype_irods_idle_connections(
+    idle_connection_irods_instance: IrodsIdleConnectionUploadTestCase, test_data: TestData, temp_file
+) -> None:
+    with idle_connection_irods_instance.dataset_populator.test_history() as history_id:
+        upload_datatype_helper(idle_connection_irods_instance, test_data, temp_file, history_id, True)
 
     # Get Irods object store's connection pool
+    assert idle_connection_irods_instance._test_driver.app
     connection_pool = idle_connection_irods_instance._test_driver.app.object_store.session.pool
 
     # Verify the connection pool has 0 active and 1 idle connections

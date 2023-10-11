@@ -18,7 +18,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.7', '3.10']
+        python-version: ['3.7', '3.11']
     defaults:
       run:
         shell: bash -l {0}
@@ -26,6 +26,11 @@ jobs:
       - uses: actions/checkout@v3
         with:
           path: 'galaxy root'
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18.12.1'
+          cache: 'yarn'
+          cache-dependency-path: 'galaxy root/client/yarn.lock'
       - name: Set up Python
         uses: actions/setup-python@v4
         with:
@@ -45,9 +50,6 @@ jobs:
         with:
           path: 'galaxy root/.venv'
           key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-reports-startup
-      - uses: mvdbeek/gha-yarn-cache@master
-        with:
-          yarn-lock-file: 'galaxy root/client/yarn.lock'
       - name: Install tox
         run: pip install tox
       - name: Run tests

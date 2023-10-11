@@ -2,6 +2,7 @@
 Data providers for genome visualizations.
 """
 
+import abc
 import itertools
 import math
 import os
@@ -1140,7 +1141,6 @@ class BamDataProvider(GenomeDataProvider, FilterableMixin):
 
 
 class SamDataProvider(BamDataProvider):
-
     dataset_type = "bai"
 
     def __init__(self, converted_dataset=None, original_dataset=None, dependencies=None):
@@ -1163,6 +1163,7 @@ class BBIDataProvider(GenomeDataProvider):
 
     dataset_type = "bigwig"
 
+    @abc.abstractmethod
     def _get_dataset(self) -> Tuple[IO[bytes], Union[BigBedFile, BigWigFile]]:
         ...
 

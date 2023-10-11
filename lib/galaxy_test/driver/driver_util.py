@@ -61,7 +61,7 @@ TOOL_SHED_TEST_DATA = os.path.join(galaxy_root, "lib", "tool_shed", "test", "tes
 TEST_WEBHOOKS_DIR = os.path.join(galaxy_root, "test", "functional", "webhooks")
 FRAMEWORK_TOOLS_DIR = os.path.join(GALAXY_TEST_DIRECTORY, "functional", "tools")
 FRAMEWORK_UPLOAD_TOOL_CONF = os.path.join(FRAMEWORK_TOOLS_DIR, "upload_tool_conf.xml")
-FRAMEWORK_SAMPLE_TOOLS_CONF = os.path.join(FRAMEWORK_TOOLS_DIR, "samples_tool_conf.xml")
+FRAMEWORK_SAMPLE_TOOLS_CONF = os.path.join(FRAMEWORK_TOOLS_DIR, "sample_tool_conf.xml")
 FRAMEWORK_DATATYPES_CONF = os.path.join(FRAMEWORK_TOOLS_DIR, "sample_datatypes_conf.xml")
 MIGRATED_TOOL_PANEL_CONFIG = "config/migrated_tools_conf.xml"
 INSTALLED_TOOL_PANEL_CONFIGS = [os.environ.get("GALAXY_TEST_SHED_TOOL_CONF", "config/shed_tool_conf.xml")]
@@ -237,7 +237,7 @@ def setup_galaxy_config(
         logging=LOGGING_CONFIG_DEFAULT,
         monitor_thread_join_timeout=5,
         object_store_store_by="uuid",
-        fetch_url_allowlist="127.0.0.1",
+        fetch_url_allowlist=["127.0.0.0/24"],
         job_handler_monitor_sleep=0.2,
         job_runner_monitor_sleep=0.2,
         workflow_monitor_sleep=0.2,
@@ -342,6 +342,13 @@ def copy_database_template(source, db_path):
         raise Exception(f"Failed to copy database template from source {source}")
 
 
+def init_database(database_connection):
+    # We pass by migrations and instantiate the current table
+    create_database(database_connection)
+    mapping.init("/tmp", database_connection, create_tables=True, map_install_models=True)
+    toolshed_mapping.init(database_connection, create_tables=True)
+
+
 def database_conf(db_path, prefix="GALAXY", prefer_template_database=False):
     """Find (and populate if needed) Galaxy database connection."""
     database_auto_migrate = False
@@ -359,10 +366,7 @@ def database_conf(db_path, prefix="GALAXY", prefer_template_database=False):
             actual_database_parsed = database_template_parsed._replace(path=f"/{actual_db}")
             database_connection = actual_database_parsed.geturl()
             if not database_exists(database_connection):
-                # We pass by migrations and instantiate the current table
-                create_database(database_connection)
-                mapping.init("/tmp", database_connection, create_tables=True, map_install_models=True)
-                toolshed_mapping.init(database_connection, create_tables=True)
+                init_database(database_connection)
                 check_migrate_databases = False
     else:
         default_db_filename = f"{prefix.lower()}.sqlite"
@@ -581,7 +585,7 @@ def build_galaxy_app(simple_kwargs) -> GalaxyUniverseApplication:
     simple_kwargs["global_conf"]["__file__"] = "lib/galaxy/config/sample/galaxy.yml.sample"
     simple_kwargs = load_app_properties(kwds=simple_kwargs)
     # Build the Universe Application
-    app = GalaxyUniverseApplication(**simple_kwargs)
+    app = GalaxyUniverseApplication(**simple_kwargs, is_webapp=True)
     log.info("Embedded Galaxy application started")
 
     global install_context
@@ -742,9 +746,13 @@ def launch_gravity(port, gxit_port=None, galaxy_config=None):
     if "interactivetools_proxy_host" not in galaxy_config:
         galaxy_config["interactivetools_proxy_host"] = f"localhost:{gxit_port}"
     # Can't use in-memory celery broker, just fall back to sqlalchemy
-    galaxy_config.update({"celery_conf": {"broker_url": None}})
+    celery_conf = galaxy_config.get("celery_conf", {})
+    celery_conf.update({"broker_url": None})
+    galaxy_config["celery_conf"] = celery_conf
+    state_dir = tempfile.mkdtemp(suffix="state")
     config = {
         "gravity": {
+            "log_dir": os.path.join(state_dir, "log"),
             "gunicorn": {"bind": f"localhost:{port}", "preload": "false"},
             "gx_it_proxy": {
                 "enable": galaxy_config.get("interactivetools_enable", False),
@@ -755,18 +763,16 @@ def launch_gravity(port, gxit_port=None, galaxy_config=None):
         },
         "galaxy": galaxy_config,
     }
-    state_dir = tempfile.mkdtemp(suffix="state")
     with tempfile.NamedTemporaryFile("w", dir=state_dir, delete=False, suffix=".galaxy.yml") as config_fh:
         json.dump(config, config_fh)
     with tempfile.NamedTemporaryFile(delete=True) as socket:
         supervisord_socket = socket.name
     gravity_env = os.environ.copy()
     gravity_env["SUPERVISORD_SOCKET"] = supervisord_socket
-    subprocess.check_output(["galaxyctl", "--state-dir", state_dir, "register", config_fh.name], env=gravity_env)
-    subprocess.check_output(["galaxyctl", "--state-dir", state_dir, "update"], env=gravity_env)
-    subprocess.check_output(["galaxyctl", "--state-dir", state_dir, "start"], env=gravity_env)
+    subprocess.check_output(["galaxyctl", "--config-file", config_fh.name, "update"], env=gravity_env)
+    subprocess.check_output(["galaxyctl", "--config-file", config_fh.name, "start"], env=gravity_env)
     return state_dir, lambda: subprocess.check_output(
-        ["galaxyctl", "--state-dir", state_dir, "shutdown"], env=gravity_env
+        ["galaxyctl", "--config-file", config_fh.name, "shutdown"], env=gravity_env
     )
 
 
@@ -832,7 +838,7 @@ class TestDriver:
         self.server_wrappers = []
         self.temp_directories = []
 
-    def setup(self):
+    def setup(self, config_object=None):
         """Called before tests are built."""
 
     def build_tests(self):
@@ -858,7 +864,7 @@ class TestDriver:
             )
         self.server_wrappers = []
 
-    def mkdtemp(self):
+    def mkdtemp(self) -> str:
         """Return a temp directory that is properly cleaned up or not based on the config."""
         temp_directory = tempfile.mkdtemp()
         self.temp_directories.append(temp_directory)

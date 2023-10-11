@@ -1,44 +1,35 @@
 <template>
-    <ConfigProvider v-slot="{ config }" class="d-flex flex-column">
-        <ToolPanelViewProvider
-            v-if="config.default_panel_view"
-            v-slot="{ currentPanel, currentPanelView }"
-            :panel-view="config.default_panel_view">
-            <ToolBox
-                v-if="currentPanelView"
-                :toolbox="currentPanel"
-                :panel-views="config.panel_views"
-                :current-panel-view="currentPanelView"
-                :stored-workflow-menu-entries="storedWorkflowMenuEntries"
-                :workflow-title="workflowTitle"
-                @updatePanelView="updatePanelView">
-            </ToolBox>
-        </ToolPanelViewProvider>
-    </ConfigProvider>
+    <ToolPanelViewProvider
+        v-if="isConfigLoaded && config.default_panel_view"
+        v-slot="{ currentPanel, currentPanelView }"
+        class="d-flex flex-column"
+        :panel-view="config.default_panel_view">
+        <ToolBox
+            v-if="currentPanelView"
+            :toolbox="currentPanel"
+            :panel-views="config.panel_views"
+            :current-panel-view="currentPanelView"
+            @updatePanelView="updatePanelView">
+        </ToolBox>
+    </ToolPanelViewProvider>
 </template>
 
 <script>
-import ToolBox from "./ToolBox";
-import ConfigProvider from "components/providers/ConfigProvider";
 import ToolPanelViewProvider from "components/providers/ToolPanelViewProvider";
-import _l from "utils/localization";
 import { mapActions } from "vuex";
+
+import { useConfig } from "@/composables/config";
+
+import ToolBox from "./ToolBox";
 
 export default {
     components: {
-        ConfigProvider,
         ToolBox,
         ToolPanelViewProvider,
     },
-    props: {
-        storedWorkflowMenuEntries: {
-            type: Array,
-            required: true,
-        },
-        workflowTitle: {
-            type: String,
-            default: _l("Workflows"),
-        },
+    setup() {
+        const { config, isConfigLoaded } = useConfig(true);
+        return { config, isConfigLoaded };
     },
     methods: {
         updatePanelView(panelView) {

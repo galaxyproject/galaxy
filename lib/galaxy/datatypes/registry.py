@@ -9,16 +9,18 @@ import pkgutil
 from pathlib import Path
 from string import Template
 from typing import (
+    cast,
     Dict,
     List,
     Optional,
     Tuple,
-    TYPE_CHECKING,
+    Union,
 )
 
 import yaml
 
 import galaxy.util
+from galaxy.datatypes.protocols import DatasetProtocol
 from galaxy.tool_util.edam_util import load_edam_tree
 from galaxy.util import RW_R__R__
 from galaxy.util.bunch import Bunch
@@ -36,9 +38,6 @@ from . import (
     xml,
 )
 from .display_applications.application import DisplayApplication
-
-if TYPE_CHECKING:
-    from galaxy.model import DatasetInstance
 
 
 class ConfigurationError(Exception):
@@ -238,8 +237,9 @@ class Registry:
                             # Because of the way that the value of can_process_datatype was set above, we know that the value of
                             # override is True.
                             self.log.debug(
-                                "Overriding conflicting datatype with extension '%s', using datatype from %s."
-                                % (str(extension), str(config))
+                                "Overriding conflicting datatype with extension '%s', using datatype from %s.",
+                                extension,
+                                config,
                             )
                         if make_subclass:
                             datatype_class = type(datatype_class_name, (datatype_class,), {})
@@ -250,6 +250,14 @@ class Registry:
                         datatype_class.is_subclass = make_subclass
                         description = elem.get("description", None)
                         description_url = elem.get("description_url", None)
+
+                        # process as a list, in the future handle grabbing extensions here
+                        upload_warning_els = elem.findall("upload_warning")
+                        upload_warning_template = None
+                        for upload_warning_el in upload_warning_els:
+                            if upload_warning_template is not None:
+                                raise NotImplementedError("Multiple upload_warnings not implemented")
+                            upload_warning_template = Template(upload_warning_el.text)
                         datatype_instance = datatype_class()
                         self.datatypes_by_extension[extension] = datatype_instance
                         if mimetype is None:
@@ -303,6 +311,7 @@ class Registry:
                             "extension": extension,
                             "description": description,
                             "description_url": description_url,
+                            "upload_warning": upload_warning(upload_warning_template),
                         }
                         composite_files = datatype_instance.get_composite_files()
                         if composite_files:
@@ -353,6 +362,7 @@ class Registry:
                                     "extension": compressed_extension,
                                     "description": description,
                                     "description_url": description_url,
+                                    "upload_warning": upload_warning(upload_warning_template, auto_compressed_type),
                                 }
                             )
                             if auto_compressed_type == "gz":
@@ -832,8 +842,8 @@ class Registry:
         return None
 
     def find_conversion_destination_for_dataset_by_extensions(
-        self, dataset_or_ext, accepted_formats: List[str], converter_safe: bool = True
-    ) -> Tuple[bool, Optional[str], Optional["DatasetInstance"]]:
+        self, dataset_or_ext: Union[str, DatasetProtocol], accepted_formats: List[str], converter_safe: bool = True
+    ) -> Tuple[bool, Optional[str], Optional[DatasetProtocol]]:
         """
         returns (direct_match, converted_ext, converted_dataset)
         - direct match is True iff no the data set already has an accepted format
@@ -841,7 +851,7 @@ class Registry:
         """
         if hasattr(dataset_or_ext, "ext"):
             ext = dataset_or_ext.ext
-            dataset = dataset_or_ext
+            dataset = cast(DatasetProtocol, dataset_or_ext)
         else:
             ext = dataset_or_ext
             dataset = None
@@ -854,7 +864,7 @@ class Registry:
             convert_ext_datatype = self.get_datatype_by_extension(convert_ext)
             if convert_ext_datatype is None:
                 self.log.warning(
-                    f"Datatype class not found for extension '{convert_ext}', which is used as target for conversion from datatype '{dataset.ext}'"
+                    f"Datatype class not found for extension '{convert_ext}', which is used as target for conversion from datatype '{ext}'"
                 )
             elif convert_ext_datatype.matches_any(accepted_formats):
                 converted_dataset = dataset and dataset.get_converted_files_by_type(convert_ext)
@@ -963,6 +973,13 @@ class Registry:
         for unpicklable in unpickleable_attributes:
             state[unpicklable] = []
         return state
+
+
+def upload_warning(template: Optional[Template], auto_compressed_type: Optional[str] = None) -> Optional[str]:
+    if template is None:
+        return None
+    template_args = {"auto_compressed_type": "" if auto_compressed_type is None else f".{auto_compressed_type}"}
+    return template.safe_substitute(template_args)
 
 
 def example_datatype_registry_for_sample(sniff_compressed_dynamic_datatypes_default=True):

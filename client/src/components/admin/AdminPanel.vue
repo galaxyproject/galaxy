@@ -43,9 +43,9 @@ export default {
             default: "",
         },
     },
-    data() {
-        return {
-            sections: [
+    computed: {
+        sections() {
+            return [
                 {
                     title: "Server",
                     items: [
@@ -78,6 +78,11 @@ export default {
                             id: "admin-link-local-data",
                             title: "Local Data",
                             route: "/admin/data_manager",
+                        },
+                        {
+                            id: "admin-link-notifications",
+                            title: "Notifications and Broadcasts",
+                            route: "/admin/notifications",
                         },
                     ],
                 },
@@ -148,8 +153,8 @@ export default {
                         },
                     ],
                 },
-            ],
-        };
+            ];
+        },
     },
 };
 </script>

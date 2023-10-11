@@ -79,7 +79,7 @@ StateQueryParam = Query(
 UserDetailsQueryParam: bool = Query(
     default=False,
     title="Include user details",
-    description="If true, and requestor is an admin, will return external job id and user email. This is only available to admins.",
+    description="If true, and requester is an admin, will return external job id and user email. This is only available to admins.",
 )
 
 UserIdQueryParam: Optional[DecodedDatabaseIdField] = Query(
@@ -322,7 +322,7 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
         """
         job = self.__get_job(trans, id)
         if not job:
-            raise exceptions.ObjectNotFound(f"Could not access job with id '{id}'")
+            raise exceptions.ObjectNotFound("Could not access job with the given id")
         if job.state == job.states.PAUSED:
             job.resume()
         else:
@@ -417,7 +417,7 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
 
         job = self.__get_job(trans, id)
         if not job:
-            raise exceptions.ObjectNotFound(f"Could not access job with id '{id}'")
+            raise exceptions.ObjectNotFound("Could not access job with the given id")
         tool = self.app.toolbox.get_tool(job.tool_id, kwd.get("tool_version") or job.tool_version)
         if tool is None:
             raise exceptions.ObjectNotFound("Requested tool not found")

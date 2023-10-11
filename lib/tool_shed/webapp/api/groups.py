@@ -1,4 +1,8 @@
 import logging
+from typing import (
+    Callable,
+    Dict,
+)
 
 from galaxy import (
     util,
@@ -9,26 +13,30 @@ from galaxy.exceptions import (
     ObjectNotFound,
     RequestParameterMissingException,
 )
-from galaxy.util import pretty_print_time_interval
+from galaxy.util import (
+    pretty_print_time_interval,
+    UNKNOWN,
+)
 from galaxy.web import (
     expose_api,
     expose_api_anonymous_and_sessionless,
     require_admin,
 )
-from galaxy.webapps.base.controller import BaseAPIController
 from tool_shed.managers import groups
+from tool_shed.structured_app import ToolShedApp
+from . import BaseShedAPIController
 
 log = logging.getLogger(__name__)
 
 
-class GroupsController(BaseAPIController):
+class GroupsController(BaseShedAPIController):
     """RESTful controller for interactions with groups in the Tool Shed."""
 
-    def __init__(self, app):
+    def __init__(self, app: ToolShedApp):
         super().__init__(app)
         self.group_manager = groups.GroupManager()
 
-    def __get_value_mapper(self, trans):
+    def __get_value_mapper(self, trans) -> Dict[str, Callable]:
         value_mapper = {"id": trans.security.encode_id}
         return value_mapper
 
@@ -93,7 +101,7 @@ class GroupsController(BaseAPIController):
         decoded_id = trans.security.decode_id(encoded_id)
         group = self.group_manager.get(trans, decoded_id)
         if group is None:
-            raise ObjectNotFound(f"Unable to locate group record for id {str(encoded_id)}.")
+            raise ObjectNotFound("Unable to locate group record with the given id.")
         return self._populate(trans, group)
 
     def _populate(self, trans, group):
@@ -151,7 +159,7 @@ class GroupsController(BaseAPIController):
                 "username": user.username,
                 "user_repos_url": user_repos_url,
                 "user_repos_count": user_repos_count,
-                "user_tools_count": "unknown",
+                "user_tools_count": UNKNOWN,
                 "time_created": time_created,
             }
             group_members.append(member_dict)

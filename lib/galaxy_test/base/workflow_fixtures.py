@@ -368,6 +368,102 @@ steps:
       queries_0|input2: nested_workflow/workflow_output
 """
 
+# WORKFLOW_NESTED_SIMPLE with a nested workflow output marked as an
+# output on the outer workflow.
+WORKFLOW_NESTED_OUTPUT = """
+class: GalaxyWorkflow
+inputs:
+  outer_input: data
+outputs:
+  outer_output:
+    outputSource: second_cat/out_file1
+  nested_output:
+    outputSource: nested_workflow/workflow_output
+steps:
+  first_cat:
+    tool_id: cat1
+    in:
+      input1: outer_input
+  nested_workflow:
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        inner_input: data
+      outputs:
+        workflow_output:
+          outputSource: random_lines/out_file1
+      steps:
+        random_lines:
+          tool_id: random_lines1
+          state:
+            num_lines: 1
+            input:
+              $link: inner_input
+            seed_source:
+              seed_source_selector: set_seed
+              seed: asdf
+    in:
+      inner_input: first_cat/out_file1
+  second_cat:
+    tool_id: cat1
+    in:
+      input1: nested_workflow/workflow_output
+      queries_0|input2: nested_workflow/workflow_output
+"""
+
+# WORKFLOW_NESTED_OUTPUT with two levels of nesting for the workflow
+# output
+WORKFLOW_NESTED_TWICE_OUTPUT = """
+class: GalaxyWorkflow
+inputs:
+  outer_input: data
+outputs:
+  outer_output:
+    outputSource: second_cat/out_file1
+  nested_output:
+    outputSource: nested_workflow/workflow_output
+steps:
+  first_cat:
+    tool_id: cat1
+    in:
+      input1: outer_input
+  nested_workflow:
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        inner_input: data
+      outputs:
+        workflow_output:
+          outputSource: inner_nested_workflow/inner_workflow_output
+      steps:
+        inner_nested_workflow:
+          run:
+            class: GalaxyWorkflow
+            inputs:
+              really_inner_input: data
+            outputs:
+              inner_workflow_output:
+                outputSource: random_lines/out_file1
+            steps:
+              random_lines:
+                tool_id: random_lines1
+                state:
+                  num_lines: 1
+                  input:
+                    $link: really_inner_input
+                  seed_source:
+                    seed_source_selector: set_seed
+                    seed: asdf
+          in:
+            really_inner_input: inner_input
+    in:
+      inner_input: first_cat/out_file1
+  second_cat:
+    tool_id: cat1
+    in:
+      input1: nested_workflow/workflow_output
+      queries_0|input2: nested_workflow/workflow_output
+"""
 
 WORKFLOW_NESTED_RUNTIME_PARAMETER = """
 class: GalaxyWorkflow
@@ -993,4 +1089,61 @@ bed_input:
   value: 1.bed
   file_type: bed
   type: File
+"""
+
+
+NESTED_WORKFLOW_WITH_CONDITIONAL_SUBWORKFLOW_AND_DISCONNECTED_MAP_OVER_SOURCE = """
+class: GalaxyWorkflow
+inputs:
+  boolean_input_files: collection
+steps:
+  create_list_of_boolean:
+    tool_id: param_value_from_file
+    in:
+       input1: boolean_input_files
+    state:
+      param_type: boolean
+  subworkflow:
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        boolean_input_file: data
+        should_run: boolean
+      steps:
+        create_more_inputs:
+          tool_id: collection_creates_dynamic_nested
+        consume_expression_parameter:
+          tool_id: cat1
+          state:
+            input1:
+              $link: create_more_inputs/list_output
+            queries:
+              - input2:
+                $link: boolean_input_file
+          out:
+            out_file1:
+              change_datatype: txt
+        consume_expression_parameter_2:
+          tool_id: cat1
+          state:
+            input1:
+              $link: consume_expression_parameter/out_file1
+      outputs:
+        inner_create_nested:
+          outputSource: create_more_inputs/list_output
+        inner_output_1:
+          outputSource: consume_expression_parameter/out_file1
+        inner_output_2:
+          outputSource: consume_expression_parameter_2/out_file1
+    in:
+      boolean_input_file: boolean_input_files
+      should_run: create_list_of_boolean/boolean_param
+    when: $(inputs.should_run)
+outputs:
+  outer_create_nested:
+    outputSource: subworkflow/inner_create_nested
+  outer_output_1:
+    outputSource: subworkflow/inner_output_1
+  outer_output_2:
+    outputSource: subworkflow/inner_output_2
 """

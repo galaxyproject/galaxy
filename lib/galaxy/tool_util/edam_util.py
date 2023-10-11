@@ -65,7 +65,7 @@ def load_edam_tree_from_tsv_stream(tsv_stream: TextIO, *included_terms: str):
 
         parents = fields[parents_column].split("|")
         edam[term_id] = {
-            "label": fields[label_column],
+            "label": fields[label_column].strip('"'),
             "definition": fields[definition_column].strip('"'),
             "parents": [x[len(EDAM_PREFIX) :] for x in parents if x.startswith(EDAM_PREFIX)],
         }

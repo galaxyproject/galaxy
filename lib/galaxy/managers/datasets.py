@@ -25,7 +25,11 @@ from galaxy.managers import (
     secured,
     users,
 )
-from galaxy.schema.tasks import ComputeDatasetHashTaskRequest
+from galaxy.model.base import transaction
+from galaxy.schema.tasks import (
+    ComputeDatasetHashTaskRequest,
+    PurgeDatasetsTaskRequest,
+)
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.util.hash_util import memory_bound_hexdigest
 
@@ -63,7 +67,9 @@ class DatasetManager(base.ModelManager[model.Dataset], secured.AccessibleManager
         self.permissions.set(dataset, manage_roles, access_roles, flush=False)
 
         if flush:
-            self.session().flush()
+            session = self.session()
+            with transaction(session):
+                session.commit()
         return dataset
 
     def copy(self, dataset, **kwargs):
@@ -82,8 +88,27 @@ class DatasetManager(base.ModelManager[model.Dataset], secured.AccessibleManager
         dataset.full_delete()
         self.session().add(dataset)
         if flush:
-            self.session().flush()
+            session = self.session()
+            with transaction(session):
+                session.commit()
         return dataset
+
+    def purge_datasets(self, request: PurgeDatasetsTaskRequest):
+        """
+        Caution: any additional security checks must be done before executing this action.
+
+        Completely removes a set of object_store/files associated with the datasets from storage and marks them as purged.
+        They might not be removed if there are still un-purged associations to the dataset.
+        """
+        self.error_unless_dataset_purge_allowed()
+        with self.session().begin():
+            for dataset_id in request.dataset_ids:
+                dataset: model.Dataset = self.session().query(model.Dataset).get(dataset_id)
+                if dataset.user_can_purge:
+                    try:
+                        dataset.full_delete()
+                    except Exception:
+                        log.exception(f"Unable to purge dataset ({dataset.id})")
 
     # TODO: this may be more conv. somewhere else
     # TODO: how to allow admin bypass?
@@ -144,7 +169,8 @@ class DatasetManager(base.ModelManager[model.Dataset], secured.AccessibleManager
         )
         if hash is None:
             sa_session.add(dataset_hash)
-            sa_session.flush()
+            with transaction(sa_session):
+                sa_session.commit()
         else:
             old_hash_value = hash.hash_value
             if old_hash_value != calculated_hash_value:
@@ -295,7 +321,6 @@ class DatasetAssociationManager(
 
     # DA's were meant to be proxies - but were never fully implemented as them
     # Instead, a dataset association HAS a dataset but contains metadata specific to a library (lda) or user (hda)
-    model_class: Type[model.DatasetInstance]
     app: MinimalManagerApp
 
     # NOTE: model_manager_class should be set in HDA/LDA subclasses
@@ -380,7 +405,9 @@ class DatasetAssociationManager(
                     if not track_jobs_in_database:
                         self.app.job_manager.stop(job)
                     if flush:
-                        self.session().flush()
+                        session = self.session()
+                        with transaction(session):
+                            session.commit()
                     return True
         return False
 
@@ -456,7 +483,8 @@ class DatasetAssociationManager(
         path = data.dataset.file_name
         datatype = sniff.guess_ext(path, trans.app.datatypes_registry.sniff_order)
         trans.app.datatypes_registry.change_datatype(data, datatype)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         self.set_metadata(trans, dataset_assoc)
 
     def set_metadata(self, trans, dataset_assoc, overwrite=False, validate=True):
@@ -513,7 +541,8 @@ class DatasetAssociationManager(
                     trans.app.security_agent.permitted_actions.DATASET_ACCESS.action, dataset, private_role
                 )
                 trans.sa_session.add(dp)
-                trans.sa_session.flush()
+                with transaction(trans.sa_session):
+                    trans.sa_session.commit()
             if not trans.app.security_agent.dataset_is_private_to_user(trans, dataset):
                 # Check again and inform the user if dataset is not private.
                 raise exceptions.InternalServerError("An error occurred and the dataset is NOT private.")
@@ -794,7 +823,8 @@ class DatasetAssociationDeserializer(base.ModelDeserializer, deletable.PurgableD
             )
         item.change_datatype(val)
         sa_session = self.app.model.context
-        sa_session.flush()
+        with transaction(sa_session):
+            sa_session.commit()
         trans = context.get("trans")
         assert (
             trans

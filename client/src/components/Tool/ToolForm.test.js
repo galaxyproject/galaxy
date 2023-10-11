@@ -1,23 +1,34 @@
-import MockAdapter from "axios-mock-adapter";
-import axios from "axios";
 import { mount } from "@vue/test-utils";
-import { getLocalVue, mockModule } from "jest/helpers";
-import ToolForm from "./ToolForm";
-import MockCurrentUser from "../providers/MockCurrentUser";
-import MockConfigProvider from "../providers/MockConfigProvider";
+import axios from "axios";
+import MockAdapter from "axios-mock-adapter";
 import MockCurrentHistory from "components/providers/MockCurrentHistory";
+import { createPinia } from "pinia";
+import { useHistoryStore } from "stores/historyStore";
+import { useUserStore } from "stores/userStore";
+import { getLocalVue } from "tests/jest/helpers";
 import Vue from "vue";
-import Vuex from "vuex";
-import { userStore } from "store/userStore";
-import { configStore } from "store/configStore";
+
+import { mockFetcher } from "@/schema/__mocks__";
+
+import ToolForm from "./ToolForm";
+
+jest.mock("@/schema");
 
 const localVue = getLocalVue();
+const pinia = createPinia();
 
 describe("ToolForm", () => {
     let wrapper;
     let axiosMock;
+    let userStore;
+    let historyStore;
 
     beforeEach(() => {
+        mockFetcher
+            .path("/api/configuration")
+            .method("get")
+            .mock({ data: { enable_tool_source_display: false, object_store_allows_id_selection: false } });
+
         axiosMock = new MockAdapter(axios);
 
         const toolData = {
@@ -26,18 +37,13 @@ describe("ToolForm", () => {
             version: "version",
             inputs: [],
             help: "help_text",
+            creator: [{ class: "Person", givenName: "FakeName", familyName: "FakeSurname", email: "fakeEmail" }],
         };
         axiosMock.onGet(`/api/tools/tool_id/build?tool_version=version`).reply(200, toolData);
+        axiosMock.onGet(`/api/webhooks`).reply(200, []);
 
         const citations = [];
         axiosMock.onGet(`/api/tools/tool_id/citations`).reply(200, citations);
-
-        const store = new Vuex.Store({
-            modules: {
-                user: mockModule(userStore),
-                config: mockModule(configStore),
-            },
-        });
 
         wrapper = mount(ToolForm, {
             propsData: {
@@ -46,13 +52,16 @@ describe("ToolForm", () => {
             },
             localVue,
             stubs: {
-                CurrentUser: MockCurrentUser({ id: "fakeuser" }),
-                UserHistories: MockCurrentHistory({ id: "fakehistory" }),
-                ConfigProvider: MockConfigProvider({ id: "fakeconfig" }),
+                UserHistories: MockCurrentHistory({ id: "fakeHistory" }),
                 FormDisplay: true,
             },
-            provide: { store },
+            pinia,
         });
+        userStore = useUserStore();
+        userStore.currentUser = { id: "fakeUser" };
+        historyStore = useHistoryStore();
+        historyStore.setHistories([{ id: "fakeHistory" }]);
+        historyStore.setCurrentHistoryId("fakeHistory");
     });
 
     afterEach(() => {
@@ -68,5 +77,7 @@ describe("ToolForm", () => {
         expect(dropdown.length).toBe(2);
         const help = wrapper.find(".form-help");
         expect(help.text()).toBe("help_text");
+        const creator = wrapper.find(".creative-work-creator");
+        expect(creator.text()).toContain("FakeName FakeSurname");
     });
 });

@@ -65,7 +65,6 @@ def __main__():
             except Exception:
                 name = "region_%i" % count
             try:
-
                 out.write("%s\t%i\t%i\t%s\t%i\t%s\n" % (region.chrom, region.start, region.end, name, 0, region.strand))
             except Exception:
                 skipped_lines += 1

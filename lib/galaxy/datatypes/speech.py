@@ -3,6 +3,7 @@ from galaxy.datatypes.metadata import (
     ListParameter,
     MetadataElement,
 )
+from galaxy.datatypes.protocols import DatasetProtocol
 from galaxy.datatypes.sniff import get_headers
 
 
@@ -35,8 +36,7 @@ class TextGrid(Text):
         no_value=[],
     )
 
-    def sniff(self, filename):
-
+    def sniff(self, filename: str) -> bool:
         with open(filename) as fd:
             text = fd.read(len(self.header))
             return text == self.header
@@ -97,7 +97,7 @@ class BPF(Text):
         "SAO",
     ]
 
-    def set_meta(self, dataset, overwrite=True, **kwd):
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         """Set the metadata for this dataset from the file contents"""
         types = set()
         with open(dataset.dataset.file_name) as fd:
@@ -110,11 +110,11 @@ class BPF(Text):
                 if len(parts) and len(parts[0]) == 3:
                     types.add(parts[0])
                 else:
-                    return False
+                    return
 
         dataset.metadata.annotations = list(types)
 
-    def sniff(self, filename):
+    def sniff(self, filename: str) -> bool:
         # We loop over 30 as there are 9 mandatory headers (the last should be
         # `LBD:`), while there are 21 optional headers that can be
         # interspersed.

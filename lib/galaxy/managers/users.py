@@ -4,18 +4,26 @@ Manager and Serializer for Users.
 import hashlib
 import logging
 import random
-import socket
+import re
+import string
 import time
 from datetime import datetime
-from typing import Optional
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+)
 
 from markupsafe import escape
 from sqlalchemy import (
     and_,
     exc,
     func,
+    select,
     true,
 )
+from sqlalchemy.orm import Session
 from sqlalchemy.orm.exc import NoResultFound
 
 from galaxy import (
@@ -24,21 +32,27 @@ from galaxy import (
     schema,
     util,
 )
+from galaxy.config import templates
 from galaxy.managers import (
     base,
     deletable,
 )
+from galaxy.model import (
+    User,
+    UserQuotaUsage,
+)
+from galaxy.model.base import transaction
 from galaxy.security.validate_user_input import (
     VALID_EMAIL_RE,
     validate_email,
     validate_password,
+    validate_preferred_object_store_id,
     validate_publicname,
 )
 from galaxy.structured_app import (
     BasicSharedApp,
     MinimalManagerApp,
 )
-from galaxy.util.custom_templates import template
 from galaxy.util.hash_util import new_secure_hash_v2
 from galaxy.web import url_for
 
@@ -68,8 +82,9 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
 
     # TODO: incorp BaseAPIController.validate_in_users_and_groups
     # TODO: incorporate UsesFormDefinitionsMixin?
-    def __init__(self, app: BasicSharedApp):
+    def __init__(self, app: BasicSharedApp, app_type="galaxy"):
         self.model_class = app.model.User
+        self.app_type = app_type
         super().__init__(app)
 
     def register(self, trans, email=None, username=None, password=None, confirm=None, subscribe=False):
@@ -99,7 +114,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         if message:
             return None, message
         message, status = trans.app.auth_manager.check_registration_allowed(email, username, password, trans.request)
-        if message:
+        if message and not trans.user_is_admin:
             return None, message
         if subscribe:
             message = self.send_subscription_email(email)
@@ -128,7 +143,9 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             user.active = True
         self.session().add(user)
         try:
-            self.session().flush()
+            session = self.session()
+            with transaction(session):
+                session.commit()
             # TODO:?? flush needed for permissions below? If not, make optional
         except exc.IntegrityError as db_err:
             raise exceptions.Conflict(str(db_err))
@@ -199,7 +216,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         # Deleting multiple times will re-hash the username/email
         email_hash = new_secure_hash_v2(user.email + pseudorandom_value)
         uname_hash = new_secure_hash_v2(user.username + pseudorandom_value)
-        # We must also redact username
+        # Redact all roles user has
         for role in user.all_roles():
             if self.app.config.redact_username_during_deletion:
                 role.name = role.name.replace(user.username, uname_hash)
@@ -208,8 +225,12 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             if self.app.config.redact_email_during_deletion:
                 role.name = role.name.replace(user.email, email_hash)
                 role.description = role.description.replace(user.email, email_hash)
-            user.email = email_hash
-            user.username = uname_hash
+            private_role.name = email_hash
+            private_role.description = f"Private Role for {email_hash}"
+            self.session().add(private_role)
+        # Redact user's email and username
+        user.email = email_hash
+        user.username = uname_hash
         # Redact user addresses as well
         if self.app.config.redact_user_address_during_deletion:
             user_addresses = (
@@ -265,7 +286,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             return schema.BootstrapAdminUser()
         sa_session = sa_session or self.app.model.session
         try:
-            provided_key = sa_session.query(self.app.model.APIKeys).filter(self.app.model.APIKeys.key == api_key).one()
+            provided_key = sa_session.query(self.app.model.APIKeys).filter_by(key=api_key, deleted=False).one()
         except NoResultFound:
             raise exceptions.AuthenticationFailed("Provided API key is not valid.")
         if provided_key.user.deleted:
@@ -339,7 +360,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         user = None
         if VALID_EMAIL_RE.match(identity):
             # VALID_PUBLICNAME and VALID_EMAIL do not overlap, so 'identity' here is an email address
-            user = self.session().query(self.model_class).filter(self.model_class.table.c.email == identity).first()
+            user = get_user_by_email(self.session(), identity, self.model_class)
             if not user:
                 # Try a case-insensitive match on the email
                 user = (
@@ -349,7 +370,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
                     .first()
                 )
         else:
-            user = self.session().query(self.model_class).filter(self.model_class.table.c.username == identity).first()
+            user = get_user_by_username(self.session(), identity, self.model_class)
         return user
 
     # ---- current
@@ -381,13 +402,13 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
     def default_permissions(self, user):
         return self.app.security_agent.user_get_default_permissions(user)
 
-    def quota(self, user, total=False):
+    def quota(self, user, total=False, quota_source_label=None):
         if total:
-            return self.app.quota_agent.get_quota_nice_size(user)
-        return self.app.quota_agent.get_percent(user=user)
+            return self.app.quota_agent.get_quota_nice_size(user, quota_source_label=quota_source_label)
+        return self.app.quota_agent.get_percent(user=user, quota_source_label=quota_source_label)
 
-    def quota_bytes(self, user):
-        return self.app.quota_agent.get_quota(user=user)
+    def quota_bytes(self, user, quota_source_label: Optional[str] = None):
+        return self.app.quota_agent.get_quota(user=user, quota_source_label=quota_source_label)
 
     def tags_used(self, user, tag_models=None):
         """
@@ -414,7 +435,8 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         # boil the tag tuples down into a sorted list of DISTINCT name:val strings
         tags = all_tags_query.distinct().all()
         tags = [(f"{name}:{val}" if val else name) for name, val in tags]
-        return sorted(tags)
+        # consider named tags while sorting
+        return sorted(tags, key=lambda str: re.sub("^name:", "#", str))
 
     def change_password(self, trans, password=None, confirm=None, token=None, id=None, current=None):
         """
@@ -434,7 +456,9 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             trans.sa_session.add(token_result)
             return user, "Password has been changed. Token has been invalidated."
         else:
-            user = self.by_id(self.app.security.decode_id(id))
+            if not isinstance(id, int):
+                id = self.app.security.decode_id(id)
+            user = self.by_id(id)
             if user:
                 message = self.app.auth_manager.check_change_password(user, current, trans.request)
                 if message:
@@ -469,7 +493,8 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
                         other_galaxy_session.is_valid = False
                         trans.sa_session.add(other_galaxy_session)
                 trans.sa_session.add(user)
-                trans.sa_session.flush()
+                with transaction(trans.sa_session):
+                    trans.sa_session.commit()
                 trans.log_event("User change password")
         else:
             return "Failed to determine user, access denied."
@@ -482,7 +507,6 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         activation_link = url_for(
             controller="user", action="activate", activation_token=activation_token, email=escape(email), qualified=True
         )
-        host = self.__get_host(trans)
         template_context = {
             "name": escape(username),
             "user_email": escape(email),
@@ -495,13 +519,12 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             "custom_message": self.app.config.custom_activation_email_message,
             "expiry_days": self.app.config.activation_grace_period,
         }
-        body = template.render(TXT_ACTIVATION_EMAIL_TEMPLATE_RELPATH, template_context, self.app.config.templates_dir)
-        html = template.render(HTML_ACTIVATION_EMAIL_TEMPLATE_RELPATH, template_context, self.app.config.templates_dir)
+        body = templates.render(TXT_ACTIVATION_EMAIL_TEMPLATE_RELPATH, template_context, self.app.config.templates_dir)
+        html = templates.render(HTML_ACTIVATION_EMAIL_TEMPLATE_RELPATH, template_context, self.app.config.templates_dir)
         to = email
-        frm = self.app.config.email_from or f"galaxy-no-reply@{host}"
         subject = "Galaxy Account Activation"
         try:
-            util.send_mail(frm, to, subject, body, self.app.config, html=html)
+            util.send_mail(self.app.config.email_from, to, subject, body, self.app.config, html=html)
             return True
         except Exception:
             log.debug(body)
@@ -512,13 +535,14 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         """
         Check for the activation token. Create new activation token and store it in the database if no token found.
         """
-        user = trans.sa_session.query(self.app.model.User).filter(self.app.model.User.table.c.email == email).first()
+        user = get_user_by_email(trans.sa_session, email, self.app.model.User)
         activation_token = user.activation_token
         if activation_token is None:
             activation_token = util.hash_util.new_secure_hash_v2(str(random.getrandbits(256)))
             user.activation_token = activation_token
             trans.sa_session.add(user)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
         return activation_token
 
     def send_reset_email(self, trans, payload, **kwd):
@@ -534,20 +558,19 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         else:
             reset_user, prt = self.get_reset_token(trans, email)
             if prt:
-                host = self.__get_host(trans)
-                reset_url = url_for(controller="root", action="login", token=prt.token)
+                reset_url = url_for(controller="login", action="start", token=prt.token)
                 body = PASSWORD_RESET_TEMPLATE % (
-                    host,
+                    trans.app.config.hostname,
                     prt.expiration_time.strftime(trans.app.config.pretty_datetime_format),
                     trans.request.host,
                     reset_url,
                 )
-                frm = trans.app.config.email_from or f"galaxy-no-reply@{host}"
                 subject = "Galaxy Password Reset"
                 try:
-                    util.send_mail(frm, email, subject, body, self.app.config)
+                    util.send_mail(trans.app.config.email_from, email, subject, body, self.app.config)
                     trans.sa_session.add(reset_user)
-                    trans.sa_session.flush()
+                    with transaction(trans.sa_session):
+                        trans.sa_session.commit()
                     trans.log_event(f"User reset password: {email}")
                 except Exception as e:
                     log.debug(body)
@@ -556,9 +579,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
                 return "Failed to produce password reset token. User not found."
 
     def get_reset_token(self, trans, email):
-        reset_user = (
-            trans.sa_session.query(self.app.model.User).filter(self.app.model.User.table.c.email == email).first()
-        )
+        reset_user = get_user_by_email(trans.sa_session, email, self.app.model.User)
         if not reset_user and email != email.lower():
             reset_user = (
                 trans.sa_session.query(self.app.model.User)
@@ -568,15 +589,10 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         if reset_user:
             prt = self.app.model.PasswordResetToken(reset_user)
             trans.sa_session.add(prt)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
             return reset_user, prt
         return None, None
-
-    def __get_host(self, trans):
-        host = trans.request.host.split(":")[0]
-        if host in ["localhost", "127.0.0.1", "0.0.0.0"]:
-            host = socket.getfqdn()
-        return host
 
     def send_subscription_email(self, email):
         if self.app.config.smtp_server is None:
@@ -595,7 +611,54 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
     def activate(self, user):
         user.active = True
         self.session().add(user)
-        self.session().flush()
+        session = self.session()
+        with transaction(session):
+            session.commit()
+
+    def get_or_create_remote_user(self, remote_user_email):
+        """
+        Create a remote user with the email remote_user_email and return it
+        """
+        if not self.app.config.use_remote_user:
+            return None
+        if getattr(self.app.config, "normalize_remote_user_email", False):
+            remote_user_email = remote_user_email.lower()
+        user = get_user_by_email(self.session(), remote_user_email, self.app.model.User)
+        if user:
+            # GVK: June 29, 2009 - This is to correct the behavior of a previous bug where a private
+            # role and default user / history permissions were not set for remote users.  When a
+            # remote user authenticates, we'll look for this information, and if missing, create it.
+            if not self.app.security_agent.get_private_user_role(user):
+                self.app.security_agent.create_private_user_role(user)
+            if self.app_type == "galaxy":
+                if not user.default_permissions:
+                    self.app.security_agent.user_set_default_permissions(user)
+                    self.app.security_agent.user_set_default_permissions(user, history=True, dataset=True)
+        elif user is None:
+            username = remote_user_email.split("@", 1)[0].lower()
+            random.seed()
+            user = self.app.model.User(email=remote_user_email)
+            user.set_random_password(length=12)
+            user.external = True
+            # Replace invalid characters in the username
+            for char in [x for x in username if x not in f"{string.ascii_lowercase + string.digits}-."]:
+                username = username.replace(char, "-")
+            # Find a unique username - user can change it later
+            if self.session().query(self.app.model.User).filter_by(username=username).first():
+                i = 1
+                while self.session().query(self.app.model.User).filter_by(username=f"{username}-{str(i)}").first():
+                    i += 1
+                username += f"-{str(i)}"
+            user.username = username
+            self.session().add(user)
+            with transaction(self.session()):
+                self.session().commit()
+            self.app.security_agent.create_private_user_role(user)
+            # We set default user permissions, before we log in and set the default history permissions
+            if self.app_type == "galaxy":
+                self.app.security_agent.user_set_default_permissions(user)
+            # self.log_event( "Automatically created account '%s'", user.email )
+        return user
 
 
 class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
@@ -629,6 +692,7 @@ class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
                 "tags_used",
                 # all annotations
                 # 'annotations'
+                "preferred_object_store_id",
             ],
             include_keys_from="summary",
         )
@@ -652,6 +716,39 @@ class UserSerializer(base.ModelSerializer, deletable.PurgableSerializerMixin):
             }
         )
 
+    def serialize_disk_usage(self, user: model.User) -> List[UserQuotaUsage]:
+        usages = user.dictify_usage(self.app.object_store)
+        rval: List[UserQuotaUsage] = []
+        for usage in usages:
+            quota_source_label = usage.quota_source_label
+            quota_percent = self.user_manager.quota(user, quota_source_label=quota_source_label)
+            quota = self.user_manager.quota(user, total=True, quota_source_label=quota_source_label)
+            quota_bytes = self.user_manager.quota_bytes(user, quota_source_label=quota_source_label)
+            rval.append(
+                UserQuotaUsage(
+                    quota_source_label=quota_source_label,
+                    total_disk_usage=usage.total_disk_usage,
+                    quota_percent=quota_percent,
+                    quota=quota,
+                    quota_bytes=quota_bytes,
+                )
+            )
+        return rval
+
+    def serialize_disk_usage_for(self, user: model.User, label: Optional[str]) -> UserQuotaUsage:
+        usage = user.dictify_usage_for(label)
+        quota_source_label = usage.quota_source_label
+        quota_percent = self.user_manager.quota(user, quota_source_label=quota_source_label)
+        quota = self.user_manager.quota(user, total=True, quota_source_label=quota_source_label)
+        quota_bytes = self.user_manager.quota_bytes(user, quota_source_label=quota_source_label)
+        return UserQuotaUsage(
+            quota_source_label=quota_source_label,
+            total_disk_usage=usage.total_disk_usage,
+            quota_percent=quota_percent,
+            quota=quota,
+            quota_bytes=quota_bytes,
+        )
+
 
 class UserDeserializer(base.ModelDeserializer):
     """
@@ -663,11 +760,18 @@ class UserDeserializer(base.ModelDeserializer):
 
     def add_deserializers(self):
         super().add_deserializers()
-        self.deserializers.update(
-            {
-                "username": self.deserialize_username,
-            }
-        )
+        history_deserializers: Dict[str, base.Deserializer] = {
+            "username": self.deserialize_username,
+            "preferred_object_store_id": self.deserialize_preferred_object_store_id,
+        }
+        self.deserializers.update(history_deserializers)
+
+    def deserialize_preferred_object_store_id(self, item: Any, key: Any, val: Any, **context):
+        preferred_object_store_id = val
+        validation_error = validate_preferred_object_store_id(self.app.object_store, preferred_object_store_id)
+        if validation_error:
+            raise base.ModelDeserializingError(validation_error)
+        return self.default_deserializer(item, key, preferred_object_store_id, **context)
 
     def deserialize_username(self, item, key, username, trans=None, **context):
         # TODO: validate_publicname requires trans and should(?) raise exceptions
@@ -734,3 +838,22 @@ class AdminUserFilterParser(base.ModelFilterParser, deletable.PurgableFiltersMix
         )
 
         self.fn_filter_parsers.update({})
+
+
+def get_users_by_ids(session: Session, user_ids):
+    stmt = select(User).where(User.id.in_(user_ids))
+    return session.scalars(stmt).all()
+
+
+# The get_user_by_email and get_user_by_username functions may be called from
+# the tool_shed app, which has its own User model, which is different from
+# galaxy.model.User. In that case, the tool_shed user model should be passed as
+# the model_class argument.
+def get_user_by_email(session, email: str, model_class=User):
+    stmt = select(model_class).filter(model_class.email == email).limit(1)
+    return session.scalars(stmt).first()
+
+
+def get_user_by_username(session, username: str, model_class=User):
+    stmt = select(model_class).filter(model_class.username == username).limit(1)
+    return session.scalars(stmt).first()

@@ -1,4 +1,4 @@
-<tool id="CONVERTER_Gro_to_Pdb_0" name="GRO to PDB" version="1.0.0" hidden="true" profile="20.09">
+<tool id="CONVERTER_Gro_to_Pdb_0" name="Convert GRO to PDB" version="1.0.0" hidden="true" profile="20.09">
     <requirements>
         <requirement type="package" version="2020.4">gromacs</requirement>
     </requirements>

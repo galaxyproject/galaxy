@@ -10,7 +10,6 @@ from galaxy_test.base.api import (
     UsesApiTestCaseMixin,
     UsesCeleryTasks,
 )
-from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.base.testcase import FunctionalTestCase
 
 try:
@@ -24,7 +23,6 @@ except ImportError:
 class ApiTestCase(FunctionalTestCase, UsesApiTestCaseMixin, UsesCeleryTasks):
     galaxy_driver_class = GalaxyTestDriver
     _test_driver: Optional[GalaxyTestDriver]
-    dataset_populator: Optional[DatasetPopulator]
 
     def setUp(self):
         super().setUp()
@@ -37,8 +35,7 @@ class ApiTestCase(FunctionalTestCase, UsesApiTestCaseMixin, UsesCeleryTasks):
 
     @pytest.fixture
     def history_id(self) -> Iterator[str]:
-        assert self.dataset_populator
-        with self.dataset_populator.test_history() as history_id:
+        with self.galaxy_interactor.test_history() as history_id:
             yield history_id
 
 

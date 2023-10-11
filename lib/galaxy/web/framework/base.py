@@ -15,6 +15,7 @@ from http.cookies import (
     SimpleCookie,
 )
 from importlib import import_module
+from urllib.parse import urljoin
 
 import routes
 import webob.compat
@@ -157,14 +158,21 @@ class WebApplication:
         friendly objects, finds the appropriate method to handle the request
         and calls it.
         """
-        # Immediately create request_id which we will use for logging
-        request_id = environ.get("request_id", "unknown")
+        # Get request_id (set by RequestIDMiddleware):
+        # Used for logging + ensuring request-scoped SQLAlchemy sessions.
+        request_id = environ["request_id"]
+
         if self.trace_logger:
             self.trace_logger.context_set("request_id", request_id)
         self.trace(message="Starting request")
+
+        path_info = environ.get("PATH_INFO", "")
+
         try:
-            return self.handle_request(environ, start_response)
+            self._model.set_request_id(request_id)  # Start SQLAlchemy session scope
+            return self.handle_request(request_id, path_info, environ, start_response)
         finally:
+            self._model.unset_request_id(request_id)  # End SQLAlchemy session scope
             self.trace(message="Handle request finished")
             if self.trace_logger:
                 self.trace_logger.context_remove("request_id")
@@ -197,11 +205,8 @@ class WebApplication:
             raise webob.exc.HTTPNotFound(f"Action not callable for {path_info}")
         return (controller_name, controller, action, method)
 
-    def handle_request(self, environ, start_response, body_renderer=None):
-        # Grab the request_id (should have been set by middleware)
-        request_id = environ.get("request_id", "unknown")
+    def handle_request(self, request_id, path_info, environ, start_response, body_renderer=None):
         # Map url using routes
-        path_info = environ.get("PATH_INFO", "")
         client_match = self.clientside_routes.match(path_info, environ)
         map_match = self.mapper.match(path_info, environ) or client_match
         if path_info.startswith("/api"):
@@ -250,7 +255,7 @@ class WebApplication:
         try:
             body = method(trans, **kwargs)
         except Exception as e:
-            body = self.handle_controller_exception(e, trans, **kwargs)
+            body = self.handle_controller_exception(e, trans, method, **kwargs)
             if not body:
                 raise
         body_renderer = body_renderer or self._render_body
@@ -285,7 +290,7 @@ class WebApplication:
             # Worst case scenario
             return [smart_str(body)]
 
-    def handle_controller_exception(self, e, trans, **kwargs):
+    def handle_controller_exception(self, e, trans, method, **kwargs):
         """
         Allow handling of exceptions raised in controller methods.
         """
@@ -430,6 +435,10 @@ class Request(webob.Request):
     def base(self):
         return f"{self.scheme}://{self.host}"
 
+    @lazy_property
+    def url_path(self):
+        return urljoin(self.base, self.environ.get("SCRIPT_NAME", ""))
+
     # @lazy_property
     # def params( self ):
     #     return parse_formvars( self.environ )
@@ -530,20 +539,41 @@ def send_file(start_response, trans, body):
         body = [b""]
     # Fall back on sending the file in chunks
     else:
-        body = iterate_file(body)
+        trans.response.headers["accept-ranges"] = "bytes"
+        start = None
+        end = None
+        if trans.request.range:
+            start = int(trans.request.range.start)
+            file_size = int(trans.response.headers["content-length"])
+            end = int(file_size if end is None else trans.request.range.end)
+            trans.response.headers["content-length"] = str(end - start)
+            trans.response.headers["content-range"] = f"bytes {start}-{end - 1}/{file_size}"
+            trans.response.status = 206
+        body = iterate_file(body, start, end)
     start_response(trans.response.wsgi_status(), trans.response.wsgi_headeritems())
     return body
 
 
-def iterate_file(fh):
+def iterate_file(fh, start=None, stop=None):
     """
     Progressively return chunks from `file`.
     """
+    length = None
+    if start:
+        fh.seek(start)
+    if stop:
+        length = stop - start
     while 1:
-        chunk = fh.read(CHUNK_SIZE)
+        read_size = CHUNK_SIZE
+        if length:
+            read_size = min(CHUNK_SIZE, length)
+            length -= read_size
+        chunk = fh.read(read_size)
         if not chunk:
             break
         yield chunk
+        if length is not None and length == 0:
+            break
 
 
 def flatten(seq):

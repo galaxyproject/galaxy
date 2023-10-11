@@ -15,7 +15,6 @@ class TestFailJobWhenToolUnavailable(integration_util.IntegrationTestCase):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
         self.workflow_populator = WorkflowPopulator(self.galaxy_interactor)
-        self.history_id = self.dataset_populator.new_history()
 
     @classmethod
     def handle_galaxy_config_kwds(
@@ -27,7 +26,7 @@ class TestFailJobWhenToolUnavailable(integration_util.IntegrationTestCase):
         # Disable tool dependency resolution.
         config["tool_dependency_dir"] = "none"
 
-    def test_fail_job_when_tool_unavailable(self):
+    def test_fail_job_when_tool_unavailable(self, history_id: str):
         self.workflow_populator.run_workflow(
             """
 class: GalaxyWorkflow
@@ -48,20 +47,20 @@ steps:
         input2:
           $link: sleep/output1
 """,
-            history_id=self.history_id,
+            history_id=history_id,
             assert_ok=False,
             wait=False,
         )
         # Wait until workflow is fully scheduled, otherwise can't test effect of removing tool from queued job
         time.sleep(5)
         self._app.toolbox.remove_tool_by_id("cat1")
-        self.dataset_populator.wait_for_history(self.history_id, assert_ok=False)
-        state_details = self.galaxy_interactor.get(f"histories/{self.history_id}").json()["state_details"]
+        self.dataset_populator.wait_for_history(history_id, assert_ok=False)
+        state_details = self.galaxy_interactor.get(f"histories/{history_id}").json()["state_details"]
         assert state_details["running"] == 0
         assert state_details["ok"] == 1
         assert state_details["error"] == 1
         failed_hda = self.dataset_populator.get_history_dataset_details(
-            history_id=self.history_id, assert_ok=False, details=True
+            history_id=history_id, assert_ok=False, details=True
         )
         assert failed_hda["state"] == "error"
         job = self.galaxy_interactor.get("jobs/{}".format(failed_hda["creating_job"])).json()

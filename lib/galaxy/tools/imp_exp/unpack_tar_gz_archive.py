@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 """
-Unpack a tar or tar.gz archive into a directory.
+Unpack a tar, tar.gz or zip archive into a directory.
 
 usage: %prog archive_source dest_dir
     --[url|file] source type, either a URL or a file.
@@ -11,6 +11,7 @@ import math
 import optparse
 import os
 import tarfile
+import zipfile
 from base64 import b64decode
 
 from galaxy.files import ConfiguredFileSources
@@ -35,11 +36,19 @@ def check_archive(archive_file, dest_dir):
     Ensure that a tar archive has no absolute paths or relative paths outside
     the archive.
     """
-    with tarfile.open(archive_file, mode="r") as archive_fp:
-        for arc_path in archive_fp.getnames():
-            assert os.path.normpath(os.path.join(dest_dir, arc_path)).startswith(
-                dest_dir.rstrip(os.sep) + os.sep
-            ), f"Archive member would extract outside target directory: {arc_path}"
+    if zipfile.is_zipfile(archive_file):
+        with zipfile.ZipFile(archive_file, "r") as archive_fp:
+            for arc_path in archive_fp.namelist():
+                assert not os.path.isabs(arc_path), f"Archive member has absolute path: {arc_path}"
+                assert not os.path.relpath(arc_path).startswith(
+                    ".."
+                ), f"Archive member would extract outside target directory: {arc_path}"
+    else:
+        with tarfile.open(archive_file, mode="r") as archive_fp:
+            for arc_path in archive_fp.getnames():
+                assert os.path.normpath(os.path.join(dest_dir, arc_path)).startswith(
+                    dest_dir.rstrip(os.sep) + os.sep
+                ), f"Archive member would extract outside target directory: {arc_path}"
     return True
 
 
@@ -47,9 +56,13 @@ def unpack_archive(archive_file, dest_dir):
     """
     Unpack a tar and/or gzipped archive into a destination directory.
     """
-    archive_fp = tarfile.open(archive_file, mode="r")
-    archive_fp.extractall(path=dest_dir)
-    archive_fp.close()
+    if zipfile.is_zipfile(archive_file):
+        with zipfile.ZipFile(archive_file, "r") as zip_archive:
+            zip_archive.extractall(path=dest_dir)
+    else:
+        archive_fp = tarfile.open(archive_file, mode="r")
+        archive_fp.extractall(path=dest_dir)
+        archive_fp.close()
 
 
 def main(options, args):

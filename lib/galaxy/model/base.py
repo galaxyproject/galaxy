@@ -2,6 +2,7 @@
 Shared model and mapping code between Galaxy and Tool Shed, trying to
 generalize to generic database connections.
 """
+import contextlib
 import os
 import threading
 from contextvars import ContextVar
@@ -12,15 +13,21 @@ from inspect import (
 from typing import (
     Dict,
     Type,
+    TYPE_CHECKING,
+    Union,
 )
 
 from sqlalchemy import event
 from sqlalchemy.orm import (
     scoped_session,
+    Session,
     sessionmaker,
 )
 
 from galaxy.util.bunch import Bunch
+
+if TYPE_CHECKING:
+    from galaxy.model.store import SessionlessContext
 
 # Create a ContextVar with mutable state, this allows sync tasks in the context
 # of a request (which run within a threadpool) to see changes to the ContextVar
@@ -30,13 +37,31 @@ _request_state: Dict[str, str] = {}
 REQUEST_ID = ContextVar("request_id", default=_request_state.copy())
 
 
+@contextlib.contextmanager
+def transaction(session: Union[scoped_session, Session, "SessionlessContext"]):
+    """Start a new transaction only if one is not present."""
+    # temporary hack; need to fix access to scoped_session callable, not proxy
+    if isinstance(session, scoped_session):
+        session = session()
+    # hack: this could be model.store.SessionlessContext; then we don't need to do anything
+    elif not isinstance(session, Session):
+        yield
+        return  # exit: can't use as a Session
+
+    if not session.in_transaction():
+        with session.begin():
+            yield
+    else:
+        yield
+
+
 # TODO: Refactor this to be a proper class, not a bunch.
 class ModelMapping(Bunch):
     def __init__(self, model_modules, engine):
         self.engine = engine
-        SessionLocal = sessionmaker(autoflush=False, autocommit=True)
-        versioned_session(SessionLocal)
-        context = scoped_session(SessionLocal, scopefunc=self.request_scopefunc)
+        self._SessionLocal = sessionmaker(autoflush=False, autocommit=False)
+        versioned_session(self._SessionLocal)
+        context = scoped_session(self._SessionLocal, scopefunc=self.request_scopefunc)
         # For backward compatibility with "context.current"
         # deprecated?
         context.current = context
@@ -53,6 +78,15 @@ class ModelMapping(Bunch):
 
         context.remove()
         context.configure(bind=engine)
+
+    def new_session(self):
+        """
+        Return a new non-scoped Session object.
+
+        Use this when we need to operate on ORM entities, so a Connection object would be
+        insufficient; yet the operation must be independent of the main session (self.session).
+        """
+        return self._SessionLocal()
 
     def request_scopefunc(self):
         """
@@ -80,7 +114,7 @@ class ModelMapping(Bunch):
             del self.scoped_registry.registry[request_id]
 
     @property
-    def context(self):
+    def context(self) -> scoped_session:
         return self.session
 
     @property

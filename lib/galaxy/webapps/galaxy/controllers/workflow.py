@@ -1,8 +1,5 @@
-import base64
-import json
 import logging
 from html.parser import HTMLParser
-from http.client import HTTPConnection
 
 from markupsafe import escape
 from sqlalchemy import desc
@@ -23,12 +20,10 @@ from galaxy.managers.workflows import (
     MissingToolsException,
     WorkflowUpdateOptions,
 )
+from galaxy.model.base import transaction
 from galaxy.model.item_attrs import UsesItemRatings
 from galaxy.tools.parameters.basic import workflow_building_modes
-from galaxy.util import (
-    FILENAME_VALID_CHARS,
-    unicodify,
-)
+from galaxy.util import FILENAME_VALID_CHARS
 from galaxy.util.sanitize_html import sanitize_html
 from galaxy.web import url_for
 from galaxy.web.framework.helpers import (
@@ -163,12 +158,12 @@ class StoredWorkflowAllPublishedGrid(grids.Grid):
         # of its steps to be eagerly loaded.
         return (
             trans.sa_session.query(self.model_class)
-            .join("user")
+            .join(self.model_class.user)
             .options(
-                lazyload("latest_workflow"),
-                joinedload("user").load_only("username"),
-                joinedload("annotations"),
-                undefer("average_rating"),
+                lazyload(self.model_class.latest_workflow),
+                joinedload(self.model_class.user).load_only(model.User.username),
+                joinedload(self.model_class.annotations),
+                undefer(self.model_class.average_rating),
             )
         )
 
@@ -225,7 +220,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         return self.published_list_grid(trans, **kwargs)
 
     @web.expose
-    def display_by_username_and_slug(self, trans, username, slug, format="html"):
+    def display_by_username_and_slug(self, trans, username, slug, format="html", **kwargs):
         """
         Display workflow based on a username and slug. Format can be html, json, or json-download.
         """
@@ -307,8 +302,9 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
 
         # Redirect to load galaxy frames.
         return trans.show_ok_message(
-            message="""Workflow "%s" has been imported. <br>You can <a href="%s">start using this workflow</a> or %s."""
-            % (stored.name, web.url_for("/workflows/list"), referer_message)
+            message="""Workflow "{}" has been imported. <br>You can <a href="{}">start using this workflow</a> or {}.""".format(
+                stored.name, web.url_for("/workflows/list"), referer_message
+            )
         )
 
     @web.expose
@@ -319,7 +315,8 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             san_new_name = sanitize_html(new_name)
             stored.name = san_new_name
             stored.latest_workflow.name = san_new_name
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
             return stored.name
 
     @web.expose
@@ -330,38 +327,13 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             # Sanitize annotation before adding it.
             new_annotation = sanitize_html(new_annotation)
             self.add_item_annotation(trans.sa_session, trans.get_user(), stored, new_annotation)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
             return new_annotation
 
     @web.expose
-    def get_embed_html_async(self, trans, id):
-        """Returns HTML for embedding a workflow in a page."""
-
-        # TODO: user should be able to embed any item he has access to. see display_by_username_and_slug for security code.
-        stored = self.get_stored_workflow(trans, id)
-        if stored:
-            return f"Embedded Workflow '{stored.name}'"
-
-    @web.expose
-    @web.json
     @web.require_login("use Galaxy workflows")
-    def get_name_and_link_async(self, trans, id=None):
-        """Returns workflow's name and link."""
-        stored = self.get_stored_workflow(trans, id)
-        return_dict = {
-            "name": stored.name,
-            "link": url_for(
-                controller="workflow",
-                action="display_by_username_and_slug",
-                username=stored.user.username,
-                slug=stored.slug,
-            ),
-        }
-        return return_dict
-
-    @web.expose
-    @web.require_login("use Galaxy workflows")
-    def gen_image(self, trans, id):
+    def gen_image(self, trans, id, **kwargs):
         stored = self.get_stored_workflow(trans, id, check_ownership=True)
         try:
             svg = self._workflow_to_svg_canvas(trans, stored)
@@ -410,14 +382,17 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             # Persist
             session = trans.sa_session
             session.add(stored_workflow)
-            session.flush()
+            with transaction(session):
+                session.commit()
             return {
                 "id": trans.security.encode_id(stored_workflow.id),
                 "message": f"Workflow {workflow_name} has been created.",
             }
 
     @web.json
-    def save_workflow_as(self, trans, workflow_name, workflow_data, workflow_annotation="", from_tool_form=False):
+    def save_workflow_as(
+        self, trans, workflow_name, workflow_data, workflow_annotation="", from_tool_form=False, **kwargs
+    ):
         """
         Creates a new workflow based on Save As command. It is a new workflow, but
         is created with workflow_data already present.
@@ -440,7 +415,8 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             # Persist
             session = trans.sa_session
             session.add(stored_workflow)
-            session.flush()
+            with transaction(session):
+                session.commit()
             workflow_update_options = WorkflowUpdateOptions(
                 update_stored_workflow_attributes=False,  # taken care of above
                 from_tool_form=from_tool_form,
@@ -469,7 +445,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
     @web.expose
     @web.json
     @web.require_login("edit workflows")
-    def editor(self, trans, id=None, workflow_id=None, version=None):
+    def editor(self, trans, id=None, workflow_id=None, version=None, **kwargs):
         """
         Render the main workflow editor interface. The canvas is embedded as
         an iframe (necessary for scrolling to work properly), which is
@@ -487,7 +463,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             trans.sa_session.query(model.StoredWorkflow)
             .filter_by(user=trans.user, deleted=False, hidden=False)
             .order_by(desc(model.StoredWorkflow.table.c.update_time))
-            .options(joinedload("latest_workflow").joinedload("steps"))
+            .options(joinedload(model.StoredWorkflow.latest_workflow).joinedload(model.Workflow.steps))
             .all()
         )
         if version is None:
@@ -538,16 +514,13 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         ]
 
         # identify item tags
-        item_tags = [tag for tag in stored.tags if tag.user == trans.user]
-        item_tag_names = []
-        for ta in item_tags:
-            item_tag_names.append(escape(ta.tag.name))
+        item_tags = stored.make_tag_string_list()
 
         # build workflow editor model
         editor_config = {
             "id": trans.security.encode_id(stored.id),
             "name": stored.name,
-            "tags": item_tag_names,
+            "tags": item_tags,
             "initialVersion": version,
             "annotation": self.get_item_annotation_str(trans.sa_session, trans.user, stored),
             "moduleSections": module_sections,
@@ -559,81 +532,19 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         return editor_config
 
     @web.json
-    def load_workflow(self, trans, id, version=None):
+    def load_workflow(self, trans, id, version=None, **kwargs):
         """
         Get the latest Workflow for the StoredWorkflow identified by `id` and
         encode it as a json string that can be read by the workflow editor
         web interface.
         """
         trans.workflow_building_mode = workflow_building_modes.ENABLED
-        stored = self.get_stored_workflow(trans, id, check_ownership=True, check_accessible=False)
+        stored = self.get_stored_workflow(trans, id, check_ownership=False, check_accessible=True)
         workflow_contents_manager = self.app.workflow_contents_manager
         return workflow_contents_manager.workflow_to_dict(trans, stored, style="editor", version=version)
 
-    @web.expose
-    @web.require_login("use workflows")
-    def export_to_myexp(self, trans, id, myexp_username, myexp_password):
-        """
-        Exports a workflow to myExperiment website.
-        """
-        trans.workflow_building_mode = workflow_building_modes.ENABLED
-        stored = self.get_stored_workflow(trans, id, check_ownership=False, check_accessible=True)
-
-        # Convert workflow to dict.
-        workflow_dict = self._workflow_to_dict(trans, stored)
-
-        #
-        # Create and submit workflow myExperiment request.
-        #
-
-        # Create workflow content JSON.
-        workflow_content = json.dumps(workflow_dict, indent=4, sort_keys=True)
-
-        # Create myExperiment request.
-        request_raw = trans.fill_template(
-            "workflow/myexp_export.mako",
-            workflow_name=workflow_dict["name"],
-            workflow_description=workflow_dict["annotation"],
-            workflow_content=workflow_content,
-            workflow_svg=self._workflow_to_svg_canvas(trans, stored).tostring(),
-        )
-        # strip() b/c myExperiment XML parser doesn't allow white space before XML; utf-8 handles unicode characters.
-        request = unicodify(request_raw.strip(), "utf-8")
-
-        # Do request and get result.
-        auth_header = base64.b64encode(f"{myexp_username}:{myexp_password}")
-        headers = {"Content-type": "text/xml", "Accept": "text/xml", "Authorization": f"Basic {auth_header}"}
-        myexp_url = trans.app.config.myexperiment_target_url
-        conn = HTTPConnection(myexp_url)
-        # NOTE: blocks web thread.
-        conn.request("POST", "/workflow.xml", request, headers)
-        response = conn.getresponse()
-        response_data = response.read()
-        conn.close()
-
-        # Do simple parse of response to see if export successful and provide user feedback.
-        parser = SingleTagContentsParser("id")
-        parser.feed(response_data)
-        myexp_workflow_id = parser.tag_content
-        workflow_list_str = f" <br>Return to <a href='{url_for(controller='workflows', action='list')}'>workflow list."
-        if myexp_workflow_id:
-            return trans.show_message(
-                """Workflow '{}' successfully exported to myExperiment. <br/>
-                <a href="http://{}/workflows/{}">Click here to view the workflow on myExperiment</a> {}
-                """.format(
-                    stored.name, myexp_url, myexp_workflow_id, workflow_list_str
-                ),
-                use_panels=True,
-            )
-        else:
-            return trans.show_error_message(
-                "Workflow '%s' could not be exported to myExperiment. Error: %s %s"
-                % (stored.name, response_data, workflow_list_str),
-                use_panels=True,
-            )
-
     @web.json_pretty
-    def for_direct_import(self, trans, id):
+    def for_direct_import(self, trans, id, **kwargs):
         """
         Get the latest Workflow for the StoredWorkflow identified by `id` and
         encode it as a json string that can be imported back into Galaxy
@@ -649,7 +560,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
     def export_to_file(self, trans, id):
         """
         Get the latest Workflow for the StoredWorkflow identified by `id` and
-        encode it as a json string that can be imported back into Galaxy
+        export it to a JSON file that can be imported back into Galaxy.
 
         This has slightly different information than the above. In particular,
         it does not attempt to decode forms and build UIs, it just stores
@@ -681,6 +592,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         workflow_name=None,
         dataset_names=None,
         dataset_collection_names=None,
+        **kwargs,
     ):
         user = trans.get_user()
         history = trans.get_history()
@@ -709,14 +621,11 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             )
             # Index page with message
             workflow_id = trans.security.encode_id(stored_workflow.id)
+            edit_url = url_for(f"/workflows/edit?id={workflow_id}")
+            run_url = url_for(f"/workflows/run?id={workflow_id}")
             return trans.show_message(
-                'Workflow "%s" created from current history. '
-                'You can <a href="%s" target="_parent">edit</a> or <a href="%s" target="_parent">run</a> the workflow.'
-                % (
-                    escape(workflow_name),
-                    url_for(controller="workflow", action="editor", id=workflow_id),
-                    url_for(controller="workflows", action="run", id=workflow_id),
-                )
+                f'Workflow "{escape(workflow_name)}" created from current history. '
+                f'You can <a href="{edit_url}" target="_parent">edit</a> or <a href="{run_url}" target="_parent">run</a> the workflow.'
             )
 
     def get_item(self, trans, id):

@@ -146,7 +146,6 @@ def _sqlite_install():
     sql = _sqlite_remove()
 
     def trigger_def(source_table, id_field, operation, when="AFTER"):
-
         # only one trigger per operation/table in simple databases, so
         # trigger name is less descriptive
         trigger_name = get_trigger_name(source_table, operation, when)

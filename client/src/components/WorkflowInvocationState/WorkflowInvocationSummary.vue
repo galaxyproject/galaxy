@@ -2,46 +2,57 @@
     <div class="mb-3 workflow-invocation-state-component">
         <div v-if="invocationAndJobTerminal">
             <span>
-                <a class="invocation-report-link" :href="invocationLink">
-                    <b>View Report {{ indexStr }}</b>
-                </a>
-                <a
-                    v-b-tooltip
-                    class="fa fa-print ml-1 invocation-pdf-link"
+                <b-button v-b-tooltip.hover size="sm" class="invocation-report-link" :href="invocationLink">
+                    View Report
+                </b-button>
+                <b-button
+                    v-b-tooltip.hover
+                    size="sm"
+                    class="invocation-pdf-link"
                     :href="invocationPdfLink"
-                    title="Download PDF" />
+                    target="_blank">
+                    Generate PDF
+                </b-button>
             </span>
         </div>
-        <div v-else>
+        <div v-else-if="!invocationSchedulingTerminal">
             <b-alert variant="info" show>
                 <LoadingSpan :message="`Waiting to complete invocation ${indexStr}`" />
             </b-alert>
             <span
-                v-if="!invocationSchedulingTerminal"
                 v-b-tooltip.hover
                 class="fa fa-times cancel-workflow-scheduling"
                 title="Cancel scheduling of workflow invocation"
                 @click="onCancel"></span>
         </div>
-        <progress-bar v-if="!stepCount" note="Loading step state summary..." :loading="true" class="steps-progress" />
-        <progress-bar
+        <ProgressBar v-if="!stepCount" note="Loading step state summary..." :loading="true" class="steps-progress" />
+        <template v-if="invocation.messages?.length">
+            <InvocationMessage
+                v-for="message in invocation.messages"
+                :key="message.reason"
+                class="steps-progress my-1"
+                :invocation-message="message"
+                :invocation="invocation">
+            </InvocationMessage>
+        </template>
+        <ProgressBar
             v-else-if="invocationState == 'cancelled'"
             note="Invocation scheduling cancelled - expected jobs and outputs may not be generated."
             :error-count="1"
             class="steps-progress" />
-        <progress-bar
+        <ProgressBar
             v-else-if="invocationState == 'failed'"
             note="Invocation scheduling failed - Galaxy administrator may have additional details in logs."
             :error-count="1"
             class="steps-progress" />
-        <progress-bar
+        <ProgressBar
             v-else
             :note="stepStatesStr"
             :total="stepCount"
             :ok-count="stepStates.scheduled"
             :loading="!invocationSchedulingTerminal"
             class="steps-progress" />
-        <progress-bar
+        <ProgressBar
             :note="jobStatesStr"
             :total="jobCount"
             :ok-count="okCount"
@@ -53,17 +64,19 @@
     </div>
 </template>
 <script>
-import { getRootFromIndexLink } from "onload";
 import mixin from "components/JobStates/mixin";
-import ProgressBar from "components/ProgressBar";
 import LoadingSpan from "components/LoadingSpan";
-
+import ProgressBar from "components/ProgressBar";
+import { getRootFromIndexLink } from "onload";
 import { mapGetters } from "vuex";
+
+import InvocationMessage from "@/components/WorkflowInvocationState/InvocationMessage.vue";
 
 const getUrl = (path) => getRootFromIndexLink() + path;
 
 export default {
     components: {
+        InvocationMessage,
         ProgressBar,
         LoadingSpan,
     },

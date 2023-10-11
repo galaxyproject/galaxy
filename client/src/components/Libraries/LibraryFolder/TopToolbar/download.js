@@ -1,5 +1,5 @@
-import $ from "jquery";
 import { Toast } from "composables/toast";
+import $ from "jquery";
 import { getAppRoot } from "onload";
 
 function processDownload(url, data, method) {

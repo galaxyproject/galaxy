@@ -1,6 +1,7 @@
 import tarfile
 
 from celery import shared_task
+from sqlalchemy import select
 
 from galaxy.celery import galaxy_task
 from galaxy.celery.tasks import (
@@ -72,7 +73,7 @@ class TestCeleryTasksIntegration(IntegrationTestCase):
         assert hda_purged()
 
     def test_pdf_download(self):
-        short_term_storage_allocator = self._app[ShortTermStorageAllocator]
+        short_term_storage_allocator = self._app[ShortTermStorageAllocator]  # type: ignore[type-abstract]
         short_term_storage_target = short_term_storage_allocator.new_target("moo.pdf", "application/pdf")
         request_id = short_term_storage_target.request_id
         pdf_download_request = GeneratePdfDownload(
@@ -108,9 +109,5 @@ class TestCeleryTasksIntegration(IntegrationTestCase):
 
     @property
     def _latest_hda(self):
-        latest_hda = (
-            self._app.model.session.query(HistoryDatasetAssociation)
-            .order_by(HistoryDatasetAssociation.table.c.id.desc())
-            .first()
-        )
-        return latest_hda
+        stmt = select(HistoryDatasetAssociation).order_by(HistoryDatasetAssociation.table.c.id.desc()).limit(1)
+        return self._app.model.session.scalars(stmt).first()

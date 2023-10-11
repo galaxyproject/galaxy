@@ -352,12 +352,13 @@ def _fetch_target(upload_config: "UploadConfig", target):
             # TODO:
             # in galaxy json add 'extra_files' and point at target derived from extra_files:
 
-            needs_grooming = not link_data_only and datatype and datatype.dataset_content_needs_grooming(path)
+            needs_grooming = not link_data_only and datatype and datatype.dataset_content_needs_grooming(path)  # type: ignore[arg-type]
             if needs_grooming:
                 # Groom the dataset content if necessary
                 transform.append(
                     {"action": "datatype_groom", "datatype_ext": ext, "datatype_class": datatype.__class__.__name__}
                 )
+                assert path
                 datatype.groom_dataset_content(path)
 
             if len(transform) > 0:

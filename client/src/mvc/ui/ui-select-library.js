@@ -1,7 +1,7 @@
 // dependencies
 import Backbone from "backbone";
-import Ui from "mvc/ui/ui-misc";
 import List from "mvc/ui/ui-list";
+import Ui from "mvc/ui/ui-misc";
 import { getAppRoot } from "onload/loadConfig";
 
 // collection of libraries

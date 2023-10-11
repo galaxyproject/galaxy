@@ -81,7 +81,7 @@
                                 </UrlDataProvider>
                             </div>
                             <pre v-else>
-                                    <code class="text-normalwrap">{{ itemContent.item_data }}</code>
+                                    <code class="word-wrap-normal">{{ itemContent.item_data }}</code>
                                 </pre>
                         </div>
                         <div v-else>No content found.</div>
@@ -94,10 +94,10 @@
 </template>
 
 <script>
-import { getAppRoot } from "onload/loadConfig";
+import { DatatypesMapperModel } from "components/Datatypes/model";
 import LoadingSpan from "components/LoadingSpan";
 import { UrlDataProvider } from "components/providers/UrlDataProvider";
-import { DatatypesMapperModel } from "components/Datatypes/model";
+import { getAppRoot } from "onload/loadConfig";
 
 export default {
     components: {

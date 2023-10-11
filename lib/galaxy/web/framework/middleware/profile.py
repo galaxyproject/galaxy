@@ -99,7 +99,7 @@ def pstats_as_html(stats, *sel_list):
     if select_message:
         rval.append(f"<div>{markupsafe.escape(select_message)}</div>")
     # Build a table for the functions
-    if list:
+    if funcs:
         rval.append("<table>")
         # Header
         rval.append(

@@ -1,3 +1,4 @@
+import abc
 import logging
 import os
 import shlex
@@ -18,7 +19,6 @@ from typing import (
     Union,
 )
 
-from galaxy import exceptions
 from galaxy.model import (
     DatasetCollection,
     DatasetCollectionElement,
@@ -46,7 +46,6 @@ if TYPE_CHECKING:
     from galaxy.model.metadata import MetadataCollection
     from galaxy.tools import Tool
     from galaxy.tools.parameters.basic import (
-        BaseDataToolParameter,
         SelectToolParameter,
         ToolParameter,
     )
@@ -65,7 +64,7 @@ class ToolParameterValueWrapper:
     Base class for object that Wraps a Tool Parameter and Value.
     """
 
-    value: Union[str, List[str]]
+    value: Optional[Union[str, List[str]]]
     input: "ToolParameter"
 
     def __bool__(self) -> bool:
@@ -119,10 +118,20 @@ class InputValueWrapper(ToolParameterValueWrapper):
     def __init__(
         self,
         input: "ToolParameter",
-        value: str,
+        value: Optional[str],
         other_values: Optional[Dict[str, str]] = None,
+        profile: Optional[float] = None,
     ) -> None:
         self.input = input
+        if (
+            value is None
+            and input.type == "text"
+            and input.optional
+            and input.optionality_inferred
+            and (profile is None or profile < 23.0)
+        ):
+            # Tools with old profile versions may treat an optional text parameter as `""`
+            value = ""
         self.value = value
         self._other_values: Dict[str, str] = other_values or {}
 
@@ -235,7 +244,7 @@ class SelectToolParameterWrapper(ToolParameterValueWrapper):
         compute_environment: Optional["ComputeEnvironment"] = None,
     ):
         self.input = input
-        self.value = value
+        self.value: Union[str, List[str]] = value
         self.input.value_label = input.value_to_display_text(value)
         self._other_values = other_values or {}
         self.compute_environment = compute_environment
@@ -291,7 +300,7 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
             compute_environment: Optional["ComputeEnvironment"] = None,
         ) -> None:
             self.dataset = dataset
-            self.metadata: "MetadataCollection" = dataset.metadata
+            self.metadata: MetadataCollection = dataset.metadata
             self.compute_environment = compute_environment
 
         def __getattr__(self, name: str) -> Any:
@@ -346,22 +355,12 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
         io_type: str = "input",
         formats: Optional[List[str]] = None,
     ) -> None:
+        dataset_instance: Optional[DatasetInstance] = None
         if not dataset:
-            dataset_instance: Optional[DatasetInstance] = None
-            ext = "data"
-            if tool is not None and name is not None:
-                try:
-                    tool_input = tool.inputs[name]
-                    if TYPE_CHECKING:
-                        assert isinstance(tool_input, BaseDataToolParameter)
-                    # TODO: allow this to work when working with grouping
-                    ext = tool_input.extensions[0]
-                except Exception:
-                    pass
             self.dataset = cast(
                 DatasetInstance,
                 wrap_with_safe_string(
-                    NoneDataset(datatypes_registry=datatypes_registry, ext=ext),
+                    NoneDataset(datatypes_registry=datatypes_registry),
                     no_wrap_classes=ToolParameterValueWrapper,
                 ),
             )
@@ -475,34 +474,14 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
         if self.false_path is not None and key == "file_name":
             # Path to dataset was rewritten for this job.
             return self.false_path
-        elif key == "extra_files_path":
+        elif key in ("extra_files_path", "files_path"):
+            if not self.compute_environment:
+                # Only happens in WrappedParameters context, refactor!
+                return self.unsanitized.extra_files_path
             if self.__io_type == "input":
-                path_rewrite = self.compute_environment and self.compute_environment.input_extra_files_rewrite(
-                    self.unsanitized
-                )
+                return self.compute_environment.input_extra_files_rewrite(self.unsanitized)
             else:
-                path_rewrite = self.compute_environment and self.compute_environment.output_extra_files_rewrite(
-                    self.unsanitized
-                )
-            if path_rewrite:
-                return path_rewrite
-            else:
-                try:
-                    # Assume it is an output and that this wrapper
-                    # will be set with correct "files_path" for this
-                    # job.
-                    return self.files_path
-                except AttributeError:
-                    # Otherwise, we have an input - delegate to model and
-                    # object store to find the static location of this
-                    # directory.
-                    try:
-                        return self.unsanitized.extra_files_path
-                    except exceptions.ObjectNotFound:
-                        # NestedObjectstore raises an error here
-                        # instead of just returning a non-existent
-                        # path like DiskObjectStore.
-                        raise
+                return self.compute_environment.output_extra_files_rewrite(self.unsanitized)
         elif key == "serialize":
             return self.serialize
         else:
@@ -515,9 +494,9 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
 
 
 class HasDatasets:
-
     job_working_directory: Optional[str]
 
+    @abc.abstractmethod
     def __iter__(self) -> Iterator[Any]:
         pass
 

@@ -1,16 +1,17 @@
-import _ from "underscore";
-import $ from "jquery";
-import Backbone from "backbone";
-import { getAppRoot } from "onload/loadConfig";
-import { getGalaxyInstance } from "app";
-import _l from "utils/localization";
-import * as d3 from "d3";
-import { event as currentEvent } from "d3";
-import visualization from "viz/visualization";
-import mod_utils from "utils/utils";
-import config from "utils/config";
-import mod_icon_btn from "mvc/ui/icon-button";
 import "libs/farbtastic";
+
+import { getGalaxyInstance } from "app";
+import Backbone from "backbone";
+import * as d3 from "d3v3";
+import { event as currentEvent } from "d3v3";
+import $ from "jquery";
+import mod_icon_btn from "mvc/ui/icon-button";
+import { getAppRoot } from "onload/loadConfig";
+import _ from "underscore";
+import config from "utils/config";
+import _l from "utils/localization";
+import mod_utils from "utils/utils";
+import visualization from "viz/visualization";
 
 /**
  * Utility class for working with SVG.

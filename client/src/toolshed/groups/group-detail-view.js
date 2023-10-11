@@ -1,8 +1,8 @@
-import $ from "jquery";
-import _ from "underscore";
 import Backbone from "backbone";
-import { Toast } from "ui/toast";
+import $ from "jquery";
 import mod_group_model from "toolshed/groups/group-model";
+import { Toast } from "ui/toast";
+import _ from "underscore";
 
 // toolshed group detail view
 const GroupDetailView = Backbone.View.extend({

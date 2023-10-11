@@ -1,5 +1,5 @@
 <template>
-    <div class="ui-thumbnails">
+    <div class="plugin-list">
         <div v-if="error" class="alert alert-danger">{{ error }}</div>
         <div v-else>
             <DelayedInput
@@ -10,18 +10,14 @@
                 @change="onSearch" />
             <div v-for="plugin in plugins" :key="plugin.name">
                 <table v-if="match(plugin)">
-                    <tr class="ui-thumbnails-item" @click="select(plugin)">
+                    <tr class="plugin-list-item" :data-plugin-name="plugin.name" @click="select(plugin)">
                         <td>
-                            <img
-                                v-if="plugin.logo"
-                                alt="ui thumbnails"
-                                class="ui-thumbnails-image"
-                                :src="plugin.logo" />
-                            <div v-else class="ui-thumbnails-icon fa fa-eye" />
+                            <img v-if="plugin.logo" alt="ui thumbnails" class="plugin-list-image" :src="plugin.logo" />
+                            <div v-else class="plugin-list-icon fa fa-eye" />
                         </td>
                         <td>
-                            <div class="ui-thumbnails-title font-weight-bold">{{ plugin.html }}</div>
-                            <div class="ui-thumbnails-text">{{ plugin.description }}</div>
+                            <div class="plugin-list-title font-weight-bold">{{ plugin.html }}</div>
+                            <div class="plugin-list-text">{{ plugin.description }}</div>
                         </td>
                     </tr>
                     <tr v-if="!fixed">
@@ -57,11 +53,11 @@
     </div>
 </template>
 <script>
-import _l from "utils/localization";
-import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
 import axios from "axios";
 import DelayedInput from "components/Common/DelayedInput";
+import { getAppRoot } from "onload/loadConfig";
+import _l from "utils/localization";
 
 export default {
     components: {
@@ -155,3 +151,38 @@ export default {
     },
 };
 </script>
+
+<style lang="scss" scoped>
+@import "theme/blue.scss";
+@import "~scss/mixins.scss";
+
+.plugin-list {
+    .plugin-list-item {
+        cursor: pointer;
+        .plugin-list-image {
+            padding: 1rem;
+            width: 5rem;
+            height: 4.3rem;
+        }
+        .plugin-list-icon {
+            padding: 1rem;
+            width: 5rem;
+            height: 4.3rem;
+            font-size: 2em;
+            text-align: center;
+            color: $text-color;
+        }
+        .plugin-list-text {
+            word-wrap: break-word;
+        }
+    }
+    .plugin-list-item:hover {
+        .plugin-list-title {
+            text-decoration: underline;
+        }
+        .plugin-list-text {
+            text-decoration: underline;
+        }
+    }
+}
+</style>

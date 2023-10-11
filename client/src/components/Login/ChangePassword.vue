@@ -15,9 +15,9 @@
 </template>
 <script>
 import axios from "axios";
-import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import { safePath } from "utils/redirect";
+import { withPrefix } from "utils/redirect";
+import Vue from "vue";
 
 Vue.use(BootstrapVue);
 
@@ -52,7 +52,7 @@ export default {
     methods: {
         submit() {
             axios
-                .post(safePath("/user/change_password"), {
+                .post(withPrefix("/user/change_password"), {
                     token: this.token,
                     id: this.expiredUser,
                     current: this.current,
@@ -60,7 +60,7 @@ export default {
                     confirm: this.confirm,
                 })
                 .then((response) => {
-                    window.location = safePath(`/`);
+                    window.location = withPrefix(`/`);
                 })
                 .catch((error) => {
                     this.variant = "danger";

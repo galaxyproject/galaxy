@@ -1,4 +1,5 @@
 import copy
+import csv
 import logging
 import re
 
@@ -8,6 +9,7 @@ from galaxy import (
     model,
     util,
 )
+from galaxy.model.base import transaction
 from galaxy.web.framework.helpers import (
     grids,
     iff,
@@ -122,7 +124,7 @@ class Forms(BaseUIController):
                     {
                         "name": "type",
                         "type": "select",
-                        "options": [("None", "none")] + [(ft[1], ft[1]) for ft in fd_types],
+                        "options": [(ft[1], ft[1]) for ft in fd_types],
                         "label": "Type",
                     },
                     {
@@ -130,6 +132,7 @@ class Forms(BaseUIController):
                         "label": "Import from CSV",
                         "type": "upload",
                         "help": "Import fields from CSV-file with the following format: Label, Help, Type, Value, Options, Required=True/False.",
+                        "optional": True,
                     },
                 ],
             }
@@ -139,16 +142,18 @@ class Forms(BaseUIController):
             index = 0
             if csv_file:
                 lines = csv_file.splitlines()
-                for line in lines:
-                    row = line.split(",")
+                rows = csv.reader(lines)
+                for row in rows:
                     if len(row) >= 6:
+                        for column in range(len(row)):
+                            row[column] = str(row[column]).strip('"')
                         prefix = "fields_%i|" % index
                         payload[f"{prefix}name"] = "%i_imported_field" % (index + 1)
                         payload[f"{prefix}label"] = row[0]
                         payload[f"{prefix}helptext"] = row[1]
                         payload[f"{prefix}type"] = row[2]
                         payload[f"{prefix}default"] = row[3]
-                        payload[f"{prefix}selectlist"] = row[4].split(",")
+                        payload[f"{prefix}selectlist"] = row[4]
                         payload[f"{prefix}required"] = row[5].lower() == "true"
                     index = index + 1
             new_form, message = self.save_form_definition(trans, None, payload)
@@ -168,9 +173,7 @@ class Forms(BaseUIController):
         latest_form = form.latest_form
         if trans.request.method == "GET":
             fd_types = sorted(trans.app.model.FormDefinition.types.__members__.items())
-            ff_types = [
-                (t.__name__.replace("Field", ""), t.__name__) for t in trans.model.FormDefinition.supported_field_types
-            ]
+            ff_types = [(t.__name__, t.__name__) for t in trans.model.FormDefinition.supported_field_types]
             field_cache = []
             field_inputs = [
                 {
@@ -188,7 +191,7 @@ class Forms(BaseUIController):
                     "label": "Options",
                     "help": "*Only for fields which allow multiple selections, provide comma-separated values.",
                 },
-                {"name": "required", "label": "Required", "type": "boolean", "value": "false"},
+                {"name": "required", "label": "Required", "type": "boolean", "value": False},
             ]
             form_dict = {
                 "title": "Edit form for '%s'" % (util.sanitize_text(latest_form.name)),
@@ -198,7 +201,7 @@ class Forms(BaseUIController):
                     {
                         "name": "type",
                         "type": "select",
-                        "options": [("None", "none")] + [(ft[1], ft[1]) for ft in fd_types],
+                        "options": [(ft[1], ft[1]) for ft in fd_types],
                         "label": "Type",
                         "value": latest_form.type,
                     },
@@ -244,7 +247,6 @@ class Forms(BaseUIController):
                 field_attributes = ["name", "label", "helptext", "required", "type", "selectlist", "default"]
                 field_dict = {attr: payload.get(f"{prefix}{attr}") for attr in field_attributes}
                 field_dict["visible"] = True
-                field_dict["required"] = field_dict["required"] == "true"
                 if isinstance(field_dict["selectlist"], str):
                     field_dict["selectlist"] = field_dict["selectlist"].split(",")
                 else:
@@ -281,7 +283,7 @@ class Forms(BaseUIController):
             desc=current_form["desc"],
             fields=current_form["fields"],
             form_definition_current=None,
-            form_type=current_form["type"],
+            type=current_form["type"],
             layout=current_form["layout"],
         )
         # save changes to the existing form
@@ -297,7 +299,8 @@ class Forms(BaseUIController):
         form_definition.form_definition_current = form_definition_current
         form_definition_current.latest_form = form_definition
         trans.sa_session.add(form_definition_current)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         return form_definition, None
 
     @web.expose
@@ -307,7 +310,8 @@ class Forms(BaseUIController):
             form = get_form(trans, form_id)
             form.deleted = True
             trans.sa_session.add(form)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
         return ("Deleted %i form(s)." % len(ids), "done")
 
     @web.expose
@@ -317,7 +321,8 @@ class Forms(BaseUIController):
             form = get_form(trans, form_id)
             form.deleted = False
             trans.sa_session.add(form)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
         return ("Undeleted %i form(s)." % len(ids), "done")
 
 

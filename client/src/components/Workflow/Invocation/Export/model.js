@@ -22,11 +22,11 @@ export class InvocationExportPlugin {
         this.markdownDescription = props.markdownDescription ?? "No description provided";
 
         /**
-         * A string used to identify the Galaxy export store that handles the download format in the backend.
+         * An object with parameters for the Galaxy export store that handles the download format in the backend.
          * Check lib/galaxy/model/store/__init__.py::get_export_store_factory for more info.
-         * @type {string}
+         * @type {Object}
          */
-        this.downloadFormat = props.downloadFormat ?? "unknown format";
+        this.exportParams = props.exportParams ?? null;
 
         /**
          * A list of additional actions that this plugin can do with the exported invocation in addition

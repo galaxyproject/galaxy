@@ -29,14 +29,17 @@ export default {
         title: {
             type: String,
             required: false,
+            default: undefined,
         },
         message: {
             type: String,
             required: false,
+            default: undefined,
         },
         error: {
             type: Boolean,
             required: false,
+            default: undefined,
         },
     },
     data() {

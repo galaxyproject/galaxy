@@ -263,7 +263,6 @@ def main(argv):
             datasets = {i[0]: i[1:] for i in datasets}
 
             for job_to_hda in job_to_hda_ids:
-
                 job = job_to_hda[0]  # job_id, hda_id, name
                 filetype = job_to_hda[1]  # input|output
 

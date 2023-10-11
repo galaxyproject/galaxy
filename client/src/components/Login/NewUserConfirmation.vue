@@ -58,9 +58,9 @@
 </template>
 <script>
 import axios from "axios";
-import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import { safePath } from "utils/redirect";
+import { withPrefix } from "utils/redirect";
+import Vue from "vue";
 
 Vue.use(BootstrapVue);
 
@@ -76,40 +76,46 @@ export default {
         },
     },
     data() {
+        const urlParams = new URLSearchParams(window.location.search);
         return {
             messageText: null,
             messageVariant: null,
+            provider: urlParams.get("provider"),
             termsRead: false,
+            token: urlParams.get("provider_token"),
         };
     },
     computed: {
         termsUrlwithRoot() {
-            return safePath(this.termsUrl);
+            return withPrefix(this.termsUrl);
         },
     },
     methods: {
         login() {
             // set url to redirect user to 3rd party management after login
             this.$emit("setRedirect", "/user/external_ids");
-            window.location = safePath("/login");
+            window.location = withPrefix("/login");
         },
         submit() {
-            const urlParams = new URLSearchParams(window.location.search);
-            const token = urlParams.get("custos_token");
-            axios
-                .post(safePath(`/authnz/custos/create_user?token=${token}`))
-                .then((response) => {
-                    if (response.data.redirect_uri) {
-                        window.location = response.data.redirect_uri;
-                    } else {
-                        window.location = safePath("/");
-                    }
-                })
-                .catch((error) => {
-                    this.messageVariant = "danger";
-                    const message = error.response.data && error.response.data.err_msg;
-                    this.messageText = message || "Login failed for an unknown reason.";
-                });
+            if (!this.provider || !this.token) {
+                this.messageVariant = "danger";
+                this.messageText = "Missing provider and/or token.";
+            } else {
+                axios
+                    .post(withPrefix(`/authnz/${this.provider}/create_user?token=${this.token}`))
+                    .then((response) => {
+                        if (response.data.redirect_uri) {
+                            window.location = response.data.redirect_uri;
+                        } else {
+                            window.location = withPrefix("/");
+                        }
+                    })
+                    .catch((error) => {
+                        this.messageVariant = "danger";
+                        const message = error.response.data && error.response.data.err_msg;
+                        this.messageText = message || "Login failed for an unknown reason.";
+                    });
+            }
         },
     },
 };

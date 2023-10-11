@@ -18,7 +18,7 @@
     <script>
         $(document).ready(function (){
             var config = {
-                href: document.location.origin,
+                href: document.location.origin + '${h.url_for( "/" )}'.replace(/\/$/, ''),
                 dataName: '${hda.name}',
                 datasetID: '${trans.security.encode_id(hda.id)}',
                 tableNames: {

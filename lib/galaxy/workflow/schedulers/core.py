@@ -9,7 +9,7 @@ from galaxy.workflow import (
     run,
     run_request,
 )
-from ..schedulers import ActiveWorkflowSchedulingPlugin
+from . import ActiveWorkflowSchedulingPlugin
 
 if TYPE_CHECKING:
     from galaxy.model import WorkflowInvocation

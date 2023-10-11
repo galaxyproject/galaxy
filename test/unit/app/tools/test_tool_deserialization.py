@@ -42,6 +42,7 @@ class ToolApp(GalaxyDataTestApp):
     name = "galaxy"
     biotools_metadata_source = None
     job_search = None
+    is_webapp = True
 
 
 @pytest.fixture
@@ -56,7 +57,6 @@ def _deserialize(app, tool_source_class, raw_tool_source):
 
 
 def test_deserialize_xml_tool(tool_app):
-
     tool = _deserialize(tool_app, tool_source_class="XmlToolSource", raw_tool_source=XML_TOOL)
     assert tool.id == "tool_id"
     assert tool.name == "xml tool"

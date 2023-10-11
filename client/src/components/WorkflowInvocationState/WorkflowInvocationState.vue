@@ -1,7 +1,7 @@
 <template>
     <b-tabs v-if="invocation">
         <b-tab title="Summary" active>
-            <workflow-invocation-summary
+            <WorkflowInvocationSummary
                 :invocation="invocation"
                 :index="index"
                 :invocation-and-job-terminal="invocationAndJobTerminal"
@@ -10,7 +10,7 @@
                 @invocation-cancelled="cancelWorkflowScheduling" />
         </b-tab>
         <b-tab title="Details">
-            <workflow-invocation-details
+            <WorkflowInvocationDetails
                 :invocation="invocation"
                 :invocation-and-job-terminal="invocationAndJobTerminal" />
         </b-tab>
@@ -19,7 +19,7 @@
         </b-tab> -->
         <b-tab title="Export">
             <div v-if="invocationAndJobTerminal">
-                <workflow-invocation-export-options :invocation-id="invocation.id" />
+                <WorkflowInvocationExportOptions :invocation-id="invocation.id" />
             </div>
             <b-alert v-else variant="info" show>
                 <LoadingSpan message="Waiting to complete invocation" />
@@ -31,14 +31,16 @@
     </b-alert>
 </template>
 <script>
+import mixin from "components/JobStates/mixin";
 import LoadingSpan from "components/LoadingSpan";
+import JOB_STATES_MODEL from "utils/job-states-model";
+import { mapActions, mapGetters } from "vuex";
+
 import { cancelWorkflowScheduling } from "./services";
-import WorkflowInvocationSummary from "./WorkflowInvocationSummary.vue";
+
 import WorkflowInvocationDetails from "./WorkflowInvocationDetails.vue";
 import WorkflowInvocationExportOptions from "./WorkflowInvocationExportOptions.vue";
-import JOB_STATES_MODEL from "utils/job-states-model";
-import mixin from "components/JobStates/mixin";
-import { mapGetters, mapActions } from "vuex";
+import WorkflowInvocationSummary from "./WorkflowInvocationSummary.vue";
 
 export default {
     components: {

@@ -1,7 +1,7 @@
 import Backbone from "backbone";
+import List from "mvc/ui/ui-list";
 import { getAppRoot } from "onload/loadConfig";
 import Utils from "utils/utils";
-import List from "mvc/ui/ui-list";
 
 /**
  * FTP file selector

@@ -1,7 +1,10 @@
-import { InvocationExportPlugin, InvocationExportPluginAction } from "../../model";
-import SendForm from "./SendForm.vue";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faDatabase } from "@fortawesome/free-solid-svg-icons";
+
+import { InvocationExportPlugin, InvocationExportPluginAction } from "../../model";
+
+import SendForm from "./SendForm.vue";
+
 library.add(faDatabase);
 
 export const BIO_COMPUTE_OBJ_EXPORT_PLUGIN = new InvocationExportPlugin({
@@ -13,7 +16,12 @@ A BCO is designed to communicate High-throughput Sequencing (HTS) analysis resul
 Learn more about [BioCompute Objects](https://biocomputeobject.org/).
 
 Instructions for [creating a BCO using Galaxy](https://w3id.org/biocompute/tutorials/galaxy_quick_start).`,
-    downloadFormat: "bco.json",
+    exportParams: {
+        modelStoreFormat: "bco.json",
+        includeFiles: false,
+        includeDeleted: false,
+        includeHidden: false,
+    },
     additionalActions: [
         new InvocationExportPluginAction({
             id: "send-to-bco-db",

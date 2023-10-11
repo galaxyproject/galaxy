@@ -12,6 +12,7 @@ from galaxy.datatypes.registry import Registry
 from galaxy.files import ConfiguredFileSources
 from galaxy.job_execution.compute_environment import SharedComputeEnvironment
 from galaxy.job_execution.setup import JobIO
+from galaxy.managers.dbkeys import GenomeBuilds
 from galaxy.metadata.set_metadata import (
     get_metadata_params,
     get_object_store,
@@ -19,7 +20,7 @@ from galaxy.metadata.set_metadata import (
 )
 from galaxy.model import store
 from galaxy.model.store import SessionlessContext
-from galaxy.objectstore import ObjectStore
+from galaxy.objectstore import BaseObjectStore
 from galaxy.structured_app import MinimalToolApp
 from galaxy.tools import (
     create_tool_from_representation,
@@ -30,7 +31,6 @@ from galaxy.tools.data import (
     ToolDataTableManager,
 )
 from galaxy.util.bunch import Bunch
-from galaxy.util.dbkeys import GenomeBuilds
 
 
 class ToolAppConfig(NamedTuple):
@@ -49,17 +49,19 @@ class ToolApp(MinimalToolApp):
     """Dummy App that allows loading tools"""
 
     name = "tool_app"
+    is_webapp = False
 
     def __init__(
         self,
         sa_session: SessionlessContext,
         tool_app_config: ToolAppConfig,
         datatypes_registry: Registry,
-        object_store: ObjectStore,
+        object_store: BaseObjectStore,
         tool_data_table_manager: ToolDataTableManager,
         file_sources: ConfiguredFileSources,
     ):
-        self.model = Bunch(context=sa_session)
+        # For backward compatibility we need both context and session attributes that point to sa_session.
+        self.model = Bunch(context=sa_session, session=sa_session)
         self.config = tool_app_config
         self.datatypes_registry = datatypes_registry
         self.object_store = object_store

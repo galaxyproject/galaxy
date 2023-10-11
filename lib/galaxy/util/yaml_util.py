@@ -8,7 +8,7 @@ from yaml.constructor import ConstructorError
 try:
     from yaml import CSafeLoader as SafeLoader
 except ImportError:
-    from yaml import SafeLoader  # type: ignore[misc]
+    from yaml import SafeLoader  # type: ignore[misc, assignment]
 
 
 log = logging.getLogger(__name__)

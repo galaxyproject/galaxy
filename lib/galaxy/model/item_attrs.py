@@ -4,6 +4,7 @@ from sqlalchemy.sql.expression import func
 
 # Cannot import galaxy.model b/c it creates a circular import graph.
 import galaxy
+from galaxy.model.base import transaction
 
 log = logging.getLogger(__name__)
 
@@ -45,11 +46,13 @@ class UsesItemRatings:
             item_rating_assoc_class = self._get_item_rating_assoc_class(item, webapp_model=webapp_model)
             item_rating = item_rating_assoc_class(user, item, rating)
             db_session.add(item_rating)
-            db_session.flush()
+            with transaction(db_session):
+                db_session.commit()
         elif item_rating.rating != rating:
             # User has rated item; update rating.
             item_rating.rating = rating
-            db_session.flush()
+            with transaction(db_session):
+                db_session.commit()
         return item_rating
 
     def get_user_item_rating(self, db_session, user, item, webapp_model=None):
@@ -93,7 +96,8 @@ class UsesAnnotations:
         annotation_assoc = get_item_annotation_obj(db_session, user, item)
         if annotation_assoc:
             db_session.delete(annotation_assoc)
-            db_session.flush()
+            with transaction(db_session):
+                db_session.commit()
 
     def copy_item_annotation(self, db_session, source_user, source_item, target_user, target_item):
         """Copy an annotation from a user/item source to a user/item target."""
@@ -179,7 +183,7 @@ def get_foreign_key(source_class, target_class):
             target_fk = fk
             break
     if not target_fk:
-        raise Exception("No foreign key found between objects: %s, %s" % source_class.table, target_class.table)
+        raise Exception(f"No foreign key found between objects: {source_class.table}, {target_class.table}")
     return target_fk
 
 

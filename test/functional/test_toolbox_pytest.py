@@ -1,30 +1,24 @@
 import os
 import sys
+from typing import (
+    List,
+    NamedTuple,
+)
 
 galaxy_root = os.path.abspath(os.path.join(os.path.dirname(__file__), os.path.pardir + "/" + os.path.pardir))
 sys.path[1:1] = [os.path.join(galaxy_root, "lib"), os.path.join(galaxy_root, "test")]
 
 import pytest
 
-from galaxy_test.driver import driver_util
+from galaxy_test.api._framework import ApiTestCase
 
 SKIPTEST = os.path.join(os.path.dirname(__file__), "known_broken_tools.txt")
-TEST_PREFIX = "TestForTool_"
 
 
-class DefaultGalaxyTestDriver(driver_util.GalaxyTestDriver):
-    """Default Galaxy-style test driver.
-
-    Just populate non-shed tool tests and run tests. Works
-    for tool tests, regular twill tests, and API testing.
-    """
-
-    conda_auto_init = True
-    conda_auto_install = True
-
-    def build_tests(self):
-        """Build framework tool test methods."""
-        return self.build_tool_tests(return_test_classes=True)
+class ToolTest(NamedTuple):
+    tool_id: str
+    tool_version: str
+    test_index: int
 
 
 def get_skiplist():
@@ -33,53 +27,41 @@ def get_skiplist():
         return skiplist
 
 
-def galaxy_driver():
-    driver = DefaultGalaxyTestDriver()
-    driver.setup()
-    return driver
-
-
-@pytest.fixture(scope="module")
-def driver(request):
-    request.addfinalizer(DRIVER.tear_down)
-    return DRIVER
-
-
-def get_cases():
-    # We setup a global driver, so that the driver fixture can tear down the driver
-    # Ideally `galaxy_driver` or `cases` would be fixtures and clean up after the yield,
-    # but that's not compatible with the use use of pytest.mark.parametrize
-    global DRIVER
-    DRIVER = galaxy_driver()
-    tests = DRIVER.build_tests()
-    cases = []
-    for test_name, test_class in tests.items():
-        if test_name.startswith(TEST_PREFIX):
-            test_class.runTest = lambda: None
-            test_instance = test_class()
-            cases.append(test_instance)
-    return cases
+def get_cases() -> List[ToolTest]:
+    atc = ApiTestCase()
+    atc.setUpClass()
+    atc.setUp()
+    test_summary = atc.galaxy_interactor.get_tests_summary()
+    test_cases = []
+    for tool_id, summary_dict in test_summary.items():
+        for tool_version, tool_dict in summary_dict.items():
+            for index in range(tool_dict["count"]):
+                test_cases.append(ToolTest(tool_id, tool_version, index))
+    atc.tearDown()
+    atc.tearDownClass()
+    return test_cases
 
 
 def cases():
     skiplist = get_skiplist()
-    for test_instance in get_cases():
-        for index in range(test_instance.test_count):
-            test = (test_instance.tool_id + "_test_%d" % (index + 1), test_instance, index)
-            marks = []
-            marks.append(pytest.mark.skipif(test_instance.tool_id in skiplist, reason="tool in skiplist"))
-            if "data_manager_" in test_instance.tool_id:
-                marks.append(pytest.mark.data_manager(test))
-            else:
-                marks.append(pytest.mark.tool(test))
-            yield pytest.param(test, marks=marks)
+    for tool_test in get_cases():
+        marks = []
+        marks.append(pytest.mark.skipif(tool_test.tool_id in skiplist, reason="tool in skiplist"))
+        if "data_manager_" in tool_test.tool_id:
+            marks.append(pytest.mark.data_manager(tool_test))
+        else:
+            marks.append(pytest.mark.tool(tool_test))
+        yield pytest.param(tool_test, marks=marks)
 
 
-def idfn(val):
-    return val[0]
+def idfn(val: ToolTest):
+    return f"{val.tool_id}/{val.tool_version}-{val.test_index}"
 
 
-@pytest.mark.parametrize("testcases", cases(), ids=idfn)
-def test_tool(testcases, driver):
-    test = testcases[1]
-    test.do_it(test_index=testcases[2])
+class TestFrameworkTools(ApiTestCase):
+    conda_auto_init = True
+    conda_auto_install = True
+
+    @pytest.mark.parametrize("testcase", cases(), ids=idfn)
+    def test_tool(self, testcase: ToolTest):
+        self._test_driver.run_tool_test(testcase.tool_id, testcase.test_index, tool_version=testcase.tool_version)

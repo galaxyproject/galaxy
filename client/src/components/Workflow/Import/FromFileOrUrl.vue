@@ -1,19 +1,24 @@
-<script setup>
-import axios from "axios";
-import { computed, ref } from "vue";
-import { safePath } from "utils/redirect";
-import { redirectOnImport } from "../utils";
-import LoadingSpan from "components/LoadingSpan";
+<script setup lang="ts">
+import axios, { type AxiosError } from "axios";
+import { computed, type Ref, ref } from "vue";
+import { useRouter } from "vue-router/composables";
+
+import { withPrefix } from "@/utils/redirect";
+
+import { getRedirectOnImportPath } from "../redirectPath";
+
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const loading = ref(false);
-const sourceURL = ref(null);
-const sourceFile = ref(null);
-const errorMessage = ref(null);
+const sourceURL: Ref<string | null> = ref(null);
+const sourceFile: Ref<string | null> = ref(null);
+const errorMessage: Ref<string | null> = ref(null);
 const acceptedWorkflowFormats = ".ga, .yml";
 
 const isImportDisabled = computed(() => {
     return !sourceFile.value && !sourceURL.value;
 });
+
 const importTooltip = computed(() => {
     return isImportDisabled.value
         ? "You must provide a workflow archive URL or file."
@@ -21,33 +26,56 @@ const importTooltip = computed(() => {
         ? "Import workflow from URL"
         : "Import workflow from File";
 });
+
 const hasErrorMessage = computed(() => {
     return errorMessage.value != null;
 });
 
-const submit = (ev) => {
+function autoAppendJson(urlString: string): string {
+    const sharedWorkflowRegex = /^(https?:\/\/[\S]+\/u\/[\S]+\/w\/[^\s/]+)\/?$/;
+    const matches = urlString.match(sharedWorkflowRegex);
+    const bareUrl = matches?.[1];
+
+    if (bareUrl) {
+        return `${bareUrl}/json`;
+    } else {
+        return urlString;
+    }
+}
+
+const router = useRouter();
+
+async function submit(ev: SubmitEvent) {
     ev.preventDefault();
     const formData = new FormData();
-    formData.append("archive_file", sourceFile.value);
-    formData.append("archive_source", sourceURL.value);
+
+    if (sourceFile.value) {
+        formData.append("archive_file", sourceFile.value);
+    }
+
+    if (sourceURL.value) {
+        const url = autoAppendJson(sourceURL.value);
+        formData.append("archive_source", url);
+    }
+
     loading.value = true;
-    axios
-        .post(safePath("/api/workflows"), formData)
-        .then((response) => {
-            redirectOnImport(safePath("/"), response.data);
-        })
-        .catch((error) => {
-            const message = error.response.data && error.response.data.err_msg;
-            errorMessage.value = message || "Import failed for an unknown reason.";
-        })
-        .finally(() => {
-            loading.value = false;
-        });
-};
+
+    try {
+        const response = await axios.post(withPrefix("/api/workflows"), formData);
+        const path = getRedirectOnImportPath(response.data);
+
+        router.push(path);
+    } catch (error) {
+        const message = (error as AxiosError).response?.data && (error as AxiosError).response?.data.err_msg;
+        errorMessage.value = message || "Import failed for an unknown reason.";
+    } finally {
+        loading.value = false;
+    }
+}
 </script>
 
 <template>
-    <b-form class="mt-4" @submit="submit">
+    <b-form class="mt-4 workflow-import-file" @submit="submit">
         <h2 class="h-sm">Import from a Galaxy workflow export URL or a workflow file</h2>
         <b-form-group label="Archived Workflow URL">
             <b-form-input

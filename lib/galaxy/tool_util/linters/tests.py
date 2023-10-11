@@ -5,8 +5,25 @@ from inspect import (
     signature,
 )
 
+from galaxy.util import asbool
 from ._util import is_datasource
 from ..verify import asserts
+
+
+def check_compare_attribs(element, lint_ctx, test_idx):
+    COMPARE_COMPATIBILITY = {
+        "sort": ["diff", "re_match", "re_match_multiline"],
+        "lines_diff": ["diff", "re_match", "contains"],
+        "decompress": ["diff"],
+        "delta": ["sim_size"],
+        "delta_frac": ["sim_size"],
+    }
+    compare = element.get("compare", "diff")
+    for attrib in COMPARE_COMPATIBILITY:
+        if attrib in element.attrib and compare not in COMPARE_COMPATIBILITY[attrib]:
+            lint_ctx.error(
+                f'Test {test_idx}: Attribute {attrib} is incompatible with compare="{compare}".', node=element
+            )
 
 
 def lint_tests(tool_xml, lint_ctx):
@@ -37,10 +54,17 @@ def lint_tests(tool_xml, lint_ctx):
             if len(assertions) == 0:
                 continue
             if len(assertions) > 1:
-                lint_ctx.error(f"Test {test_idx}: More than one {ta} found. Only the first is considered.")
+                lint_ctx.error(f"Test {test_idx}: More than one {ta} found. Only the first is considered.", node=test)
             has_test = True
             _check_asserts(test_idx, assertions, lint_ctx)
         _check_asserts(test_idx, test.findall(".//assert_contents"), lint_ctx)
+
+        # check if expect_num_outputs is set if there are outputs with filters
+        # (except for tests with expect_failure .. which can't have test outputs)
+        filter = tool_xml.findall("./outputs//filter")
+        if len(filter) > 0 and "expect_num_outputs" not in test.attrib:
+            if not asbool(test.attrib.get("expect_failure", False)):
+                lint_ctx.warn("Test should specify 'expect_num_outputs' if outputs have filters", node=test)
 
         # really simple test that test parameters are also present in the inputs
         for param in test.findall("param"):
@@ -77,6 +101,13 @@ def lint_tests(tool_xml, lint_ctx):
                 )
                 continue
 
+            if output.tag == "output":
+                check_compare_attribs(output, lint_ctx, test_idx)
+            elements = output.findall("./element")
+            if elements:
+                for element in elements:
+                    check_compare_attribs(element, lint_ctx, test_idx)
+
             # check that
             # - test/output corresponds to outputs/data and
             # - test/collection to outputs/output_collection
@@ -102,7 +133,6 @@ def lint_tests(tool_xml, lint_ctx):
                             node=output,
                         )
                 else:
-                    elements = output.findall("./element")
                     if "count" not in output.attrib and len(elements) == 0:
                         lint_ctx.error(
                             f"Test {test_idx}: test collection '{name}' must have a 'count' attribute or 'element' children",
@@ -117,9 +147,16 @@ def lint_tests(tool_xml, lint_ctx):
                                 node=output,
                             )
 
-        if "expect_failure" in test.attrib and found_output_test:
-            lint_ctx.error(f"Test {test_idx}: Cannot specify outputs in a test expecting failure.", node=test)
-            continue
+        if asbool(test.attrib.get("expect_failure", False)):
+            if found_output_test:
+                lint_ctx.error(f"Test {test_idx}: Cannot specify outputs in a test expecting failure.", node=test)
+                continue
+            if "expect_num_outputs" in test.attrib:
+                lint_ctx.error(
+                    f"Test {test_idx}: Cannot make assumptions on the number of outputs in a test expecting failure.",
+                    node=test,
+                )
+                continue
 
         has_test = has_test or found_output_test
         if not has_test:
@@ -150,23 +187,11 @@ def _check_asserts(test_idx, assertions, lint_ctx):
                 lint_ctx.error(f"Test {test_idx}: unknown assertion '{a.tag}'", node=a)
                 continue
             assert_function_sig = signature(asserts.assertion_functions[assert_function_name])
-            # check type of the attributes (int, float ...)
+            # check of the attributes
             for attrib in a.attrib:
                 if attrib not in assert_function_sig.parameters:
                     lint_ctx.error(f"Test {test_idx}: unknown attribute '{attrib}' for '{a.tag}'", node=a)
                     continue
-                annotation = assert_function_sig.parameters[attrib].annotation
-                annotation = _handle_optionals(annotation)
-                if annotation is not Parameter.empty:
-                    try:
-                        annotation(a.attrib[attrib])
-                    except TypeError:
-                        raise Exception(f"Faild to instantiate {attrib} for {assert_function_name}")
-                    except ValueError:
-                        lint_ctx.error(
-                            f"Test {test_idx}: attribute '{attrib}' for '{a.tag}' needs to be '{annotation.__name__}' got '{a.attrib[attrib]}'",
-                            node=a,
-                        )
             # check missing required attributes
             for p in assert_function_sig.parameters:
                 if p in ["output", "output_bytes", "verify_assertions_function", "children"]:
@@ -179,7 +204,7 @@ def _check_asserts(test_idx, assertions, lint_ctx):
                     lint_ctx.error(f"Test {test_idx}: '{a.tag}' needs to specify 'n', 'min', or 'max'", node=a)
             if a.tag == "has_size":
                 if "value" not in a.attrib and "min" not in a.attrib and "max" not in a.attrib:
-                    lint_ctx.error(f"Test {test_idx}: '{a.tag}' needs to specify 'n', 'min', or 'max'", node=a)
+                    lint_ctx.error(f"Test {test_idx}: '{a.tag}' needs to specify 'value', 'min', or 'max'", node=a)
 
 
 def _handle_optionals(annotation):

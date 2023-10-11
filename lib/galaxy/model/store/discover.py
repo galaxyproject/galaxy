@@ -60,6 +60,9 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
     max_discovered_files = float("inf")
     discovered_file_count: int
 
+    def get_job(self) -> Optional[galaxy.model.Job]:
+        return getattr(self, "job", None)
+
     def create_dataset(
         self,
         ext,
@@ -82,6 +85,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         created_from_basename=None,
         final_job_state="ok",
         creating_job_id=None,
+        output_name=None,
         storage_callbacks=None,
     ):
         tag_list = tag_list or []
@@ -104,7 +108,6 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
 
         if primary_data is not None:
             primary_data.extension = ext
-            primary_data.visible = visible
             primary_data.dbkey = dbkey
         else:
             if not library_folder:
@@ -161,7 +164,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
             primary_data.created_from_basename = created_from_basename
 
         if tag_list:
-            job = getattr(self, "job", None)
+            job = self.get_job()
             self.tag_handler.add_tags_from_list(job and job.user, primary_data, tag_list, flush=False)
 
         # If match specified a name use otherwise generate one from
@@ -191,6 +194,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
                     extra_files=extra_files,
                     filename=filename,
                     link_data=link_data,
+                    output_name=output_name,
                 )
             else:
                 storage_callbacks.append(
@@ -200,14 +204,19 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
                         extra_files=extra_files,
                         filename=filename,
                         link_data=link_data,
+                        output_name=output_name,
                     )
                 )
         return primary_data
 
-    def finalize_storage(self, primary_data, dataset_attributes, extra_files, filename, link_data):
+    def finalize_storage(self, primary_data, dataset_attributes, extra_files, filename, link_data, output_name):
         # Move data from temp location to dataset location
         if not link_data:
-            self.object_store.update_from_file(primary_data.dataset, file_name=filename, create=True)
+            dataset = primary_data.dataset
+            object_store_id = self.override_object_store_id(output_name)
+            if object_store_id:
+                dataset.object_store_id = object_store_id
+            self.object_store.update_from_file(dataset, file_name=filename, create=True)
         else:
             primary_data.link_to(filename)
         if extra_files:
@@ -358,9 +367,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
             element_datasets["paths"].append(filename)
 
         self.add_tags_to_datasets(datasets=element_datasets["datasets"], tag_lists=element_datasets["tag_lists"])
-        for (element_identifiers, dataset) in zip(
-            element_datasets["element_identifiers"], element_datasets["datasets"]
-        ):
+        for element_identifiers, dataset in zip(element_datasets["element_identifiers"], element_datasets["datasets"]):
             current_builder = root_collection_builder
             for element_identifier in element_identifiers[:-1]:
                 current_builder = current_builder.get_level(element_identifier)
@@ -377,6 +384,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
             datasets=element_datasets["datasets"],
             paths=element_datasets["paths"],
             extra_files=element_datasets["extra_files"],
+            output_name=name,
         )
         log.debug(
             "(%s) Add dynamic collection datasets to history for output [%s] %s",
@@ -391,8 +399,12 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
             for dataset, tags in zip(datasets, tag_lists):
                 self.tag_handler.add_tags_from_list(self.user, dataset, tags, flush=False)
 
-    def update_object_store_with_datasets(self, datasets, paths, extra_files):
+    def update_object_store_with_datasets(self, datasets, paths, extra_files, output_name):
         for dataset, path, extra_file in zip(datasets, paths, extra_files):
+            object_store_id = self.override_object_store_id(output_name)
+            if object_store_id:
+                dataset.dataset.object_store_id = object_store_id
+
             self.object_store.update_from_file(dataset.dataset, file_name=path, create=True)
             if extra_file:
                 persist_extra_files(self.object_store, extra_files, dataset)
@@ -400,25 +412,29 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
             else:
                 dataset.set_size(no_extra_files=True)
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def tag_handler(self):
         """Return a galaxy.model.tags.TagHandler-like object for persisting tags."""
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def user(self):
         """If bound to a database, return the user the datasets should be created for.
 
         Return None otherwise.
         """
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def sa_session(self) -> Optional[ScopedSession]:
         """If bound to a database, return the SQL Alchemy session.
 
         Return None otherwise.
         """
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def permission_provider(self) -> "PermissionProvider":
         """If bound to a database, return the SQL Alchemy session.
 
@@ -429,19 +445,32 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
         """No-op, no job context."""
         return None
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def job(self) -> Optional[galaxy.model.Job]:
         """Return associated job object if bound to a job finish context connected to a database."""
 
-    @abc.abstractproperty
+    def override_object_store_id(self, output_name: Optional[str] = None) -> Optional[str]:
+        """Object store ID to assign to a dataset before populating its contents."""
+        job = self.job
+        if not job:
+            return None
+        default_object_store_id = job.object_store_id
+        object_store_id_overrides = job.object_store_id_overrides or {}
+        return object_store_id_overrides.get(output_name, default_object_store_id)
+
+    @property
+    @abc.abstractmethod
     def metadata_source_provider(self) -> "MetadataSourceProvider":
         """Return associated MetadataSourceProvider object."""
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def object_store(self) -> ObjectStore:
         """Return object store to use for populating discovered dataset contents."""
 
-    @abc.abstractproperty
+    @property
+    @abc.abstractmethod
     def flush_per_n_datasets(self) -> Optional[int]:
         pass
 
@@ -547,7 +576,7 @@ class SessionlessModelPersistenceContext(ModelPersistenceContext):
 
     @property
     def tag_handler(self):
-        return GalaxySessionlessTagHandler(self.sa_session)
+        return GalaxySessionlessTagHandler(self.sa_session, galaxy_session=None)
 
     @property
     def sa_session(self):
@@ -805,12 +834,13 @@ def persist_hdas(elements, model_persistence_context, final_job_state="ok"):
                 hashes = fields_match.hashes
                 created_from_basename = fields_match.created_from_basename
                 extra_files = fields_match.extra_files
+                visible = fields_match.visible
 
                 info, state = discovered_file.discovered_state(element, final_job_state)
                 dataset = model_persistence_context.create_dataset(
                     ext=ext,
                     designation=designation,
-                    visible=True,
+                    visible=visible,
                     dbkey=dbkey,
                     name=name,
                     filename=discovered_file.path,

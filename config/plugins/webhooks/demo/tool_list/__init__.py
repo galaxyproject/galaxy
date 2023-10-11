@@ -9,7 +9,6 @@ def main(trans, webhook, params):
     tools = trans.app.toolbox.tools()
 
     for tool in tools:
-
         try:
             ts_data = tool[1].tool_shed_repository.to_dict()
             panel = tool[1].get_panel_section()
@@ -17,7 +16,6 @@ def main(trans, webhook, params):
             continue
 
         if ts_data["name"] + ts_data["installed_changeset_revision"] not in unique_tools:
-
             unique_tools.append(ts_data["name"] + ts_data["installed_changeset_revision"])
 
             data["tools"].append(

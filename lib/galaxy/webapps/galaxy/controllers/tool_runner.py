@@ -18,7 +18,6 @@ log = logging.getLogger(__name__)
 
 
 class ToolRunner(BaseUIController):
-
     # Hack to get biomart to work, ideally, we could pass tool_id to biomart and receive it back
     @web.expose
     def biomart(self, trans, tool_id="biomart", **kwd):

@@ -65,6 +65,20 @@ export async function updateContentFields(content, newFields = {}) {
     return doResponse(response);
 }
 
+/** Get all objects that match filters in a history
+ *
+ * @param {string} historyId
+ * @param {Object} filters
+ * @param {string} type
+ *
+ */
+export async function getHistoryContent(historyId, filters = {}, type = "dataset") {
+    const filterQuery = buildQueryStringFrom(filters);
+    const url = `api/histories/${historyId}/contents/${type}s?v=dev&${filterQuery}`;
+    const response = await axios.get(prependPath(url));
+    return doResponse(response);
+}
+
 /**
  * Performs an operation on a specific set of items or all the items
  * matching the filters.
@@ -87,7 +101,6 @@ export async function bulkUpdate(history, operation, filters, items = [], params
         params,
     };
     const response = await axios.put(prependPath(url), payload);
-    console.debug(`Submitted request to ${operation} selected content in bulk. Parameters: ${params}`, response);
     return doResponse(response);
 }
 

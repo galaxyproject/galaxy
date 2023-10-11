@@ -1,7 +1,7 @@
 <template>
     <b-button
-        id="tool-panel-upload-button"
-        v-b-tooltip.hover.bottom
+        id="activity-upload"
+        v-b-tooltip.hover.noninteractive.bottom
         :aria-label="title | localize"
         :title="title | localize"
         class="upload-button"
@@ -16,19 +16,20 @@
                 }" />
         </div>
         <span class="position-relative">
-            <font-awesome-icon icon="upload" class="mr-1" />
+            <FontAwesomeIcon icon="upload" class="mr-1" />
             <b v-localize>Upload Data</b>
         </span>
     </b-button>
 </template>
 
 <script>
-import Query from "utils/query-string-parsing";
-import { VBTooltip } from "bootstrap-vue";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faUpload } from "@fortawesome/free-solid-svg-icons";
-import { openGlobalUploadModal } from "./mount";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { VBTooltip } from "bootstrap-vue";
+import { useGlobalUploadModal } from "composables/globalUploadModal";
+import Query from "utils/query-string-parsing";
+
 library.add(faUpload);
 
 export default {
@@ -38,6 +39,10 @@ export default {
     },
     props: {
         title: { type: String, default: "Download from URL or upload files from disk" },
+    },
+    setup() {
+        const { openGlobalUploadModal } = useGlobalUploadModal();
+        return { openGlobalUploadModal };
     },
     data() {
         return {
@@ -58,7 +63,7 @@ export default {
     },
     methods: {
         showUploadDialog() {
-            openGlobalUploadModal();
+            this.openGlobalUploadModal();
         },
         setStatus(val) {
             this.status = val;

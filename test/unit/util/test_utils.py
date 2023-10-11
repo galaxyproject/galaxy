@@ -1,5 +1,7 @@
 import errno
+import os
 import tempfile
+from enum import Enum
 from io import StringIO
 from typing import Dict
 
@@ -99,3 +101,51 @@ def test_safe_loads():
     assert "foo" not in d
     s = '{"foo": "bar"}'
     assert safe_loads(s) == {"foo": "bar"}
+
+
+def test_in_packages(monkeypatch):
+    monkeypatch.setattr(util, "galaxy_root_path", "a/b")
+    assert not util.in_packages()
+
+    monkeypatch.setattr(util, "galaxy_root_path", "a/b/packages")
+    assert util.in_packages()
+
+
+def test_galaxy_directory(monkeypatch):
+    monkeypatch.setattr(util, "galaxy_root_path", "a/b")  # a/b
+    path1 = util.galaxy_directory()
+
+    monkeypatch.setattr(util, "galaxy_root_path", "a/b/c/..")  # a/b
+    path2 = util.galaxy_directory()
+
+    monkeypatch.setattr(util, "galaxy_root_path", "a/b/packages/c/..")  # a/b/packages
+    path3 = util.galaxy_directory()
+
+    assert path1 == path2 == path3
+    assert os.path.isabs(path1)
+
+
+def test_listify() -> None:
+    assert util.listify(None) == []
+    assert util.listify(False) == []
+    assert util.listify(True) == [True]
+    assert util.listify("foo") == ["foo"]
+    assert util.listify("foo, bar") == ["foo", " bar"]
+    assert util.listify("foo, bar", do_strip=True) == ["foo", "bar"]
+    assert util.listify([1, 2, 3]) == [1, 2, 3]
+    assert util.listify((1, 2, 3)) == [1, 2, 3]
+    s = {1, 2, 3}
+    assert util.listify(s) == [s]
+    d = {"a": 1, "b": 2, "c": 3}
+    assert util.listify(d) == [d]
+    o = object()
+    assert util.listify(o) == [o]
+
+
+def test_enum_values():
+    class Stuff(str, Enum):
+        A = "a"
+        C = "c"
+        B = "b"
+
+    assert util.enum_values(Stuff) == ["a", "c", "b"]

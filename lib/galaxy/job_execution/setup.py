@@ -92,11 +92,11 @@ class JobIO(Dictifiable):
         is_task: bool = False,
     ):
         user_context_instance: Union[ProvidesUserFileSourcesUserContext, DictFileSourcesUserContext]
+        self.file_sources_dict = file_sources_dict
         if isinstance(user_context, dict):
-            user_context_instance = DictFileSourcesUserContext(**user_context)
+            user_context_instance = DictFileSourcesUserContext(**user_context, file_sources=self.file_sources)
         else:
             user_context_instance = user_context
-        self.file_sources_dict = file_sources_dict
         self.user_context = user_context_instance
         self.sa_session = sa_session
         self.job = job
@@ -222,7 +222,7 @@ class JobIO(Dictifiable):
         if getattr(dataset, "fake_dataset_association", False):
             return dataset.file_name
         assert dataset.id is not None, f"{dataset} needs to be flushed to find output path"
-        for (hda, dataset_path) in self.output_hdas_and_paths.values():
+        for hda, dataset_path in self.output_hdas_and_paths.values():
             if hda.id == dataset.id:
                 return dataset_path
         raise KeyError(f"Couldn't find job output for [{dataset}] in [{self.output_hdas_and_paths.values()}]")

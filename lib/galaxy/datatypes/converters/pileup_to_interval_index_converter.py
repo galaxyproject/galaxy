@@ -12,7 +12,6 @@ from bx.interval_index_file import Indexes
 
 
 def main():
-
     # Read options, args.
     parser = optparse.OptionParser()
     (options, args) = parser.parse_args()

@@ -1,13 +1,12 @@
 ### History Panel Component Tree
+
 This is not intended to be a complete listing, but a general idea of how the components are intended
 to interact with each other.
 
 ```html static
 <Index :history="history">
-
     <!-- if main history selected -->
     <CurrentHistory :history="history">
-
         <!-- Data providers do the heavy-lifting of mixing params, history, and 
         scroll position to deliver the content for the scroller -->
         <StoreProvider>
@@ -18,7 +17,7 @@ to interact with each other.
 
             <!-- Uses a virtual scroller plugin to render all ContentItems and throttles the scrolling pace by limiting
             the frequency and magnitude of offset changes. -->
-            <Listing>
+            <listing>
 
                 <!-- The ContentItem renders a row in the list, showing the title, some attributes,
                 and basic operation buttons such as display and edit for either a dataset or a collection.
@@ -40,7 +39,7 @@ to interact with each other.
             <CollectionOperations />
 
             <!-- As above, the same virtual scroller and ContentItem component is being used to render the elements. -->
-            <Listing>
+            <listing>
                 (<ContentItem />)
                     <DatasetDetails />
             </Listing>

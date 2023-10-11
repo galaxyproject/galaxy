@@ -62,3 +62,15 @@ class TestParameterValidation(BaseParameterTestCase):
             ValueError, r"Validator 'value.lower\(\) == \"foo\"' could not be evaluated on '1'"
         ):
             p.validate(1)
+
+    def test_RegexValidator_global_flag_inline(self):
+        # tests that global inline flags continue to work past python 3.10
+        p = self._parameter_for(
+            xml=r"""
+<param name="blah" type="text" value="">
+    <validator type="regex">^(?ims)\s*select\s+.*\s+from\s+.*$</validator>
+</param>"""
+        )
+        p.validate("select id from job where id = 1;")
+        with self.assertRaises(ValueError):
+            p.validate("not sql")

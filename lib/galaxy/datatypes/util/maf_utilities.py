@@ -134,7 +134,6 @@ class TempFileHandler:
 
 # an object corresponding to a reference layered alignment
 class RegionAlignment:
-
     DNA_COMPLEMENT = maketrans("ACGTacgt", "TGCAtgca")
     MAX_SEQUENCE_SIZE = sys.maxsize  # Maximum length of sequence allowed
 
@@ -226,7 +225,6 @@ class GenomicRegionAlignment(RegionAlignment):
 
 
 class SplicedAlignment:
-
     DNA_COMPLEMENT = maketrans("ACGTacgt", "TGCAtgca")
 
     def __init__(self, exon_starts, exon_ends, species=None, temp_file_handler=None):

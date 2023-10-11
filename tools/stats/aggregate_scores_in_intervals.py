@@ -148,7 +148,6 @@ def load_scores_ba_dir(dir):
 
 
 def main():
-
     # Parse command line
     options, args = doc_optparse.parse(__doc__)
 

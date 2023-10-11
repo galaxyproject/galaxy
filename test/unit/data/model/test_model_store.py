@@ -11,15 +11,19 @@ from typing import (
     Any,
     Dict,
     NamedTuple,
+    Optional,
 )
 
 import pytest
 from rocrate.rocrate import ROCrate
+from sqlalchemy import select
 from sqlalchemy.orm.scoping import scoped_session
 
 from galaxy import model
 from galaxy.model import store
+from galaxy.model.base import transaction
 from galaxy.model.metadata import MetadataTempFile
+from galaxy.model.orm.now import now
 from galaxy.model.unittest_utils import GalaxyDataTestApp
 from galaxy.model.unittest_utils.store_fixtures import (
     deferred_hda_model_store_dict,
@@ -69,7 +73,9 @@ def test_import_export_history_hidden_false_with_hidden_dataset():
 
     u, h, d1, d2, j = _setup_simple_cat_job(app)
     d2.visible = False
-    app.model.session.flush()
+    session = app.model.session
+    with transaction(session):
+        session.commit()
 
     imported_history = _import_export_history(app, h, export_files="copy", include_hidden=False)
     assert d1.dataset.get_size() == imported_history.datasets[0].get_size()
@@ -81,7 +87,9 @@ def test_import_export_history_hidden_true_with_hidden_dataset():
 
     u, h, d1, d2, j = _setup_simple_cat_job(app)
     d2.visible = False
-    app.model.session.flush()
+    session = app.model.session
+    with transaction(session):
+        session.commit()
 
     imported_history = _import_export_history(app, h, export_files="copy", include_hidden=True)
     assert d1.dataset.get_size() == imported_history.datasets[0].get_size()
@@ -188,9 +196,9 @@ def test_import_library_from_dict():
     perform_import_from_store_dict(fixture_context, import_dict, import_options=import_options)
 
     sa_session = fixture_context.sa_session
-    all_libraries = sa_session.query(model.Library).all()
+    all_libraries = sa_session.scalars(select(model.Library)).all()
     assert len(all_libraries) == 1, len(all_libraries)
-    all_lddas = sa_session.query(model.LibraryDatasetDatasetAssociation).all()
+    all_lddas = sa_session.scalars(select(model.LibraryDatasetDatasetAssociation)).all()
     assert len(all_lddas) == 1, len(all_lddas)
 
 
@@ -243,7 +251,8 @@ def test_import_library_require_permissions():
     root_folder = model.LibraryFolder(name="my library 1", description="folder description")
     library.root_folder = root_folder
     sa_session.add_all((library, root_folder))
-    sa_session.flush()
+    with transaction(sa_session):
+        sa_session.commit()
 
     temp_directory = mkdtemp()
     with store.DirectoryModelExportStore(temp_directory, app=app) as export_store:
@@ -271,7 +280,8 @@ def test_import_export_library():
     root_folder = model.LibraryFolder(name="my library 1", description="folder description")
     library.root_folder = root_folder
     sa_session.add_all((library, root_folder))
-    sa_session.flush()
+    with transaction(sa_session):
+        sa_session.commit()
 
     subfolder = model.LibraryFolder(name="sub folder 1", description="sub folder")
     root_folder.add_folder(subfolder)
@@ -285,7 +295,8 @@ def test_import_export_library():
     sa_session.add(ld)
     sa_session.add(ldda)
 
-    sa_session.flush()
+    with transaction(sa_session):
+        sa_session.commit()
     assert len(root_folder.datasets) == 1
     assert len(root_folder.folders) == 1
 
@@ -298,9 +309,9 @@ def test_import_export_library():
     )
     import_model_store.perform_import()
 
-    all_libraries = sa_session.query(model.Library).all()
+    all_libraries = sa_session.scalars(select(model.Library)).all()
     assert len(all_libraries) == 2, len(all_libraries)
-    all_lddas = sa_session.query(model.LibraryDatasetDatasetAssociation).all()
+    all_lddas = sa_session.scalars(select(model.LibraryDatasetDatasetAssociation)).all()
     assert len(all_lddas) == 2, len(all_lddas)
 
     new_library = [lib for lib in all_libraries if lib.id != library.id][0]
@@ -327,7 +338,8 @@ def test_import_export_invocation():
     sa_session = app.model.context
     h2 = model.History(user=workflow_invocation.user)
     sa_session.add(h2)
-    sa_session.flush()
+    with transaction(sa_session):
+        sa_session.commit()
 
     import_model_store = store.get_import_model_store_for_directory(
         temp_directory, app=app, user=workflow_invocation.user, import_options=store.ImportOptions()
@@ -340,12 +352,16 @@ def validate_crate_metadata(as_dict):
 
 
 def validate_has_pl_galaxy(ro_crate: ROCrate):
-    found = False
-    for e in ro_crate.get_entities():
-        if e.id == "https://w3id.org/workflowhub/workflow-ro-crate#galaxy":
-            found = True
-            assert e.url == "https://galaxyproject.org/"
-    assert found
+    programming_language = ro_crate.mainEntity.get("programmingLanguage")
+    assert programming_language
+    assert programming_language.id == "https://w3id.org/workflowhub/workflow-ro-crate#galaxy"
+    assert programming_language.name == "Galaxy"
+    assert programming_language.url == "https://galaxyproject.org/"
+
+
+def validate_organize_action(ro_crate: ROCrate):
+    organize_action = next((x for x in ro_crate.contextual_entities if x.type == "OrganizeAction"), None)
+    assert organize_action
 
 
 def validate_has_mit_license(ro_crate: ROCrate):
@@ -382,12 +398,88 @@ def validate_history_crate_directory(crate_directory):
     validate_has_readme(crate)
 
 
+def validate_main_entity(ro_crate: ROCrate):
+    workflow = ro_crate.mainEntity
+    assert workflow
+    assert workflow.id.endswith(".gxwf.yml")
+    assert workflow["name"]
+    assert workflow["name"] == "Test Workflow"
+    assert "SoftwareSourceCode" in workflow.type
+    assert "ComputationalWorkflow" in workflow.type
+    assert len(workflow["input"]) == 1
+    assert len(workflow["output"]) == 1
+
+
+def validate_create_action(ro_crate: ROCrate):
+    workflow = ro_crate.mainEntity
+    actions = [_ for _ in ro_crate.contextual_entities if "CreateAction" in _.type]
+    assert len(actions) == 1
+    wf_action = actions[0]
+    assert wf_action["instrument"]
+    assert wf_action["instrument"] is workflow
+    wf_objects = wf_action["object"]
+    wf_results = wf_action["result"]
+    assert len(wf_objects) == 1
+    assert len(wf_results) == 1
+    for entity in wf_results:
+        if entity.id.endswith(".txt"):
+            assert "File" in entity.type
+            wf_output_file = entity
+            assert wf_output_file["encodingFormat"] == "text/plain"
+            assert wf_output_file["exampleOfWork"] is workflow["output"][0]
+
+
+def validate_other_entities(ro_crate: ROCrate):
+    workflow = ro_crate.mainEntity
+    inputs = workflow["input"]
+    outputs = workflow["output"]
+    assert inputs[0]["additionalType"] == "File"
+    assert outputs[0]["additionalType"] == "File"
+
+    for entity in inputs + outputs:
+        assert "FormalParameter" in entity.type
+
+    sel = [_ for _ in ro_crate.contextual_entities if "OrganizeAction" in _.type]
+    assert len(sel) == 1
+    engine_action = sel[0]
+    assert "SoftwareApplication" in engine_action["instrument"].type
+
+
 def validate_invocation_crate_directory(crate_directory):
     crate = open_ro_crate(crate_directory)
+    for e in crate.contextual_entities:
+        print(e.type)
+    validate_main_entity(crate)
+    validate_create_action(crate)
+    validate_other_entities(crate)
     validate_has_pl_galaxy(crate)
+    validate_organize_action(crate)
     validate_has_mit_license(crate)
-    validate_has_readme(crate)
-    # print(json.dumps(metadata_json, indent=4))
+    # validate_has_readme(crate)
+
+
+def validate_invocation_collection_crate_directory(crate_directory):
+    ro_crate = open_ro_crate(crate_directory)
+    workflow = ro_crate.mainEntity
+    root = ro_crate.root_dataset
+    actions = [_ for _ in ro_crate.contextual_entities if "CreateAction" in _.type]
+    assert len(actions) == 1
+    wf_action = actions[0]
+    assert wf_action in root["mentions"]
+    assert len(workflow["input"]) == 2
+    assert len(workflow["output"]) == 1
+    assert len(root["mentions"]) == 4
+    collections = [_ for _ in ro_crate.contextual_entities if "Collection" in _.type]
+    assert len(collections) == 3
+    collection = collections[0]
+    assert collection.type == "Collection"
+    assert (
+        collection["additionalType"]
+        == "https://training.galaxyproject.org/training-material/faqs/galaxy/collections_build_list.html"
+    )
+    assert len(collection["hasPart"]) == 2
+    for dataset in collection["hasPart"]:
+        assert dataset in root["hasPart"]
 
 
 def test_export_history_to_ro_crate(tmp_path):
@@ -403,11 +495,28 @@ def test_export_history_to_ro_crate(tmp_path):
 def test_export_invocation_to_ro_crate(tmp_path):
     app = _mock_app()
     workflow_invocation = _setup_invocation(app)
-
     crate_directory = tmp_path / "crate"
     with store.ROCrateModelExportStore(crate_directory, app=app) as export_store:
         export_store.export_workflow_invocation(workflow_invocation)
     validate_invocation_crate_directory(crate_directory)
+
+
+def test_export_simple_invocation_to_ro_crate(tmp_path):
+    app = _mock_app()
+    workflow_invocation = _setup_simple_invocation(app)
+    crate_directory = tmp_path / "crate"
+    with store.ROCrateModelExportStore(crate_directory, app=app) as export_store:
+        export_store.export_workflow_invocation(workflow_invocation)
+    validate_invocation_crate_directory(crate_directory)
+
+
+def test_export_collection_invocation_to_ro_crate(tmp_path):
+    app = _mock_app()
+    workflow_invocation = _setup_collection_invocation(app)
+    crate_directory = tmp_path / "crate"
+    with store.ROCrateModelExportStore(crate_directory, app=app) as export_store:
+        export_store.export_workflow_invocation(workflow_invocation)
+    validate_invocation_collection_crate_directory(crate_directory)
 
 
 def test_export_invocation_to_ro_crate_archive(tmp_path):
@@ -415,7 +524,7 @@ def test_export_invocation_to_ro_crate_archive(tmp_path):
     workflow_invocation = _setup_invocation(app)
 
     crate_zip = tmp_path / "crate.zip"
-    with store.ROCrateArchiveModelExportStore(crate_zip, app=app) as export_store:
+    with store.ROCrateArchiveModelExportStore(crate_zip, app=app, export_files="symlink") as export_store:
         export_store.export_workflow_invocation(workflow_invocation)
     compressed_file = CompressedFile(crate_zip)
     assert compressed_file.file_type == "zip"
@@ -507,7 +616,8 @@ def test_import_export_edit_collection():
     sa_session.add(h)
     import_history = model.History(name="Test History for Import", user=u)
     sa_session.add(import_history)
-    sa_session.flush()
+    with transaction(sa_session):
+        sa_session.commit()
 
     temp_directory = mkdtemp()
     with store.DirectoryModelExportStore(temp_directory, app=app, for_edit=True) as export_store:
@@ -581,7 +691,8 @@ def test_import_export_composite_datasets():
     d1 = _create_datasets(sa_session, h, 1, extension="html")[0]
     d1.dataset.create_extra_files_path()
     sa_session.add_all((h, d1))
-    sa_session.flush()
+    with transaction(sa_session):
+        sa_session.commit()
 
     primary = NamedTemporaryFile("w")
     primary.write("cool primary file")
@@ -607,7 +718,8 @@ def test_import_export_composite_datasets():
 
     import_history = model.History(name="Test History for Import", user=u)
     sa_session.add(import_history)
-    sa_session.flush()
+    with transaction(sa_session):
+        sa_session.commit()
     _perform_import_from_directory(temp_directory, app, u, import_history)
     assert len(import_history.datasets) == 1
     import_dataset = import_history.datasets[0]
@@ -631,7 +743,8 @@ def test_edit_metadata_files():
 
     d1 = _create_datasets(sa_session, h, 1, extension="bam")[0]
     sa_session.add_all((h, d1))
-    sa_session.flush()
+    with transaction(sa_session):
+        sa_session.commit()
     index = NamedTemporaryFile("w")
     index.write("cool bam index")
     metadata_dict = {"bam_index": MetadataTempFile.from_JSON({"kwds": {}, "filename": index.name})}
@@ -647,7 +760,8 @@ def test_edit_metadata_files():
 
     import_history = model.History(name="Test History for Import", user=u)
     sa_session.add(import_history)
-    sa_session.flush()
+    with transaction(sa_session):
+        sa_session.commit()
     _perform_import_from_directory(temp_directory, app, u, import_history, store.ImportOptions(allow_edit=True))
 
 
@@ -688,7 +802,8 @@ def _setup_simple_export(export_kwds):
 
     import_history = model.History(name="Test History for Import", user=u)
     sa_session.add(import_history)
-    sa_session.flush()
+    with transaction(sa_session):
+        sa_session.commit()
 
     temp_directory = mkdtemp()
     with store.DirectoryModelExportStore(temp_directory, app=app, **export_kwds) as export_store:
@@ -737,7 +852,8 @@ def _setup_simple_cat_job(app, state="ok"):
     j.add_output_dataset("out_file1", d2)
 
     sa_session.add_all((d1, d2, h, j))
-    sa_session.flush()
+    with transaction(sa_session):
+        sa_session.commit()
 
     app.object_store.update_from_file(d1, file_name=TEST_PATH_1, create=True)
     app.object_store.update_from_file(d2, file_name=TEST_PATH_2, create=True)
@@ -749,6 +865,7 @@ def _setup_invocation(app):
     sa_session = app.model.context
 
     u, h, d1, d2, j = _setup_simple_cat_job(app)
+    j.parameters = [model.JobParameter(name="index_path", value='"/old/path/human"')]
 
     workflow_step_1 = model.WorkflowStep()
     workflow_step_1.order_index = 0
@@ -756,19 +873,127 @@ def _setup_invocation(app):
     sa_session.add(workflow_step_1)
     workflow_1 = _workflow_from_steps(u, [workflow_step_1])
     workflow_1.license = "MIT"
+    workflow_1.name = "Test Workflow"
     sa_session.add(workflow_1)
     workflow_invocation = _invocation_for_workflow(u, workflow_1)
     invocation_step = model.WorkflowInvocationStep()
     invocation_step.workflow_step = workflow_step_1
+    invocation_step.job = j
     sa_session.add(invocation_step)
     output_assoc = model.WorkflowInvocationStepOutputDatasetAssociation()
     output_assoc.dataset = d2
     invocation_step.output_datasets = [output_assoc]
     workflow_invocation.steps = [invocation_step]
     workflow_invocation.user = u
+    workflow_invocation.add_input(d1, step=workflow_step_1)
+    wf_output = model.WorkflowOutput(workflow_step_1, label="output_label")
+    workflow_invocation.add_output(wf_output, workflow_step_1, d2)
     sa_session.add(workflow_invocation)
-    sa_session.flush()
+    with transaction(sa_session):
+        sa_session.commit()
     return workflow_invocation
+
+
+def _setup_simple_collection_job(app, state="ok"):
+    sa_session = app.model.context
+
+    u = model.User(email="collection@example.com", password="password")
+    h = model.History(name="Test History", user=u)
+
+    d1, d2, d3, d4 = _create_datasets(sa_session, h, 4)
+
+    c1 = model.DatasetCollection(collection_type="list")
+    hc1 = model.HistoryDatasetCollectionAssociation(history=h, hid=1, collection=c1, name="HistoryCollectionTest1")
+    dce1 = model.DatasetCollectionElement(collection=c1, element=d1, element_identifier="forward", element_index=0)
+    dce2 = model.DatasetCollectionElement(collection=c1, element=d2, element_identifier="reverse", element_index=1)
+
+    c2 = model.DatasetCollection(collection_type="list")
+    hc2 = model.HistoryDatasetCollectionAssociation(history=h, hid=2, collection=c2, name="HistoryCollectionTest2")
+    dce3 = model.DatasetCollectionElement(collection=c2, element=d1, element_identifier="forward", element_index=0)
+    dce4 = model.DatasetCollectionElement(collection=c2, element=d3, element_identifier="reverse", element_index=1)
+
+    c3 = model.DatasetCollection(collection_type="list")
+    hc3 = model.HistoryDatasetCollectionAssociation(history=h, hid=3, collection=c3, name="HistoryCollectionTest3")
+    dce5 = model.DatasetCollectionElement(collection=c3, element=d4, element_identifier="out", element_index=0)
+
+    j = model.Job()
+    j.user = h.user
+    j.tool_id = "cat1"
+    j.add_input_dataset("input1", d1)
+    j.add_input_dataset("input2", d2)
+    j.add_input_dataset("input3", d3)
+    j.add_output_dataset("out_file1", d4)
+    j.add_input_dataset_collection("input1_collect", hc1)
+    j.add_input_dataset_collection("input2_collect", hc2)
+    j.add_output_dataset_collection("output", hc3)
+
+    sa_session.add(dce1)
+    sa_session.add(dce2)
+    sa_session.add(dce3)
+    sa_session.add(dce4)
+    sa_session.add(dce5)
+    sa_session.add(hc1)
+    sa_session.add(hc2)
+    sa_session.add(hc3)
+    sa_session.add(j)
+    with transaction(sa_session):
+        sa_session.commit()
+
+    return u, h, c1, c2, c3, hc1, hc2, hc3, j
+
+
+def _setup_collection_invocation(app):
+    sa_session = app.model.context
+
+    u, h, c1, c2, c3, hc1, hc2, hc3, j = _setup_simple_collection_job(app)
+
+    workflow_step_1 = model.WorkflowStep()
+    workflow_step_1.order_index = 0
+    workflow_step_1.type = "data_collection_input"
+    workflow_step_1.tool_inputs = {}
+    sa_session.add(workflow_step_1)
+    workflow_1 = _workflow_from_steps(u, [workflow_step_1])
+    workflow_1.license = "MIT"
+    workflow_1.name = "Test Workflow"
+    sa_session.add(workflow_1)
+    workflow_invocation = _invocation_for_workflow(u, workflow_1)
+    workflow_invocation.user = u
+    workflow_invocation.add_input(hc1, step=workflow_step_1)
+    workflow_invocation.add_input(hc2, step=workflow_step_1)
+    wf_output = model.WorkflowOutput(workflow_step_1, label="output_label")
+    workflow_invocation.add_output(wf_output, workflow_step_1, hc3)
+
+    sa_session.add(workflow_invocation)
+    with transaction(sa_session):
+        sa_session.commit()
+    return workflow_invocation
+
+
+def _setup_simple_invocation(app):
+    sa_session = app.model.context
+
+    u, h, d1, d2, j = _setup_simple_cat_job(app)
+    j.parameters = [model.JobParameter(name="index_path", value='"/old/path/human"')]
+
+    workflow_step_1 = model.WorkflowStep()
+    workflow_step_1.order_index = 0
+    workflow_step_1.type = "data_input"
+    workflow_step_1.tool_inputs = {}
+    sa_session.add(workflow_step_1)
+    workflow = _workflow_from_steps(u, [workflow_step_1])
+    workflow.license = "MIT"
+    workflow.name = "Test Workflow"
+    workflow.create_time = now()
+    workflow.update_time = now()
+    sa_session.add(workflow)
+    invocation = _invocation_for_workflow(u, workflow)
+    invocation.create_time = now()
+    invocation.update_time = now()
+
+    invocation.add_input(d1, step=workflow_step_1)
+    wf_output = model.WorkflowOutput(workflow_step_1, label="output_label")
+    invocation.add_output(wf_output, workflow_step_1, d2)
+    return invocation
 
 
 def _import_export_history(app, h, dest_export=None, export_files=None, import_options=None, include_hidden=False):
@@ -821,7 +1046,8 @@ class MockWorkflowContentsManager:
         stored_workflow.latest_workflow = workflow
         sa_session = app.model.context
         sa_session.add_all((stored_workflow, workflow))
-        sa_session.flush()
+        with transaction(sa_session):
+            sa_session.commit()
         return workflow
 
 
@@ -865,13 +1091,16 @@ def setup_fixture_context_with_history(
     app, sa_session, user = setup_fixture_context_with_user(**kwd)
     history = model.History(name=history_name, user=user)
     sa_session.add(history)
-    sa_session.flush()
+    with transaction(sa_session):
+        sa_session.commit()
     return StoreFixtureContextWithHistory(app, sa_session, user, history)
 
 
 def perform_import_from_store_dict(
-    fixture_context: StoreFixtureContextWithHistory, import_dict: Dict[str, Any], import_options=None
-):
+    fixture_context: StoreFixtureContextWithHistory,
+    import_dict: Dict[str, Any],
+    import_options: Optional[store.ImportOptions] = None,
+) -> None:
     import_options = import_options or store.ImportOptions()
     import_model_store = store.get_import_model_store_for_dict(
         import_dict, app=fixture_context.app, user=fixture_context.user, import_options=import_options

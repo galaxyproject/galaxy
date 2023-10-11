@@ -45,8 +45,8 @@ def parse_arguments():
     if args.debug:
         log.setLevel(logging.DEBUG)
         log.debug("Full options:")
-        for i in vars(args).items():
-            log.debug("%s: %s" % i)
+        for key, value in vars(args).items():
+            log.debug("%s: %s", key, value)
     return args
 
 

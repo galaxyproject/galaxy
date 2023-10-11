@@ -1,11 +1,12 @@
 <template>
-    <prism :language="language" :code="code" :plugins="['normalize-whitespace']"></prism>
+    <Prism :language="language" :code="code" :plugins="['normalize-whitespace']"></Prism>
 </template>
 
 <script>
-import Prism from "vue-prismjs";
 import "prismjs/themes/prism.css";
 import "prismjs/plugins/normalize-whitespace/prism-normalize-whitespace.js";
+
+import Prism from "vue-prismjs";
 
 export default {
     components: {

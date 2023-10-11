@@ -1,13 +1,13 @@
 /** This class renders the grid list. */
-import $ from "jquery";
-import Backbone from "backbone";
-import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
-import _l from "utils/localization";
-import AjaxQueue from "utils/ajax-queue";
-import Utils from "utils/utils";
+import Backbone from "backbone";
+import $ from "jquery";
 import GridView from "mvc/grid/grid-view";
+import { getAppRoot } from "onload/loadConfig";
 import LoadingIndicator from "ui/loading-indicator";
+import AjaxQueue from "utils/ajax-queue";
+import _l from "utils/localization";
+import Utils from "utils/utils";
 
 var HistoryGridView = GridView.extend({
     initialize: function (grid_config) {
@@ -62,12 +62,7 @@ var View = Backbone.View.extend({
     initialize: function (options) {
         const Galaxy = getGalaxyInstance();
         LoadingIndicator.markViewAsLoading(this);
-
-        if (options.action_id == "list_published") {
-            this.active_tab = "shared";
-        } else if (options.action_id == "list") {
-            this.active_tab = "user";
-        }
+        this.active_tab = "user";
         this.model = new Backbone.Model();
         Utils.get({
             url: `${getAppRoot()}history/${options.action_id}?${$.param(Galaxy.params)}`,

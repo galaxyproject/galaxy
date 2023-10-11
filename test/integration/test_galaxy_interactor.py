@@ -6,7 +6,6 @@ from galaxy_test.driver import integration_util
 
 
 class TestGalaxyInteractor(integration_util.IntegrationTestCase):
-
     framework_tool_and_types = True
 
     def test_local_test_data_download(self):
@@ -22,15 +21,16 @@ class TestGalaxyInteractor(integration_util.IntegrationTestCase):
     def test_get_tool_tests(self):
         # test that get_tool_tests will return the right tests when the tool_version has a '+' in it
         test_data = self.galaxy_interactor.get_tool_tests(tool_id="multiple_versions", tool_version="0.1+galaxy6")
-        print(test_data)
         assert isinstance(test_data, list)
         assert len(test_data) > 0
-        assert isinstance(test_data[0], dict)
-        assert test_data[0].get("tool_version") == "0.1+galaxy6"
+        test_data_dict = test_data[0]
+        assert isinstance(test_data_dict, dict)
+        assert test_data_dict.get("tool_version") == "0.1+galaxy6"
 
         test_data = self.galaxy_interactor.get_tool_tests(
             tool_id="multiple_versions"
         )  # test that tool_version=None does not break it
         assert isinstance(test_data, list)
         assert len(test_data) > 0
-        assert isinstance(test_data[0], dict)
+        test_data_dict = test_data[0]
+        assert isinstance(test_data_dict, dict)

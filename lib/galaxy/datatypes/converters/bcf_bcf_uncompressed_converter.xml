@@ -1,4 +1,4 @@
-<tool id="CONVERTER_bcf_uncompressed_to_bcf" name="Converter for BCF and uncompressed BCF" version="0.0.1" hidden="false" profile="21.09">
+<tool id="CONVERTER_bcf_uncompressed_to_bcf" name="Convert compressed and uncompressed BCF files" version="0.0.1" hidden="false" profile="21.09">
     <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
     <requirements>
         <requirement type="package" version="1.12">bcftools</requirement>

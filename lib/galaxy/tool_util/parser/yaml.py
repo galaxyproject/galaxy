@@ -12,10 +12,14 @@ from galaxy.tool_util.parser.util import (
     DEFAULT_DELTA_FRAC,
 )
 from .interface import (
+    AssertionDict,
+    AssertionList,
     InputSource,
     PageSource,
     PagesSource,
     ToolSource,
+    ToolSourceTest,
+    ToolSourceTests,
 )
 from .output_collection_def import dataset_collector_descriptions_from_output_dict
 from .output_objects import (
@@ -28,7 +32,6 @@ from .util import is_dict
 
 
 class YamlToolSource(ToolSource):
-
     language = "yaml"
 
     def __init__(self, root_dict: Dict, source_path=None):
@@ -177,9 +180,9 @@ class YamlToolSource(ToolSource):
         )
         return output_collection
 
-    def parse_tests_to_dict(self):
-        tests = []
-        rval = dict(tests=tests)
+    def parse_tests_to_dict(self) -> ToolSourceTests:
+        tests: List[ToolSourceTest] = []
+        rval: ToolSourceTests = dict(tests=tests)
 
         for i, test_dict in enumerate(self.root_dict.get("tests", [])):
             tests.append(_parse_test(i, test_dict))
@@ -206,7 +209,7 @@ class YamlToolSource(ToolSource):
         return json.dumps(self.root_dict)
 
 
-def _parse_test(i, test_dict):
+def _parse_test(i, test_dict) -> ToolSourceTest:
     inputs = test_dict["inputs"]
     if is_dict(inputs):
         new_inputs = []
@@ -231,7 +234,7 @@ def _parse_test(i, test_dict):
             name = output["name"]
             value = output.get("file", None)
             attributes = output
-            new_outputs.append((name, value, attributes))
+            new_outputs.append({"name": name, "value": value, "attributes": attributes})
 
     for output in new_outputs:
         attributes = output["attributes"]
@@ -246,8 +249,6 @@ def _parse_test(i, test_dict):
         attributes["extra_files"] = []
         # TODO
         attributes["metadata"] = {}
-        # TODO
-        assert_list = []
         assert_list = __to_test_assert_list(attributes.get("asserts", []))
         attributes["assert_list"] = assert_list
         _ensure_has(attributes, defaults)
@@ -264,7 +265,7 @@ def _parse_test(i, test_dict):
     return test_dict
 
 
-def __to_test_assert_list(assertions):
+def __to_test_assert_list(assertions) -> AssertionList:
     def expand_dict_form(item):
         key, value = item
         new_value = value.copy()
@@ -274,7 +275,7 @@ def __to_test_assert_list(assertions):
     if is_dict(assertions):
         assertions = map(expand_dict_form, assertions.items())
 
-    assert_list = []
+    assert_list: List[AssertionDict] = []
     for assertion in assertions:
         # TODO: not handling nested assertions correctly,
         # not sure these are used though.
@@ -282,7 +283,7 @@ def __to_test_assert_list(assertions):
         if "children" in assertion:
             children = assertion["children"]
             del assertion["children"]
-        assert_dict = dict(
+        assert_dict: AssertionDict = dict(
             tag=assertion["that"],
             attributes=assertion,
             children=children,

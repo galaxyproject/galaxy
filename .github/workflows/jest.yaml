@@ -16,7 +16,7 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node: [16]
+        node: [18]
     steps:
       - uses: actions/checkout@v3
       - name: Setup node
@@ -31,7 +31,5 @@ jobs:
         run: yarn run gulp client
         working-directory: client
       - name: Run Unit Tests
-        run: yarn run qunit
-        working-directory: client
-      - run: yarn jest
+        run: yarn jest
         working-directory: client

@@ -25,7 +25,10 @@ import threading
 import time
 import unicodedata
 import xml.dom.minidom
-from datetime import datetime
+from datetime import (
+    datetime,
+    timezone,
+)
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 from hashlib import md5
@@ -37,6 +40,9 @@ from typing import (
     List,
     Optional,
     overload,
+    Tuple,
+    TypeVar,
+    Union,
 )
 from urllib.parse import (
     urlencode,
@@ -62,24 +68,23 @@ except ImportError:
 LXML_AVAILABLE = True
 try:
     from lxml import etree
-    from lxml.etree import (
-        _Element as Element,
-        ElementTree,
-    )
+    from lxml.etree import _Element as Element
+
+    # lxml.etree.ElementTree is a function that returns a new instance of the
+    # lxml.etree._ElementTree class. This class doesn't have a proper
+    # __init__() method, so we can add a __new__() constructor that mimicks
+    # xml.etree.ElementTree.ElementTree initialization.
+    class ElementTree(etree._ElementTree):
+        def __new__(cls, element=None, file=None) -> etree.ElementTree:
+            return etree.ElementTree(element, file=file)
+
 except ImportError:
     LXML_AVAILABLE = False
     import xml.etree.ElementTree as etree  # type: ignore[assignment,no-redef]
-    from xml.etree.ElementTree import (  # noqa: F401
+    from xml.etree.ElementTree import (  # type: ignore[assignment]
         Element,
         ElementTree,
     )
-
-try:
-    import docutils.core as docutils_core
-    import docutils.writers.html4css1 as docutils_html4css1
-except ImportError:
-    docutils_core = None  # type: ignore[assignment]
-    docutils_html4css1 = None  # type: ignore[assignment]
 
 from .custom_logging import get_logger
 from .inflection import Inflector
@@ -89,6 +94,7 @@ from .path import (  # noqa: F401
     safe_relpath,
     StrPath,
 )
+from .rst_to_html import rst_to_html  # noqa: F401
 
 try:
     shlex_join = shlex.join  # type: ignore[attr-defined]
@@ -126,6 +132,8 @@ RWXRWXRWX = stat.S_IRWXU | stat.S_IRWXG | stat.S_IRWXO
 XML = etree.XML
 
 defaultdict = collections.defaultdict
+
+UNKNOWN = "unknown"
 
 
 def str_removeprefix(s: str, prefix: str):
@@ -286,7 +294,7 @@ def unique_id(KEY_SIZE=128):
     return md5(random_bits).hexdigest()
 
 
-def parse_xml(fname: StrPath, strip_whitespace=True, remove_comments=True) -> etree.ElementTree:
+def parse_xml(fname: StrPath, strip_whitespace=True, remove_comments=True) -> ElementTree:
     """Returns a parsed xml tree"""
     parser = None
     if remove_comments and LXML_AVAILABLE:
@@ -313,28 +321,28 @@ def parse_xml(fname: StrPath, strip_whitespace=True, remove_comments=True) -> et
     return tree
 
 
-def parse_xml_string(xml_string, strip_whitespace=True) -> etree.Element:
+def parse_xml_string(xml_string: str, strip_whitespace: bool = True) -> Element:
     try:
-        tree = etree.fromstring(xml_string)
+        elem = etree.fromstring(xml_string)
     except ValueError as e:
         if "strings with encoding declaration are not supported" in unicodify(e):
-            tree = etree.fromstring(xml_string.encode("utf-8"))
+            elem = etree.fromstring(xml_string.encode("utf-8"))
         else:
             raise e
     if strip_whitespace:
-        for elem in tree.iter("*"):
-            if elem.text is not None:
-                elem.text = elem.text.strip()
-            if elem.tail is not None:
-                elem.tail = elem.tail.strip()
-    return tree
+        for sub_elem in elem.iter("*"):
+            if sub_elem.text is not None:
+                sub_elem.text = sub_elem.text.strip()
+            if sub_elem.tail is not None:
+                sub_elem.tail = sub_elem.tail.strip()
+    return elem
 
 
-def parse_xml_string_to_etree(xml_string, strip_whitespace=True):
+def parse_xml_string_to_etree(xml_string: str, strip_whitespace: bool = True) -> ElementTree:
     return ElementTree(parse_xml_string(xml_string=xml_string, strip_whitespace=strip_whitespace))
 
 
-def xml_to_string(elem, pretty=False) -> str:
+def xml_to_string(elem: Element, pretty: bool = False) -> str:
     """
     Returns a string from an xml tree.
     """
@@ -530,7 +538,7 @@ def pretty_print_time_interval(time=False, precise=False, utc=False):
         now = datetime.utcnow()
     else:
         now = datetime.now()
-    if type(time) is int:
+    if isinstance(time, (int, float)):
         diff = now - datetime.fromtimestamp(time)
     elif isinstance(time, datetime):
         diff = now - time
@@ -942,33 +950,6 @@ class Params:
         self.__dict__.update(values)
 
 
-def rst_to_html(s, error=False):
-    """Convert a blob of reStructuredText to HTML"""
-    log = get_logger("docutils")
-
-    if docutils_core is None:
-        raise Exception("Attempted to use rst_to_html but docutils unavailable.")
-
-    class FakeStream:
-        def write(self, str):
-            if len(str) > 0 and not str.isspace():
-                if error:
-                    raise Exception(str)
-                log.warning(str)
-
-    settings_overrides = {
-        "embed_stylesheet": False,
-        "template": os.path.join(os.path.dirname(__file__), "docutils_template.txt"),
-        "warning_stream": FakeStream(),
-        "doctitle_xform": False,  # without option, very different rendering depending on
-        # number of sections in help content.
-    }
-
-    return unicodify(
-        docutils_core.publish_string(s, writer=docutils_html4css1.Writer(), settings_overrides=settings_overrides)
-    )
-
-
 def xml_text(root, name=None):
     """Returns the text inside an element"""
     if name is not None:
@@ -998,7 +979,7 @@ def parse_resource_parameters(resource_param_file):
         resource_definitions_root = resource_definitions.getroot()
         for parameter_elem in resource_definitions_root.findall("param"):
             name = parameter_elem.get("name")
-            resource_parameters[name] = parameter_elem
+            resource_parameters[name] = etree.tostring(parameter_elem)
 
     return resource_parameters
 
@@ -1046,7 +1027,32 @@ def string_as_bool_or_none(string):
         return False
 
 
-def listify(item, do_strip: bool = False) -> List[Any]:
+ItemType = TypeVar("ItemType")
+
+
+@overload
+def listify(item: Union[None, Literal[False]], do_strip: bool = False) -> List:
+    ...
+
+
+@overload
+def listify(item: str, do_strip: bool = False) -> List[str]:
+    ...
+
+
+@overload
+def listify(item: Union[List[ItemType], Tuple[ItemType, ...]], do_strip: bool = False) -> List[ItemType]:
+    ...
+
+
+# Unfortunately we cannot use ItemType .. -> List[ItemType] in the next overload
+# because then that would also match Union types.
+@overload
+def listify(item: Any, do_strip: bool = False) -> List:
+    ...
+
+
+def listify(item: Any, do_strip: bool = False) -> List:
     """
     Make a single item a single item list.
 
@@ -1065,9 +1071,7 @@ def listify(item, do_strip: bool = False) -> List[Any]:
     """
     if not item:
         return []
-    elif isinstance(item, list):
-        return item
-    elif isinstance(item, tuple):
+    elif isinstance(item, (list, tuple)):
         return list(item)
     elif isinstance(item, str) and item.count(","):
         if do_strip:
@@ -1634,10 +1638,15 @@ galaxy_samples_path = os.path.join(__path__[0], os.pardir, "config", "sample")  
 
 
 def galaxy_directory():
-    root_path = os.path.abspath(galaxy_root_path)
-    if os.path.basename(root_path) == "packages":
-        root_path = os.path.abspath(os.path.join(root_path, ".."))
-    return root_path
+    path = galaxy_root_path
+    if in_packages():
+        path = os.path.join(galaxy_root_path, "..")
+    return os.path.abspath(path)
+
+
+def in_packages():
+    # Normalize first; otherwise basename will be `..`
+    return os.path.basename(os.path.normpath(galaxy_root_path)) == "packages"
 
 
 def galaxy_samples_directory():
@@ -1769,6 +1778,17 @@ def is_url(uri, allow_list=None):
     return any(uri.startswith(scheme) for scheme in allow_list)
 
 
+def check_github_api_response_rate_limit(response):
+    if response.status_code == 403 and "API rate limit exceeded" in response.json()["message"]:
+        # It can take tens of minutes before the rate limit window resets
+        message = "GitHub API rate limit exceeded."
+        rate_limit_reset_UTC_timestamp = response.headers.get("X-RateLimit-Reset")
+        if rate_limit_reset_UTC_timestamp:
+            rate_limit_reset_datetime = datetime.fromtimestamp(int(rate_limit_reset_UTC_timestamp), tz=timezone.utc)
+            message += f" The rate limit window will reset at {rate_limit_reset_datetime.isoformat()}."
+        raise Exception(message)
+
+
 def download_to_file(url, dest_file_path, timeout=30, chunk_size=2**20):
     """Download a URL to a file in chunks."""
     with requests.get(url, timeout=timeout, stream=True) as r, open(dest_file_path, "wb") as f:
@@ -1854,3 +1874,11 @@ class StructuredExecutionTimer:
     @property
     def elapsed(self):
         return time.time() - self.begin
+
+
+def enum_values(enum_class):
+    """
+    Return a list of member values of enumeration enum_class.
+    Values are in member definition order.
+    """
+    return [value.value for value in enum_class.__members__.values()]

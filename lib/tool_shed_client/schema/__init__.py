@@ -1,12 +1,21 @@
 from typing import (
     Any,
+    cast,
     Dict,
     List,
     Optional,
+    Tuple,
     Union,
 )
 
-from pydantic import BaseModel
+from pydantic import (
+    BaseModel,
+    Field,
+)
+from typing_extensions import (
+    Literal,
+    TypedDict,
+)
 
 
 class Repository(BaseModel):
@@ -24,16 +33,48 @@ class Repository(BaseModel):
     times_downloaded: int
     deprecated: bool
     create_time: str
+    update_time: str
+
+
+class DetailedRepository(Repository):
+    long_description: Optional[str]
+
+
+class RepositoryPermissions(BaseModel):
+    allow_push: List[str]
+    can_manage: bool  # can the requesting user manage the repository
+    can_push: bool
+
+
+class RepositoryRevisionReadmes(BaseModel):
+    __root__: Dict[str, str]
+
+
+class CreateUserRequest(BaseModel):
+    username: str
+    email: str
+    password: str
+
+
+class User(BaseModel):
+    id: str
+    username: str
+
+
+class UserV2(User):
+    is_admin: bool
 
 
 class Category(BaseModel):
     id: str
     name: str
+    description: str
+    repositories: int
 
 
 class CreateCategoryRequest(BaseModel):
     name: str
-    description: str
+    description: Optional[str] = None
 
 
 class ValidRepostiroyUpdateMessage(BaseModel):
@@ -53,6 +94,38 @@ class OrderedInstallableRevisions(BaseModel):
     __root__: List[str]
 
 
+RepositoryType = Literal[
+    "repository_suite_definition",
+    "tool_dependency_definition",
+    "unrestricted",
+]
+
+
+class CreateRepositoryRequest(BaseModel):
+    name: str
+    synopsis: str
+    description: Optional[str] = None
+    remote_repository_url: Optional[str] = None
+    homepage_url: Optional[str] = None
+    type_: RepositoryType = Field(
+        "unrestricted",
+        alias="type",
+        title="Type",
+    )
+    category_ids: str = Field(
+        ...,
+        alias="category_ids[]",
+        title="Category IDs",
+    )
+
+    class Config:
+        allow_population_by_field_name = True
+
+
+class RepositoryUpdateRequest(BaseModel):
+    commit_message: Optional[str] = None
+
+
 class RepositoryUpdate(BaseModel):
     __root__: Union[ValidRepostiroyUpdateMessage, FailedRepositoryUpdateMessage]
 
@@ -61,19 +134,28 @@ class RepositoryUpdate(BaseModel):
         return isinstance(self.__root__, ValidRepostiroyUpdateMessage)
 
 
-class RepositoryDependency(BaseModel):
-    pass
-
-
 class RepositoryTool(BaseModel):
-    pass
+    # Added back in post v2 in order for the frontend to render
+    # tool descriptions on the repository page.
+    description: str
+    guid: str
+    id: str
+    name: str
+    requirements: list
+    tool_config: str
+    tool_type: str
+    version: str
+    # add_to_tool_panel: bool
+    # tests: list
+    # version_string_cmd: Optional[str]
 
 
 class RepositoryRevisionMetadata(BaseModel):
     id: str
     repository: Repository
-    repository_dependencies: List[RepositoryDependency]
-    tools: Optional[List[RepositoryTool]]
+    repository_dependencies: List["RepositoryDependency"]
+    tools: Optional[List["RepositoryTool"]]
+    invalid_tools: List[str]  # added for rendering list of invalid tools in 2.0 frontend
     repository_id: str
     numeric_revision: int
     changeset_revision: str
@@ -87,6 +169,15 @@ class RepositoryRevisionMetadata(BaseModel):
     includes_tool_dependencies: Optional[bool]
     includes_datatypes: Optional[bool]
     includes_workflows: Optional[bool]
+
+
+class RepositoryDependency(RepositoryRevisionMetadata):
+    # This only needs properties for tests it seems?
+    # e.g. test_0550_metadata_updated_dependencies.py
+    pass
+
+
+RepositoryRevisionMetadata.update_forward_refs()
 
 
 class RepositoryMetadata(BaseModel):
@@ -166,6 +257,14 @@ class RepositoryIndexRequest(BaseModel):
     deleted: str = "false"
 
 
+class RepositoriesByCategory(BaseModel):
+    id: str
+    name: str
+    description: str
+    repository_count: int
+    repositories: List[Repository]
+
+
 class RepositoryIndexResponse(BaseModel):
     __root__: List[Repository]
 
@@ -203,3 +302,183 @@ class RepositorySearchResults(BaseModel):
     page_size: str
     hostname: str
     hits: List[RepositorySearchHit]
+
+
+class GetInstallInfoRequest(BaseModel):
+    owner: str
+    name: str
+    changeset_revision: str
+
+
+class ValidToolDict(TypedDict):
+    add_to_tool_panel: bool
+    description: str
+    guid: str
+    id: str
+    name: str
+    requirements: list
+    tests: list
+    tool_config: str
+    tool_type: str
+    version: str
+    version_string_cmd: Optional[str]
+
+
+class RepositoryMetadataInstallInfoDict(TypedDict):
+    changeset_revision: str
+    downloadable: bool
+    has_repository_dependencies: bool
+    has_repository_dependencies_only_if_compiling_contained_td: bool
+    id: str
+    includes_datatypes: bool
+    includes_tool_dependencies: bool
+    includes_tools: bool
+    includes_tools_for_display_in_tool_panel: bool
+    includes_workflows: bool
+    malicious: bool
+    repository_id: str
+    url: str
+    valid_tools: List[ValidToolDict]
+
+
+# So hard to type this... the keys are repo names and the elements
+# are tuples that have been list-ified.
+ExtraRepoInfo = Dict[str, List]
+# {
+#     "add_column": [
+#         "add_column hello",
+#         "http://test@localhost:9009/repos/test/add_column",
+#         "3a08cc21466f",
+#         "1",
+#         "test",
+#         {},
+#         {}
+#     ]
+# }
+
+
+class EmptyDict(TypedDict):
+    pass
+
+
+LegacyInstallInfoTuple = Tuple[
+    Optional[Dict], Union[RepositoryMetadataInstallInfoDict, EmptyDict], Union[ExtraRepoInfo, EmptyDict]
+]
+
+
+class RepositoryExtraInstallInfo(BaseModel):
+    name: str
+    description: str
+    repository_clone_url: str
+    changeset_revision: str
+    ctx_rev: str
+    repository_owner: str
+    repository_dependencies: Optional[Dict]
+    # tool dependencies not longer work so don't transmit them in v2?
+    # tool_dependencies: Optional[Dict]
+
+    @staticmethod
+    def from_legacy_dict(as_dict: ExtraRepoInfo) -> "RepositoryExtraInstallInfo":
+        assert len(as_dict) == 1
+        repo_name = next(iter(as_dict.keys()))
+        info_indexable = as_dict[repo_name]
+        return RepositoryExtraInstallInfo(
+            name=repo_name,
+            description=info_indexable[0],
+            repository_clone_url=info_indexable[1],
+            changeset_revision=info_indexable[2],
+            ctx_rev=info_indexable[3],
+            repository_owner=info_indexable[4],
+            repository_dependencies=info_indexable[5],
+        )
+
+
+class ValidTool(BaseModel):
+    add_to_tool_panel: bool
+    description: str
+    guid: str
+    id: str
+    name: str
+    requirements: list
+    tests: list
+    tool_config: str
+    tool_type: str
+    version: str
+    version_string_cmd: Optional[str]
+
+    @staticmethod
+    def from_legacy_dict(as_dict: ValidToolDict) -> "ValidTool":
+        return ValidTool(**as_dict)
+
+    @staticmethod
+    def from_legacy_list(as_dicts: List[ValidToolDict]) -> List["ValidTool"]:
+        return list(ValidTool.from_legacy_dict(d) for d in as_dicts)
+
+
+class RepositoryMetadataInstallInfo(BaseModel):
+    id: str
+    changeset_revision: str
+    downloadable: bool
+    has_repository_dependencies: bool
+    includes_tools: bool
+    includes_tools_for_display_in_tool_panel: bool
+    malicious: bool
+    repository_id: str
+    url: str
+    valid_tools: List[ValidToolDict]
+    # no longer used, don't transmit.
+    # has_repository_dependencies_only_if_compiling_contained_td: bool
+    # includes_datatypes: bool
+    # includes_tool_dependencies: bool
+    # includes_workflows: bool
+
+    @staticmethod
+    def from_legacy_dict(as_dict: RepositoryMetadataInstallInfoDict) -> "RepositoryMetadataInstallInfo":
+        return RepositoryMetadataInstallInfo(
+            id=as_dict["id"],
+            changeset_revision=as_dict["changeset_revision"],
+            downloadable=as_dict["downloadable"],
+            has_repository_dependencies=as_dict["has_repository_dependencies"],
+            includes_tools=as_dict["includes_tools"],
+            includes_tools_for_display_in_tool_panel=as_dict["includes_tools_for_display_in_tool_panel"],
+            malicious=as_dict["malicious"],
+            repository_id=as_dict["repository_id"],
+            url=as_dict["url"],
+            valid_tools=ValidTool.from_legacy_list(as_dict.get("valid_tools", [])),
+        )
+
+
+class InstallInfo(BaseModel):
+    metadata_info: Optional[RepositoryMetadataInstallInfo]
+    repo_info: Optional[RepositoryExtraInstallInfo]
+
+
+def from_legacy_install_info(legacy_install_info: LegacyInstallInfoTuple) -> InstallInfo:
+    repo_metadata_install_info: Union[RepositoryMetadataInstallInfoDict, EmptyDict]
+    extra_info: Union[ExtraRepoInfo, EmptyDict]
+    _, repo_metadata_install_info, extra_info = legacy_install_info
+    if repo_metadata_install_info:
+        metadata_info = RepositoryMetadataInstallInfo.from_legacy_dict(
+            cast(RepositoryMetadataInstallInfoDict, repo_metadata_install_info)
+        )
+    else:
+        metadata_info = None
+    if extra_info:
+        repo_info = RepositoryExtraInstallInfo.from_legacy_dict(extra_info)
+    else:
+        repo_info = None
+    return InstallInfo(
+        metadata_info=metadata_info,
+        repo_info=repo_info,
+    )
+
+
+class BuildSearchIndexResponse(BaseModel):
+    repositories_indexed: int
+    tools_indexed: int
+
+
+class Version(BaseModel):
+    version_major: str
+    version: str
+    api_version: str = "v1"

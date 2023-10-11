@@ -1,3 +1,7 @@
+**Notice** Consider using [Composables](composables.md) instead of Providers. They offer more functionality and need less boilerplate.
+
+---
+
 We are using components in two very distinct ways. The first, "normal", kind of component will
 probably look familiar to anybody whis is already passingly familiar with Vue. Here the relevant
 information comes in as properties, any internal variables get defined in "data", changes go out as
@@ -18,40 +22,33 @@ component we previously made, but you are free to putput whatever you want in th
 doodad and saveDoddad properties as desired, as well as any other local data with the only
 restriction that Vue needs a single root element in which to render.
 
-
 ## The Renderer
 
 ```html static
 <!-- DoodadEditor.vue, a simple "rendering" component -->
 
 <template>
-    <AutoComplete
-        :options="options"
-        :value="doodad.category"  
-        @select="saveCategory"
-    />
+    <AutoComplete :options="options" :value="doodad.category" @select="saveCategory" />
 </template>
 
 <script>
-
-export default {
-    props: { 
-        doodad: { type: Object, required: true },
-        options: { type: Array, required: true },
-    },
-    methods: {
-        saveCategory(newCategory) {
-            this.$emit('update:doodad', { ...this.doodad, category: newCategory });
-        }
-    }
-}
-
+    export default {
+        props: {
+            doodad: { type: Object, required: true },
+            options: { type: Array, required: true },
+        },
+        methods: {
+            saveCategory(newCategory) {
+                this.$emit("update:doodad", { ...this.doodad, category: newCategory });
+            },
+        },
+    };
 </script>
 ```
 
 This component accepts a mandatory input object (doodad), lets the user play with a category prop,
 then emits a fresh object after it's done. So what, what's the big deal? The important part to walk
-away from this dumb example is the things that are NOT in this sample component. 
+away from this dumb example is the things that are NOT in this sample component.
 
 This component doesn't save the data. This component doesn't make ajax calls, and this component
 doesn't mutate its props. What it does do is to allow the user to edit some object named "doodad"
@@ -62,7 +59,6 @@ binds](https://vuejs.org/v2/guide/components-custom-events.html#sync-Modifier)).
 Whatever happens to that new object is somebody else's job. As soon as you tie the data management
 to the rendering, the re-usability of your components craters.
 
-
 ## The Provider
 
 As the opposite of the rendering component, a provider or renderless component, is pure logic. It
@@ -71,7 +67,6 @@ fancy way of configuring some data manipulation methods. This is one of the many
 functionality available in Vue. Some others are [Mixins](https://vuejs.org/v2/guide/mixins.html),
 [Provide/Inject](https://v3.vuejs.org/guide/component-provide-inject.html) and (in Vue3) [the
 composition API](https://v3.vuejs.org/guide/composition-api-introduction.html).
-
 
 ```js static
 // DoodadProvider.js
@@ -130,7 +125,7 @@ mandatory markup, just one big empty slot.
 // Testing a renderless component
 
 import { shallowMount } from "@vue/test-utils";
-import { getLocalVue, waitForLifecyleEvent } from "jest/helpers";
+import { getLocalVue, waitForLifecyleEvent } from "tests/jest/helpers";
 import DoodadProvider from "./DoodadProvider";
 
 describe("A renderless component", () => {
@@ -149,16 +144,16 @@ describe("A renderless component", () => {
             },
         });
 
-        // waits for "updated" Vue lifecycle hook to fire on the renderless 
-        // component. This is often good enough for waiting for 
+        // waits for "updated" Vue lifecycle hook to fire on the renderless
+        // component. This is often good enough for waiting for
         // an initial ajax load to finish, for example
         await waitForLifecyleEvent(wrapper.vm, "updated");
-    })
+    });
 
     test("someProp", () => {
         const { someProp } = slotProps;
         expect(someProp).toExist();
         // ...more tests
-    })
-})
+    });
+});
 ```

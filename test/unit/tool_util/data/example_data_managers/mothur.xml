@@ -1,0 +1,57 @@
+<?xml version="1.0"?>
+<data_managers>
+  <data_manager tool_file="data_manager/data_manager_fetch_mothur_reference_data.xml" id="data_manager_mothur_fetch_reference_data">
+    <data_table name="mothur_aligndb">
+      <output>
+        <column name="name" />
+        <column name="value" output_ref="out_file" >
+          <move type="file">
+            <source>${value}</source>
+            <target base="${GALAXY_DATA_MANAGER_DATA_PATH}">mothur/aligndb/${value}</target>
+          </move>
+          <value_translation>${GALAXY_DATA_MANAGER_DATA_PATH}/mothur/aligndb/${value}</value_translation>
+          <value_translation type="function">abspath</value_translation>
+        </column>
+      </output>
+    </data_table>
+    <data_table name="mothur_lookup">
+      <output>
+        <column name="name" />
+        <column name="value" output_ref="out_file" >
+          <move type="file">
+            <source>${value}</source>
+            <target base="${GALAXY_DATA_MANAGER_DATA_PATH}">mothur/lookup/${value}</target>
+          </move>
+          <value_translation>${GALAXY_DATA_MANAGER_DATA_PATH}/mothur/lookup/${value}</value_translation>
+          <value_translation type="function">abspath</value_translation>
+        </column>
+      </output>
+    </data_table>
+    <data_table name="mothur_map">
+      <output>
+        <column name="name" />
+        <column name="value" output_ref="out_file" >
+          <move type="file">
+            <source>${value}</source>
+            <target base="${GALAXY_DATA_MANAGER_DATA_PATH}">mothur/map/${value}</target>
+          </move>
+          <value_translation>${GALAXY_DATA_MANAGER_DATA_PATH}/mothur/map/${value}</value_translation>
+          <value_translation type="function">abspath</value_translation>
+        </column>
+      </output>
+    </data_table>
+    <data_table name="mothur_taxonomy">
+      <output>
+        <column name="name" />
+        <column name="value" output_ref="out_file" >
+          <move type="file">
+            <source>${value}</source>
+            <target base="${GALAXY_DATA_MANAGER_DATA_PATH}">mothur/taxonomy/${value}</target>
+          </move>
+          <value_translation>${GALAXY_DATA_MANAGER_DATA_PATH}/mothur/taxonomy/${value}</value_translation>
+          <value_translation type="function">abspath</value_translation>
+        </column>
+      </output>
+    </data_table>
+  </data_manager>
+</data_managers>

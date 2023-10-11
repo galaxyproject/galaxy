@@ -1,8 +1,17 @@
 import os
+import tempfile
+from typing import (
+    Any,
+    Dict,
+    Tuple,
+)
 
 import pytest
 
-from galaxy.exceptions import ItemAccessibilityException
+from galaxy.exceptions import (
+    ItemAccessibilityException,
+    RequestParameterInvalidException,
+)
 from galaxy.files import (
     ConfiguredFileSources,
     ConfiguredFileSourcesConfig,
@@ -333,6 +342,100 @@ def test_posix_user_access_using_boolean_rules():
     _assert_user_access_granted(file_sources, user_context)
 
 
+def test_posix_file_url_only_mode_non_admin_cannot_retrieve():
+    with tempfile.NamedTemporaryFile(mode="w") as tf:
+        tf.write("File content returned from a file:// location")
+        tf.flush()
+        test_url = f"file://{tf.name}"
+        user_context = user_context_fixture()
+        file_sources = _configured_file_sources(empty_root=True)
+        file_source_pair = file_sources.get_file_source_path(test_url)
+
+        assert file_source_pair.path == tf.name
+        assert file_source_pair.file_source.id == "test1"
+
+        with pytest.raises(ItemAccessibilityException):
+            assert_realizes_as(
+                file_sources,
+                test_url,
+                "File content returned from a file:// location",
+                user_context=user_context,
+            )
+
+
+def test_posix_file_url_only_mode_admin_can_retrieve():
+    with tempfile.NamedTemporaryFile(mode="w") as tf:
+        tf.write("File content returned from a file:// location")
+        tf.flush()
+        test_url = f"file://{tf.name}"
+        user_context = user_context_fixture(is_admin=True)
+        file_sources = _configured_file_sources(empty_root=True)
+        file_source_pair = file_sources.get_file_source_path(test_url)
+
+        assert file_source_pair.path == tf.name
+        assert file_source_pair.file_source.id == "test1"
+
+        assert_realizes_as(
+            file_sources,
+            test_url,
+            "File content returned from a file:// location",
+            user_context=user_context,
+        )
+
+
+def test_posix_file_url_only_mode_even_admin_cannot_write():
+    with tempfile.NamedTemporaryFile(mode="w") as tf:
+        tf.write("File content returned from a file:// location")
+        tf.flush()
+        test_url = f"file://{tf.name}"
+        user_context = user_context_fixture(is_admin=True)
+        file_sources = _configured_file_sources(empty_root=True)
+        file_source_pair = file_sources.get_file_source_path(test_url)
+
+        assert file_source_pair.path == tf.name
+        assert file_source_pair.file_source.id == "test1"
+
+        with pytest.raises(Exception, match="Cannot write to a non-writable file source"):
+            write_from(file_sources, test_url, "my test content", user_context=user_context)
+
+
+def test_posix_file_url_only_mode_malformed():
+    with tempfile.NamedTemporaryFile(mode="w") as tf:
+        tf.write("File content returned from a file://file:// location")
+        tf.flush()
+        test_url = f"file://file://{tf.name}"
+        user_context = user_context_fixture(is_admin=True)
+        file_sources = _configured_file_sources(empty_root=True)
+        file_source_pair = file_sources.get_file_source_path(test_url)
+
+        assert file_source_pair.path == test_url[7:]
+        assert file_source_pair.file_source.id == "test1"
+
+        with pytest.raises(FileNotFoundError, match=r"\[Errno 2\] No such file or directory: '/file:/"):
+            assert_realizes_as(
+                file_sources,
+                test_url,
+                "File content returned from a file://file:// location",
+                user_context=user_context,
+            )
+
+
+def test_posix_file_url_allowed_root():
+    file_sources, root = _configured_file_sources_with_root(plugin_extra_config={"enforce_symlink_security": False})
+    test_url = f"file://{root}/a"
+    assert_realizes_as(file_sources, test_url, "a\n")
+
+
+def test_posix_file_url_disallowed_root():
+    file_sources, root = _configured_file_sources_with_root(plugin_extra_config={"enforce_symlink_security": False})
+    with tempfile.NamedTemporaryFile(mode="w") as tf:
+        tf.write("some content")
+        tf.flush()
+        test_url = f"file://{tf.name}"
+        with pytest.raises(RequestParameterInvalidException, match="Could not find handler for URI"):
+            assert_realizes_as(file_sources, test_url, "some content\n")
+
+
 def _assert_user_access_prohibited(file_sources, user_context):
     with pytest.raises(ItemAccessibilityException):
         list_root(file_sources, "gxfiles://test1", recursive=False, user_context=user_context)
@@ -357,20 +460,28 @@ def _assert_user_access_granted(file_sources, user_context):
     assert_realizes_as(file_sources, "gxfiles://test1/a", "a\n", user_context=user_context)
 
 
-def _configured_file_sources(
-    include_allowlist=False, plugin_extra_config=None, per_user=False, writable=None, allow_subdir_creation=True
-) -> TestConfiguredFileSources:
-    tmp, root = setup_root()
+def _configured_file_sources_with_root(
+    include_allowlist=False,
+    plugin_extra_config=None,
+    per_user=False,
+    writable=None,
+    allow_subdir_creation=True,
+    empty_root=False,
+) -> Tuple[TestConfiguredFileSources, str]:
+    if empty_root:
+        tmp, root = "/", None
+    else:
+        tmp, root = setup_root()
     config_kwd = {}
     if include_allowlist:
         config_kwd["symlink_allowlist"] = [tmp]
     file_sources_config = ConfiguredFileSourcesConfig(**config_kwd)
-    plugin = {
+    plugin: Dict[str, Any] = {
         "type": "posix",
     }
     if writable is not None:
         plugin["writable"] = writable
-    if per_user:
+    if per_user and root:
         plugin["root"] = "%s/${user.username}" % root
         # setup files just for alice
         root = os.path.join(root, "alice")
@@ -378,8 +489,28 @@ def _configured_file_sources(
     else:
         plugin["root"] = root
     plugin.update(plugin_extra_config or {})
-    write_file_fixtures(tmp, root)
+    if root:
+        write_file_fixtures(tmp, root)
     file_sources = TestConfiguredFileSources(file_sources_config, conf_dict={"test1": plugin}, test_root=root)
+    return file_sources, root
+
+
+def _configured_file_sources(
+    include_allowlist=False,
+    plugin_extra_config=None,
+    per_user=False,
+    writable=None,
+    allow_subdir_creation=True,
+    empty_root=False,
+) -> TestConfiguredFileSources:
+    file_sources, _ = _configured_file_sources_with_root(
+        include_allowlist=include_allowlist,
+        plugin_extra_config=plugin_extra_config,
+        per_user=per_user,
+        writable=writable,
+        allow_subdir_creation=allow_subdir_creation,
+        empty_root=empty_root,
+    )
     return file_sources
 
 

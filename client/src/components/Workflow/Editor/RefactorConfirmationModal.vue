@@ -1,5 +1,5 @@
 <template>
-    <b-modal v-model="show" :title="title" scrollable ok-title="Save" @ok="executeRefactoring">
+    <BModal v-model="show" :title="title" scrollable ok-title="Save" @ok="executeRefactoring">
         <div class="workflow-refactor-modal">
             {{ message }}
             <ul>
@@ -12,12 +12,13 @@
                 </li>
             </ul>
         </div>
-    </b-modal>
+    </BModal>
 </template>
 
 <script>
-import { refactor } from "./modules/services";
 import { BModal } from "bootstrap-vue";
+
+import { refactor } from "./modules/services";
 
 export default {
     components: { BModal },

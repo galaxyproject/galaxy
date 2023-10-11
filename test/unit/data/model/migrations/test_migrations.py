@@ -14,22 +14,27 @@ from galaxy.model import migrations
 from galaxy.model.database_utils import database_exists
 from galaxy.model.migrations import (
     AlembicManager,
-    DatabaseStateCache,
     DatabaseStateVerifier,
     get_last_sqlalchemymigrate_version,
     GXY,
-    IncorrectVersionError,
-    listify,
-    load_metadata,
-    metadata_contains_only_kombu_tables,
-    NoVersionTableError,
-    OutdatedDatabaseError,
     scripts,
     SQLALCHEMYMIGRATE_LAST_VERSION_GXY,
     SQLALCHEMYMIGRATE_LAST_VERSION_TSI,
-    SQLALCHEMYMIGRATE_TABLE,
     TSI,
     verify_databases,
+)
+from galaxy.model.migrations.base import (
+    DatabaseStateCache,
+    listify,
+    load_metadata,
+    metadata_contains_only_kombu_tables,
+    SQLALCHEMYMIGRATE_TABLE,
+)
+from galaxy.model.migrations.exceptions import (
+    IncorrectSAMigrateVersionError,
+    NoVersionTableError,
+    OutdatedDatabaseError,
+    SAMigrateError,
 )
 from galaxy.model.migrations.scripts import LegacyManageDb
 from galaxy.model.unittest_utils.model_testing_utils import (  # noqa: F401  (url_factory is a fixture we have to import explicitly)
@@ -38,6 +43,7 @@ from galaxy.model.unittest_utils.model_testing_utils import (  # noqa: F401  (ur
     drop_existing_database,
     url_factory,
 )
+from galaxy.util.resources import resource_path
 
 # Revision numbers from test versions directories
 GXY_REVISION_0 = "62695fac6cc0"  # oldest/base
@@ -451,17 +457,17 @@ class TestDatabaseStates:
         # the stored version is not the latest after which we could transition to Alembic.
         # Expect: fail with appropriate message.
         def test_combined_database(self, db_state2_combined):
-            with pytest.raises(IncorrectVersionError):
+            with pytest.raises(IncorrectSAMigrateVersionError):
                 with disposing_engine(db_state2_combined) as engine:
                     _verify_databases(engine)
 
         def test_separate_databases_gxy_raises_error(self, db_state2_gxy, db_state6_tsi):
-            with pytest.raises(IncorrectVersionError):
+            with pytest.raises(IncorrectSAMigrateVersionError):
                 with disposing_engine(db_state2_gxy) as engine1, disposing_engine(db_state6_tsi) as engine2:
                     _verify_databases(engine1, engine2)
 
         def test_separate_databases_tsi_raises_error(self, db_state6_gxy, db_state2_tsi):
-            with pytest.raises(IncorrectVersionError):
+            with pytest.raises(IncorrectSAMigrateVersionError):
                 with disposing_engine(db_state6_gxy) as engine1, disposing_engine(db_state2_tsi) as engine2:
                     _verify_databases(engine1, engine2)
 
@@ -498,17 +504,17 @@ class TestDatabaseStates:
                 assert database_is_up_to_date(db2_url, metadata_state6_tsi, TSI)
 
         def test_combined_database_no_automigrate(self, db_state3_combined):
-            with pytest.raises(OutdatedDatabaseError):
+            with pytest.raises(SAMigrateError):
                 with disposing_engine(db_state3_combined) as engine:
                     _verify_databases(engine)
 
         def test_separate_databases_no_automigrate_gxy_raises_error(self, db_state3_gxy, db_state6_tsi):
-            with pytest.raises(OutdatedDatabaseError):
+            with pytest.raises(SAMigrateError):
                 with disposing_engine(db_state3_gxy) as engine1, disposing_engine(db_state6_tsi) as engine2:
                     _verify_databases(engine1, engine2)
 
         def test_separate_databases_no_automigrate_tsi_raises_error(self, db_state6_gxy, db_state3_tsi):
-            with pytest.raises(OutdatedDatabaseError):
+            with pytest.raises(SAMigrateError):
                 with disposing_engine(db_state6_gxy) as engine1, disposing_engine(db_state3_tsi) as engine2:
                     _verify_databases(engine1, engine2)
 
@@ -1122,13 +1128,7 @@ def db_state6_gxy_state3_tsi_no_sam(url_factory, metadata_state6_gxy_state3_tsi_
 @pytest.fixture(autouse=True)
 def legacy_manage_db(monkeypatch):
     def get_alembic_cfg():
-        path = os.path.join(os.path.dirname(__file__), os.pardir, os.pardir, os.pardir, os.pardir, os.pardir)
-        path = os.path.normpath(path)
-        # Adjust path when running from packages
-        if os.path.split(path)[1] == "packages":
-            path = os.path.join(path, os.pardir)
-        path = os.path.join(path, "lib", "galaxy", "model", "migrations", "alembic.ini")
-
+        path = resource_path("galaxy.model.migrations", "alembic.ini")
         config = Config(path)
         path1, path2 = _get_paths_to_version_locations()
         config.set_main_option("version_locations", f"{path1};{path2}")
@@ -1164,14 +1164,14 @@ class TestLegacyManageDbScript:
         def test_get_gxy_db_version__state2__gxy_database(self, db_state2_gxy):
             # Expect: fail
             db_url = db_state2_gxy
-            with pytest.raises(IncorrectVersionError):
+            with pytest.raises(IncorrectSAMigrateVersionError):
                 mdb = LegacyManageDb()
                 mdb.get_gxy_db_version(db_url)
 
         def test_get_gxy_db_version__state2__combined_database(self, db_state2_combined):
             # Expect: fail
             db_url = db_state2_combined
-            with pytest.raises(IncorrectVersionError):
+            with pytest.raises(IncorrectSAMigrateVersionError):
                 mdb = LegacyManageDb()
                 mdb.get_gxy_db_version(db_url)
 

@@ -26,8 +26,8 @@ define({
     User: "账号管理",
     Login: "登陆",
     Register: "注册",
-    "Login or Register": "注册登陆",
-    "Logged in as": "您已登陆为",
+    "Log in or Register": "注册登陆",
+    "Signed in as": "您已登陆为",
     Preferences: "用户偏好性",
     "Custom Builds": "自定义构建集",
     Logout: "退出",
@@ -162,7 +162,7 @@ define({
     // state: queued
     "This job is waiting to run": "您的任务正在等待运行",
     // state: upload
-    "This dataset is currently uploading": "领的数据集正在上传中",
+    "This dataset is currently uploading": "您的数据集正在上传中",
     // state: setting_metadata
     "Metadata is being auto-detected": "元数据正在被自动检测中",
     // state: running

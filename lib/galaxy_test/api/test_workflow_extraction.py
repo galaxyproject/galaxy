@@ -97,17 +97,14 @@ class TestWorkflowExtractionApi(BaseWorkflowsApiTestCase):
         self.__assert_looks_like_randomlines_mapping_workflow(downloaded_workflow)
 
     def test_extract_copied_mapping_from_history(self, history_id):
-        old_history_id = self.dataset_populator.new_history()
-        hdca, job_id1, job_id2 = self.__run_random_lines_mapped_over_pair(old_history_id)
+        hdca, job_id1, job_id2 = self.__run_random_lines_mapped_over_pair(history_id)
 
-        old_contents = self._history_contents(old_history_id)
-        for old_content in old_contents:
-            self.__copy_content_to_history(history_id, old_content)
+        new_history_id = self.dataset_populator.copy_history(history_id).json()["id"]
         # API test is somewhat contrived since there is no good way
         # to retrieve job_id1, job_id2 like this for copied dataset
         # collections I don't think.
         downloaded_workflow = self._extract_and_download_workflow(
-            history_id,
+            new_history_id,
             dataset_collection_ids=[hdca["hid"]],
             job_ids=[job_id1, job_id2],
         )

@@ -9,6 +9,7 @@ import re
 from io import StringIO
 
 from galaxy.model import (
+    DatasetCollectionElement,
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
     MetadataFile,
@@ -113,7 +114,7 @@ class RegexpFilter(Filter):
             pass
         filter_pattern = re.compile(filter_value)
         for fields in options:
-            if self.keep == (not filter_pattern.match(fields[self.column]) is None):
+            if self.keep == (filter_pattern.match(fields[self.column]) is not None):
                 rval.append(fields)
         return rval
 
@@ -356,8 +357,6 @@ class AttributeValueSplitterFilter(Filter):
     """
     Filters a list of attribute-value pairs to be unique attribute names.
 
-    DEPRECATED: just replace with 2 rounds of MultipleSplitterFilter
-
     Type: attribute_value_splitter
 
     Required Attributes:
@@ -569,7 +568,7 @@ class DynamicOptions:
         self._tool_data_table = None
         self.elem = elem
         self.column_elem = elem.find("column")
-        self.tool_data_table  # Need to touch tool data table once to populate self.columns
+        self.tool_data_table  # noqa: B018 Need to touch tool data table once to populate self.columns
 
         # Options are defined by parsing tabular text data from a data file
         # on disk, a dataset, or the value of another parameter
@@ -812,12 +811,15 @@ def _get_ref_data(other_values, ref_name):
         (
             DatasetFilenameWrapper,
             HistoryDatasetAssociation,
+            DatasetCollectionElement,
             DatasetListWrapper,
             HistoryDatasetCollectionAssociation,
             list,
         ),
     ):
         raise ValueError
+    if isinstance(ref, DatasetCollectionElement) and ref.hda:
+        ref = ref.hda
     if isinstance(ref, (DatasetFilenameWrapper, HistoryDatasetAssociation)):
         ref = [ref]
     elif isinstance(ref, HistoryDatasetCollectionAssociation):

@@ -1,3 +1,4 @@
+import abc
 from typing import (
     Any,
     Callable,
@@ -20,6 +21,7 @@ OperationT = Callable[[Dict[str, Any]], Response]
 
 class UsesShedApi:
     @property
+    @abc.abstractmethod
     def galaxy_interactor(self) -> GalaxyInteractorApi:
         ...
 

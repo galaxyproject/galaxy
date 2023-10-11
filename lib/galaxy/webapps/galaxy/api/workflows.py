@@ -45,9 +45,11 @@ from galaxy.managers.workflows import (
     WorkflowCreateOptions,
     WorkflowUpdateOptions,
 )
+from galaxy.model.base import transaction
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.model.store import BcoExportOptions
 from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.invocation import InvocationMessageResponseModel
 from galaxy.schema.schema import (
     AsyncFile,
     AsyncTaskResultSummary,
@@ -138,17 +140,6 @@ class WorkflowsAPIController(
         self.tool_recommendations = recommendations.ToolRecommendations()
 
     @expose_api
-    def get_workflow_menu(self, trans: ProvidesUserContext, **kwd):
-        """
-        Get workflows present in the tools panel
-        GET /api/workflows/menu
-        """
-        user = trans.user
-        ids_in_menu = [x.stored_workflow_id for x in user.stored_workflow_menu_entries]
-        workflows = self.get_workflows_list(trans, **kwd)
-        return {"ids_in_menu": ids_in_menu, "workflows": workflows}
-
-    @expose_api
     def set_workflow_menu(self, trans: GalaxyWebTransaction, payload=None, **kwd):
         """
         Save workflow menu to be shown in the tool panel
@@ -159,19 +150,18 @@ class WorkflowsAPIController(
         workflow_ids = payload.get("workflow_ids")
         if workflow_ids is None:
             workflow_ids = []
-        elif type(workflow_ids) != list:
+        elif not isinstance(workflow_ids, list):
             workflow_ids = [workflow_ids]
         workflow_ids_decoded = []
         # Decode the encoded workflow ids
         for ids in workflow_ids:
             workflow_ids_decoded.append(trans.security.decode_id(ids))
-        sess = trans.sa_session
+        session = trans.sa_session
         # This explicit remove seems like a hack, need to figure out
         # how to make the association do it automatically.
         for m in user.stored_workflow_menu_entries:
-            sess.delete(m)
+            session.delete(m)
         user.stored_workflow_menu_entries = []
-        q = sess.query(model.StoredWorkflow)
         # To ensure id list is unique
         seen_workflow_ids = set()
         for wf_id in workflow_ids_decoded:
@@ -180,56 +170,14 @@ class WorkflowsAPIController(
             else:
                 seen_workflow_ids.add(wf_id)
             m = model.StoredWorkflowMenuEntry()
-            m.stored_workflow = q.get(wf_id)
+            m.stored_workflow = session.get(model.StoredWorkflow, wf_id)
+
             user.stored_workflow_menu_entries.append(m)
-        sess.flush()
+        with transaction(session):
+            session.commit()
         message = "Menu updated."
         trans.set_message(message)
         return {"message": message, "status": "done"}
-
-    def get_workflows_list(
-        self,
-        trans: ProvidesUserContext,
-        missing_tools=False,
-        show_published=None,
-        show_shared=None,
-        show_hidden=False,
-        show_deleted=False,
-        **kwd,
-    ):
-        """
-        Displays a collection of workflows.
-
-        :param  show_published:      Optional boolean to include published workflows
-                                     If unspecified this behavior depends on whether the request
-                                     is coming from an authenticated session. The default is true
-                                     for annonymous API requests and false otherwise.
-        :type   show_published:      boolean
-        :param  show_hidden:         if True, show hidden workflows
-        :type   show_hidden:         boolean
-        :param  show_deleted:        if True, show deleted workflows
-        :type   show_deleted:        boolean
-        :param  show_shared:         Optional boolean to include shared workflows.
-                                     If unspecified this behavior depends on show_deleted/show_hidden.
-                                     Defaulting to false if show_hidden or show_deleted is true or else
-                                     false.
-        :param  missing_tools:       if True, include a list of missing tools per workflow
-        :type   missing_tools:       boolean
-        """
-        show_published = util.string_as_bool_or_none(show_published)
-        show_hidden = util.string_as_bool(show_hidden)
-        show_deleted = util.string_as_bool(show_deleted)
-        missing_tools = util.string_as_bool(missing_tools)
-        show_shared = util.string_as_bool_or_none(show_shared)
-        payload = WorkflowIndexPayload(
-            show_published=show_published,
-            show_hidden=show_hidden,
-            show_deleted=show_deleted,
-            show_shared=show_shared,
-            missing_tools=missing_tools,
-        )
-        workflows, _ = self.service.index(trans, payload)
-        return workflows
 
     @expose_api_anonymous_and_sessionless
     def show(self, trans: GalaxyWebTransaction, id, **kwd):
@@ -244,12 +192,8 @@ class WorkflowsAPIController(
         """
         stored_workflow = self.__get_stored_workflow(trans, id, **kwd)
         if stored_workflow.importable is False and stored_workflow.user != trans.user and not trans.user_is_admin:
-            if (
-                trans.sa_session.query(model.StoredWorkflowUserShareAssociation)
-                .filter_by(user=trans.user, stored_workflow=stored_workflow)
-                .count()
-                == 0
-            ):
+            wf_count = 0 if not trans.user else trans.user.count_stored_workflow_user_assocs(stored_workflow)
+            if wf_count == 0:
                 message = "Workflow is neither importable, nor owned by or shared with current user"
                 raise exceptions.ItemAccessibilityException(message)
         if kwd.get("legacy", False):
@@ -266,26 +210,6 @@ class WorkflowsAPIController(
                     version = i
                     break
         return self.workflow_contents_manager.workflow_to_dict(trans, stored_workflow, style=style, version=version)
-
-    @expose_api
-    def show_versions(self, trans: GalaxyWebTransaction, workflow_id, **kwds):
-        """
-        GET /api/workflows/{encoded_workflow_id}/versions
-
-        :param  instance:                 true if fetch by Workflow ID instead of StoredWorkflow id, false
-                                          by default.
-        :type   instance:                 boolean
-
-        Lists all versions of this workflow.
-        """
-        instance = util.string_as_bool(kwds.get("instance", "false"))
-        stored_workflow = self.workflow_manager.get_stored_accessible_workflow(
-            trans, workflow_id, by_stored_id=not instance
-        )
-        return [
-            {"version": i, "update_time": w.update_time.isoformat(), "steps": len(w.steps)}
-            for i, w in enumerate(reversed(stored_workflow.workflows))
-        ]
 
     @expose_api
     def create(self, trans: GalaxyWebTransaction, payload=None, **kwd):
@@ -311,6 +235,7 @@ class WorkflowsAPIController(
 
         """
         ways_to_create = {
+            "archive_file",
             "archive_source",
             "from_history_id",
             "from_path",
@@ -329,8 +254,8 @@ class WorkflowsAPIController(
             message = f"Only one parameter among - {', '.join(ways_to_create)} - must be specified"
             raise exceptions.RequestParameterInvalidException(message)
 
-        if "archive_source" in payload:
-            archive_source = payload["archive_source"]
+        if "archive_source" in payload or "archive_file" in payload:
+            archive_source = payload.get("archive_source")
             archive_file = payload.get("archive_file")
             archive_data = None
             if archive_source:
@@ -340,11 +265,27 @@ class WorkflowsAPIController(
                     payload["workflow"] = workflow_src
                     return self.__api_import_new_workflow(trans, payload, **kwd)
                 elif archive_source == "trs_tool":
-                    trs_server = payload.get("trs_server")
-                    trs_tool_id = payload.get("trs_tool_id")
-                    trs_version_id = payload.get("trs_version_id")
+                    server = None
+                    trs_tool_id = None
+                    trs_version_id = None
                     import_source = None
-                    archive_data = self.app.trs_proxy.get_version_descriptor(trs_server, trs_tool_id, trs_version_id)
+                    if "trs_url" in payload:
+                        parts = self.app.trs_proxy.match_url(payload["trs_url"])
+                        if parts:
+                            server = self.app.trs_proxy.server_from_url(parts["trs_base_url"])
+                            trs_tool_id = parts["tool_id"]
+                            trs_version_id = parts["version_id"]
+                            payload["trs_tool_id"] = trs_tool_id
+                            payload["trs_version_id"] = trs_version_id
+                        else:
+                            raise exceptions.MessageException("Invalid TRS URL.")
+                    else:
+                        trs_server = payload.get("trs_server")
+                        server = self.app.trs_proxy.get_server(trs_server)
+                        trs_tool_id = payload.get("trs_tool_id")
+                        trs_version_id = payload.get("trs_version_id")
+
+                    archive_data = server.get_version_descriptor(trs_tool_id, trs_version_id)
                 else:
                     try:
                         archive_data = stream_url_to_str(
@@ -579,12 +520,15 @@ class WorkflowsAPIController(
                         require_flush = True
             # set tags
             if "tags" in workflow_dict:
-                trans.app.tag_handler.set_tags_from_list(
-                    user=trans.user, item=stored_workflow, new_tags_list=workflow_dict["tags"]
+                trans.tag_handler.set_tags_from_list(
+                    user=trans.user,
+                    item=stored_workflow,
+                    new_tags_list=workflow_dict["tags"],
                 )
 
             if require_flush:
-                trans.sa_session.flush()
+                with transaction(trans.sa_session):
+                    trans.sa_session.commit()
 
             if "steps" in workflow_dict:
                 try:
@@ -631,6 +575,7 @@ class WorkflowsAPIController(
         POST /api/workflows/build_module
         Builds module models for the workflow editor.
         """
+        # payload is tool state
         if payload is None:
             payload = {}
         inputs = payload.get("inputs", {})
@@ -641,8 +586,6 @@ class WorkflowsAPIController(
             populate_state(trans, module.get_inputs(), inputs, module_state, check=False)
             module.recover_state(module_state, from_tool_form=True)
         return {
-            "label": inputs.get("__label", ""),
-            "annotation": inputs.get("__annotation", ""),
             "name": module.get_name(),
             "tool_state": module.get_state(),
             "content_id": module.get_content_id(),
@@ -756,7 +699,7 @@ class WorkflowsAPIController(
         try:
             stored_workflow = self.get_stored_workflow(trans, workflow_id, check_ownership=False)
         except Exception:
-            raise exceptions.ObjectNotFound(f"Malformed workflow id ( {workflow_id} ) specified.")
+            raise exceptions.ObjectNotFound("Malformed workflow id specified.")
         if stored_workflow.importable is False:
             raise exceptions.ItemAccessibilityException(
                 "The owner of this workflow has disabled imports via this link."
@@ -822,13 +765,21 @@ class WorkflowsAPIController(
             )
             invocations.append(workflow_invocation)
 
-        trans.sa_session.flush()
-        invocations = [self.encode_all_ids(trans, invocation.to_dict(), recursive=True) for invocation in invocations]
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
+        encoded_invocations = []
+        for invocation in invocations:
+            as_dict = workflow_invocation.to_dict()
+            as_dict = self.encode_all_ids(trans, as_dict, recursive=True)
+            as_dict["messages"] = [
+                InvocationMessageResponseModel.parse_obj(message).__root__.dict() for message in invocation.messages
+            ]
+            encoded_invocations.append(as_dict)
 
         if is_batch:
-            return invocations
+            return encoded_invocations
         else:
-            return invocations[0]
+            return encoded_invocations[0]
 
     @expose_api
     def index_invocations(self, trans: GalaxyWebTransaction, **kwd):
@@ -1022,7 +973,7 @@ class WorkflowsAPIController(
         decoded_invocation_id = self.decode_id(invocation_id)
         ids = []
         types = []
-        for (job_source_type, job_source_id, _) in invocation_job_source_iter(trans.sa_session, decoded_invocation_id):
+        for job_source_type, job_source_id, _ in invocation_job_source_iter(trans.sa_session, decoded_invocation_id):
             ids.append(job_source_id)
             types.append(job_source_type)
         return [self.encode_all_ids(trans, s) for s in fetch_job_states(trans.sa_session, ids, types)]
@@ -1098,7 +1049,8 @@ class WorkflowsAPIController(
         )
         if importable:
             self._make_item_accessible(trans.sa_session, created_workflow.stored_workflow)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
 
         self._import_tools_if_needed(trans, workflow_create_options, raw_workflow_description)
         return created_workflow.stored_workflow, created_workflow.missing_tools
@@ -1205,6 +1157,10 @@ OffsetQueryParam: Optional[int] = Query(
     title="Number of workflows to skip in sorted query (to enable pagination).",
 )
 
+InstanceQueryParam: Optional[bool] = Query(
+    default=False, title="True when fetching by Workflow ID, False when fetching by StoredWorkflow ID."
+)
+
 query_tags = [
     IndexQueryTag("name", "The stored workflow's name.", "n"),
     IndexQueryTag(
@@ -1239,7 +1195,6 @@ SkipStepCountsQueryParam: bool = Query(
 @router.cbv
 class FastAPIWorkflows:
     service: WorkflowsService = depends(WorkflowsService)
-    invocations_service: InvocationsService = depends(InvocationsService)
 
     @router.get(
         "/api/workflows",
@@ -1368,6 +1323,72 @@ class FastAPIWorkflows:
         self.service.shareable_service.set_slug(trans, id, payload)
         return Response(status_code=status.HTTP_204_NO_CONTENT)
 
+    @router.delete(
+        "/api/workflows/{workflow_id}",
+        summary="Add the deleted flag to a workflow.",
+    )
+    def delete_workflow(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
+    ):
+        self.service.delete(trans, workflow_id)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    @router.post(
+        "/api/workflows/{workflow_id}/undelete",
+        summary="Remove the deleted flag from a workflow.",
+    )
+    def undelete_workflow(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
+    ):
+        self.service.undelete(trans, workflow_id)
+        return Response(status_code=status.HTTP_204_NO_CONTENT)
+
+    @router.get(
+        "/api/workflows/{workflow_id}/versions",
+        summary="List all versions of a workflow.",
+    )
+    def show_versions(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
+        instance: Optional[bool] = InstanceQueryParam,
+    ):
+        return self.service.get_versions(trans, workflow_id, instance)
+
+    @router.get(
+        "/api/workflows/menu",
+        summary="Get workflows present in the tools panel.",
+    )
+    def get_workflow_menu(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        show_deleted: Optional[bool] = DeletedQueryParam,
+        show_hidden: Optional[bool] = HiddenQueryParam,
+        missing_tools: Optional[bool] = MissingToolsQueryParam,
+        show_published: Optional[bool] = ShowPublishedQueryParam,
+        show_shared: Optional[bool] = ShowSharedQueryParam,
+    ):
+        payload = WorkflowIndexPayload(
+            show_published=show_published,
+            show_hidden=show_hidden,
+            show_deleted=show_deleted,
+            show_shared=show_shared,
+            missing_tools=missing_tools,
+        )
+        return self.service.get_workflow_menu(
+            trans,
+            payload=payload,
+        )
+
+
+@router.cbv
+class FastAPIInvocations:
+    invocations_service: InvocationsService = depends(InvocationsService)
+
     @router.post(
         "/api/invocations/{invocation_id}/prepare_store_download",
         summary="Prepare a workflow invocation export-style download.",
@@ -1400,30 +1421,6 @@ class FastAPIWorkflows:
             payload,
         )
         return rval
-
-    @router.delete(
-        "/api/workflows/{workflow_id}",
-        summary="Add the deleted flag to a workflow.",
-    )
-    def delete_workflow(
-        self,
-        trans: ProvidesUserContext = DependsOnTrans,
-        workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
-    ):
-        self.service.delete(trans, workflow_id)
-        return Response(status_code=status.HTTP_204_NO_CONTENT)
-
-    @router.post(
-        "/api/workflows/{workflow_id}/undelete",
-        summary="Remove the deleted flag from a workflow.",
-    )
-    def undelete_workflow(
-        self,
-        trans: ProvidesUserContext = DependsOnTrans,
-        workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
-    ):
-        self.service.undelete(trans, workflow_id)
-        return Response(status_code=status.HTTP_204_NO_CONTENT)
 
     # TODO: remove this endpoint after 23.1 release
     @router.get(
@@ -1504,7 +1501,7 @@ class FastAPIWorkflows:
         self, trans, invocation_id: DecodedDatabaseIdField, merge_history_metadata: Optional[bool]
     ):
         export_options = BcoExportOptions(
-            galaxy_url=trans.request.base,
+            galaxy_url=trans.request.url_path,
             galaxy_version=VERSION,
             merge_history_metadata=merge_history_metadata or False,
         )

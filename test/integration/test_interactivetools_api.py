@@ -1,6 +1,12 @@
 """Integration tests for realtime tools."""
 import os
 import tempfile
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+)
 
 import pytest
 import requests
@@ -26,128 +32,135 @@ SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
 EMBEDDED_PULSAR_JOB_CONFIG_FILE_DOCKER = os.path.join(SCRIPT_DIRECTORY, "embedded_pulsar_docker_job_conf.yml")
 
 
-class BaseInteractiveToolsIntegrationTestCase(ContainerizedIntegrationTestCase):
-    framework_tool_and_types = True
-    container_type = "docker"
-    enable_realtime_mapping = True
+class AbstractTestCases:
+    class BaseInteractiveToolsIntegrationTestCase(ContainerizedIntegrationTestCase):
+        dataset_populator: DatasetPopulator
+        framework_tool_and_types = True
+        container_type = "docker"
+        enable_realtime_mapping = True
 
-    def setUp(self):
-        super().setUp()
-        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
-        self.history_id = self.dataset_populator.new_history()
+        def setUp(self) -> None:
+            super().setUp()
+            self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
 
-    # Move helpers to populators.py
-    def wait_on_proxied_content(self, target):
-        def get_hosted_content():
-            try:
-                scheme, rest = target.split("://", 1)
-                prefix, host_and_port = rest.split(".interactivetool.")
-                faked_host = rest
-                if "/" in rest:
-                    faked_host = rest.split("/", 1)[0]
-                url = f"{scheme}://{host_and_port}"
-                response = requests.get(url, timeout=1, headers={"Host": faked_host})
-                response.raise_for_status()
-                return response.text
-            except Exception as e:
-                print(e)
-                return None
+        # Move helpers to populators.py
+        def wait_on_proxied_content(self, target: str) -> str:
+            def get_hosted_content() -> Optional[str]:
+                try:
+                    scheme, rest = target.split("://", 1)
+                    prefix, host_and_port = rest.split(".interactivetool.")
+                    faked_host = rest
+                    if "/" in rest:
+                        faked_host = rest.split("/", 1)[0]
+                    url = f"{scheme}://{host_and_port}"
+                    response = requests.get(url, timeout=1, headers={"Host": faked_host})
+                    response.raise_for_status()
+                    return response.text
+                except Exception as e:
+                    print(e)
+                    return None
 
-        content = wait_on(get_hosted_content, f"realtime hosted content at {target}")
-        return content
+            content = wait_on(get_hosted_content, f"realtime hosted content at {target}")
+            return content
 
-    def entry_point_target(self, entry_point_id):
-        entry_point_access_response = self._get(f"entry_points/{entry_point_id}/access")
-        api_asserts.assert_status_code_is(entry_point_access_response, 200)
-        access_json = entry_point_access_response.json()
-        api_asserts.assert_has_key(access_json, "target")
-        return access_json["target"]
+        def entry_point_target(self, entry_point_id: str) -> str:
+            entry_point_access_response = self._get(f"entry_points/{entry_point_id}/access")
+            api_asserts.assert_status_code_is(entry_point_access_response, 200)
+            access_json = entry_point_access_response.json()
+            api_asserts.assert_has_key(access_json, "target")
+            return access_json["target"]
 
-    def wait_on_entry_points_active(self, job_id, expected_num=1):
-        def active_entry_points():
-            entry_points = self.entry_points_for_job(job_id)
-            if len(entry_points) != expected_num:
-                return None
-            elif any(not e["active"] for e in entry_points):
-                job_json = self._get(f"jobs/{job_id}?full=true").json()
-                if job_json["state"] == "error":
-                    raise Exception(f"Interactive tool job {job_id} failed: {job_json}")
-                return None
-            else:
-                return entry_points
+        def wait_on_entry_points_active(self, job_id: str, expected_num: int = 1) -> List[Dict[str, Any]]:
+            def active_entry_points() -> Optional[List[Dict[str, Any]]]:
+                entry_points = self.entry_points_for_job(job_id)
+                if len(entry_points) != expected_num:
+                    return None
+                elif any(not e["active"] for e in entry_points):
+                    job_json = self._get(f"jobs/{job_id}?full=true").json()
+                    if job_json["state"] == "error":
+                        raise Exception(f"Interactive tool job {job_id} failed: {job_json}")
+                    return None
+                else:
+                    return entry_points
 
-        # It currently takes at least 90 seconds until we can be sure the container monitor failed.
-        # Can be decreased when galaxy_ext/container_monitor/monitor.py changes
-        return wait_on(active_entry_points, "entry points to become active", timeout=120)
+            # It currently takes at least 90 seconds until we can be sure the container monitor failed.
+            # Can be decreased when galaxy_ext/container_monitor/monitor.py changes
+            return wait_on(active_entry_points, "entry points to become active", timeout=120)
 
-    def entry_points_for_job(self, job_id):
-        entry_points_response = self._get(f"entry_points?job_id={job_id}")
-        api_asserts.assert_status_code_is(entry_points_response, 200)
-        return entry_points_response.json()
+        def entry_points_for_job(self, job_id: str) -> List[Dict[str, Any]]:
+            entry_points_response = self._get(f"entry_points?job_id={job_id}")
+            api_asserts.assert_status_code_is(entry_points_response, 200)
+            return entry_points_response.json()
 
+        def test_simple_execution(self, history_id: str) -> None:
+            response_dict = self.dataset_populator.run_tool("interactivetool_simple", {}, history_id)
+            assert "jobs" in response_dict, response_dict
+            jobs = response_dict["jobs"]
+            assert isinstance(jobs, list)
+            assert len(jobs) == 1
+            job0 = jobs[0]
+            entry_points = self.wait_on_entry_points_active(job0["id"])
+            assert len(entry_points) == 1
+            entry_point0 = entry_points[0]
+            target = self.entry_point_target(entry_point0["id"])
+            content = self.wait_on_proxied_content(target)
+            assert content == "moo cow\n", content
 
-class RunsInterativeToolTests:
-    def test_simple_execution(self):
-        response_dict = self.dataset_populator.run_tool("interactivetool_simple", {}, self.history_id)
-        assert "jobs" in response_dict, response_dict
-        jobs = response_dict["jobs"]
-        assert isinstance(jobs, list)
-        assert len(jobs) == 1
-        job0 = jobs[0]
-        entry_points = self.wait_on_entry_points_active(job0["id"])
-        assert len(entry_points) == 1
-        entry_point0 = entry_points[0]
-        target = self.entry_point_target(entry_point0["id"])
-        content = self.wait_on_proxied_content(target)
-        assert content == "moo cow\n", content
+        def test_multi_server_realtime_tool(self, history_id: str) -> None:
+            response_dict = self.dataset_populator.run_tool("interactivetool_two_entry_points", {}, history_id)
+            assert "jobs" in response_dict, response_dict
+            jobs = response_dict["jobs"]
+            assert isinstance(jobs, list)
+            assert len(jobs) == 1
+            job0 = jobs[0]
+            entry_points = self.wait_on_entry_points_active(job0["id"], expected_num=2)
+            entry_point0 = entry_points[0]
+            entry_point1 = entry_points[1]
+            target0 = self.entry_point_target(entry_point0["id"])
+            target1 = self.entry_point_target(entry_point1["id"])
+            assert target0 != target1
+            content0 = self.wait_on_proxied_content(target0)
+            assert content0 == "moo cow\n", content0
 
-    def test_multi_server_realtime_tool(self):
-        response_dict = self.dataset_populator.run_tool("interactivetool_two_entry_points", {}, self.history_id)
-        assert "jobs" in response_dict, response_dict
-        jobs = response_dict["jobs"]
-        assert isinstance(jobs, list)
-        assert len(jobs) == 1
-        job0 = jobs[0]
-        entry_points = self.wait_on_entry_points_active(job0["id"], expected_num=2)
-        entry_point0 = entry_points[0]
-        entry_point1 = entry_points[1]
-        target0 = self.entry_point_target(entry_point0["id"])
-        target1 = self.entry_point_target(entry_point1["id"])
-        assert target0 != target1
-        content0 = self.wait_on_proxied_content(target0)
-        assert content0 == "moo cow\n", content0
-
-        content1 = self.wait_on_proxied_content(target1)
-        assert content1 == "moo cow\n", content1
-        stop_response = self.dataset_populator._delete(f'entry_points/{entry_point0["id"]}')
-        stop_response.raise_for_status()
-        self.dataset_populator.wait_for_job(job0["id"], assert_ok=True)
-        job_details = self.dataset_populator.get_job_details(job0["id"], full=True)
-        job_details.raise_for_status()
-        job_details = job_details.json()
-        assert job_details["state"] == "ok"
-        it_output_details = self.dataset_populator.get_history_dataset_details_raw(
-            self.history_id, dataset_id=job_details["outputs"]["test_output"]["id"]
-        )
-        it_output_details.raise_for_status()
-        it_output_details = it_output_details.json()
-        assert it_output_details["state"] == "ok"
-        assert not it_output_details["deleted"]
+            content1 = self.wait_on_proxied_content(target1)
+            assert content1 == "moo cow\n", content1
+            stop_response = self.dataset_populator._delete(f'entry_points/{entry_point0["id"]}')
+            stop_response.raise_for_status()
+            self.dataset_populator.wait_for_job(job0["id"], assert_ok=True)
+            job_details_response = self.dataset_populator.get_job_details(job0["id"], full=True)
+            job_details_response.raise_for_status()
+            job_details = job_details_response.json()
+            assert job_details["state"] == "ok"
+            it_output_details_response = self.dataset_populator.get_history_dataset_details_raw(
+                history_id, dataset_id=job_details["outputs"]["test_output"]["id"]
+            )
+            it_output_details_response.raise_for_status()
+            it_output_details = it_output_details_response.json()
+            assert it_output_details["state"] == "ok"
+            assert not it_output_details["deleted"]
 
 
-class TestInteractiveToolsIntegration(BaseInteractiveToolsIntegrationTestCase, RunsInterativeToolTests):
+class TestInteractiveToolsIntegration(AbstractTestCases.BaseInteractiveToolsIntegrationTestCase):
     pass
 
 
-class TestInteractiveToolsPulsarIntegration(BaseInteractiveToolsIntegrationTestCase, RunsInterativeToolTests):
+class TestInteractiveToolsPulsarIntegration(AbstractTestCases.BaseInteractiveToolsIntegrationTestCase):
     @classmethod
-    def handle_galaxy_config_kwds(cls, config):
+    def handle_galaxy_config_kwds(cls, config) -> None:
         config["job_config_file"] = EMBEDDED_PULSAR_JOB_CONFIG_FILE_DOCKER
         config["galaxy_infrastructure_url"] = "http://localhost:$GALAXY_WEB_PORT"
         disable_dependency_resolution(config)
 
 
-class TestInteractiveToolsRemoteProxyIntegration(BaseInteractiveToolsIntegrationTestCase, RunsInterativeToolTests):
+class TestInteractiveToolsShortURLIntegration(AbstractTestCases.BaseInteractiveToolsIntegrationTestCase):
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        config["interactivetools_shorten_url"] = True
+        config["job_config_file"] = DOCKERIZED_JOB_CONFIG_FILE
+
+
+class TestInteractiveToolsRemoteProxyIntegration(AbstractTestCases.BaseInteractiveToolsIntegrationTestCase):
     """
     $ cd gx-it-proxy
     $ ./lib/createdb.js --sessions $HOME/gxitexproxy.sqlite
@@ -157,7 +170,7 @@ class TestInteractiveToolsRemoteProxyIntegration(BaseInteractiveToolsIntegration
     """
 
     @classmethod
-    def handle_galaxy_config_kwds(cls, config):
+    def handle_galaxy_config_kwds(cls, config) -> None:
         interactivetools_map = os.environ.get("GALAXY_TEST_EXTERNAL_PROXY_MAP")
         interactivetools_proxy_host = os.environ.get("GALAXY_TEST_EXTERNAL_PROXY_HOST")
         if not interactivetools_map or not interactivetools_proxy_host:
@@ -173,7 +186,7 @@ class TestInteractiveToolsRemoteProxyIntegration(BaseInteractiveToolsIntegration
 @integration_util.skip_unless_kubernetes()
 @integration_util.skip_unless_amqp()
 @integration_util.skip_if_github_workflow()
-class TestKubeInteractiveToolsRemoteProxyIntegration(BaseInteractiveToolsIntegrationTestCase, RunsInterativeToolTests):
+class TestKubeInteractiveToolsRemoteProxyIntegration(AbstractTestCases.BaseInteractiveToolsIntegrationTestCase):
     """
     $ git clone https://github.com/galaxyproject/gx-it-proxy.git $HOME/gx-it-proxy
     $ cd $HOME/gx-it-proxy/docker/k8s
@@ -188,14 +201,16 @@ class TestKubeInteractiveToolsRemoteProxyIntegration(BaseInteractiveToolsIntegra
     $ GALAXY_TEST_K8S_EXTERNAL_PROXY_HOST="localhost:9002" GALAXY_TEST_K8S_EXTERNAL_PROXY_MAP="$HOME/gxitk8proxy.sqlite" pytest -s test/integration/test_interactivetools_api.py::TestKubeInteractiveToolsRemoteProxyIntegration
     """
 
+    jobs_directory: str
+
     @classmethod
-    def setUpClass(cls):
+    def setUpClass(cls) -> None:
         # realpath for docker deployed in a VM on Mac, also done in driver_util.
         cls.jobs_directory = os.path.realpath(tempfile.mkdtemp())
         super().setUpClass()
 
     @classmethod
-    def handle_galaxy_config_kwds(cls, config):
+    def handle_galaxy_config_kwds(cls, config) -> None:
         interactivetools_map = os.environ.get("GALAXY_TEST_K8S_EXTERNAL_PROXY_MAP")
         interactivetools_proxy_host = os.environ.get("GALAXY_TEST_K8S_EXTERNAL_PROXY_HOST")
         if not interactivetools_map or not interactivetools_proxy_host:

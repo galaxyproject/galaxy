@@ -4,6 +4,7 @@ from mercurial.hgweb.hgwebdir_mod import hgwebdir
 
 from galaxy import web
 from galaxy.exceptions import ObjectNotFound
+from galaxy.model.base import transaction
 from galaxy.webapps.base.controller import BaseUIController
 from tool_shed.util.repository_util import get_repository_by_name_and_owner
 
@@ -45,5 +46,6 @@ class HgController(BaseUIController):
                 times_downloaded += 1
                 repository.times_downloaded = times_downloaded
                 trans.sa_session.add(repository)
-                trans.sa_session.flush()
+                with transaction(trans.sa_session):
+                    trans.sa_session.commit()
         return PortAsStringMiddleware(wsgi_app)

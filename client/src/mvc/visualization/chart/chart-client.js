@@ -1,14 +1,19 @@
-import $ from "jquery";
-import Backbone from "backbone";
-import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
-import Deferred from "utils/deferred";
-import Modal from "mvc/ui/ui-modal";
+import Backbone from "backbone";
+import $ from "jquery";
 import Ui from "mvc/ui/ui-misc";
+import Modal from "mvc/ui/ui-modal";
 import Chart from "mvc/visualization/chart/components/model";
 import Editor from "mvc/visualization/chart/views/editor";
-import Viewer from "mvc/visualization/chart/views/viewer";
 import Menu from "mvc/visualization/chart/views/menu";
+import Viewer from "mvc/visualization/chart/views/viewer";
+import { getAppRoot } from "onload/loadConfig";
+import Deferred from "utils/deferred";
+
+/** Get boolean as string */
+function asBoolean(value) {
+    return String(value).toLowerCase() == "true";
+}
 
 export default Backbone.View.extend({
     initialize: function (options) {
@@ -26,7 +31,7 @@ export default Backbone.View.extend({
         this.$buttons = this.$(".charts-buttons");
         this.chart = new Chart({}, options);
         this.chart.plugin = options.visualization_plugin;
-        this.chart.plugin.specs = this.chart.plugin.specs || {};
+        this.chart.requiresConfirmation = asBoolean(this.chart.plugin.specs?.confirm);
         this.chart_load = options.chart_load;
         this.message = new Ui.Message();
         this.deferred = new Deferred();

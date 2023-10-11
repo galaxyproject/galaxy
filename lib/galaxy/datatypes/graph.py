@@ -2,7 +2,12 @@
 Graph content classes.
 """
 import logging
+from typing import List
 
+from galaxy.datatypes.dataproviders.column import ColumnarDataProvider
+from galaxy.datatypes.dataproviders.dataset import DatasetDataProvider
+from galaxy.datatypes.dataproviders.hierarchy import XMLDataProvider
+from galaxy.datatypes.protocols import DatasetProtocol
 from galaxy.util import simplegraph
 from . import (
     data,
@@ -23,7 +28,7 @@ class Xgmml(xml.GenericXml):
 
     file_ext = "xgmml"
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """
         Set the peek and blurb text
         """
@@ -34,14 +39,14 @@ class Xgmml(xml.GenericXml):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def sniff(self, filename):
+    def sniff(self, filename: str) -> bool:
         """
         Returns false and the user must manually set.
         """
         return False
 
     @staticmethod
-    def merge(split_files, output_file):
+    def merge(split_files: List[str], output_file: str) -> None:
         """
         Merging multiple XML files is non-trivial and must be done in subclasses.
         """
@@ -52,9 +57,9 @@ class Xgmml(xml.GenericXml):
         # For one file only, use base class method (move/copy)
         data.Text.merge(split_files, output_file)
 
-    @dataproviders.decorators.dataprovider_factory("node-edge", dataproviders.hierarchy.XMLDataProvider.settings)
-    def node_edge_dataprovider(self, dataset, **settings):
-        dataset_source = dataproviders.dataset.DatasetDataProvider(dataset)
+    @dataproviders.decorators.dataprovider_factory("node-edge", XMLDataProvider.settings)
+    def node_edge_dataprovider(self, dataset: DatasetProtocol, **settings) -> "XGMMLGraphDataProvider":
+        dataset_source = DatasetDataProvider(dataset)
         return XGMMLGraphDataProvider(dataset_source, **settings)
 
 
@@ -71,7 +76,7 @@ class Sif(tabular.Tabular):
 
     file_ext = "sif"
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """
         Set the peek and blurb text
         """
@@ -82,24 +87,24 @@ class Sif(tabular.Tabular):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def sniff(self, filename):
+    def sniff(self, filename: str) -> bool:
         """
         Returns false and the user must manually set.
         """
         return False
 
     @staticmethod
-    def merge(split_files, output_file):
+    def merge(split_files: List[str], output_file: str) -> None:
         data.Text.merge(split_files, output_file)
 
-    @dataproviders.decorators.dataprovider_factory("node-edge", dataproviders.column.ColumnarDataProvider.settings)
-    def node_edge_dataprovider(self, dataset, **settings):
-        dataset_source = dataproviders.dataset.DatasetDataProvider(dataset)
+    @dataproviders.decorators.dataprovider_factory("node-edge", ColumnarDataProvider.settings)
+    def node_edge_dataprovider(self, dataset: DatasetProtocol, **settings) -> "SIFGraphDataProvider":
+        dataset_source = DatasetDataProvider(dataset)
         return SIFGraphDataProvider(dataset_source, **settings)
 
 
 # ----------------------------------------------------------------------------- graph specific data providers
-class XGMMLGraphDataProvider(dataproviders.hierarchy.XMLDataProvider):
+class XGMMLGraphDataProvider(XMLDataProvider):
     """
     Provide two lists: nodes, edges::
 
@@ -133,7 +138,7 @@ class XGMMLGraphDataProvider(dataproviders.hierarchy.XMLDataProvider):
         yield graph.as_dict()
 
 
-class SIFGraphDataProvider(dataproviders.column.ColumnarDataProvider):
+class SIFGraphDataProvider(ColumnarDataProvider):
     """
     Provide two lists: nodes, edges::
 

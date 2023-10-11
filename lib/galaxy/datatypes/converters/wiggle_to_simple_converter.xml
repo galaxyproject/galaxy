@@ -1,4 +1,4 @@
-<tool id="CONVERTER_wiggle_to_interval_0" name="Wiggle to Interval" version="1.0.1" profile="16.04">
+<tool id="CONVERTER_wiggle_to_interval_0" name="Convert Wiggle to Interval" version="1.0.1" profile="16.04">
     <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
     <!-- Used on the metadata edit page. -->
     <requirements>

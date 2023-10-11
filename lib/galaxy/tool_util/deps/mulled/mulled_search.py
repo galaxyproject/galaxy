@@ -5,15 +5,14 @@ import json
 import logging
 import sys
 import tempfile
-from datetime import (
-    datetime,
-    timezone,
-)
 
 import requests
 
 from galaxy.tool_util.deps.conda_util import CondaContext
-from galaxy.util import which
+from galaxy.util import (
+    check_github_api_response_rate_limit,
+    which,
+)
 from .mulled_list import get_singularity_containers
 from .util import (
     build_target,
@@ -147,17 +146,6 @@ class GitHubSearch:
     Tool to search the GitHub bioconda-recipes repo
     """
 
-    @staticmethod
-    def _check_response_rate_limit(response):
-        if response.status_code == 403 and "API rate limit exceeded" in response.json()["message"]:
-            # It can take tens of minutes before the rate limit window resets
-            message = "GitHub API rate limit exceeded."
-            rate_limit_reset_UTC_timestamp = response.headers.get("X-RateLimit-Reset")
-            if rate_limit_reset_UTC_timestamp:
-                rate_limit_reset_datetime = datetime.fromtimestamp(int(rate_limit_reset_UTC_timestamp), tz=timezone.utc)
-                message += f" The rate limit window will reset at {rate_limit_reset_datetime.isoformat()}."
-            raise Exception(message)
-
     def get_json(self, search_string):
         """
         Takes search_string variable and return results from the bioconda-recipes github repository in JSON format
@@ -169,7 +157,7 @@ class GitHubSearch:
             f"https://api.github.com/search/code?q={search_string}+in:path+repo:bioconda/bioconda-recipes+path:recipes",
             timeout=MULLED_SOCKET_TIMEOUT,
         )
-        self._check_response_rate_limit(response)
+        check_github_api_response_rate_limit(response)
         response.raise_for_status()
         return response.json()
 
@@ -188,7 +176,7 @@ class GitHubSearch:
             f"https://api.github.com/repos/bioconda/bioconda-recipes/contents/recipes/{search_string}",
             timeout=MULLED_SOCKET_TIMEOUT,
         )
-        self._check_response_rate_limit(response)
+        check_github_api_response_rate_limit(response)
         return response.status_code == 200
 
 
@@ -245,7 +233,6 @@ def singularity_search(search_string):
 
 
 def readable_output(json, organization="biocontainers", channel="bioconda"):
-
     # if json is empty:
     if sum(len(json[destination][results]) for destination in json for results in json[destination]) == 0:
         sys.stdout.write("No results found for that query.\n")

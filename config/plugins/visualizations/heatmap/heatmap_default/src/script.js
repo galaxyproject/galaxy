@@ -468,7 +468,7 @@ window.bundleEntries.heatmap_default = function (options) {
 }
 
 window.bundleEntries.heatmap_cluster = function (options) {
-    options.targets = createContainers(options.chart, options.target);
+    options.targets = createContainers("svg", options.chart, options.target);
     requestJobs(
         options.chart,
         requestCharts(options.chart, "heatmap"),

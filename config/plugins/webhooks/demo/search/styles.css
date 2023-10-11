@@ -4,7 +4,7 @@
 
 .search-screen {
     position: fixed;
-    z-index: 202;
+    z-index: 5100;
     width:100%;
     height:100%;
     display:none;
@@ -15,7 +15,7 @@
     top:0;
     left:0;
     background: rgba(224, 224, 224, 0.75);
-    z-index: 201;
+    z-index: 5000;
     width:100%;
     height:100%;
     display:none;
@@ -64,7 +64,7 @@
     position: fixed;
     top: 34px;
     width: 100%;
-    z-index: 203;
+    z-index: 5200;
 }
 
 .txtbx-search-data {

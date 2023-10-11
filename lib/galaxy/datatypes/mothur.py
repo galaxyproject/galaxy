@@ -3,9 +3,17 @@ Mothur Metagenomics Datatypes
 """
 import logging
 import re
+from typing import (
+    List,
+    Optional,
+)
 
 from galaxy.datatypes.data import Text
 from galaxy.datatypes.metadata import MetadataElement
+from galaxy.datatypes.protocols import (
+    DatasetProtocol,
+    HasMetadata,
+)
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
     FilePrefix,
@@ -28,7 +36,7 @@ class Otu(Text):
     def __init__(self, **kwd):
         super().__init__(**kwd)
 
-    def set_meta(self, dataset, overwrite=True, **kwd):
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         """
         Set metadata for Otu files.
 
@@ -77,7 +85,7 @@ class Otu(Text):
             dataset.metadata.labels = sorted(label_names)
             dataset.metadata.otulabels = sorted(otulabel_names)
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines whether the file is otu (operational taxonomic unit) format
 
@@ -118,10 +126,10 @@ class Sabund(Otu):
         """
         super().__init__(**kwd)
 
-    def init_meta(self, dataset, copy_from=None):
+    def init_meta(self, dataset: HasMetadata, copy_from: Optional[HasMetadata] = None) -> None:
         super().init_meta(dataset, copy_from=copy_from)
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines whether the file is otu (operational taxonomic unit) format
         label<TAB>count[<TAB>value(1..n)]
@@ -162,10 +170,10 @@ class GroupAbund(Otu):
     def __init__(self, **kwd):
         super().__init__(**kwd)
 
-    def init_meta(self, dataset, copy_from=None):
+    def init_meta(self, dataset: HasMetadata, copy_from: Optional[HasMetadata] = None) -> None:
         super().init_meta(dataset, copy_from=copy_from)
 
-    def set_meta(self, dataset, overwrite=True, skip=1, **kwd):
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, skip: Optional[int] = 1, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
 
         # See if file starts with header line
@@ -195,7 +203,7 @@ class GroupAbund(Otu):
             dataset.metadata.groups = sorted(group_names)
             dataset.metadata.skip = skip
 
-    def sniff_prefix(self, file_prefix: FilePrefix, vals_are_int=False):
+    def sniff_prefix(self, file_prefix: FilePrefix, vals_are_int=False) -> bool:
         """
         Determines whether the file is a otu (operational taxonomic unit)
         Shared format
@@ -243,7 +251,7 @@ class SecondaryStructureMap(Tabular):
         super().__init__(**kwd)
         self.column_names = ["Map"]
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines whether the file is a secondary structure map format
         A single column with an integer value which indicates the row that this
@@ -289,7 +297,7 @@ class AlignCheck(Tabular):
         self.column_types = ["str", "int", "int", "int", "int", "int", "int", "int"]
         self.comment_lines = 1
 
-    def set_meta(self, dataset, overwrite=True, **kwd):
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
 
         dataset.metadata.column_names = self.column_names
@@ -343,10 +351,10 @@ class DistanceMatrix(Text):
         no_value="?",
     )
 
-    def init_meta(self, dataset, copy_from=None):
+    def init_meta(self, dataset: HasMetadata, copy_from: Optional[HasMetadata] = None) -> None:
         super().init_meta(dataset, copy_from=copy_from)
 
-    def set_meta(self, dataset, overwrite=True, skip=0, **kwd):
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, skip: Optional[int] = 0, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, skip=skip, **kwd)
 
         headers = iter_headers(dataset.file_name, sep="\t")
@@ -368,10 +376,10 @@ class LowerTriangleDistanceMatrix(DistanceMatrix):
         """Initialize secondary structure map datatype"""
         super().__init__(**kwd)
 
-    def init_meta(self, dataset, copy_from=None):
+    def init_meta(self, dataset: HasMetadata, copy_from: Optional[HasMetadata] = None) -> None:
         super().init_meta(dataset, copy_from=copy_from)
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines whether the file is a lower-triangle distance matrix (phylip) format
         The first line has the number of sequences in the matrix.
@@ -433,10 +441,10 @@ class SquareDistanceMatrix(DistanceMatrix):
     def __init__(self, **kwd):
         super().__init__(**kwd)
 
-    def init_meta(self, dataset, copy_from=None):
+    def init_meta(self, dataset: HasMetadata, copy_from: Optional[HasMetadata] = None) -> None:
         super().init_meta(dataset, copy_from=copy_from)
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines whether the file is a square distance matrix (Column-formatted distance matrix) format
         The first line has the number of sequences in the matrix.
@@ -499,10 +507,10 @@ class PairwiseDistanceMatrix(DistanceMatrix, Tabular):
         self.column_names = ["Sequence", "Sequence", "Distance"]
         self.column_types = ["str", "str", "float"]
 
-    def set_meta(self, dataset, overwrite=True, skip=None, **kwd):
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, skip: Optional[int] = None, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, skip=skip, **kwd)
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines whether the file is a pairwise distance matrix (Column-formatted distance matrix) format
         The first and second columns have the sequence names and the third column is the distance between those sequences.
@@ -587,8 +595,15 @@ class Group(Tabular):
         self.column_names = ["name", "group"]
         self.columns = 2
 
-    def set_meta(self, dataset, overwrite=True, skip=None, max_data_lines=None, **kwd):
-        super().set_meta(dataset, overwrite, skip, max_data_lines)
+    def set_meta(
+        self,
+        dataset: DatasetProtocol,
+        overwrite: bool = True,
+        skip: Optional[int] = None,
+        max_data_lines: Optional[int] = None,
+        **kwd,
+    ) -> None:
+        super().set_meta(dataset, overwrite=overwrite, skip=skip, max_data_lines=max_data_lines, **kwd)
 
         group_names = set()
         headers = iter_headers(dataset.file_name, sep="\t", count=-1)
@@ -612,7 +627,7 @@ class AccNos(Tabular):
 class Oligos(Text):
     file_ext = "mothur.oligos"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         http://www.mothur.org/wiki/Oligos_File
         Determines whether the file is a otu (operational taxonomic unit) format
@@ -653,7 +668,7 @@ class Frequency(Tabular):
         self.column_names = ["position", "frequency"]
         self.column_types = ["int", "float"]
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines whether the file is a frequency tabular format for chimera analysis
 
@@ -732,7 +747,7 @@ class Quantile(Tabular):
         self.column_names = ["num", "ten", "twentyfive", "fifty", "seventyfive", "ninetyfive", "ninetynine"]
         self.column_types = ["int", "float", "float", "float", "float", "float", "float"]
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines whether the file is a quantiles tabular format for chimera analysis
 
@@ -778,7 +793,7 @@ class Quantile(Tabular):
 class LaneMask(Text):
     file_ext = "mothur.filter"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines whether the file is a lane mask filter:  1 line consisting of zeros and ones.
 
@@ -828,7 +843,14 @@ class CountTable(Tabular):
         super().__init__(**kwd)
         self.column_names = ["name", "total"]
 
-    def set_meta(self, dataset, overwrite=True, skip=1, max_data_lines=None, **kwd):
+    def set_meta(
+        self,
+        dataset: DatasetProtocol,
+        overwrite: bool = True,
+        skip: Optional[int] = 1,
+        max_data_lines: Optional[int] = None,
+        **kwd,
+    ) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
 
         headers = get_headers(dataset.file_name, sep="\t", count=1)
@@ -852,7 +874,7 @@ class RefTaxonomy(Tabular):
         super().__init__(**kwd)
         self.column_names = ["name", "taxonomy"]
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines whether the file is a Reference Taxonomy
 
@@ -939,7 +961,7 @@ class Axes(Tabular):
         """Initialize axes datatype"""
         super().__init__(**kwd)
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         Determines whether the file is an axes format
         The first line may have column headings.
@@ -1033,8 +1055,15 @@ class SffFlow(Tabular):
     def __init__(self, **kwd):
         super().__init__(**kwd)
 
-    def set_meta(self, dataset, overwrite=True, skip=1, max_data_lines=None, **kwd):
-        super().set_meta(dataset, overwrite, 1, max_data_lines)
+    def set_meta(
+        self,
+        dataset: DatasetProtocol,
+        overwrite: bool = True,
+        skip: Optional[int] = 1,
+        max_data_lines: Optional[int] = None,
+        **kwd,
+    ) -> None:
+        super().set_meta(dataset, overwrite=overwrite, skip=1, max_data_lines=max_data_lines, **kwd)
 
         headers = get_headers(dataset.file_name, sep="\t", count=1)
         try:
@@ -1043,10 +1072,9 @@ class SffFlow(Tabular):
         except Exception as e:
             log.warning(f"SffFlow set_meta {e}")
 
-    def make_html_table(self, dataset, skipchars=None):
+    def make_html_table(self, dataset: DatasetProtocol, skipchars: Optional[List] = None, **kwargs) -> str:
         """Create HTML table, used for displaying peek"""
-        if skipchars is None:
-            skipchars = []
+        skipchars = skipchars or []
         try:
             out = '<table cellspacing="0" cellpadding="3">'
 

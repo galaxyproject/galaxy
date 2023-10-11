@@ -1,9 +1,10 @@
-import axios from "axios";
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "jest/helpers";
+import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
-import HistoryDatasetDisplay from "./HistoryDatasetDisplay.vue";
 import { typesAndMappingResponse } from "components/Datatypes/test_fixtures";
+import { getLocalVue } from "tests/jest/helpers";
+
+import HistoryDatasetDisplay from "./HistoryDatasetDisplay.vue";
 
 const localVue = getLocalVue();
 
@@ -68,7 +69,7 @@ describe("History Text Dataset Display", () => {
     });
 
     it("should render text", () => {
-        const renderedText = wrapper.find(".text-normalwrap");
+        const renderedText = wrapper.find(".word-wrap-normal");
         expect(renderedText.exists()).toBe(true);
         expect(renderedText.text()).toBe(text.item_data);
     });

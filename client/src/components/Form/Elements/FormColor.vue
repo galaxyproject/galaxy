@@ -1,3 +1,29 @@
+<script setup lang="ts">
+import { computed } from "vue";
+
+export interface FormColorProps {
+    value?: string;
+    id: string;
+}
+
+const props = withDefaults(defineProps<FormColorProps>(), {
+    value: "",
+});
+
+const emit = defineEmits<{
+    (e: "input", value: string): void;
+}>();
+
+const currentValue = computed({
+    get() {
+        return props.value;
+    },
+    set(newValue) {
+        emit("input", newValue);
+    },
+});
+</script>
+
 <template>
     <b-row>
         <b-col class="form-color-input">
@@ -9,30 +35,6 @@
     </b-row>
 </template>
 
-<script>
-export default {
-    props: {
-        value: {
-            type: String,
-            default: "",
-        },
-        id: {
-            type: String,
-            required: true,
-        },
-    },
-    computed: {
-        currentValue: {
-            get() {
-                return this.value;
-            },
-            set(val) {
-                this.$emit("input", val);
-            },
-        },
-    },
-};
-</script>
 <style scoped>
 .form-color-input {
     max-width: 3.6rem;

@@ -22,14 +22,13 @@ lib/galaxy/web/framework/static/scripts
 lib/galaxy/web/framework/static/style
 lib/galaxy/web/framework/meta.json
 
-# Database stuff
+# Misc. data, config, cache files
 /database/
-
 
 # Python bytecode
 *.pyc
 
-# Galaxy Runtime Files
+# Galaxy runtime files
 *.lock
 *.log
 *.pid
@@ -38,19 +37,19 @@ celerybeat-schedule
 # Celery state files
 celerybeat-schedule.*
 
-# Tool Shed Runtime Files
+# Tool Shed runtime files
 tool_shed_webapp.lock
 tool_shed_webapp.log
 tool_shed_webapp.pid
 hgweb.config*
 lib/tool_shed/scripts/bootstrap_tool_shed/user_info.xml
 
-# Reports Runtime Files
+# Reports runtime files
 reports_webapp.lock
 reports_webapp.log
 reports_webapp.pid
 
-# Jupyter Runtime Files
+# Jupyter runtime files
 .ipynb_checkpoints
 
 # Config files
@@ -77,13 +76,14 @@ workflow_schedulers_conf.xml
 config/*
 config/plugins/interactive_environments/**/*.ini
 config/plugins/**/.cache
+config/plugins/**/.parcel-cache
 !config/plugins
 static/welcome.html.*
 static/welcome.html
 static/client_build_hash.txt
 lib/galaxy_test/selenium/jupyter/galaxy_selenium_context.yml
 
-# Tool data.
+# Tool data
 tool-data/annotation_profiler_options.xml
 tool-data/annotation_profiler_valid_builds.txt
 tool-data/gatk_annotations.txt
@@ -135,7 +135,7 @@ vetur.config.js
 # Chrom len files
 *.len
 
-# Jars
+# JARs
 tool-data/shared/jars/
 
 # JS, Local node_modules, and bower_components directories
@@ -145,41 +145,46 @@ static/scripts
 node_modules
 bower_components
 client/src/libs/*
+
 # Old galaxy client location
 client/galaxy
 
-# Documentation build files.
+# Documentation build files
 doc/build
 doc/schema.md
 doc/source/admin/config_logging_default_yaml.rst
 doc/source/dev/schema.md
 client/docs/dist
 
-# webpack stats
+# Webpack stats
 client/webpack-stats.json
 
-# packages
+# Packages
 packages/*/build
 packages/*/dist
 packages/*/*.egg-info
 
-# Misc
-*.orig
-.DS_Store
-*.rej
-*~
-
-# standalone script + main, or build into dist.
+# Standalone script + main, or build into dist
 config/plugins/**/static/dist
 config/plugins/**/static/script.js
 config/plugins/**/static/main.css
 config/plugins/**/static/plugin_build_hash.txt
 config/plugins/**/static/*.map
 
-# viz-specific build artifacts to ignore (until these are removed from codebase)
+# Viz-specific build artifacts to ignore (until these are removed from codebase)
 config/plugins/visualizations/annotate_image/static/jquery.contextMenu.css
 config/plugins/visualizations/nvd3/nvd3_bar/static/nvd3.js
+config/plugins/visualizations/h5web/static/script.css
 
 # CWL conformance tests
 lib/galaxy_test/api/cwl/test_cwl_conformance_v1_?.py
 test/functional/tools/cwl_tools/v1.?/
+
+# Involucro tool
+involucro
+
+# Misc
+*.orig
+.DS_Store
+*.rej
+*~

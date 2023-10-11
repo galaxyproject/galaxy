@@ -1,62 +1,60 @@
+import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
-import { getLocalVue, mockModule } from "jest/helpers";
+import axios from "axios";
+import MockAdapter from "axios-mock-adapter";
+import { getLocalVue } from "tests/jest/helpers";
+
 import FormTool from "./FormTool";
-import MockCurrentUser from "components/providers/MockCurrentUser";
-import MockConfigProvider from "components/providers/MockConfigProvider";
-import Vuex from "vuex";
-import { userStore } from "store/userStore";
-import { configStore } from "store/configStore";
+
+jest.mock("@/schema");
+
+jest.mock("@/composables/config", () => ({
+    useConfig: jest.fn(() => ({
+        config: { enable_tool_source_display: false },
+        isConfigLoaded: true,
+    })),
+}));
 
 const localVue = getLocalVue();
 
 describe("FormTool", () => {
-    let wrapper;
+    const axiosMock = new MockAdapter(axios);
+    axiosMock.onGet(`/api/webhooks`).reply(200, []);
 
-    beforeEach(() => {
-        const store = new Vuex.Store({
-            modules: {
-                user: mockModule(userStore),
-                config: mockModule(configStore),
-            },
-        });
-
-        wrapper = mount(FormTool, {
+    function mountTarget() {
+        return mount(FormTool, {
             propsData: {
                 id: "input",
                 datatypes: [],
-                configForm: {
-                    id: "tool_id+1.0",
-                    name: "tool_name",
-                    version: "1.0",
-                    description: "description",
+                step: {
+                    id: 0,
+                    config_form: {
+                        id: "tool_id+1.0",
+                        name: "tool_name",
+                        version: "1.0",
+                        description: "description",
+                        inputs: [{ name: "input", label: "input", type: "text", value: "value" }],
+                        help: "help_text",
+                        versions: ["1.0", "2.0", "3.0"],
+                        citations: false,
+                    },
+                    outputs: [],
                     inputs: [],
-                    help: "help_text",
-                    versions: ["1.0", "2.0", "3.0"],
-                    hasCitations: false,
-                },
-                nodeId: "id",
-                nodeAnnotation: "",
-                nodeLabel: "",
-                nodeInputs: [],
-                nodeOutputs: [],
-                nodeActiveOutputs: {},
-                postJobActions: {},
-                getManager: () => {
-                    return {};
+                    post_job_actions: {},
                 },
             },
             localVue,
             stubs: {
-                CurrentUser: MockCurrentUser({ id: "fakeuser" }),
-                ConfigProvider: MockConfigProvider({ id: "fakeconfig" }),
-                FormElement: { template: "<div>form-element</div>" },
                 ToolFooter: { template: "<div>tool-footer</div>" },
             },
-            provide: { store },
+            pinia: createTestingPinia(),
+            provide: { workflowId: "mock-workflow" },
         });
-    });
+    }
 
     it("changes between different versions", async () => {
+        const wrapper = mountTarget();
+
         const dropdowns = wrapper.findAll(".tool-versions .dropdown-item");
         let version = dropdowns.at(1);
         expect(version.text()).toBe("Switch to 2.0");

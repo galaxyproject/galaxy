@@ -21,9 +21,10 @@
  */
 
 import { BehaviorSubject, Subject } from "rxjs";
-import { debounceTime, scan, filter } from "rxjs/operators";
-import { getRootFromIndexLink } from "./getRootFromIndexLink";
+import { debounceTime, filter, scan } from "rxjs/operators";
+
 import { defaultConfigs } from "./defaultConfigs";
+import { getRootFromIndexLink } from "./getRootFromIndexLink";
 
 // exporting this addInitialization to window.config variable
 export { addInitialization } from "./initQueue";
@@ -68,7 +69,7 @@ export function get() {
  *
  * @param {*} defaultRoot
  */
-export function getAppRoot(defaultRoot = "/") {
+export function getAppRoot(defaultRoot = "/", stripTrailingSlash = false) {
     let root = defaultRoot;
     try {
         // try actual config
@@ -79,6 +80,9 @@ export function getAppRoot(defaultRoot = "/") {
         } catch (err) {
             console.warn("Unable to find index link in head", err);
         }
+    }
+    if (stripTrailingSlash) {
+        root = (root || "").replace(/\/$/, "");
     }
     return root;
 }

@@ -5,7 +5,7 @@ import Ui from "mvc/ui/ui-misc";
 export default Backbone.View.extend({
     initialize: function (app) {
         this.app = app;
-        this.model = new Backbone.Model({ visible: false });
+        this.model = new Backbone.Model({ visible: app.chart.requiresConfirmation });
         this.execute_button = new Ui.Button({
             icon: "fa-check-square",
             tooltip: "Confirm",
@@ -134,14 +134,14 @@ export default Backbone.View.extend({
     },
 
     render: function () {
-        var visible = this.model.get("visible");
+        const visible = this.model.get("visible");
         this.app.$el[visible ? "removeClass" : "addClass"]("charts-fullscreen");
-        this.execute_button.model.set("visible", visible && !!this.app.chart.plugin.specs.confirm);
+        this.execute_button.model.set("visible", visible && !!this.app.chart.plugin.specs?.confirm);
         this.save_button.model.set("visible", visible);
         this.export_button.model.set("visible", visible);
         this.right_button.model.set("visible", visible);
         this.left_button.model.set("visible", !visible);
-        var exports = this.app.chart.plugin.specs.exports || [];
+        const exports = this.app.chart.plugin.specs?.exports ?? [];
         this.export_button.collection.each((model) => {
             model.set("visible", exports.indexOf(model.get("key")) !== -1);
         });

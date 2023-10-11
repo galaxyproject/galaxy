@@ -59,7 +59,6 @@ def validate_and_normalize_targets(trans, payload):
     payload["check_content"] = trans.app.config.check_upload_content
 
     def check_src(item):
-
         validate_datatype_extension(datatypes_registry=trans.app.datatypes_registry, ext=item.get("ext"))
 
         # Normalize file:// URLs into paths.
@@ -107,7 +106,7 @@ def validate_and_normalize_targets(trans, payload):
             is_directory = False
 
             assert not os.path.islink(user_ftp_dir), "User FTP directory cannot be a symbolic link"
-            for (dirpath, dirnames, filenames) in os.walk(user_ftp_dir):
+            for dirpath, dirnames, filenames in os.walk(user_ftp_dir):
                 for filename in filenames:
                     if ftp_path == filename:
                         path = relpath(os.path.join(dirpath, filename), user_ftp_dir)
@@ -125,7 +124,7 @@ def validate_and_normalize_targets(trans, payload):
 
             if is_directory:
                 # If the target is a directory - make sure no files under it are symbolic links
-                for (dirpath, dirnames, filenames) in os.walk(full_path):
+                for dirpath, dirnames, filenames in os.walk(full_path):
                     for filename in filenames:
                         if ftp_path == filename:
                             path = relpath(os.path.join(dirpath, filename), full_path)

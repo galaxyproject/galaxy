@@ -30,7 +30,7 @@ class odict(UserDict):
         else:
             UserDict.__init__(self, None)
         if isinstance(item, list):
-            for (key, value) in item:
+            for key, value in item:
                 self[key] = value
 
     def __delitem__(self, key):
@@ -72,7 +72,7 @@ class odict(UserDict):
         return UserDict.setdefault(self, key, failobj)
 
     def update(self, dict):
-        for (key, val) in dict.items():
+        for key, val in dict.items():
             self.__setitem__(key, val)
 
     def values(self):

@@ -3,16 +3,24 @@ Unit tests for ``galaxy.web.framework.webapp``
 """
 import logging
 import re
+from typing import (
+    cast,
+    Optional,
+)
 
 import galaxy.config
 from galaxy.app_unittest_utils import galaxy_mock
-from galaxy.webapps.base import webapp as Webapp
+from galaxy.structured_app import BasicSharedApp
+from galaxy.webapps.base.webapp import (
+    GalaxyWebTransaction,
+    WebApplication,
+)
 
 log = logging.getLogger(__name__)
 
 
-class StubGalaxyWebTransaction(Webapp.GalaxyWebTransaction):
-    def _ensure_valid_session(self, session_cookie, create=True):
+class StubGalaxyWebTransaction(GalaxyWebTransaction):
+    def _ensure_valid_session(self, session_cookie: str, create: bool = True) -> None:
         pass
 
 
@@ -28,21 +36,21 @@ class CORSParsingMockConfig(galaxy_mock.MockAppConfig):
 
 
 class TestGalaxyWebTransactionHeaders:
-    def _new_trans(self, allowed_origin_hostnames=None):
-        app = galaxy_mock.MockApp()
+    def _new_trans(self, allowed_origin_hostnames: Optional[str] = None) -> StubGalaxyWebTransaction:
+        app = cast(BasicSharedApp, galaxy_mock.MockApp())
         app.config = CORSParsingMockConfig(allowed_origin_hostnames=allowed_origin_hostnames)
-        webapp = galaxy_mock.MockWebapp(app.security)
+        webapp = cast(WebApplication, galaxy_mock.MockWebapp(app.security))
         environ = galaxy_mock.buildMockEnviron()
-        trans = StubGalaxyWebTransaction(environ, app, webapp)
+        trans = StubGalaxyWebTransaction(environ, app, webapp, "session_cookie")
         return trans
 
     def assert_cors_header_equals(self, headers, should_be):
         assert headers.get("access-control-allow-origin", None) == should_be
 
     def assert_cors_header_missing(self, headers):
-        assert not ("access-control-allow-origin" in headers)
+        assert "access-control-allow-origin" not in headers
 
-    def test_parse_allowed_origin_hostnames(self):
+    def test_parse_allowed_origin_hostnames(self) -> None:
         """Should return a list of (possibly) mixed strings and regexps"""
         config = CORSParsingMockConfig()
 
@@ -57,16 +65,16 @@ class TestGalaxyWebTransactionHeaders:
         assert isinstance(hostnames[1], str)
         assert isinstance(hostnames[2], str)
 
-    def test_default_set_cors_headers(self):
+    def test_default_set_cors_headers(self) -> None:
         """No CORS headers should be set (or even checked) by default"""
         trans = self._new_trans(allowed_origin_hostnames=None)
-        assert isinstance(trans, Webapp.GalaxyWebTransaction)
+        assert isinstance(trans, GalaxyWebTransaction)
 
         trans.request.headers["Origin"] = "http://lisaskelprecipes.pinterest.com?id=kelpcake"
         trans.set_cors_headers()
         self.assert_cors_header_missing(trans.response.headers)
 
-    def test_set_cors_headers(self):
+    def test_set_cors_headers(self) -> None:
         """Origin should be echo'd when it matches an allowed hostname"""
         # an asterisk is a special 'allow all' string
         trans = self._new_trans(allowed_origin_hostnames="*,beep.com")

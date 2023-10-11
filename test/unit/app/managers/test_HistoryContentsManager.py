@@ -17,6 +17,7 @@ from galaxy.managers import (
     history_contents,
 )
 from galaxy.managers.histories import HistoryManager
+from galaxy.model.base import transaction
 from .base import (
     BaseTestCase,
     CreatesCollectionsMixin,
@@ -55,6 +56,7 @@ class HistoryAsContainerBaseTestCase(BaseTestCase, CreatesCollectionsMixin):
 class TestHistoryAsContainer(HistoryAsContainerBaseTestCase):
     def test_contents(self):
         user2 = self.user_manager.create(**user2_data)
+        self.trans.set_user(user2)
         history = self.history_manager.create(name="history", user=user2)
 
         self.log("calling contents on an empty history should return an empty list")
@@ -73,6 +75,7 @@ class TestHistoryAsContainer(HistoryAsContainerBaseTestCase):
 
     def test_contained(self):
         user2 = self.user_manager.create(**user2_data)
+        self.trans.set_user(user2)
         history = self.history_manager.create(name="history", user=user2)
 
         self.log("calling contained on an empty history should return an empty list")
@@ -85,6 +88,7 @@ class TestHistoryAsContainer(HistoryAsContainerBaseTestCase):
 
     def test_copy_elements_on_collection_creation(self):
         user2 = self.user_manager.create(**user2_data)
+        self.trans.set_user(user2)
         history = self.history_manager.create(name="history", user=user2)
         hdas = [self.add_hda_to_history(history, name=("hda-" + str(x))) for x in range(3)]
         hdca = self.add_list_collection_to_history(history, hdas)
@@ -95,6 +99,7 @@ class TestHistoryAsContainer(HistoryAsContainerBaseTestCase):
 
     def test_subcontainers(self):
         user2 = self.user_manager.create(**user2_data)
+        self.trans.set_user(user2)
         history = self.history_manager.create(name="history", user=user2)
 
         self.log("calling subcontainers on an empty history should return an empty list")
@@ -108,6 +113,7 @@ class TestHistoryAsContainer(HistoryAsContainerBaseTestCase):
 
     def test_limit_and_offset(self):
         user2 = self.user_manager.create(**user2_data)
+        self.trans.set_user(user2)
         history = self.history_manager.create(name="history", user=user2)
         contents = []
         contents.extend([self.add_hda_to_history(history, name=("hda-" + str(x))) for x in range(3)])
@@ -129,6 +135,7 @@ class TestHistoryAsContainer(HistoryAsContainerBaseTestCase):
     def test_orm_filtering(self):
         parse_filter = self.history_contents_filters.parse_filter
         user2 = self.user_manager.create(**user2_data)
+        self.trans.set_user(user2)
         history = self.history_manager.create(name="history", user=user2)
         contents = []
         contents.extend([self.add_hda_to_history(history, name=("hda-" + str(x))) for x in range(3)])
@@ -141,7 +148,9 @@ class TestHistoryAsContainer(HistoryAsContainerBaseTestCase):
         self.hda_manager.delete(contents[4])
         contents[6].deleted = True
         deleted = [contents[1], contents[4], contents[6]]
-        self.app.model.context.flush()
+        session = self.app.model.context
+        with transaction(session):
+            session.commit()
 
         # TODO: cross db compat?
         filters = [parse_filter("deleted", "eq", "True")]
@@ -160,7 +169,9 @@ class TestHistoryAsContainer(HistoryAsContainerBaseTestCase):
         contents[5].visible = False
         contents[6].visible = False
         invisible = [contents[2], contents[5], contents[6]]
-        self.app.model.context.flush()
+        session = self.app.model.context
+        with transaction(session):
+            session.commit()
 
         filters = [parse_filter("visible", "eq", "False")]
         assert self.contents_manager.contents(history, filters=filters) == invisible
@@ -223,6 +234,7 @@ class TestHistoryAsContainer(HistoryAsContainerBaseTestCase):
 
     def test_order_by(self):
         user2 = self.user_manager.create(**user2_data)
+        self.trans.set_user(user2)
         history = self.history_manager.create(name="history", user=user2)
         contents = []
         contents.extend([self.add_hda_to_history(history, name=("hda-" + str(x))) for x in range(3)])
@@ -250,12 +262,15 @@ class TestHistoryAsContainer(HistoryAsContainerBaseTestCase):
         self.log("should allow update_time order_by")
         # change the oldest created to update the update_time
         contents[0].name = "zany and/or wacky"
-        self.app.model.context.flush()
+        session = self.app.model.context
+        with transaction(session):
+            session.commit()
         results = self.contents_manager.contents(history, order_by=desc("update_time"))
         assert contents[0] == results[0]
 
     def test_update_time_filter(self):
         user2 = self.user_manager.create(**user2_data)
+        self.trans.set_user(user2)
         history = self.history_manager.create(name="history", user=user2)
         contents = []
         contents.extend([self.add_hda_to_history(history, name=("hda-" + str(x))) for x in range(3)])
@@ -266,7 +281,9 @@ class TestHistoryAsContainer(HistoryAsContainerBaseTestCase):
         self.log("should allow filtering by update_time")
         # change the update_time by updating the name
         contents[3].name = "big ball of mud"
-        self.app.model.context.flush()
+        session = self.app.model.context
+        with transaction(session):
+            session.commit()
         update_time = contents[3].update_time
 
         def get_update_time(item):
@@ -283,6 +300,7 @@ class TestHistoryAsContainer(HistoryAsContainerBaseTestCase):
     def test_filtered_counting(self):
         parse_filter = self.history_contents_filters.parse_filter
         user2 = self.user_manager.create(**user2_data)
+        self.trans.set_user(user2)
         history = self.history_manager.create(name="history", user=user2)
         contents = []
         contents.extend([self.add_hda_to_history(history, name=("hda-" + str(x))) for x in range(3)])
@@ -294,12 +312,16 @@ class TestHistoryAsContainer(HistoryAsContainerBaseTestCase):
         self.hda_manager.delete(contents[1])
         self.hda_manager.delete(contents[4])
         contents[6].deleted = True
-        self.app.model.context.flush()
+        session = self.app.model.context
+        with transaction(session):
+            session.commit()
 
         contents[2].visible = False
         contents[5].visible = False
         contents[6].visible = False
-        self.app.model.context.flush()
+        session = self.app.model.context
+        with transaction(session):
+            session.commit()
 
         HDA = self.hda_manager.model_class
         assert self.contents_manager.contents_count(history, filters=[parsed_filter("orm", HDA.deleted == true())]) == 3
@@ -311,6 +333,7 @@ class TestHistoryAsContainer(HistoryAsContainerBaseTestCase):
 
     def test_type_id(self):
         user2 = self.user_manager.create(**user2_data)
+        self.trans.set_user(user2)
         history = self.history_manager.create(name="history", user=user2)
         contents = []
         contents.extend([self.add_hda_to_history(history, name=("hda-" + str(x))) for x in range(3)])

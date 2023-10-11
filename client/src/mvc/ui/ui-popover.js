@@ -1,8 +1,8 @@
 /**
  * Popover wrapper
  */
-import $ from "jquery";
 import Backbone from "backbone";
+import $ from "jquery";
 import _ from "underscore";
 import Utils from "utils/utils";
 
@@ -14,7 +14,7 @@ export default Backbone.View.extend({
             container: "body",
         });
         this.uid = Utils.uid();
-        this.$target = this.options.container;
+        this.$target = $(this.options.container);
     },
 
     /**

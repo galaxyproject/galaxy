@@ -2,9 +2,11 @@
 Classes related to parameter validation.
 """
 import abc
+import json
 import logging
 import os.path
-import re
+
+import regex
 
 from galaxy import (
     model,
@@ -31,7 +33,7 @@ class Validator(abc.ABC):
     @classmethod
     def from_element(cls, param, elem):
         """
-        Initialize the appropiate Validator class
+        Initialize the appropriate Validator class
 
         example call `validation.Validator.from_element(ToolParameter_object, Validator_object)`
 
@@ -143,7 +145,7 @@ class RegexValidator(Validator):
         if not isinstance(value, list):
             value = [value]
         for val in value:
-            match = re.match(self.expression, val or "")
+            match = regex.match(self.expression, val or "")
             super().validate(match is not None, value_to_show=val)
 
 
@@ -312,8 +314,8 @@ class DatasetOkValidator(Validator):
     >>>
     >>> sa_session = init("/tmp", "sqlite:///:memory:", create_tables=True).session
     >>> hist = History()
-    >>> sa_session.add(hist)
-    >>> sa_session.flush()
+    >>> with sa_session.begin():
+    ...     sa_session.add(hist)
     >>> set_datatypes_registry(example_datatype_registry_for_sample())
     >>> ok_hda = hist.add_dataset(HistoryDatasetAssociation(id=1, extension='interval', create_dataset=True, sa_session=sa_session))
     >>> ok_hda.set_dataset_state(model.Dataset.states.OK)
@@ -371,8 +373,8 @@ class DatasetEmptyValidator(Validator):
     >>>
     >>> sa_session = init("/tmp", "sqlite:///:memory:", create_tables=True).session
     >>> hist = History()
-    >>> sa_session.add(hist)
-    >>> sa_session.flush()
+    >>> with sa_session.begin():
+    ...     sa_session.add(hist)
     >>> set_datatypes_registry(example_datatype_registry_for_sample())
     >>> empty_dataset = Dataset(external_filename=get_test_fname("empty.txt"))
     >>> empty_hda = hist.add_dataset(HistoryDatasetAssociation(id=1, extension='interval', dataset=empty_dataset, sa_session=sa_session))
@@ -427,8 +429,8 @@ class DatasetExtraFilesPathEmptyValidator(Validator):
     >>>
     >>> sa_session = init("/tmp", "sqlite:///:memory:", create_tables=True).session
     >>> hist = History()
-    >>> sa_session.add(hist)
-    >>> sa_session.flush()
+    >>> with sa_session.begin():
+    ...     sa_session.add(hist)
     >>> set_datatypes_registry(example_datatype_registry_for_sample())
     >>> has_extra_hda = hist.add_dataset(HistoryDatasetAssociation(id=1, extension='interval', create_dataset=True, sa_session=sa_session))
     >>> has_extra_hda.dataset.file_size = 10
@@ -485,8 +487,8 @@ class MetadataValidator(Validator):
     >>>
     >>> sa_session = init("/tmp", "sqlite:///:memory:", create_tables=True).session
     >>> hist = History()
-    >>> sa_session.add(hist)
-    >>> sa_session.flush()
+    >>> with sa_session.begin():
+    ...     sa_session.add(hist)
     >>> set_datatypes_registry(example_datatype_registry_for_sample())
     >>> fname = get_test_fname('1.bed')
     >>> bedds = Dataset(external_filename=fname)
@@ -559,6 +561,42 @@ class MetadataValidator(Validator):
             super().validate(isinstance(value, model.DatasetInstance) and not missing, value_to_show=missing)
 
 
+class MetadataEqualValidator(Validator):
+    """
+    Validator that checks for a metadata value for equality
+
+    metadata values that are lists are converted as comma separated string
+    everything else is converted to the string representation
+    """
+
+    requires_dataset_metadata = True
+
+    def __init__(self, metadata_name=None, value=None, message=None, negate="false"):
+        if not message:
+            if not util.asbool(negate):
+                message = f"Metadata value for '{metadata_name}' must be '{value}', but it is '%s'."
+            else:
+                message = f"Metadata value for '{metadata_name}' must not be '{value}' but it is."
+        super().__init__(message, negate)
+        self.metadata_name = metadata_name
+        self.value = value
+
+    @classmethod
+    def from_element(cls, param, elem):
+        value = elem.get("value", None) or json.loads(elem.get("value_json", "null"))
+        return cls(
+            metadata_name=elem.get("metadata_name", None),
+            value=value,
+            message=elem.get("message", None),
+            negate=elem.get("negate", "false"),
+        )
+
+    def validate(self, value, trans=None):
+        if value:
+            metadata_value = getattr(value.metadata, self.metadata_name)
+            super().validate(metadata_value == self.value, value_to_show=metadata_value)
+
+
 class UnspecifiedBuildValidator(Validator):
     """
     Validator that checks for dbkey not equal to '?'
@@ -571,8 +609,8 @@ class UnspecifiedBuildValidator(Validator):
     >>>
     >>> sa_session = init("/tmp", "sqlite:///:memory:", create_tables=True).session
     >>> hist = History()
-    >>> sa_session.add(hist)
-    >>> sa_session.flush()
+    >>> with sa_session.begin():
+    ...     sa_session.add(hist)
     >>> set_datatypes_registry(example_datatype_registry_for_sample())
     >>> has_dbkey_hda = hist.add_dataset(HistoryDatasetAssociation(id=1, extension='interval', create_dataset=True, sa_session=sa_session))
     >>> has_dbkey_hda.set_dataset_state(model.Dataset.states.OK)
@@ -940,7 +978,6 @@ class MetadataInRangeValidator(InRangeValidator):
                 raise ValueError(f"{self.metadata_name} Metadata missing")
             except ValueError:
                 raise ValueError(f"{self.metadata_name} must be a float or an integer")
-            log.error(f"MetadataInRangeValidato.validate value_to_check {value_to_check}")
             super().validate(value_to_check, trans)
 
 
@@ -950,6 +987,7 @@ validator_types = dict(
     in_range=InRangeValidator,
     length=LengthValidator,
     metadata=MetadataValidator,
+    dataset_metadata_equal=MetadataEqualValidator,
     unspecified_build=UnspecifiedBuildValidator,
     no_options=NoOptionsValidator,
     empty_field=EmptyTextfieldValidator,

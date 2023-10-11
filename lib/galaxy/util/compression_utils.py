@@ -4,6 +4,7 @@ import io
 import logging
 import os
 import tarfile
+import tempfile
 import zipfile
 from typing import (
     Any,
@@ -152,8 +153,20 @@ def file_iter(fname: str, sep: Optional[Any] = None) -> Generator[Union[List[byt
 ArchiveMemberType = Union[tarfile.TarInfo, zipfile.ZipInfo]
 
 
-class CompressedFile:
+def decompress_bytes_to_directory(content: bytes) -> str:
+    temp_directory = tempfile.mkdtemp()
+    with tempfile.NamedTemporaryFile(delete=False) as fp:
+        fp.write(content)
+        fp.close()
+        return CompressedFile(fp.name).extract(temp_directory)
 
+
+def decompress_path_to_directory(path: str) -> str:
+    temp_directory = tempfile.mkdtemp()
+    return CompressedFile(path).extract(temp_directory)
+
+
+class CompressedFile:
     archive: Union[tarfile.TarFile, zipfile.ZipFile]
 
     @staticmethod

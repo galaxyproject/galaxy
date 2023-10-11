@@ -30,7 +30,7 @@ class GalaxySessionManager:
                     self.model.GalaxySession.table.c.is_valid == true(),
                 )
             )
-            .options(joinedload("user"))
+            .options(joinedload(self.model.GalaxySession.user))
             .first()
         )
         return galaxy_session

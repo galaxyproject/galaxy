@@ -65,13 +65,11 @@ def verify(
                 f.write(file_content)
             return local_name
 
-    assert get_filename
-
     # Check assertions...
     assertions = attributes.get("assert_list", None)
     if attributes is not None and assertions is not None:
         try:
-            verify_assertions(output_content, attributes["assert_list"])
+            verify_assertions(output_content, attributes["assert_list"], attributes.get("decompress"))
         except AssertionError as err:
             errmsg = f"{item_label} different than expected\n"
             errmsg += unicodify(err)
@@ -372,6 +370,7 @@ def files_re_match(file1, file2, attributes=None):
     )
     if attributes.get("sort", False):
         history_data.sort()
+        local_file.sort()
     lines_diff = int(attributes.get("lines_diff", 0))
     line_diff_count = 0
     diffs = []

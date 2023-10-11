@@ -2,6 +2,7 @@
 Heterogenous lists/contents are difficult to query properly since unions are
 not easily made.
 """
+import json
 import logging
 from typing import (
     Any,
@@ -36,12 +37,16 @@ from galaxy.managers import (
     annotatable,
     base,
     deletable,
+    genomes,
     hdas,
     hdcas,
     taggable,
     tools,
 )
+from galaxy.managers.job_connections import JobConnectionsManager
+from galaxy.schema import ValueFilterQueryParams
 from galaxy.structured_app import MinimalManagerApp
+from galaxy.util import listify
 from .base import (
     parse_bool,
     raise_filter_err,
@@ -54,7 +59,6 @@ log = logging.getLogger(__name__)
 # into its own class to have it's own filters, etc.
 # TODO: but can't inherit from model manager (which assumes only one model)
 class HistoryContentsManager(base.SortableManager):
-
     root_container_class = model.History
 
     contained_class = model.HistoryDatasetAssociation
@@ -176,7 +180,7 @@ class HistoryContentsManager(base.SortableManager):
         ]
         contents_subquery = self._union_of_contents_query(history, filters=filters).subquery()
         statement = (
-            sql.select([sql.column("state"), func.count("*")])
+            sql.select(sql.column("state"), func.count("*"))
             .select_from(contents_subquery)
             .group_by(sql.column("state"))
         )
@@ -433,9 +437,9 @@ class HistoryContentsManager(base.SortableManager):
         query = (
             self._session()
             .query(component_class)
-            .filter(component_class.id.in_(id_list))
+            .filter(component_class.id.in_(id_list))  # type: ignore[attr-defined]
             .options(undefer(component_class._metadata))
-            .options(joinedload("dataset.actions"))  # TODO: use class attr after moving Dataset to declarative mapping.
+            .options(joinedload(component_class.dataset).joinedload(model.Dataset.actions))
             .options(joinedload(component_class.tags))
             .options(joinedload(component_class.annotations))  # type: ignore[attr-defined]
         )
@@ -454,14 +458,6 @@ class HistoryContentsManager(base.SortableManager):
             .options(joinedload(component_class.tags))
             .options(joinedload(component_class.annotations))
         )
-
-        # This will conditionally join a potentially costly job_state summary
-        # All the paranoia if-checking makes me wonder if serialization_params
-        # should really be a property of the manager class instance
-        if serialization_params and serialization_params.keys:
-            if "job_state_summary" in serialization_params.keys:
-                query = query.options(joinedload(component_class.job_state_summary))
-
         return {row.id: row for row in query.all()}
 
 
@@ -519,14 +515,37 @@ class HistoryContentsFilters(
     base.ModelFilterParser,
     annotatable.AnnotatableFilterMixin,
     deletable.PurgableFiltersMixin,
+    genomes.GenomeFilterMixin,
     taggable.TaggableFilterMixin,
     tools.ToolFilterMixin,
 ):
     # surprisingly (but ominously), this works for both content classes in the union that's filtered
     model_class = model.HistoryDatasetAssociation
 
-    def _parse_orm_filter(self, attr, op, val):
+    def parse_query_filters_with_relations(self, query_filters: ValueFilterQueryParams, history_id):
+        """Parse query filters but consider case where related filter is included."""
+        has_related_q = [q for q in ("related-eq", "related") if query_filters.q and q in query_filters.q]
+        if query_filters.q and query_filters.qv and has_related_q:
+            qv_index = query_filters.q.index(has_related_q[0])
+            qv_hid = query_filters.qv[qv_index]
 
+            # Type check whether hid is int
+            if not qv_hid.isdigit():
+                raise glx_exceptions.RequestParameterInvalidException(
+                    "unparsable value for related filter",
+                    column="related",
+                    operation="eq",
+                    value=qv_hid,
+                    ValueError="invalid type in filter",
+                )
+
+            query_filters_with_relations = self.get_query_filters_with_relations(
+                query_filters=query_filters, related_q=has_related_q[0], history_id=history_id
+            )
+            return super().parse_query_filters(query_filters_with_relations)
+        return super().parse_query_filters(query_filters)
+
+    def _parse_orm_filter(self, attr, op, val):
         # we need to use some manual/text/column fu here since some where clauses on the union don't work
         # using the model_class defined above - they need to be wrapped in their own .column()
         # (and some of these are *not* a normal columns (especially 'state') anyway)
@@ -536,6 +555,12 @@ class HistoryContentsFilters(
             if attr == "history_content_type" and op == "eq":
                 if val in ("dataset", "dataset_collection"):
                     return sql.column("history_content_type") == val
+                raise_filter_err(attr, op, val, "bad op in filter")
+
+            if attr == "related":
+                if op == "eq":
+                    # unclear if multiple related values make sense, maybe this should be `.eq_` instead
+                    return sql.column("hid").in_(listify(json.loads(val)))
                 raise_filter_err(attr, op, val, "bad op in filter")
 
             if attr == "type_id":
@@ -575,6 +600,30 @@ class HistoryContentsFilters(
             return self.parsed_filter(filter_type="orm", filter=column_filter)
         return super()._parse_orm_filter(attr, op, val)
 
+    def get_query_filters_with_relations(self, query_filters: ValueFilterQueryParams, related_q: str, history_id):
+        """Return `query_filters_with_relations` changing `related:hid` to `related:[hid1, hid2, ...]`."""
+        if query_filters.q and query_filters.qv:
+            qv_index = query_filters.q.index(related_q)
+            qv_hid = query_filters.qv[qv_index]
+
+            # Make new q and qv excluding related filter
+            new_q = [x for i, x in enumerate(query_filters.q) if i != qv_index]
+            new_qv = [x for i, x in enumerate(query_filters.qv) if i != qv_index]
+
+            # Get list of related item hids from job_connections manager
+            job_connections_manager = JobConnectionsManager(self.app.model.session)
+            related = job_connections_manager.get_related_hids(history_id, int(qv_hid))
+
+            # Make new query_filters with updated list of related hids for given hid
+            new_q.append("related-eq")
+            new_qv.append(json.dumps(related))
+            query_filters_with_relations = ValueFilterQueryParams(
+                q=new_q,
+                qv=new_qv,
+            )
+            return query_filters_with_relations
+        return query_filters
+
     def decode_type_id(self, type_id):
         TYPE_ID_SEP = "-"
         split = type_id.split(TYPE_ID_SEP, 1)
@@ -589,6 +638,7 @@ class HistoryContentsFilters(
     def _add_parsers(self):
         super()._add_parsers()
         annotatable.AnnotatableFilterMixin._add_parsers(self)
+        genomes.GenomeFilterMixin._add_parsers(self)
         deletable.PurgableFiltersMixin._add_parsers(self)
         taggable.TaggableFilterMixin._add_parsers(self)
         tools.ToolFilterMixin._add_parsers(self)

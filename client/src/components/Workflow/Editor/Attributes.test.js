@@ -1,7 +1,10 @@
-import { mount, createLocalVue } from "@vue/test-utils";
+import { createLocalVue, mount } from "@vue/test-utils";
+import { useUserTags } from "composables/user";
+import { isDate } from "date-fns";
+import { computed } from "vue";
+
 import Attributes from "./Attributes";
 import { UntypedParameters } from "./modules/parameters";
-import { isDate } from "date-fns";
 
 jest.mock("app");
 
@@ -11,7 +14,13 @@ const TEST_VERSIONS = [
     { version: 0, update_time: "2022-01-02", steps: 10 },
     { version: 1, update_time: "2022-03-04", steps: 20 },
 ];
+const autocompleteTags = ["#named_uer_tag", "abc", "my_tag"];
 
+jest.mock("composables/user");
+useUserTags.mockReturnValue({
+    userTags: computed(() => autocompleteTags),
+    addLocalTag: jest.fn(),
+});
 describe("Attributes", () => {
     it("test attributes", async () => {
         const localVue = createLocalVue();

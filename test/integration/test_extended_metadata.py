@@ -6,6 +6,7 @@ from galaxy_test.base.populators import (
 from galaxy_test.driver import integration_util
 
 TEST_TOOL_IDS = [
+    "from_work_dir_glob",
     "job_properties",
     "multi_output",
     "multi_output_configured",
@@ -28,6 +29,7 @@ TEST_TOOL_IDS = [
     "composite_output_tests",
     "metadata",
     "metadata_bam",
+    "discover_metadata_files",
     "output_format",
     "output_auto_format",
     "collection_paired_test",
@@ -127,8 +129,6 @@ class TestExtendedMetadataDeferredIntegration(integration_util.IntegrationTestCa
 
 
 class ExtendedMetadataIntegrationInstance(integration_util.IntegrationInstance):
-    """Describe a Galaxy test instance with embedded pulsar configured."""
-
     framework_tool_and_types = True
 
     @classmethod

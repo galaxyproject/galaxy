@@ -1,4 +1,4 @@
-from galaxy.tool_util.unittest_utils import skip_if_site_down
+from galaxy.util.unittest_utils import skip_if_site_down
 from .framework import (
     managed_history,
     selenium_test,
@@ -8,7 +8,6 @@ from .framework import (
 
 
 class TestDataSource(SeleniumTestCase, UsesHistoryItemAssertions):
-
     ensure_registered = True
 
     @selenium_test

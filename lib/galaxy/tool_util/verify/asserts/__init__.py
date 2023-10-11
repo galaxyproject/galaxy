@@ -4,12 +4,14 @@ from inspect import (
     getfullargspec,
     getmembers,
 )
+from tempfile import NamedTemporaryFile
 
 from galaxy.util import unicodify
+from galaxy.util.compression_utils import get_fileobj
 
 log = logging.getLogger(__name__)
 
-assertion_module_names = ["text", "tabular", "xml", "hdf5", "archive", "size"]
+assertion_module_names = ["text", "tabular", "xml", "json", "hdf5", "archive", "size"]
 
 # Code for loading modules containing assertion checking functions, to
 # create a new module of assertion functions, create the needed python
@@ -30,9 +32,15 @@ for assertion_module_name in assertion_module_names:
             assertion_functions[member] = value
 
 
-def verify_assertions(data: bytes, assertion_description_list):
+def verify_assertions(data: bytes, assertion_description_list, decompress=None):
     """This function takes a list of assertions and a string to check
     these assertions against."""
+    if decompress:
+        with NamedTemporaryFile() as tmpfh:
+            tmpfh.write(data)
+            tmpfh.flush()
+            with get_fileobj(tmpfh.name, mode="rb", compressed_formats=None) as fh:
+                data = fh.read()
     for assertion_description in assertion_description_list:
         verify_assertion(data, assertion_description)
 
@@ -60,7 +68,7 @@ def verify_assertion(data: bytes, assertion_description):
     # output. children is the parsed version of the child elements of
     # the XML element describing this assertion. See
     # assert_element_text in test/base/asserts/xml.py as an example of
-    # how to use verify_assertions_function and children in conjuction
+    # how to use verify_assertions_function and children in conjunction
     # to apply assertion checking to a subset of the input. The parsed
     # version of an elements child elements do not need to just define
     # assertions, developers of assertion functions can also use the

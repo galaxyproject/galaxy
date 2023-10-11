@@ -1,15 +1,15 @@
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "jest/helpers";
+import { useConfig } from "composables/config";
+import { getLocalVue } from "tests/jest/helpers";
+
 import ToolSection from "./ToolSection";
 
-import { useConfig } from "composables/useConfig";
-
-jest.mock("composables/useConfig");
+jest.mock("composables/config");
 useConfig.mockReturnValue({
     config: {
         toolbox_auto_sort: true,
     },
-    isLoaded: true,
+    isConfigLoaded: true,
 });
 
 const localVue = getLocalVue();

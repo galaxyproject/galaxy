@@ -3,10 +3,19 @@ Proteomics Datatypes
 """
 import logging
 import re
+from typing import (
+    IO,
+    List,
+    Optional,
+)
 
 from galaxy.datatypes import data
 from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.data import Text
+from galaxy.datatypes.protocols import (
+    DatasetProtocol,
+    HasExtraFilesAndMetadata,
+)
 from galaxy.datatypes.sequence import Sequence
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
@@ -46,8 +55,50 @@ class Wiff(Binary):
             is_binary=True,
         )
 
-    def generate_primary_file(self, dataset=None):
+    def generate_primary_file(self, dataset: HasExtraFilesAndMetadata) -> str:
         rval = ["<html><head><title>Wiff Composite Dataset </title></head><p/>"]
+        rval.append("<div>This composite dataset is composed of the following files:<p/><ul>")
+        for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
+            fn = composite_name
+            opt_text = ""
+            if composite_file.optional:
+                opt_text = " (optional)"
+            if composite_file.get("description"):
+                rval.append(
+                    f"<li><a href=\"{fn}\" type=\"text/plain\">{fn} ({composite_file.get('description')})</a>{opt_text}</li>"
+                )
+            else:
+                rval.append(f'<li><a href="{fn}" type="text/plain">{fn}</a>{opt_text}</li>')
+        rval.append("</ul></div></html>")
+        return "\n".join(rval)
+
+
+class Wiff2(Binary):
+    """Class for wiff2 files."""
+
+    edam_data = "data_2536"
+    edam_format = "format_3710"
+    file_ext = "wiff2"
+    composite_type = "auto_primary_file"
+
+    def __init__(self, **kwd):
+        super().__init__(**kwd)
+
+        self.add_composite_file(
+            "wiff2",
+            description="AB SCIEX files in .wiff2 format. This can contain all needed information or only metadata.",
+            is_binary=True,
+        )
+
+        self.add_composite_file(
+            "wiff_scan",
+            description="AB SCIEX spectra file (wiff.scan), if the corresponding .wiff2 file only contains metadata.",
+            optional="True",
+            is_binary=True,
+        )
+
+    def generate_primary_file(self, dataset: HasExtraFilesAndMetadata) -> str:
+        rval = ["<html><head><title>Wiff2 Composite Dataset </title></head><p/>"]
         rval.append("<div>This composite dataset is composed of the following files:<p/><ul>")
         for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
             fn = composite_name
@@ -94,7 +145,7 @@ class MzTab(Text):
     def __init__(self, **kwd):
         super().__init__(**kwd)
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -103,7 +154,7 @@ class MzTab(Text):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """Determines whether the file is the correct type."""
         has_version = False
         found_man_mtd = set()
@@ -119,7 +170,7 @@ class MzTab(Text):
                     mandatory_field = self._man_mtd[columns[1]]
                     if mandatory_field is None or columns[2].lower() in mandatory_field:
                         found_man_mtd.add(columns[1])
-            elif not columns[0] in self._sections:
+            elif columns[0] not in self._sections:
                 return False
         return has_version and found_man_mtd == set(self._man_mtd.keys())
 
@@ -145,7 +196,7 @@ class MzTab2(MzTab):
     def __init__(self, **kwd):
         super().__init__(**kwd)
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -190,11 +241,11 @@ class Kroenik(Tabular):
             "Modifications",
         ]
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: DatasetProtocol) -> str:
         """Returns formated html of peek"""
         return self.make_html_table(dataset, column_names=self.column_names)
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         fh = file_prefix.string_io()
         line = [_.strip() for _ in fh.readline().split("\t")]
         if line != self.column_names:
@@ -229,11 +280,11 @@ class PepList(Tabular):
         super().__init__(**kwd)
         self.column_names = ["m/z", "rt(min)", "snr", "charge", "intensity"]
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: DatasetProtocol) -> str:
         """Returns formated html of peek"""
         return self.make_html_table(dataset, column_names=self.column_names)
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         fh = file_prefix.string_io()
         line = [_.strip() for _ in fh.readline().split("\t")]
         if line == self.column_names:
@@ -266,11 +317,11 @@ class PSMS(Tabular):
         super().__init__(**kwd)
         self.column_names = ["PSMId", "score", "q-value", "posterior_error_prob", "peptide", "proteinIds"]
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: DatasetProtocol) -> str:
         """Returns formated html of peek"""
         return self.make_html_table(dataset, column_names=self.column_names)
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         fh = file_prefix.string_io()
         line = [_.strip() for _ in fh.readline().split("\t")]
         if line == self.column_names:
@@ -287,7 +338,7 @@ class PEFF(Sequence):
 
     file_ext = "peff"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname( 'test.peff' )
@@ -326,7 +377,7 @@ class PepXmlReport(Tabular):
             "Interprophet Probability",
         ]
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: DatasetProtocol) -> str:
         """Returns formated html of peek"""
         return self.make_html_table(dataset, column_names=self.column_names)
 
@@ -367,7 +418,7 @@ class ProtXmlReport(Tabular):
             "Is Evidence?",
         ]
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: DatasetProtocol) -> str:
         """Returns formated html of peek"""
         return self.make_html_table(dataset, column_names=self.column_names)
 
@@ -382,9 +433,9 @@ class Dta(TabularData):
     file_ext = "dta"
     comment_lines = 0
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         column_types = []
-        data_row = []
+        data_row: List = []
         data_lines = 0
         if dataset.has_data():
             with open(dataset.file_name) as dtafile:
@@ -430,7 +481,7 @@ class Dta2d(TabularData):
     file_ext = "dta2d"
     comment_lines = 0
 
-    def _parse_header(self, line):
+    def _parse_header(self, line: List) -> Optional[List]:
         if len(line) != 3 or len(line[0]) < 3 or not line[0].startswith("#"):
             return None
         line[0] = line[0].lstrip("#")
@@ -439,14 +490,14 @@ class Dta2d(TabularData):
             return None
         return line
 
-    def _parse_delimiter(self, line):
+    def _parse_delimiter(self, line: str) -> Optional[str]:
         if len(line.split(" ")) == 3:
             return " "
         elif len(line.split("\t")) == 3:
             return "\t"
         return None
 
-    def _parse_dataline(self, line):
+    def _parse_dataline(self, line: List) -> bool:
         try:
             line = [float(_) for _ in line]
         except ValueError:
@@ -455,7 +506,7 @@ class Dta2d(TabularData):
             return False
         return True
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         data_lines = 0
         delim = None
         if dataset.has_data():
@@ -479,7 +530,7 @@ class Dta2d(TabularData):
             dataset.metadata.data_lines -= 1
             dataset.metadata.column_names = ["SEC", "MZ", "INT"]
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         sep = None
         header = None
         for idx, line in enumerate(file_prefix.line_iterator()):
@@ -532,7 +583,7 @@ class Edta(TabularData):
     file_ext = "edta"
     comment_lines = 0
 
-    def _parse_delimiter(self, line):
+    def _parse_delimiter(self, line: str) -> Optional[str]:
         if len(line.split(" ")) >= 3:
             return " "
         elif len(line.split("\t")) >= 3:
@@ -541,7 +592,7 @@ class Edta(TabularData):
             return "\t"
         return None
 
-    def _parse_type(self, line):
+    def _parse_type(self, line: List) -> Optional[int]:
         """
         parse the type from the header line
         types 1-3 as in the class docs, 0: type 1 wo/wrong header
@@ -561,7 +612,7 @@ class Edta(TabularData):
         else:
             return 3
 
-    def _parse_dataline(self, line, tpe):
+    def _parse_dataline(self, line: List, tpe: Optional[int]) -> bool:
         if tpe == 2 or tpe == 3:
             idx = 4
         else:
@@ -574,7 +625,7 @@ class Edta(TabularData):
             return False
         return True
 
-    def _clean_header(self, line):
+    def _clean_header(self, line: List) -> List:
         for idx, el in enumerate(line):
             el = el.lower()
             if el.startswith("rt"):
@@ -591,7 +642,7 @@ class Edta(TabularData):
                 line[idx] += str(idx // 4)
         return line
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         data_lines = 0
         delim = None
         tpe = None
@@ -623,7 +674,7 @@ class Edta(TabularData):
             dataset.metadata.comment_lines += 1
             dataset.metadata.data_lines -= 1
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         sep = None
         tpe = None
         for idx, line in enumerate(file_prefix.line_iterator()):
@@ -655,7 +706,7 @@ class ProteomicsXml(GenericXml):
     edam_format = "format_2032"
     root: str
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """Determines whether the file is the correct XML type."""
         for line in file_prefix.line_iterator():
             line = line.strip()
@@ -665,11 +716,11 @@ class ProteomicsXml(GenericXml):
         pattern = r"<(\w*:)?%s" % self.root
         return re.search(pattern, line) is not None
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
-            dataset.blurb = self.blurb
+            dataset.blurb = "ProteomicsXML data"
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
@@ -834,7 +885,7 @@ class Mgf(Text):
     edam_format = "format_3651"
     file_ext = "mgf"
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -843,7 +894,7 @@ class Mgf(Text):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def sniff(self, filename):
+    def sniff(self, filename: str) -> bool:
         mgf_begin_ions = "BEGIN IONS"
         max_lines = 100
 
@@ -854,6 +905,7 @@ class Mgf(Text):
                     return True
                 if i > max_lines:
                     return False
+        return False
 
 
 class MascotDat(Text):
@@ -863,7 +915,7 @@ class MascotDat(Text):
     edam_format = "format_3713"
     file_ext = "mascotdat"
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -872,7 +924,7 @@ class MascotDat(Text):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def sniff(self, filename):
+    def sniff(self, filename: str) -> bool:
         mime_version = "MIME-Version: 1.0 (Generated by Mascot version 1.0)"
         max_lines = 10
 
@@ -883,6 +935,7 @@ class MascotDat(Text):
                     return True
                 if i > max_lines:
                     return False
+        return False
 
 
 class ThermoRAW(Binary):
@@ -892,7 +945,7 @@ class ThermoRAW(Binary):
     edam_format = "format_3712"
     file_ext = "thermo.raw"
 
-    def sniff(self, filename):
+    def sniff(self, filename: str) -> bool:
         # Thermo Finnigan RAW format is proprietary and hence not well documented.
         # Files start with 2 bytes that seem to differ followed by F\0i\0n\0n\0i\0g\0a\0n
         # This combination represents 17 bytes, but to play safe we read 20 bytes from
@@ -906,7 +959,7 @@ class ThermoRAW(Binary):
         except Exception:
             return False
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Thermo Finnigan RAW file"
             dataset.blurb = nice_size(dataset.get_size())
@@ -914,7 +967,7 @@ class ThermoRAW(Binary):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: DatasetProtocol) -> str:
         try:
             return dataset.peek
         except Exception:
@@ -928,11 +981,11 @@ class Msp(Text):
     file_ext = "msp"
 
     @staticmethod
-    def next_line_starts_with(contents, prefix):
+    def next_line_starts_with(contents: IO, prefix: str) -> bool:
         next_line = contents.readline()
         return next_line is not None and next_line.startswith(prefix)
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """Determines whether the file is a NIST MSP output file."""
         begin_contents = file_prefix.contents_header
         if "\n" not in begin_contents:
@@ -948,7 +1001,7 @@ class SPLibNoIndex(Text):
 
     file_ext = "splib_noindex"
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -973,7 +1026,7 @@ class SPLib(Msp):
         self.add_composite_file("library.spidx", description="Spectrum index", is_binary=False)
         self.add_composite_file("library.pepidx", description="Peptide index", is_binary=False)
 
-    def generate_primary_file(self, dataset=None):
+    def generate_primary_file(self, dataset: HasExtraFilesAndMetadata) -> str:
         rval = ["<html><head><title>Spectral Library Composite Dataset </title></head><p/>"]
         rval.append("<div>This composite dataset is composed of the following files:<p/><ul>")
         for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
@@ -990,7 +1043,7 @@ class SPLib(Msp):
         rval.append("</ul></div></html>")
         return "\n".join(rval)
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -999,7 +1052,7 @@ class SPLib(Msp):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """Determines whether the file is a SpectraST generated file."""
         contents = file_prefix.string_io()
         return Msp.next_line_starts_with(contents, "Name:") and Msp.next_line_starts_with(contents, "LibID:")
@@ -1009,7 +1062,7 @@ class SPLib(Msp):
 class Ms2(Text):
     file_ext = "ms2"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """Determines whether the file is a valid ms2 file."""
         header_lines = []
         for line in file_prefix.line_iterator():
@@ -1062,7 +1115,7 @@ class ImzML(Binary):
 
         self.add_composite_file("ibd", description="The mass spectral data component.", is_binary=True)
 
-    def generate_primary_file(self, dataset=None):
+    def generate_primary_file(self, dataset: HasExtraFilesAndMetadata) -> str:
         rval = ["<html><head><title>imzML Composite Dataset </title></head><p/>"]
         rval.append("<div>This composite dataset is composed of the following files:<p/><ul>")
         for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():

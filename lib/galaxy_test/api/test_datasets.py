@@ -1,4 +1,5 @@
 import textwrap
+import urllib
 import zipfile
 from io import BytesIO
 from typing import (
@@ -11,8 +12,12 @@ from galaxy.model.unittest_utils.store_fixtures import (
     one_hda_model_store_dict,
     TEST_SOURCE_URI,
 )
-from galaxy.tool_util.unittest_utils import skip_if_github_down
+from galaxy.util.unittest_utils import skip_if_github_down
 from galaxy_test.base.api_asserts import assert_has_keys
+from galaxy_test.base.decorators import (
+    requires_admin,
+    requires_new_history,
+)
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
@@ -56,6 +61,7 @@ class TestDatasetsApi(ApiTestCase):
             assert len(dataset) == 1
             self._assert_has_keys(dataset, "id")
 
+    @requires_new_history
     def test_index_order_by_size(self):
         num_datasets = 3
         history_id = self.dataset_populator.new_history()
@@ -82,183 +88,192 @@ class TestDatasetsApi(ApiTestCase):
         for index, dataset in enumerate(datasets):
             assert dataset["id"] == expected_ids_order[index]
 
-    def test_search_datasets(self, history_id):
-        hda_id = self.dataset_populator.new_dataset(history_id)["id"]
-        payload = {"limit": 1, "offset": 0, "history_id": history_id}
-        index_response = self._get("datasets", payload).json()
-        assert len(index_response) == 1
-        assert index_response[0]["id"] == hda_id
-        fetch_response = self.dataset_collection_populator.create_list_in_history(
-            history_id, contents=["1\n2\n3"]
-        ).json()
-        hdca_id = self.dataset_collection_populator.wait_for_fetched_collection(fetch_response)["id"]
-        index_payload_1 = {"limit": 3, "offset": 0, "order": "hid", "history_id": history_id}
-        index_response = self._get("datasets", index_payload_1).json()
-        assert len(index_response) == 3
-        assert index_response[0]["hid"] == 3
-        assert index_response[1]["hid"] == 2
-        assert index_response[2]["hid"] == 1
-        assert index_response[2]["history_content_type"] == "dataset"
-        assert index_response[2]["id"] == hda_id
-        assert index_response[1]["history_content_type"] == "dataset_collection"
-        assert index_response[1]["id"] == hdca_id
-        index_payload_2 = {"limit": 2, "offset": 0, "q": ["history_content_type"], "qv": ["dataset"]}
-        index_response = self._get("datasets", index_payload_2).json()
-        assert index_response[1]["id"] == hda_id
+    @requires_new_history
+    def test_search_datasets(self):
+        with self.dataset_populator.test_history_for(self.test_search_datasets) as history_id:
+            hda_id = self.dataset_populator.new_dataset(history_id)["id"]
+            payload = {"limit": 1, "offset": 0, "history_id": history_id}
+            index_response = self._get("datasets", payload).json()
+            assert len(index_response) == 1
+            assert index_response[0]["id"] == hda_id
+            fetch_response = self.dataset_collection_populator.create_list_in_history(
+                history_id, contents=["1\n2\n3"]
+            ).json()
+            hdca_id = self.dataset_collection_populator.wait_for_fetched_collection(fetch_response)["id"]
+            index_payload_1 = {"limit": 3, "offset": 0, "order": "hid", "history_id": history_id}
+            index_response = self._get("datasets", index_payload_1).json()
+            assert len(index_response) == 3
+            assert index_response[0]["hid"] == 3
+            assert index_response[1]["hid"] == 2
+            assert index_response[2]["hid"] == 1
+            assert index_response[2]["history_content_type"] == "dataset"
+            assert index_response[2]["id"] == hda_id
+            assert index_response[1]["history_content_type"] == "dataset_collection"
+            assert index_response[1]["id"] == hdca_id
+            index_payload_2 = {"limit": 2, "offset": 0, "q": ["history_content_type"], "qv": ["dataset"]}
+            index_response = self._get("datasets", index_payload_2).json()
+            assert index_response[1]["id"] == hda_id
 
-    def test_search_by_tag(self, history_id):
-        hda_id = self.dataset_populator.new_dataset(history_id)["id"]
-        update_payload = {
-            "tags": ["cool:new_tag", "cool:another_tag"],
-        }
-        updated_hda = self._put(f"histories/{history_id}/contents/{hda_id}", update_payload, json=True).json()
-        assert "cool:new_tag" in updated_hda["tags"]
-        assert "cool:another_tag" in updated_hda["tags"]
-        payload = {
-            "limit": 10,
-            "offset": 0,
-            "q": ["history_content_type", "tag"],
-            "qv": ["dataset", "cool:new_tag"],
-            "history_id": history_id,
-        }
-        index_response = self._get("datasets", payload).json()
-        assert len(index_response) == 1
-        payload = {
-            "limit": 10,
-            "offset": 0,
-            "q": ["history_content_type", "tag-contains"],
-            "qv": ["dataset", "new_tag"],
-            "history_id": history_id,
-        }
-        index_response = self._get("datasets", payload).json()
-        assert len(index_response) == 1
-        payload = {
-            "limit": 10,
-            "offset": 0,
-            "q": ["history_content_type", "tag-contains"],
-            "qv": ["dataset", "notag"],
-            "history_id": history_id,
-        }
-        index_response = self._get("datasets", payload).json()
-        assert len(index_response) == 0
+    @requires_new_history
+    def test_search_by_tag(self):
+        with self.dataset_populator.test_history_for(self.test_search_by_tag) as history_id:
+            hda_id = self.dataset_populator.new_dataset(history_id)["id"]
+            update_payload = {
+                "tags": ["cool:new_tag", "cool:another_tag"],
+            }
+            updated_hda = self._put(f"histories/{history_id}/contents/{hda_id}", update_payload, json=True).json()
+            assert "cool:new_tag" in updated_hda["tags"]
+            assert "cool:another_tag" in updated_hda["tags"]
+            payload = {
+                "limit": 10,
+                "offset": 0,
+                "q": ["history_content_type", "tag"],
+                "qv": ["dataset", "cool:new_tag"],
+                "history_id": history_id,
+            }
+            index_response = self._get("datasets", payload).json()
+            assert len(index_response) == 1
+            payload = {
+                "limit": 10,
+                "offset": 0,
+                "q": ["history_content_type", "tag-contains"],
+                "qv": ["dataset", "new_tag"],
+                "history_id": history_id,
+            }
+            index_response = self._get("datasets", payload).json()
+            assert len(index_response) == 1
+            payload = {
+                "limit": 10,
+                "offset": 0,
+                "q": ["history_content_type", "tag-contains"],
+                "qv": ["dataset", "notag"],
+                "history_id": history_id,
+            }
+            index_response = self._get("datasets", payload).json()
+            assert len(index_response) == 0
 
+    @requires_new_history
     def test_search_by_tag_case_insensitive(self):
-        history_id = self.dataset_populator.new_history()
-        hda_id = self.dataset_populator.new_dataset(history_id)["id"]
-        update_payload = {
-            "tags": ["name:new_TAG", "cool:another_TAG"],
-        }
-        updated_hda = self._put(f"histories/{history_id}/contents/{hda_id}", update_payload, json=True).json()
-        assert "name:new_TAG" in updated_hda["tags"]
-        assert "cool:another_TAG" in updated_hda["tags"]
-        payload = {
-            "limit": 10,
-            "offset": 0,
-            "q": ["history_content_type", "tag"],
-            "qv": ["dataset", "name:new_tag"],
-            "history_id": history_id,
-        }
-        index_response = self._get("datasets", payload).json()
-        assert len(index_response) == 1
-        payload = {
-            "limit": 10,
-            "offset": 0,
-            "q": ["history_content_type", "tag-contains"],
-            "qv": ["dataset", "new_tag"],
-            "history_id": history_id,
-        }
-        index_response = self._get("datasets", payload).json()
-        assert len(index_response) == 1
-        payload = {
-            "limit": 10,
-            "offset": 0,
-            "q": ["history_content_type", "tag-contains"],
-            "qv": ["dataset", "notag"],
-            "history_id": history_id,
-        }
-        index_response = self._get("datasets", payload).json()
-        assert len(index_response) == 0
+        with self.dataset_populator.test_history_for(self.test_search_by_tag_case_insensitive) as history_id:
+            hda_id = self.dataset_populator.new_dataset(history_id)["id"]
+            update_payload = {
+                "tags": ["name:new_TAG", "cool:another_TAG"],
+            }
+            updated_hda = self._put(f"histories/{history_id}/contents/{hda_id}", update_payload, json=True).json()
+            assert "name:new_TAG" in updated_hda["tags"]
+            assert "cool:another_TAG" in updated_hda["tags"]
+            payload = {
+                "limit": 10,
+                "offset": 0,
+                "q": ["history_content_type", "tag"],
+                "qv": ["dataset", "name:new_tag"],
+                "history_id": history_id,
+            }
+            index_response = self._get("datasets", payload).json()
+            assert len(index_response) == 1
+            payload = {
+                "limit": 10,
+                "offset": 0,
+                "q": ["history_content_type", "tag-contains"],
+                "qv": ["dataset", "new_tag"],
+                "history_id": history_id,
+            }
+            index_response = self._get("datasets", payload).json()
+            assert len(index_response) == 1
+            payload = {
+                "limit": 10,
+                "offset": 0,
+                "q": ["history_content_type", "tag-contains"],
+                "qv": ["dataset", "notag"],
+                "history_id": history_id,
+            }
+            index_response = self._get("datasets", payload).json()
+            assert len(index_response) == 0
 
-    def test_search_by_tool_id(self, history_id):
-        self.dataset_populator.new_dataset(history_id)
-        payload = {
-            "limit": 1,
-            "offset": 0,
-            "q": ["history_content_type", "tool_id"],
-            "qv": ["dataset", "__DATA_FETCH__"],
-            "history_id": history_id,
-        }
-        assert len(self._get("datasets", payload).json()) == 1
-        payload = {
-            "limit": 1,
-            "offset": 0,
-            "q": ["history_content_type", "tool_id"],
-            "qv": ["dataset", "__DATA_FETCH__X"],
-            "history_id": history_id,
-        }
-        assert len(self._get("datasets", payload).json()) == 0
-        payload = {
-            "limit": 1,
-            "offset": 0,
-            "q": ["history_content_type", "tool_id-contains"],
-            "qv": ["dataset", "ATA_FETCH"],
-            "history_id": history_id,
-        }
-        assert len(self._get("datasets", payload).json()) == 1
-        self.dataset_collection_populator.create_list_in_history(
-            history_id, name="search by tool id", contents=["1\n2\n3"], wait=True
-        )
-        payload = {
-            "limit": 10,
-            "offset": 0,
-            "q": ["name", "tool_id"],
-            "qv": ["search by tool id", "__DATA_FETCH__"],
-            "history_id": history_id,
-        }
-        result = self._get("datasets", payload).json()
-        assert result[0]["name"] == "search by tool id", result
-        payload = {
-            "limit": 1,
-            "offset": 0,
-            "q": ["history_content_type", "tool_id"],
-            "qv": ["dataset_collection", "uploadX"],
-            "history_id": history_id,
-        }
-        result = self._get("datasets", payload).json()
-        assert len(result) == 0
+    @requires_new_history
+    def test_search_by_tool_id(self):
+        with self.dataset_populator.test_history_for(self.test_search_by_tool_id) as history_id:
+            self.dataset_populator.new_dataset(history_id)
+            payload = {
+                "limit": 1,
+                "offset": 0,
+                "q": ["history_content_type", "tool_id"],
+                "qv": ["dataset", "__DATA_FETCH__"],
+                "history_id": history_id,
+            }
+            assert len(self._get("datasets", payload).json()) == 1
+            payload = {
+                "limit": 1,
+                "offset": 0,
+                "q": ["history_content_type", "tool_id"],
+                "qv": ["dataset", "__DATA_FETCH__X"],
+                "history_id": history_id,
+            }
+            assert len(self._get("datasets", payload).json()) == 0
+            payload = {
+                "limit": 1,
+                "offset": 0,
+                "q": ["history_content_type", "tool_id-contains"],
+                "qv": ["dataset", "ATA_FETCH"],
+                "history_id": history_id,
+            }
+            assert len(self._get("datasets", payload).json()) == 1
+            self.dataset_collection_populator.create_list_in_history(
+                history_id, name="search by tool id", contents=["1\n2\n3"], wait=True
+            )
+            payload = {
+                "limit": 10,
+                "offset": 0,
+                "q": ["name", "tool_id"],
+                "qv": ["search by tool id", "__DATA_FETCH__"],
+                "history_id": history_id,
+            }
+            result = self._get("datasets", payload).json()
+            assert result[0]["name"] == "search by tool id", result
+            payload = {
+                "limit": 1,
+                "offset": 0,
+                "q": ["history_content_type", "tool_id"],
+                "qv": ["dataset_collection", "uploadX"],
+                "history_id": history_id,
+            }
+            result = self._get("datasets", payload).json()
+            assert len(result) == 0
 
-    def test_search_by_extension(self, history_id):
-        self.dataset_populator.new_dataset(history_id, wait=True)
-        payload = {
-            "q": ["extension"],
-            "qv": ["txt"],
-            "history_id": history_id,
-        }
-        assert len(self._get("datasets", payload).json()) == 1
-        payload = {
-            "q": ["extension"],
-            "qv": ["bam"],
-            "history_id": history_id,
-        }
-        assert len(self._get("datasets", payload).json()) == 0
-        payload = {
-            "q": ["extension-in"],
-            "qv": ["bam,txt"],
-            "history_id": history_id,
-        }
-        assert len(self._get("datasets", payload).json()) == 1
-        payload = {
-            "q": ["extension-like"],
-            "qv": ["t%t"],
-            "history_id": history_id,
-        }
-        assert len(self._get("datasets", payload).json()) == 1
-        payload = {
-            "q": ["extension-like"],
-            "qv": ["b%m"],
-            "history_id": history_id,
-        }
-        assert len(self._get("datasets", payload).json()) == 0
+    @requires_new_history
+    def test_search_by_extension(self):
+        with self.dataset_populator.test_history_for(self.test_search_by_extension) as history_id:
+            self.dataset_populator.new_dataset(history_id, wait=True)
+            payload = {
+                "q": ["extension"],
+                "qv": ["txt"],
+                "history_id": history_id,
+            }
+            assert len(self._get("datasets", payload).json()) == 1
+            payload = {
+                "q": ["extension"],
+                "qv": ["bam"],
+                "history_id": history_id,
+            }
+            assert len(self._get("datasets", payload).json()) == 0
+            payload = {
+                "q": ["extension-in"],
+                "qv": ["bam,txt"],
+                "history_id": history_id,
+            }
+            assert len(self._get("datasets", payload).json()) == 1
+            payload = {
+                "q": ["extension-like"],
+                "qv": ["t%t"],
+                "history_id": history_id,
+            }
+            assert len(self._get("datasets", payload).json()) == 1
+            payload = {
+                "q": ["extension-like"],
+                "qv": ["b%m"],
+                "history_id": history_id,
+            }
+            assert len(self._get("datasets", payload).json()) == 0
 
     def test_invalid_search(self):
         payload = {
@@ -292,6 +307,7 @@ class TestDatasetsApi(ApiTestCase):
             show_response = self._get(f"datasets/{hda['id']}")
             self._assert_status_code_is(show_response, 403)
 
+    @requires_admin
     def test_admin_can_update_permissions(self, history_id):
         # Create private dataset
         hda = self.dataset_populator.new_dataset(history_id)
@@ -325,6 +341,147 @@ class TestDatasetsApi(ApiTestCase):
         display_response = self._get(f"histories/{history_id}/contents/{hda1['id']}/display", {"raw": "True"})
         self._assert_status_code_is(display_response, 200)
         assert display_response.text == contents
+
+    def test_get_content_as_text(self, history_id):
+        contents = textwrap.dedent(
+            """\
+        1   2   3   4
+        A   B   C   D
+        10  20  30  40
+        """
+        )
+        hda1 = self.dataset_populator.new_dataset(history_id, content=contents, wait=True)
+        get_content_as_text_response = self._get(f"datasets/{hda1['id']}/get_content_as_text")
+        self._assert_status_code_is(get_content_as_text_response, 200)
+        self._assert_has_key(get_content_as_text_response.json(), "item_data")
+        assert get_content_as_text_response.json().get("item_data") == contents
+
+    def test_anon_get_content_as_text(self, history_id):
+        contents = "accessible data"
+        hda1 = self.dataset_populator.new_dataset(history_id, content=contents, wait=True)
+        with self._different_user(anon=True):
+            get_content_as_text_response = self._get(f"datasets/{hda1['id']}/get_content_as_text")
+            self._assert_status_code_is(get_content_as_text_response, 200)
+
+    def test_anon_private_get_content_as_text(self, history_id):
+        contents = "private data"
+        hda1 = self.dataset_populator.new_dataset(history_id, content=contents, wait=True)
+        self.dataset_populator.make_private(history_id=history_id, dataset_id=hda1["id"])
+        with self._different_user(anon=True):
+            get_content_as_text_response = self._get(f"datasets/{hda1['id']}/get_content_as_text")
+            self._assert_status_code_is(get_content_as_text_response, 403)
+
+    def test_dataprovider_chunk(self, history_id):
+        contents = textwrap.dedent(
+            """\
+        1   2   3   4
+        A   B   C   D
+        10  20  30  40
+        """
+        )
+        # test first chunk
+        hda1 = self.dataset_populator.new_dataset(history_id, content=contents, wait=True)
+        kwds = {
+            "data_type": "raw_data",
+            "provider": "chunk",
+            "chunk_index": "0",
+            "chunk_size": "5",
+        }
+
+        display_response = self._get(f"datasets/{hda1['id']}", kwds)
+        self._assert_status_code_is(display_response, 200)
+        display = display_response.json()
+        self._assert_has_key(display, "data")
+        assert display["data"] == ["1   2"]
+
+        # test index
+        kwds = {
+            "data_type": "raw_data",
+            "provider": "chunk",
+            "chunk_index": "1",
+            "chunk_size": "5",
+        }
+
+        display_response = self._get(f"datasets/{hda1['id']}", kwds)
+        self._assert_status_code_is(display_response, 200)
+        display = display_response.json()
+        self._assert_has_key(display, "data")
+        assert display["data"] == ["   3 "]
+
+        # test line breaks
+        kwds = {
+            "data_type": "raw_data",
+            "provider": "chunk",
+            "chunk_index": "0",
+            "chunk_size": "20",
+        }
+
+        display_response = self._get(f"datasets/{hda1['id']}", kwds)
+        self._assert_status_code_is(display_response, 200)
+        display = display_response.json()
+        self._assert_has_key(display, "data")
+        assert "\nA" in display["data"][0]
+
+    def test_bam_chunking_through_display_endpoint(self, history_id):
+        # This endpoint does not use data providers and instead overrides display_data
+        # in the bam datatype. This is the endpoint is very close to the legacy non-API
+        # controller endpoint used by the UI to produce these chunks.
+        bam_dataset = self.dataset_populator.new_bam_dataset(history_id, self.test_data_resolver)
+        bam_id = bam_dataset["id"]
+
+        chunk_1 = self._display_chunk(bam_id, 0, 1)
+        self._assert_has_keys(chunk_1, "offset", "ck_data")
+
+        offset = chunk_1["offset"]
+
+        chunk_2 = self._display_chunk(bam_id, offset, 1)
+        assert chunk_2["offset"] > offset
+        # chunk_1 just contains all the headers so this check wouldn't work.
+        assert len(chunk_2["ck_data"].split("\n")) == 1
+
+        double_chunk = self._display_chunk(bam_id, offset, 2)
+        assert len(double_chunk["ck_data"].split("\n")) == 2
+
+    def _display_chunk(self, dataset_id: str, offset: int, ck_size: int):
+        return self.dataset_populator.display_chunk(dataset_id, offset, ck_size)
+
+    def test_tabular_chunking_through_display_endpoint(self, history_id):
+        contents = textwrap.dedent(
+            """\
+        1   2   3   4
+        A   B   C   D
+        10  20  30  40
+        """
+        )
+        # test first chunk
+        hda1 = self.dataset_populator.new_dataset(history_id, content=contents, wait=True, file_type="tabular")
+        dataset_id = hda1["id"]
+        chunk_1 = self._display_chunk(dataset_id, 0, 1)
+        self._assert_has_keys(chunk_1, "offset", "ck_data")
+
+        assert chunk_1["ck_data"] == "1   2   3   4"
+        assert chunk_1["offset"] == 14
+
+        chunk_2 = self._display_chunk(dataset_id, 14, 1)
+        assert chunk_2["ck_data"] == "A   B   C   D"
+        assert chunk_2["offset"] == 28
+
+        chunk_3 = self._display_chunk(dataset_id, 28, 1)
+        assert chunk_3["ck_data"] == "10  20  30  40"
+
+    def test_connectivity_table_chunking_through_display_endpoint(self, history_id):
+        ct_dataset = self.dataset_populator.new_dataset(
+            history_id, content=open(self.test_data_resolver.get_filename("1.ct"), "rb"), file_type="ct", wait=True
+        )
+        dataset_id = ct_dataset["id"]
+        chunk_1 = self._display_chunk(dataset_id, 0, 1)
+        self._assert_has_keys(chunk_1, "offset", "ck_data")
+
+        assert chunk_1["ck_data"] == "363	tmRNA"
+        assert chunk_1["offset"] == 10, chunk_1
+
+        chunk_2 = self._display_chunk(dataset_id, 10, 1)
+        assert chunk_2["ck_data"] == "1	G	0	2	359	1"
 
     def test_head(self, history_id):
         hda1 = self.dataset_populator.new_dataset(history_id, wait=True)
@@ -373,6 +530,39 @@ class TestDatasetsApi(ApiTestCase):
         assert "tag_c" in updated_hda["tags"]
         assert "name:tag_d" in updated_hda["tags"]
         assert "name:tag_e" in updated_hda["tags"]
+
+    def test_anon_tag_permissions(self):
+        with self._different_user(anon=True):
+            history_id = self._get(urllib.parse.urljoin(self.url, "history/current_history_json")).json()["id"]
+            hda_id = self.dataset_populator.new_dataset(history_id, content="abc", wait=True)["id"]
+            payload = {
+                "item_id": hda_id,
+                "item_class": "HistoryDatasetAssociation",
+                "item_tags": ["cool:tag_a", "cool:tag_b", "tag_c", "name:tag_d", "#tag_e"],
+            }
+            put_response = self._put("tags", data=payload, json=True)
+            updated_hda = self._get(f"histories/{history_id}/contents/{hda_id}").json()
+            assert len(updated_hda["tags"]) == 5
+            # ensure we can remove these tags again
+            payload = {
+                "item_id": hda_id,
+                "item_class": "HistoryDatasetAssociation",
+                "item_tags": [],
+            }
+            put_response = self._put("tags", data=payload, json=True)
+            put_response.raise_for_status()
+            updated_hda = self._get(f"histories/{history_id}/contents/{hda_id}").json()
+            assert len(updated_hda["tags"]) == 0
+        with self._different_user(anon=True):
+            # another anon user can't modify tags
+            payload = {
+                "item_id": hda_id,
+                "item_class": "HistoryDatasetAssociation",
+                "item_tags": ["cool:tag_a", "cool:tag_b", "tag_c", "name:tag_d", "#tag_e"],
+            }
+            put_response = self._put("tags", data=payload, json=True)
+            updated_hda = self._get(f"histories/{history_id}/contents/{hda_id}").json()
+            assert len(updated_hda["tags"]) == 0
 
     @skip_without_tool("cat_data_and_sleep")
     def test_update_datatype(self, history_id):
@@ -454,6 +644,8 @@ class TestDatasetsApi(ApiTestCase):
         for index in range(num_datasets):
             hda = self.dataset_populator.new_dataset(history_id)
             dataset_map[index] = hda["id"]
+
+        self.dataset_populator.wait_for_history(history_id)
 
         expected_deleted_source_ids = [
             {"id": dataset_map[1], "src": "hda"},
@@ -659,3 +851,15 @@ class TestDatasetsApi(ApiTestCase):
         output = self.dataset_populator.fetch_hda(history_id, item)
         dataset_details = self.dataset_populator.get_history_dataset_details(history_id, dataset=output, assert_ok=True)
         assert "display_application/" in dataset_details["display_apps"][0]["links"][0]["href"]
+
+    def test_cannot_update_datatype_on_immutable_history(self, history_id):
+        hda_id = self.dataset_populator.new_dataset(history_id)["id"]
+        self.dataset_populator.wait_for_history_jobs(history_id)
+
+        # once we purge the history, it becomes immutable
+        self._delete(f"histories/{history_id}", data={"purge": True}, json=True)
+
+        # now we can't update the datatype
+        response = self._put(f"histories/{history_id}/contents/{hda_id}", data={"datatype": "tabular"}, json=True)
+        self._assert_status_code_is(response, 403)
+        assert response.json()["err_msg"] == "History is immutable"

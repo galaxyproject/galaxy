@@ -1,8 +1,11 @@
 import os
 from tempfile import mkdtemp
 
+from sqlalchemy import select
+
 from galaxy import model
 from galaxy.model import store
+from galaxy.model.base import transaction
 from galaxy.model.store.discover import persist_target_to_export_store
 from galaxy.model.unittest_utils import GalaxyDataTestApp
 
@@ -210,7 +213,7 @@ def test_persist_target_hdca():
 
 
 def _assert_one_library_created(sa_session):
-    all_libraries = sa_session.query(model.Library).all()
+    all_libraries = sa_session.scalars(select(model.Library)).all()
     assert len(all_libraries) == 1, len(all_libraries)
     new_library = all_libraries[0]
     return new_library
@@ -242,13 +245,18 @@ def _import_directory_to_history(app, target, work_directory):
 
     sa_session = app.model.context
     sa_session.add_all([u, import_history])
-    sa_session.flush()
+    with transaction(sa_session):
+        sa_session.commit()
 
     assert len(import_history.datasets) == 0
 
     import_options = store.ImportOptions(allow_dataset_object_edit=True)
     import_model_store = store.get_import_model_store_for_directory(
-        target, app=app, user=u, import_options=import_options, tag_handler=app.tag_handler.create_tag_handler_session()
+        target,
+        app=app,
+        user=u,
+        import_options=import_options,
+        tag_handler=app.tag_handler.create_tag_handler_session(None),
     )
     with import_model_store.target_history(default_history=import_history):
         import_model_store.perform_import(import_history)

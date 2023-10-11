@@ -1,22 +1,37 @@
-<tool id="CONVERTER_interval_to_bgzip_0" name="Convert Interval to BGZIP" version="1.0.1" hidden="true" profile="16.04">
+<tool id="CONVERTER_interval_to_bgzip_0" name="Convert Interval to BGZIP" version="1.0.3" hidden="true" profile="16.04">
     <!-- <description>__NOT_USED_CURRENTLY_FOR_CONVERTERS__</description> -->
+    <macros>
+        <xml name="assert_size" tokens="value" token_delta="10">
+            <assert_contents>
+                <has_size value="@VALUE@" delta="@DELTA@"/>
+                <yield/>
+            </assert_contents>
+        </xml>
+    </macros>
     <requirements>
-        <requirement type="package" version="0.15.4">pysam</requirement>
-        <requirement type="package" version="8.25">coreutils</requirement>
+        <requirement type="package" version="9.1">coreutils</requirement>
+        <requirement type="package" version="1.16">htslib</requirement>
     </requirements>
     <command><![CDATA[
-        python '$__tool_directory__/bgzip.py'
-        #if $input1.ext in ['bed', 'gff', 'vcf']
-            -P $input1.ext
+        ## Skip any lines starting with '#' and 'track'
+        grep -e '^#' -e '^track' -v '$input1' 
+        |
+        sort 
+        #if $input1.is_of_type('vcf')
+            -k1,1 -k2,2n
+        #elif $input1.is_of_type('gff')
+            ## stable sort on start column (only) ..
+            -s -k1,1 -k4,4n
         #else
-            -c ${input1.metadata.chromCol}
-            -s ${input1.metadata.startCol}
-            -e ${input1.metadata.endCol}
+            -k${input1.metadata.chromCol},${input1.metadata.chromCol}
+            -k${input1.metadata.startCol},${input1.metadata.startCol}n
+            -k${input1.metadata.endCol},${input1.metadata.endCol}n
         #end if
-        '$input1' '$output1'
+        | 
+        bgzip -c > '$output1'
     ]]></command>
     <inputs>
-        <!-- gff because gff and vcf are not a subclass of interval -->
+        <!-- gff and vcf are not a subclass of interval -->
         <param format="gff,vcf,interval" name="input1" type="data" label="Choose Interval file"/>
     </inputs>
     <outputs>
@@ -25,27 +40,67 @@
     <tests>
         <test>
             <param name="input1" ftype="bed" value="droPer1.bed"/>
-            <output name="output1" ftype="bgzip" value="droPer1.bgzip"/>
+            <output name="output1" ftype="bgzip" value="droPer1.bgzip" decompress="true">
+                <expand macro="assert_size" value="131"/>
+            </output>
+            <assert_command>
+                <has_text text="-k1,1 -k2,2n -k3,3n"/>
+            </assert_command>
         </test>
         <test>
             <param name="input1" ftype="encodepeak" value="encode.broad.peak"/>
             <output name="output1" ftype="bgzip">
-                <assert_contents>
-                    <has_size value="299" delta="10"/>
-                </assert_contents>
+                <expand macro="assert_size" value="143">
+                    <has_text_matching expression="^#" negate="true"/>
+                </expand>
             </output>
+            <assert_command>
+                <has_text text="-k1,1 -k2,2n -k3,3n"/>
+            </assert_command>
         </test>
         <test>
             <param name="input1" ftype="gff" value="gff_filter_by_feature_count_out2.gff"/>
-            <output name="output1" ftype="bgzip" value="bgzip_filter_by_feature_count_out2.bgzip"/>
+            <output name="output1" ftype="bgzip" value="bgzip_filter_by_feature_count_out2.bgzip" decompress="true">
+                <expand macro="assert_size" value="638"/>
+            </output>
+            <assert_command>
+                <has_text text="-k1,1 -k4,4n"/>
+                <has_text text="-k5,5" negate="true"/>
+            </assert_command>
         </test>
         <test>
             <param name="input1" ftype="interval" value="2.interval"/>
-            <output name="output1" ftype="bgzip" value="2.bgzip"/>
+            <output name="output1" ftype="bgzip" value="2.bgzip" decompress="true">
+                <expand macro="assert_size" value="208"/>
+            </output>
+            <assert_command>
+                <has_text text="-k1,1 -k2,2n -k3,3n"/>
+            </assert_command>
         </test>
         <test>
             <param name="input1" ftype="vcf" value="vcf_to_maf_in.vcf"/>
-            <output name="output1" ftype="bgzip" value="bgzip_to_maf_in.bgzip"/>
+            <output name="output1" ftype="bgzip" decompress="true">
+                <expand macro="assert_size" value="322">
+                    <!-- will only work with https://github.com/galaxyproject/galaxy/pull/15085
+                        <has_n_lines n="3"/>
+                        <has_text_matching expression="^#" negate="true"/> -->
+                </expand>
+            </output>
+            <assert_command>
+                <has_text text="-k1,1 -k2,2n"/>
+            </assert_command>
+        </test>
+        <test>
+            <param name="input1" ftype="gtf" value="cufflinks_out1.gtf"/>
+            <output name="output1" ftype="bgzip" >
+                <assert_contents>
+                    <has_size value="270" delta="10" />
+                </assert_contents>
+            </output>
+            <assert_command>
+                <has_text text="-k1,1 -k4,4n"/>
+                <has_text text="-k5,5" negate="true"/>
+            </assert_command>
         </test>
     </tests>
     <help>

@@ -7,6 +7,7 @@
 <script>
 import DisplayApplications from "./DisplayApplications";
 import PluginList from "./PluginList";
+
 export default {
     components: {
         PluginList,

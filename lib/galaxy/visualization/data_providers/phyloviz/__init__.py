@@ -11,7 +11,6 @@ from galaxy.visualization.data_providers.phyloviz.phyloxmlparser import Phyloxml
 
 
 class PhylovizDataProvider(BaseDataProvider):
-
     dataset_type = "phylo"
 
     def __init__(self, original_dataset=None):

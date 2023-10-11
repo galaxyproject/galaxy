@@ -5,6 +5,17 @@
     <head>
         <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
 
+        <!-- Set meta description -->
+        <%
+            if request.path.startswith('/login'):
+                meta_description = "Log in to Galaxy to get access to more tools and resources. Register now for a free account."
+            elif request.path.startswith('/workflows'):
+                meta_description = "Galaxy Workflows facilitate rigorous, reproducible analysis pipelines that can be shared with the community."
+            else:
+                meta_description = "Galaxy is a community-driven web-based analysis platform for life science research."
+        %>
+        <meta name="description" content="${meta_description}" />
+
         <title>
             Galaxy
             %if app.config.brand:
@@ -21,7 +32,6 @@
         )}
         ${ h.css(
             'jquery-ui/smoothness/jquery-ui',
-            'bootstrap-tour',
         )}
     </head>
 

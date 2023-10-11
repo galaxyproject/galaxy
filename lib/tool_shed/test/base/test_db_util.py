@@ -1,5 +1,8 @@
 import logging
-from typing import Optional
+from typing import (
+    List,
+    Optional,
+)
 
 from sqlalchemy import (
     and_,
@@ -10,6 +13,7 @@ from sqlalchemy import (
 import galaxy.model
 import galaxy.model.tool_shed_install
 import tool_shed.webapp.model as model
+from galaxy.managers.users import get_user_by_username
 
 log = logging.getLogger("test.tool_shed.test_db_util")
 
@@ -46,23 +50,21 @@ def get_all_repositories():
     return sa_session().query(model.Repository).all()
 
 
-def get_all_installed_repositories(actually_installed=False):
-    if actually_installed:
-        return (
-            install_session()
-            .query(galaxy.model.tool_shed_install.ToolShedRepository)
-            .filter(
-                and_(
-                    galaxy.model.tool_shed_install.ToolShedRepository.table.c.deleted == false(),
-                    galaxy.model.tool_shed_install.ToolShedRepository.table.c.uninstalled == false(),
-                    galaxy.model.tool_shed_install.ToolShedRepository.table.c.status
-                    == galaxy.model.tool_shed_install.ToolShedRepository.installation_status.INSTALLED,
-                )
+def get_all_installed_repositories(session=None) -> List[galaxy.model.tool_shed_install.ToolShedRepository]:
+    if session is None:
+        session = install_session()
+    return list(
+        session.query(galaxy.model.tool_shed_install.ToolShedRepository)
+        .filter(
+            and_(
+                galaxy.model.tool_shed_install.ToolShedRepository.table.c.deleted == false(),
+                galaxy.model.tool_shed_install.ToolShedRepository.table.c.uninstalled == false(),
+                galaxy.model.tool_shed_install.ToolShedRepository.table.c.status
+                == galaxy.model.tool_shed_install.ToolShedRepository.installation_status.INSTALLED,
             )
-            .all()
         )
-    else:
-        return install_session().query(galaxy.model.tool_shed_install.ToolShedRepository).all()
+        .all()
+    )
 
 
 def get_galaxy_repository_by_name_owner_changeset_revision(repository_name, owner, changeset_revision):
@@ -89,15 +91,13 @@ def get_installed_repository_by_id(repository_id):
     )
 
 
-def get_installed_repository_by_name_owner(repository_name, owner, return_multiple=False):
-    query = (
-        install_session()
-        .query(galaxy.model.tool_shed_install.ToolShedRepository)
-        .filter(
-            and_(
-                galaxy.model.tool_shed_install.ToolShedRepository.table.c.name == repository_name,
-                galaxy.model.tool_shed_install.ToolShedRepository.table.c.owner == owner,
-            )
+def get_installed_repository_by_name_owner(repository_name, owner, return_multiple=False, session=None):
+    if session is None:
+        session = install_session()
+    query = session.query(galaxy.model.tool_shed_install.ToolShedRepository).filter(
+        and_(
+            galaxy.model.tool_shed_install.ToolShedRepository.table.c.name == repository_name,
+            galaxy.model.tool_shed_install.ToolShedRepository.table.c.owner == owner,
         )
     )
     if return_multiple:
@@ -149,7 +149,6 @@ def get_repository_downloadable_revisions(repository_id):
 def get_repository_metadata_for_changeset_revision(
     repository_id: int, changeset_revision: Optional[str]
 ) -> model.RepositoryMetadata:
-    assert sa_session
     repository_metadata = (
         sa_session()
         .query(model.RepositoryMetadata)
@@ -172,10 +171,6 @@ def get_user(email):
     return sa_session().query(model.User).filter(model.User.table.c.email == email).first()
 
 
-def get_user_by_name(username):
-    return sa_session().query(model.User).filter(model.User.table.c.username == username).first()
-
-
 def mark_obj_deleted(obj):
     obj.deleted = True
     sa_session().add(obj)
@@ -191,7 +186,7 @@ def ga_refresh(obj):
 
 
 def get_repository_by_name_and_owner(name, owner_username, return_multiple=False):
-    owner = get_user_by_name(owner_username)
+    owner = get_user_by_username(sa_session(), owner_username, model.User)
     repository = (
         sa_session()
         .query(model.Repository)

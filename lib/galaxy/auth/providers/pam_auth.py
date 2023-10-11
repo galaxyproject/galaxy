@@ -10,7 +10,7 @@ from galaxy.util import (
     commands,
     string_as_bool,
 )
-from ..providers import AuthProvider
+from . import AuthProvider
 
 log = logging.getLogger(__name__)
 
@@ -55,7 +55,6 @@ Configuration example (for internal authentication, use email for user details):
 
 
 class PAM(AuthProvider):
-
     plugin_type = "PAM"
 
     def authenticate(self, email, username, password, options, request):

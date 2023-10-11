@@ -1,3 +1,4 @@
+import json
 import logging
 from typing import (
     Any,
@@ -6,7 +7,7 @@ from typing import (
     Sequence,
 )
 
-import packaging.version
+from packaging.version import Version
 
 log = logging.getLogger(__name__)
 
@@ -146,7 +147,7 @@ def _json_wrap_input(input, value_wrapper, profile, handle_files="skip"):
         else:
             json_value = _cast_if_not_none(value_wrapper, bool, empty_to_none=input.optional)
     elif input_type == "select":
-        if packaging.version.parse(str(profile)) < packaging.version.parse("20.05"):
+        if Version(str(profile)) < Version("20.05"):
             json_value = _cast_if_not_none(value_wrapper, str)
         else:
             if input.multiple:
@@ -168,6 +169,15 @@ def _json_wrap_input(input, value_wrapper, profile, handle_files="skip"):
 
 
 def _hda_to_object(hda):
+    if hda.extension == "expression.json":
+        # We may have a null data value
+        with open(str(hda)) as inp:
+            try:
+                rval = json.loads(inp.read(5))
+                if rval is None:
+                    return rval
+            except Exception:
+                pass
     hda_dict = hda.to_dict()
     metadata_dict = {}
 

@@ -35,7 +35,7 @@ class HomePage(BaseUIController, ReportQueryBuilder):
         et_dy_data = []
 
         recent_jobs = sa.select(
-            ((model.Job.id), (model.Job.create_time).label("create_time"), (model.Job.update_time).label("update_time"))
+            model.Job.id, model.Job.create_time.label("create_time"), model.Job.update_time.label("update_time")
         )
 
         for job in trans.sa_session.execute(recent_jobs):

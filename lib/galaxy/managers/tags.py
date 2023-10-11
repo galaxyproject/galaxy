@@ -4,7 +4,7 @@ from typing import Optional
 from pydantic import Field
 
 from galaxy.managers.context import ProvidesUserContext
-from galaxy.model import ItemTagAssociation
+from galaxy.model.base import transaction
 from galaxy.model.tags import GalaxyTagHandlerSession
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
@@ -12,10 +12,15 @@ from galaxy.schema.schema import (
     TagCollection,
 )
 
-taggable_item_names = {item: item for item in ItemTagAssociation.associated_item_names}
-# This Enum is generated dynamically and mypy can not statically infer it's real type
-# so it should be ignored. See: https://github.com/python/mypy/issues/4865#issuecomment-592560696
-TaggableItemClass = Enum("TaggableItemClass", taggable_item_names)  # type: ignore[misc]
+
+class TaggableItemClass(Enum):
+    History = "History"
+    HistoryDatasetAssociation = "HistoryDatasetAssociation"
+    HistoryDatasetCollectionAssociation = "HistoryDatasetCollectionAssociation"
+    LibraryDatasetDatasetAssociation = "LibraryDatasetDatasetAssociation"
+    Page = "Page"
+    StoredWorkflow = "StoredWorkflow"
+    Visualization = "Visualization"
 
 
 class ItemTagsPayload(Model):
@@ -41,16 +46,15 @@ class TagsManager:
 
     def update(self, trans: ProvidesUserContext, payload: ItemTagsPayload) -> None:
         """Apply a new set of tags to an item; previous tags are deleted."""
-        sa_session = trans.sa_session
         user = trans.user
-        tag_handler = GalaxyTagHandlerSession(sa_session)
         new_tags: Optional[str] = None
         if payload.item_tags and len(payload.item_tags.__root__) > 0:
             new_tags = ",".join(payload.item_tags.__root__)
-        item = self._get_item(tag_handler, payload)
-        tag_handler.delete_item_tags(user, item)
-        tag_handler.apply_item_tags(user, item, new_tags)
-        sa_session.flush()
+        item = self._get_item(trans.tag_handler, payload)
+        trans.tag_handler.delete_item_tags(user, item)
+        trans.tag_handler.apply_item_tags(user, item, new_tags)
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
 
     def _get_item(self, tag_handler: GalaxyTagHandlerSession, payload: ItemTagsPayload):
         """

@@ -6,6 +6,10 @@ import logging
 from galaxy.datatypes.data import Data
 from galaxy.datatypes.images import Html
 from galaxy.datatypes.metadata import MetadataElement
+from galaxy.datatypes.protocols import (
+    DatasetProtocol,
+    HasExtraFilesAndMetadata,
+)
 
 gal_Log = logging.getLogger(__name__)
 verbose = True
@@ -18,7 +22,7 @@ class Neo4j(Html):
     stored in extra files path
     """
 
-    def generate_primary_file(self, dataset=None):
+    def generate_primary_file(self, dataset: HasExtraFilesAndMetadata) -> str:
         """
         This is called only at upload to write the html file
         cannot rename the datasets here - they come with the default unfortunately
@@ -37,11 +41,11 @@ class Neo4j(Html):
         rval.append("</ul></html>")
         return "\n".join(rval)
 
-    def get_mime(self):
+    def get_mime(self) -> str:
         """Returns the mime type of the datatype"""
         return "text/html"
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = "Neo4j database (multiple files)"
@@ -50,7 +54,7 @@ class Neo4j(Html):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: DatasetProtocol) -> str:
         """Create HTML content, used for displaying peek."""
         try:
             return dataset.peek

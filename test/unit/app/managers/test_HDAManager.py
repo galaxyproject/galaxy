@@ -1,6 +1,7 @@
 from unittest import mock
 
 import sqlalchemy
+from sqlalchemy import select
 
 from galaxy import (
     exceptions,
@@ -44,7 +45,7 @@ class TestHDAManager(HDATestCase):
         hda3 = self.hda_manager.create(history=history1, hid=3)
 
         self.log("should be able to query")
-        hdas = self.trans.sa_session.query(hda_model).all()
+        hdas = self.trans.sa_session.scalars(select(hda_model)).all()
         assert self.hda_manager.list() == hdas
         assert self.hda_manager.one(filters=(hda_model.id == hda1.id)) == hda1
         assert self.hda_manager.by_id(hda1.id) == hda1
@@ -70,7 +71,7 @@ class TestHDAManager(HDATestCase):
         self.log("should be able to create a new HDA with a specified history and dataset")
         hda1 = self.hda_manager.create(history=history1, dataset=dataset1)
         assert isinstance(hda1, model.HistoryDatasetAssociation)
-        assert hda1 == self.trans.sa_session.query(model.HistoryDatasetAssociation).get(hda1.id)
+        assert hda1 == self.trans.sa_session.get(model.HistoryDatasetAssociation, hda1.id)
         assert hda1.history == history1
         assert hda1.dataset == dataset1
         assert hda1.hid == 1
@@ -88,18 +89,6 @@ class TestHDAManager(HDATestCase):
         assert isinstance(hda3.dataset, model.Dataset), "dataset will be auto created"
         assert hda3.history is None, "history will be None"
         assert hda3.hid is None, "should allow setting hid to None (or any other value)"
-
-    def test_hda_tags(self):
-        owner = self.user_manager.create(**user2_data)
-        history1 = self.history_manager.create(name="history1", user=owner)
-        dataset1 = self.dataset_manager.create()
-        hda1 = self.hda_manager.create(history=history1, dataset=dataset1)
-
-        self.log("should be able to set tags on an hda")
-        tags_to_set = ["tag-one", "tag-two"]
-        self.hda_manager.set_tags(hda1, tags_to_set, user=owner)
-        tag_str_array = self.hda_manager.get_tags(hda1)
-        assert sorted(tags_to_set) == sorted(tag_str_array)
 
     def test_hda_annotation(self):
         owner = self.user_manager.create(**user2_data)
@@ -121,7 +110,7 @@ class TestHDAManager(HDATestCase):
         self.log("should be able to copy an HDA")
         hda2 = self.hda_manager.copy(hda1, history=history1)
         assert isinstance(hda2, model.HistoryDatasetAssociation)
-        assert hda2 == self.trans.sa_session.query(model.HistoryDatasetAssociation).get(hda2.id)
+        assert hda2 == self.trans.sa_session.get(model.HistoryDatasetAssociation, hda2.id)
         assert hda2.name == hda1.name
         assert hda2.history == hda1.history
         assert hda2.dataset == hda1.dataset
@@ -130,11 +119,9 @@ class TestHDAManager(HDATestCase):
         self.log("tags should be copied between HDAs")
         tagged = self.hda_manager.create(history=history1, dataset=self.dataset_manager.create())
         tags_to_set = ["tag-one", "tag-two"]
-        self.hda_manager.set_tags(tagged, tags_to_set, user=owner)
-
+        self.app.tag_handler.add_tags_from_list(owner, tagged, tags_to_set)
         hda2 = self.hda_manager.copy(tagged, history=history1)
-        tag_str_array = self.hda_manager.get_tags(hda2)
-        assert sorted(tags_to_set) == sorted(tag_str_array)
+        assert tagged.make_tag_string_list() == hda2.make_tag_string_list()
 
         self.log("annotations should be copied between HDAs")
         annotated = self.hda_manager.create(history=history1, dataset=self.dataset_manager.create())
@@ -480,7 +467,7 @@ class TestHDASerializer(HDATestCase):
 
     def test_file_name_serializers(self):
         hda = self._create_vanilla_hda()
-        owner = hda.history.user
+        owner = hda.user
         keys = ["file_name"]
 
         self.log("file_name should be included if app configured to do so")
@@ -495,9 +482,9 @@ class TestHDASerializer(HDATestCase):
         self.log("file_name should be skipped for non-admin when not exposed by config")
         self.app.config.expose_dataset_path = False
         serialized = self.hda_serializer.serialize(hda, keys, user=None)
-        assert not ("file_name" in serialized)
+        assert "file_name" not in serialized
         serialized = self.hda_serializer.serialize(hda, keys, user=owner)
-        assert not ("file_name" in serialized)
+        assert "file_name" not in serialized
 
         self.log("file_name should be sent for admin in either case")
         serialized = self.hda_serializer.serialize(hda, keys, user=self.admin_user)

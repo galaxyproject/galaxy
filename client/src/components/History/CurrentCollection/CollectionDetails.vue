@@ -7,7 +7,7 @@
         @save="$emit('update:dsc', $event)">
         <template v-slot:name>
             <!-- eslint-disable-next-line vuejs-accessibility/heading-has-content -->
-            <h2 class="h-md" v-short="dsc.name || 'Collection'" data-description="collection name display" />
+            <h2 v-short="dsc.name || 'Collection'" class="h-md" data-description="collection name display" />
             <CollectionDescription
                 :job-state-summary="jobState"
                 :collection-type="dsc.collection_type"
@@ -18,10 +18,11 @@
 </template>
 
 <script>
-import short from "components/directives/v-short";
-import DetailsLayout from "components/History/Layout/DetailsLayout";
-import CollectionDescription from "components/History/Content/Collection/CollectionDescription";
-import { JobStateSummary } from "components/History/Content/Collection/JobStateSummary";
+import { JobStateSummary } from "@/components/History/Content/Collection/JobStateSummary.js";
+import short from "@/components/plugins/short.js";
+
+import CollectionDescription from "@/components/History/Content/Collection/CollectionDescription.vue";
+import DetailsLayout from "@/components/History/Layout/DetailsLayout.vue";
 
 export default {
     components: {

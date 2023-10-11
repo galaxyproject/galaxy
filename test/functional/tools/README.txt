@@ -12,4 +12,4 @@ to ensure these tools get loaded during the testing process.
 Finally, to play around with these tools interactively - simply
 replace the 'galaxy.ini' option 'tool_config_file' with:
 
-tool_config_file = test/functional/tools/samples_tool_conf.xml
+tool_config_file = test/functional/tools/sample_tool_conf.xml

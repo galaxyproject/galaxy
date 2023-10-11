@@ -5,7 +5,7 @@ Created on 16/07/2014
 """
 import logging
 
-from ..providers import AuthProvider
+from . import AuthProvider
 
 log = logging.getLogger(__name__)
 

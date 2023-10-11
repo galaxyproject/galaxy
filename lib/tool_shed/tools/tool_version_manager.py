@@ -1,7 +1,5 @@
 import logging
 
-from sqlalchemy import and_
-
 from tool_shed.util import (
     hg_util,
     metadata_util,
@@ -14,31 +12,6 @@ log = logging.getLogger(__name__)
 class ToolVersionManager:
     def __init__(self, app):
         self.app = app
-
-    def get_tool_version(self, tool_id):
-        context = self.app.install_model.context
-        return (
-            context.query(self.app.install_model.ToolVersion)
-            .filter(self.app.install_model.ToolVersion.table.c.tool_id == tool_id)
-            .first()
-        )
-
-    def get_tool_version_association(self, parent_tool_version, tool_version):
-        """
-        Return a ToolVersionAssociation if one exists that associates the two
-        received tool_versions. This function is called only from Galaxy.
-        """
-        context = self.app.install_model.context
-        return (
-            context.query(self.app.install_model.ToolVersionAssociation)
-            .filter(
-                and_(
-                    self.app.install_model.ToolVersionAssociation.table.c.parent_id == parent_tool_version.id,
-                    self.app.install_model.ToolVersionAssociation.table.c.tool_id == tool_version.id,
-                )
-            )
-            .first()
-        )
 
     def get_version_lineage_for_tool(self, repository_id, repository_metadata, guid):
         """

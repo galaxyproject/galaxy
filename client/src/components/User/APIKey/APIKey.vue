@@ -1,9 +1,10 @@
 <script setup>
-import { ref } from "vue";
-import svc from "./model/service";
-import APIKeyItem from "./APIKeyItem";
 import { getGalaxyInstance } from "app";
 import LoadingSpan from "components/LoadingSpan";
+import { ref } from "vue";
+
+import APIKeyItem from "./APIKeyItem";
+import svc from "./model/service";
 
 const apiKey = ref(null);
 const loading = ref(false);
@@ -32,7 +33,7 @@ getAPIKey();
 
 <template>
     <section class="api-key d-flex flex-column">
-        <h1 class="h-lg" v-localize>Manage API Key</h1>
+        <h1 v-localize class="h-lg">Manage API Key</h1>
 
         <span v-localize class="mb-2">
             An API key will allow you to access via web API. Please note that this key acts as an alternate means to

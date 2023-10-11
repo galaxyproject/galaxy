@@ -3,7 +3,7 @@
 import json
 
 from selenium.common.exceptions import NoSuchElementException
-from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support.wait import WebDriverWait
 
 from .has_driver import exception_indicates_stale_element
 

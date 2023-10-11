@@ -13,6 +13,11 @@ how to build tools for Galaxy,
 [Planemo](https://planemo.readthedocs.io/en/latest/writing.html) features a
 number of tutorials on building Galaxy tools that would better serve that purpose.
 
+```{contents} Contents
+:depth: 1
+:local:
+```
+
 $tag:tool://element[@name='tool']
 $tag:tool|description://element[@name='tool']//element[@name='description']
 $tag:tool|macros://complexType[@name='Macros']
@@ -74,6 +79,7 @@ $tag:tool|outputs|data|actions://complexType[@name='Actions']
 $tag:tool|outputs|data|actions|conditional://complexType[@name='ActionsConditional']
 $tag:tool|outputs|data|actions|conditional|when://complexType[@name='ActionsConditionalWhen']
 $tag:tool|outputs|data|actions|action://complexType[@name='Action']
+$tag:tool|outputs|data|actions|action|option://complexType[@name='ActionsOption']
 $tag:tool|outputs|data|discover_datasets://complexType[@name='OutputDiscoverDatasets']
 $tag:tool|outputs|collection://complexType[@name='OutputCollection']
 $tag:tool|outputs|collection|filter://complexType[@name='OutputFilter']

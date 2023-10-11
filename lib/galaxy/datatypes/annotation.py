@@ -6,6 +6,7 @@ from galaxy.datatypes.data import (
     get_file_peek,
     Text,
 )
+from galaxy.datatypes.protocols import DatasetProtocol
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
     FilePrefix,
@@ -20,7 +21,7 @@ class SnapHmm(Text):
     file_ext = "snaphmm"
     edam_data = "data_1364"
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "SNAP HMM model"
@@ -28,13 +29,13 @@ class SnapHmm(Text):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disc"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: DatasetProtocol) -> str:
         try:
             return dataset.peek
         except Exception:
             return f"SNAP HMM model ({nice_size(dataset.get_size())})"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         SNAP model files start with zoeHMM
         """
@@ -50,7 +51,7 @@ class Augustus(CompressedArchive):
     edam_data = "data_0950"
     compressed = True
 
-    def set_peek(self, dataset):
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Augustus model"
             dataset.blurb = nice_size(dataset.get_size())
@@ -58,13 +59,13 @@ class Augustus(CompressedArchive):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset):
+    def display_peek(self, dataset: DatasetProtocol) -> str:
         try:
             return dataset.peek
         except Exception:
             return f"Augustus model ({nice_size(dataset.get_size())})"
 
-    def sniff(self, filename):
+    def sniff(self, filename: str) -> bool:
         """
         Augustus archives always contain the same files
         """

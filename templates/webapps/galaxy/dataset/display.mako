@@ -66,7 +66,7 @@
         %if truncated:
             <div class="warningmessagelarge">
                  This dataset is large and only the first megabyte is shown below. |
-                 <a href="${h.url_for( controller='dataset', action='display_by_username_and_slug', username=data.history.user.username, slug=trans.security.encode_id( data.id ), preview=False )}">Show all</a>
+                 <a href="${h.url_for( controller='dataset', action='display_by_username_and_slug', username=data.user.username, slug=trans.security.encode_id( data.id ), preview=False )}">Show all</a>
             </div>
         %endif
         ## TODO: why is the default font size so small?
@@ -126,9 +126,9 @@
             <div style="padding: 10px;">
                 <h4>Author</h4>
 
-                <p>${item.history.user.username | h}</p>
+                <p>${item.user.username | h}</p>
 
-                <div><img src="https://secure.gravatar.com/avatar/${h.md5(item.history.user.email)}?d=identicon&s=150"></div>
+                <div><img src="https://secure.gravatar.com/avatar/${h.md5(item.user.email)}?d=identicon&s=150"></div>
 
                 ## Page meta.
 

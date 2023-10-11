@@ -131,7 +131,6 @@ class TestVisualizationsRegistry(VisualizationsBase_TestCase):
         assert not vis2.serves_templates
 
         mock_app_dir.remove()
-        template_cache_dir
 
     def test_script_entry(self):
         """"""

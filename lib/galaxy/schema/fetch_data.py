@@ -274,10 +274,8 @@ Targets = List[
 
 
 class FetchDataPayload(BaseDataPayload):
-
     targets: Targets
 
 
 class FetchDataFormPayload(BaseDataPayload):
-
     targets: Union[Json[Targets], Targets]  # type: ignore[type-arg]  # https://github.com/samuelcolvin/pydantic/issues/2990

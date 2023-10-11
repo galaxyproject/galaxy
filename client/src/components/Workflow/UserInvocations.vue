@@ -1,15 +1,19 @@
 <template>
     <!-- Bit of an odd component, but the API returns all invocations for admins if no user id is included in request-->
-    <CurrentUser v-slot="{ user }"> <Invocations v-if="user.id" :user-id="user.id" /> </CurrentUser>
+    <InvocationsList v-if="currentUser?.id" :user-id="currentUser.id" />
 </template>
 <script>
-import Invocations from "components/Workflow/Invocations";
-import CurrentUser from "components/providers/CurrentUser";
+import InvocationsList from "components/Workflow/InvocationsList";
+import { mapState } from "pinia";
+
+import { useUserStore } from "@/stores/userStore";
 
 export default {
     components: {
-        CurrentUser,
-        Invocations,
+        InvocationsList,
+    },
+    computed: {
+        ...mapState(useUserStore, ["currentUser"]),
     },
 };
 </script>

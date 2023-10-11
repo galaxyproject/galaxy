@@ -2,9 +2,17 @@
 Created on 15/07/2014
 
 @author: Andrew Robinson
+
+Modification on 24/10/2022
+
+Addition of LDAP3 auth provider using the ldap3 module. The original LDAP auth provider uses the python-ldap library which
+has external dependencies like openldap client libs. ldap3 is a pure Python LDAP v3 client library.
+
+@author: Mahendra Paipuri, CNRS
 """
 
 import logging
+from urllib.parse import urlparse
 
 from galaxy.exceptions import ConfigurationError
 from galaxy.security.validate_user_input import transform_publicname
@@ -12,13 +20,19 @@ from galaxy.util import (
     string_as_bool,
     unicodify,
 )
-from ..providers import AuthProvider
+from . import AuthProvider
 
 try:
     import ldap
 except ImportError as exc:
     ldap = None
     ldap_import_exc = exc
+
+try:
+    import ldap3
+except ImportError as exc:
+    ldap3 = None
+    ldap3_import_exc = exc
 
 log = logging.getLogger(__name__)
 
@@ -199,8 +213,7 @@ class LDAP(AuthProvider):
 
                 if self.auto_create_roles_or_groups and self.role_search_option not in params:
                     raise ConfigurationError(
-                        "Missing or mismatching LDAP parameters for %s. Make sure the %s is "
-                        "included in the 'search-fields'." % (self.role_search_option, self.role_search_attribute)
+                        f"Missing or mismatching LDAP parameters for {self.role_search_option}. Make sure the {self.role_search_attribute} is included in the 'search-fields'."
                     )
                 params["dn"] = dn
             except Exception:
@@ -282,6 +295,154 @@ class LDAP(AuthProvider):
         return self.authenticate(user.email, user.username, password, options, request)[0]
 
 
+class LDAP3(LDAP):
+    """LDAP auth provider using ldap3 module"""
+
+    plugin_type = "ldap3"
+
+    def __init__(self):
+        super().__init__()
+        # Initialise server and autobind objects
+        self.server = None
+        self.auto_bind = None
+        # LDAP over TLS bool
+        self.ldap_tls = None
+
+    def get_server(self, options, params):
+        # Get server URL
+        server_url = _get_subs(options, "server", params)
+        # Check if server URL has scheme
+        # If no scheme is provided, assume it to be ldap
+        if "ldap" not in server_url:
+            server_url = f"ldaps://{server_url}"
+        # Check if TLS is available
+        if server_url.startswith("ldaps://"):
+            self.ldap_tls = True
+        else:
+            self.ldap_tls = False
+        # Get server address and port
+        url_obj = urlparse(server_url)
+        server_address = url_obj.hostname
+        try:
+            server_port = int(url_obj.port)
+        except TypeError:
+            # If port is not specified use standard port numbers based on TLS
+            if self.ldap_tls:
+                server_port = 636
+            else:
+                server_port = 389
+        # Create server object
+        self.server = ldap3.Server(server_address, port=server_port, use_ssl=self.ldap_tls, get_info=ldap3.ALL)
+        # Set auto_bind
+        self.auto_bind = ldap3.AUTO_BIND_NO_TLS if self.ldap_tls else ldap3.AUTO_BIND_TLS_BEFORE_BIND
+
+    def ldap_search(self, email, username, options):
+        config_ok, failure_mode = self.check_config(username, email, options)
+        if ldap3 is None:
+            raise RuntimeError("Failed to load LDAP3 module: %s", str(ldap3_import_exc))
+
+        if not config_ok:
+            return failure_mode, None
+
+        params = {"email": email, "username": username}
+
+        if "search-fields" in options:
+            try:
+                # Initialise server object
+                self.get_server(options, params)
+                if "search-user" in options:
+                    conn = ldap3.Connection(
+                        self.server,
+                        user=_get_subs(options, "search-user", params),
+                        password=_get_subs(options, "search-password", params),
+                        auto_bind=self.auto_bind,
+                    )
+                else:
+                    conn = ldap3.Connection(self.server, auto_bind=self.auto_bind)
+                # Use StartTLS if LDAP connection is not over TLS
+                if not self.ldap_tls:
+                    conn.start_tls()
+                # setup search
+                attributes = {_.strip().format(**params) for _ in options["search-fields"].split(",")}
+                if "search-memberof-filter" in options:
+                    attributes.add("memberOf")
+                conn.search(
+                    search_base=_get_subs(options, "search-base", params),
+                    search_scope=ldap3.SUBTREE,
+                    search_filter=_get_subs(options, "search-filter", params),
+                    attributes=attributes,
+                    time_limit=60,
+                    size_limit=1,
+                )
+                response = conn.response
+                # Unbind connection
+                conn.unbind()
+
+                # parse results
+                if len(response) == 0 or "attributes" not in response[0].keys():
+                    log.warning("LDAP3 authenticate: search returned no results")
+                    return (failure_mode, None)
+                dn = response[0]["dn"]
+                attrs = response[0]["attributes"]
+                log.debug("LDAP3 authenticate: dn is %s", dn)
+                log.debug("LDAP3 authenticate: search attributes are %s", attrs)
+                for attr in attributes:
+                    if self.role_search_attribute and attr == self.role_search_attribute[1:-1]:  # strip curly brackets
+                        # keep role names as list
+                        params[self.role_search_option] = [unicodify(_) for _ in attrs[attr]]
+                    elif attr == "memberOf":
+                        params[attr] = [unicodify(_) for _ in attrs[attr]]
+                    elif attr in attrs:
+                        params[attr] = unicodify(attrs[attr][0])
+                    else:
+                        params[attr] = ""
+
+                if self.auto_create_roles_or_groups and self.role_search_option not in params:
+                    raise ConfigurationError(
+                        f"Missing or mismatching LDAP parameters for {self.role_search_option}. Make sure the {self.role_search_attribute} is included in the 'search-fields'."
+                    )
+                params["dn"] = dn
+            except Exception:
+                log.exception("LDAP3 authenticate: search exception")
+                return (failure_mode, None)
+
+        return failure_mode, params
+
+    def _authenticate(self, params, options):
+        """
+        Do the actual authentication by binding as the user to check their credentials
+        """
+        try:
+            # Initialise server object
+            self.get_server(options, params)
+            conn = ldap3.Connection(
+                self.server,
+                user=_get_subs(options, "bind-user", params),
+                password=_get_subs(options, "bind-password", params),
+                auto_bind=self.auto_bind,
+            )
+            # Use StartTLS if LDAP connection is not over TLS
+            if not self.ldap_tls:
+                conn.start_tls()
+            try:
+                whoami = conn.extend.standard.who_am_i()
+                # Unbind connection
+                conn.unbind()
+            except ldap3.LDAPExtensionError:
+                # The "Who am I?" extended operation is not supported by this LDAP server
+                pass
+            else:
+                if whoami is None:
+                    raise RuntimeError("LDAP3 authenticate: anonymous bind")
+                if not options["redact_username_in_logs"]:
+                    log.debug("LDAP3 authenticate: whoami is %s", whoami)
+        except Exception as e:
+            log.info("LDAP3 authenticate: bind exception: %s", unicodify(e))
+            return False
+        log.debug("LDAP3 authentication successful")
+        return True
+
+
 class ActiveDirectory(LDAP):
     """Effectively just an alias for LDAP auth, but may contain active directory specific
     logic in the future."""
@@ -289,4 +450,22 @@ class ActiveDirectory(LDAP):
     plugin_type = "activedirectory"
 
 
-__all__ = ("LDAP", "ActiveDirectory")
+__all__ = ("LDAP", "LDAP3", "ActiveDirectory")
+
+if __name__ == "__main__":
+    # Instantiate LDAP3 class
+    c = LDAP3()
+    # Define options
+    options = {
+        "server": "ipa.demo1.freeipa.org",
+        "bind-user": "{dn}",
+        "bind-password": "{password}",
+        "search-fields": "uid",
+        "search-filter": "(uid={username})",
+        "search-base": "cn=users,cn=accounts,dc=demo1,dc=freeipa,dc=org",
+        "redact_username_in_logs": False,
+        "auto-register-username": "{uid}",
+        "auto-register-email": "{uid}@example.com",
+    }
+    # Test method
+    print(c.authenticate("admin@example.com", "admin", "Secret123", options, None))

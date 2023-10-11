@@ -12,7 +12,6 @@ from galaxy.model.base import SharedModelMapping
 from galaxy.model.orm.engine_factory import build_engine
 from galaxy.model.security import GalaxyRBACAgent
 from galaxy.model.triggers.update_audit_table import install as install_timestamp_triggers
-from galaxy.model.view.utils import install_views
 
 log = logging.getLogger(__name__)
 
@@ -66,7 +65,6 @@ def init(
 
 def create_additional_database_objects(engine):
     install_timestamp_triggers(engine)
-    install_views(engine)
 
 
 def configure_model_mapping(

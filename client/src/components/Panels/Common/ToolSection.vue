@@ -1,25 +1,24 @@
 <template>
     <div v-if="isSection && hasElements" class="tool-panel-section">
         <div
-            v-b-tooltip.topright.hover
+            v-b-tooltip.topright.hover.noninteractive
             :class="['toolSectionTitle', `tool-menu-section-${sectionName}`]"
-            :title="title"
-            @mouseover="hover = true"
-            @mouseleave="hover = false"
-            @focus="hover = true"
-            @blur="hover = false">
+            :title="title">
             <a class="title-link" href="javascript:void(0)" @click="toggleMenu()">
                 <span class="name">
                     {{ name }}
                 </span>
-                <ToolPanelLinks :links="links" :show="hover" />
+                <ToolPanelLinks :links="links" />
             </a>
         </div>
         <transition name="slide">
             <div v-if="opened">
                 <template v-for="[key, el] in sortedElements">
-                    <ToolPanelLabel v-if="category.text" :key="key" :definition="el" />
-                    <tool
+                    <ToolPanelLabel
+                        v-if="category.text || el.model_class === 'ToolSectionLabel'"
+                        :key="key"
+                        :definition="el" />
+                    <Tool
                         v-else
                         :key="key"
                         class="ml-2"
@@ -36,7 +35,7 @@
     </div>
     <div v-else>
         <ToolPanelLabel v-if="category.text" :definition="category" />
-        <tool
+        <Tool
             v-else
             :tool="category"
             :hide-name="hideName"
@@ -48,12 +47,12 @@
 </template>
 
 <script>
+import { useConfig } from "composables/config";
+import ariaAlert from "utils/ariaAlert";
+
 import Tool from "./Tool";
 import ToolPanelLabel from "./ToolPanelLabel";
-import ariaAlert from "utils/ariaAlert";
 import ToolPanelLinks from "./ToolPanelLinks";
-
-import { useConfig } from "composables/useConfig";
 
 export default {
     name: "ToolSection",
@@ -97,12 +96,16 @@ export default {
             type: Boolean,
             default: false,
         },
+        sortItems: {
+            type: Boolean,
+            default: true,
+        },
     },
     setup() {
-        const { config, isLoaded } = useConfig();
+        const { config, isConfigLoaded } = useConfig();
         return {
             config,
-            isLoaded,
+            isConfigLoaded,
         };
     },
     data() {
@@ -133,13 +136,24 @@ export default {
             // the order set and hope for the best from the integrated
             // panel.
             if (
-                this.isLoaded &&
+                this.isConfigLoaded &&
                 this.config.toolbox_auto_sort === true &&
+                this.sortItems === true &&
                 !this.category.elems.some((el) => el.text !== undefined && el.text !== "")
             ) {
-                return Object.entries(
-                    [...this.category.elems].sort((a, b) => a.name.toLowerCase() > b.name.toLowerCase())
-                );
+                const elements = [...this.category.elems];
+                const sorted = elements.sort((a, b) => {
+                    const aNameLower = a.name.toLowerCase();
+                    const bNameLower = b.name.toLowerCase();
+                    if (aNameLower > bNameLower) {
+                        return 1;
+                    } else if (aNameLower < bNameLower) {
+                        return -1;
+                    } else {
+                        return 0;
+                    }
+                });
+                return Object.entries(sorted);
             } else {
                 return Object.entries(this.category.elems);
             }
@@ -237,5 +251,19 @@ export default {
 .slide-leave-to {
     overflow: hidden;
     max-height: 0;
+}
+
+.title-link {
+    &:deep(.tool-panel-links) {
+        display: none;
+    }
+
+    &:hover,
+    &:focus,
+    &:focus-within {
+        &:deep(.tool-panel-links) {
+            display: inline;
+        }
+    }
 }
 </style>

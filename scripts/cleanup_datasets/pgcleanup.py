@@ -10,6 +10,7 @@ import datetime
 import inspect
 import logging
 import os
+import re
 import string
 import sys
 import time
@@ -26,6 +27,7 @@ sys.path.insert(1, os.path.join(galaxy_root, "lib"))
 
 import galaxy.config
 from galaxy.exceptions import ObjectNotFound
+from galaxy.model import calculate_user_disk_usage_statements
 from galaxy.objectstore import build_object_store_from_config
 from galaxy.util.script import (
     app_properties_from_args,
@@ -76,6 +78,7 @@ class Action:
     directly.)
     """
 
+    requires_objectstore = True
     update_time_sql = ", update_time = NOW() AT TIME ZONE 'utc'"
     force_retry_sql = " AND NOT purged"
     primary_key = None
@@ -116,6 +119,9 @@ class Action:
         self.__row_methods = []
         self.__post_methods = []
         self.__exit_methods = []
+        if self.requires_objectstore:
+            self.object_store = build_object_store_from_config(self._config)
+            self._register_exit_method(self.object_store.shutdown)
         self._init()
 
     def __enter__(self):
@@ -219,7 +225,7 @@ class Action:
             self.log.info(f"{primary_key}: {primary}")
             for causal, s in zip(self.causals, results[primary]):
                 for r in sorted(s):
-                    secondaries = ", ".join("%s: %s" % x for x in zip(causal[1:], r[1:]))
+                    secondaries = ", ".join(f"{x[0]}: {x[1]}" for x in zip(causal[1:], r[1:]))
                     self.log.info(f"{causal[0]} {r[0]} caused {secondaries}")
 
     def handle_results(self, cur):
@@ -248,13 +254,14 @@ class Action:
 class RemovesObjects:
     """Base class for mixins that remove objects from object stores."""
 
+    requires_objectstore = True
+
     def _init(self):
+        super()._init()
         self.objects_to_remove = set()
         log.info("Initializing object store for action %s", self.name)
-        self.object_store = build_object_store_from_config(self._config)
         self._register_row_method(self.collect_removed_object_info)
         self._register_post_method(self.remove_objects)
-        self._register_exit_method(self.object_store.shutdown)
 
     def collect_removed_object_info(self, row):
         object_id = getattr(row, self.id_column, None)
@@ -361,7 +368,10 @@ class RequiresDiskUsageRecalculation:
     To use, ensure your query returns a ``recalculate_disk_usage_user_id`` column.
     """
 
+    requires_objectstore = True
+
     def _init(self):
+        super()._init()
         self.__recalculate_disk_usage_user_ids = set()
         self._register_row_method(self.collect_recalculate_disk_usage_user_id)
         self._register_post_method(self.recalculate_disk_usage)
@@ -381,30 +391,19 @@ class RequiresDiskUsageRecalculation:
         """
         log.info("Recalculating disk usage for users whose data were purged")
         for user_id in sorted(self.__recalculate_disk_usage_user_ids):
-            # TODO: h.purged = false should be unnecessary once all hdas in purged histories are purged.
-            sql = """
-                   UPDATE galaxy_user
-                      SET disk_usage = (
-                            SELECT COALESCE(SUM(total_size), 0)
-                              FROM (  SELECT d.total_size
-                                        FROM history_dataset_association hda
-                                             JOIN history h ON h.id = hda.history_id
-                                             JOIN dataset d ON hda.dataset_id = d.id
-                                       WHERE h.user_id = %(user_id)s
-                                             AND h.purged = false
-                                             AND hda.purged = false
-                                             AND d.purged = false
-                                             AND d.id NOT IN (SELECT dataset_id
-                                                                FROM library_dataset_dataset_association)
-                                    GROUP BY d.id) AS sizes)
-                    WHERE id = %(user_id)s
-                RETURNING disk_usage;
-            """
-            args = {"user_id": user_id}
-            cur = self._update(sql, args, add_event=False)
-            for row in cur:
-                # disk_usage might be None (e.g. user has purged all data)
-                self.log.info("recalculate_disk_usage user_id %i to %s bytes" % (user_id, row.disk_usage))
+            quota_source_map = self.object_store.get_quota_source_map()
+            statements = calculate_user_disk_usage_statements(user_id, quota_source_map)
+
+            for sql, args in statements:
+                sql, _ = re.subn(r"\:([\w]+)", r"%(\1)s", sql)
+                new_args = {}
+                for key, val in args.items():
+                    if isinstance(val, list):
+                        val = tuple(val)
+                    new_args[key] = val
+                self._update(sql, new_args, add_event=False)
+
+            self.log.info("recalculate_disk_usage user_id %i" % user_id)
 
 
 class RemovesMetadataFiles(RemovesObjects):

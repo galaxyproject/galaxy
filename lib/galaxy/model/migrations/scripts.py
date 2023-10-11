@@ -17,12 +17,19 @@ from galaxy.model.database_utils import database_exists
 from galaxy.model.migrations import (
     AlembicManager,
     DatabaseConfig,
-    DatabaseStateCache,
     GXY,
-    IncorrectVersionError,
-    NoVersionTableError,
     SQLALCHEMYMIGRATE_LAST_VERSION_GXY,
     TSI,
+)
+from galaxy.model.migrations.base import (
+    DatabaseStateCache,
+    pop_arg_from_args,
+)
+from galaxy.model.migrations.exceptions import (
+    DatabaseDoesNotExistError,
+    DatabaseNotInitializedError,
+    IncorrectSAMigrateVersionError,
+    NoVersionTableError,
 )
 from galaxy.util.properties import (
     find_config_file,
@@ -35,27 +42,6 @@ CONFIG_FILE_ARG = "--galaxy-config"
 CONFIG_DIR_NAME = "config"
 GXY_CONFIG_PREFIX = "GALAXY_CONFIG_"
 TSI_CONFIG_PREFIX = "GALAXY_INSTALL_CONFIG_"
-
-
-class DatabaseDoesNotExistError(Exception):
-    def __init__(self, db_url: str) -> None:
-        super().__init__(
-            f"""The database at {db_url} does not exist. You must
-            create and initialize the database before running this script. You
-            can do so by (a) running `create_db.sh`; or by (b) starting Galaxy,
-            in which case Galaxy will create and initialize the database
-            automatically."""
-        )
-
-
-class DatabaseNotInitializedError(Exception):
-    def __init__(self, db_url: str) -> None:
-        super().__init__(
-            f"""The database at {db_url} is empty. You must
-            initialize the database before running this script. You can do so by
-            (a) running `create_db.sh`; or by (b) starting Galaxy, in which case
-            Galaxy will initialize the database automatically."""
-        )
 
 
 def verify_database_is_initialized(db_url: str) -> None:
@@ -86,14 +72,13 @@ def get_configuration(argv: List[str], cwd: str) -> Tuple[DatabaseConfig, Databa
     """
     Return a 3-item-tuple with configuration values used for managing databases.
     """
-    config_file = _pop_config_file(argv)
+    config_file = pop_arg_from_args(argv, CONFIG_FILE_ARG)
     return get_configuration_from_file(cwd, config_file)
 
 
 def get_configuration_from_file(
     cwd: str, config_file: Optional[str] = None
 ) -> Tuple[DatabaseConfig, DatabaseConfig, bool]:
-
     if config_file is None:
         cwds = [cwd, os.path.join(cwd, CONFIG_DIR_NAME)]
         config_file = find_config_file(DEFAULT_CONFIG_NAMES, dirs=cwds)
@@ -116,14 +101,6 @@ def get_configuration_from_file(
     tsi_config = DatabaseConfig(url, template, encoding)
 
     return (gxy_config, tsi_config, is_auto_migrate)
-
-
-def _pop_config_file(argv: List[str]) -> Optional[str]:
-    if CONFIG_FILE_ARG in argv:
-        pos = argv.index(CONFIG_FILE_ARG)
-        argv.pop(pos)  # pop argument name
-        return argv.pop(pos)  # pop and return argument value
-    return None
 
 
 def add_db_urls_to_command_arguments(argv: List[str], gxy_url: str, tsi_url: str) -> None:
@@ -156,14 +133,7 @@ def invoke_alembic() -> None:
         alembic.config.main()
 
 
-class LegacyScriptsException(Exception):
-    # Misc. errors caused by incorrect arguments passed to a legacy script.
-    def __init__(self, message: str) -> None:
-        super().__init__(message)
-
-
 class LegacyManageDb:
-
     LEGACY_CONFIG_FILE_ARG_NAMES = ["-c", "--config", "--config-file"]
 
     def __init__(self):
@@ -198,7 +168,7 @@ class LegacyManageDb:
                 if version is None:
                     raise NoVersionTableError(GXY)
                 elif version != SQLALCHEMYMIGRATE_LAST_VERSION_GXY:
-                    raise IncorrectVersionError(GXY, SQLALCHEMYMIGRATE_LAST_VERSION_GXY)
+                    raise IncorrectSAMigrateVersionError(GXY, SQLALCHEMYMIGRATE_LAST_VERSION_GXY)
             return version
         finally:
             engine.dispose()

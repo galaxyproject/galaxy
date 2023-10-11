@@ -1,0 +1,306 @@
+<tool id="bismark_methylation_extractor" name="Bismark" version="0.7.7.2">
+    <!-- Wrapper compatible with Bismark version 0.7.7 -->
+    <description>methylation extractor</description>
+    <!--<version_command>bismark_methylation_extractor version</version_command>-->
+    <requirements>
+        <requirement type="set_environment">SCRIPT_PATH</requirement>
+        <requirement type="package" version="0.12.8">bowtie</requirement>
+        <requirement type="package" version="2.0.0-beta7">bowtie2</requirement>
+    </requirements>
+    <parallelism method="basic"></parallelism>
+    <command interpreter="python">
+        bismark_methylation_extractor.py
+
+        --infile $input
+
+        --bismark_path \$SCRIPT_PATH
+
+        #if $singlePaired.sPaired == "single":
+            --single-end
+        #else:
+            --paired-end
+            $no_overlap
+        #end if
+
+        #if str($ignore_bps) != "0":
+           --ignore $ignore_bps
+        #end if
+
+        #if $report:
+            --report-file $o_report
+        #end if
+
+        #if $comprehensive:
+            --comprehensive
+        #end if
+
+        #if $merge_non_cpg:
+            --merge-non-cpg
+        #end if
+
+        #if $compress:
+            --compress $compressed_output
+        #else:
+            #if $comprehensive == False and $merge_non_cpg == False:
+                ##twelfe files
+                --cpg_ot $cpg_ot
+                --chg_ot $chg_ot
+                --chh_ot $chh_ot
+                --cpg_ctot $cpg_ctot
+                --chg_ctot $chg_ctot
+                --chh_ctot $chh_ctot
+                --cpg_ob $cpg_ob
+                --chg_ob $chg_ob
+                --chh_ob $chh_ob
+                --cpg_ctob $cpg_ctob
+                --chg_ctob $chg_ctob
+                --chh_ctob $chh_ctob
+            #elif $merge_non_cpg and $comprehensive:
+                ## two files
+                --non_cpg_context $non_cpg_context
+                --cpg_context $cpg_context
+            #elif $comprehensive:
+                ## three files
+                --cpg_context $cpg_context
+                --chg_context $chg_context
+                --chh_context $chh_context
+            #elif $merge_non_cpg:
+                ## eight files
+                --non_cpg_context_ctot $non_cpg_context_ctot
+                --non_cpg_context_ot $non_cpg_context_ot
+                --non_cpg_context_ob $non_cpg_context_ob
+                --non_cpg_context_ctob $non_cpg_context_ctob
+                --cpg_ot $cpg_ot
+                --cpg_ctot $cpg_ctot
+                --cpg_ob $cpg_ob
+                --cpg_ctob $cpg_ctob
+            #end if
+        ## end compress
+        #end if
+
+    </command>
+    <inputs>
+        <!-- Input Parameters -->
+        <param name="input" type="data" format="sam" label="SAM file from Bismark bisulfid mapper" />
+        <conditional name="singlePaired">
+            <param name="sPaired" type="select" label="Is this library mate-paired?">
+              <option value="single">Single-end</option>
+              <option value="paired">Paired-end</option>
+            </param>
+            <when value="single" />
+            <when value="paired">
+                <param name="no_overlap" type="boolean" truevalue="--no-overlap" falsevalue="" checked="False" label="This option avoids scoring overlapping methylation calls twice, in case of overlapping read one and read two" help="" />
+            </when>
+        </conditional>
+
+       <param name="ignore_bps" type="integer" value="0" label="Ignore the first N bp when processing the methylation call string" />
+       <param name="comprehensive" type="boolean" truevalue="true" falsevalue="false" checked="False" label="Merge all four possible strand-specific methylation info
+into context-dependent output files" help="" />
+       <param name="merge_non_cpg" type="boolean" truevalue="true" falsevalue="false" checked="False" label="Merge all non-CpG contexts into one file" help="This will produce eight strand-specific output files, or two output files in comprehensive mode." />
+       <param name="report" type="boolean" truevalue="true" falsevalue="false" checked="False" label="Short methylation summary output" />
+       <param name="compress" type="boolean" truevalue="true" falsevalue="false" checked="False" label="Compress all result files and output one single file" />
+
+    </inputs>
+    <outputs>
+        <!--
+            OT – original top strand
+            CTOT – complementary to original top strand
+            OB – original bottom strand
+            CTOB – complementary to original bottom strand
+        -->
+        <data format="tabular" name="o_report" label="${tool.name} on ${on_string}: Report file">
+          <filter> ( report is True ) </filter>
+        </data>
+
+        <!-- default output 12 files -->
+        <data format="tabular" name="cpg_ot" label="${tool.name} on ${on_string}: CpG original top strand">
+          <filter> ( compress == False and comprehensive == False and merge_non_CpG == False) </filter>
+        </data>
+        <data format="tabular" name="chg_ot" label="${tool.name} on ${on_string}: CHG original top strand">
+          <filter> ( compress == False and comprehensive == False and merge_non_CpG == False) </filter>
+        </data>
+        <data format="tabular" name="chh_ot" label="${tool.name} on ${on_string}: CHH original top strand">
+          <filter> ( compress == False and comprehensive == False and merge_non_CpG == False) </filter>
+        </data>
+        <data format="tabular" name="cpg_ctot" label="${tool.name} on ${on_string}: CpG complementary to top strand">
+          <filter> ( compress == False and comprehensive == False and merge_non_CpG == False) </filter>
+        </data>
+        <data format="tabular" name="chg_ctot" label="${tool.name} on ${on_string}: CHG complementary to top strand">
+          <filter> ( compress == False and comprehensive == False and merge_non_CpG == False) </filter>
+        </data>
+        <data format="tabular" name="chh_ctot" label="${tool.name} on ${on_string}: CHH complementary to top strand">
+          <filter> ( compress == False and comprehensive == False and merge_non_CpG == False) </filter>
+        </data>
+
+        <data format="tabular" name="cpg_ob" label="${tool.name} on ${on_string}: CpG original bottom strand">
+          <filter> ( compress == False and comprehensive == False and merge_non_CpG == False) </filter>
+        </data>
+        <data format="tabular" name="chg_ob" label="${tool.name} on ${on_string}: CHG original bottom strand">
+          <filter> ( compress == False and comprehensive == False and merge_non_CpG == False) </filter>
+        </data>
+        <data format="tabular" name="chh_ob" label="${tool.name} on ${on_string}: CHH original bottom strand">
+          <filter> ( compress == False and comprehensive == False and merge_non_CpG == False) </filter>
+        </data>
+        <data format="tabular" name="cpg_ctob" label="${tool.name} on ${on_string}: CpG complementary to bottom strand">
+          <filter> ( compress == False and comprehensive == False and merge_non_CpG == False) </filter>
+        </data>
+        <data format="tabular" name="chg_ctob" label="${tool.name} on ${on_string}: CHG complementary to bottom strand">
+          <filter> ( compress == False and comprehensive == False and merge_non_CpG == False) </filter>
+        </data>
+        <data format="tabular" name="chh_ctob" label="${tool.name} on ${on_string}: CHH complementary to bottom strand">
+          <filter> ( compress == False and comprehensive == False and merge_non_CpG == False) </filter>
+        </data>
+
+        <!-- Context-dependent methylation output files (comprehensive option) -->
+        <data format="tabular" name="cpg_context" label="${tool.name} on ${on_string}: CpG context dependent">
+          <filter> ( compress == False and comprehensive) </filter>
+        </data>
+        <data format="tabular" name="chg_context" label="${tool.name} on ${on_string}: CHG context dependent">
+          <filter> ( compress == False and comprehensive and merge_non_CpG == False) </filter>
+        </data>
+        <data format="tabular" name="chh_context" label="${tool.name} on ${on_string}: CHH context dependent">
+          <filter> ( compress == False and comprehensive and merge_non_CpG == False) </filter>
+        </data>
+
+        <data format="tabular" name="non_cpg_context" label="${tool.name} on ${on_string}: Non CpG context dependent">
+          <filter> ( compress == False and comprehensive and merge_non_cpg) </filter>
+        </data>
+
+        <data format="tabular" name="non_cpg_context_ot" label="${tool.name} on ${on_string}: Non CpG context dependent on original top strand">
+          <filter> ( compress == False and comprehensive == False and merge_non_cpg) </filter>
+        </data>
+        <data format="tabular" name="non_cpg_context_ctot" label="${tool.name} on ${on_string}: Non CpG context dependent on complementary to top strand">
+          <filter> ( compress == False and comprehensive == False and merge_non_cpg) </filter>
+        </data>
+        <data format="tabular" name="non_cpg_context_ob" label="${tool.name} on ${on_string}: Non CpG context dependent on bottom top strand">
+          <filter> ( compress == False and comprehensive == False and merge_non_cpg) </filter>
+        </data>
+        <data format="tabular" name="non_cpg_context_ctob" label="${tool.name} on ${on_string}: Non CpG context dependent on complementary to bottom strand">
+          <filter> ( compress == False and comprehensive == False and merge_non_cpg) </filter>
+        </data>
+
+        <data format="gzipped" name="compressed_output" label="${tool.name} on ${on_string}: Result archive.">
+          <filter> ( compress ) </filter>
+        </data>
+    </outputs>
+
+    <tests>
+    </tests>
+
+    <help>
+
+**What it does**
+
+The following is a brief description of all options to control the Bismark_
+methylation extractor. The script reads in a bisulfite read alignment results file 
+produced by the Bismark bisulfite mapper and extracts the methylation information
+for individual cytosines. This information is found in the methylation call field
+which can contain the following characters:
+
+
+  - X = for methylated C in CHG context (was protected)
+  - x = for not methylated C CHG (was converted)
+  - H = for methylated C in CHH context (was protected)
+  - h = for not methylated C in CHH context (was converted)
+  - Z = for methylated C in CpG context (was protected)
+  - z = for not methylated C in CpG context (was converted)
+  - . = for any bases not involving cytosines
+
+
+The methylation extractor outputs result files for cytosines in CpG, CHG and CHH
+context (this distinction is actually already made in Bismark itself). As the methylation
+information for every C analysed can produce files which easily have tens or even hundreds of
+millions of lines, file sizes can become very large and more difficult to handle. The C
+methylation info additionally splits cytosine methylation calls up into one of the four possible
+strands a given bisulfite read aligned against:
+
+  - OT = original top strand
+  - CTOT = complementary to original top strand
+
+  - OB = original bottom strand
+  - CTOB = complementary to original bottom strand
+
+Thus, by default twelve individual output files are being generated per input file (unless
+--comprehensive is specified, see below). The output files can be imported into a genome
+viewer, such as SeqMonk, and re-combined into a single data group if desired (in fact
+unless the bisulfite reads were generated preserving directionality it doesn't make any
+sense to look at the data in a strand-specific manner). Strand-specific output files can
+optionally be skipped, in which case only three output files for CpG, CHG or CHH context
+will be generated. For both the strand-specific and comprehensive outputs there is also
+the option to merge both non-CpG contexts (CHG and CHH) into one single non-CpG context.
+
+
+.. _Bismark: http://www.bioinformatics.babraham.ac.uk/projects/bismark/
+
+
+It is developed by Krueger F and Andrews SR. at the Babraham Institute. Krueger F, Andrews SR. (2011) Bismark: a flexible aligner and methylation caller for Bisulfite-Seq applications. Bioinformatics, 27, 1571-2.
+
+-------
+
+**Bismark settings**
+
+All of the options have a default value. You can change any of them. If any Bismark function is missing please contact the tool author or your Galaxy admin.
+
+------
+
+**Outputs**
+
+The output files are in the following format (tab delimited)::
+
+
+    Column  Description
+  --------  --------------------------------------------------------
+      1     seq-ID
+      2     strand
+      3     chromosome
+      4     position
+      5     methylation call
+
+
+  * Methylated cytosines receive a '+' orientation,
+  * Unmethylated cytosines receive a '-' orientation.
+
+------
+
+**OPTIONS**
+
+Input::
+
+  -s/--single-end          Input file(s) are Bismark result file(s) generated from single-end
+                           read data. Specifying either --single-end or --paired-end is
+                           mandatory.
+
+  -p/--paired-end          Input file(s) are Bismark result file(s) generated from paired-end
+                           read data. Specifying either --paired-end or --single-end is
+                           mandatory.
+
+  --no_overlap             For paired-end reads it is theoretically possible that read_1 and
+                           read_2 overlap. This option avoids scoring overlapping methylation
+                           calls twice. Whilst this removes a bias towards more methylation calls
+                           towards the center of sequenced fragments it can de facto remove
+                           a good proportion of the data.
+
+  --ignore INT             Ignore the first INT bp at the 5' end of each read when processing the
+                           methylation call string. This can remove e.g. a restriction enzyme site
+                           at the start of each read.
+
+Output::
+
+  --comprehensive          Specifying this option will merge all four possible strand-specific 
+                           methylation info into context-dependent output files. The default 
+                           contexts are:
+                            - CpG context
+                            - CHG context
+                            - CHH context
+
+  --merge_non_CpG          This will produce two output files (in --comprehensive mode) or eight
+                           strand-specific output files (default) for Cs in
+                            - CpG context
+                            - non-CpG context
+
+  --report                 Prints out a short methylation summary as well as the paramaters used to run
+                           this script.
+
+
+  </help>
+</tool>

@@ -1,8 +1,18 @@
-import WorkflowInvocationState from "./WorkflowInvocationState";
 import { shallowMount } from "@vue/test-utils";
-import { getLocalVue } from "jest/helpers";
+import { useConfig } from "composables/config";
+import { getLocalVue } from "tests/jest/helpers";
 import Vuex from "vuex";
+
 import invocationData from "../Workflow/test/json/invocation.json";
+import WorkflowInvocationState from "./WorkflowInvocationState";
+
+jest.mock("composables/config");
+useConfig.mockReturnValue({
+    config: {
+        enable_celery_tasks: true,
+    },
+    isConfigLoaded: true,
+});
 
 const invocationJobsSummaryById = {
     id: "d9833097445452b0",

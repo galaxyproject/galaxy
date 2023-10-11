@@ -11,7 +11,7 @@ export const defaultAppFactory = (config, label = "Galaxy") => {
     return setGalaxyInstance((GalaxyApp) => {
         const { options, bootstrapped } = config;
         const app = new GalaxyApp(options, bootstrapped);
-        app.debug(`${label} app`);
+        console.debug(`${label} app`);
         return app;
     });
 };

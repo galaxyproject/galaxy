@@ -4,7 +4,9 @@ The Galaxy project is strongly committed to security and responsible disclosure.
 
 ## Reporting Security Issues
 
-If you believe you have discovered a security issue, please email [galaxy-committers@lists.galaxyproject.org](galaxy-committers@lists.galaxyproject.org). Please use `[SECURITY]` in the email title. Someone on that list will acknowledge your email within 2 US business days. We ask that you not disclose the issues on the public issue tracker. We will provide you credit for the discovery when publicly disclosing the issue.
+If you believe you have discovered a security issue, please email [galaxy-committers@lists.galaxyproject.org](galaxy-committers@lists.galaxyproject.org). Please use `[SECURITY]` in the email title. Alternatively you can report a security vulnerability using GitHub [private reporting](https://github.com/galaxyproject/galaxy/security/advisories/new). In either case one of the maintainers will acknowledge your report within 2 US business days.
+
+We ask that you not disclose the issues publicly. We will provide you credit for the discovery when publicly disclosing the issue.
 
 Security issues which *only* affect a pre-release version of Galaxy (i.e. the `dev` branch in GitHub) do not need to go through this process, so you may open issues and pull requests publicly.
 
@@ -52,10 +54,11 @@ embargo, we will:
 - Patch the oldest release within the 12 month support window, and merge that fix forward.
   - Updates will be available on the `release_XX.YY` branches.
 - Update each release branch
-- Post a notice to the [galaxy-announce mailing list](https://lists.galaxyproject.org/listinfo/galaxy-announce) with:
+- Publish a repository security advisory on GitHub containing:
   - A description of the issue
   - List of supported versions that are affected
   - Steps to update or patch your Galaxy
+  - A CVE identifier (if applicable)
 
 If an issue is deemed to be time-sensitive – e.g. due to active and ongoing exploits in the wild – the embargo may be shortened considerably.
 

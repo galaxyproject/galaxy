@@ -3,6 +3,7 @@ Qualityscore class
 """
 import logging
 
+from galaxy.datatypes.protocols import DatasetProtocol
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
     FilePrefix,
@@ -31,7 +32,7 @@ class QualityScoreSOLiD(QualityScore):
     edam_format = "format_3610"
     file_ext = "qualsolid"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname( 'sequence.fasta' )
@@ -65,11 +66,11 @@ class QualityScoreSOLiD(QualityScore):
                     return False
         return goodblock > 0
 
-    def set_meta(self, dataset, **kwd):
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         if self.max_optional_metadata_filesize >= 0 and dataset.get_size() > self.max_optional_metadata_filesize:
             dataset.metadata.data_lines = None
             return
-        return QualityScore.set_meta(self, dataset, **kwd)
+        return QualityScore.set_meta(self, dataset, overwrite=overwrite, **kwd)
 
 
 @build_sniff_from_prefix
@@ -81,7 +82,7 @@ class QualityScore454(QualityScore):
     edam_format = "format_3611"
     file_ext = "qual454"
 
-    def sniff_prefix(self, file_prefix: FilePrefix):
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
         """
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname( 'sequence.fasta' )

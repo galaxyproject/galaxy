@@ -51,7 +51,7 @@ def archive_repository_revision(app, repository, archive_dir, changeset_revision
         raise Exception(error_message)
 
 
-def commit_changeset(repo_path, full_path_to_changeset, username, message):
+def commit_changeset(repo_path: str, full_path_to_changeset: str, username: str, message: str) -> None:
     try:
         subprocess.check_output(
             ["hg", "commit", "-u", username, "-m", message, full_path_to_changeset],
@@ -85,7 +85,11 @@ def create_hgrc_file(app, repository):
         fp.write("default = .\n")
         fp.write("default-push = .\n")
         fp.write("[web]\n")
-        fp.write(f"allow_push = {repository.user.username}\n")
+        if app.config.config_hg_for_dev:
+            allow_push = "*"
+        else:
+            allow_push = repository.user.username
+        fp.write(f"allow_push = {allow_push}\n")
         fp.write(f"name = {repository.name}\n")
         fp.write("push_ssl = false\n")
         fp.write("[extensions]\n")

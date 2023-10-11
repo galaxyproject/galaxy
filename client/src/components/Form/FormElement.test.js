@@ -1,8 +1,9 @@
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "jest/helpers";
-import FormElement from "./FormElement";
+import { getLocalVue } from "tests/jest/helpers";
+
 import FormHidden from "./Elements/FormHidden";
-import FormInput from "./Elements/FormInput";
+import FormText from "./Elements/FormText";
+import FormElement from "./FormElement";
 
 const localVue = getLocalVue();
 
@@ -49,11 +50,10 @@ describe("FormElement", () => {
         });
         expect(wrapper.find(".ui-form-title-text").text()).toEqual("title_text");
         expect(wrapper.findAll("button[title='Disable']").length).toEqual(1);
-        expect(wrapper.emitted().input[0][0]).toEqual("initial_value");
 
         await wrapper.find(".ui-form-collapsible-icon").trigger("click");
-        expect(wrapper.emitted().input[1][0]).toEqual("collapsible_value");
-        expect(wrapper.emitted().input[1][1]).toEqual("input");
+        expect(wrapper.emitted().input[0][0]).toEqual("collapsible_value");
+        expect(wrapper.emitted().input[0][1]).toEqual("input");
 
         await wrapper.setProps({
             collapsedEnableText: "Enable Collapsible",
@@ -63,19 +63,24 @@ describe("FormElement", () => {
         expect(wrapper.findAll("button[title='Disable Collapsible']").length).toEqual(0);
 
         await wrapper.find(".ui-form-collapsible-icon").trigger("click");
-        expect(wrapper.emitted().input[2][0]).toEqual("default_value");
+        expect(wrapper.emitted().input[1][0]).toEqual("default_value");
         expect(wrapper.findAll("button[title='Disable Collapsible']").length).toEqual(1);
         expect(wrapper.findAll("button[title='Enable Collapsible']").length).toEqual(0);
     });
 
     it("check type matching", async () => {
         await wrapper.setProps({ type: "text" });
-        expect(wrapper.findComponent(FormInput).exists()).toBe(true);
+        expect(wrapper.findComponent(FormText).exists()).toBe(true);
         expect(wrapper.findComponent(FormHidden).exists()).toBe(false);
 
         await wrapper.setProps({ attributes: { titleonly: true } });
         expect(wrapper.findComponent(FormHidden).exists()).toBe(true);
-        expect(wrapper.findComponent(FormInput).exists()).toBe(false);
+        expect(wrapper.findComponent(FormText).exists()).toBe(false);
+    });
+
+    it("displays as the correct type if is_workflow is true", async () => {
+        await wrapper.setProps({ type: "data_column", attributes: { is_workflow: true } });
+        expect(wrapper.findComponent(FormText).exists()).toBe(true);
     });
 
     it("marks required values", async () => {

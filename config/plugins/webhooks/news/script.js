@@ -6,19 +6,19 @@
         }
     }
 
-    function newsSeen() {
-        // When it's seen, remove fa, add far.
-        const newsIconSpan = document.querySelector("#news .fa-bell");
-        newsIconSpan.classList.remove("fa");
-        newsIconSpan.classList.add("far");
-        window.localStorage.setItem("galaxy-news-seen-release", Galaxy.config.version_major);
+    function newsSeen(currentGalaxyVersion) {
+        // When it's seen, remove the red indicator if it exists and store the current version.
+        const newsIndicator = document.getElementById("news-indicator");
+        if (newsIndicator) {
+            newsIndicator.remove();
+        }
+        window.localStorage.setItem("galaxy-news-seen-release", currentGalaxyVersion);
     }
 
     function newsUnseen() {
-        // When there is news, remove far, add fa for (default -- same as fas) solid style.
-        const newsIconSpan = document.querySelector("#news .fa-bell");
-        newsIconSpan.classList.remove("far");
-        newsIconSpan.classList.add("fa");
+        // When there is news, add an red indicator to the icon.
+        const newsIconSpan = document.querySelector("#news .nav-link");
+        newsIconSpan.insertAdjacentHTML("beforeend", '<span id="news-indicator"></span>');
     }
 
     /* The masthead icon may not exist yet when this webhook executes; we need this to wait for that to happen.
@@ -52,23 +52,26 @@
         el.parentNode.replaceChild(clean, el);
 
         let currentGalaxyVersion = Galaxy.config.version_major;
+        const lastSeenVersion = window.localStorage.getItem("galaxy-news-seen-release");
 
-        // TODO/@hexylena: By 21.01 we will have a proper solution for this. For
-        // now we'll hardcode the version users 'see'. @hexylena will remove this
-        // code when she writes the user-facing release notes, and then will file
-        // an issue for how we'll fix this properly.
-        if (currentGalaxyVersion == "22.01") {
-            currentGalaxyVersion = "21.09";
+        // If we're at a deployed release candidate, just mark it seen and show
+        // the previous notes if someone clicks the link.  RC notes won't exist.
+        if (Galaxy.config.version_minor.startsWith("rc")) {
+            // If we, for whatever reason, need to do this again just add
+            // another case here.  It's not worth parsing and doing version
+            // math, and we should be able to drop preferring notifications
+            // framework moving forward in 23.2
+            if (currentGalaxyVersion == "23.1") {
+                currentGalaxyVersion = "23.0";
+            }
+            newsSeen(currentGalaxyVersion);
+        } else if (lastSeenVersion != currentGalaxyVersion) {
+            newsUnseen();
+        } else {
+            newsSeen(currentGalaxyVersion);
         }
 
         const releaseNotes = `https://docs.galaxyproject.org/en/latest/releases/${currentGalaxyVersion}_announce_user.html`;
-        const lastSeenVersion = window.localStorage.getItem("galaxy-news-seen-release");
-        // Check that they've seen the current version's release notes.
-        if (lastSeenVersion != currentGalaxyVersion) {
-            newsUnseen();
-        } else {
-            newsSeen();
-        }
 
         clean.addEventListener("click", (e) => {
             e.preventDefault();
@@ -94,7 +97,7 @@
                 });
             }
             document.getElementById("news-container").style.visibility = "visible";
-            newsSeen();
+            newsSeen(currentGalaxyVersion);
         });
     });
 

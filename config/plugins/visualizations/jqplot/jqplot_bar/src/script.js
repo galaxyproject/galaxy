@@ -261,7 +261,7 @@ window.bundleEntries.jqplot_box = function (options) {
             chart               : options.chart,
             dataset_id          : dataset.id,
             dataset_groups      : dataset_groups,
-            targets             : options.targets,
+            target              : options.target,
             makeConfig          : function( groups, plot_config ){
                 var boundary = getDomains( groups, 'x' );
                 $.extend( true, plot_config, {

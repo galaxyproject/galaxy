@@ -1,11 +1,16 @@
 import string
-from typing import cast
+from typing import (
+    cast,
+    Optional,
+)
 
 from galaxy import model
 from galaxy.app_unittest_utils import tools_support
 from galaxy.exceptions import UserActivationRequiredException
+from galaxy.model.base import transaction
 from galaxy.objectstore import BaseObjectStore
 from galaxy.tool_util.parser.output_objects import ToolOutput
+from galaxy.tool_util.parser.xml import parse_change_format
 from galaxy.tools.actions import (
     DefaultToolAction,
     determine_output_format,
@@ -65,7 +70,9 @@ class TestDefaultToolAction(TestCase, tools_support.UsesTools):
         self.history = history
         self.trans = MockTrans(self.app, self.history)
         self.app.model.context.add(history)
-        self.app.model.context.flush()
+        session = self.app.model.context
+        with transaction(session):
+            session.commit()
         self.action = DefaultToolAction()
         self.app.config.len_file_path = "moocow"
         self.app.object_store = cast(BaseObjectStore, MockObjectStore())
@@ -122,7 +129,9 @@ class TestDefaultToolAction(TestCase, tools_support.UsesTools):
         hda.dataset.state = "ok"
         hda.dataset.external_filename = "/tmp/datasets/dataset_001.dat"
         self.history.add_dataset(hda)
-        self.app.model.context.flush()
+        session = self.app.model.context
+        with transaction(session):
+            session.commit()
         return hda
 
     def _simple_execute(self, contents=None, incoming=None):
@@ -131,7 +140,7 @@ class TestDefaultToolAction(TestCase, tools_support.UsesTools):
         if incoming is None:
             incoming = dict(param1="moo")
         self._init_tool(contents)
-        job, out_data, _, = self.action.execute(
+        job, out_data, _ = self.action.execute(
             tool=self.tool,
             trans=self.trans,
             history=self.history,
@@ -228,14 +237,16 @@ def __assert_output_format_is(expected, output, input_extensions=None, param_con
     assert actual_format == expected, f"Actual format {actual_format}, does not match expected {expected}"
 
 
-def quick_output(format, format_source=None, change_format_xml=None):
+def quick_output(
+    format: str, format_source: Optional[str] = None, change_format_xml: Optional[str] = None
+) -> ToolOutput:
     test_output = ToolOutput("test_output")
     test_output.format = format
     test_output.format_source = format_source
     if change_format_xml:
-        test_output.change_format = XML(change_format_xml)
+        test_output.change_format = parse_change_format(XML(change_format_xml).findall("change_format"))
     else:
-        test_output.change_format = None
+        test_output.change_format = []
     return test_output
 
 
@@ -248,6 +259,10 @@ class MockTrans:
         self.model = app.model
         self._user_is_active = True
         self.user_is_admin = False
+
+    @property
+    def tag_handler(self):
+        return self.app.tag_handler
 
     def get_user_is_active(self):
         # NOTE: the real user_is_active also checks whether activation is enabled in the config

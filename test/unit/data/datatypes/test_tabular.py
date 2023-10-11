@@ -14,4 +14,4 @@ def test_tabular_set_meta_large_file():
         test_file.flush()
         dataset = MockDataset(id=1)
         dataset.file_name = test_file.name
-        Tabular().set_meta(dataset)
+        Tabular().set_meta(dataset)  # type: ignore [arg-type]

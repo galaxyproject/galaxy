@@ -1,14 +1,15 @@
 from .framework import (
+    managed_history,
     selenium_test,
     SeleniumTestCase,
 )
 
 
 class TestCollectionBuilders(SeleniumTestCase):
-
     ensure_registered = True
 
     @selenium_test
+    @managed_history
     def test_build_list_simple_hidden(self):
         self.perform_upload(self.get_filename("1.fasta"))
         self._wait_for_and_select([1])
@@ -19,6 +20,7 @@ class TestCollectionBuilders(SeleniumTestCase):
         self._wait_for_hid_visible(2)
 
     @selenium_test
+    @managed_history
     def test_build_list_and_show_items(self):
         self.perform_upload(self.get_filename("1.fasta"))
         self._wait_for_and_select([1])
@@ -32,6 +34,7 @@ class TestCollectionBuilders(SeleniumTestCase):
         self._wait_for_hid_visible(3)
 
     @selenium_test
+    @managed_history
     def test_build_pair_simple_hidden(self):
         self.perform_upload(self.get_filename("1.tabular"))
         self.perform_upload(self.get_filename("2.tabular"))
@@ -43,6 +46,7 @@ class TestCollectionBuilders(SeleniumTestCase):
         self._wait_for_hid_visible(3)
 
     @selenium_test
+    @managed_history
     def test_build_paired_list_simple(self):
         self.perform_upload(self.get_filename("1.tabular"))
         self.perform_upload(self.get_filename("2.tabular"))
@@ -61,6 +65,7 @@ class TestCollectionBuilders(SeleniumTestCase):
         self._wait_for_hid_visible(2)
 
     @selenium_test
+    @managed_history
     def test_build_paired_list_show_original(self):
         self.perform_upload(self.get_filename("1.tabular"))
         self.perform_upload(self.get_filename("2.tabular"))
@@ -85,6 +90,7 @@ class TestCollectionBuilders(SeleniumTestCase):
         self._wait_for_hid_visible(4)
 
     @selenium_test
+    @managed_history
     def test_build_simple_list_via_rules_hidden(self):
         self.perform_upload(self.get_filename("1.fasta"))
         self._wait_for_and_select([1])

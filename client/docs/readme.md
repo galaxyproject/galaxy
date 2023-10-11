@@ -5,7 +5,7 @@ I'm not talking about how webpack turns it into a rendering function. That's obv
 I mean conceptually, props come in (like arguments) and events go out (like the return statements).
 A component is a fancy kind of function that can keep emitting results and accept changing inputs
 over time. In truth it more closely resembles an Observable, but an observable is ALSO a slightly
-fancier kind of function. 
+fancier kind of function.
 
 If you just think of a component as thing that takes input props and emits output events you're well
 on your way to using them well.
@@ -19,22 +19,22 @@ problems of the old imperative class-based legacy code.
 New vue programmers are ok at handing props to components, but they rarely use events effectively
 (at first). As a result they end up using a lot of global state, a million little data props and
 relying on imperfect globalized tools like Vuex or other imported dependencies for every little
-variable. 
+variable.
 
 Vuex definitely has its uses, but not as many as you might expect given the way it is
 overly-emphasized in common tutorials. It's easy to walk away from an "Intro to Vue" video with the
-idea that all data must live in Vuex all the time. That's a really undesirable situation. 
+idea that all data must live in Vuex all the time. That's a really undesirable situation.
 
 Although vuex is a well-organized (many would say over-organized) state machine, it is important
 to remember that it is still a kind of global injection and deserves to be considered as such.
 
-* [Should I Store This Data in
-  Vuex](https://markus.oberlehner.net/blog/should-i-store-this-data-in-vuex/)
-* [Vuex getters are great, but don’t overuse
-  them](https://codeburst.io/vuex-getters-are-great-but-dont-overuse-them-9c946689b414)
+-   [Should I Store This Data in
+    Vuex](https://markus.oberlehner.net/blog/should-i-store-this-data-in-vuex/)
+-   [Vuex getters are great, but don’t overuse
+    them](https://codeburst.io/vuex-getters-are-great-but-dont-overuse-them-9c946689b414)
 
 Data persistence should be something that happens near the top of your component tree, not down in
-the guts. 
+the guts.
 
 Your first thought with a component should be: "How can I offload the handling of the results of
 this component to my caller?" The answer is usually going to be events. A component that simply
@@ -45,7 +45,6 @@ global state to operate.
 
 They're just fancy shorthands for a prop / event handler combination. They are fundamentally no
 different from props and events, but the syntax is important to understand.
-
 
 ### Think carefully about what should really be in "data".
 

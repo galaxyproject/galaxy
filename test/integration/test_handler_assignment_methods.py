@@ -33,7 +33,6 @@ class WritesConfig:
 
 
 class BaseHandlerAssignmentMethodIntegrationTestCase(integration_util.IntegrationTestCase, WritesConfig):
-
     framework_tool_and_types = True
 
     @classmethod

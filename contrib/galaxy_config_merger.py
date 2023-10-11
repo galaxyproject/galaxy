@@ -30,7 +30,7 @@ def main():
 
     for option in ["sample", "config"]:
         if getattr(options, option) is None:
-            print("Please supply a --%s parameter.\n" % (option))
+            print(f"Please supply a --{option} parameter.\n")
             parser.print_help()
             sys.exit()
 
@@ -45,11 +45,11 @@ def main():
     logging.info("---------- DIFFERENCE ANALYSIS BEGIN ----------")
     for section in config.sections():
         if not config_sample.has_section(section):
-            logging.warning("-MISSING- section [%s] not found in sample file. It will be ignored." % section)
+            logging.warning("-MISSING- section [%s] not found in sample file. It will be ignored.", section)
         else:
-            for (name, value) in config.items(section):
+            for name, value in config.items(section):
                 if not config_sample.has_option(section, name):
-                    if not "#%s" % name in config_sample_content:
+                    if f"#{name}" not in config_sample_content:
                         logging.warning(
                             f"-MISSING- section [{section}] option '{name}' not found in sample file. It will be ignored."
                         )

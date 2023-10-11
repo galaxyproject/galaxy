@@ -1,67 +1,257 @@
+<script setup lang="ts">
+import { BButton, BFormCheckbox, BModal, BPagination, BTable } from "bootstrap-vue";
+import { computed, ref, watch } from "vue";
+
+import localize from "@/utils/localization";
+import { bytesToString } from "@/utils/utils";
+
+import { type CleanableItem, type CleanupOperation, PaginationOptions, type SortableKey } from "./model";
+
+import UtcDate from "@/components/UtcDate.vue";
+
+interface ReviewCleanupDialogProps {
+    operation?: CleanupOperation;
+    totalItems?: number;
+    modalStatic?: boolean;
+}
+
+const props = withDefaults(defineProps<ReviewCleanupDialogProps>(), {
+    operation: undefined,
+    totalItems: 0,
+});
+
+const emit = defineEmits<{
+    (event: "onConfirmCleanupSelectedItems", items: CleanableItem[]): void;
+}>();
+
+const permanentlyDeleteText = localize("Permanently delete");
+const captionText = localize("To free up account space, review and select items to be permanently deleted here.");
+const agreementText = localize("I understand that once I delete the items, they cannot be recovered.");
+const fields = [
+    {
+        key: "selected",
+        label: "",
+        sortable: false,
+    },
+    {
+        key: "name",
+        sortable: true,
+    },
+    {
+        key: "size",
+        sortable: true,
+        formatter: toNiceSize,
+    },
+    {
+        label: "Updated",
+        key: "update_time",
+        sortable: true,
+    },
+];
+
+const MAXIMUM_ITEMS_PER_PAGE = 25;
+
+const sortBy = ref<SortableKey>("size");
+const sortDesc = ref(true);
+const currentPage = ref(1);
+const totalRows = ref(1);
+const allSelected = ref(false);
+const indeterminate = ref(false);
+const showDialog = ref(false);
+const items = ref<CleanableItem[]>([]);
+const selectedItems = ref<CleanableItem[]>([]);
+const confirmChecked = ref(false);
+const isBusy = ref(false);
+
+const selectedItemCount = computed(() => {
+    return selectedItems.value.length;
+});
+
+const hasItemsSelected = computed(() => {
+    return selectedItemCount.value > 0;
+});
+
+const hasPages = computed(() => {
+    return totalRows.value > MAXIMUM_ITEMS_PER_PAGE;
+});
+
+const title = computed(() => {
+    return props.operation?.name ?? "";
+});
+
+const confirmationTitle = computed(() => {
+    return `Permanently delete ${selectedItemCount.value} items?`;
+});
+
+const deleteButtonVariant = computed(() => {
+    return hasItemsSelected.value ? "danger" : "";
+});
+
+const deleteItemsText = computed(() => {
+    return hasItemsSelected.value ? `${selectedItemCount.value} items` : "";
+});
+
+const confirmButtonVariant = computed(() => {
+    return confirmChecked.value ? "danger" : "";
+});
+
+watch(props, (newVal) => {
+    currentPage.value = 1;
+    totalRows.value = newVal.totalItems;
+});
+
+watch(selectedItems, (newVal) => {
+    if (newVal.length === 0) {
+        indeterminate.value = false;
+        allSelected.value = false;
+    } else if (newVal.length === totalRows.value) {
+        indeterminate.value = false;
+        allSelected.value = true;
+    } else {
+        indeterminate.value = true;
+        allSelected.value = false;
+    }
+});
+
+function toNiceSize(sizeInBytes: number) {
+    return bytesToString(sizeInBytes, true, undefined);
+}
+
+async function toggleSelectAll(checked: boolean) {
+    if (checked) {
+        await selectAllItems();
+    } else {
+        unselectAllItems();
+    }
+}
+
+function openModal() {
+    showDialog.value = true;
+}
+
+function hideModal() {
+    showDialog.value = false;
+}
+
+function onShowModal() {
+    resetModal();
+}
+
+function resetModal() {
+    unselectAllItems();
+}
+
+function resetConfirmationModal() {
+    confirmChecked.value = false;
+}
+
+function onConfirmCleanupSelectedItems() {
+    emit("onConfirmCleanupSelectedItems", selectedItems.value);
+    hideModal();
+}
+
+function onSort(props: { sortBy: SortableKey; sortDesc: boolean }) {
+    sortBy.value = props.sortBy;
+    sortDesc.value = props.sortDesc;
+}
+
+async function itemsProvider(ctx: { currentPage: number; perPage: number }) {
+    try {
+        const page = ctx.currentPage > 0 ? ctx.currentPage - 1 : 0;
+        const offset = page * ctx.perPage;
+        const options = new PaginationOptions({
+            offset: offset,
+            limit: ctx.perPage,
+            sortBy: sortBy.value,
+            sortDesc: sortDesc.value,
+        });
+        const result = await props.operation.fetchItems(options);
+        return result;
+    } catch (error) {
+        return [];
+    }
+}
+
+async function selectAllItems() {
+    isBusy.value = true;
+    const allItems = await props.operation.fetchItems(
+        new PaginationOptions({
+            offset: 0,
+            limit: totalRows.value,
+            sortBy: sortBy.value,
+            sortDesc: sortDesc.value,
+        })
+    );
+    items.value = allItems;
+    selectedItems.value = allItems;
+    isBusy.value = false;
+}
+
+function unselectAllItems() {
+    selectedItems.value = [];
+}
+
+defineExpose({
+    openModal,
+    selectedItems,
+});
+</script>
+
 <template>
-    <b-modal
-        id="review-cleanup-dialog"
-        v-model="showDialog"
-        title-tag="h2"
-        :static="modalStatic"
-        centered
-        @show="onShowModal">
+    <BModal v-model="showDialog" title-tag="h2" :static="modalStatic" centered @show="onShowModal">
         <template v-slot:modal-title>
             {{ title }}
-            <span class="text-primary h3">{{ totalItems }}<span v-if="rowLimitReached">+</span> items</span>
+            <span class="text-primary h3">{{ totalRows }} items</span>
         </template>
         <div>
             {{ captionText }}
-            <b>
-                <b-link @click="onSelectAllItems">select all {{ totalItems }} items</b-link>
-            </b>
         </div>
-        <b-table
+        <BTable
             v-if="operation"
             v-model="items"
             :fields="fields"
             :items="itemsProvider"
-            :per-page="perPage"
+            :per-page="MAXIMUM_ITEMS_PER_PAGE"
             :current-page="currentPage"
             :busy="isBusy"
             hover
+            no-sort-reset
             no-local-sorting
             no-provider-filtering
             sticky-header="50vh"
             data-test-id="review-table"
             @sort-changed="onSort">
             <template v-slot:head(selected)>
-                <b-form-checkbox
+                <BFormCheckbox
                     v-model="allSelected"
                     :indeterminate="indeterminate"
                     data-test-id="select-all-checkbox"
                     @change="toggleSelectAll" />
             </template>
             <template v-slot:cell(selected)="data">
-                <b-form-checkbox
-                    :key="data.index"
-                    v-model="selectedItems"
-                    :checked="allSelected"
-                    :value="data.item"></b-form-checkbox>
+                <BFormCheckbox :key="data.index" v-model="selectedItems" :checked="allSelected" :value="data.item" />
             </template>
             <template v-slot:cell(update_time)="data">
                 <UtcDate :date="data.value" mode="elapsed" />
             </template>
-        </b-table>
+        </BTable>
         <template v-slot:modal-footer>
-            <span v-if="rowLimitReached" class="font-italic">{{ rowLimitReachedText }}</span>
-            <b-pagination v-if="hasPages" v-model="currentPage" :total-rows="totalRows" :per-page="perPage" />
-            <b-button
+            <BPagination
+                v-if="hasPages"
+                v-model="currentPage"
+                :total-rows="totalRows"
+                :per-page="MAXIMUM_ITEMS_PER_PAGE" />
+            <BButton
                 v-b-modal.confirmation-modal
                 :disabled="!hasItemsSelected"
                 :variant="deleteButtonVariant"
                 class="mx-2"
                 data-test-id="delete-button">
                 {{ permanentlyDeleteText }} {{ deleteItemsText }}
-            </b-button>
+            </BButton>
         </template>
 
-        <b-modal
+        <BModal
             id="confirmation-modal"
             :title="confirmationTitle"
             title-tag="h2"
@@ -72,206 +262,9 @@
             centered
             @show="resetConfirmationModal"
             @ok="onConfirmCleanupSelectedItems">
-            <b-form-checkbox id="confirm-delete-checkbox" v-model="confirmChecked" data-test-id="agreement-checkbox">
+            <BFormCheckbox id="confirm-delete-checkbox" v-model="confirmChecked" data-test-id="agreement-checkbox">
                 {{ agreementText }}
-            </b-form-checkbox>
-        </b-modal>
-    </b-modal>
+            </BFormCheckbox>
+        </BModal>
+    </BModal>
 </template>
-
-<script>
-import _l from "utils/localization";
-import { bytesToString } from "utils/utils";
-import UtcDate from "components/UtcDate";
-import { CleanupOperation } from "./model";
-
-export default {
-    components: {
-        UtcDate,
-    },
-    props: {
-        operation: {
-            type: CleanupOperation,
-            required: false,
-            default: null,
-        },
-        totalItems: {
-            type: Number,
-            required: false,
-            default: 0,
-        },
-        show: {
-            type: Boolean,
-            required: false,
-        },
-        modalStatic: {
-            type: Boolean,
-            required: false,
-        },
-    },
-    data() {
-        return {
-            fields: [
-                {
-                    key: "selected",
-                    label: "",
-                    sortable: false,
-                },
-                {
-                    key: "name",
-                    sortable: true,
-                },
-                {
-                    key: "size",
-                    sortable: true,
-                    formatter: this.toNiceSize,
-                },
-                {
-                    label: "Updated",
-                    key: "update_time",
-                    sortable: true,
-                },
-            ],
-            sortBy: "size",
-            sortDesc: true,
-            perPage: 50,
-            currentPage: 1,
-            totalRows: 1,
-            allSelected: false,
-            indeterminate: false,
-            showDialog: false,
-            items: [],
-            selectedItems: [],
-            itemLimit: 500,
-            confirmChecked: false,
-            permanentlyDeleteText: _l("Permanently delete"),
-            captionText: _l("To free up account space, review and select items to be permanently deleted or"),
-            agreementText: _l("I understand that once I delete the items, they cannot be recovered."),
-            isBusy: false,
-        };
-    },
-    computed: {
-        /** @returns {Number} */
-        selectedItemCount() {
-            return this.selectedItems.length;
-        },
-        /** @returns {Boolean} */
-        hasItemsSelected() {
-            return this.selectedItems.length > 0;
-        },
-        /** @returns {Boolean} */
-        hasPages() {
-            return this.totalRows > this.perPage;
-        },
-        /** @returns {String} */
-        title() {
-            return this.operation ? this.operation.name : "";
-        },
-        /** @returns {String} */
-        confirmationTitle() {
-            return `Permanently delete ${this.selectedItemCount} items?`;
-        },
-        /** @returns {String} */
-        deleteButtonVariant() {
-            return this.hasItemsSelected ? "danger" : "";
-        },
-        /** @returns {String} */
-        deleteItemsText() {
-            return this.hasItemsSelected ? `${this.selectedItemCount} items` : "";
-        },
-        /** @returns {String} */
-        confirmButtonVariant() {
-            return this.confirmChecked ? "danger" : "";
-        },
-        /** @returns {Boolean} */
-        rowLimitReached() {
-            return this.totalRows >= this.itemLimit;
-        },
-        /** @returns {String} */
-        rowLimitReachedText() {
-            return _l(
-                `Displaying a maximum of ${this.itemLimit} items here. If there are more, you can rerun this operation after deleting some.`
-            );
-        },
-    },
-    watch: {
-        operation() {
-            this.currentPage = 1;
-        },
-        totalItems(newVal) {
-            this.totalRows = newVal;
-        },
-        selectedItems(newVal) {
-            if (newVal.length === 0) {
-                this.indeterminate = false;
-                this.allSelected = false;
-            } else if (newVal.length === this.items.length) {
-                this.indeterminate = false;
-                this.allSelected = true;
-            } else {
-                this.indeterminate = true;
-                this.allSelected = false;
-            }
-        },
-    },
-    created() {
-        this.showDialog = this.show;
-    },
-    methods: {
-        toNiceSize(sizeInBytes) {
-            return bytesToString(sizeInBytes, true);
-        },
-        toggleSelectAll(checked) {
-            this.selectedItems = checked ? this.items : [];
-        },
-        hideModal() {
-            this.showDialog = false;
-        },
-        onShowModal() {
-            this.resetModal();
-        },
-        resetModal() {
-            this.selectedItems = [];
-        },
-        resetConfirmationModal() {
-            this.confirmChecked = false;
-        },
-        onConfirmCleanupSelectedItems() {
-            this.$emit("onConfirmCleanupSelectedItems", this.selectedItems);
-            this.hideModal();
-        },
-        onSort(props) {
-            this.sortBy = props.sortBy;
-            this.sortDesc = props.sortDesc;
-        },
-        async itemsProvider(ctx) {
-            try {
-                const page = ctx.currentPage > 0 ? ctx.currentPage - 1 : 0;
-                const offset = page * ctx.perPage;
-                const options = {
-                    offset: offset,
-                    limit: ctx.perPage,
-                    sortBy: this.sortBy,
-                    sortDesc: this.sortDesc,
-                };
-                const result = await this.operation.fetchItems(options);
-                return result;
-            } catch (error) {
-                return [];
-            }
-        },
-        async onSelectAllItems() {
-            this.isBusy = true;
-            const options = {
-                offset: 0,
-                limit: this.totalRows,
-                sortBy: this.sortBy,
-                sortDesc: this.sortDesc,
-            };
-            const allItems = await this.operation.fetchItems(options);
-            this.selectedItems = allItems;
-            this.isBusy = false;
-        },
-    },
-};
-</script>

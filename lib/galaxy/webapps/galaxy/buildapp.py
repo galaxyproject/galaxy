@@ -56,7 +56,7 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
         galaxy.app.app = app
     else:
         try:
-            app = galaxy.app.UniverseApplication(global_conf=global_conf, **kwargs)
+            app = galaxy.app.UniverseApplication(global_conf=global_conf, is_webapp=True, **kwargs)
             galaxy.app.app = app
         except Exception:
             traceback.print_exc()
@@ -66,6 +66,7 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
         # Call app's shutdown method when the interpeter exits, this cleanly stops
         # the various Galaxy application daemon threads
         app.application_stack.register_postfork_function(atexit.register, app.shutdown)
+
     # Create the universe WSGI application
     webapp = GalaxyWebApplication(app, session_cookie="galaxysession", name="galaxy")
 
@@ -193,6 +194,7 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/admin/invocations")
     webapp.add_client_route("/admin/toolbox_dependencies")
     webapp.add_client_route("/admin/data_manager{path_info:.*}")
+    webapp.add_client_route("/admin/notifications{path_info:.*}")
     webapp.add_client_route("/admin/error_stack")
     webapp.add_client_route("/admin/users")
     webapp.add_client_route("/admin/users/create")
@@ -200,6 +202,7 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/admin/reset_metadata")
     webapp.add_client_route("/admin/roles")
     webapp.add_client_route("/admin/forms")
+    webapp.add_client_route("/admin/notifications")
     webapp.add_client_route("/admin/groups")
     webapp.add_client_route("/admin/repositories")
     webapp.add_client_route("/admin/sanitize_allow")
@@ -208,14 +211,15 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/admin/quotas")
     webapp.add_client_route("/admin/form/{form_id}")
     webapp.add_client_route("/admin/api_keys")
+    webapp.add_client_route("/carbon_emissions_calculations")
     webapp.add_client_route("/datatypes")
     webapp.add_client_route("/login/start")
-    webapp.add_client_route("/login/confirm")
     webapp.add_client_route("/tools/list")
     webapp.add_client_route("/tools/json")
     webapp.add_client_route("/tours")
     webapp.add_client_route("/tours/{tour_id}")
     webapp.add_client_route("/user")
+    webapp.add_client_route("/user/notifications{path:.*?}")
     webapp.add_client_route("/user/{form_id}")
     webapp.add_client_route("/welcome/new")
     webapp.add_client_route("/visualizations")
@@ -237,6 +241,9 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/histories/list")
     webapp.add_client_route("/histories/import")
     webapp.add_client_route("/histories/{history_id}/export")
+    webapp.add_client_route("/histories/{history_id}/archive")
+    webapp.add_client_route("/histories/{history_id}/invocations")
+    webapp.add_client_route("/histories/archived")
     webapp.add_client_route("/histories/list_published")
     webapp.add_client_route("/histories/list_shared")
     webapp.add_client_route("/histories/rename")
@@ -251,6 +258,7 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/datasets/{dataset_id}/preview")
     webapp.add_client_route("/datasets/{dataset_id}/show_params")
     webapp.add_client_route("/collection/{collection_id}/edit")
+    webapp.add_client_route("/jobs/submission/success")
     webapp.add_client_route("/jobs/{job_id}/view")
     webapp.add_client_route("/workflows/list")
     webapp.add_client_route("/workflows/list_published")
@@ -302,23 +310,6 @@ def populate_api_routes(webapp, app):
 
     _add_item_tags_controller(
         webapp, name_prefix="history_content_", path_prefix="/api/histories/{history_id}/contents/{history_content_id}"
-    )
-    webapp.mapper.connect(
-        "cloud_storage", "/api/cloud/storage/", controller="cloud", action="index", conditions=dict(method=["GET"])
-    )
-    webapp.mapper.connect(
-        "cloud_storage_get",
-        "/api/cloud/storage/get",
-        controller="cloud",
-        action="get",
-        conditions=dict(method=["POST"]),
-    )
-    webapp.mapper.connect(
-        "cloud_storage_send",
-        "/api/cloud/storage/send",
-        controller="cloud",
-        action="send",
-        conditions=dict(method=["POST"]),
     )
 
     _add_item_tags_controller(webapp, name_prefix="history_", path_prefix="/api/histories/{history_id}")
@@ -581,13 +572,9 @@ def populate_api_routes(webapp, app):
         conditions=dict(method=["POST"]),
     )
 
-    webapp.mapper.resource_with_deleted("user", "users", path_prefix="/api")
     webapp.mapper.resource("visualization", "visualizations", path_prefix="/api")
     webapp.mapper.resource("plugins", "plugins", path_prefix="/api")
     webapp.mapper.connect("/api/workflows/build_module", action="build_module", controller="workflows")
-    webapp.mapper.connect(
-        "/api/workflows/menu", action="get_workflow_menu", controller="workflows", conditions=dict(method=["GET"])
-    )
     webapp.mapper.connect(
         "/api/workflows/menu", action="set_workflow_menu", controller="workflows", conditions=dict(method=["PUT"])
     )
@@ -595,8 +582,6 @@ def populate_api_routes(webapp, app):
         "/api/workflows/{id}/refactor", action="refactor", controller="workflows", conditions=dict(method=["PUT"])
     )
     webapp.mapper.resource("workflow", "workflows", path_prefix="/api")
-
-    webapp.mapper.resource("search", "search", path_prefix="/api")
 
     # ---- visualizations registry ---- generic template renderer
     # @deprecated: this route should be considered deprecated
@@ -631,13 +616,6 @@ def populate_api_routes(webapp, app):
         "/api/workflows/{workflow_id}/download",
         controller="workflows",
         action="workflow_dict",
-        conditions=dict(method=["GET"]),
-    )
-    webapp.mapper.connect(
-        "show_versions",
-        "/api/workflows/{workflow_id}/versions",
-        controller="workflows",
-        action="show_versions",
         conditions=dict(method=["GET"]),
     )
     # Preserve the following download route for now for dependent applications  -- deprecate at some point
@@ -774,38 +752,6 @@ def populate_api_routes(webapp, app):
         "update_step", "/steps/{step_id}", action="update_invocation_step", conditions=dict(method=["PUT"])
     )
 
-    # ============================
-    # ===== AUTHENTICATE API =====
-    # ============================
-
-    webapp.mapper.connect(
-        "api_key_retrieval",
-        "/api/authenticate/baseauth/",
-        controller="authenticate",
-        action="get_api_key",
-        conditions=dict(method=["GET"]),
-    )
-
-    # ======================================
-    # ====== DISPLAY APPLICATIONS API ======
-    # ======================================
-
-    webapp.mapper.connect(
-        "index",
-        "/api/display_applications",
-        controller="display_applications",
-        action="index",
-        conditions=dict(method=["GET"]),
-    )
-
-    webapp.mapper.connect(
-        "reload",
-        "/api/display_applications/reload",
-        controller="display_applications",
-        action="reload",
-        conditions=dict(method=["POST"]),
-    )
-
     # ================================
     # ===== USERS API =====
     # ================================
@@ -872,46 +818,6 @@ def populate_api_routes(webapp, app):
         controller="users",
         action="set_toolbox_filters",
         conditions=dict(method=["PUT"]),
-    )
-
-    webapp.mapper.connect(
-        "get_custom_builds",
-        "/api/users/{id}/custom_builds",
-        controller="users",
-        action="get_custom_builds",
-        conditions=dict(method=["GET"]),
-    )
-
-    webapp.mapper.connect(
-        "add_custom_builds",
-        "/api/users/{id}/custom_builds/{key}",
-        controller="users",
-        action="add_custom_builds",
-        conditions=dict(method=["PUT"]),
-    )
-
-    webapp.mapper.connect(
-        "delete_custom_builds",
-        "/api/users/{id}/custom_builds/{key}",
-        controller="users",
-        action="delete_custom_builds",
-        conditions=dict(method=["DELETE"]),
-    )
-
-    webapp.mapper.connect(
-        "set_favorite_tool",
-        "/api/users/{id}/favorites/{object_type}",
-        controller="users",
-        action="set_favorite",
-        conditions=dict(method=["PUT"]),
-    )
-
-    webapp.mapper.connect(
-        "remove_favorite_tool",
-        "/api/users/{id}/favorites/{object_type}/{object_id:.*?}",
-        controller="users",
-        action="remove_favorite",
-        conditions=dict(method=["DELETE"]),
     )
 
     # ========================
@@ -1087,6 +993,7 @@ def populate_api_routes(webapp, app):
         path_prefix="/api/jobs/{job_id}",
         parent_resources=dict(member_name="job", collection_name="jobs"),
     )
+
     webapp.mapper.resource(
         "port",
         "ports",
@@ -1311,19 +1218,7 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
                 normalize_remote_user_email=conf.get("normalize_remote_user_email", False),
             ),
         )
-    # The recursive middleware allows for including requests in other
-    # requests or forwarding of requests, all on the server side.
-    if asbool(conf.get("use_recursive", True)):
-        from paste import recursive
 
-        app = wrap_if_allowed(app, stack, recursive.RecursiveMiddleware, args=(conf,))
-    # If sentry logging is enabled, log here before propogating up to
-    # the error middleware
-    sentry_dsn = conf.get("sentry_dsn", None)
-    if sentry_dsn:
-        from sentry_sdk.integrations.wsgi import SentryWsgiMiddleware
-
-        app = wrap_if_allowed(app, stack, SentryWsgiMiddleware)
     # Error middleware
     app = wrap_if_allowed(app, stack, ErrorMiddleware, args=(conf,))
     # Transaction logging (apache access.log style)

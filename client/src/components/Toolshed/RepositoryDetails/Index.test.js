@@ -1,14 +1,18 @@
-import { shallowMount, createLocalVue } from "@vue/test-utils";
+import { shallowMount } from "@vue/test-utils";
+import { getAppRoot } from "onload/loadConfig";
+import { createPinia } from "pinia";
+import { getLocalVue } from "tests/jest/helpers";
+
+import { mockFetcher } from "@/schema/__mocks__";
+
+import { Services } from "../services";
 import Index from "./Index";
 
 jest.mock("app");
-
-import { getAppRoot } from "onload/loadConfig";
 jest.mock("onload/loadConfig");
 getAppRoot.mockImplementation(() => "/");
-
-import { Services } from "../services";
 jest.mock("../services");
+jest.mock("@/schema");
 
 Services.mockImplementation(() => {
     return {
@@ -27,7 +31,9 @@ Services.mockImplementation(() => {
 
 describe("RepositoryDetails", () => {
     it("test repository details index", async () => {
-        const localVue = createLocalVue();
+        mockFetcher.path("/api/configuration").method("get").mock({ data: {} });
+        const localVue = getLocalVue();
+        const pinia = createPinia();
         const wrapper = shallowMount(Index, {
             propsData: {
                 repo: {
@@ -39,6 +45,7 @@ describe("RepositoryDetails", () => {
                 toolshedUrl: "toolshedUrl",
             },
             localVue,
+            pinia,
         });
         expect(wrapper.find(".loading-message").text()).toBe("Loading repository details...");
         await localVue.nextTick();

@@ -32,7 +32,9 @@ from galaxy.schema.schema import (
 from galaxy.webapps.galaxy.api import (
     depends,
     DependsOnTrans,
+    IndexQueryTag,
     Router,
+    search_query_param,
 )
 from galaxy.webapps.galaxy.services.pages import PagesService
 
@@ -59,14 +61,14 @@ ShowSharedQueryParam: bool = Query(default=False, title="Include pages shared wi
 
 
 SortByQueryParam: PageSortByEnum = Query(
-    default=PageSortByEnum.update_time,
+    default="update_time",
     title="Sort attribute",
     description="Sort page index by this specified attribute on the page model",
 )
 
 
 SortDescQueryParam: bool = Query(
-    default=True,
+    default=False,
     title="Sort Descending",
     description="Sort in descending order?",
 )
@@ -76,6 +78,19 @@ LimitQueryParam: int = Query(default=100, lt=1000, title="Limit number of querie
 OffsetQueryParam: int = Query(
     default=0,
     title="Number of pages to skip in sorted query (to enable pagination).",
+)
+
+query_tags = [
+    IndexQueryTag("title", "The page's title."),
+    IndexQueryTag("slug", "The page's slug.", "s"),
+    IndexQueryTag("tag", "The page's tags.", "t"),
+    IndexQueryTag("user", "The page's owner's username.", "u"),
+]
+
+SearchQueryParam: Optional[str] = search_query_param(
+    model_name="Page",
+    tags=query_tags,
+    free_text_fields=["title", "slug", "tag", "user"],
 )
 
 
@@ -90,6 +105,7 @@ class FastAPIPages:
     )
     async def index(
         self,
+        response: Response,
         trans: ProvidesUserContext = DependsOnTrans,
         deleted: bool = DeletedQueryParam,
         user_id: Optional[DecodedDatabaseIdField] = UserIdQueryParam,
@@ -99,6 +115,7 @@ class FastAPIPages:
         sort_desc: bool = SortDescQueryParam,
         limit: int = LimitQueryParam,
         offset: int = OffsetQueryParam,
+        search: Optional[str] = SearchQueryParam,
     ) -> PageSummaryList:
         """Get a list with summary information of all Pages available to the user."""
         payload = PageIndexQueryPayload.construct(
@@ -110,8 +127,11 @@ class FastAPIPages:
             sort_desc=sort_desc,
             limit=limit,
             offset=offset,
+            search=search,
         )
-        return self.service.index(trans, payload)
+        pages, total_matches = self.service.index(trans, payload, include_total_count=True)
+        response.headers["total_matches"] = str(total_matches)
+        return pages
 
     @router.post(
         "/api/pages",

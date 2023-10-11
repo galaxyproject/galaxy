@@ -13,6 +13,7 @@ from typing import (
     Type,
 )
 
+from galaxy.model import database_utils
 from galaxy.util.facts import get_facts
 from .handlers import HANDLER_ASSIGNMENT_METHODS
 
@@ -42,8 +43,9 @@ class ApplicationStack:
         return {}
 
     @classmethod
-    def register_postfork_function(cls, f, *args, **kwargs):
-        f(*args, **kwargs)
+    def register_postfork_function(cls, f, *args, post_fork_only=False, **kwargs):
+        if not post_fork_only:
+            f(*args, **kwargs)
 
     def __init__(self, app=None, config=None):
         self.app = app
@@ -56,26 +58,14 @@ class ApplicationStack:
         if app:
             log.debug("%s initialized", self.__class__.__name__)
 
-    def supports_returning(self):
+    def supports_returning(self) -> bool:
         if self._supports_returning is None:
-            job_table = self.app.model.Job.__table__
-            stmt = job_table.update().where(job_table.c.id == -1).returning(job_table.c.id)
-            try:
-                self.app.model.session.execute(stmt)
-                self._supports_returning = True
-            except Exception:
-                self._supports_returning = False
+            self._supports_returning = database_utils.supports_returning(self.app.model.engine)
         return self._supports_returning
 
-    def supports_skip_locked(self):
+    def supports_skip_locked(self) -> bool:
         if self._supports_skip_locked is None:
-            job_table = self.app.model.Job.__table__
-            stmt = job_table.select().where(job_table.c.id == -1).with_for_update(skip_locked=True)
-            try:
-                self.app.model.session.execute(stmt)
-                self._supports_skip_locked = True
-            except Exception:
-                self._supports_skip_locked = False
+            self._supports_skip_locked = database_utils.supports_skip_locked(self.app.model.engine)
         return self._supports_skip_locked
 
     def get_preferred_handler_assignment_method(self):
@@ -202,7 +192,7 @@ class GunicornApplicationStack(ApplicationStack):
     late_postfork_thread: threading.Thread
 
     @classmethod
-    def register_postfork_function(cls, f, *args, **kwargs):
+    def register_postfork_function(cls, f, *args, post_fork_only=False, **kwargs):
         # do_post_fork determines if we need to run postfork functions
         if cls.do_post_fork:
             # if so, we call ApplicationStack.late_postfork once after forking ...
@@ -210,7 +200,7 @@ class GunicornApplicationStack(ApplicationStack):
                 os.register_at_fork(after_in_child=cls.late_postfork)
             # ... and store everything we need to run in ApplicationStack.postfork_functions
             cls.postfork_functions.append(lambda: f(*args, **kwargs))
-        else:
+        elif not post_fork_only:
             f(*args, **kwargs)
 
     @classmethod
@@ -229,7 +219,8 @@ class GunicornApplicationStack(ApplicationStack):
     def log_startup(self):
         msg = [f"Galaxy server instance '{self.config.server_name}' is running"]
         if "GUNICORN_LISTENERS" in os.environ:
-            msg.append(f'serving on {os.environ["GUNICORN_LISTENERS"]}')
+            message = f'\nServing on {os.environ["GUNICORN_LISTENERS"]}\n'
+            msg.append(f"\033[92m{message}\033[0m")  # Highlight in green
         log.info("\n".join(msg))
 
 
@@ -310,8 +301,8 @@ def application_stack_log_formatter():
     return logging.Formatter(fmt=application_stack_class().log_format)
 
 
-def register_postfork_function(f, *args, **kwargs):
-    application_stack_class().register_postfork_function(f, *args, **kwargs)
+def register_postfork_function(f, *args, post_fork_only=False, **kwargs):
+    application_stack_class().register_postfork_function(f, *args, post_fork_only=post_fork_only**kwargs)
 
 
 def get_app_kwds(config_section, app_name=None):

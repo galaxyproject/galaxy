@@ -12,7 +12,6 @@ try:
 
     job_states = Job.states
 except ImportError:
-
     # Not in Galaxy, map Galaxy job states to Pulsar ones.
     class job_states(str, Enum):  # type: ignore[no-redef]
         RUNNING = "running"

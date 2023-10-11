@@ -314,7 +314,8 @@ class KubernetesJobRunner(AsynchronousJobRunner):
 
     def __get_k8s_job_spec(self, ajs):
         """Creates the k8s Job spec. For a Job spec, the only requirement is to have a .spec.template.
-        If the job hangs around unlimited it will be ended after k8s wall time limit, which sets activeDeadlineSeconds"""
+        If the job hangs around unlimited it will be ended after k8s wall time limit, which sets activeDeadlineSeconds
+        """
         k8s_job_spec = {
             "template": self.__get_k8s_job_spec_template(ajs),
             "activeDeadlineSeconds": int(self.runner_params["k8s_walltime_limit"]),
@@ -955,8 +956,9 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         jobs = find_job_object_by_name(self._pykube_api, job_state.job_id, self.runner_params["k8s_namespace"])
         if len(jobs.response["items"]) > 1:
             log.warning(
-                "More than one job matches selector: %s. Possible configuration error"
-                " in job id '%s'" % (jobs.response["items"], job_state.job_id)
+                "More than one job matches selector: %s. Possible configuration error in job id '%s'",
+                jobs.response["items"],
+                job_state.job_id,
             )
         elif len(jobs.response["items"]) == 0:
             log.warning("No k8s job found which matches job id '%s'. Ignoring...", job_state.job_id)

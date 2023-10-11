@@ -1,13 +1,17 @@
-import WorkflowIndexActions from "./WorkflowIndexActions";
+import "jest-location-mock";
+
+import { createTestingPinia } from "@pinia/testing";
 import { shallowMount } from "@vue/test-utils";
-import { getLocalVue } from "jest/helpers";
+import { PiniaVuePlugin } from "pinia";
+import { getLocalVue } from "tests/jest/helpers";
 import { ROOT_COMPONENT } from "utils/navigation";
 import VueRouter from "vue-router";
 
-import "jest-location-mock";
+import WorkflowIndexActions from "./WorkflowIndexActions";
 
 const localVue = getLocalVue(true);
 localVue.use(VueRouter);
+localVue.use(PiniaVuePlugin);
 
 const router = new VueRouter();
 
@@ -23,6 +27,7 @@ describe("WorkflowIndexActions", () => {
         wrapper = shallowMount(WorkflowIndexActions, {
             localVue,
             router,
+            pinia: createTestingPinia(),
         });
         $router = wrapper.vm.$router;
     });

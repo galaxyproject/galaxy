@@ -2,9 +2,11 @@ import random
 
 import pytest
 
-from galaxy.model.migrations.scripts import (
+from galaxy.model.migrations.exceptions import (
     DatabaseDoesNotExistError,
     DatabaseNotInitializedError,
+)
+from galaxy.model.migrations.scripts import (
     LegacyManageDb,
     verify_database_is_initialized,
 )

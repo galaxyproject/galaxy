@@ -1,4 +1,4 @@
-<tool id="CONVERTER_mdconvert" name="Converter for XTC, DCD, and TRR" version="1.0.0" hidden="true" profile="21.09">
+<tool id="CONVERTER_mdconvert" name="Convert XTC, DCD, and TRR" version="1.0.0" hidden="true" profile="21.09">
     <requirements>
         <requirement type="package" version="1.9.4">mdtraj</requirement>
     </requirements>

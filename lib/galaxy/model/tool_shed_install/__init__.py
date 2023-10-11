@@ -1,7 +1,13 @@
 import logging
 import os
 from enum import Enum
-from typing import TYPE_CHECKING
+from typing import (
+    Any,
+    Callable,
+    Dict,
+    Optional,
+    TYPE_CHECKING,
+)
 
 from sqlalchemy import (
     Boolean,
@@ -10,20 +16,23 @@ from sqlalchemy import (
     ForeignKey,
     Integer,
     String,
-    Table,
     TEXT,
 )
 from sqlalchemy.orm import (
     registry,
     relationship,
 )
-from sqlalchemy.orm.decl_api import DeclarativeMeta
+from typing_extensions import Protocol
 
 from galaxy.model.custom_types import (
     MutableJSONType,
     TrimmedString,
 )
 from galaxy.model.orm.now import now
+from galaxy.tool_util.toolbox.base import (
+    AbstractToolBox,
+    DynamicToolConfDict,
+)
 from galaxy.util import asbool
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
@@ -34,12 +43,24 @@ log = logging.getLogger(__name__)
 mapper_registry = registry()
 
 if TYPE_CHECKING:
+    # Workaround for https://github.com/python/mypy/issues/14182
+    from sqlalchemy.orm.decl_api import DeclarativeMeta as _DeclarativeMeta
 
-    class _HasTable:
-        table: Table
+    class DeclarativeMeta(_DeclarativeMeta, type):
+        pass
 
 else:
-    _HasTable = object
+    from sqlalchemy.orm.decl_api import DeclarativeMeta
+
+
+class HasToolBox(common_util.HasToolShedRegistry, Protocol):
+    @property
+    def tool_dependency_dir(self) -> Optional[str]:
+        ...
+
+    @property
+    def toolbox(self) -> AbstractToolBox:
+        ...
 
 
 class Base(metaclass=DeclarativeMeta):
@@ -53,7 +74,7 @@ class Base(metaclass=DeclarativeMeta):
         cls.table = cls.__table__
 
 
-class ToolShedRepository(Base, _HasTable):
+class ToolShedRepository(Base):
     __tablename__ = "tool_shed_repository"
 
     id = Column(Integer, primary_key=True)
@@ -170,7 +191,7 @@ class ToolShedRepository(Base, _HasTable):
         self.status = status
         self.error_message = error_message
 
-    def as_dict(self, value_mapper=None):
+    def as_dict(self, value_mapper: Optional[Dict[str, Callable]] = None) -> Dict[str, Any]:
         return self.to_dict(view="element", value_mapper=value_mapper)
 
     @property
@@ -197,7 +218,7 @@ class ToolShedRepository(Base, _HasTable):
     def can_reinstall_or_activate(self):
         return self.deleted
 
-    def get_sharable_url(self, app):
+    def get_sharable_url(self, app: HasToolBox):
         return common_util.get_tool_shed_repository_url(app, self.tool_shed, self.owner, self.name)
 
     @property
@@ -208,7 +229,7 @@ class ToolShedRepository(Base, _HasTable):
     def shed_config_filename(self, value):
         self.metadata_["shed_config_filename"] = os.path.abspath(value)
 
-    def get_shed_config_dict(self, app):
+    def get_shed_config_dict(self, app: HasToolBox) -> DynamicToolConfDict:
         """
         Return the in-memory version of the shed_tool_conf file, which is stored in the config_elems entry
         in the shed_tool_conf_dict.
@@ -219,7 +240,7 @@ class ToolShedRepository(Base, _HasTable):
                 return shed_config_dict
         return self.guess_shed_config(app)
 
-    def get_tool_relative_path(self, app):
+    def get_tool_relative_path(self, app: HasToolBox):
         # This is a somewhat public function, used by data_manager_manual for instance
         shed_conf_dict = self.get_shed_config_dict(app)
         tool_path = None
@@ -231,7 +252,7 @@ class ToolShedRepository(Base, _HasTable):
             )
         return tool_path, relative_path
 
-    def guess_shed_config(self, app):
+    def guess_shed_config(self, app: HasToolBox):
         tool_ids = []
         for tool in self.metadata_.get("tools", []):
             tool_ids.append(tool.get("guid"))
@@ -389,13 +410,13 @@ class ToolShedRepository(Base, _HasTable):
                 missing_dependencies.append(tool_dependency)
         return missing_dependencies
 
-    def repo_files_directory(self, app):
+    def repo_files_directory(self, app: HasToolBox):
         repo_path = self.repo_path(app)
         if repo_path:
             return os.path.join(repo_path, self.name)
         return None
 
-    def repo_path(self, app):
+    def repo_path(self, app: HasToolBox):
         tool_shed = common_util.remove_protocol_and_port_from_tool_shed_url(self.tool_shed)
         for shed_tool_conf_dict in app.toolbox.dynamic_confs(include_migrated_tool_conf=True):
             tool_path = shed_tool_conf_dict["tool_path"]
@@ -515,7 +536,7 @@ class ToolShedRepository(Base, _HasTable):
             return asbool(self.tool_shed_status.get("revision_update", False))
         return False
 
-    def to_dict(self, view="collection", value_mapper=None):
+    def to_dict(self, view="collection", value_mapper: Optional[Dict[str, Callable]] = None) -> Dict[str, Any]:
         if value_mapper is None:
             value_mapper = {}
         rval = {}
@@ -527,7 +548,7 @@ class ToolShedRepository(Base, _HasTable):
             try:
                 rval[key] = self.__getattribute__(key)
                 if key in value_mapper:
-                    rval[key] = value_mapper.get(key, rval[key])
+                    rval[key] = value_mapper[key](rval[key])
             except AttributeError:
                 rval[key] = None
         return rval
@@ -634,7 +655,7 @@ class ToolShedRepository(Base, _HasTable):
         return False
 
 
-class RepositoryRepositoryDependencyAssociation(Base, _HasTable):
+class RepositoryRepositoryDependencyAssociation(Base):
     __tablename__ = "repository_repository_dependency_association"
 
     id = Column(Integer, primary_key=True)
@@ -650,7 +671,7 @@ class RepositoryRepositoryDependencyAssociation(Base, _HasTable):
         self.repository_dependency_id = repository_dependency_id
 
 
-class RepositoryDependency(Base, _HasTable):
+class RepositoryDependency(Base):
     __tablename__ = "repository_dependency"
 
     id = Column(Integer, primary_key=True)
@@ -663,7 +684,7 @@ class RepositoryDependency(Base, _HasTable):
         self.tool_shed_repository_id = tool_shed_repository_id
 
 
-class ToolDependency(Base, _HasTable):
+class ToolDependency(Base):
     __tablename__ = "tool_dependency"
 
     id = Column(Integer, primary_key=True)
@@ -725,8 +746,9 @@ class ToolDependency(Base, _HasTable):
     def in_error_state(self):
         return self.status == self.installation_status.ERROR
 
-    def installation_directory(self, app):
+    def installation_directory(self, app: HasToolBox) -> Optional[str]:
         if self.type == "package":
+            assert app.tool_dependency_dir
             return os.path.join(
                 app.tool_dependency_dir,
                 self.name,
@@ -736,6 +758,7 @@ class ToolDependency(Base, _HasTable):
                 self.tool_shed_repository.installed_changeset_revision,
             )
         if self.type == "set_environment":
+            assert app.tool_dependency_dir
             return os.path.join(
                 app.tool_dependency_dir,
                 "environment_settings",
@@ -751,7 +774,7 @@ class ToolDependency(Base, _HasTable):
         return self.status == self.installation_status.INSTALLED
 
 
-class ToolVersion(Base, Dictifiable, _HasTable):
+class ToolVersion(Base, Dictifiable):
     __tablename__ = "tool_version"
 
     id = Column(Integer, primary_key=True)
@@ -779,7 +802,7 @@ class ToolVersion(Base, Dictifiable, _HasTable):
         return rval
 
 
-class ToolVersionAssociation(Base, _HasTable):
+class ToolVersionAssociation(Base):
     __tablename__ = "tool_version_association"
 
     id = Column(Integer, primary_key=True)

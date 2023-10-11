@@ -4,9 +4,6 @@ cd "$(dirname "$0")"
 
 show_help() {
 cat <<EOF
-'${0##*/} -id bbb'                  for testing one tool with id 'bbb' ('bbb' is the tool id)
-'${0##*/} -sid ccc'                 for testing one section with sid 'ccc' ('ccc' is the string after 'section::')
-'${0##*/} -list'                    for listing all the tool ids
 '${0##*/} -api (test_path)'         for running all the test scripts in the ./lib/galaxy_test/api directory, test_path
                                     can be pytest selector
 '${0##*/} -cwl (test_path)'         for running all the test scripts in the ./lib/galaxy_test/api/cwl directory, test_path
@@ -14,7 +11,6 @@ cat <<EOF
 '${0##*/} -integration (test_path)' for running all integration test scripts in the ./test/integration directory, test_path
                                     can be pytest selector
 '${0##*/} -toolshed (test_path)'    for running all the test scripts in the ./lib/tool_shed/test directory
-'${0##*/} -installed'               for running tests of Tool Shed installed tools
 '${0##*/} -main'                    for running tests of tools shipped with Galaxy
 '${0##*/} -framework'               for running through example tool tests testing framework features in test/functional/tools"
 '${0##*/} -framework -id toolid'    for testing one framework tool (in test/functional/tools/) with id 'toolid'
@@ -239,6 +235,9 @@ GALAXY_TEST_TOOL_PATH           Path defaulting to 'tools'.
 GALAXY_TEST_SHED_TOOL_CONF      Shed toolbox conf (defaults to
                                 config/shed_tool_conf.xml) used when testing
                                 installed to tools with -installed.
+GALAXY_TEST_HISTORY_ID          Some tests can target existing history ids, this option
+                                is fairly limited and not compatible with parallel testing
+                                so should be limited to debugging one-off tests.
 TOOL_SHED_TEST_HOST             Host to use for shed server setup for testing.
 TOOL_SHED_TEST_PORT             Port to use for shed server setup for testing.
 TOOL_SHED_TEST_FILE_DIR         Defaults to lib/tool_shed/test/test_data.
@@ -247,7 +246,19 @@ TOOL_SHED_TEST_TMP_DIR          Defaults to random /tmp directory - place for
 TOOL_SHED_TEST_OMIT_GALAXY      Do not launch a Galaxy server for tool shed
                                 testing.
 GALAXY_TEST_DISABLE_ACCESS_LOG  Do not log access messages
+GALAXY_TEST_AXE_SCRIPT_URL      URL of aXe script to use for accessibility testing.
+GALAXY_TEST_SKIP_AXE            Set this to '1' to skip aXe accessibilty testing when
+                                running selenium tests.
 
+We're tyring annotate API and Selenium tests with the resources they require
+and create to make them more appropriate to run on established Galaxy instances.
+The following variables can be used to disable certain classes of properly tests.
+
+GALAXY_TEST_SKIP_IF_REQUIRES_ADMIN
+GALAXY_TEST_SKIP_IF_REQUIRES_NEW_HISTORY
+GALAXY_TEST_SKIP_IF_REQUIRES_NEW_LIBRARY
+GALAXY_TEST_SKIP_IF_REQUIRES_NEW_USER
+GALAXY_TEST_SKIP_IF_REQUIRES_NEW_PUBLISHED_OBJECTS
 EOF
 }
 
@@ -285,7 +296,6 @@ if [ -n "$BUILD_NUMBER" ]; then
     xunit_report_file="xunit-${BUILD_NUMBER}.xml"
 fi
 
-run_default_functional_tests="1"
 # Loop through and consume the main arguments.
 # Some loops will consume more than one argument (there are extra "shift"s in some cases).
 while :
@@ -295,32 +305,19 @@ do
           show_help
           exit 0
           ;;
-      -l|-list|--list)
-          show_list
-          exit 0
-          ;;
       -id|--id)
           if [ $# -gt 1 ]; then
-              test_id=$2;
+              test_id=$2
               shift 2
           else
-              echo "--id requires an argument" 1>&2
-              exit 1
-          fi
-          ;;
-      -s|-sid|--sid)
-          if [ $# -gt 1 ]; then
-              section_id=$2
-              shift 2
-          else
-              echo "--sid requires an argument" 1>&2
+              echo "ERROR: --id requires an argument" 1>&2
               exit 1
           fi
           ;;
       -a|-api|--api)
           GALAXY_TEST_USE_HIERARCHICAL_OBJECT_STORE="True"  # Run these tests with a non-trivial object store.
           export GALAXY_TEST_USE_HIERARCHICAL_OBJECT_STORE
-          GALAXY_TEST_TOOL_CONF="lib/galaxy/config/sample/tool_conf.xml.sample,test/functional/tools/samples_tool_conf.xml"
+          GALAXY_TEST_TOOL_CONF="lib/galaxy/config/sample/tool_conf.xml.sample,test/functional/tools/sample_tool_conf.xml"
           marker="not cwl_conformance"
           report_file="./run_api_tests.html"
           if [ $# -gt 1 ]; then
@@ -334,7 +331,7 @@ do
       -cwl|--cwl)
           GALAXY_TEST_USE_HIERARCHICAL_OBJECT_STORE="True"  # Run these tests with a non-trivial object store.
           export GALAXY_TEST_USE_HIERARCHICAL_OBJECT_STORE
-          GALAXY_TEST_TOOL_CONF="lib/galaxy/config/sample/tool_conf.xml.sample,test/functional/tools/samples_tool_conf.xml"
+          GALAXY_TEST_TOOL_CONF="lib/galaxy/config/sample/tool_conf.xml.sample,test/functional/tools/sample_tool_conf.xml"
           marker="cwl_conformance"
           report_file="./run_cwl_tests.html"
           generate_cwl_conformance_tests=1
@@ -347,7 +344,7 @@ do
           fi
           ;;
       -selenium|--selenium)
-          GALAXY_TEST_TOOL_CONF="lib/galaxy/config/sample/tool_conf.xml.sample,test/functional/tools/samples_tool_conf.xml"
+          GALAXY_TEST_TOOL_CONF="lib/galaxy/config/sample/tool_conf.xml.sample,test/functional/tools/sample_tool_conf.xml"
           report_file="./run_selenium_tests.html"
           skip_client_build=""
           if [ $# -gt 1 ]; then
@@ -391,45 +388,31 @@ do
           shift 2
           ;;
       -f|-framework|--framework)
-          GALAXY_TEST_TOOL_CONF="test/functional/tools/samples_tool_conf.xml"
+          GALAXY_TEST_TOOL_CONF="test/functional/tools/sample_tool_conf.xml"
           marker="tool"
           report_file="run_framework_tests.html"
-          framework_test=1;
+          framework_test=1
+          shift 1
+          ;;
+      -d|-data_managers|--data_managers)
+          marker="data_manager"
+          report_file="run_data_managers_tests.html"
+          data_managers_test=1
           shift 1
           ;;
       -main|-main_tools|--main_tools)
           GALAXY_TEST_TOOL_CONF="lib/galaxy/config/sample/tool_conf.xml.sample"
           marker="tool"
           report_file="run_framework_tests.html"
-          framework_test=1;
+          framework_test=1
           shift 1
-          ;;
-      -d|-data_managers|--data_managers)
-          marker="data_manager"
-          report_file="run_data_managers_tests.html"
-          data_managers_test=1;
-          shift 1
-          ;;
-      -m|-migrated|--migrated)
-          GALAXY_TEST_TOOL_CONF="config/migrated_tools_conf.xml"
-          marker="tool"
-          report_file="run_migrated_tests.html"
-          migrated_test=1;
-          shift
-          ;;
-      -installed|--installed)
-          GALAXY_TEST_TOOL_CONF="config/shed_tool_conf.xml"
-          marker="tool"
-          report_file="run_installed_tests.html"
-          installed_test=1;
-          shift
           ;;
       -r|--report_file)
           if [ $# -gt 1 ]; then
               report_file=$2
               shift 2
           else
-              echo "--report_file requires an argument" 1>&2
+              echo "ERROR: --report_file requires an argument" 1>&2
               exit 1
           fi
           ;;
@@ -438,7 +421,7 @@ do
               xunit_report_file=$2
               shift 2
           else
-              echo "--xunit_report_file requires an argument" 1>&2
+              echo "ERROR: --xunit_report_file requires an argument" 1>&2
               exit 1
           fi
           ;;
@@ -447,7 +430,7 @@ do
               structured_data_report_file=$2
               shift 2
           else
-              echo "--structured_data_report_file requires an argument" 1>&2
+              echo "ERROR: --structured_data_report_file requires an argument" 1>&2
               exit 1
           fi
           ;;
@@ -487,7 +470,15 @@ do
           ;;
       -u|-unit|--unit)
           report_file="run_unit_tests.html"
-          unit_extra='--doctest-modules --ignore lib/galaxy/web/proxy/js/node_modules/ --ignore lib/tool_shed/webapp/controllers --ignore lib/galaxy/jobs/runners/chronos.py --ignore lib/tool_shed/webapp/model/migrate --ignore lib/galaxy/tools/bundled --ignore lib/galaxy_test --ignore lib/tool_shed/test --ignore lib/galaxy/model/migrations/alembic'
+          unit_extra='--doctest-modules
+			--ignore lib/galaxy/jobs/runners/chronos.py
+			--ignore lib/galaxy/model/migrations/alembic
+			--ignore lib/galaxy/tools/bundled
+			--ignore lib/galaxy/web/proxy/js/node_modules/
+			--ignore lib/galaxy_test
+			--ignore lib/tool_shed/test
+			--ignore lib/tool_shed/webapp/controllers
+			--ignore=lib/tool_shed/webapp/model/migrations/alembic/'
           generate_cwl_conformance_tests=1
           if [ $# -gt 1 ]; then
               unit_extra="$unit_extra $2"
@@ -498,7 +489,7 @@ do
           fi
           ;;
       -i|-integration|--integration)
-          GALAXY_TEST_TOOL_CONF="lib/galaxy/config/sample/tool_conf.xml.sample,test/functional/tools/samples_tool_conf.xml"
+          GALAXY_TEST_TOOL_CONF="lib/galaxy/config/sample/tool_conf.xml.sample,test/functional/tools/sample_tool_conf.xml"
           report_file="./run_integration_tests.html"
           if [ $# -gt 1 ]; then
               integration_extra=$2
@@ -526,12 +517,8 @@ do
           no_create_venv='--no-create-venv'
           shift
           ;;
-      --no-replace-pip)
-          no_replace_pip='--no-replace-pip'
-          shift
-          ;;
-      --replace-pip)
-          replace_pip='--replace-pip'
+      --no-replace-pip|--replace-pip)
+          # Deprecated options
           shift
           ;;
       --skip-common-startup)
@@ -543,12 +530,11 @@ do
       --)
           # Do not default to running the functional tests in this case, caller
           # is opting to run specific tests so don't interfere with that by default.
-          unset run_default_functional_tests;
           shift
           break
           ;;
       -*)
-          echo "invalid option: $1" 1>&2;
+          echo "ERROR: Invalid option $1" 1>&2
           show_help
           exit 1
           ;;
@@ -569,7 +555,7 @@ if [ -z "$skip_common_startup" ]; then
             GALAXY_CONFIG_OVERRIDE_DATABASE_CONNECTION=$GALAXY_TEST_DBURI
             export GALAXY_CONFIG_OVERRIDE_DATABASE_CONNECTION
     fi
-    ./scripts/common_startup.sh $skip_venv $no_create_venv $no_replace_pip $replace_pip $skip_client_build --dev-wheels || exit 1
+    ./scripts/common_startup.sh $skip_venv $no_create_venv $skip_client_build --dev-wheels || exit 1
     unset GALAXY_CONFIG_OVERRIDE_DATABASE_CONNECTION
 fi
 
@@ -577,7 +563,7 @@ fi
 
 setup_python
 
-if [ -n "$framework_test" ] || [ -n "$installed_test" ] || [ -n "$migrated_test" ] || [ -n "$data_managers_test" ] ; then
+if [ -n "$framework_test" ] || [ -n "$data_managers_test" ] ; then
     if [ -n "$test_id" ]; then
         selector="-k $test_id"
     else
@@ -590,18 +576,16 @@ elif [ -n "$toolshed_script" ]; then
     extra_args="$toolshed_script"
 elif [ -n "$api_script" ]; then
     extra_args="$api_script"
-elif [ -n "$section_id" ]; then
-    extra_args=$(python tool_list.py "$section_id")
 elif [ -n "$unit_extra" ]; then
     extra_args="$unit_extra"
 elif [ -n "$integration_extra" ]; then
     extra_args="$integration_extra"
 elif [ -n "$test_target" ] ; then
     extra_args="$test_target"
-elif [ -n "$run_default_functional_tests" ] ; then
-    extra_args='--exclude="^get" functional'
 else
-    extra_args=""
+    echo "ERROR: No testing mode selected!" 1>&2
+    show_help
+    exit 1
 fi
 
 if [ -n "$xunit_report_file" ]; then

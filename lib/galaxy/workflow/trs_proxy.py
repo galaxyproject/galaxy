@@ -1,5 +1,6 @@
 import logging
 import os
+import re
 import urllib.parse
 
 import requests
@@ -25,6 +26,9 @@ DEFAULT_TRS_SERVERS = [
     },
 ]
 GA4GH_GALAXY_DESCRIPTOR = "GALAXY"
+TRS_URL_REGEX = (
+    r"(?P<trs_base_url>https?:\/\/.+)\/ga4gh\/trs\/v2\/tools\/(?P<tool_id>.+)\/versions\/(?P<version_id>[^\/]+).*"
+)
 
 
 def parse_search_kwds(search_query):
@@ -43,7 +47,7 @@ def parse_search_kwds(search_query):
         query_kwd["description"] = (description_term,)
 
     if keyed_terms is not None:
-        for (key, value, _) in keyed_terms:
+        for key, value, _ in keyed_terms:
             query_kwd[key] = value
     return query_kwd
 
@@ -62,30 +66,53 @@ class TrsProxy:
     def get_servers(self):
         return self._server_list
 
-    def get_tools(self, trs_server, **kwd):
+    def get_server(self, trs_server):
+        trs_url = self._server_dict[trs_server]["api_url"]
+        return TrsServer(trs_url)
+
+    def server_from_url(self, trs_url):
+        return TrsServer(trs_url)
+
+    def match_url(self, url):
+        matches = re.match(TRS_URL_REGEX, url)
+        if matches:
+            match_dict = matches.groupdict()
+            match_dict["tool_id"] = urllib.parse.unquote(match_dict["tool_id"])
+            return match_dict
+        else:
+            return None
+
+
+class TrsServer:
+    def __init__(self, trs_url):
+        self._trs_url = trs_url
+
+    def get_tools(self, **kwd):
         query_kwd = {}
         for key in ["toolClass", "descriptorType", "description", "name", "organization"]:
             value = kwd.pop(key, None)
             if value is not None:
                 query_kwd[key] = value
 
-        trs_api_url = self._get_api_endpoint(trs_server, **kwd)
+        trs_api_url = self._get_api_endpoint(**kwd)
         return self._get(trs_api_url, params=query_kwd)
 
-    def get_tool(self, trs_server, tool_id, **kwd):
-        trs_api_url = self._get_tool_api_endpoint(trs_server, tool_id, **kwd)
+    def get_tool(self, tool_id, **kwd):
+        trs_api_url = self._get_tool_api_endpoint(tool_id, **kwd)
         return self._get(trs_api_url)
 
-    def get_versions(self, trs_server, tool_id, **kwd):
-        trs_api_url = f"{self._get_tool_api_endpoint(trs_server, tool_id, **kwd)}/versions"
+    def get_versions(self, tool_id, **kwd):
+        trs_api_url = f"{self._get_tool_api_endpoint(tool_id, **kwd)}/versions"
         return self._get(trs_api_url)
 
-    def get_version(self, trs_server, tool_id, version_id, **kwd):
-        trs_api_url = f"{self._get_tool_api_endpoint(trs_server, tool_id, **kwd)}/versions/{version_id}"
+    def get_version(self, tool_id, version_id, **kwd):
+        trs_api_url = f"{self._get_tool_api_endpoint(tool_id, **kwd)}/versions/{version_id}"
         return self._get(trs_api_url)
 
-    def get_version_descriptor(self, trs_server, tool_id, version_id, **kwd):
-        trs_api_url = f"{self._get_tool_api_endpoint(trs_server, tool_id, **kwd)}/versions/{version_id}/{GA4GH_GALAXY_DESCRIPTOR}/descriptor"
+    def get_version_descriptor(self, tool_id, version_id, **kwd):
+        trs_api_url = (
+            f"{self._get_tool_api_endpoint(tool_id, **kwd)}/versions/{version_id}/{GA4GH_GALAXY_DESCRIPTOR}/descriptor"
+        )
         return self._get(trs_api_url)["content"]
 
     def _quote(self, tool_id, **kwd):
@@ -111,12 +138,12 @@ class TrsProxy:
                 pass
             raise MessageException.from_code(code, message)
 
-    def _get_api_endpoint(self, trs_server, **kwd):
-        trs_url = self._server_dict[trs_server]["api_url"]
+    def _get_api_endpoint(self, **kwd):
+        trs_url = self._trs_url
         trs_api_endpoint = f"{trs_url}/ga4gh/trs/v2/tools"
         return trs_api_endpoint
 
-    def _get_tool_api_endpoint(self, trs_server, tool_id, **kwd):
+    def _get_tool_api_endpoint(self, tool_id, **kwd):
         tool_id = self._quote(tool_id, **kwd)
-        trs_api_url = f"{self._get_api_endpoint(trs_server, **kwd)}/{tool_id}"
+        trs_api_url = f"{self._get_api_endpoint(**kwd)}/{tool_id}"
         return trs_api_url
