@@ -1651,6 +1651,8 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
                 .values(state=state)
             )
             if rval.rowcount == 1:
+                # Need to expire state since we just updated it, but ORM doesn't know about it.
+                session.expire(self, ["state"])
                 self.state_history.append(JobStateHistory(self))
                 return True
             else:
