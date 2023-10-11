@@ -1057,7 +1057,15 @@ class WorkflowContentsManager(UsesAnnotations):
                     except KeyError:
                         continue
                 else:
-                    row_for_param(input_dict, input, values[input.name], other_values, prefix, step)
+                    row_for_param(
+                        input_dict,
+                        input,
+                        # Use values.get so that unspecified param values don't blow up the display
+                        values.get(input.name),
+                        other_values,
+                        prefix,
+                        step,
+                    )
                 input_dicts.append(input_dict)
             return input_dicts
 
