@@ -4,7 +4,7 @@ from functools import partial
 import galaxy.workflow.schedulers
 from galaxy import model
 from galaxy.exceptions import HandlerAssignmentError
-from galaxy.jobs.handler import ItemGrabber
+from galaxy.jobs.handler import InvocationGrabber
 from galaxy.model.base import transaction
 from galaxy.util import plugin_config
 from galaxy.util.custom_logging import get_logger
@@ -285,13 +285,12 @@ class WorkflowRequestMonitor(Monitors):
         self.invocation_grabber = None
         self_handler_tags = set(self.app.job_config.self_handler_tags)
         self_handler_tags.add(self.workflow_scheduling_manager.default_handler_id)
-        handler_assignment_method = ItemGrabber.get_grabbable_handler_assignment_method(
+        handler_assignment_method = InvocationGrabber.get_grabbable_handler_assignment_method(
             self.workflow_scheduling_manager.handler_assignment_methods
         )
         if handler_assignment_method:
-            self.invocation_grabber = ItemGrabber(
+            self.invocation_grabber = InvocationGrabber(
                 app=app,
-                grab_type="WorkflowInvocation",
                 handler_assignment_method=handler_assignment_method,
                 max_grab=self.workflow_scheduling_manager.handler_max_grab,
                 self_handler_tags=self_handler_tags,
