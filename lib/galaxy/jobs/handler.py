@@ -131,7 +131,7 @@ class ItemGrabber:
                 (self.grab_model.states.NEW, self.grab_model.states.CANCELLING)
             )
         else:
-            raise NotImplementedError(f"Grabbing {self.grab_model} not implemented")
+            raise NotImplementedError(f"Grabbing {self.grab_model.__name__} not implemented")
         subq = (
             select(self.grab_model.id)
             .where(
@@ -192,7 +192,9 @@ class ItemGrabber:
                     if self._supports_returning:
                         rows = proxy.fetchall()
                         if rows:
-                            log.debug(f"Grabbed {type(self.grab_model)}(s): {', '.join(str(row[0]) for row in rows)}")
+                            log.debug(
+                                f"Grabbed {self.grab_model.__name__}(s): {', '.join(str(row[0]) for row in rows)}"
+                            )
                         else:
                             trans.rollback()
                 except OperationalError as e:
@@ -200,7 +202,9 @@ class ItemGrabber:
                     # and should have attribute `code`. Other engines should just report the message and move on.
                     if int(getattr(e.orig, "pgcode", -1)) != 40001:
                         log.debug(
-                            "Grabbing %s failed (serialization failures are ok): %s", self.grab_model, unicodify(e)
+                            "Grabbing %s failed (serialization failures are ok): %s",
+                            self.grab_model.__name__,
+                            unicodify(e),
                         )
                     trans.rollback()
 
