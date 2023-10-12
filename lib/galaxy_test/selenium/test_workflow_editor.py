@@ -500,6 +500,14 @@ steps:
         self.assert_workflow_has_changes_and_save()
         workflow = self.workflow_populator.download_workflow(workflow_id)
         assert workflow["steps"]["0"]["tool_version"] == "0.2"
+        editor.node._(label="multiple_versions").wait_for_and_click()
+        editor.tool_version_button.wait_for_and_click()
+        assert self.select_dropdown_item("Switch to 0.1+galaxy6"), "Switch to tool version dropdown item not found"
+        self.screenshot("workflow_editor_version_downgrade")
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.assert_workflow_has_changes_and_save()
+        workflow = self.workflow_populator.download_workflow(workflow_id)
+        assert workflow["steps"]["0"]["tool_version"] == "0.1+galaxy6"
 
     @selenium_test
     def test_editor_tool_upgrade_message(self):
