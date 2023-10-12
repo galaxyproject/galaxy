@@ -71,7 +71,7 @@ export function getCompositeDatasetLink(historyDatasetId: string, path: string) 
 }
 
 const getDataset = fetcher.path("/api/datasets/{dataset_id}").method("get").create();
-export async function getCompositeDatasetInfo(id: string) {
+export async function getDatasetDetails(id: string) {
     const { data } = await getDataset({ dataset_id: id });
     return data;
 }
