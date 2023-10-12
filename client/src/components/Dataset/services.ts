@@ -67,13 +67,11 @@ export async function updateTags(
 }
 
 export function getCompositeDatasetLink(historyDatasetId: string, path: string) {
-    // TODO: historyDatasetId is wrong here, we should expose the route without forcing to provide a history id
-    return withPrefix(`/api/histories/${historyDatasetId}/contents/${historyDatasetId}/display?filename=${path}`);
+    return withPrefix(`/api/datasets/${historyDatasetId}/display?filename=${path}`);
 }
 
-const getDataset = fetcher.path("/api/histories/{history_id}/contents/{id}").method("get").create();
+const getDataset = fetcher.path("/api/datasets/{dataset_id}").method("get").create();
 export async function getCompositeDatasetInfo(id: string) {
-    // TODO: ${id} as history id is wrong here, we should expose the route without forcing to provide a history id
-    const { data } = await getDataset({ history_id: id, id });
+    const { data } = await getDataset({ dataset_id: id });
     return data;
 }
