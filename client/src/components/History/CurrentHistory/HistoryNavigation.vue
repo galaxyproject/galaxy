@@ -7,7 +7,7 @@
             <h2 class="m-1 h-sm">History</h2>
             <b-button-group>
                 <b-button
-                    v-b-tooltip.bottom.hover
+                    v-b-tooltip.top.hover.noninteractive
                     class="create-hist-btn"
                     data-description="create new history"
                     size="sm"
@@ -19,7 +19,7 @@
                 </b-button>
 
                 <b-button
-                    v-b-tooltip.bottom.hover
+                    v-b-tooltip.top.hover.noninteractive
                     data-description="switch to another history"
                     size="sm"
                     variant="link"
@@ -30,7 +30,7 @@
                 </b-button>
 
                 <b-dropdown
-                    v-b-tooltip.bottom.hover
+                    v-b-tooltip.top.hover.noninteractive
                     size="sm"
                     variant="link"
                     toggle-class="text-decoration-none"

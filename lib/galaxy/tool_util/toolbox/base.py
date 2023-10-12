@@ -96,7 +96,12 @@ class ToolBoxRegistryImpl(ToolBoxRegistry):
 
     def has_tool(self, tool_id: str) -> bool:
         toolbox = self.__toolbox
-        return tool_id in toolbox._tools_by_id or tool_id in toolbox._tools_by_old_id
+        # tool_id could be full guid, old tool id (no toolshed and version info) or versionless guid.
+        return (
+            tool_id in toolbox._tools_by_id
+            or tool_id in toolbox._tools_by_old_id
+            or bool(toolbox._lineage_map.lineage_map.get(tool_id))
+        )
 
     def get_tool(self, tool_id: str):
         return self.__toolbox.get_tool(tool_id)

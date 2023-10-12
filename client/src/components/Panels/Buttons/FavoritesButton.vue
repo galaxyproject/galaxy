@@ -1,6 +1,6 @@
 <template>
     <b-button
-        v-b-tooltip.hover.noninteractive
+        v-b-tooltip.hover.top.noninteractive
         class="panel-header-button-toolbox"
         size="sm"
         variant="link"

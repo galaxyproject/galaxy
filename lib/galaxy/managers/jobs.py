@@ -970,8 +970,6 @@ def summarize_job_parameters(trans, job):
                 # Get parameter label.
                 if input.type == "conditional":
                     label = input.test_param.label
-                elif input.type == "repeat":
-                    label = input.label()
                 else:
                     label = input.label or input.name
                 rval.append(

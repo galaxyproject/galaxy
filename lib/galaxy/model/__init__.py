@@ -9544,7 +9544,7 @@ class CustosAuthnzToken(Base, RepresentById):
 
     id = Column(Integer, primary_key=True)
     user_id = Column(Integer, ForeignKey("galaxy_user.id"))
-    external_user_id = Column(String(64))
+    external_user_id = Column(String(255))
     provider = Column(String(255))
     access_token = Column(Text)
     id_token = Column(Text)

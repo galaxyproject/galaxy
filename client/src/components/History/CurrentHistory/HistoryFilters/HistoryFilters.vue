@@ -13,7 +13,7 @@
             </DebouncedInput>
             <b-input-group-append>
                 <b-button
-                    v-b-tooltip.hover
+                    v-b-tooltip.hover.bottom.noninteractive
                     aria-haspopup="true"
                     size="sm"
                     :pressed="showAdvanced"
@@ -26,7 +26,7 @@
                     <icon v-else fixed-width icon="angle-double-down" />
                 </b-button>
                 <b-button
-                    v-b-tooltip.hover
+                    v-b-tooltip.hover.bottom.noninteractive
                     aria-haspopup="true"
                     size="sm"
                     title="Clear Filters (esc)"
