@@ -589,7 +589,7 @@ class WorkflowsAPIController(
             module_state: Dict[str, Any] = {}
             populate_state(trans, module.get_inputs(), inputs, module_state, check=False)
             module.recover_state(module_state, from_tool_form=True)
-        return {
+        step_dict = {
             "name": module.get_name(),
             "tool_state": module.get_state(),
             "content_id": module.get_content_id(),
@@ -597,6 +597,9 @@ class WorkflowsAPIController(
             "outputs": module.get_all_outputs(),
             "config_form": module.get_config_form(),
         }
+        if payload["type"] == "tool":
+            step_dict["tool_version"] = module.get_version()
+        return step_dict
 
     @expose_api
     def get_tool_predictions(self, trans: ProvidesUserContext, payload, **kwd):

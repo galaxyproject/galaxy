@@ -105,6 +105,7 @@ export interface NewStep {
     position?: StepPosition;
     post_job_actions?: PostJobActions;
     tool_state: Record<string, unknown>;
+    tool_version?: string;
     tooltip?: string;
     type: "tool" | "data_input" | "data_collection_input" | "subworkflow" | "parameter_input" | "pause";
     uuid?: string;

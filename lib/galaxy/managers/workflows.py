@@ -1155,6 +1155,8 @@ class WorkflowContentsManager(UsesAnnotations):
             input_connections_type = {}
             multiple_input = {}  # Boolean value indicating if this can be multiple
             if isinstance(module, ToolModule) and module.tool:
+                # Serialize tool version
+                step_dict["tool_version"] = module.tool.version
                 # Determine full (prefixed) names of valid input datasets
                 data_input_names = {}
 
