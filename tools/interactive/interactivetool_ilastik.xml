@@ -16,7 +16,7 @@
         export HOME=\$PWD &&
         ## Make a copy of the existing project if exists
         #if str($input_type.existing) == "existing":
-            cp $input_type.project ./MyProject.ilp &&
+            cp '$input_type.project' ./MyProject.ilp &&
         #end if
 
         ## Link input images to current working directory
@@ -25,13 +25,13 @@
         #end for
         ## Write the bash script to run:
         #if str($input_type.existing) == "new":
-            echo "ilastik --new_project \$HOME/MyProject.ilp --workflow '$input_type.Workflow'" > ilastik_with_args &&
+            echo "ilastik --new_project \$HOME/MyProject.ilp --workflow '$input_type.Workflow'" > ./ilastik_with_args &&
         #else:
             echo "ilastik --project \$HOME/MyProject.ilp" > ilastik_with_args &&
         #end if
         ## Copy it to /bin/ so it will be used by the container:
-        chmod +x ilastik_with_args &&
-        cp ilastik_with_args '/bin/' &&
+        chmod +x ./ilastik_with_args &&
+        cp ./ilastik_with_args '/bin/' &&
         /init
     ]]>
     </command>
