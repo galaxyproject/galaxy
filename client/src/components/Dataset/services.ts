@@ -69,9 +69,3 @@ export async function updateTags(
 export function getCompositeDatasetLink(historyDatasetId: string, path: string) {
     return withPrefix(`/api/datasets/${historyDatasetId}/display?filename=${path}`);
 }
-
-const getDataset = fetcher.path("/api/datasets/{dataset_id}").method("get").create();
-export async function getDatasetDetails(id: string) {
-    const { data } = await getDataset({ dataset_id: id });
-    return data;
-}
