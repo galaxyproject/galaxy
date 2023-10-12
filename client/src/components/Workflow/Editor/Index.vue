@@ -425,6 +425,7 @@ export default {
                     inputs: response.inputs,
                     outputs: response.outputs,
                     tool_state: response.tool_state,
+                    tool_version: response.tool_version,
                 });
             });
         },
@@ -550,6 +551,7 @@ export default {
                         outputs: data.outputs,
                         config_form: data.config_form,
                         tool_state: data.tool_state,
+                        tool_version: data.tool_version,
                         errors: data.errors,
                     };
                     this.onUpdateStep(step);
