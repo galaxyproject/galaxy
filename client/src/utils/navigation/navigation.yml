@@ -583,6 +583,7 @@ workflows:
     advanced_search_toggle: '.workflows-list [data-description="toggle advanced search"]'
     advanced_search_name_input: '#workflows-advanced-filter-name'
     advanced_search_tag_input: '#workflows-advanced-filter-tag .stateless-tags'
+    advanced_search_submit: '#workflows-advanced-filter-submit'
     workflow_table: "#workflow-table"
     workflow_rows: "#workflow-table > tbody > tr:not(.b-table-empty-row, [style*='display: none'])"
     external_link: '.workflow-external-link'

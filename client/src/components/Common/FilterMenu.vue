@@ -157,7 +157,7 @@ watch(
             @onToggle="onToggle" />
         <b-button
             v-if="props.menuType == 'separate' && props.showAdvanced"
-            v-b-tooltip.hover.noninteractive
+            v-b-tooltip.hover.bottom.noninteractive
             class="w-100"
             aria-haspopup="true"
             size="sm"

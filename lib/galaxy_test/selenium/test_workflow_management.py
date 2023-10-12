@@ -192,7 +192,9 @@ class TestWorkflowManagement(SeleniumTestCase, TestsGalaxyPagers, UsesWorkflowAs
         self.components.workflows.advanced_search_toggle.wait_for_and_click()
         # search by tag and name
         self.components.workflows.advanced_search_name_input.wait_for_and_send_keys("searchforthis")
-        self.workflow_index_add_advanced_tag_filter(["mytag"])
+        self.components.workflows.advanced_search_tag_input.wait_for_and_click()
+        self.tagging_add(["mytag"])
+        self.components.workflows.advanced_search_submit.wait_for_and_click()
         self._assert_showing_n_workflows(1)
         curr_value = self.workflow_index_get_current_filter()
         assert curr_value == "name:searchforthis tag:mytag", curr_value
@@ -204,7 +206,9 @@ class TestWorkflowManagement(SeleniumTestCase, TestsGalaxyPagers, UsesWorkflowAs
 
         self.components.workflows.advanced_search_toggle.wait_for_and_click()
         # search by 2 tags, one of which is not present
-        self.workflow_index_add_advanced_tag_filter(["mytag", "DNEtag"])
+        self.components.workflows.advanced_search_tag_input.wait_for_and_click()
+        self.tagging_add(["mytag", "DNEtag"])
+        self.components.workflows.advanced_search_submit.wait_for_and_click()
         curr_value = self.workflow_index_get_current_filter()
         assert curr_value == "tag:mytag tag:DNEtag", curr_value
         self._assert_showing_n_workflows(0)

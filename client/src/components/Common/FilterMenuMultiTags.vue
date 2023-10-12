@@ -3,7 +3,7 @@ import { computed, type PropType, ref, watch } from "vue";
 
 import { ValidFilter } from "@/utils/filtering";
 
-import StatelessTags from "../Tags/StatelessTags.vue";
+import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 
 const props = defineProps({
     name: { type: String, required: true },

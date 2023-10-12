@@ -17,7 +17,6 @@ from typing import (
     Any,
     cast,
     Dict,
-    List,
     NamedTuple,
     Optional,
     Union,
@@ -1395,14 +1394,6 @@ class NavigatesGalaxy(HasDriver):
             search_term,
             escape_to_clear=True,
         )
-
-    def workflow_index_add_advanced_tag_filter(self, tags: List[str]):
-        for tag in tags:
-            tag_display = self.components.workflows.advanced_search_tag_input
-            if tag_display.is_absent:
-                self.components.workflows.advanced_search_toggle.wait_for_and_click()
-            tag_display.wait_for_and_click()
-            self.tagging_add([tag])
 
     def workflow_index_click_import(self):
         return self.components.workflows.import_button.wait_for_and_click()

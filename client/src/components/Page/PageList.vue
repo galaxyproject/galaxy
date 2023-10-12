@@ -26,7 +26,7 @@
         </b-row>
         <b-table v-model="pageItemsModel" v-bind="{ ...defaultTableAttrs, ...indexTableAttrs }">
             <template v-slot:empty>
-                <loading-span v-if="loading" message="Loading pages" />
+                <LoadingSpan v-if="loading" message="Loading pages" />
                 <b-alert v-else id="no-pages" variant="info" show>
                     <div v-if="filterText !== ''">
                         No matching entries found for: <span class="font-weight-bold">{{ filterText }}</span
@@ -249,7 +249,7 @@ export default {
     computed: {
         dataProviderParameters() {
             const extraParams = {
-                search: this.effectiveFilter,
+                search: this.searchQuery,
                 show_published: false,
                 show_shared: true,
             };
