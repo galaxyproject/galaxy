@@ -19,17 +19,19 @@
             cp $input_type.project ./MyProject.ilp &&
         #end if
 
-        mkdir -p ./galaxy_inputs &&
+        ## Link input images to current working directory
         #for input in $infiles:
-            ln -s '$input' ./galaxy_inputs/'$input.name' &&
+            ln -s '$input' ./'$input.name' &&
         #end for
+        ## Write the bash script to run:
         #if str($input_type.existing) == "new":
-            echo "ilastik --new_project \$HOME/MyProject.ilp --workflow '$input_type.Workflow'" > run_ilastik &&
+            echo "ilastik --new_project \$HOME/MyProject.ilp --workflow '$input_type.Workflow'" > ilastik_with_args &&
         #else:
-            echo "ilastik --project \$HOME/MyProject.ilp" > run_ilastik &&
+            echo "ilastik --project \$HOME/MyProject.ilp" > ilastik_with_args &&
         #end if
-        chmod +x run_ilastik &&
-        cp run_ilastik '/bin/' &&
+        ## Copy it to /bin/ so it will be used by the container:
+        chmod +x ilastik_with_args &&
+        cp ilastik_with_args '/bin/' &&
         /init
     ]]>
     </command>
