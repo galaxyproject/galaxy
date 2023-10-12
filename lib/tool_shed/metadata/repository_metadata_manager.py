@@ -35,7 +35,11 @@ from tool_shed.util import (
     tool_util,
 )
 from tool_shed.util.metadata_util import repository_metadata_by_changeset_revision
-from tool_shed.webapp.model import Repository
+from tool_shed.webapp.model import (
+    Repository,
+    RepositoryMetadata,
+    User,
+)
 
 log = logging.getLogger(__name__)
 
@@ -149,7 +153,7 @@ class ToolShedMetadataGenerator(BaseMetadataGenerator):
 
         if suc.tool_shed_is_this_tool_shed(toolshed, trans=self.trans):
             try:
-                user = get_user_by_username(self.sa_session, owner, self.app.model.User)
+                user = get_user_by_username(self.sa_session, owner)
             except Exception:
                 error_message = (
                     f"Ignoring repository dependency definition for tool shed {toolshed}, name {name}, owner {owner}, "
@@ -159,7 +163,7 @@ class ToolShedMetadataGenerator(BaseMetadataGenerator):
                 is_valid = False
                 return repository_dependency_tup, is_valid, error_message
             try:
-                repository = get_repository(self.sa_session, self.app.model.Repository, name, user.id)
+                repository = get_repository(self.sa_session, name, user.id)
             except Exception:
                 error_message = f"Ignoring repository dependency definition for tool shed {toolshed},"
                 error_message += f"name {name}, owner {owner}, "
@@ -288,9 +292,7 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
         # records with the same changeset revision value - no idea how this happens. We'll
         # assume we can delete the older records, so we'll order by update_time descending and
         # delete records that have the same changeset_revision we come across later.
-        for repository_metadata in get_repository_metadata(
-            self.sa_session, self.app.model.RepositoryMetadata, self.repository.id
-        ):
+        for repository_metadata in get_repository_metadata(self.sa_session, self.repository.id):
             changeset_revision = repository_metadata.changeset_revision
             if changeset_revision not in changeset_revisions:
                 self.sa_session.delete(repository_metadata)
@@ -592,7 +594,7 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
         if my_writable:
             username = self.user.username
             repo_ids = []
-            for repository in get_current_repositories(self.sa_session, self.app.model.Repository):
+            for repository in get_current_repositories(self.sa_session):
                 # Always reset metadata on all repositories of types repository_suite_definition and
                 # tool_dependency_definition.
                 if repository.type in [rt_util.REPOSITORY_SUITE_DEFINITION, rt_util.TOOL_DEPENDENCY_DEFINITION]:
@@ -605,11 +607,11 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
                         if username in allow_push_usernames:
                             repo_ids.append(repository.id)
             if repo_ids:
-                return get_filtered_repositories(self.sa_session, self.app.model.Repository, repo_ids, order)
+                return get_filtered_repositories(self.sa_session, repo_ids, order)
             else:
                 return []
         else:
-            return get_current_repositories(self.sa_session, self.app.model.Repository, order)
+            return get_current_repositories(self.sa_session, order)
 
     def new_metadata_required_for_utilities(self):
         """
@@ -1068,18 +1070,17 @@ def _get_changeset_revisions_that_contain_tools(app: "ToolShedApp", repo, reposi
     return changeset_revisions_that_contain_tools
 
 
-def get_user_by_username(session, username, user_model):
-    stmt = select(user_model).where(user_model.username == username)
+def get_user_by_username(session, username):
+    stmt = select(User).where(User.username == username)
     return session.execute(stmt).scalar_one()
 
 
-def get_repository(session, repository_model, name, user_id):
-    stmt = select(repository_model).where(repository_model.name == name).where(repository_model.user_id == user_id)
+def get_repository(session, name, user_id):
+    stmt = select(Repository).where(Repository.name == name).where(Repository.user_id == user_id)
     return session.execute(stmt).scalar_one()
 
 
-def get_repository_metadata(session, repository_metadata_model, repository_id):
-    RepositoryMetadata = repository_metadata_model
+def get_repository_metadata(session, repository_id):
     stmt = (
         select(RepositoryMetadata)
         .where(RepositoryMetadata.repository_id == repository_id)
@@ -1088,16 +1089,14 @@ def get_repository_metadata(session, repository_metadata_model, repository_id):
     return session.scalars(stmt)
 
 
-def get_current_repositories(session, repository_model, order=False):
-    Repository = repository_model
+def get_current_repositories(session, order=False):
     stmt = select(Repository).where(Repository.deleted == false())
     if order:
         stmt = stmt.order_by(Repository.name, Repository.user_id)
     return session.scalars(stmt)
 
 
-def get_filtered_repositories(session, repository_model, repo_ids, order):
-    Repository = repository_model
+def get_filtered_repositories(session, repo_ids, order):
     stmt = select(Repository).where(Repository.in_(repo_ids))
     if order:
         stmt = stmt.order_by(Repository.name, Repository.user_id)
