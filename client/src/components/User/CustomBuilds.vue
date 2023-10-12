@@ -11,9 +11,9 @@
                     <template v-slot:cell(action)="row">
                         <a
                             v-b-tooltip.bottom.hover
-                            href="javascript:void(0)"
+                            href=""
                             title="Delete build"
-                            @click="deleteBuild(row.item.id)">
+                            @click.prevent="deleteBuild(row.item.id)">
                             <i class="icon fa fa-lg fa-trash-o" />
                         </a>
                     </template>

@@ -49,14 +49,10 @@ const text = computed(() =>
     <div>
         {{ text }}
         <span v-if="summary">
-            <a
-                v-if="!propShowDetails"
-                class="text-summary-expand"
-                href="javascript:void(0)"
-                @click.stop="propShowDetails = true">
+            <a v-if="!propShowDetails" class="text-summary-expand" href="" @click.stop.prevent="propShowDetails = true">
                 ... <FontAwesomeIcon :icon="collapsedEnableIcon" />
             </a>
-            <a v-else href="javascript:void(0)" @click.stop="propShowDetails = false">
+            <a v-else href="" @click.stop.prevent="propShowDetails = false">
                 ... <FontAwesomeIcon :icon="collapsedDisableIcon" />
             </a>
         </span>

@@ -65,17 +65,17 @@
                         </button>
                         <div class="dropdown-menu" role="menu">
                             <a
-                                href="javascript:void(0)"
+                                href=""
                                 role="button"
                                 class="toolbtn-bulk-import add-to-history-datasets dropdown-item"
-                                @click="importToHistoryModal(false)">
+                                @click.prevent="importToHistoryModal(false)">
                                 as Datasets
                             </a>
                             <a
-                                href="javascript:void(0)"
+                                href=""
                                 role="button"
                                 class="toolbtn-collection-import add-to-history-collection dropdown-item"
-                                @click="importToHistoryModal(true)">
+                                @click.prevent="importToHistoryModal(true)">
                                 as a Collection
                             </a>
                         </div>

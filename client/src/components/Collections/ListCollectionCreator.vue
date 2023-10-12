@@ -10,7 +10,7 @@
                 <b-alert show variant="warning" dismissible>
                     {{ noElementsHeader }}
                     {{ allInvalidElementsPartOne }}
-                    <a class="cancel-text" href="javascript:void(0)" role="button" @click="oncancel">
+                    <a class="cancel-text" href="" role="button" @click.prevent="oncancel">
                         {{ cancelText }}
                     </a>
                     {{ allInvalidElementsPartTwo }}
@@ -30,7 +30,7 @@
                         </li>
                     </ul>
                     {{ allInvalidElementsPartOne }}
-                    <a class="cancel-text" href="javascript:void(0)" role="button" @click="oncancel">
+                    <a class="cancel-text" href="" role="button" @click.prevent="oncancel">
                         {{ cancelText }}
                     </a>
                     {{ allInvalidElementsPartTwo }}
@@ -158,10 +158,10 @@
                             <a
                                 v-if="atLeastOneDatasetIsSelected"
                                 class="clear-selected"
-                                href="javascript:void(0);"
+                                href=""
                                 role="button"
                                 :title="titleDeselectButton"
-                                @click="clickClearAll">
+                                @click.prevent="clickClearAll">
                                 {{ l("Clear selected") }}
                             </a>
                         </div>
@@ -173,7 +173,7 @@
                             <div v-if="noMoreValidDatasets">
                                 <b-alert show variant="warning" dismissible>
                                     {{ discardedElementsHeader }}
-                                    <a class="reset-text" href="javascript:void(0)" role="button" @click="reset">
+                                    <a class="reset-text" href="" role="button" @click.prevent="reset">
                                         {{ startOverText }}
                                     </a>
                                     ?

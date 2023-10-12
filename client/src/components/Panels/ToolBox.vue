@@ -47,7 +47,7 @@
                     <b-badge class="alert-danger w-100">
                         Did you mean:
                         <i>
-                            <a href="javascript:void(0)" @click="onQuery(closestTerm)">{{ closestTerm }}</a>
+                            <a href="" @click.prevent="onQuery(closestTerm)">{{ closestTerm }}</a>
                         </i>
                         ?
                     </b-badge>

@@ -102,7 +102,7 @@ function possibleServeUrlsMatch(a: string, b: string) {
                     v-for="serverSelection in trsServers"
                     :key="serverSelection.id"
                     class="dropdown-item"
-                    href="javascript:void(0)"
+                    href=""
                     role="button"
                     @click.prevent="onTrsSelection(serverSelection)"
                     >{{ serverSelection.label }}</a
