@@ -13,6 +13,17 @@
     </entry_points>
     <command detect_errors="exit_code">
     <![CDATA[
+        ## Check inputs have no duplicated element_identifier:
+        #set labels = [input.element_identifier for input in $infiles]
+        #set duplicates = [label for label in labels if labels.count(label) > 1]
+        #if len(duplicates) > 0:
+            #set unique_duplicates = list(set(duplicates))
+            echo "Cannot run ilastik because these identifiers are present more than once:" &&
+            #for label in $unique_duplicates:
+                echo $label &&
+            #end for
+            exit 1 &&
+        #end if
         export HOME=\$PWD &&
         ## Make a copy of the existing project if exists
         #if str($input_type.existing) == "existing":
@@ -21,7 +32,7 @@
 
         ## Link input images to current working directory
         #for input in $infiles:
-            ln -s '$input' ./'$input.name' &&
+            ln -s '$input' ./'$input.element_identifier'.tif &&
         #end for
         ## Write the bash script to run:
         #if str($input_type.existing) == "new":
@@ -80,8 +91,9 @@
 
         This tool has been designed uniquely to make/modify a project.
         
+        - It requires that input images have unique identifiers.
         - When you have trained your project, save it and quit the application. The project called 'MyProject.ilp' will be imported into your history.
-        - If you want to modify a project, make sure you use at least the same images as the first time (but you can add more).
+        - If you want to modify a project, make sure you use at least the same images (with the same identifiers) as the first time (but you can add more).
 
         Please, check the documentation at https://www.ilastik.org/documentation/.
 ]]>
