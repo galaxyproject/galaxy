@@ -49,6 +49,7 @@ async function getDatasetList() {
         currentDatasetOptions.value = data
             .filter((x: OptionType) => x.type === "file")
             .map((x: OptionType) => ({ label: stripSlash(x.name), value: { id: x.id, name: stripSlash(x.name) } }));
+        currentDataset.value = null;
         errorMessage.value = "";
     } catch (e) {
         errorMessage.value = "Failed to access library contents.";
@@ -107,15 +108,23 @@ watch(currentLibrary, () => {
         <BAlert v-if="!!errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
         <FormSelect v-model="currentLibrary" :options="currentLibraryOptions" />
         <div v-if="currentDatasetOptions.length > 0" class="d-flex my-2">
-            <FormSelect v-model="currentDataset" :optional="true" :options="currentDatasetOptions" />
-            <BButton v-if="currentDataset" class="ml-2" variant="link" @click="onAdd(currentDataset)">
+            <FormSelect v-model="currentDataset" :options="currentDatasetOptions" />
+            <BButton
+                class="ml-2"
+                data-description="form library add dataset"
+                variant="link"
+                @click="onAdd(currentDataset)">
                 <icon icon="plus" />
             </BButton>
         </div>
         <div v-else v-localize class="text-muted mb-2">The selected library does not contain any datasets.</div>
         <div v-for="(v, vIndex) of valueAsArray" :key="vIndex">
             <span>
-                <BButton size="sm" variant="link" @click="onRemove(v.id)">
+                <BButton
+                    size="sm"
+                    variant="link"
+                    data-description="form library remove dataset"
+                    @click="onRemove(v.id)">
                     <icon icon="trash" />
                 </BButton>
                 <span>{{ v.name }}</span>
