@@ -30,7 +30,7 @@
                 </span>
             </div>
             <b-badge variant="info" class="w-100 rounded mb-3 white-space-normal">
-                <div class="float-left m-1 text-break">Generated with Galaxy {{ version }} on {{ time }} UTC</div>
+                <div class="float-left m-1 text-break">Generated with Galaxy {{ version }} on {{ time }}</div>
                 <div class="float-right m-1">Identifier: {{ markdownConfig.id }}</div>
             </b-badge>
             <div>
@@ -138,8 +138,13 @@ export default {
             return this.enable_beta_markdown_export ? this.exportLink : null;
         },
         time() {
-            const generateTime = this.markdownConfig.generate_time;
+            let generateTime = this.markdownConfig.generate_time;
             if (generateTime) {
+                if (!generateTime.endsWith("Z")) {
+                    // We don't have tzinfo, but this will always be UTC coming
+                    // from Galaxy so append Z to assert that prior to parsing
+                    generateTime += "Z";
+                }
                 const date = new Date(generateTime);
                 return date.toLocaleString("default", {
                     day: "numeric",
@@ -147,6 +152,8 @@ export default {
                     year: "numeric",
                     minute: "numeric",
                     hour: "numeric",
+                    timeZone: "UTC",
+                    timeZoneName: "short",
                 });
             }
             return "unavailable";
