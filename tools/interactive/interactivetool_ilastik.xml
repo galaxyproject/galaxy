@@ -78,6 +78,11 @@
     <help><![CDATA[
         Leverage machine learning algorithms to easily segment, classify, track and count your cells or other experimental data. Most operations are interactive, even on large datasets: you just draw the labels and immediately see the result. No machine learning expertise required.
 
+        This tool has been designed uniquely to make/modify a project.
+        
+        - When you have trained your project, save it and quit the application. The project called 'MyProject.ilp' will be imported into your history.
+        - If you want to modify a project, make sure you use at least the same images as the first time (but you can add more).
+
         Please, check the documentation at https://www.ilastik.org/documentation/.
 ]]>
     </help>
