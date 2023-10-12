@@ -4034,7 +4034,12 @@ input1:
             invocation_url = self._api_url(f"workflows/{uploaded_workflow_id}/usage/{invocation_id}", use_key=True)
             delete_response = delete(invocation_url)
             self._assert_status_code_is(delete_response, 200)
-
+            self.workflow_populator.wait_for_invocation_and_jobs(
+                history_id=history_id,
+                workflow_id=uploaded_workflow_id,
+                invocation_id=invocation_id,
+                assert_ok=False,
+            )
             invocation = self._invocation_details(uploaded_workflow_id, invocation_id)
             assert invocation["state"] == "cancelled"
             message = invocation["messages"][0]
