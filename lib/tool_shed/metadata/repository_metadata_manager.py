@@ -8,9 +8,8 @@ from typing import (
 )
 
 from sqlalchemy import (
-    and_,
     false,
-    or_,
+    select,
 )
 
 from galaxy import util
@@ -150,11 +149,7 @@ class ToolShedMetadataGenerator(BaseMetadataGenerator):
 
         if suc.tool_shed_is_this_tool_shed(toolshed, trans=self.trans):
             try:
-                user = (
-                    self.sa_session.query(self.app.model.User)
-                    .filter(self.app.model.User.table.c.username == owner)
-                    .one()
-                )
+                user = get_user_by_username(self.sa_session, owner, self.app.model.User)
             except Exception:
                 error_message = (
                     f"Ignoring repository dependency definition for tool shed {toolshed}, name {name}, owner {owner}, "
@@ -164,16 +159,7 @@ class ToolShedMetadataGenerator(BaseMetadataGenerator):
                 is_valid = False
                 return repository_dependency_tup, is_valid, error_message
             try:
-                repository = (
-                    self.sa_session.query(self.app.model.Repository)
-                    .filter(
-                        and_(
-                            self.app.model.Repository.table.c.name == name,
-                            self.app.model.Repository.table.c.user_id == user.id,
-                        )
-                    )
-                    .one()
-                )
+                repository = get_repository(self.sa_session, self.app.model.Repository, name, user.id)
             except Exception:
                 error_message = f"Ignoring repository dependency definition for tool shed {toolshed},"
                 error_message += f"name {name}, owner {owner}, "
@@ -288,8 +274,7 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
     ):
         """Generate the current list of repositories for resetting metadata."""
         repositories_select_field = SelectField(name=name, multiple=multiple, display=display)
-        query = self.get_query_for_setting_metadata_on_repositories(my_writable=my_writable, order=True)
-        for repository in query:
+        for repository in self.get_repositories_for_setting_metadata(my_writable=my_writable, order=True):
             owner = str(repository.user.username)
             option_label = f"{str(repository.name)} ({owner})"
             option_value = f"{self.app.security.encode_id(repository.id)}"
@@ -303,13 +288,8 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
         # records with the same changeset revision value - no idea how this happens. We'll
         # assume we can delete the older records, so we'll order by update_time descending and
         # delete records that have the same changeset_revision we come across later.
-        for repository_metadata in (
-            self.sa_session.query(self.app.model.RepositoryMetadata)
-            .filter(self.app.model.RepositoryMetadata.table.c.repository_id == self.repository.id)
-            .order_by(
-                self.app.model.RepositoryMetadata.table.c.changeset_revision,
-                self.app.model.RepositoryMetadata.table.c.update_time.desc(),
-            )
+        for repository_metadata in get_repository_metadata(
+            self.sa_session, self.app.model.RepositoryMetadata, self.repository.id
         ):
             changeset_revision = repository_metadata.changeset_revision
             if changeset_revision not in changeset_revisions:
@@ -600,9 +580,9 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
             # The tool did not change through all of the changeset revisions.
             return old_id
 
-    def get_query_for_setting_metadata_on_repositories(self, my_writable=False, order=True):
+    def get_repositories_for_setting_metadata(self, my_writable=False, order=True):
         """
-        Return a query containing repositories for resetting metadata.  The order parameter
+        Return a list of repositories for resetting metadata.  The order parameter
         is used for displaying the list of repositories ordered alphabetically for display on
         a page.  When called from the Tool Shed API, order is False.
         """
@@ -611,46 +591,25 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
         # repositories.
         if my_writable:
             username = self.user.username
-            clause_list = []
-            for repository in self.sa_session.query(self.app.model.Repository).filter(
-                self.app.model.Repository.table.c.deleted == false()
-            ):
+            repo_ids = []
+            for repository in get_current_repositories(self.sa_session, self.app.model.Repository):
                 # Always reset metadata on all repositories of types repository_suite_definition and
                 # tool_dependency_definition.
                 if repository.type in [rt_util.REPOSITORY_SUITE_DEFINITION, rt_util.TOOL_DEPENDENCY_DEFINITION]:
-                    clause_list.append(self.app.model.Repository.table.c.id == repository.id)
+                    repo_ids.append(repository.id)
                 else:
                     allow_push = repository.allow_push()
                     if allow_push:
                         # Include all repositories that are writable by the current user.
                         allow_push_usernames = allow_push.split(",")
                         if username in allow_push_usernames:
-                            clause_list.append(self.app.model.Repository.table.c.id == repository.id)
-            if clause_list:
-                if order:
-                    return (
-                        self.sa_session.query(self.app.model.Repository)
-                        .filter(or_(*clause_list))
-                        .order_by(self.app.model.Repository.table.c.name, self.app.model.Repository.table.c.user_id)
-                    )
-                else:
-                    return self.sa_session.query(self.app.model.Repository).filter(or_(*clause_list))
+                            repo_ids.append(repository.id)
+            if repo_ids:
+                return get_filtered_repositories(self.sa_session, self.app.model.Repository, repo_ids, order)
             else:
-                # Return an empty query.
-                return self.sa_session.query(self.app.model.Repository).filter(
-                    self.app.model.Repository.table.c.id == -1
-                )
+                return []
         else:
-            if order:
-                return (
-                    self.sa_session.query(self.app.model.Repository)
-                    .filter(self.app.model.Repository.table.c.deleted == false())
-                    .order_by(self.app.model.Repository.table.c.name, self.app.model.Repository.table.c.user_id)
-                )
-            else:
-                return self.sa_session.query(self.app.model.Repository).filter(
-                    self.app.model.Repository.table.c.deleted == false()
-                )
+            return get_current_repositories(self.sa_session, self.app.model.Repository, order)
 
     def new_metadata_required_for_utilities(self):
         """
@@ -1107,3 +1066,39 @@ def _get_changeset_revisions_that_contain_tools(app: "ToolShedApp", repo, reposi
                 if metadata.get("tools", None):
                     changeset_revisions_that_contain_tools.append(changeset_revision)
     return changeset_revisions_that_contain_tools
+
+
+def get_user_by_username(session, username, user_model):
+    stmt = select(user_model).where(user_model.username == username)
+    return session.execute(stmt).scalar_one()
+
+
+def get_repository(session, repository_model, name, user_id):
+    stmt = select(repository_model).where(repository_model.name == name).where(repository_model.user_id == user_id)
+    return session.execute(stmt).scalar_one()
+
+
+def get_repository_metadata(session, repository_metadata_model, repository_id):
+    RepositoryMetadata = repository_metadata_model
+    stmt = (
+        select(RepositoryMetadata)
+        .where(RepositoryMetadata.repository_id == repository_id)
+        .order_by(RepositoryMetadata.changeset_revision, RepositoryMetadata.update_time.desc())
+    )
+    return session.scalars(stmt)
+
+
+def get_current_repositories(session, repository_model, order=False):
+    Repository = repository_model
+    stmt = select(Repository).where(Repository.deleted == false())
+    if order:
+        stmt = stmt.order_by(Repository.name, Repository.user_id)
+    return session.scalars(stmt)
+
+
+def get_filtered_repositories(session, repository_model, repo_ids, order):
+    Repository = repository_model
+    stmt = select(Repository).where(Repository.in_(repo_ids))
+    if order:
+        stmt = stmt.order_by(Repository.name, Repository.user_id)
+    return session.scalars(stmt)
