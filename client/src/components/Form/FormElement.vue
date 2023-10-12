@@ -225,7 +225,12 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
         <div v-if="showField" class="ui-form-field" :data-label="props.title">
             <FormBoolean v-if="props.type === 'boolean'" :id="props.id" v-model="currentValue" />
             <FormHidden v-else-if="isHiddenType" :id="props.id" v-model="currentValue" :info="attrs['info']" />
-            <FormLibraryData v-else-if="props.type === 'library_data'" />
+            <FormLibraryData
+                v-else-if="props.type === 'library_data'"
+                :id="props.id"
+                v-model="currentValue"
+                :multiple="attrs.multiple"
+                :optional="attrs.optional" />
             <FormNumber
                 v-else-if="props.type === 'integer' || props.type === 'float'"
                 :id="props.id"
