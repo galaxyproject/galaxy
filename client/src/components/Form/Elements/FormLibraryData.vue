@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import axios from "axios";
+import { BAlert, BButton } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
 
 import { withPrefix } from "@/utils/redirect";
@@ -35,11 +36,7 @@ const $emit = defineEmits(["input"]);
 
 const valueAsArray = computed(() => {
     if (props.value) {
-        if (Array.isArray(props.value)) {
-            return props.value;
-        } else {
-            return [props.value];
-        }
+        return Array.isArray(props.value) ? props.value : [props.value];
     } else {
         return [];
     }
@@ -51,7 +48,7 @@ async function getDatasetList() {
         const { data } = await axios.get(withPrefix(datasetUrl));
         currentDatasetOptions.value = data
             .filter((x: OptionType) => x.type === "file")
-            .map((x: OptionType) => ({ label: x.name, value: { id: x.id, name: x.name } }));
+            .map((x: OptionType) => ({ label: stripSlash(x.name), value: { id: x.id, name: stripSlash(x.name) } }));
         errorMessage.value = "";
     } catch (e) {
         errorMessage.value = "Failed to access library contents.";
@@ -92,6 +89,10 @@ function onRemove(datasetId: string) {
     }
 }
 
+function stripSlash(name: string) {
+    return name.startsWith("/") ? name.substr(1) : name;
+}
+
 onMounted(() => {
     getLibraryList();
 });
@@ -105,12 +106,13 @@ watch(currentLibrary, () => {
     <div>
         <BAlert v-if="!!errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
         <FormSelect v-model="currentLibrary" :options="currentLibraryOptions" />
-        <div class="d-flex my-2">
+        <div v-if="currentDatasetOptions.length > 0" class="d-flex my-2">
             <FormSelect v-model="currentDataset" :optional="true" :options="currentDatasetOptions" />
-            <BButton v-if="currentDataset" class="ml-2" variant="link" @click="onAdd(currentDataset)"
-                ><icon icon="plus"
-            /></BButton>
+            <BButton v-if="currentDataset" class="ml-2" variant="link" @click="onAdd(currentDataset)">
+                <icon icon="plus" />
+            </BButton>
         </div>
+        <div v-else v-localize class="text-muted mb-2">The selected library does not contain any datasets.</div>
         <div v-for="(v, vIndex) of valueAsArray" :key="vIndex">
             <span>
                 <BButton size="sm" variant="link" @click="onRemove(v.id)">
