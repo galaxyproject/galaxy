@@ -1,4 +1,4 @@
-import { BrowsableFilesSourcePlugin } from "./services";
+import { BrowsableFilesSourcePlugin } from "@/api/remoteFiles";
 
 export const ftpId = "_ftp";
 export const rootId = "pdb-gzip";

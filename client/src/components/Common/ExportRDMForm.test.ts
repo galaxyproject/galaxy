@@ -2,9 +2,8 @@ import { getLocalVue } from "@tests/jest/helpers";
 import { mount, Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 
+import { CreatedEntry } from "@/api/remoteFiles";
 import { mockFetcher } from "@/api/schema/__mocks__";
-
-import { CreatedEntry } from "../FilesDialog/services";
 
 import ExportRDMForm from "./ExportRDMForm.vue";
 import FilesInput from "@/components/FilesDialog/FilesInput.vue";

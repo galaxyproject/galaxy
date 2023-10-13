@@ -2,9 +2,8 @@
 import { BFormInput } from "bootstrap-vue";
 import { computed } from "vue";
 
+import { FileSourceBrowsingMode, FilterFileSourcesOptions } from "@/api/remoteFiles";
 import { filesDialog } from "@/utils/data";
-
-import { FileSourceBrowsingMode, FilterFileSourcesOptions } from "./services";
 
 interface Props {
     value: string;
