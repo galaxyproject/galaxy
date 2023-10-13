@@ -1,5 +1,3 @@
-import axios from "axios";
-
 import { type components, fetcher } from "@/api/schema";
 
 const getNotification = fetcher.path("/api/notifications/{notification_id}").method("get").create();
@@ -20,11 +18,5 @@ const putNotification = fetcher.path("/api/notifications/{notification_id}").met
 type UserNotificationUpdateRequest = components["schemas"]["UserNotificationUpdateRequest"];
 export async function updateNotification(id: string, notification: UserNotificationUpdateRequest) {
     const { data } = await putNotification({ notification_id: id, ...notification });
-    return data;
-}
-
-type GroupModel = components["schemas"]["GroupModel"];
-export async function getGroups(): Promise<GroupModel[]> {
-    const { data } = await axios.get("/api/groups");
     return data;
 }
