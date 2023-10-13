@@ -50,7 +50,7 @@ class TestParameterParsing(BaseParameterTestCase):
     those tests may need to be updated anyway.
 
     It occurs to me that rewriting this stuff to test to_dict would
-    be much better - since that is a public API of the the tools.
+    be much better - since that is a public API of the tools.
     """
 
     def test_parse_help_and_label(self):

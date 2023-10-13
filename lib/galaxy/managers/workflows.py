@@ -339,7 +339,7 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
 
         # If given an invocation verify ownership of invocation
         if isinstance(has_workflow, model.WorkflowInvocation):
-            # We use the the owner of the history that is associated to the invocation as a proxy
+            # We use the owner of the history that is associated to the invocation as a proxy
             # for the owner of the invocation.
             if trans.user != has_workflow.history.user and not trans.user_is_admin:
                 raise exceptions.ItemOwnershipException()

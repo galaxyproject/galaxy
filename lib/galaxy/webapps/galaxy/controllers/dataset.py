@@ -815,9 +815,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             if hda.dataset.user_can_purge:
                 try:
                     hda.dataset.full_delete()
-                    trans.log_event(
-                        f"Dataset id {hda.dataset.id} has been purged upon the the purge of HDA id {hda.id}"
-                    )
+                    trans.log_event(f"Dataset id {hda.dataset.id} has been purged upon the purge of HDA id {hda.id}")
                     trans.sa_session.add(hda.dataset)
                 except Exception:
                     log.exception(f"Unable to purge dataset ({hda.dataset.id}) on purge of HDA ({hda.id}):")

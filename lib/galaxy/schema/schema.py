@@ -3494,7 +3494,7 @@ class MaterializeDatasetInstanceAPIRequest(Model):
         description=(
             "Depending on the `source` it can be:\n"
             "- The encoded id of the source library dataset\n"
-            "- The encoded id of the the HDA\n"
+            "- The encoded id of the HDA\n"
         ),
     )
 

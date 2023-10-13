@@ -6914,7 +6914,7 @@ export interface components {
              * Content
              * @description Depending on the `source` it can be:
              * - The encoded id of the source library dataset
-             * - The encoded id of the the HDA
+             * - The encoded id of the HDA
              *
              * @example 0123456789ABCDEF
              */
@@ -18140,10 +18140,10 @@ export interface operations {
              * : The stored workflow's owner's username. (The tag `u` can be used a short hand alias for this tag to filter on this attribute.)
              *
              * `is:published`
-             * : Include only published workflows in the final result. Be sure the the query parameter `show_published` is set to `true` if to include all published workflows and not just the requesting user's.
+             * : Include only published workflows in the final result. Be sure the query parameter `show_published` is set to `true` if to include all published workflows and not just the requesting user's.
              *
              * `is:share_with_me`
-             * : Include only workflows shared with the requesting user.  Be sure the the query parameter `show_shared` is set to `true` if to include shared workflows.
+             * : Include only workflows shared with the requesting user.  Be sure the query parameter `show_shared` is set to `true` if to include shared workflows.
              *
              * ## Free Text
              *
