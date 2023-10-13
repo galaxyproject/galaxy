@@ -25,9 +25,12 @@
             exit 1 &&
         #end if
         export HOME=\$PWD &&
+        ## Create a directory where the app user has access
+        mkdir -p ./output &&
+        chown 1000:1000 ./output/ &&
         ## Make a copy of the existing project if exists
         #if str($input_type.existing) == "existing":
-            cp '$input_type.project' ./MyProject.ilp &&
+            cp '$input_type.project' ./output/MyProject.ilp &&
         #end if
 
         ## Link input images to current working directory
@@ -36,9 +39,9 @@
         #end for
         ## Write the bash script to run:
         #if str($input_type.existing) == "new":
-            echo "ilastik --new_project \$HOME/MyProject.ilp --workflow '$input_type.Workflow'" > ./ilastik_with_args &&
+            echo "ilastik --new_project \$HOME/output/MyProject.ilp --workflow '$input_type.Workflow'" > ./ilastik_with_args &&
         #else:
-            echo "ilastik --project \$HOME/MyProject.ilp" > ./ilastik_with_args &&
+            echo "ilastik --project \$HOME/output/MyProject.ilp" > ./ilastik_with_args &&
         #end if
         ## Copy it to /bin/ so it will be used by the container:
         chmod +x ./ilastik_with_args &&
@@ -80,7 +83,7 @@
     </inputs>
     
     <outputs>
-        <data name="ilastik_project" format="h5" label="Ilastik project file" from_work_dir="MyProject.ilp"/>
+        <data name="ilastik_project" format="h5" label="Ilastik project file" from_work_dir="output/MyProject.ilp"/>
     </outputs>
     
     <tests>
