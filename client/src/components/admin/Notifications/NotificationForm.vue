@@ -6,13 +6,8 @@ import { BAlert, BCard, BCol, BFormGroup, BRow } from "bootstrap-vue";
 import { computed, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
+import { getGroups, getRoles, getUsers, sendNotification } from "@/api/notifications";
 import { type components } from "@/api/schema";
-import {
-    getGroups,
-    getRoles,
-    getUsers,
-    sendNotification,
-} from "@/components/admin/Notifications/notifications.services";
 import { Toast } from "@/composables/toast";
 import { errorMessageAsString } from "@/utils/simple-error";
 
