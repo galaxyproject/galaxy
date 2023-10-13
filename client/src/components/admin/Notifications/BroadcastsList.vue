@@ -14,8 +14,8 @@ import { BAlert, BButton, BCol, BInputGroup, BRow } from "bootstrap-vue";
 import { ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
+import { loadBroadcasts, updateBroadcast } from "@/api/notifications.broadcast";
 import { type components } from "@/api/schema";
-import { loadBroadcasts, updateBroadcast } from "@/components/admin/Notifications/broadcasts.services";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useMarkdown } from "@/composables/markdown";
 import { Toast } from "@/composables/toast";
