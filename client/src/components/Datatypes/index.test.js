@@ -1,8 +1,9 @@
+import { getDatatypes } from "@/api/datatypes";
+
 import { getDatatypesMapper } from "./index";
-import { getDatatypes } from "./services";
 import { typesAndMappingResponse } from "./test_fixtures";
 
-jest.mock("./services");
+jest.mock("@/api/datatypes");
 
 describe("Datatypes/index.js", () => {
     describe("getDatatypesMapper", () => {
