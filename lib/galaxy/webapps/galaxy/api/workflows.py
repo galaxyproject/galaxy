@@ -1171,11 +1171,11 @@ query_tags = [
     IndexQueryTag("user", "The stored workflow's owner's username.", "u"),
     IndexQueryTag(
         "is:published",
-        "Include only published workflows in the final result. Be sure the the query parameter `show_published` is set to `true` if to include all published workflows and not just the requesting user's.",
+        "Include only published workflows in the final result. Be sure the query parameter `show_published` is set to `true` if to include all published workflows and not just the requesting user's.",
     ),
     IndexQueryTag(
         "is:share_with_me",
-        "Include only workflows shared with the requesting user.  Be sure the the query parameter `show_shared` is set to `true` if to include shared workflows.",
+        "Include only workflows shared with the requesting user.  Be sure the query parameter `show_shared` is set to `true` if to include shared workflows.",
     ),
 ]
 

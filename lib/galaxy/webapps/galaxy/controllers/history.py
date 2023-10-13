@@ -658,7 +658,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                     try:
                         hda.dataset.full_delete()
                         trans.log_event(
-                            f"Dataset id {hda.dataset.id} has been purged upon the the purge of HDA id {hda.id}"
+                            f"Dataset id {hda.dataset.id} has been purged upon the purge of HDA id {hda.id}"
                         )
                         trans.sa_session.add(hda.dataset)
                     except Exception:

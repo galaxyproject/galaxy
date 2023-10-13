@@ -6,14 +6,16 @@ from ..base.twilltestcase import (
 )
 
 matplotlib_repository_name = "package_matplotlib_1_2_0170"
-matplotlib_repository_description = "Contains a tool dependency definition that downloads and compiles version 1.2.x of the the python matplotlib package."
+matplotlib_repository_description = (
+    "Contains a tool dependency definition that downloads and compiles version 1.2.x of the python matplotlib package."
+)
 matplotlib_repository_long_description = (
     "This repository is intended to be defined as a complex repository dependency within a separate repository."
 )
 
 numpy_repository_name = "package_numpy_1_7_0170"
 numpy_repository_description = (
-    "Contains a tool dependency definition that downloads and compiles version 1.7 of the the python numpy package."
+    "Contains a tool dependency definition that downloads and compiles version 1.7 of the python numpy package."
 )
 numpy_repository_long_description = (
     "This repository is intended to be defined as a complex repository dependency within a separate repository."

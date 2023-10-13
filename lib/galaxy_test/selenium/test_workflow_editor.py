@@ -1167,7 +1167,7 @@ steps:
     def workflow_editor_add_input(self, item_name="data_input"):
         editor = self.components.workflow_editor
 
-        # Make sure we're on the the workflow editor and not clicking the main tool panel.
+        # Make sure we're on the workflow editor and not clicking the main tool panel.
         editor.canvas_body.wait_for_visible()
 
         editor.tool_menu.wait_for_visible()

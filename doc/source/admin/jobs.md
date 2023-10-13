@@ -38,7 +38,7 @@ workers
 
 The `<handlers>` configuration elements defines which Galaxy server processes (when [running multiple server processes](scaling.md)) should be used for running jobs, and how to group those processes.
 
-The handlers configuration may define a ``default`` attribute. This is the the handler(s) that should be used if no explicit handler is defined for a job. If unset, any untagged handlers will be used by default.
+The handlers configuration may define a ``default`` attribute. This is the handler(s) that should be used if no explicit handler is defined for a job. If unset, any untagged handlers will be used by default.
 
 The collection contains `<handler>` elements.
 
@@ -316,7 +316,7 @@ The above examples demonstrate that the dynamic job destination framework will p
 
 Also available though less likely useful are ``job_id``.
 
-The above examples demonstrated mapping one tool to one function. Multiple tools may be mapped to the same function, by specifying a function the the dynamic destination:
+The above examples demonstrated mapping one tool to one function. Multiple tools may be mapped to the same function, by specifying a function the dynamic destination:
 
 ```xml
     <destination id="blast_dynamic" runner="dynamic">
