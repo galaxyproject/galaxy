@@ -122,8 +122,8 @@ change_user_address:
 
 sign_out:
   selectors:
-    cancel_button: '.modal-footer .buttons #button-0'
-    sign_out_button: '.modal-footer .buttons #button-1'
+    cancel_button: '.modal-footer .btn-secondary'
+    sign_out_button: '.modal-footer .btn-primary'
 
 dataset_details:
   selectors:
