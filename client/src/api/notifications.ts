@@ -23,12 +23,6 @@ export async function updateNotification(id: string, notification: UserNotificat
     return data;
 }
 
-const getRolesReq = fetcher.path("/api/roles").method("get").create();
-export async function getRoles() {
-    const { data } = await getRolesReq({});
-    return data;
-}
-
 type GroupModel = components["schemas"]["GroupModel"];
 export async function getGroups(): Promise<GroupModel[]> {
     const { data } = await axios.get("/api/groups");
