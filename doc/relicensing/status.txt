@@ -31,6 +31,7 @@ bebatut, bebatut@gmail.com, https://github.com/galaxyproject/galaxy/pull/15068
 bernt-matthias, bernt@informatik.uni-leipzig.de, https://github.com/galaxyproject/galaxy/pull/16668
 bdwheele, bdwheele@iu.edu, https://github.com/galaxyproject/galaxy/pull/16443
 thepineapplepirate, braubeno@uno.edu, https://github.com/galaxyproject/galaxy/pull/13126
+slugger70, slugger70@gmail.com, private email from Simon Gladman's heirs affirming the license change
 
 # not yet agreed, needs research
 Daniel Bouchard <danieljosephbouchard@gmail.com> # GH user: Airistotal
