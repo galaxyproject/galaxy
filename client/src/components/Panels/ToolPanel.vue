@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { storeToRefs } from "pinia";
-import { ref, watch, watchEffect } from "vue";
+import { ref, watch } from "vue";
 
 import { useConfig } from "@/composables/config";
 import { useToolStore } from "@/stores/toolStore";
@@ -41,17 +41,36 @@ watch(
     }
 );
 
-watchEffect(async () => {
-    if (isConfigLoaded.value) {
-        panelViews.value = config.value.panel_views;
-        try {
-            await toolStore.fetchTools();
-            await toolStore.initCurrentPanelView(config.value.default_panel_view);
-        } catch (error: any) {
-            console.error("ToolPanel - Load tools error:", error);
+// as soon as config is loaded, load tools
+watch(
+    () => isConfigLoaded.value,
+    async (newVal) => {
+        if (newVal) {
+            await loadTools();
+        }
+    },
+    { immediate: true }
+);
+
+// if currentPanelView ever becomes null || "", load tools
+watch(
+    () => currentPanelView.value,
+    async (newVal) => {
+        if (!newVal && isConfigLoaded.value) {
+            await loadTools();
         }
     }
-});
+);
+
+async function loadTools() {
+    panelViews.value = panelViews.value === null ? config.value.panel_views : panelViews.value;
+    try {
+        await toolStore.fetchTools();
+        await toolStore.initCurrentPanelView(config.value.default_panel_view);
+    } catch (error: any) {
+        console.error("ToolPanel - Load tools error:", error);
+    }
+}
 
 async function updatePanelView(panelView: string) {
     await toolStore.setCurrentPanelView(panelView);
