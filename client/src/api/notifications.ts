@@ -29,12 +29,6 @@ export async function getRoles() {
     return data;
 }
 
-const getUsersReq = fetcher.path("/api/users").method("get").create();
-export async function getUsers() {
-    const { data } = await getUsersReq({});
-    return data;
-}
-
 type GroupModel = components["schemas"]["GroupModel"];
 export async function getGroups(): Promise<GroupModel[]> {
     const { data } = await axios.get("/api/groups");

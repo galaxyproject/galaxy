@@ -6,8 +6,9 @@ import { BAlert, BCard, BCol, BFormGroup, BRow } from "bootstrap-vue";
 import { computed, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { getGroups, getRoles, getUsers, sendNotification } from "@/api/notifications";
+import { getGroups, getRoles, sendNotification } from "@/api/notifications";
 import { type components } from "@/api/schema";
+import { getAllUsers } from "@/api/users";
 import { Toast } from "@/composables/toast";
 import { errorMessageAsString } from "@/utils/simple-error";
 
@@ -100,7 +101,7 @@ async function loadData<T>(
     }
 }
 
-loadData(getUsers, users, (user) => {
+loadData(getAllUsers, users, (user) => {
     return [`${user.username} | ${user.email}`, user.id];
 });
 
