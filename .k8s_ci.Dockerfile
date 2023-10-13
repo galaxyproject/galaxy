@@ -166,7 +166,7 @@ RUN set -xe; \
 
 # Create Galaxy user, group, directory; chown
 RUN set -xe; \
-      adduser --system --group $GALAXY_USER \
+      adduser --system --group --uid 101 $GALAXY_USER \
       && mkdir -p $SERVER_DIR \
       && chown $GALAXY_USER:$GALAXY_USER $ROOT_DIR -R
 
@@ -179,7 +179,8 @@ COPY --chown=$GALAXY_USER:$GALAXY_USER --from=client_build $SERVER_DIR/static ./
 WORKDIR $SERVER_DIR
 
 # The data in version.json will be displayed in Galaxy's /api/version endpoint
-RUN printf "{\n  \"git_commit\": \"$(cat GITREVISION)\",\n  \"build_date\": \"$BUILD_DATE\",\n  \"image_tag\": \"$IMAGE_TAG\"\n}\n" > version.json
+RUN printf "{\n  \"git_commit\": \"$(cat GITREVISION)\",\n  \"build_date\": \"$BUILD_DATE\",\n  \"image_tag\": \"$IMAGE_TAG\"\n}\n" > version.json \
+    && chown $GALAXY_USER:$GALAXY_USER version.json
 
 EXPOSE 8080
 USER $GALAXY_USER
