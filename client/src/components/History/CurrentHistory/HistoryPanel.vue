@@ -145,7 +145,6 @@
 
 <script>
 import FilterMenu from "components/Common/FilterMenu";
-import { copyDataset } from "components/Dataset/services";
 import ContentItem from "components/History/Content/ContentItem";
 import ExpandedItems from "components/History/Content/ExpandedItems";
 import SelectedItems from "components/History/Content/SelectedItems";
@@ -160,6 +159,8 @@ import { useHistoryItemsStore } from "stores/history/historyItemsStore";
 import { useHistoryStore } from "stores/historyStore";
 import { getOperatorForAlias } from "utils/filtering";
 import Vue from "vue";
+
+import { copyDataset } from "@/api/datasets";
 
 import HistoryCounter from "./HistoryCounter";
 import HistoryDetails from "./HistoryDetails";
