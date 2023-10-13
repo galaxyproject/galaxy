@@ -1,4 +1,4 @@
-import { type components, fetcher } from "@/schema";
+import { type components, fetcher } from "@/api/schema";
 
 type BroadcastNotificationResponse = components["schemas"]["BroadcastNotificationResponse"];
 

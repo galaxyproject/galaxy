@@ -1,5 +1,5 @@
-import type { components } from "@/schema";
-import { fetcher } from "@/schema/fetcher";
+import type { components } from "@/api/schema";
+import { fetcher } from "@/api/schema/fetcher";
 
 /** The browsing mode:
  * - `file` - allows to select files or directories contained in a source (default)

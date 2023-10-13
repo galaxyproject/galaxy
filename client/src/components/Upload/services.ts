@@ -1,4 +1,4 @@
-import { fetcher } from "@/schema/fetcher";
+import { fetcher } from "@/api/schema/fetcher";
 
 export const getDatatypes = fetcher.path("/api/datatypes").method("get").create();
 export const getDbKeys = fetcher.path("/api/genomes").method("get").create();

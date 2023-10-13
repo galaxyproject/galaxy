@@ -5,7 +5,7 @@ import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 
-import { mockFetcher } from "@/schema/__mocks__";
+import { mockFetcher } from "@/api/schema/__mocks__";
 import { getCurrentUser } from "@/stores/users/queries";
 import { useUserStore } from "@/stores/userStore";
 
@@ -13,7 +13,7 @@ import { UserQuotaUsageData } from "./Quota/model";
 
 import DiskUsageSummary from "./DiskUsageSummary.vue";
 
-jest.mock("@/schema");
+jest.mock("@/api/schema");
 jest.mock("@/stores/users/queries");
 
 const localVue = getLocalVue();

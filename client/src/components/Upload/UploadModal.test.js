@@ -13,7 +13,7 @@ import UploadModal from "./UploadModal.vue";
 
 jest.mock("app");
 jest.mock("./services");
-jest.mock("@/schema");
+jest.mock("@/api/schema");
 
 jest.mock("@/composables/config", () => ({
     useConfig: jest.fn(() => ({

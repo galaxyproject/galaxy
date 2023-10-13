@@ -5,13 +5,13 @@ import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 
-import { mockFetcher } from "@/schema/__mocks__";
+import { mockFetcher } from "@/api/schema/__mocks__";
 
 import FormDirectory from "./FormDirectory";
 
 const localVue = getLocalVue();
 jest.mock("app");
-jest.mock("@/schema");
+jest.mock("@/api/schema");
 
 describe("DirectoryPathEditableBreadcrumb", () => {
     let wrapper;

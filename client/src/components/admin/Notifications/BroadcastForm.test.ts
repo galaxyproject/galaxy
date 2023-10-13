@@ -4,13 +4,13 @@ import { mount, type Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 
-import { mockFetcher } from "@/schema/__mocks__";
+import { mockFetcher } from "@/api/schema/__mocks__";
 
 import { generateNewBroadcast, generateRandomString } from "./test.utils";
 
 import BroadcastForm from "./BroadcastForm.vue";
 
-jest.mock("@/schema");
+jest.mock("@/api/schema");
 
 const SUBJECT_INPUT_SELECTOR = "#broadcast-subject";
 const MESSAGE_INPUT_SELECTOR = "#broadcast-message";

@@ -4,13 +4,13 @@ import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 
+import type { components } from "@/api/schema";
+import { mockFetcher } from "@/api/schema/__mocks__";
 import {
     EXPIRED_STS_DOWNLOAD_RECORD,
     FILE_SOURCE_STORE_RECORD,
     RECENT_STS_DOWNLOAD_RECORD,
 } from "@/components/Common/models/testData/exportData";
-import type { components } from "@/schema";
-import { mockFetcher } from "@/schema/__mocks__";
 import { type HistorySummary, useHistoryStore } from "@/stores/historyStore";
 
 import { getExportRecords } from "./services";
@@ -19,7 +19,7 @@ import HistoryExport from "./HistoryExport.vue";
 
 const localVue = getLocalVue(true);
 
-jest.mock("@/schema");
+jest.mock("@/api/schema");
 jest.mock("./services");
 const mockGetExportRecords = getExportRecords as jest.MockedFunction<typeof getExportRecords>;
 mockGetExportRecords.mockResolvedValue([]);

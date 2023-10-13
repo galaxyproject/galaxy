@@ -5,7 +5,7 @@ import { getAppRoot } from "onload/loadConfig";
 import { createPinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 
-import { mockFetcher } from "@/schema/__mocks__";
+import { mockFetcher } from "@/api/schema/__mocks__";
 
 import { Services } from "../services";
 import Index from "./Index";
@@ -14,7 +14,7 @@ jest.mock("app");
 jest.mock("onload/loadConfig");
 getAppRoot.mockImplementation(() => "/");
 jest.mock("../services");
-jest.mock("@/schema");
+jest.mock("@/api/schema");
 
 Services.mockImplementation(() => {
     return {

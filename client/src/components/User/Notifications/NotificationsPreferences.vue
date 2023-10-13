@@ -5,6 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BCard, BCol, BFormCheckbox, BRow } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
+import type { components } from "@/api/schema";
 import {
     getNotificationsPreferencesFromServer,
     updateNotificationsPreferencesOnServer,
@@ -16,7 +17,6 @@ import {
     pushNotificationsEnabled,
     togglePushNotifications,
 } from "@/composables/utils/pushNotifications";
-import type { components } from "@/schema";
 
 import AsyncButton from "@/components/Common/AsyncButton.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";

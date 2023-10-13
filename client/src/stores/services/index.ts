@@ -1,4 +1,4 @@
-import { components } from "@/schema";
+import { components } from "@/api/schema";
 
 /**
  * Contains minimal information about a HistoryContentItem.

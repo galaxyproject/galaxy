@@ -1,4 +1,4 @@
-import { fetcher } from "@/schema";
+import { fetcher } from "@/api/schema";
 
 const getBroadcastNotifications = fetcher.path("/api/notifications/broadcast").method("get").create();
 

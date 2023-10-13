@@ -4,9 +4,9 @@ import { BAlert, BButton, BCol, BFormGroup, BFormInput, BRow } from "bootstrap-v
 import Vue, { computed, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
+import { type components } from "@/api/schema";
 import { createBroadcast, loadBroadcast, updateBroadcast } from "@/components/admin/Notifications/broadcasts.services";
 import { Toast } from "@/composables/toast";
-import { type components } from "@/schema";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import AsyncButton from "@/components/Common/AsyncButton.vue";

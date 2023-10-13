@@ -10,7 +10,7 @@ import { storeToRefs } from "pinia";
 import { computed, onMounted, onUnmounted, type PropType, type Ref, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import type { components } from "@/schema";
+import type { components } from "@/api/schema";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 import Filtering, { compare, contains, expandNameTag, toDate } from "@/utils/filtering";

@@ -1,9 +1,9 @@
 import { defineStore } from "pinia";
 import Vue, { computed, ref } from "vue";
 
+import type { components } from "@/api/schema";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
-import type { components } from "@/schema";
 import {
     cloneHistory,
     createAndSelectNewHistory,

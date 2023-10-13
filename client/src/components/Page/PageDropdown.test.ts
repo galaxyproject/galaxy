@@ -6,12 +6,12 @@ import { createWrapper, mount, shallowMount } from "@vue/test-utils";
 import { createPinia, PiniaVuePlugin } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 
-import { mockFetcher } from "@/schema/__mocks__";
+import { mockFetcher } from "@/api/schema/__mocks__";
 import { useUserStore } from "@/stores/userStore";
 
 import PageDropdown from "./PageDropdown.vue";
 
-jest.mock("@/schema");
+jest.mock("@/api/schema");
 
 const waitRAF = () => new Promise((resolve) => requestAnimationFrame(resolve));
 

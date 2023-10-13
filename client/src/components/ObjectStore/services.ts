@@ -1,4 +1,4 @@
-import { fetcher } from "@/schema/fetcher";
+import { fetcher } from "@/api/schema/fetcher";
 
 const getObjectStores = fetcher.path("/api/object_stores").method("get").create();
 

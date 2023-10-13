@@ -1,5 +1,5 @@
+import { type components, fetcher } from "@/api/schema";
 import type { UserNotification } from "@/components/Notifications";
-import { type components, fetcher } from "@/schema";
 
 const getNotifications = fetcher.path("/api/notifications").method("get").create();
 

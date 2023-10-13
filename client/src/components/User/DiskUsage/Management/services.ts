@@ -1,4 +1,4 @@
-import { fetcher } from "@/schema";
+import { fetcher } from "@/api/schema";
 import { rethrowSimple } from "@/utils/simple-error";
 
 import { type CleanableItem, CleanableSummary, CleanupResult, PaginationOptions } from "./Cleanup/model";

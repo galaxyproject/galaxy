@@ -1,8 +1,8 @@
 import { defineStore } from "pinia";
 import Vue, { computed, ref } from "vue";
 
+import type { components } from "@/api/schema";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
-import type { components } from "@/schema";
 import { loadBroadcastsFromServer } from "@/stores/services/broadcasts.service";
 import { mergeObjectListsById } from "@/utils/utils";
 

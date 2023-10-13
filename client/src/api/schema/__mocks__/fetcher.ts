@@ -1,10 +1,10 @@
-import type { paths } from "@/schema";
+import type { paths } from "@/api/schema";
 
-jest.mock("@/schema", () => ({
+jest.mock("@/api/schema", () => ({
     fetcher: mockFetcher,
 }));
 
-jest.mock("@/schema/fetcher", () => ({
+jest.mock("@/api/schema/fetcher", () => ({
     fetcher: mockFetcher,
 }));
 
@@ -60,9 +60,9 @@ function setMockReturn(path: Path | RegExp, method: Method, value: any) {
 }
 
 /**
- * Mock implementation for the fetcher found in `@/schema/fetcher`
+ * Mock implementation for the fetcher found in `@/api/schema/fetcher`
  *
- * You need to call `jest.mock("@/schema")` and/or `jest.mock("@/schema/fetcher")`
+ * You need to call `jest.mock("@/api/schema")` and/or `jest.mock("@/api/schema/fetcher")`
  * (depending on what module the file you are testing imported)
  * in order for this mock to take effect.
  *

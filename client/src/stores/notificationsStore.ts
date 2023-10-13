@@ -1,8 +1,8 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 
+import type { components } from "@/api/schema";
 import type { UserNotification } from "@/components/Notifications";
-import type { components } from "@/schema";
 import {
     loadNotificationsFromServer,
     loadNotificationsStatus,

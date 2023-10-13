@@ -5,7 +5,7 @@ import { PiniaVuePlugin, setActivePinia } from "pinia";
 import { useEntryPointStore } from "stores/entryPointStore";
 import { getLocalVue } from "tests/jest/helpers";
 
-import { mockFetcher } from "@/schema/__mocks__";
+import { mockFetcher } from "@/api/schema/__mocks__";
 
 import { loadWebhookMenuItems } from "./_webhooks";
 import { getActiveTab } from "./utilities";
@@ -17,7 +17,7 @@ jest.mock("./_webhooks");
 jest.mock("vue-router/composables", () => ({
     useRoute: jest.fn(() => ({ name: "Home" })),
 }));
-jest.mock("@/schema");
+jest.mock("@/api/schema");
 
 describe("Masthead.vue", () => {
     let wrapper;

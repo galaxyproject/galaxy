@@ -1,4 +1,4 @@
-import { fetcher } from "@/schema";
+import { fetcher } from "@/api/schema";
 
 import { DatasetDetails } from ".";
 

@@ -6,6 +6,7 @@ import { BAlert, BCard, BCol, BFormGroup, BRow } from "bootstrap-vue";
 import { computed, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
+import { type components } from "@/api/schema";
 import {
     getGroups,
     getRoles,
@@ -13,7 +14,6 @@ import {
     sendNotification,
 } from "@/components/admin/Notifications/notifications.services";
 import { Toast } from "@/composables/toast";
-import { type components } from "@/schema";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import AsyncButton from "@/components/Common/AsyncButton.vue";

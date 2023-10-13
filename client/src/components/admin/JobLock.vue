@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from "vue";
 
-import { fetcher } from "@/schema";
+import { fetcher } from "@/api/schema";
 
 const jobLock = ref(false);
 const jobLockUpdating = ref(true);

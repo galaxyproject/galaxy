@@ -1,6 +1,6 @@
 import axios from "axios";
 
-import { type components, fetcher } from "@/schema";
+import { type components, fetcher } from "@/api/schema";
 
 const getNotification = fetcher.path("/api/notifications/{notification_id}").method("get").create();
 type NotificationResponse = components["schemas"]["NotificationResponse"];

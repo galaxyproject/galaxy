@@ -1,4 +1,4 @@
-import { fetcher } from "@/schema/fetcher";
+import { fetcher } from "@/api/schema";
 
 const getHistories = fetcher.path("/api/histories").method("get").create();
 const getArchivedHistories = fetcher.path("/api/histories/archived").method("get").create();

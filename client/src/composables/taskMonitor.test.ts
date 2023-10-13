@@ -1,9 +1,9 @@
 import flushPromises from "flush-promises";
 
+import { mockFetcher } from "@/api/schema/__mocks__";
 import { useTaskMonitor } from "@/composables/taskMonitor";
-import { mockFetcher } from "@/schema/__mocks__";
 
-jest.mock("@/schema");
+jest.mock("@/api/schema");
 
 const PENDING_TASK_ID = "pending-fake-task-id";
 const COMPLETED_TASK_ID = "completed-fake-task-id";
