@@ -27,12 +27,16 @@
                 @dragover.prevent
                 @dragleave.prevent="onDragLeave">
                 <slot name="navigation" :history="history" />
-                <HistoryFilters
+                <FilterMenu
                     v-if="filterable"
                     class="content-operations-filters mx-3"
+                    name="History Items"
+                    placeholder="search datasets"
+                    :filter-class="filterClass"
                     :filter-text.sync="filterText"
-                    :show-advanced.sync="showAdvanced"
-                    :search-error="formattedSearchError" />
+                    :loading="loading"
+                    :search-error="searchError"
+                    :show-advanced.sync="showAdvanced" />
                 <section v-if="!showAdvanced">
                     <HistoryDetails :history="history" :writeable="writable" @update:history="updateHistory($event)" />
                     <HistoryMessages :history="history" />
@@ -121,7 +125,7 @@
                                     :selected="isSelected(item)"
                                     :selectable="showSelection"
                                     :filterable="filterable"
-                                    @tag-click="onTagClick"
+                                    @tag-click="updateFilterVal('tag', $event)"
                                     @tag-change="onTagChange"
                                     @toggleHighlights="updateFilterVal('related', item.hid)"
                                     @update:expand-dataset="setExpanded(item, $event)"
@@ -140,11 +144,12 @@
 </template>
 
 <script>
+import FilterMenu from "components/Common/FilterMenu";
 import { copyDataset } from "components/Dataset/services";
 import ContentItem from "components/History/Content/ContentItem";
 import ExpandedItems from "components/History/Content/ExpandedItems";
 import SelectedItems from "components/History/Content/SelectedItems";
-import { HistoryFilters as FilterClass } from "components/History/HistoryFilters";
+import { HistoryFilters } from "components/History/HistoryFilters";
 import ListingLayout from "components/History/Layout/ListingLayout";
 import { deleteContent, updateContentFields } from "components/History/model/queries";
 import LoadingSpan from "components/LoadingSpan";
@@ -160,7 +165,6 @@ import HistoryCounter from "./HistoryCounter";
 import HistoryDetails from "./HistoryDetails";
 import HistoryDropZone from "./HistoryDropZone";
 import HistoryEmpty from "./HistoryEmpty";
-import HistoryFilters from "./HistoryFilters/HistoryFilters";
 import HistoryMessages from "./HistoryMessages";
 import HistoryOperations from "./HistoryOperations/HistoryOperations";
 import OperationErrorDialog from "./HistoryOperations/OperationErrorDialog";
@@ -172,12 +176,12 @@ export default {
     components: {
         ContentItem,
         ExpandedItems,
+        FilterMenu,
         HistoryCounter,
         HistoryMessages,
         HistoryDetails,
         HistoryDropZone,
         HistoryEmpty,
-        HistoryFilters,
         HistoryOperations,
         HistorySelectionOperations,
         HistorySelectionStatus,
@@ -198,6 +202,7 @@ export default {
     data() {
         return {
             filterText: "",
+            filterClass: HistoryFilters,
             invisible: {},
             loading: false,
             offset: 0,
@@ -323,7 +328,7 @@ export default {
         ...mapActions(useHistoryStore, ["loadHistoryById", "setFilterText", "updateHistory"]),
         ...mapActions(useHistoryItemsStore, ["fetchHistoryItems"]),
         getHighlight(item) {
-            const highlightsKey = FilterClass.getFilterValue(this.filterText, "related");
+            const highlightsKey = this.filterClass.getFilterValue(this.filterText, "related");
             if (highlightsKey == item.hid) {
                 return "active";
             } else if (highlightsKey) {
@@ -387,9 +392,6 @@ export default {
         onTagChange(item, newTags) {
             item.tags = newTags;
         },
-        onTagClick(tag) {
-            this.updateFilterVal("tag", tag);
-        },
         onOperationError(error) {
             console.debug("HistoryPanel - Operation error.", error);
             this.operationError = error;
@@ -433,7 +435,7 @@ export default {
             Toast.error(`${error}`);
         },
         updateFilterVal(newFilter, newVal) {
-            this.filterText = FilterClass.setFilterValue(this.filterText, newFilter, newVal);
+            this.filterText = this.filterClass.setFilterValue(this.filterText, newFilter, newVal);
         },
     },
 };

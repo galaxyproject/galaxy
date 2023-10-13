@@ -1,13 +1,13 @@
 <script setup>
 import { useInfiniteScroll } from "@vueuse/core";
+import FilterMenu from "components/Common/FilterMenu";
 import Heading from "components/Common/Heading";
-import DebouncedInput from "components/DebouncedInput";
 import LoadingSpan from "components/LoadingSpan";
 import StatelessTags from "components/TagsMultiselect/StatelessTags";
 import ScrollToTopButton from "components/ToolsList/ScrollToTopButton";
 import UtcDate from "components/UtcDate";
 import { useAnimationFrameScroll } from "composables/sensors/animationFrameScroll";
-import Filtering, { contains, equals, expandNameTag } from "utils/filtering";
+import Filtering, { compare, contains, equals, expandNameTag, toDate } from "utils/filtering";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 
 import { getPublishedHistories, updateTags } from "./services";
@@ -15,14 +15,23 @@ import { getPublishedHistories, updateTags } from "./services";
 const LIMIT = 50;
 
 const validFilters = {
-    name: contains("name"),
-    annotation: contains("annotation"),
-    tag: contains("tags", "tag", expandNameTag),
-    user: contains("username"),
-    user_eq: equals("username"),
+    name: { placeholder: "name", type: String, handler: contains("name"), menuItem: true },
+    annotation: { placeholder: "annotation", type: String, handler: contains("annotation"), menuItem: true },
+    tag: { placeholder: "tag", type: String, handler: contains("tags", "tag", expandNameTag), menuItem: true },
+    user: { placeholder: "user name", type: String, handler: contains("username"), menuItem: true },
+    user_eq: { handler: equals("username"), menuItem: false },
+    update_time: {
+        placeholder: "updated time",
+        type: Date,
+        handler: compare("update_time", "le", toDate),
+        isRangeInput: true,
+        menuItem: true,
+    },
+    update_time_ge: { handler: compare("update_time", "ge", toDate), menuItem: false },
+    update_time_le: { handler: compare("update_time", "le", toDate), menuItem: false },
 };
 
-const filters = new Filtering(validFilters, false);
+const filters = new Filtering(validFilters);
 
 const props = defineProps({
     fUsername: {
@@ -59,19 +68,6 @@ const fields = computed(() => [
     { label: "Last Updated", key: "update_time", sortable: !loading.value },
 ]);
 
-const localFilter = computed({
-    get() {
-        return filterText.value;
-    },
-    set(newVal) {
-        if (newVal !== filterText.value) {
-            updateFilter(newVal);
-        }
-    },
-});
-
-const filterSettings = computed(() => filters.toAlias(filters.getFiltersForText(filterText.value)));
-
 const updateFilter = (newVal) => {
     filterText.value = newVal.trim();
 };
@@ -83,15 +79,6 @@ const setFilter = (filter, tag) => {
 const onTagsUpdate = (newTags, row) => {
     row.item.tags = newTags;
     updateTags(row.item.id, "History", row.item.tags);
-};
-
-const onToggle = () => {
-    showAdvanced.value = !showAdvanced.value;
-};
-
-const onSearch = () => {
-    onToggle();
-    updateFilter(filters.getFilterText(filterSettings.value));
 };
 
 const scrollToTop = () => {
@@ -213,80 +200,13 @@ watch([filterText, sortBy, sortDesc], async () => {
         <b-alert v-if="noItems" variant="info" show>No published histories found.</b-alert>
 
         <div v-else>
-            <b-input-group class="mb-2">
-                <DebouncedInput v-slot="{ value, input }" v-model="localFilter">
-                    <b-form-input
-                        id="published-histories-filter"
-                        size="sm"
-                        :class="filterText && 'font-weight-bold'"
-                        :value="value"
-                        :placeholder="'Search by name or use the advanced filtering options' | localize"
-                        title="clear search (esc)"
-                        data-description="filter text input"
-                        @input="input"
-                        @keyup.esc="updateFilter('')" />
-                </DebouncedInput>
-                <b-input-group-append>
-                    <b-button
-                        id="published-histories-advanced-filter-toggle"
-                        size="sm"
-                        :pressed="showAdvanced"
-                        :variant="showAdvanced ? 'info' : 'secondary'"
-                        title="show advanced filter"
-                        data-description="show advanced filter toggle"
-                        aria-label="Show advanced filter"
-                        @click="onToggle">
-                        <icon v-if="showAdvanced" icon="angle-double-up" />
-                        <icon v-else icon="angle-double-down" />
-                    </b-button>
-                    <b-button
-                        size="sm"
-                        aria-label="Clear filters"
-                        data-description="clear filters"
-                        @click="updateFilter('')">
-                        <icon icon="times" />
-                    </b-button>
-                </b-input-group-append>
-            </b-input-group>
-
-            <div v-if="showAdvanced" class="mt-2" @keyup.esc="onToggle" @keyup.enter="onSearch">
-                <small>Filter by name:</small>
-                <b-form-input
-                    id="published-histories-advanced-filter-name"
-                    v-model="filterSettings['name:']"
-                    size="sm"
-                    placeholder="any name" />
-                <small class="mt-1">Filter by annotation:</small>
-                <b-form-input v-model="filterSettings['annotation:']" size="sm" placeholder="any annotation" />
-                <small class="mt-1">Filter by community tag:</small>
-                <b-form-input
-                    id="published-histories-advanced-filter-tag"
-                    v-model="filterSettings['tag:']"
-                    size="sm"
-                    placeholder="any community tag" />
-                <small class="mt-1">Filter by owner:</small>
-                <b-form-input
-                    id="published-histories-advanced-filter-username"
-                    v-model="filterSettings['user:']"
-                    size="sm"
-                    placeholder="any username" />
-                <div class="mt-3">
-                    <b-button
-                        id="published-histories-advanced-filter-submit"
-                        class="mr-1"
-                        size="sm"
-                        variant="primary"
-                        description="apply filters"
-                        @click="onSearch">
-                        <icon icon="search" />
-                        <span>{{ "Search" | localize }}</span>
-                    </b-button>
-                    <b-button size="sm" @click="onToggle">
-                        <icon icon="redo" />
-                        <span>{{ "Cancel" | localize }}</span>
-                    </b-button>
-                </div>
-            </div>
+            <FilterMenu
+                name="Published Histories"
+                :placeholder="'Search by name or use the advanced filtering options' | localize"
+                :filter-class="filters"
+                :filter-text.sync="filterText"
+                :loading="loading"
+                :show-advanced.sync="showAdvanced" />
 
             <b-alert v-if="noResults || error" :variant="error ? 'danger' : 'info'" show>
                 <div>

@@ -398,8 +398,8 @@ multi_history_panel:
 published_histories:
   selectors:
     histories: '#published-histories-table tbody tr'
-    search_input: '#published-histories-filter'
-    advanced_search_toggle: '#published-histories-advanced-filter-toggle'
+    search_input: '#published-histories input.search-query[data-description="filter text input"]'
+    advanced_search_toggle: '#published-histories [data-description="toggle advanced search"]'
     advanced_search_name_input: '#published-histories-advanced-filter-name'
     advanced_search_tag_input: '#published-histories-advanced-filter-tag'
     advanced_search_submit: '#published-histories-advanced-filter-submit'
@@ -578,7 +578,12 @@ workflows:
     new_button: '#workflow-create'
     import_button: '#workflow-import'
     save_button: '#workflow-save-button'
-    search_box: "#workflow-search"
+    search_box: '.workflows-list input.search-query[data-description="filter text input"]'
+    clear_filter: '.workflows-list [data-description="reset query"]'
+    advanced_search_toggle: '.workflows-list [data-description="toggle advanced search"]'
+    advanced_search_name_input: '#workflows-advanced-filter-name'
+    advanced_search_tag_input: '#workflows-advanced-filter-tag .stateless-tags'
+    advanced_search_submit: '#workflows-advanced-filter-submit'
     workflow_table: "#workflow-table"
     workflow_rows: "#workflow-table > tbody > tr:not(.b-table-empty-row, [style*='display: none'])"
     external_link: '.workflow-external-link'

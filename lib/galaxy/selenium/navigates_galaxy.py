@@ -1380,7 +1380,13 @@ class NavigatesGalaxy(HasDriver):
         return columns[column_index].text
 
     def workflow_index_click_search(self):
-        return self.wait_for_and_click_selector("#workflow-search")
+        return self.wait_for_and_click_selector(
+            '.workflows-list input.search-query[data-description="filter text input"]'
+        )
+
+    def workflow_index_get_current_filter(self):
+        filter_element = self.components.workflows.search_box.wait_for_and_click()
+        return filter_element.get_attribute("value")
 
     def workflow_index_search_for(self, search_term=None):
         return self._inline_search_for(
