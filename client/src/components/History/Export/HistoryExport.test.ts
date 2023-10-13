@@ -4,6 +4,7 @@ import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 
+import { fetchHistoryExportRecords } from "@/api/histories.export";
 import type { components } from "@/api/schema";
 import { mockFetcher } from "@/api/schema/__mocks__";
 import {
@@ -13,16 +14,14 @@ import {
 } from "@/components/Common/models/testData/exportData";
 import { type HistorySummary, useHistoryStore } from "@/stores/historyStore";
 
-import { getExportRecords } from "./services";
-
 import HistoryExport from "./HistoryExport.vue";
 
 const localVue = getLocalVue(true);
 
 jest.mock("@/api/schema");
-jest.mock("./services");
-const mockGetExportRecords = getExportRecords as jest.MockedFunction<typeof getExportRecords>;
-mockGetExportRecords.mockResolvedValue([]);
+jest.mock("@/api/histories.export");
+const mockFetchExportRecords = fetchHistoryExportRecords as jest.MockedFunction<typeof fetchHistoryExportRecords>;
+mockFetchExportRecords.mockResolvedValue([]);
 
 const FAKE_HISTORY_ID = "fake-history-id";
 const FAKE_HISTORY = {
@@ -90,7 +89,7 @@ describe("HistoryExport.vue", () => {
     });
 
     it("should render previous records when there is more than one record", async () => {
-        mockGetExportRecords.mockResolvedValue([
+        mockFetchExportRecords.mockResolvedValue([
             RECENT_STS_DOWNLOAD_RECORD,
             FILE_SOURCE_STORE_RECORD,
             EXPIRED_STS_DOWNLOAD_RECORD,
@@ -101,7 +100,7 @@ describe("HistoryExport.vue", () => {
     });
 
     it("should not render previous records when there is one or less records", async () => {
-        mockGetExportRecords.mockResolvedValue([RECENT_STS_DOWNLOAD_RECORD]);
+        mockFetchExportRecords.mockResolvedValue([RECENT_STS_DOWNLOAD_RECORD]);
         const wrapper = await mountHistoryExport();
 
         expect(wrapper.find("#previous-export-records").exists()).toBe(false);
