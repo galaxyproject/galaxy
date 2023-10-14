@@ -115,9 +115,20 @@ watch(
             </section>
             <section class="position-relative flex-grow-1 scroller">
                 <div>
-                    <ListingLayout :items="collectionElements" :loading="loading" @scroll="onScroll">
+                    <ListingLayout
+                        data-key="element_index"
+                        :items="collectionElements"
+                        :loading="loading"
+                        @scroll="onScroll">
                         <template v-slot:item="{ item }">
                             <ContentItem
+                                v-if="item.id === undefined"
+                                :id="item.element_index + 1"
+                                :item="item"
+                                :is-placeholder="true"
+                                name="Loading..." />
+                            <ContentItem
+                                v-else
                                 :id="item.element_index + 1"
                                 :item="item.object"
                                 :name="item.element_identifier"

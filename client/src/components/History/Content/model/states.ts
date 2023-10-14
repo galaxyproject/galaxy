@@ -2,10 +2,10 @@ import { components } from "@/schema";
 
 type DatasetState = components["schemas"]["DatasetState"];
 // The 'failed' state is for the collection job state summary, not a dataset state.
-type State = DatasetState | "failed";
+type State = DatasetState | "failed" | "placeholder";
 
 interface StateRepresentation {
-    status: "success" | "warning" | "info" | "danger";
+    status: "success" | "warning" | "info" | "danger" | "secondary";
     text?: string;
     icon?: string;
     spin?: boolean;
@@ -96,6 +96,13 @@ export const STATES: StateMap = {
     failed: {
         status: "danger",
         icon: "exclamation-triangle",
+    },
+    /** the dataset is not yet loaded in the UI. This state is only visual and transitional, it does not exist in the database. */
+    placeholder: {
+        status: "secondary",
+        text: "This dataset is being fetched.",
+        icon: "spinner",
+        spin: true,
     },
 } as const satisfies StateMap;
 

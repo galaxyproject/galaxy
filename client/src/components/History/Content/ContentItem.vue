@@ -54,7 +54,7 @@
                     </b-badge>
                 </span>
                 <ContentOptions
-                    v-else
+                    v-if="!isPlaceholder && !item.purged"
                     :writable="writable"
                     :is-dataset="isDataset"
                     :is-deleted="item.deleted"
@@ -102,7 +102,7 @@
 
 <script>
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faArrowCircleDown, faArrowCircleUp, faCheckCircle } from "@fortawesome/free-solid-svg-icons";
+import { faArrowCircleDown, faArrowCircleUp, faCheckCircle, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { updateContentFields } from "components/History/model/queries";
 import StatelessTags from "components/TagsMultiselect/StatelessTags";
@@ -116,7 +116,7 @@ import ContentOptions from "./ContentOptions";
 import DatasetDetails from "./Dataset/DatasetDetails";
 import { HIERARCHICAL_COLLECTION_JOB_STATES, STATES } from "./model/states";
 
-library.add(faArrowCircleUp, faArrowCircleDown, faCheckCircle);
+library.add(faArrowCircleUp, faArrowCircleDown, faCheckCircle, faSpinner);
 export default {
     components: {
         CollectionDescription,
@@ -126,18 +126,19 @@ export default {
         FontAwesomeIcon,
     },
     props: {
-        writable: { type: Boolean, default: true },
-        expandDataset: { type: Boolean, required: true },
-        addHighlightBtn: { type: Boolean, default: false },
-        highlight: { type: String, default: null },
         id: { type: Number, required: true },
-        isDataset: { type: Boolean, default: true },
-        isHistoryItem: { type: Boolean, default: false },
         item: { type: Object, required: true },
         name: { type: String, required: true },
+        expandDataset: { type: Boolean, default: false },
+        writable: { type: Boolean, default: true },
+        addHighlightBtn: { type: Boolean, default: false },
+        highlight: { type: String, default: null },
+        isDataset: { type: Boolean, default: true },
+        isHistoryItem: { type: Boolean, default: false },
         selected: { type: Boolean, default: false },
         selectable: { type: Boolean, default: false },
         filterable: { type: Boolean, default: false },
+        isPlaceholder: { type: Boolean, default: false },
     },
     computed: {
         jobState() {
@@ -166,6 +167,9 @@ export default {
             return this.contentState && this.contentState.icon;
         },
         state() {
+            if (this.isPlaceholder) {
+                return "placeholder";
+            }
             if (this.item.job_state_summary) {
                 for (const state of HIERARCHICAL_COLLECTION_JOB_STATES) {
                     if (this.item.job_state_summary[state] > 0) {
@@ -219,6 +223,9 @@ export default {
             }
         },
         onClick() {
+            if (this.isPlaceholder) {
+                return;
+            }
             if (this.isDataset) {
                 this.$emit("update:expand-dataset", !this.expandDataset);
             } else {
