@@ -89,7 +89,7 @@ const validFilters: ComputedRef<Record<string, ValidFilter<string>>> = computed(
     return {
         name: { placeholder: "name", type: String, handler: contains("name"), menuItem: true },
         section: {
-            placeholder: props.currentPanelView === "default" ? "section" : "ontology",
+            placeholder: "section",
             type: String,
             handler: contains("section"),
             datalist: sectionNames,

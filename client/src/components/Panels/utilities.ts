@@ -25,13 +25,21 @@ const UNSECTIONED_SECTION = {
 };
 const VALID_SECTION_TYPES = ["edam_operations", "edam_topics"]; // other than `default`
 
+/** These are keys used to order/sort results in `ToolSearch`.
+ * The value for each is the sort order, higher number = higher rank.
+ * Must include some `Tool` properties (like name, description, id etc.)
+ * to check against query, and any other keys below are special, used for
+ * specific cases (like `combined` for name+description).
+ */
 export interface ToolSearchKeys {
     [key: string | keyof Tool]: number | undefined;
+    /** property has exact match with query */
     exact?: number;
+    /** property starts with query */
     startsWith?: number;
-    name?: number;
-    description?: number;
+    /** query contains matches `Tool.name + Tool.description` */
     combined?: number;
+    /** property matches   */
     wordMatch?: number;
 }
 
