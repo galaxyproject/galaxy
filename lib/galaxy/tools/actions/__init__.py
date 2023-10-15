@@ -675,6 +675,7 @@ class DefaultToolAction(ToolAction):
                 data.visible = False
                 with open(data.dataset.file_name, "w") as out:
                     out.write(json.dumps(None))
+                data.set_total_size()
         job.preferred_object_store_id = preferred_object_store_id
         self._record_inputs(trans, tool, job, incoming, inp_data, inp_dataset_collections)
         self._record_outputs(job, out_data, output_collections)
