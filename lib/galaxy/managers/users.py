@@ -295,6 +295,13 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             raise exceptions.AuthenticationFailed("Provided API key has expired.")
         return provided_key.user
 
+    def by_oidc_access_token(self, access_token: str):
+        if hasattr(self.app, "authnz_manager") and self.app.authnz_manager:
+            user = self.app.authnz_manager.find_user_by_access_token(self.app.model.session, access_token)  # type: ignore[attr-defined]
+            return user
+        else:
+            return None
+
     def check_bootstrap_admin_api_key(self, api_key):
         bootstrap_admin_api_key = getattr(self.app.config, "bootstrap_admin_api_key", None)
         if not bootstrap_admin_api_key:

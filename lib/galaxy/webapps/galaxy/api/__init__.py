@@ -36,6 +36,7 @@ from fastapi.security import (
     APIKeyCookie,
     APIKeyHeader,
     APIKeyQuery,
+    HTTPBearer
 )
 from fastapi_utils.cbv import cbv
 from fastapi_utils.inferring_router import InferringRouter
@@ -80,6 +81,7 @@ from galaxy.work.context import (
 api_key_query = APIKeyQuery(name="key", auto_error=False)
 api_key_header = APIKeyHeader(name="x-api-key", auto_error=False)
 api_key_cookie = APIKeyCookie(name="galaxysession", auto_error=False)
+api_bearer_token = HTTPBearer()
 
 
 def get_app() -> StructuredApp:
@@ -139,6 +141,7 @@ def get_api_user(
     user_manager: UserManager = depends(UserManager),
     key: str = Security(api_key_query),
     x_api_key: str = Security(api_key_header),
+    bearer_token: str = Security(api_bearer_token),
     run_as: Optional[DecodedDatabaseIdField] = Header(
         default=None,
         title="Run as User",
@@ -149,9 +152,12 @@ def get_api_user(
     ),
 ) -> Optional[User]:
     api_key = key or x_api_key
-    if not api_key:
+    if api_key:
+        user = user_manager.by_api_key(api_key=api_key)
+    elif bearer_token:
+        user = user_manager.by_oidc_access_token(access_token=bearer_token.credentials)
+    else:
         return None
-    user = user_manager.by_api_key(api_key=api_key)
     if run_as:
         if user_manager.user_can_do_run_as(user):
             return user_manager.by_id(run_as)

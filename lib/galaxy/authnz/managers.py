@@ -404,6 +404,33 @@ class AuthnzManager:
             log.exception(msg)
             return False, msg, (None, None)
 
+    def find_user_by_access_token_in_provider(self, sa_session, provider, access_token):
+        try:
+            success, message, backend = self._get_authnz_backend(provider)
+            if success is False:
+                msg = f"An error occurred when obtaining user by token with provider `{provider}`: {message}"
+                log.error(msg)
+                return None
+            user = backend.match_access_token_to_user(sa_session, access_token)
+            if user:
+                log.debug(f"Found user: {user} via `{provider}` identity provider")
+                return user
+            return None
+        except Exception as e:
+            msg = f"An error occurred when finding user by token: {e}"
+            log.error(msg)
+            return None
+
+    def find_user_by_access_token(self, sa_session, access_token):
+        # decoded_token = jwt.decode(access_token, options={"verify_signature": False})
+        # issuer = decoded_token["iss"]
+        # audience = decoded_token["aud"]
+        for provider in self.oidc_backends_config:
+            user = self.find_user_by_access_token_in_provider(sa_session, provider, access_token)
+            if user:
+                return user
+        return None
+
     def logout(self, provider, trans, post_user_logout_href=None):
         """
         Log the user out of the identity provider.
