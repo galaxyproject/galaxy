@@ -265,6 +265,8 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
             except Exception:
                 log.exception("Exception occured while setting dataset peek")
 
+            primary_data.set_total_size()
+
     def populate_collection_elements(
         self,
         collection,
