@@ -91,7 +91,7 @@ class PermissionProvider(AbstractPermissionProvider):
             self._security_agent.set_all_dataset_permissions(primary_data.dataset, permissions, new=True, flush=False)
 
     def copy_dataset_permissions(self, init_from, primary_data):
-        self._security_agent.copy_dataset_permissions(init_from.dataset, primary_data.dataset)
+        self._security_agent.copy_dataset_permissions(init_from.dataset, primary_data.dataset, flush=False)
 
 
 class MetadataSourceProvider(AbstractMetadataSourceProvider):
