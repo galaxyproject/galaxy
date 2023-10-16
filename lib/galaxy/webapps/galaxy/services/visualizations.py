@@ -20,7 +20,6 @@ from galaxy.managers.visualizations import (
 from galaxy.security.idencoding import IdEncodingHelper
 
 from galaxy.schema import (
-    FilterQueryParams,
     SerializationParams,
 )
 
@@ -55,6 +54,7 @@ class VisualizationsService(ServiceBase):
         self,
         trans: ProvidesHistoryContext,
         serialization_params: SerializationParams,
+        sharing: bool = False,
     ) -> List[Any]:
         """
         Search visualizations using a query system and returns a list
@@ -64,12 +64,17 @@ class VisualizationsService(ServiceBase):
         visualizations = self.get_visualizations_by_user(trans, user)
         visualizations += self.get_visualizations_shared_with_user(trans, user)
         visualizations += self.get_published_visualizations(trans, exclude_user=user)
-        return [
-            self.serializer.serialize_to_view(
+        
+        response = []
+        for content in visualizations:
+            result = self.serializer.serialize_to_view(
                 content, user=user, trans=trans, **serialization_params.dict()
             )
-            for content in visualizations
-        ]
+            if sharing:
+                sharing_dict = self.shareable_service.sharing(trans, content.id)
+                result.update(sharing_dict)
+            response.append(result)
+        return response
 
     def get_visualizations_by_user(self, trans, user):
         """Return query results of visualizations filtered by a user."""

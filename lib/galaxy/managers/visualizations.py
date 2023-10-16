@@ -59,13 +59,13 @@ class VisualizationSerializer(sharable.SharableModelSerializer):
         ])
         self.add_view("detailed", [
             "create_time",
+            "tags",
             "update_time",
         ], include_keys_from="summary",)
 
     def add_serializers(self):
         super().add_serializers()
-        serializers: Dict[str, base.Serializer] = {
-        }
+        serializers: Dict[str, base.Serializer] = {}
         self.serializers.update(serializers)
 
 

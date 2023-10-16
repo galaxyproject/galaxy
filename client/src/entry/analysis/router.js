@@ -458,7 +458,8 @@ export function getRouter(Galaxy) {
                         path: "visualizations/list",
                         component: GridList,
                         props: (route) => ({
-                            url: "/api/visualizations",
+                            url: "/api/visualizations?view=detailed&sharing=true",
+                            resource: "visualizations",
                             item: "visualization",
                             plural: "Visualizations",
                             title: "Visualizations",

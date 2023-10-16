@@ -76,9 +76,10 @@ class FastAPIVisualizations:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         serialization_params: SerializationParams = Depends(query_serialization_params),
+        sharing: bool = False,
     ) -> List[Any]:
         return self.service.index(
-            trans, serialization_params
+            trans, serialization_params, sharing,
         )
 
     @router.get(
