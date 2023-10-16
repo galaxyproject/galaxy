@@ -8,6 +8,8 @@ import { useRouter } from "vue-router/composables";
 
 import { withPrefix } from "@/utils/redirect";
 
+import { VisualizationsGrid } from "./types/visualizations.js";
+
 const router = useRouter();
 
 interface Props {
@@ -26,71 +28,16 @@ interface configType {
     item: string;
     plural: string;
     title: string;
+    fields: Array<Record<string, unknown>>;
 }
 
 const config: Record<string, configType> = {
-    visualizations: {
-        url: "/api/visualizations?view=detailed&sharing=true",
-        resource: "visualizations",
-        item: "visualization",
-        plural: "Visualizations",
-        title: "Visualizations",
-    }
-}
-
-const fields = [
-    {
-        title: "title",
-        operations: [
-            {
-                title: "Edit Attributes",
-                handler: (data: any) => {
-                    router.push(`/visualizations/edit?id=${data.id}`);
-                },
-            },
-            {
-                title: "Share and Publish",
-                handler: (data: any) => {
-                    router.push(`/visualizations/sharing?id=${data.id}`);
-                },
-            },
-            {
-                title: "Delete",
-                handler: (data: any) => {
-                    return `'${data.title}' has been deleted.`;
-                },
-            },
-        ],
-    },
-    {
-        key: "type",
-        type: "string",
-    },
-    {
-        key: "create_time",
-        type: "date",
-    },
-    {
-        key: "update_time",
-        type: "date",
-    },
-    {
-        key: "sharing",
-        type: "sharing",
-    },
-    {
-        key: "username_and_slug",
-        type: "link",
-    },
-    {
-        key: "tags",
-        type: "string",
-    },
-];
+    visualizations: VisualizationsGrid,
+};
 
 const gridConfig = computed(() => {
     return config[props.name];
-})
+});
 
 async function getGridData() {
     if (gridConfig.value) {
@@ -109,7 +56,7 @@ onMounted(() => {
 });
 
 async function executeOperation(operation: any, rowData: any) {
-    const message = await operation.handler(rowData);
+    const message = await operation.handler(rowData, router);
     if (message) {
         await getGridData();
         operationMessage.value = message;
@@ -119,20 +66,20 @@ async function executeOperation(operation: any, rowData: any) {
 
 <template>
     <div>
-        <BAlert v-if="!!operationMessage" variant="success" show>{{ operationMessage }}</BAlert>
         <BAlert v-if="!!errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
+        <BAlert v-if="!!operationMessage" variant="success" show>{{ operationMessage }}</BAlert>
         <div>
             <h1 class="mb-3 h-lg">
                 {{ gridConfig.title }}
             </h1>
             <table class="table table-striped">
                 <thead>
-                    <th v-for="(fieldEntry, fieldIndex) of fields" :key="fieldIndex">
+                    <th v-for="(fieldEntry, fieldIndex) in gridConfig.fields" :key="fieldIndex">
                         {{ fieldEntry.title || fieldEntry.key }}
                     </th>
                 </thead>
-                <tr v-for="(rowData, rowIndex) of gridData" :key="rowIndex">
-                    <td v-for="(fieldEntry, fieldIndex) of fields" :key="fieldIndex">
+                <tr v-for="(rowData, rowIndex) in gridData" :key="rowIndex">
+                    <td v-for="(fieldEntry, fieldIndex) in gridConfig.fields" :key="fieldIndex">
                         <span v-if="!!fieldEntry.operations">
                             <b-dropdown text="Selection" size="sm" variant="primary" data-description="grid operations">
                                 <template v-slot:button-content>
