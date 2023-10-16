@@ -5,10 +5,9 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed, unref } from "vue";
 
+import { deletePage } from "@/api/pages";
 import { useUserStore } from "@/stores/userStore";
 import _l from "@/utils/localization";
-
-import { deletePage } from "./services";
 
 library.add(faCaretDown);
 
@@ -30,10 +29,10 @@ const emit = defineEmits(["onRemove", "onSuccess", "onError"]);
 
 const readOnly = computed(() => props.page.shared || props.published || unref(isAnonymous));
 
-function onDelete(page_id: string) {
-    deletePage(page_id)
-        .then((response) => {
-            emit("onRemove", page_id);
+function onDelete(pageId: string) {
+    deletePage(pageId)
+        .then(() => {
+            emit("onRemove", pageId);
             emit("onSuccess");
         })
         .catch((error) => {
