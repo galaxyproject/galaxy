@@ -1455,10 +1455,10 @@
   resolved "https://registry.yarnpkg.com/@eslint/js/-/js-8.51.0.tgz#6d419c240cfb2b66da37df230f7e7eef801c32fa"
   integrity sha512-HxjQ8Qn+4SI3/AFv6sOrDB+g6PpUTDwSJiQqOrnneEk8L71161srI9gjzzZvYVbzHiVg/BvcH95+cK/zfIt4pg==
 
-"@fontsource/atkinson-hyperlegible@^4.5.11":
-  version "4.5.11"
-  resolved "https://registry.yarnpkg.com/@fontsource/atkinson-hyperlegible/-/atkinson-hyperlegible-4.5.11.tgz#7dc6f9cc92c45fa9eda48f0c5fc9f372e5a31556"
-  integrity sha512-ounnhVVjseNci+G0dGPBwUY7RYM2h8FsfyhzvpUnQYKeiuUcRtGahCswnrKPrvSXNRCl1uqnRSxP3ahJ4miYIQ==
+"@fontsource/atkinson-hyperlegible@^5.0.15":
+  version "5.0.15"
+  resolved "https://registry.yarnpkg.com/@fontsource/atkinson-hyperlegible/-/atkinson-hyperlegible-5.0.15.tgz#8fff7b3798eb5ce528e890d723a23ee8938bc92f"
+  integrity sha512-JZlgFy4k7zku9Gm4XxX44y1ku19wNDez4k+8VmZkDhT8Yicsnjpwa2IehnwAkiV6+mJeLJPyw+53V9KMFI476A==
 
 "@fortawesome/fontawesome-common-types@6.2.1":
   version "6.2.1"
