@@ -32,6 +32,11 @@ bernt-matthias, bernt@informatik.uni-leipzig.de, https://github.com/galaxyprojec
 bdwheele, bdwheele@iu.edu, https://github.com/galaxyproject/galaxy/pull/16443
 thepineapplepirate, braubeno@uno.edu, https://github.com/galaxyproject/galaxy/pull/13126
 slugger70, slugger70@gmail.com, private email from Simon Gladman's heirs affirming the license change
+neoformit, chyde@neoformit.com, https://github.com/galaxyproject/galaxy/pull/16616
+cat-bro, cathjb@gmail.com, https://github.com/galaxyproject/galaxy/pull/11923
+claudiofr, claudiofr@yahoo.com, https://github.com/galaxyproject/galaxy/pull/16576
+hujambo-dunia, michelle.savage.1@gmail.com, https://github.com/galaxyproject/galaxy/pull/13912
+gallardoalba, gallardoalbac@gmail.com, https://github.com/galaxyproject/galaxy/pull/13708
 
 # not yet agreed, needs research
 Daniel Bouchard <danieljosephbouchard@gmail.com> # GH user: Airistotal
@@ -62,11 +67,29 @@ Bioinformatics Platform (Belgian Institute of Public Health) <bioit@sciensano.be
 Brad Chapman <chapmanb@50mail.com>  # GH user: chapmanb
 Brad Holmes <holmesbr@ncbi.nlm.nih.gov>  # GH user: BradHolmes
 Brad Langhorst <brad@langhorst.com> <langhorst@neb.com>  # GH user: bwlang
-
+Caleb Easterly <caleb.easterly@gmail.com>  # GH user: caleb-easterly
+Carl Eberhard <carlfeberhard@gmail.com>  # GH user: carlfeberhard
+Carlos Garcia <carlos.andrew.garcia@gmail.com>  # GH user: cginmn
+Carrie Ganote <cganote@iu.edu>  # GH user: cganote
+Matt Chambers <matt.chambers42@gmail.com>  # GH user: chambm
+Cedric Mendoza <cedricmendoza@gmail.com>  # GH user: ccedmendoza
+Cristian <cche@users.noreply.github.com>  # GH user: cche
+Charles Strittmatter <cstrittmatter@gmail.com>  # GH user: charesredhat
+Charles Hsu <charles0126@gmail.com>  # GH user: charz
+Chinmay Rao <chinmay@bx.psu.edu>
+Chris Armstrong <carmstrong1gw@github.com>  # GH user: carmstrong1gw
+Chris Barnett <chris.barnett@uct.ac.za>  # GH user: chrisbarnettster
+Christian Y. Brenninkmeijer <christian.brenninkmeijer@manchester.ac.uk>  # GH user: Christian-B
+Clayton Turner <clayclay911@gmail.com>  # GH user: ClaytonTurner
+Clemens Blank <blankclemens@gmail.com>  # GH user: blankclemens
+Cyril Monjeaud <cyril.monjeaud@gmail.com>  # GH user: cmonjeau
+Christopher Mundus <crashGoBoom@users.noreply.github.com>  # GH user: crashGoBoom
 
 # not agreed, but contributions no longer present
 Adam Brenner <aebrenne@uci.edu> # GH user: abrenner, only commits to tools moved to tool shed (no longer in galaxy)
 Abdulrahman Azab <eng.azab@gmail.com> # GH user: abdulrahmanazab, one-line contribution, rewritten by John Chilton
 Andrea Sbardellati <andrea.sbardellati@crs4.it>  # only one commit to bowtie2 wrapper, since moved to the tool shed
 Benjamin Carr <BenjaminHCCarr@users.noreply.github.com>  # GH user: BenjaminHCCarr, single line change, no longer present
-
+Carlos Borroto <carlos.borroto@gmail.com>  # GH user: CarlosBorroto, single line change, no longer present in the code
+Christopher Bare <christopherbare@gmail.com>  # GH user: cbare, contribution reverted or otherwise unused
+Clare Sloggett <sloc@unimelb.edu.au>  # GH user: claresloggett, code heavily refactored since 2012 contribution
