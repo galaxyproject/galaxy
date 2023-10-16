@@ -3,6 +3,8 @@ from typing import (
     Optional,
 )
 
+from pydantic import Extra
+
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     EncodedDatasetSourceId,
@@ -30,3 +32,12 @@ class ReportJobErrorPayload(Model):
     dataset_id: DecodedDatabaseIdField
     email: Optional[str] = None
     message: Optional[str] = None
+
+
+class SearchJobsPayload(Model):
+    tool_id: str
+    inputs: str
+    state: str
+
+    class Config:
+        extra = Extra.allow  # This is used for items named file_ and __file_
