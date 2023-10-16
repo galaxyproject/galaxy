@@ -434,13 +434,3 @@ class TestParameterParsing(BaseParameterTestCase):
         )
         assert param.type == "data_collection"
         assert param.collection_types == ["list", "list:paired"]
-
-    def test_library(self):
-        param = self._parameter_for(
-            xml="""
-            <param name="libraryp" type="library_data">
-            </param>
-        """
-        )
-        assert param.type == "library_data"
-        assert param.name == "libraryp"
