@@ -1,4 +1,6 @@
 import { shallowMount } from "@vue/test-utils";
+import axios from "axios";
+import MockAdapter from "axios-mock-adapter";
 import { getAppRoot } from "onload/loadConfig";
 import { createPinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
@@ -31,6 +33,8 @@ Services.mockImplementation(() => {
 
 describe("RepositoryDetails", () => {
     it("test repository details index", async () => {
+        const axiosMock = new MockAdapter(axios);
+        axiosMock.onGet("api/tools?in_panel=true&view=default").reply(200, {});
         mockFetcher.path("/api/configuration").method("get").mock({ data: {} });
         const localVue = getLocalVue();
         const pinia = createPinia();

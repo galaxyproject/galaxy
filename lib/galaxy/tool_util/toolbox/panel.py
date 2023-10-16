@@ -73,18 +73,33 @@ class ToolSection(Dictifiable, HasPanelItems):
         copy.elems.update(self.elems)
         return copy
 
-    def to_dict(self, trans, link_details=False, tool_help=False, toolbox=None):
-        """Return a dict that includes section's attributes."""
+    def to_dict(self, trans, link_details=False, tool_help=False, toolbox=None, only_ids=False):
+        """Return a dict that includes section's attributes.
+
+        if `only_ids` is `True`, we store only the ids of the section's tools in `section.tools`
+        (also full `ToolSectionLabel` objects in `section.tools` if any are present)
+
+        if `only_ids` is `False`, we store the section's full `Tool` (and any other) objects in
+        `section.elems`
+        """
 
         section_dict = super().to_dict()
         section_elts = []
         kwargs = dict(trans=trans, link_details=link_details, tool_help=tool_help)
         for elt in self.elems.values():
             if hasattr(elt, "tool_type") and toolbox:
-                section_elts.append(toolbox.get_tool_to_dict(trans, elt, tool_help=tool_help))
-            else:
+                if only_ids:
+                    section_elts.append(elt.id)
+                else:
+                    section_elts.append(toolbox.get_tool_to_dict(trans, elt, tool_help=tool_help))
+            elif not only_ids or (only_ids and elt.text):
+                # if !only_ids or (only_ids & section has a ToolSectionLabel within it)
                 section_elts.append(elt.to_dict(**kwargs))
-        section_dict["elems"] = section_elts
+
+        if only_ids:
+            section_dict["tools"] = section_elts
+        else:
+            section_dict["elems"] = section_elts
 
         return section_dict
 

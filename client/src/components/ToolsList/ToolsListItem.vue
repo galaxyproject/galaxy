@@ -21,6 +21,7 @@ const props = defineProps({
     id: { type: String, required: true },
     name: { type: String, required: true },
     section: { type: String, required: true },
+    ontologies: { type: Array, default: null },
     description: { type: String, default: null },
     summary: { type: String, default: null },
     help: { type: String, default: null },
@@ -102,6 +103,12 @@ const formattedToolHelp = computed(() => {
                     <FontAwesomeIcon icon="fa-user" />
                     <b>Owner:</b> <b-link :to="`/tools/list?owner=${props.owner}`">{{ props.owner }}</b-link>
                 </span>
+
+                <span v-if="props.ontologies && props.ontologies.length > 0">
+                    <span v-for="ontology in props.ontologies" :key="ontology" class="tag toggle">
+                        <b-link :to="`/tools/list?ontology=${ontology}`">{{ ontology }}</b-link>
+                    </span>
+                </span>
             </div>
 
             <div v-if="props.summary" v-html="props.summary"></div>
@@ -153,6 +160,11 @@ const formattedToolHelp = computed(() => {
     .warn {
         background-color: scale-color($brand-warning, $lightness: +75%);
         border-color: scale-color($brand-warning, $lightness: +55%);
+    }
+
+    .toggle {
+        background-color: scale-color($brand-toggle, $lightness: +75%);
+        border-color: scale-color($brand-toggle, $lightness: +55%);
     }
 
     .top-bar {

@@ -1331,6 +1331,39 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                 rval.append(self.get_tool_to_dict(trans, tool, tool_help=tool_help))
         return rval
 
+    def to_panel_view(self, trans, in_panel=True, tool_help=False, view=None, **kwds):
+        """
+        Create a panel view representation of the toolbox.
+        For in_panel=True, uses the structure:
+            {view: {section_id: { section but with .tools=List[all tool ids] }, ...}}}
+        For in_panel=False, uses the structure:
+            {tools: {tool_id: tool.to_dict(), ...}}}
+        """
+        rval = {}
+        if in_panel:
+            if view is None:
+                view = self._default_panel_view
+            view_contents: Dict[str, Dict] = {}
+            rval[view] = view_contents
+            panel_elts = self.tool_panel_contents(trans, view=view, **kwds)
+            for elt in panel_elts:
+                # Only use cache for objects that are Tools.
+                if hasattr(elt, "tool_type"):
+                    view_contents[elt.id] = self.get_tool_to_dict(trans, elt, tool_help=False)
+                else:
+                    kwargs = dict(trans=trans, link_details=True, tool_help=tool_help, toolbox=self, only_ids=True)
+                    view_contents[elt.id] = elt.to_dict(**kwargs)
+        else:
+            returned_tools: Dict[str, Dict] = {}
+            rval["tools"] = returned_tools
+            filter_method = self._build_filter_method(trans)
+            for tool in self._tools_by_id.values():
+                tool = filter_method(tool, panel_item_types.TOOL)
+                if not tool:
+                    continue
+                returned_tools[tool.id] = self.get_tool_to_dict(trans, tool, tool_help=tool_help)
+        return rval
+
     def _lineage_in_panel(self, panel_dict, tool=None, tool_lineage=None):
         """If tool with same lineage already in panel (or section) - find
         and return it. Otherwise return None.

@@ -18,7 +18,7 @@ import WorkflowInformation from "./WorkflowInformation.vue";
 import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
 import Heading from "@/components/Common/Heading.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
-import ToolBox from "@/components/Panels/ProviderAwareToolBox.vue";
+import ToolPanel from "@/components/Panels/ToolPanel.vue";
 import WorkflowGraph from "@/components/Workflow/Editor/WorkflowGraph.vue";
 
 library.add(faSpinner, faUser, faBuilding, faPlay, faEdit, faDownload);
@@ -108,7 +108,7 @@ function logInTitle(title: string) {
     <div id="columns" class="d-flex">
         <ActivityBar v-if="showActivityBar" />
         <FlexPanel v-if="showToolbox" side="left">
-            <ToolBox />
+            <ToolPanel />
         </FlexPanel>
 
         <div id="center" class="m-3 w-100 overflow-auto d-flex flex-column">

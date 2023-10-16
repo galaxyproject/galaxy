@@ -3,22 +3,22 @@ import { computed, type ComputedRef, onMounted, onUnmounted, type PropType, type
 import { useRouter } from "vue-router/composables";
 
 import { getGalaxyInstance } from "@/app";
+import { type Tool, type ToolSection, useToolStore } from "@/stores/toolStore";
 import Filtering, { contains, type ValidFilter } from "@/utils/filtering";
+import _l from "@/utils/localization";
 
-import { flattenTools } from "../utilities.js";
+import { type ToolSearchKeys } from "../utilities";
 
 import DelayedInput from "@/components/Common/DelayedInput.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
 
 const router = useRouter();
 
-const KEYS = { exact: 3, name: 2, description: 1, combined: 0 };
+// Note: These are ordered by result priority (exact matches very top; words matches very bottom)
+const KEYS: ToolSearchKeys = { exact: 5, startsWith: 4, name: 3, description: 2, combined: 1, wordMatch: 0 };
+
 const FAVORITES = ["#favs", "#favorites", "#favourites"];
 const MIN_QUERY_LENGTH = 3;
-
-interface Tool {
-    name?: string;
-}
 
 const props = defineProps({
     currentPanelView: {
@@ -45,15 +45,24 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
-    toolbox: {
+    toolsList: {
         type: Array as PropType<Tool[]>,
+        required: true,
+    },
+    currentPanel: {
+        type: Object as PropType<Record<string, Tool | ToolSection>>,
         required: true,
     },
 });
 
 const emit = defineEmits<{
     (e: "update:show-advanced", showAdvanced: boolean): void;
-    (e: "onResults", filtered: string[] | null, closestValue: string | null): void;
+    (
+        e: "onResults",
+        filtered: string[] | null,
+        sectioned: Record<string, Tool | ToolSection> | null,
+        closestValue: string | null
+    ): void;
     (e: "onQuery", query: string): void;
 }>();
 
@@ -76,22 +85,21 @@ const propShowAdvanced = computed({
         emit("update:show-advanced", val);
     },
 });
-const sectionNames = computed(() => {
-    return props.toolbox.map((section) =>
-        section.name !== undefined && section.name !== "Uncategorized" ? section.name : ""
-    );
-});
-const toolsList = computed(() => {
-    return flattenTools(props.toolbox);
-});
 const validFilters: ComputedRef<Record<string, ValidFilter<string>>> = computed(() => {
     return {
         name: { placeholder: "name", type: String, handler: contains("name"), menuItem: true },
         section: {
-            placeholder: props.currentPanelView === "default" ? "section" : "ontology",
+            placeholder: "section",
             type: String,
             handler: contains("section"),
-            datalist: sectionNames.value,
+            datalist: sectionNames,
+            menuItem: true,
+        },
+        ontology: {
+            placeholder: "EDAM ontology",
+            type: String,
+            handler: contains("ontology"),
+            datalist: ontologyList,
             menuItem: true,
         },
         id: { placeholder: "id", type: String, handler: contains("id"), menuItem: true },
@@ -101,19 +109,26 @@ const validFilters: ComputedRef<Record<string, ValidFilter<string>>> = computed(
 });
 const ToolFilters: ComputedRef<Filtering<string>> = computed(() => new Filtering(validFilters.value));
 
+const toolStore = useToolStore();
+
+const sectionNames = toolStore.sectionDatalist("default").map((option: { value: string; text: string }) => option.text);
+const ontologyList = toolStore
+    .sectionDatalist("ontology:edam_topics")
+    .concat(toolStore.sectionDatalist("ontology:edam_operations"));
+
 onMounted(() => {
     searchWorker.value = new Worker(new URL("../toolSearch.worker.js", import.meta.url));
     const Galaxy = getGalaxyInstance();
     const favoritesResults = Galaxy?.user.getFavorites().tools;
 
     searchWorker.value.onmessage = ({ data }) => {
-        const { type, payload, query, closestTerm } = data;
+        const { type, payload, sectioned, query, closestTerm } = data;
         if (type === "searchToolsByKeysResult" && query === props.query) {
-            emit("onResults", payload, closestTerm);
+            emit("onResults", payload, sectioned, closestTerm);
         } else if (type === "clearFilterResult") {
-            emit("onResults", null, null);
+            emit("onResults", null, null, null);
         } else if (type === "favoriteToolsResult") {
-            emit("onResults", favoritesResults, null);
+            emit("onResults", favoritesResults, null, null);
         }
     };
 });
@@ -131,9 +146,11 @@ function checkQuery(q: string) {
             post({
                 type: "searchToolsByKeys",
                 payload: {
-                    tools: toolsList.value,
+                    tools: props.toolsList,
                     keys: KEYS,
                     query: q,
+                    panelView: props.currentPanelView,
+                    currentPanel: props.currentPanel,
                 },
             });
         }
@@ -185,16 +202,11 @@ function onAdvancedSearch(filters: any) {
                         <dt><code>name</code></dt>
                         <dd>The tool name (stored as tool.name + tool.description in the XML)</dd>
                         <dt><code>section</code></dt>
+                        <dd>The tool section is based on the default tool panel view</dd>
+                        <dt><code>ontology</code></dt>
                         <dd>
-                            The tool section is based on the current view you have selected for the panel. <br />
-                            When this field is active, you will be able to see a datalist showing the available sections
-                            you can filter from. <br />
-                            By default, Galaxy tool panel sections are filterable if you are currently on the
-                            <i>Full Tool Panel</i> view, and it will show EDAM ontologies or EDAM topics if you have
-                            either of those options selected. <br />
-                            Change panel views by clicking on the
-                            <icon icon="caret-down" />
-                            icon at the top right of the tool panel.
+                            This is the EDAM ontology term that is associated with the tool. Example inputs:
+                            <i>"topic_3174"</i> or <i>"operation_0324"</i>
                         </dd>
                         <dt><code>id</code></dt>
                         <dd>The tool id (taken from its XML)</dd>

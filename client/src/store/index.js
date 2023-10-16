@@ -17,7 +17,6 @@ import { jobDestinationParametersStore } from "./jobDestinationParametersStore";
 import { panelStore } from "./panelStore";
 import { syncVuextoGalaxy } from "./syncVuextoGalaxy";
 import { tagStore } from "./tagStore";
-import { toolStore } from "./toolStore";
 
 Vue.use(Vuex);
 
@@ -51,7 +50,6 @@ export function createStore() {
             gridSearch: gridSearchStore,
             panels: panelStore,
             tags: tagStore,
-            tools: toolStore,
         },
     };
 

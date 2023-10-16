@@ -1,6 +1,7 @@
 import "jest-location-mock";
 
 import { mount } from "@vue/test-utils";
+import { createPinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 import VueRouter from "vue-router";
 
@@ -11,19 +12,22 @@ localVue.use(VueRouter);
 const router = new VueRouter();
 
 describe("ToolSearch", () => {
-    it("test tools advanced filter panel", async () => {
+    it("test tools advanced filter panel navigation", async () => {
+        const pinia = createPinia();
         const wrapper = mount(ToolSearch, {
             propsData: {
                 currentPanelView: "default",
                 enableAdvanced: false,
                 showAdvanced: false,
-                toolbox: [],
+                toolsList: [],
+                currentPanel: {},
             },
             localVue,
             router,
             stubs: {
                 icon: { template: "<div></div>" },
             },
+            pinia,
         });
         const $router = wrapper.vm.$router;
 
@@ -32,13 +36,6 @@ describe("ToolSearch", () => {
         await wrapper.setProps({ enableAdvanced: true, showAdvanced: true });
         expect(wrapper.find("[data-description='wide toggle advanced search']").exists()).toBe(true);
         expect(wrapper.find("[data-description='advanced filters']").exists()).toBe(true);
-
-        // Test: changing panel view should change search by section field to search by ontology
-        expect(wrapper.find("[placeholder='any section']").exists()).toBe(true);
-        await wrapper.setProps({ currentPanelView: "ontology:edam_operations" });
-        expect(wrapper.find("[placeholder='any section']").exists()).toBe(false);
-        expect(wrapper.find("[placeholder='any ontology']").exists()).toBe(true);
-        await wrapper.setProps({ currentPanelView: "default" });
 
         // Test: keyup.esc (should toggle the view out) --- doesn't work from name (DelayedInput) field
         const sectionField = wrapper.find("[placeholder='any section']");
@@ -52,6 +49,7 @@ describe("ToolSearch", () => {
         const filterInputs = {
             "[placeholder='any name']": "name-filter",
             "[placeholder='any section']": "section-filter",
+            "[placeholder='any EDAM ontology']": "ontology-filter",
             "[placeholder='any id']": "id-filter",
             "[placeholder='any repository owner']": "owner-filter",
             "[placeholder='any help text']": "help-filter",
@@ -72,6 +70,7 @@ describe("ToolSearch", () => {
         const filterSettings = {
             name: "name-filter",
             section: "section-filter",
+            ontology: "ontology-filter",
             id: "id-filter",
             owner: "owner-filter",
             help: "help-filter",

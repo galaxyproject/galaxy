@@ -93,9 +93,9 @@ import LoadingSpan from "components/LoadingSpan";
 import { InvocationStepProvider } from "components/providers";
 import WorkflowIcons from "components/Workflow/icons";
 import { mapActions, mapState } from "pinia";
+import { useToolStore } from "stores/toolStore";
 import { useWorkflowStore } from "stores/workflowStore";
 import { mapActions as vuexMapActions, mapGetters } from "vuex";
-import { mapCacheActions } from "vuex-cache";
 
 import JobStep from "./JobStep";
 import ParameterStep from "./ParameterStep";
@@ -125,7 +125,8 @@ export default {
     },
     computed: {
         ...mapState(useWorkflowStore, ["getStoredWorkflowByInstanceId"]),
-        ...mapGetters(["getToolForId", "getToolNameById", "getInvocationStepById"]),
+        ...mapState(useToolStore, ["getToolForId", "getToolNameById"]),
+        ...mapGetters(["getInvocationStepById"]),
         isReady() {
             return this.invocation.steps.length > 0;
         },
@@ -153,8 +154,8 @@ export default {
         this.fetchSubworkflow();
     },
     methods: {
-        ...mapCacheActions(["fetchToolForId"]),
         ...mapActions(useWorkflowStore, ["fetchWorkflowForInstanceId"]),
+        ...mapActions(useToolStore, ["fetchToolForId"]),
         ...vuexMapActions(["fetchInvocationStepById"]),
         fetchTool() {
             if (this.workflowStep.tool_id && !this.getToolForId(this.workflowStep.tool_id)) {
