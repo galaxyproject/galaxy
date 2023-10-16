@@ -7,8 +7,14 @@ may change often.
 import json
 import logging
 
+from typing import (
+    Any,
+    List,
+)
+
 from fastapi import (
     Body,
+    Depends,
     Path,
     Response,
     status,
@@ -22,6 +28,10 @@ from galaxy import (
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.model.base import transaction
 from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.schema import (
+    FilterQueryParams,
+    SerializationParams,
+)
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     SetSlugPayload,
@@ -39,6 +49,10 @@ from galaxy.webapps.galaxy.api import (
     DependsOnTrans,
     Router,
 )
+from galaxy.webapps.galaxy.api.common import (
+    get_filter_query_params,
+    query_serialization_params,
+)
 from galaxy.webapps.galaxy.services.visualizations import VisualizationsService
 
 log = logging.getLogger(__name__)
@@ -53,6 +67,19 @@ VisualizationIdPathParam: DecodedDatabaseIdField = Path(
 @router.cbv
 class FastAPIVisualizations:
     service: VisualizationsService = depends(VisualizationsService)
+
+    @router.get(
+        "/api/visualizations",
+        summary="Returns visualizations for the current user.",
+    )
+    def index(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        serialization_params: SerializationParams = Depends(query_serialization_params),
+    ) -> List[Any]:
+        return self.service.index(
+            trans, serialization_params
+        )
 
     @router.get(
         "/api/visualizations/{id}/sharing",
@@ -149,32 +176,6 @@ class VisualizationsController(BaseGalaxyAPIController, UsesVisualizationMixin, 
     """
 
     service: VisualizationsService = depends(VisualizationsService)
-
-    @expose_api
-    def index(self, trans: GalaxyWebTransaction, **kwargs):
-        """
-        GET /api/visualizations:
-        """
-        rval = []
-        user = trans.user
-
-        # TODO: search for: title, made by user, creation time range, type (vis name), dbkey, etc.
-        # TODO: limit, offset, order_by
-        # TODO: deleted
-
-        # this is the default search - user's vis, vis shared with user, published vis
-        visualizations = self.get_visualizations_by_user(trans, user)
-        visualizations += self.get_visualizations_shared_with_user(trans, user)
-        visualizations += self.get_published_visualizations(trans, exclude_user=user)
-        # TODO: the admin case - everything
-
-        for visualization in visualizations:
-            item = self.get_visualization_summary_dict(visualization)
-            item = trans.security.encode_dict_ids(item)
-            item["url"] = web.url_for("visualization", id=item["id"])
-            rval.append(item)
-
-        return rval
 
     @expose_api
     def show(self, trans: GalaxyWebTransaction, id: str, **kwargs):

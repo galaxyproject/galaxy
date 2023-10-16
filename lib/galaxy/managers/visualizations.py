@@ -6,8 +6,12 @@ reproduce a specific view in a Galaxy visualization.
 """
 import logging
 
+from typing import (
+    Dict,
+)
+
 from galaxy import model
-from galaxy.managers import sharable
+from galaxy.managers import (base, sharable)
 from galaxy.structured_app import MinimalManagerApp
 
 log = logging.getLogger(__name__)
@@ -47,12 +51,22 @@ class VisualizationSerializer(sharable.SharableModelSerializer):
         self.visualization_manager = self.manager
 
         self.default_view = "summary"
-        self.add_view("summary", [])
-        self.add_view("detailed", [])
+        self.add_view("summary", [
+            "id",
+            "title",
+            "type",
+            "dbkey",
+        ])
+        self.add_view("detailed", [
+            "create_time",
+            "update_time",
+        ], include_keys_from="summary",)
 
     def add_serializers(self):
         super().add_serializers()
-        self.serializers.update({})
+        serializers: Dict[str, base.Serializer] = {
+        }
+        self.serializers.update(serializers)
 
 
 class VisualizationDeserializer(sharable.SharableModelDeserializer):
