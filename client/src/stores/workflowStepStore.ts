@@ -160,7 +160,7 @@ export const useWorkflowStepStore = (workflowId: string) => {
                 };
             },
             getStepExtraInputs(state: State) {
-                return (stepId: number) => this.stepExtraInputs[stepId] || [];
+                return (stepId: number) => state.stepExtraInputs[stepId] || [];
             },
             getStepIndex(state: State) {
                 return Math.max(...Object.values(state.steps).map((step) => step.id), state.stepIndex);
