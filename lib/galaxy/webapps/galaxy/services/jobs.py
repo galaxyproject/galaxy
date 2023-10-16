@@ -23,6 +23,8 @@ from galaxy.schema.schema import (
     EncodedDatasetSourceId,
     JobIndexQueryPayload,
 )
+from galaxy.security.idencoding import IdEncodingHelper
+from galaxy.webapps.galaxy.services.base import ServiceBase
 
 
 class JobIndexViewEnum(str, Enum):
@@ -34,17 +36,19 @@ class JobIndexPayload(JobIndexQueryPayload):
     view: JobIndexViewEnum = JobIndexViewEnum.collection
 
 
-class JobsService:
+class JobsService(ServiceBase):
     job_manager: JobManager
     job_search: JobSearch
     hda_manager: hdas.HDAManager
 
     def __init__(
         self,
+        security: IdEncodingHelper,
         job_manager: JobManager,
         job_search: JobSearch,
         hda_manager: hdas.HDAManager,
     ):
+        super().__init__(security=security)
         self.job_manager = job_manager
         self.job_search = job_search
         self.hda_manager = hda_manager
