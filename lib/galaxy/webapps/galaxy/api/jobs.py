@@ -4,6 +4,7 @@ API operations on a jobs.
 .. seealso:: :class:`galaxy.model.Jobs`
 """
 
+import json
 import logging
 from datetime import (
     date,
@@ -49,6 +50,7 @@ from galaxy.schema.jobs import (
     JobErrorSummary,
     JobInputSummary,
     ReportJobErrorPayload,
+    SearchJobsPayload,
 )
 from galaxy.schema.schema import JobIndexSortByEnum
 from galaxy.schema.types import OffsetNaiveDatetime
@@ -180,6 +182,7 @@ SearchQueryParam: Optional[str] = search_query_param(
 JobIdPathParam: DecodedDatabaseIdField = Path(title="Job ID", description="The ID of the job")
 
 ReportErrorBody = Body(default=Required, title="Report error", description="The values to report an Error")
+SearchJobBody = Body(default=Required, title="Search job", description="The values to search an Job")
 
 
 @router.cbv
@@ -187,6 +190,7 @@ class FastAPIJobs:
     service: JobsService = depends(JobsService)
     manager: JobManager = depends(JobManager)
     hda_manager: HDAManager = depends(HDAManager)
+    job_search: JobSearch = depends(JobSearch)
 
     @router.get("/api/jobs")
     def index(
@@ -285,7 +289,6 @@ class FastAPIJobs:
         self,
         payload: Annotated[ReportJobErrorPayload, ReportErrorBody],
         id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
-        # payload: Any = {"dataset_id": 1, "email": None, "message": None},
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> JobErrorSummary:
         """
@@ -294,8 +297,6 @@ class FastAPIJobs:
         """
         # Get dataset on which this error was triggered
         dataset_id = payload.dataset_id
-        # if not dataset_id:
-        #     raise exceptions.RequestParameterMissingException("No dataset_id")
         dataset = self.hda_manager.get_accessible(id=dataset_id, user=trans.user)
         # Get job
         job = self.service.get_job(trans, id)
@@ -315,6 +316,59 @@ class FastAPIJobs:
             message=payload.message,
         )
         return JobErrorSummary(messages=messages)
+
+    @router.post(
+        "/api/jobs/search",
+        name="search_jobs",
+        summary="Return jobs for current user",
+    )
+    def search(
+        self,
+        payload: Annotated[SearchJobsPayload, SearchJobBody],
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ):
+        """
+        :type   payload: dict
+        :param  payload: Dictionary containing description of requested job. This is in the same format as
+            a request to POST /apt/tools would take to initiate a job
+
+        :rtype:     list
+        :returns:   list of dictionaries containing summary job information of the jobs that match the requested job run
+
+        This method is designed to scan the list of previously run jobs and find records of jobs that had
+        the exact some input parameters and datasets. This can be used to minimize the amount of repeated work, and simply
+        recycle the old results.
+        """
+        tool_id = payload.tool_id
+
+        tool = trans.app.toolbox.get_tool(tool_id)
+        if tool is None:
+            raise exceptions.ObjectNotFound("Requested tool not found")
+        inputs = json.loads(payload.inputs)
+        # Find files coming in as multipart file data and add to inputs.
+        for k, v in payload.__annotations__.items():
+            if k.startswith("files_") or k.startswith("__files_"):
+                inputs[k] = v
+        request_context = WorkRequestContext(app=trans.app, user=trans.user, history=trans.history)
+        all_params, all_errors, _, _ = tool.expand_incoming(
+            trans=trans, incoming=inputs, request_context=request_context
+        )
+        if any(all_errors):
+            return []
+        params_dump = [tool.params_to_strings(param, trans.app, nested=True) for param in all_params]
+        jobs = []
+        for param_dump, param in zip(params_dump, all_params):
+            job = self.job_search.by_tool_input(
+                trans=trans,
+                tool_id=tool_id,
+                tool_version=tool.version,
+                param=param,
+                param_dump=param_dump,
+                job_state=payload.state,
+            )
+            if job:
+                jobs.append(job)
+        return [self.service.encode_all_ids(single_job.to_dict("element"), True) for single_job in jobs]
 
     @router.get("/api/jobs/{id}")
     def show(
@@ -514,55 +568,3 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
     def create(self, trans: ProvidesUserContext, payload, **kwd):
         """See the create method in tools.py in order to submit a job."""
         raise exceptions.NotImplemented("Please POST to /api/tools instead.")
-
-    @expose_api
-    def search(self, trans: ProvidesHistoryContext, payload: dict, **kwd):
-        """
-        search( trans, payload )
-        * POST /api/jobs/search:
-            return jobs for current user
-
-        :type   payload: dict
-        :param  payload: Dictionary containing description of requested job. This is in the same format as
-            a request to POST /apt/tools would take to initiate a job
-
-        :rtype:     list
-        :returns:   list of dictionaries containing summary job information of the jobs that match the requested job run
-
-        This method is designed to scan the list of previously run jobs and find records of jobs that had
-        the exact some input parameters and datasets. This can be used to minimize the amount of repeated work, and simply
-        recycle the old results.
-        """
-        tool_id = payload.get("tool_id")
-        if tool_id is None:
-            raise exceptions.RequestParameterMissingException("No tool id")
-        tool = trans.app.toolbox.get_tool(tool_id)
-        if tool is None:
-            raise exceptions.ObjectNotFound("Requested tool not found")
-        if "inputs" not in payload:
-            raise exceptions.RequestParameterMissingException("No inputs defined")
-        inputs = payload.get("inputs", {})
-        # Find files coming in as multipart file data and add to inputs.
-        for k, v in payload.items():
-            if k.startswith("files_") or k.startswith("__files_"):
-                inputs[k] = v
-        request_context = WorkRequestContext(app=trans.app, user=trans.user, history=trans.history)
-        all_params, all_errors, _, _ = tool.expand_incoming(
-            trans=trans, incoming=inputs, request_context=request_context
-        )
-        if any(all_errors):
-            return []
-        params_dump = [tool.params_to_strings(param, self.app, nested=True) for param in all_params]
-        jobs = []
-        for param_dump, param in zip(params_dump, all_params):
-            job = self.job_search.by_tool_input(
-                trans=trans,
-                tool_id=tool_id,
-                tool_version=tool.version,
-                param=param,
-                param_dump=param_dump,
-                job_state=payload.get("state"),
-            )
-            if job:
-                jobs.append(job)
-        return [self.encode_all_ids(trans, single_job.to_dict("element"), True) for single_job in jobs]
