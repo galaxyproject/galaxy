@@ -29,15 +29,14 @@ const emit = defineEmits(["onRemove", "onSuccess", "onError"]);
 
 const readOnly = computed(() => props.page.shared || props.published || unref(isAnonymous));
 
-function onDelete(pageId: string) {
-    deletePage(pageId)
-        .then(() => {
-            emit("onRemove", pageId);
-            emit("onSuccess");
-        })
-        .catch((error) => {
-            emit("onError", error);
-        });
+async function onDelete(pageId: string) {
+    try {
+        await deletePage(pageId);
+        emit("onRemove", pageId);
+        emit("onSuccess");
+    } catch (error) {
+        emit("onError", error);
+    }
 }
 </script>
 <template>
