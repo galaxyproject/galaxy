@@ -1,6 +1,7 @@
 import json
 import logging
 import sqlite3
+from urllib.parse import urlsplit, urlunsplit
 
 from sqlalchemy import (
     or_,
@@ -297,19 +298,24 @@ class InteractiveToolManager:
 
     def target_if_active(self, trans, entry_point):
         if entry_point.active and not entry_point.deleted:
-            request_host = trans.request.host
-            if not self.app.config.interactivetools_upstream_proxy and self.app.config.interactivetools_proxy_host:
-                request_host = self.app.config.interactivetools_proxy_host
-            protocol = trans.request.host_url.split("//", 1)[0]
+            use_it_proxy_host_cfg = (
+                not self.app.config.interactivetools_upstream_proxy and self.app.config.interactivetools_proxy_host
+            )
+
+            url_parts = urlsplit(trans.request.host_url)
+            url_host = self.app.config.interactivetools_proxy_host if use_it_proxy_host_cfg else trans.request.host
+            url_path = url_parts.path
+
             if entry_point.requires_domain:
-                rval = f"{protocol}//{self.get_entry_point_subdomain(trans, entry_point)}.{request_host}/"
+                url_host = f"{self.get_entry_point_subdomain(trans, entry_point)}.{url_host}"
                 if entry_point.entry_url:
-                    rval = "{}/{}".format(rval.rstrip("/"), entry_point.entry_url.lstrip("/"))
+                    url_path = f"{url_path.rstrip('/')}/{entry_point.entry_url.lstrip('/')}"
             else:
-                rval = self.get_entry_point_path(trans, entry_point)
-                if not self.app.config.interactivetools_upstream_proxy and self.app.config.interactivetools_proxy_host:
-                    rval = f"{protocol}//{request_host}{rval}"
-            return rval
+                url_path = self.get_entry_point_path(trans, entry_point)
+                if not use_it_proxy_host_cfg:
+                    return url_path
+
+            return urlunsplit((url_parts.scheme, url_host, url_path, "", ""))
 
     def _get_entry_point_url_elements(self, trans, entry_point):
         encoder = IdAsLowercaseAlphanumEncodingHelper(trans.security)
@@ -324,15 +330,23 @@ class InteractiveToolManager:
         return f"{ep_encoded_id}-{ep_token}.{ep_class_id}.{ep_prefix}"
 
     def get_entry_point_path(self, trans, entry_point):
-        ep_encoded_id, ep_class_id, ep_prefix, ep_token = self._get_entry_point_url_elements(trans, entry_point)
-        rval = "/"
+        url_path = "/"
         if not entry_point.requires_domain:
-            rval = str(self.app.config.interactivetools_base_path).rstrip("/").lstrip("/")
-            rval = f"/{rval}/{ep_prefix}/{ep_class_id}/{ep_encoded_id}/{ep_token}/"
+            ep_encoded_id, ep_class_id, ep_prefix, ep_token = self._get_entry_point_url_elements(trans, entry_point)
+            path_parts = [
+                part.strip("/")
+                for part in (
+                    str(self.app.config.interactivetools_base_path),
+                    ep_prefix,
+                    ep_class_id,
+                    ep_encoded_id,
+                    ep_token,
+                )
+            ]
+            url_path += "/".join(part for part in path_parts if part) + "/"
         if entry_point.entry_url:
-            rval = f"{rval.rstrip('/')}/{entry_point.entry_url.lstrip('/')}"
-        rval = "/" + rval.lstrip("/")
-        return rval
+            url_path += entry_point.entry_url.lstrip("/")
+        return url_path
 
     def access_entry_point_target(self, trans, entry_point_id):
         entry_point = trans.sa_session.get(InteractiveToolEntryPoint, entry_point_id)
