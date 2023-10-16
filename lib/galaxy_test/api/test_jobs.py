@@ -939,7 +939,7 @@ steps:
 
     def _job_search(self, tool_id, history_id, inputs):
         search_payload = self._search_payload(history_id=history_id, tool_id=tool_id, inputs=inputs)
-        empty_search_response = self._post("jobs/search", data=search_payload)
+        empty_search_response = self._post("jobs/search", data=search_payload, json=True)
         self._assert_status_code_is(empty_search_response, 200)
         assert len(empty_search_response.json()) == 0
         tool_response = self._post("tools", data=search_payload)
@@ -966,7 +966,7 @@ steps:
         return search_count
 
     def _search_count(self, search_payload):
-        search_response = self._post("jobs/search", data=search_payload)
+        search_response = self._post("jobs/search", data=search_payload, json=True)
         self._assert_status_code_is(search_response, 200)
         search_json = search_response.json()
         return len(search_json)
