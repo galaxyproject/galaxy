@@ -5,11 +5,11 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BCard, BCol, BFormCheckbox, BRow } from "bootstrap-vue";
 import { computed, ref, watch } from "vue";
 
-import type { components } from "@/api/schema";
 import {
     getNotificationsPreferencesFromServer,
     updateNotificationsPreferencesOnServer,
-} from "@/components/User/Notifications/model/services";
+    UserNotificationPreferences,
+} from "@/api/notifications.preferences";
 import { useConfig } from "@/composables/config";
 import { Toast } from "@/composables/toast";
 import {
@@ -29,8 +29,6 @@ defineProps({
         default: "h-lg",
     },
 });
-
-type UserNotificationPreferences = components["schemas"]["UserNotificationPreferences"];
 
 const { config } = useConfig(true);
 
