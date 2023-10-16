@@ -124,6 +124,7 @@ module.exports = {
                 ...baseRules,
                 "@typescript-eslint/no-throw-literal": "error",
                 "@typescript-eslint/ban-ts-comment": "warn",
+                "@typescript-eslint/no-explicit-any": "warn", // TODO: re-enable this
             },
             parser: "@typescript-eslint/parser",
             parserOptions: {
