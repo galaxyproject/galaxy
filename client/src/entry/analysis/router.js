@@ -8,6 +8,7 @@ import DatasetDetails from "components/DatasetInformation/DatasetDetails";
 import DatasetError from "components/DatasetInformation/DatasetError";
 import FormGeneric from "components/Form/FormGeneric";
 import GridHistory from "components/Grid/GridHistory";
+import GridList from "components/Grid/GridList";
 import GridShared from "components/Grid/GridShared";
 import HistoryExportTasks from "components/History/Export/HistoryExport";
 import HistoryPublished from "components/History/HistoryPublished";
@@ -451,6 +452,16 @@ export function getRouter(Galaxy) {
                             id: route.query.id,
                             pluralName: "Visualizations",
                             modelClass: "Visualization",
+                        }),
+                    },
+                    {
+                        path: "visualizations/list",
+                        component: GridList,
+                        props: (route) => ({
+                            url: "/api/visualizations",
+                            item: "visualization",
+                            plural: "Visualizations",
+                            title: "Visualizations",
                         }),
                     },
                     {
