@@ -1430,8 +1430,6 @@ class MinimalJobWrapper(HasResourceParameters):
                 dataset.state = dataset.states.ERROR
                 dataset.blurb = "tool error"
                 dataset.info = message
-                dataset.set_size()
-                dataset.dataset.set_total_size()
                 dataset.mark_unhidden()
                 if dataset.ext == "auto":
                     dataset.extension = "data"
@@ -1738,7 +1736,6 @@ class MinimalJobWrapper(HasResourceParameters):
             # Ensure white space between entries
             dataset.info = f"{dataset.info.rstrip()}\n{context['stderr'].strip()}"
         dataset.tool_version = self.version_string
-        dataset.set_size()
         if "uuid" in context:
             dataset.dataset.uuid = context["uuid"]
         self.__update_output(job, dataset)
@@ -2423,6 +2420,7 @@ class MinimalJobWrapper(HasResourceParameters):
         cleaned up if the dataset has been purged.
         """
         dataset = hda.dataset
+        dataset.set_total_size()
         if dataset not in job.output_library_datasets:
             purged = dataset.purged
             if not purged and not clean_only:

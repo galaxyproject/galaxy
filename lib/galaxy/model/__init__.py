@@ -3870,6 +3870,7 @@ class Dataset(Base, StorableObject, Serializable):
     non_ready_states = (states.NEW, states.UPLOAD, states.QUEUED, states.RUNNING, states.SETTING_METADATA)
     ready_states = tuple(set(states.__members__.values()) - set(non_ready_states))
     valid_input_states = tuple(set(states.__members__.values()) - {states.ERROR, states.DISCARDED})
+    no_data_states = (states.PAUSED, states.DEFERRED, states.DISCARDED, *non_ready_states)
     terminal_states = (
         states.OK,
         states.EMPTY,

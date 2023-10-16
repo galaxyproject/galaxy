@@ -125,7 +125,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
 
                 if init_from:
                     self.permission_provider.copy_dataset_permissions(init_from, primary_data)
-                    primary_data.state = init_from.state
+                    primary_data.raw_set_dataset_state(init_from.state)
                 else:
                     self.permission_provider.set_default_hda_permissions(primary_data)
             else:
@@ -264,6 +264,8 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
                 primary_data.set_peek()
             except Exception:
                 log.exception("Exception occured while setting dataset peek")
+
+            primary_data.set_total_size()
 
     def populate_collection_elements(
         self,

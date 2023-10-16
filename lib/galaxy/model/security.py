@@ -998,12 +998,12 @@ class GalaxyRBACAgent(RBACAgent):
                 permissions[action] = [item_permission.role]
         return permissions
 
-    def copy_dataset_permissions(self, src, dst):
+    def copy_dataset_permissions(self, src, dst, flush=True):
         if not isinstance(src, self.model.Dataset):
             src = src.dataset
         if not isinstance(dst, self.model.Dataset):
             dst = dst.dataset
-        self.set_all_dataset_permissions(dst, self.get_permissions(src))
+        self.set_all_dataset_permissions(dst, self.get_permissions(src), flush=flush)
 
     def privately_share_dataset(self, dataset, users=None):
         dataset.ensure_shareable()

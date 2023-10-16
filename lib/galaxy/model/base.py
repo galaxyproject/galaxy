@@ -152,9 +152,13 @@ def versioned_objects_strict(iter):
                 # These should get some other type of permanent storage, perhaps UserDatasetAssociation ?
                 # Everything else needs to have a hid and a history
                 if not obj.history and not obj.history_id:
-                    raise Exception(f"HistoryDatsetAssociation {obj} without history detected, this is not valid")
+                    raise Exception(f"HistoryDatasetAssociation {obj} without history detected, this is not valid")
                 elif not obj.hid:
-                    raise Exception(f"HistoryDatsetAssociation {obj} without has no hid, this is not valid")
+                    raise Exception(f"HistoryDatasetAssociation {obj} without hid, this is not valid")
+                elif obj.dataset.file_size is None and obj.dataset.state not in obj.dataset.no_data_states:
+                    raise Exception(
+                        f"HistoryDatasetAssociation {obj} in state {obj.dataset.state} with null file size, this is not valid"
+                    )
             yield obj
 
 
