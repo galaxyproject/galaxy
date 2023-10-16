@@ -16,6 +16,8 @@ const props = defineProps<{
     toolName: string;
 }>();
 
+const toolHelpTag = "tool-help";
+
 const helpFetcher = fetcher.path("/api/help/forum/search").method("get").create();
 
 const topics = ref<HelpForumTopic[]>([]);
@@ -24,7 +26,7 @@ const helpAvailable = computed(() => topics.value.length > 0);
 
 const root = ref(null);
 
-const query = computed(() => `${props.toolName} min_posts:2`);
+const query = computed(() => `tag:${props.toolId} tag:${toolHelpTag}`);
 
 onMounted(async () => {
     const response = await helpFetcher({ query: query.value });
@@ -47,7 +49,7 @@ function blurbForTopic(topicId: number): string {
 
 const { createNewTopicUrl, searchTopicUrl } = useHelpURLs({
     title: computed(() => props.toolName),
-    tags: computed(() => [props.toolId]),
+    tags: computed(() => [props.toolId, toolHelpTag]),
     query,
 });
 
