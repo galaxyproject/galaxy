@@ -183,7 +183,6 @@
     "raw-loader": "^4.0.2",
     "sass": "^1.69.3",
     "sass-loader": "^13.3.2",
-    "sinon": "^13.0.1",
     "store": "^2.0.12",
     "style-loader": "^3.3.3",
     "ts-jest": "^29.1.1",
