@@ -45,7 +45,8 @@ import StatelessTags from "components/TagsMultiselect/StatelessTags";
 import UtcDate from "components/UtcDate";
 import { mapActions } from "pinia";
 
-import { copyDataset, getDatasets, updateTags } from "@/api/datasets";
+import { copyDataset, getDatasets } from "@/api/datasets";
+import { updateTags } from "@/api/tags";
 import { useHistoryStore } from "@/stores/historyStore";
 
 import DatasetHistory from "./DatasetHistory";

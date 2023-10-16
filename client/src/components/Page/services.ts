@@ -11,18 +11,3 @@ export async function deletePage(itemId: PageDeleteArgs["id"]) {
     });
     return data;
 }
-
-const _updateTags = fetcher.path("/api/tags").method("put").create();
-type UpdateTagsArgs = FetchArgType<typeof _updateTags>;
-export async function updateTags(
-    itemId: UpdateTagsArgs["item_id"],
-    itemClass: UpdateTagsArgs["item_class"],
-    itemTags: UpdateTagsArgs["item_tags"]
-) {
-    const { data } = await _updateTags({
-        item_id: itemId,
-        item_class: itemClass,
-        item_tags: itemTags,
-    });
-    return data;
-}

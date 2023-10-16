@@ -10,7 +10,9 @@ import { useAnimationFrameScroll } from "composables/sensors/animationFrameScrol
 import Filtering, { compare, contains, equals, expandNameTag, toDate } from "utils/filtering";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 
-import { getPublishedHistories, updateTags } from "./services";
+import { updateTags } from "@/api/tags";
+
+import { getPublishedHistories } from "./services";
 
 const LIMIT = 50;
 
