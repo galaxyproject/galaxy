@@ -1,4 +1,8 @@
 <script setup lang="ts">
+/**
+ * This component is strictly for backward compatibility. Tool developers should use the regular
+ * data input field instead, which already allows the selection of library datasets and is more efficient.
+ */
 import axios from "axios";
 import { BAlert, BButton } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
