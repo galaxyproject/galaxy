@@ -924,9 +924,6 @@ def populate_api_routes(webapp, app):
 
     webapp.mapper.resource("job", "jobs", path_prefix="/api")
     webapp.mapper.connect(
-        "job_search", "/api/jobs/search", controller="jobs", action="search", conditions=dict(method=["POST"])
-    )
-    webapp.mapper.connect(
         "job_inputs", "/api/jobs/{id}/inputs", controller="jobs", action="inputs", conditions=dict(method=["GET"])
     )
     webapp.mapper.connect(
