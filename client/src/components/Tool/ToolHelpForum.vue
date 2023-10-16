@@ -28,12 +28,11 @@ const query = computed(() => `${props.toolName} min_posts:2`);
 
 onMounted(async () => {
     const response = await helpFetcher({ query: query.value });
-    //const response = await search("workflows");
 
     const data = response.data;
 
-    topics.value = data.topics || [];
-    posts.value = data.posts || [];
+    topics.value = (data.topics ?? []) as HelpForumTopic[];
+    posts.value = data.posts ?? [];
 });
 
 const displayCount = 5;
