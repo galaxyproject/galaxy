@@ -893,6 +893,22 @@ export interface paths {
         /** Index */
         get: operations["index_api_jobs_get"];
     };
+    "/api/jobs/search": {
+        /**
+         * Return jobs for current user
+         * @description :type   payload: dict
+         * :param  payload: Dictionary containing description of requested job. This is in the same format as
+         *     a request to POST /apt/tools would take to initiate a job
+         *
+         * :rtype:     list
+         * :returns:   list of dictionaries containing summary job information of the jobs that match the requested job run
+         *
+         * This method is designed to scan the list of previously run jobs and find records of jobs that had
+         * the exact some input parameters and datasets. This can be used to minimize the amount of repeated work, and simply
+         * recycle the old results.
+         */
+        post: operations["search_jobs_api_jobs_search_post"];
+    };
     "/api/jobs/{id}": {
         /**
          * Show
@@ -8265,6 +8281,18 @@ export interface components {
             url: string;
         };
         /**
+         * SearchJobsPayload
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        SearchJobsPayload: {
+            /** Inputs */
+            inputs: string;
+            /** State */
+            state: string;
+            /** Tool Id */
+            tool_id: string;
+        };
+        /**
          * ServerDirElement
          * @description Base model definition with common configuration used by all derived models.
          */
@@ -14715,6 +14743,46 @@ export interface operations {
             200: {
                 content: {
                     "application/json": Record<string, never>[];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    search_jobs_api_jobs_search_post: {
+        /**
+         * Return jobs for current user
+         * @description :type   payload: dict
+         * :param  payload: Dictionary containing description of requested job. This is in the same format as
+         *     a request to POST /apt/tools would take to initiate a job
+         *
+         * :rtype:     list
+         * :returns:   list of dictionaries containing summary job information of the jobs that match the requested job run
+         *
+         * This method is designed to scan the list of previously run jobs and find records of jobs that had
+         * the exact some input parameters and datasets. This can be used to minimize the amount of repeated work, and simply
+         * recycle the old results.
+         */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SearchJobsPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": Record<string, never>;
                 };
             };
             /** @description Validation Error */
