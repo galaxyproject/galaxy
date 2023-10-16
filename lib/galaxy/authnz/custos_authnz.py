@@ -620,4 +620,4 @@ class OIDCAuthnzBaseCustos(OIDCAuthnzBase):
         # jwt verified, we can now fetch the user
         user_id = decoded_jwt["sub"]
         custos_authnz_token = self._get_custos_authnz_token(sa_session, user_id, self.config["provider"])
-        return custos_authnz_token.user
+        return custos_authnz_token.user if custos_authnz_token else None

@@ -332,6 +332,54 @@
     "realmRoles" : [ "default-roles-gxyrealm" ],
     "notBefore" : 0,
     "groups" : [ ]
+  },
+  {
+    "id" : "24ffa3ff-d351-4d5e-b10b-8d615082ec9d",
+    "createdTimestamp" : 1694376671733,
+    "username" : "gxyuser_logged_in_once",
+    "enabled" : true,
+    "totp" : false,
+    "emailVerified" : true,
+    "firstName" : "Test",
+    "lastName" : "GalaxyUser",
+    "email" : "gxyuser_logged_in_once@galaxy.org",
+    "credentials" : [ {
+      "id" : "00d87268-7e21-4d08-9f92-cfc06eca5149",
+      "type" : "password",
+      "userLabel" : "My password",
+      "createdDate" : 1694376754826,
+      "secretData" : "{\"value\":\"uNBI+UnpCLpXWHhm/tPSnnhuINiNw2MNt1XeDmImJaQ=\",\"salt\":\"fHS/FpnORylnSIco16UHwA==\",\"additionalParameters\":{}}",
+      "credentialData" : "{\"hashIterations\":27500,\"algorithm\":\"pbkdf2-sha256\",\"additionalParameters\":{}}"
+    } ],
+    "disableableCredentialTypes" : [ ],
+    "requiredActions" : [ ],
+    "realmRoles" : [ "default-roles-gxyrealm" ],
+    "notBefore" : 0,
+    "groups" : [ ]
+  },
+  {
+    "id" : "24ffa3ff-d351-4d5e-b10b-8d615082ec9e",
+    "createdTimestamp" : 1694376671733,
+    "username" : "gxyuser_never_logged_in",
+    "enabled" : true,
+    "totp" : false,
+    "emailVerified" : true,
+    "firstName" : "Test",
+    "lastName" : "GalaxyUser",
+    "email" : "gxyuserneverloggedin@galaxy.org",
+    "credentials" : [ {
+      "id" : "00d87268-7e21-4d08-9f92-cfc06eca514a",
+      "type" : "password",
+      "userLabel" : "My password",
+      "createdDate" : 1694376754826,
+      "secretData" : "{\"value\":\"uNBI+UnpCLpXWHhm/tPSnnhuINiNw2MNt1XeDmImJaQ=\",\"salt\":\"fHS/FpnORylnSIco16UHwA==\",\"additionalParameters\":{}}",
+      "credentialData" : "{\"hashIterations\":27500,\"algorithm\":\"pbkdf2-sha256\",\"additionalParameters\":{}}"
+    } ],
+    "disableableCredentialTypes" : [ ],
+    "requiredActions" : [ ],
+    "realmRoles" : [ "default-roles-gxyrealm" ],
+    "notBefore" : 0,
+    "groups" : [ ]
   } ],
   "scopeMappings" : [ {
     "clientScope" : "offline_access",

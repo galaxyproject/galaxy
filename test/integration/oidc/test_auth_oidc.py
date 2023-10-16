@@ -193,13 +193,19 @@ class TestGalaxyOIDCLoginIntegration(AbstractTestCases.BaseKeycloakIntegrationTe
         response = session.get(self._api_url("users/current"))
         self._assert_status_code_is(response, 400)
 
-    def test_auth_by_access_token(self):
+    def test_auth_by_access_token_logged_in_once(self):
         # login at least once
-        self._login_via_keycloak(KEYCLOAK_TEST_USERNAME, KEYCLOAK_TEST_PASSWORD)
-        access_token = self.get_keycloak_access_token()
+        self._login_via_keycloak("gxyuser_logged_in_once", KEYCLOAK_TEST_PASSWORD)
+        access_token = self.get_keycloak_access_token(username="gxyuser_logged_in_once")
         response = self._get("users/current", headers={"Authorization": f"Bearer {access_token}"})
         self._assert_status_code_is(response, 200)
-        assert response.json()["email"] == "gxyuser@galaxy.org"
+        assert response.json()["email"] == "gxyuser_logged_in_once@galaxy.org"
+
+    def test_auth_by_access_token_never_logged_in(self):
+        # If the user has not previously logged in via OIDC at least once, OIDC API calls are not allowed
+        access_token = self.get_keycloak_access_token(username="gxyuser_never_logged_in")
+        response = self._get("users/current", headers={"Authorization": f"Bearer {access_token}"})
+        self._assert_status_code_is(response, 400)
 
     def get_keycloak_access_token(self, username=KEYCLOAK_TEST_USERNAME, password=KEYCLOAK_TEST_PASSWORD):
         data = {

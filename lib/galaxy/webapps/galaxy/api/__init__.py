@@ -81,7 +81,7 @@ from galaxy.work.context import (
 api_key_query = APIKeyQuery(name="key", auto_error=False)
 api_key_header = APIKeyHeader(name="x-api-key", auto_error=False)
 api_key_cookie = APIKeyCookie(name="galaxysession", auto_error=False)
-api_bearer_token = HTTPBearer()
+api_bearer_token = HTTPBearer(auto_error=False)
 
 
 def get_app() -> StructuredApp:
