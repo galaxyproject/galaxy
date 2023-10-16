@@ -140,7 +140,7 @@ class Terminal extends EventEmitter {
     isMappedOver(): boolean {
         return Boolean(this.mapOver.isCollection);
     }
-    resetMapping(connection?: Connection) {
+    resetMapping(_connection?: Connection) {
         this.stepStore.changeStepMapOver(this.stepId, NULL_COLLECTION_TYPE_DESCRIPTION);
         this.stepStore.resetStepInputMapOver(this.stepId);
     }
@@ -224,7 +224,7 @@ class BaseInputTerminal extends Terminal {
             return this.attachable(outputTerminal);
         }
     }
-    attachable(terminal: BaseOutputTerminal): ConnectionAcceptable {
+    attachable(_terminal: BaseOutputTerminal): ConnectionAcceptable {
         // TODO: provide through Mixin
         throw Error("Subclass needs to implement this");
     }
@@ -444,7 +444,7 @@ export class InvalidInputTerminal extends BaseInputTerminal {
         this.localMapOver = NULL_COLLECTION_TYPE_DESCRIPTION;
     }
 
-    attachable(terminal: BaseOutputTerminal) {
+    attachable(_terminal: BaseOutputTerminal) {
         return new ConnectionAcceptable(false, "Cannot attach to invalid input. Disconnect this input.");
     }
 }
