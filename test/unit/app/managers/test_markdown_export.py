@@ -280,7 +280,7 @@ invocation_time(invocation_id=1)
         invocation = self._new_invocation()
         self.app.workflow_manager.get_invocation.side_effect = [invocation]  # type: ignore[attr-defined,union-attr]
         result = self._to_basic(example)
-        expectedtime = invocation.create_time.strftime("%m/%d/%Y, %H:%M:%S")
+        expectedtime = invocation.create_time.strftime("%Y-%m-%d, %H:%M:%S")
         assert f"\n    {expectedtime}" in result
 
     def test_job_parameters(self):
