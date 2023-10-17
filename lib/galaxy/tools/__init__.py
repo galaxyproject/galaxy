@@ -301,6 +301,21 @@ WORKFLOW_SAFE_TOOL_VERSION_UPDATES = {
 }
 
 
+def get_safe_version(tool: "Tool", requested_tool_version: str) -> Optional[str]:
+    if tool.id:
+        safe_version = WORKFLOW_SAFE_TOOL_VERSION_UPDATES.get(tool.id)
+        if (
+            safe_version
+            and tool.lineage
+            and safe_version.current_version >= parse_version(requested_tool_version) >= safe_version.min_version
+        ):
+            # tool versions are sorted from old to new, so check newest version first
+            for lineage_version in reversed(tool.lineage.tool_versions):
+                if safe_version.current_version >= parse_version(lineage_version) >= safe_version.min_version:
+                    return lineage_version
+    return None
+
+
 class ToolNotFoundException(Exception):
     pass
 
