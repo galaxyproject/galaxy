@@ -1706,9 +1706,9 @@ class ToolModule(WorkflowModule):
             )
         if self.tool:
             current_tool_version = str(self.tool.version)
-            if tool_version and exact_tools and self.tool_version and self.tool_version != current_tool_version:
+            if exact_tools and self.tool_version and self.tool_version != current_tool_version:
                 safe_version = get_safe_version(self.tool, self.tool_version)
-                if safe_version and self.tool.lineage:
+                if safe_version:
                     self.tool = trans.app.toolbox.get_tool(
                         tool_id, tool_version=safe_version, exact=True, tool_uuid=tool_uuid
                     )
