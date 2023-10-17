@@ -11,18 +11,10 @@ import {
     setCurrentThemeQuery,
 } from "@/stores/users/queries";
 
-type QuotaUsageResponse = components["schemas"]["UserQuotaUsage"];
 
-interface User extends QuotaUsageResponse {
-    id: string;
-    email: string;
-    tags_used: string[];
-    isAnonymous: false;
-}
+type AnonymousUser = components["schemas"]["AnonUserModel"]
+type User = components["schemas"]["DetailedUserModel"]
 
-interface AnonymousUser {
-    isAnonymous: true;
-}
 
 interface Preferences {
     theme: string;
