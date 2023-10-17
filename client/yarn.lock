@@ -8181,10 +8181,10 @@ lines-and-columns@^1.1.6:
   resolved "https://registry.npmjs.org/lines-and-columns/-/lines-and-columns-1.2.4.tgz"
   integrity sha512-7ylylesZQ/PV29jhEDl3Ufjo6ZX7gCqJr5F7PKrqc93v7fzSymt1BpwEU8nAUXs8qzzvqhbjhK5QZg6Mt/HkBg==
 
-linkify-html@^3.0.5:
-  version "3.0.5"
-  resolved "https://registry.npmjs.org/linkify-html/-/linkify-html-3.0.5.tgz"
-  integrity sha512-3O7HEYjkugX+C/G2C2wyBmIt8Mt0pmeaHNIxRHodCFeQQeSxSoZHR+5hC1pi0WrmoEvfnSemyZyYTM8w3lo9cA==
+linkify-html@^4.1.1:
+  version "4.1.1"
+  resolved "https://registry.yarnpkg.com/linkify-html/-/linkify-html-4.1.1.tgz#da88082149471bb6d3945fabf0d855a33c7f4120"
+  integrity sha512-7RcF7gIhEOGBBvs7orCJ2tevaz7iF0ZLZSRPWNNBOnW/uGjOOQYB+ztSeHF6dchMC2dM9H8zZlt6Z959bjteaw==
 
 linkify-it@^4.0.1:
   version "4.0.1"
@@ -8193,10 +8193,10 @@ linkify-it@^4.0.1:
   dependencies:
     uc.micro "^1.0.1"
 
-linkifyjs@^3.0.5:
-  version "3.0.5"
-  resolved "https://registry.npmjs.org/linkifyjs/-/linkifyjs-3.0.5.tgz"
-  integrity sha512-1Y9XQH65eQKA9p2xtk+zxvnTeQBG7rdAXSkUG97DmuI/Xhji9uaUzaWxRj6rf9YC0v8KKHkxav7tnLX82Sz5Fg==
+linkifyjs@^4.1.1:
+  version "4.1.1"
+  resolved "https://registry.yarnpkg.com/linkifyjs/-/linkifyjs-4.1.1.tgz#73d427e3bbaaf4ca8e71c589ad4ffda11a9a5fde"
+  integrity sha512-zFN/CTVmbcVef+WaDXT63dNzzkfRBKT1j464NJQkV7iSgJU0sLBus9W0HBwnXK13/hf168pbrx/V/bjEHOXNHA==
 
 load-json-file@^1.0.0:
   version "1.1.0"
