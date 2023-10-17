@@ -3,15 +3,30 @@ export const VisualizationsGrid = {
     resource: "visualizations",
     item: "visualization",
     plural: "Visualizations",
-    title: "Visualizations",
+    title: "Saved Visualizations",
     fields: [
         {
             title: "title",
             operations: [
                 {
+                    title: "Open",
+                    handler: (data, router) => {
+                        router.push(`/visualizations/edit?id=${data.id}`);
+                    },
+                },
+                {
                     title: "Edit Attributes",
                     handler: (data, router) => {
                         router.push(`/visualizations/edit?id=${data.id}`);
+                    },
+                },
+                {
+                    title: "Copy",
+                    handler: (data) => {
+                        return {
+                            status: "success",
+                            message: `'${data.title}' has been deleted.`,
+                        };
                     },
                 },
                 {
@@ -33,27 +48,31 @@ export const VisualizationsGrid = {
         },
         {
             key: "type",
+            title: "Type",
             type: "string",
         },
         {
+            key: "sharing",
+            title: "Sharing",
+            type: "sharing",
+        },
+        {
+            key: "tags",
+            title: "Tags",
+            type: "tags",
+            handler: async (data) => {
+                alert(data.tags);
+            },
+        },
+        {
             key: "create_time",
+            title: "Created",
             type: "date",
         },
         {
             key: "update_time",
+            title: "Last updated",
             type: "date",
-        },
-        {
-            key: "sharing",
-            type: "sharing",
-        },
-        {
-            key: "username_and_slug",
-            type: "link",
-        },
-        {
-            key: "tags",
-            type: "string",
         },
     ],
 };

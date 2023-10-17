@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import axios from "axios";
 import { BAlert } from "bootstrap-vue";
+import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 //@ts-ignore
-import UtcDate from "components/UtcDate";
+import UtcDate from "@/components/UtcDate.vue";
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -65,6 +66,13 @@ async function executeOperation(operation: Operation, rowData: RowData) {
         operationStatus.value = response.status || "success";
     }
 }
+
+async function onTagInput (data: RowData, tags: Array<string>, handler: any) {
+    await handler({ ...data, tags: tags });
+    data.tags = tags;
+}
+
+function onTagClick() {}
 </script>
 
 <template>
@@ -109,6 +117,14 @@ async function executeOperation(operation: Operation, rowData: RowData) {
                         </span>
                         <span v-else-if="fieldEntry.type == 'date'">
                             <UtcDate :date="rowData[fieldEntry.key]" mode="elapsed" />
+                        </span>
+                        <span v-else-if="fieldEntry.type == 'tags'">
+                            <StatelessTags
+                                clickable
+                                :value="rowData[fieldEntry.key]"
+                                :disabled="rowData.published"
+                                @input="(tags) => onTagInput(rowData, tags, fieldEntry.handler)"
+                                @tag-click="onTagClick" />
                         </span>
                     </td>
                 </tr>
