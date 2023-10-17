@@ -553,7 +553,7 @@ export default class Filtering<T> {
         ) {
             const { converter } = this.validFilters[filterName]?.handler as HandlerReturn<T>;
             if (converter) {
-                if (converter == toBool && filterValue == "any") {
+                if ((converter == toBool && filterValue == "any") || /^(['"]).*\1$/.test(filterValue as string)) {
                     return filterValue;
                 } else if (!backendFormatted && ([expandNameTag, toDate] as Converter<T>[]).includes(converter)) {
                     return toLower(filterValue) as T;
