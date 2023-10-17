@@ -74,21 +74,6 @@ export async function copyDataset(
     return response.data;
 }
 
-const tagsUpdater = fetcher.path("/api/tags").method("put").create();
-type UpdateTagsArgs = FetchArgType<typeof tagsUpdater>;
-export async function updateTags(
-    itemId: UpdateTagsArgs["item_id"],
-    itemClass: UpdateTagsArgs["item_class"],
-    itemTags: UpdateTagsArgs["item_tags"]
-) {
-    const { data } = await tagsUpdater({
-        item_id: itemId,
-        item_class: itemClass,
-        item_tags: itemTags,
-    });
-    return data;
-}
-
 export function getCompositeDatasetLink(historyDatasetId: string, path: string) {
     return withPrefix(`/api/datasets/${historyDatasetId}/display?filename=${path}`);
 }
