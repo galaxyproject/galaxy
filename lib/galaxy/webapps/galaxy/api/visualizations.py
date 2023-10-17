@@ -249,12 +249,11 @@ class VisualizationsController(BaseGalaxyAPIController, UsesVisualizationMixin, 
         PUT /api/visualizations/{encoded_visualization_id}
         """
         rval = None
-
         payload = self._validate_and_parse_payload(payload)
 
-        # there's a differentiation here between updating the visualiztion and creating a new revision
-        #   that needs to be handled clearly here
-        # or alternately, using a different controller like PUT /api/visualizations/{id}/r/{id}
+        # there's a differentiation here between updating the visualization and creating a new revision
+        # that needs to be handled clearly here or alternately, using a different controller
+        # like e.g. PUT /api/visualizations/{id}/r/{id}
 
         # TODO: consider allowing direct alteration of revisions title (without a new revision)
         #   only create a new revsion on a different config
@@ -263,6 +262,7 @@ class VisualizationsController(BaseGalaxyAPIController, UsesVisualizationMixin, 
         visualization = self.get_visualization(trans, id, check_ownership=True)
         title = payload.get("title", visualization.latest_revision.title)
         dbkey = payload.get("dbkey", visualization.latest_revision.dbkey)
+        deleted = payload.get("deleted", visualization.deleted)
         config = payload.get("config", visualization.latest_revision.config)
 
         latest_config = visualization.latest_revision.config
@@ -276,6 +276,7 @@ class VisualizationsController(BaseGalaxyAPIController, UsesVisualizationMixin, 
 
         # allow updating vis title
         visualization.title = title
+        visualization.deleted = deleted
         with transaction(trans.sa_session):
             trans.sa_session.commit()
 
@@ -299,7 +300,6 @@ class VisualizationsController(BaseGalaxyAPIController, UsesVisualizationMixin, 
             "model_class"
             # TODO: fill out when we create to_dict, get_dict, whatevs
         )
-        # TODO: deleted
         # TODO: importable
         ValidationError = exceptions.RequestParameterInvalidException
 
@@ -313,11 +313,13 @@ class VisualizationsController(BaseGalaxyAPIController, UsesVisualizationMixin, 
             elif key == "config":
                 if not isinstance(val, dict):
                     raise ValidationError(f"{key} must be a dictionary: {str(type(val))}")
-
             elif key == "annotation":
                 if not isinstance(val, str):
                     raise ValidationError(f"{key} must be a string or unicode: {str(type(val))}")
                 val = util.sanitize_html.sanitize_html(val)
+            elif key == "deleted":
+                if not isinstance(val, bool):
+                    raise ValidationError(f"{key} must be a bool: {str(type(val))}")
 
             # these are keys that actually only be *updated* at the revision level and not here
             #   (they are still valid for create, tho)

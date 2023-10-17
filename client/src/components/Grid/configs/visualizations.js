@@ -36,7 +36,7 @@ export const VisualizationsGrid = {
                                 type: copyViz.type,
                                 config: copyViz.config,
                             };
-                            await axios.post(withPrefix(`/api/visualizations`), newViz);
+                            await axios.post(withPrefix("/api/visualizations"), newViz);
                             return {
                                 status: "success",
                                 message: `'${data.title}' has been copied.`,
@@ -57,11 +57,19 @@ export const VisualizationsGrid = {
                 },
                 {
                     title: "Delete",
-                    handler: (data) => {
-                        return {
-                            status: "success",
-                            message: `'${data.title}' has been deleted.`,
-                        };
+                    handler: async (data) => {
+                        try {
+                            await axios.put(withPrefix(`/api/visualizations/${data.id}`), { deleted: true });
+                            return {
+                                status: "success",
+                                message: `'${data.title}' has been deleted.`,
+                            };
+                        } catch (e) {
+                            return {
+                                status: "danger",
+                                message: `Failed to delete '${data.title}': ${errorMessageAsString(e)}.`,
+                            };
+                        }
                     },
                 },
             ],

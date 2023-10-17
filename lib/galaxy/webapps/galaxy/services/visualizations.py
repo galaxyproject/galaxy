@@ -55,6 +55,7 @@ class VisualizationsService(ServiceBase):
         trans: ProvidesHistoryContext,
         serialization_params: SerializationParams,
         sharing: bool = False,
+        deleted: bool = False,
     ) -> List[Any]:
         """
         Search visualizations using a query system and returns a list
@@ -64,16 +65,17 @@ class VisualizationsService(ServiceBase):
         visualizations = self.get_visualizations_by_user(trans, user)
         visualizations += self.get_visualizations_shared_with_user(trans, user)
         visualizations += self.get_published_visualizations(trans, exclude_user=user)
-        
+
         response = []
         for content in visualizations:
             result = self.serializer.serialize_to_view(
                 content, user=user, trans=trans, **serialization_params.dict()
             )
-            if sharing:
+            if content.deleted is False and sharing:
                 sharing_dict = self.shareable_service.sharing(trans, content.id)
                 result.update(sharing_dict)
-            response.append(result)
+            if content.deleted == deleted:
+                response.append(result)
         return response
 
     def get_visualizations_by_user(self, trans, user):
