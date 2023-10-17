@@ -11,12 +11,19 @@ from typing import (
     Union,
 )
 
+from sqlalchemy import select
+
 from galaxy import (
     model,
     util,
 )
 from galaxy.exceptions import ActionInputError
 from galaxy.managers import base
+from galaxy.model import (
+    Group,
+    Quota,
+    User,
+)
 from galaxy.model.base import transaction
 from galaxy.quota import DatabaseQuotaAgent
 from galaxy.quota._schema import (
@@ -46,7 +53,8 @@ class QuotaManager:
     def create_quota(self, payload: dict, decode_id=None) -> Tuple[model.Quota, str]:
         params = CreateQuotaParams.parse_obj(payload)
         create_amount = self._parse_amount(params.amount)
-        if self.sa_session.query(model.Quota).filter(model.Quota.name == params.name).first():
+        stmt = select(Quota).where(Quota.name == params.name).limit(1)
+        if self.sa_session.scalars(stmt).first():
             raise ActionInputError(
                 "Quota names must be unique and a quota with that name already exists, please choose another name."
             )
@@ -74,12 +82,10 @@ class QuotaManager:
         else:
             # Create the UserQuotaAssociations
             in_users = [
-                self.sa_session.query(model.User).get(decode_id(x) if decode_id else x)
-                for x in util.listify(params.in_users)
+                self.sa_session.get(User, decode_id(x) if decode_id else x) for x in util.listify(params.in_users)
             ]
             in_groups = [
-                self.sa_session.query(model.Group).get(decode_id(x) if decode_id else x)
-                for x in util.listify(params.in_groups)
+                self.sa_session.get(Group, decode_id(x) if decode_id else x) for x in util.listify(params.in_groups)
             ]
             if None in in_users:
                 raise ActionInputError("One or more invalid user id has been provided.")
@@ -108,12 +114,10 @@ class QuotaManager:
             return False
 
     def rename_quota(self, quota, params) -> str:
+        stmt = select(Quota).where(Quota.name == params.name).limit(1)
         if not params.name:
             raise ActionInputError("Enter a valid name.")
-        elif (
-            params.name != quota.name
-            and self.sa_session.query(model.Quota).filter(model.Quota.name == params.name).first()
-        ):
+        elif params.name != quota.name and self.sa_session.scalars(stmt).first():
             raise ActionInputError("A quota with that name already exists.")
         else:
             old_name = quota.name
@@ -131,13 +135,12 @@ class QuotaManager:
             raise ActionInputError("Default quotas cannot be associated with specific users and groups.")
         else:
             in_users = [
-                self.sa_session.query(model.User).get(decode_id(x) if decode_id else x)
-                for x in util.listify(params.in_users)
+                self.sa_session.get(model.User, decode_id(x) if decode_id else x) for x in util.listify(params.in_users)
             ]
             if None in in_users:
                 raise ActionInputError("One or more invalid user id has been provided.")
             in_groups = [
-                self.sa_session.query(model.Group).get(decode_id(x) if decode_id else x)
+                self.sa_session.get(model.Group, decode_id(x) if decode_id else x)
                 for x in util.listify(params.in_groups)
             ]
             if None in in_groups:

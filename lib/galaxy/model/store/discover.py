@@ -828,7 +828,7 @@ def persist_hdas(elements, model_persistence_context, final_job_state="ok"):
                     sa_session = (
                         model_persistence_context.sa_session or model_persistence_context.import_store.sa_session
                     )
-                    primary_dataset = sa_session.query(galaxy.model.HistoryDatasetAssociation).get(hda_id)
+                    primary_dataset = sa_session.get(galaxy.model.HistoryDatasetAssociation, hda_id)
 
                 sources = fields_match.sources
                 hashes = fields_match.hashes

@@ -20,6 +20,7 @@ from typing import (
     Union,
 )
 
+from sqlalchemy import select
 from sqlalchemy.orm import object_session
 from sqlalchemy.orm.attributes import flag_modified
 
@@ -602,9 +603,9 @@ class FileParameter(MetadataParameter):
         if isinstance(value, galaxy.model.MetadataFile) or isinstance(value, MetadataTempFile):
             return value
         if isinstance(value, int):
-            return session.query(galaxy.model.MetadataFile).get(value)
+            return session.get(galaxy.model.MetadataFile, value)
         else:
-            return session.query(galaxy.model.MetadataFile).filter_by(uuid=value).one()
+            return session.execute(select(galaxy.model.MetadataFile).filter_by(uuid=value)).scalar_one()
 
     def make_copy(self, value, target_context: MetadataCollection, source_context):
         session = target_context._object_session(target_context.parent)
