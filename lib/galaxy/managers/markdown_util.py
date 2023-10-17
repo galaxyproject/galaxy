@@ -749,7 +749,8 @@ history_dataset_collection_display(input={})
             target_match = step_match
             name = find_non_empty_group(target_match)
             ref_object_type = "job"
-            ref_object = invocation.step_invocation_for_label(name).job
+            invocation_step = invocation.step_invocation_for_label(name)
+            ref_object = invocation_step and invocation_step.job
         else:
             target_match = None
             ref_object = None
