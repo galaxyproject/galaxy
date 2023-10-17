@@ -8,37 +8,33 @@ import { useRouter } from "vue-router/composables";
 
 import { withPrefix } from "@/utils/redirect";
 
-import { VisualizationsGrid } from "./types/visualizations.js";
+import { registry } from "./configs/registry";
+import { Operation, RowData } from "./configs/types";
 
 const router = useRouter();
 
 interface Props {
-    name: string;
+    // specifies the grid config identifier as specified in the registry
+    id: string;
 }
 
 const props = withDefaults(defineProps<Props>(), {});
 
+// contains the current grid data provided by the corresponding api endpoint
 const gridData = ref();
+
+// message references
 const errorMessage = ref("");
 const operationMessage = ref("");
-
-interface configType {
-    url: string;
-    resource: string;
-    item: string;
-    plural: string;
-    title: string;
-    fields: Array<Record<string, unknown>>;
-}
-
-const config: Record<string, configType> = {
-    visualizations: VisualizationsGrid,
-};
+const operationStatus = ref("");
 
 const gridConfig = computed(() => {
-    return config[props.name];
+    return registry[props.id];
 });
 
+/**
+ * Request grid data
+ */
 async function getGridData() {
     if (gridConfig.value) {
         try {
@@ -51,15 +47,22 @@ async function getGridData() {
     }
 }
 
+/**
+ * Initialize grid data
+ */
 onMounted(() => {
     getGridData();
 });
 
-async function executeOperation(operation: any, rowData: any) {
-    const message = await operation.handler(rowData, router);
-    if (message) {
+/**
+ * Execute grid operation and display message if available
+ */
+async function executeOperation(operation: Operation, rowData: RowData) {
+    const response = await operation.handler(rowData, router);
+    if (response) {
         await getGridData();
-        operationMessage.value = message;
+        operationMessage.value = response.message;
+        operationStatus.value = response.status || "success";
     }
 }
 </script>
@@ -67,7 +70,7 @@ async function executeOperation(operation: any, rowData: any) {
 <template>
     <div>
         <BAlert v-if="!!errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
-        <BAlert v-if="!!operationMessage" variant="success" show>{{ operationMessage }}</BAlert>
+        <BAlert v-if="!!operationMessage" :variant="operationStatus" show>{{ operationMessage }}</BAlert>
         <div>
             <h1 class="mb-3 h-lg">
                 {{ gridConfig.title }}

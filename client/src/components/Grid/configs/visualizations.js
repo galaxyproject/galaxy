@@ -23,7 +23,10 @@ export const VisualizationsGrid = {
                 {
                     title: "Delete",
                     handler: (data) => {
-                        return `'${data.title}' has been deleted.`;
+                        return {
+                            status: "success",
+                            message: `'${data.title}' has been deleted.`,
+                        };
                     },
                 },
             ],

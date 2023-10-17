@@ -458,7 +458,7 @@ export function getRouter(Galaxy) {
                         path: "visualizations/list",
                         component: GridList,
                         props: {
-                            name: "visualizations",
+                            id: "visualizations",
                         },
                     },
                     {
