@@ -70,6 +70,15 @@ async function executeOperation(operation: Operation, rowData: RowData) {
 }
 
 /**
+ * Verify if row item has been shared
+ */
+function isShared(data: RowData) {
+    if (data.users_shared_with && Array.isArray(data.users_shared_with)) {
+        return data.published || data.importable || data.users_shared_with.length > 0;
+    }
+}
+
+/**
  * Process tag inputs
  */
 async function onTagInput(data: RowData, tags: Array<string>, tagsHandler: FieldKeyHandler) {
@@ -118,7 +127,28 @@ function onTagClick() {}
                             {{ rowData[fieldEntry.key] }}
                         </a>
                         <span v-else-if="fieldEntry.type == 'sharing'">
-                            {{ rowData.published }}
+                            <span v-if="isShared(rowData)">
+                                <span v-if="rowData.published" v-b-tooltip.hover title="Published" class="mr-1">
+                                    <icon icon="globe" />
+                                </span>
+                                <span
+                                    v-if="rowData.importable"
+                                    v-b-tooltip.hover
+                                    title="Accessible by link"
+                                    class="mr-1">
+                                    <icon icon="link" />
+                                </span>
+                                <span
+                                    v-if="rowData.users_shared_with.length > 0"
+                                    v-b-tooltip.hover
+                                    title="Shared with users"
+                                    class="mr-1">
+                                    <icon icon="users" />
+                                </span>
+                            </span>
+                            <span v-else v-b-tooltip.hover title="Not shared">
+                                <icon icon="lock" />
+                            </span>
                         </span>
                         <span v-else-if="fieldEntry.type == 'date'">
                             <UtcDate :date="rowData[fieldEntry.key]" mode="elapsed" />

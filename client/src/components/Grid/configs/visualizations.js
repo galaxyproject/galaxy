@@ -80,11 +80,6 @@ export const VisualizationsGrid = {
             type: "string",
         },
         {
-            key: "sharing",
-            title: "Sharing",
-            type: "sharing",
-        },
-        {
             key: "tags",
             title: "Tags",
             type: "tags",
@@ -110,6 +105,11 @@ export const VisualizationsGrid = {
             key: "update_time",
             title: "Last updated",
             type: "date",
+        },
+        {
+            key: "sharing",
+            title: "Shared",
+            type: "sharing",
         },
     ],
 };
