@@ -1,16 +1,17 @@
 <script setup lang="ts">
 import axios from "axios";
 import { BAlert } from "bootstrap-vue";
-import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
-//@ts-ignore
-import UtcDate from "@/components/UtcDate.vue";
 import { computed, onMounted, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { withPrefix } from "@/utils/redirect";
 
 import { registry } from "./configs/registry";
-import { Operation, RowData } from "./configs/types";
+import { FieldKeyHandler, Operation, RowData } from "./configs/types";
+
+import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
+//@ts-ignore
+import UtcDate from "@/components/UtcDate.vue";
 
 const router = useRouter();
 
@@ -29,6 +30,7 @@ const errorMessage = ref("");
 const operationMessage = ref("");
 const operationStatus = ref("");
 
+// current grid configuration
 const gridConfig = computed(() => {
     return registry[props.id];
 });
@@ -67,8 +69,11 @@ async function executeOperation(operation: Operation, rowData: RowData) {
     }
 }
 
-async function onTagInput (data: RowData, tags: Array<string>, handler: any) {
-    await handler({ ...data, tags: tags });
+/**
+ * Process tag inputs
+ */
+async function onTagInput(data: RowData, tags: Array<string>, tagsHandler: FieldKeyHandler) {
+    await tagsHandler({ ...data, tags: tags });
     data.tags = tags;
 }
 

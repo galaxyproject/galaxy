@@ -3,6 +3,7 @@ type Field = FieldKey | FieldOperations;
 interface FieldKey {
     key: string;
     type: string;
+    handler?: FieldKeyHandler;
 }
 
 interface FieldOperations {
@@ -10,12 +11,12 @@ interface FieldOperations {
     operations: Array<Operation>;
 }
 
-interface HandlerMessage {
+interface OperationHandlerMessage {
     message: string;
     status: string;
 }
 
-type HandlerReturn = HandlerMessage | void;
+type OperationHandlerReturn = OperationHandlerMessage | void;
 
 export interface Config {
     url: string;
@@ -26,9 +27,11 @@ export interface Config {
     fields: Array<Field>;
 }
 
+export type FieldKeyHandler = (data: RowData) => void;
+
 export type RowData = Record<string, unknown>;
 
 export interface Operation {
     title: string;
-    handler: (data: RowData, router: any) => HandlerReturn;
+    handler: (data: RowData, router: any) => OperationHandlerReturn;
 }

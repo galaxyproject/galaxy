@@ -6,7 +6,7 @@ export const VisualizationsGrid = {
     title: "Saved Visualizations",
     fields: [
         {
-            title: "title",
+            title: "Title",
             operations: [
                 {
                     title: "Open",
