@@ -3,7 +3,9 @@
  */
 import { errorMessageAsString, rethrowSimple } from "utils/simple-error";
 
-import { getDatatypes, getDbKeys, getRemoteFiles } from "./services";
+import { datatypesFetcher } from "@/api/datatypes";
+
+import { getDbKeys, getRemoteFiles } from "./services";
 
 export const AUTO_EXTENSION = {
     id: "auto",
@@ -65,7 +67,7 @@ async function loadUploadDatatypes() {
     if (_cachedDatatypes) {
         return _cachedDatatypes;
     }
-    const { data: datatypes } = await getDatatypes({ extension_only: false });
+    const { data: datatypes } = await datatypesFetcher({ extension_only: false });
     const listExtensions = [];
     for (var key in datatypes) {
         listExtensions.push({
