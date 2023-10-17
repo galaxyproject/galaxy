@@ -8,13 +8,14 @@ import { useAnimationFrameThrottle } from "@/composables/throttle";
 import { useWorkflowStores } from "@/composables/workflowStores";
 import type {
     FrameWorkflowComment,
+    FreehandWorkflowComment,
     MarkdownWorkflowComment,
     TextWorkflowComment,
     WorkflowComment,
 } from "@/stores/workflowEditorCommentStore";
 import type { Step, Steps } from "@/stores/workflowStepStore";
 
-import * as commentColours from "./Comments/colours";
+import { drawBoxComments, drawFreehandComments, drawSteps } from "./modules/canvasDraw";
 import { AxisAlignedBoundingBox, Transform } from "./modules/geometry";
 
 const props = defineProps<{
@@ -29,7 +30,8 @@ const emit = defineEmits<{
     (e: "moveTo", position: { x: number; y: number }): void;
 }>();
 
-const { stateStore } = useWorkflowStores();
+const { stateStore, commentStore } = useWorkflowStores();
+const { isJustCreated } = commentStore;
 
 /** reference to the main canvas element */
 const canvas: Ref<HTMLCanvasElement | null> = ref(null);
@@ -157,9 +159,11 @@ function renderMinimap() {
     // apply global to local transform
     canvasTransform.applyToContext(ctx);
 
+    // sort comments by type
     const frameComments: FrameWorkflowComment[] = [];
     const markdownComments: MarkdownWorkflowComment[] = [];
     const textComments: TextWorkflowComment[] = [];
+    const freehandComments: FreehandWorkflowComment[] = [];
 
     props.comments.forEach((comment) => {
         if (comment.type === "frame") {
@@ -168,15 +172,19 @@ function renderMinimap() {
             markdownComments.push(comment);
         } else if (comment.type === "text") {
             textComments.push(comment);
+        } else {
+            if (!isJustCreated(comment.id)) {
+                freehandComments.push(comment);
+            }
         }
     });
 
+    // sort steps by error state
     const allSteps = Object.values(props.steps);
     const okSteps: Step[] = [];
     const errorSteps: Step[] = [];
     let selectedStep: Step | undefined;
 
-    // sort steps into different arrays
     allSteps.forEach((step) => {
         if (stateStore.activeNodeId === step.id) {
             selectedStep = step;
@@ -190,74 +198,15 @@ function renderMinimap() {
     });
 
     // draw rects
-
-    ctx.lineWidth = 2 / canvasTransform.scaleX;
-    frameComments.forEach((comment) => {
-        ctx.beginPath();
-
-        if (comment.colour !== "none") {
-            ctx.fillStyle = commentColours.brighterColours[comment.colour];
-            ctx.strokeStyle = commentColours.colours[comment.colour];
-        } else {
-            ctx.fillStyle = "rgba(0, 0, 0, 0)";
-            ctx.strokeStyle = colors.node;
-        }
-
-        ctx.rect(comment.position[0], comment.position[1], comment.size[0], comment.size[1]);
-        ctx.fill();
-        ctx.stroke();
-    });
-
+    drawBoxComments(ctx, frameComments, 2 / canvasTransform.scaleX, colors.node, true);
     ctx.fillStyle = "white";
-    markdownComments.forEach((comment) => {
-        ctx.beginPath();
+    drawBoxComments(ctx, markdownComments, 2 / canvasTransform.scaleX, colors.node);
+    ctx.fillStyle = "rgba(0, 0, 0, 0)";
+    drawBoxComments(ctx, textComments, 1 / canvasTransform.scaleX, colors.node);
+    drawSteps(ctx, okSteps, colors.node, stateStore);
+    drawSteps(ctx, errorSteps, colors.error, stateStore);
 
-        if (comment.colour !== "none") {
-            ctx.strokeStyle = commentColours.colours[comment.colour];
-        } else {
-            ctx.strokeStyle = colors.node;
-        }
-
-        ctx.rect(comment.position[0], comment.position[1], comment.size[0], comment.size[1]);
-        ctx.fill();
-        ctx.stroke();
-    });
-
-    ctx.lineWidth = 1 / canvasTransform.scaleX;
-    textComments.forEach((comment) => {
-        ctx.beginPath();
-
-        if (comment.colour !== "none") {
-            ctx.strokeStyle = commentColours.brightColours[comment.colour];
-        } else {
-            ctx.strokeStyle = colors.node;
-        }
-
-        ctx.rect(comment.position[0], comment.position[1], comment.size[0], comment.size[1]);
-        ctx.stroke();
-    });
-
-    ctx.beginPath();
-    ctx.fillStyle = colors.node;
-    okSteps.forEach((step) => {
-        const rect = stateStore.stepPosition[step.id];
-
-        if (rect) {
-            ctx.rect(step.position!.left, step.position!.top, rect.width, rect.height);
-        }
-    });
-    ctx.fill();
-
-    ctx.beginPath();
-    ctx.fillStyle = colors.error;
-    errorSteps.forEach((step) => {
-        const rect = stateStore.stepPosition[step.id];
-
-        if (rect) {
-            ctx.rect(step.position!.left, step.position!.top, rect.width, rect.height);
-        }
-    });
-    ctx.fill();
+    drawFreehandComments(ctx, freehandComments, colors.node);
 
     // draw selected
     if (selectedStep) {
