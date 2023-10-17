@@ -42,7 +42,7 @@ BACKENDS = {
     "elixir": "social_core.backends.elixir.ElixirOpenIdConnect",
     "okta": "social_core.backends.okta_openidconnect.OktaOpenIdConnect",
     "azure": "social_core.backends.azuread_tenant.AzureADV2TenantOAuth2",
-    "checkin": "social_core.backends.checkin.CheckinOpenIdConnect",
+    "egi_checkin": "social_core.backends.checkin.EGICheckinOpenIdConnect",
 }
 
 BACKENDS_NAME = {
@@ -51,7 +51,7 @@ BACKENDS_NAME = {
     "elixir": "elixir",
     "okta": "okta-openidconnect",
     "azure": "azuread-v2-tenant-oauth2",
-    "checkin": "checkin",
+    "egi_checkin": "egi-checkin",
 }
 
 AUTH_PIPELINE = (

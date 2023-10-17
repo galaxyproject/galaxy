@@ -198,8 +198,8 @@ Please mind `http` and `https`.
     </provider>
 
     <!-- Documentation: https://docs.egi.eu/providers/check-in/sp -->
-    <provider name="checkin">
-	<!-- Client id and secret can be obtained by registering your client at Check-in
+    <provider name="egi_checkin">
+	<!-- Client id and secret can be obtained by registering your client at EGI Check-in
 	Federation Registry: https://aai.egi.eu/federation -->
         <client_id>...</client_id>
         <client_secret>...</client_secret>
