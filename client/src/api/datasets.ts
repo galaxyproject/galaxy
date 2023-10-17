@@ -3,8 +3,9 @@ import type { FetchArgType } from "openapi-typescript-fetch";
 import { fetcher } from "@/api/schema";
 import { withPrefix } from "@/utils/redirect";
 
-const _getDatasets = fetcher.path("/api/datasets").method("get").create();
-type GetDatasetsApiOptions = FetchArgType<typeof _getDatasets>;
+export const datasetsFetcher = fetcher.path("/api/datasets").method("get").create();
+
+type GetDatasetsApiOptions = FetchArgType<typeof datasetsFetcher>;
 type GetDatasetsQuery = Pick<GetDatasetsApiOptions, "limit" | "offset">;
 // custom interface for how we use getDatasets
 interface GetDatasetsOptions extends GetDatasetsQuery {
@@ -30,19 +31,41 @@ export async function getDatasets(options: GetDatasetsOptions = {}) {
         params.q = ["name-contains"];
         params.qv = [options.query];
     }
-    const { data } = await _getDatasets(params);
+    const { data } = await datasetsFetcher(params);
     return data;
 }
 
-const _copyDataset = fetcher.path("/api/histories/{history_id}/contents/{type}s").method("post").create();
-type HistoryContentsArgs = FetchArgType<typeof _copyDataset>;
+const updateHistoryDataset = fetcher.path("/api/histories/{history_id}/contents/{type}s/{id}").method("put").create();
+
+export async function undeleteHistoryDataset(historyId: string, datasetId: string) {
+    const { data } = await updateHistoryDataset({
+        history_id: historyId,
+        id: datasetId,
+        type: "dataset",
+        deleted: false,
+    });
+    return data;
+}
+
+const deleteHistoryDataset = fetcher
+    .path("/api/histories/{history_id}/contents/{type}s/{id}")
+    .method("delete")
+    .create();
+
+export async function purgeHistoryDataset(historyId: string, datasetId: string) {
+    const { data } = await deleteHistoryDataset({ history_id: historyId, id: datasetId, type: "dataset", purge: true });
+    return data;
+}
+
+const datasetCopy = fetcher.path("/api/histories/{history_id}/contents/{type}s").method("post").create();
+type HistoryContentsArgs = FetchArgType<typeof datasetCopy>;
 export async function copyDataset(
     datasetId: HistoryContentsArgs["content"],
     historyId: HistoryContentsArgs["history_id"],
     type: HistoryContentsArgs["type"] = "dataset",
     source: HistoryContentsArgs["source"] = "hda"
 ) {
-    const response = await _copyDataset({
+    const response = await datasetCopy({
         history_id: historyId,
         type,
         source: source,
@@ -51,14 +74,14 @@ export async function copyDataset(
     return response.data;
 }
 
-const _updateTags = fetcher.path("/api/tags").method("put").create();
-type UpdateTagsArgs = FetchArgType<typeof _updateTags>;
+const tagsUpdater = fetcher.path("/api/tags").method("put").create();
+type UpdateTagsArgs = FetchArgType<typeof tagsUpdater>;
 export async function updateTags(
     itemId: UpdateTagsArgs["item_id"],
     itemClass: UpdateTagsArgs["item_class"],
     itemTags: UpdateTagsArgs["item_tags"]
 ) {
-    const { data } = await _updateTags({
+    const { data } = await tagsUpdater({
         item_id: itemId,
         item_class: itemClass,
         item_tags: itemTags,
