@@ -4,8 +4,9 @@
 import { errorMessageAsString, rethrowSimple } from "utils/simple-error";
 
 import { datatypesFetcher } from "@/api/datatypes";
+import { dbKeysFetcher } from "@/api/dbKeys";
 
-import { getDbKeys, getRemoteFiles } from "./services";
+import { getRemoteFiles } from "./services";
 
 export const AUTO_EXTENSION = {
     id: "auto",
@@ -51,7 +52,7 @@ async function loadDbKeys() {
     if (_cachedDbKeys) {
         return _cachedDbKeys;
     }
-    const { data: dbKeys } = await getDbKeys();
+    const { data: dbKeys } = await dbKeysFetcher();
     const dbKeyList = [];
     for (var key in dbKeys) {
         dbKeyList.push({

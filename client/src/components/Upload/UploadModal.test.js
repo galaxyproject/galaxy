@@ -8,8 +8,6 @@ import { getLocalVue } from "tests/jest/helpers";
 
 import { mockFetcher } from "@/api/schema/__mocks__";
 
-import { getDbKeys } from "./services";
-
 import UploadContainer from "./UploadContainer.vue";
 import UploadModal from "./UploadModal.vue";
 
@@ -38,8 +36,6 @@ const genomesResponse = [
     ["Cat Sep. 2011 (ICGSC Felis_catus 6.2/felCat5) (felCat5)", "felCat5"],
 ];
 
-getDbKeys.mockReturnValue({ data: genomesResponse });
-
 const propsData = {
     chunkUploadSize: 1024,
     fileSourcesConfigured: true,
@@ -56,6 +52,8 @@ describe("UploadModal.vue", () => {
             .path("/api/datatypes")
             .method("get")
             .mock({ data: [fastaResponse] });
+        mockFetcher.path("/api/genomes").method("get").mock({ data: genomesResponse });
+
         axiosMock = new MockAdapter(axios);
         axiosMock.onGet(`/api/histories/count`).reply(200, 0);
 
