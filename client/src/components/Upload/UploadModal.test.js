@@ -12,7 +12,6 @@ import UploadContainer from "./UploadContainer.vue";
 import UploadModal from "./UploadModal.vue";
 
 jest.mock("app");
-jest.mock("./services");
 jest.mock("@/api/schema");
 
 jest.mock("@/composables/config", () => ({

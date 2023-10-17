@@ -5,8 +5,7 @@ import { errorMessageAsString, rethrowSimple } from "utils/simple-error";
 
 import { datatypesFetcher } from "@/api/datatypes";
 import { dbKeysFetcher } from "@/api/dbKeys";
-
-import { getRemoteFiles } from "./services";
+import { remoteFilesFetcher } from "@/api/remoteFiles";
 
 export const AUTO_EXTENSION = {
     id: "auto",
@@ -114,7 +113,7 @@ export async function getUploadDbKeys(defaultDbKey) {
 
 export async function getRemoteEntries(success, error) {
     try {
-        const { data } = await getRemoteFiles();
+        const { data } = await remoteFilesFetcher();
         success(data);
     } catch (e) {
         error(errorMessageAsString(e));
@@ -123,7 +122,7 @@ export async function getRemoteEntries(success, error) {
 
 export async function getRemoteEntriesAt(target) {
     try {
-        const { data: files } = await getRemoteFiles({ target });
+        const { data: files } = await remoteFilesFetcher({ target });
         return files;
     } catch (e) {
         rethrowSimple(e);
