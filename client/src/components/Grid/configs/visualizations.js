@@ -1,3 +1,8 @@
+import axios from "axios";
+
+import { withPrefix } from "@/utils/redirect";
+import { errorMessageAsString } from "@/utils/simple-error";
+
 export const VisualizationsGrid = {
     url: "/api/visualizations?view=detailed&sharing=true",
     resource: "visualizations",
@@ -22,11 +27,26 @@ export const VisualizationsGrid = {
                 },
                 {
                     title: "Copy",
-                    handler: (data) => {
-                        return {
-                            status: "success",
-                            message: `'${data.title}' has been deleted.`,
-                        };
+                    handler: async (data) => {
+                        try {
+                            const copyResponse = await axios.get(withPrefix(`/api/visualizations/${data.id}`));
+                            const copyViz = copyResponse.data;
+                            const newViz = {
+                                title: `Copy of '${copyViz.title}'`,
+                                type: copyViz.type,
+                                config: copyViz.config,
+                            };
+                            await axios.post(withPrefix(`/api/visualizations`), newViz);
+                            return {
+                                status: "success",
+                                message: `'${data.title}' has been copied.`,
+                            };
+                        } catch (e) {
+                            return {
+                                status: "danger",
+                                message: `Failed to copy '${data.title}': ${errorMessageAsString(e)}.`,
+                            };
+                        }
                     },
                 },
                 {
