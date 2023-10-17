@@ -348,7 +348,7 @@ class ReadyForExportMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHand
 
     def handle_invocation_time(self, line, invocation):
         self.ensure_rendering_data_for("invocations", invocation)["create_time"] = invocation.create_time.strftime(
-            "%Y-%m-/%d, %H:%M:%S"
+            "%Y-%m-%d, %H:%M:%S"
         )
 
     def handle_dataset_type(self, line, hda):
@@ -549,7 +549,7 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
         return (content, True)
 
     def handle_invocation_time(self, line, invocation):
-        content = literal_via_fence(invocation.create_time.strftime("%m/%d/%Y, %H:%M:%S"))
+        content = literal_via_fence(invocation.create_time.strftime("%Y-%m-%d, %H:%M:%S"))
         return (content, True)
 
     def handle_dataset_name(self, line, hda):

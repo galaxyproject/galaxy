@@ -414,7 +414,7 @@ invocation_time(invocation_id=1)
         assert "invocations" in extra_data
         assert "create_time" in extra_data["invocations"]["be8be0fd2ce547f6"]
         assert extra_data["invocations"]["be8be0fd2ce547f6"]["create_time"] == invocation.create_time.strftime(
-            "%m/%d/%Y, %H:%M:%S"
+            "%Y-%m-%d, %H:%M:%S"
         )
 
     def _ready_export(self, example):
