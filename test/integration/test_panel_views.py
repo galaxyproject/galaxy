@@ -16,7 +16,7 @@ class TestPanelViewsFromDirectoryIntegration(integration_util.IntegrationTestCas
         config["panel_views_dir"] = PANEL_VIEWS_DIR_1
 
     def test_section_copy(self):
-        index = self.galaxy_interactor.get("tools", data=dict(in_panel=True, view="filter"))
+        index = self.galaxy_interactor.get("tool_panel", data=dict(in_panel=True, view="filter"))
         index_panel = index.json().get("filter", {})
         sections = get_sections(index_panel)
         section_names = [s["name"] for s in sections]
@@ -24,11 +24,11 @@ class TestPanelViewsFromDirectoryIntegration(integration_util.IntegrationTestCas
         assert "For Tours" in section_names
 
     def test_custom_label_order(self):
-        index = self.galaxy_interactor.get("tools", data=dict(in_panel=True, view="my-custom"))
+        index = self.galaxy_interactor.get("tool_panel", data=dict(in_panel=True, view="my-custom"))
         verify_my_custom(index)
 
     def test_filtering_sections_by_tool_id(self):
-        index = self.galaxy_interactor.get("tools", data=dict(in_panel=True, view="custom_2"))
+        index = self.galaxy_interactor.get("tool_panel", data=dict(in_panel=True, view="custom_2"))
         index.raise_for_status()
         index_panel = index.json().get("custom_2", {})
         sections = get_sections(index_panel)
@@ -38,11 +38,11 @@ class TestPanelViewsFromDirectoryIntegration(integration_util.IntegrationTestCas
         assert len(tools) == 3, len(tools)
 
     def test_filtering_sections_by_tool_id_regex(self):
-        index = self.galaxy_interactor.get("tools", data=dict(in_panel=True, view="custom_3"))
+        index = self.galaxy_interactor.get("tool_panel", data=dict(in_panel=True, view="custom_3"))
         verify_custom_regex_filtered(index, "custom_3")
 
     def test_filtering_root_by_type(self):
-        index = self.galaxy_interactor.get("tools", data=dict(in_panel=True, view="custom_4"))
+        index = self.galaxy_interactor.get("tool_panel", data=dict(in_panel=True, view="custom_4"))
         index.raise_for_status()
         index_panel = index.json().get("custom_4", {})
         assert len(index_panel) == 2
@@ -51,7 +51,7 @@ class TestPanelViewsFromDirectoryIntegration(integration_util.IntegrationTestCas
         assert list(index_panel.keys()) == ["empty_list", "count_list"]
 
     def test_custom_section_def(self):
-        index = self.galaxy_interactor.get("tools", data=dict(in_panel=True, view="custom_6"))
+        index = self.galaxy_interactor.get("tool_panel", data=dict(in_panel=True, view="custom_6"))
         index.raise_for_status()
         index_panel = index.json().get("custom_6", {})
         assert len(index_panel) == 1
@@ -67,11 +67,11 @@ class TestPanelViewsFromDirectoryIntegration(integration_util.IntegrationTestCas
         ]
 
     def test_section_embed(self):
-        index = self.galaxy_interactor.get("tools", data=dict(in_panel=True, view="custom_5"))
+        index = self.galaxy_interactor.get("tool_panel", data=dict(in_panel=True, view="custom_5"))
         verify_custom_embed(index, "custom_5")
 
     def test_section_embed_filtering(self):
-        index = self.galaxy_interactor.get("tools", data=dict(in_panel=True, view="custom_7"))
+        index = self.galaxy_interactor.get("tool_panel", data=dict(in_panel=True, view="custom_7"))
         index.raise_for_status()
         index_panel = index.json().get("custom_7", {})
         assert len(index_panel) == 1
@@ -84,26 +84,26 @@ class TestPanelViewsFromDirectoryIntegration(integration_util.IntegrationTestCas
         assert section_elems[3]["model_class"] == "ToolSectionLabel"
 
     def test_section_reference_by_name(self):
-        index = self.galaxy_interactor.get("tools", data=dict(in_panel=True, view="custom_8"))
+        index = self.galaxy_interactor.get("tool_panel", data=dict(in_panel=True, view="custom_8"))
         verify_custom_embed(index, "custom_8")
 
     def test_section_alias(self):
-        index = self.galaxy_interactor.get("tools", data=dict(in_panel=True, view="custom_9"))
+        index = self.galaxy_interactor.get("tool_panel", data=dict(in_panel=True, view="custom_9"))
         verify_custom_regex_filtered(index, "custom_9")
 
     def test_expand_section_aliases(self):
-        index = self.galaxy_interactor.get("tools", data=dict(in_panel=True, view="custom_10"))
+        index = self.galaxy_interactor.get("tool_panel", data=dict(in_panel=True, view="custom_10"))
         index.raise_for_status()
         index_panel = index.json().get("custom_10", {})
         assert len(index_panel) == 2
         assert model_classes(index_panel) == ["ToolSection", "ToolSection"]
 
     def test_global_filters(self):
-        index = self.galaxy_interactor.get("tools", data=dict(in_panel=True, view="custom_11"))
+        index = self.galaxy_interactor.get("tool_panel", data=dict(in_panel=True, view="custom_11"))
         verify_custom_regex_filtered(index, "custom_11")
 
     def test_global_filters_on_integrated_panel(self):
-        index = self.galaxy_interactor.get("tools", data=dict(in_panel=True, view="custom_12"))
+        index = self.galaxy_interactor.get("tool_panel", data=dict(in_panel=True, view="custom_12"))
         index.raise_for_status()
         index_panel = index.json().get("custom_12", {})
         sections = get_sections(index_panel)
@@ -153,7 +153,7 @@ class TestPanelViewsFromConfigIntegration(integration_util.IntegrationTestCase):
         config["default_panel_view"] = "my-custom"
 
     def test_custom_label_order(self):
-        index = self.galaxy_interactor.get("tools", data=dict(in_panel=True))
+        index = self.galaxy_interactor.get("tool_panel", data=dict(in_panel=True))
         verify_my_custom(index)
 
 

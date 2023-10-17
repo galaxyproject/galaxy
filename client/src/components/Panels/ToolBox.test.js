@@ -26,9 +26,9 @@ describe("ToolBox", () => {
 
     it("test filter functions correctly matching: (1) Tools store array-of-objects with (2) Results array", async () => {
         axiosMock
-            .onGet(`/api/tools`)
+            .onGet(`/api/tool_panel`)
             .replyOnce(200, toolsListInPanel)
-            .onGet(`/api/tools?in_panel=False`)
+            .onGet(`/api/tool_panel?in_panel=False`)
             .replyOnce(200, toolsMock)
             .onGet(/api\/tools?.*/)
             .replyOnce(200, resultsMock);
