@@ -1,10 +1,13 @@
-export interface Config {
-    url: string;
-    resource: string;
-    item: string;
-    plural: string;
+type Field = FieldKey | FieldOperations;
+
+interface FieldKey {
+    key: string;
+    type: string;
+}
+
+interface FieldOperations {
     title: string;
-    fields: Array<Record<string, unknown>>;
+    operations: Array<Operation>;
 }
 
 interface HandlerMessage {
@@ -12,7 +15,16 @@ interface HandlerMessage {
     status: string;
 }
 
-export type HandlerReturn = HandlerMessage | undefined;
+type HandlerReturn = HandlerMessage | void;
+
+export interface Config {
+    url: string;
+    resource: string;
+    item: string;
+    plural: string;
+    title: string;
+    fields: Array<Field>;
+}
 
 export type RowData = Record<string, unknown>;
 
