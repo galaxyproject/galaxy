@@ -3,7 +3,7 @@ const fs = require("fs");
 const del = require("del");
 const { src, dest, series, parallel, watch } = require("gulp");
 const child_process = require("child_process");
-const glob = require("glob");
+const { globSync } = require("glob");
 const buildIcons = require("./icons/build_icons");
 
 /*
@@ -105,7 +105,7 @@ function buildPlugins(callback, forceRebuild) {
      * Walk pluginBuildModules glob and attempt to build modules.
      * */
     PATHS.pluginBuildModules.map((buildModule) => {
-        glob(buildModule, {}, (er, files) => {
+        globSync(buildModule, {}, (er, files) => {
             files.map((file) => {
                 let skipBuild = false;
                 const pluginDir = path.dirname(file);
