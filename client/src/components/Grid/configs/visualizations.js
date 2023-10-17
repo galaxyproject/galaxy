@@ -15,8 +15,8 @@ export const VisualizationsGrid = {
             operations: [
                 {
                     title: "Open",
-                    handler: (data, router) => {
-                        router.push(`/visualizations/edit?id=${data.id}`);
+                    handler: (data) => {
+                        window.location = withPrefix(`/plugins/visualizations/${data.type}/saved?id=${data.id}`);
                     },
                 },
                 {
