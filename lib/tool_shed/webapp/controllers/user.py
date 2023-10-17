@@ -2,13 +2,13 @@ import logging
 import socket
 
 from markupsafe import escape
-from sqlalchemy import func
 
 from galaxy import (
     util,
     web,
 )
 from galaxy.managers.api_keys import ApiKeyManager
+from galaxy.managers.users import get_user_by_email
 from galaxy.model.base import transaction
 from galaxy.security.validate_user_input import (
     validate_email,
@@ -247,18 +247,10 @@ class User(BaseUser):
                     "Please check your email account for more instructions.  "
                     "If you do not receive an email shortly, please contact an administrator." % (escape(email))
                 )
-                reset_user = (
-                    trans.sa_session.query(trans.app.model.User)
-                    .filter(trans.app.model.User.table.c.email == email)
-                    .first()
-                )
+                reset_user = get_user_by_email(trans.sa_session, email, trans.app.model.User)
                 if not reset_user:
                     # Perform a case-insensitive check only if the user wasn't found
-                    reset_user = (
-                        trans.sa_session.query(trans.app.model.User)
-                        .filter(func.lower(trans.app.model.User.table.c.email) == func.lower(email))
-                        .first()
-                    )
+                    reset_user = get_user_by_email(trans.sa_session, email, trans.app.model.User, False)
                 if reset_user:
                     prt = trans.app.model.PasswordResetToken(reset_user)
                     trans.sa_session.add(prt)
@@ -291,7 +283,7 @@ class User(BaseUser):
         params = util.Params(kwd)
         user_id = params.get("id", None)
         if user_id:
-            user = trans.sa_session.query(trans.app.model.User).get(trans.security.decode_id(user_id))
+            user = trans.sa_session.get(trans.app.model.User, trans.security.decode_id(user_id))
         else:
             user = trans.user
         if not user:
@@ -336,7 +328,7 @@ class User(BaseUser):
         status = params.get("status", "done")
         user_id = params.get("user_id", None)
         if user_id and is_admin:
-            user = trans.sa_session.query(trans.app.model.User).get(trans.security.decode_id(user_id))
+            user = trans.sa_session.get(trans.app.model.User, trans.security.decode_id(user_id))
         else:
             user = trans.user
         if user and params.get("change_username_button", False):
@@ -371,7 +363,7 @@ class User(BaseUser):
         status = params.get("status", "done")
         user_id = params.get("user_id", None)
         if user_id and is_admin:
-            user = trans.sa_session.query(trans.app.model.User).get(trans.security.decode_id(user_id))
+            user = trans.sa_session.get(trans.app.model.User, trans.security.decode_id(user_id))
         elif user_id and (not trans.user or trans.user.id != trans.security.decode_id(user_id)):
             message = "Invalid user id"
             status = "error"
@@ -422,8 +414,8 @@ class User(BaseUser):
             # Edit user information - webapp MUST BE 'galaxy'
             user_type_fd_id = params.get("user_type_fd_id", "none")
             if user_type_fd_id not in ["none"]:
-                user_type_form_definition = trans.sa_session.query(trans.app.model.FormDefinition).get(
-                    trans.security.decode_id(user_type_fd_id)
+                user_type_form_definition = trans.sa_session.get(
+                    trans.app.model.FormDefinition, trans.security.decode_id(user_type_fd_id)
                 )
             elif user.values:
                 user_type_form_definition = user.values.form_definition

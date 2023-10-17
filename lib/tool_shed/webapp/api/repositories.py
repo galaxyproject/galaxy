@@ -427,9 +427,8 @@ class RepositoriesController(BaseShedAPIController):
             updating_installed_repository=False,
             persist=False,
         )
-        query = rmm.get_query_for_setting_metadata_on_repositories(my_writable=my_writable, order=False)
         # First reset metadata on all repositories of type repository_dependency_definition.
-        for repository in query:
+        for repository in rmm.get_repositories_for_setting_metadata(my_writable=my_writable, order=False):
             encoded_id = trans.security.encode_id(repository.id)
             if encoded_id in encoded_ids_to_skip:
                 log.debug(
@@ -440,7 +439,7 @@ class RepositoriesController(BaseShedAPIController):
             elif repository.type == rt_util.TOOL_DEPENDENCY_DEFINITION and repository.id not in handled_repository_ids:
                 results = handle_repository(trans, repository, results)
         # Now reset metadata on all remaining repositories.
-        for repository in query:
+        for repository in rmm.get_repositories_for_setting_metadata(my_writable=my_writable, order=False):
             encoded_id = trans.security.encode_id(repository.id)
             if encoded_id in encoded_ids_to_skip:
                 log.debug(

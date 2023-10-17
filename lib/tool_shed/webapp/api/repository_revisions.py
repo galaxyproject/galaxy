@@ -4,7 +4,7 @@ from typing import (
     Dict,
 )
 
-from sqlalchemy import and_
+from sqlalchemy import select
 
 from galaxy import (
     util,
@@ -16,6 +16,7 @@ from tool_shed.util import (
     metadata_util,
     repository_util,
 )
+from tool_shed.webapp.model import RepositoryMetadata
 from . import BaseShedAPIController
 
 log = logging.getLogger(__name__)
@@ -39,32 +40,15 @@ class RepositoryRevisionsController(BaseShedAPIController):
         Displays a collection (list) of repository revisions.
         """
         # Example URL: http://localhost:9009/api/repository_revisions
-        repository_metadata_dicts = []
-        # Build up an anded clause list of filters.
-        clause_list = []
-        # Filter by downloadable if received.
         downloadable = kwd.get("downloadable", None)
-        if downloadable is not None:
-            clause_list.append(trans.model.RepositoryMetadata.table.c.downloadable == util.asbool(downloadable))
-        # Filter by malicious if received.
         malicious = kwd.get("malicious", None)
-        if malicious is not None:
-            clause_list.append(trans.model.RepositoryMetadata.table.c.malicious == util.asbool(malicious))
-        # Filter by missing_test_components if received.
         missing_test_components = kwd.get("missing_test_components", None)
-        if missing_test_components is not None:
-            clause_list.append(
-                trans.model.RepositoryMetadata.table.c.missing_test_components == util.asbool(missing_test_components)
-            )
-        # Filter by includes_tools if received.
         includes_tools = kwd.get("includes_tools", None)
-        if includes_tools is not None:
-            clause_list.append(trans.model.RepositoryMetadata.table.c.includes_tools == util.asbool(includes_tools))
-        for repository_metadata in (
-            trans.sa_session.query(trans.app.model.RepositoryMetadata)
-            .filter(and_(*clause_list))
-            .order_by(trans.app.model.RepositoryMetadata.table.c.repository_id.desc())
-        ):
+        repository_metadata_dicts = []
+        all_repository_metadata = get_repository_metadata(
+            trans.sa_session, downloadable, malicious, missing_test_components, includes_tools
+        )
+        for repository_metadata in all_repository_metadata:
             repository_metadata_dict = repository_metadata.to_dict(
                 view="collection", value_mapper=self.__get_value_mapper(trans)
             )
@@ -222,3 +206,17 @@ class RepositoryRevisionsController(BaseShedAPIController):
             controller="repository_revisions", action="show", id=repository_metadata_id
         )
         return repository_metadata_dict
+
+
+def get_repository_metadata(session, downloadable, malicious, missing_test_components, includes_tools):
+    stmt = select(RepositoryMetadata)
+    if downloadable is not None:
+        stmt = stmt.where(RepositoryMetadata.downloadable == util.asbool(downloadable))
+    if malicious is not None:
+        stmt = stmt.where(RepositoryMetadata.malicious == util.asbool(malicious))
+    if missing_test_components is not None:
+        stmt = stmt.where(RepositoryMetadata.missing_test_components == util.asbool(missing_test_components))
+    if includes_tools is not None:
+        stmt = stmt.where(RepositoryMetadata.includes_tools == util.asbool(includes_tools))
+    stmt = stmt.order_by(RepositoryMetadata.repository_id.desc())
+    return session.scalars(stmt)

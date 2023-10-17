@@ -31,8 +31,8 @@ from mercurial import (
 )
 from playwright.sync_api import Page
 from sqlalchemy import (
-    and_,
     false,
+    select,
 )
 
 import galaxy.model.tool_shed_install as galaxy_model
@@ -572,20 +572,7 @@ class StandaloneToolShedInstallationClient(ToolShedInstallationClient):
     def get_installed_repository_for(
         self, owner: Optional[str] = None, name: Optional[str] = None, changeset: Optional[str] = None
     ) -> Optional[Dict[str, Any]]:
-        clause_list = []
-        if name is not None:
-            clause_list.append(galaxy_model.ToolShedRepository.table.c.name == name)
-        if owner is not None:
-            clause_list.append(galaxy_model.ToolShedRepository.table.c.owner == owner)
-        if changeset is not None:
-            clause_list.append(galaxy_model.ToolShedRepository.table.c.changeset_revision == changeset)
-        clause_list.append(galaxy_model.ToolShedRepository.table.c.deleted == false())
-        clause_list.append(galaxy_model.ToolShedRepository.table.c.uninstalled == false())
-
-        query = self._installation_target.install_model.context.query(galaxy_model.ToolShedRepository)
-        if len(clause_list) > 0:
-            query = query.filter(and_(*clause_list))
-        repository = query.one_or_none()
+        repository = get_installed_repository(self._installation_target.install_model.context, name, owner, changeset)
         if repository:
             return repository.to_dict()
         else:
@@ -1500,9 +1487,9 @@ class ShedTwillTestCase(ShedApiTestCase):
         return [metadata_revision for metadata_revision in repository.metadata_revisions]
 
     def get_repository_metadata_by_changeset_revision(self, repository_id: int, changeset_revision):
-        return test_db_util.get_repository_metadata_for_changeset_revision(
+        return test_db_util.get_repository_metadata_by_repository_id_changeset_revision(
             repository_id, changeset_revision
-        ) or test_db_util.get_repository_metadata_for_changeset_revision(repository_id, None)
+        ) or test_db_util.get_repository_metadata_by_repository_id_changeset_revision(repository_id, None)
 
     def get_repository_metadata_revisions(self, repository: Repository) -> List[str]:
         return [
@@ -2096,3 +2083,17 @@ def _get_tool_panel_section_from_repository_metadata(metadata):
     tool_panel_section_metadata = metadata["tool_panel_section"]
     tool_panel_section = tool_panel_section_metadata[tool_guid][0]["name"]
     return tool_panel_section
+
+
+def get_installed_repository(session, name, owner, changeset):
+    ToolShedRepository = galaxy_model.ToolShedRepository
+    stmt = select(ToolShedRepository)
+    if name is not None:
+        stmt = stmt.where(ToolShedRepository.name == name)
+    if owner is not None:
+        stmt = stmt.where(ToolShedRepository.owner == owner)
+    if changeset is not None:
+        stmt = stmt.wehre(ToolShedRepository.changeset_revision == changeset)
+    stmt = stmt.where(ToolShedRepository.deleted == false())
+    stmt = stmt.where(ToolShedRepository.uninstalled == false())
+    return session.scalars(stmt).one_or_none()
