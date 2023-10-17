@@ -14,7 +14,7 @@ import { BAlert, BButton, BCol, BInputGroup, BRow } from "bootstrap-vue";
 import { ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { loadBroadcasts, updateBroadcast } from "@/api/notifications.broadcast";
+import { fetchAllBroadcasts, updateBroadcast } from "@/api/notifications.broadcast";
 import { type components } from "@/api/schema";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useMarkdown } from "@/composables/markdown";
@@ -101,7 +101,7 @@ async function loadBroadcastsList(overlayLoading = false) {
     }
 
     try {
-        broadcasts.value = await loadBroadcasts();
+        broadcasts.value = await fetchAllBroadcasts();
         broadcasts.value.sort((a, b) => new Date(b.create_time).getTime() - new Date(a.create_time).getTime());
     } finally {
         loading.value = false;

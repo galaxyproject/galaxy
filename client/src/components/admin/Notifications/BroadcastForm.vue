@@ -4,7 +4,7 @@ import { BAlert, BButton, BCol, BFormGroup, BFormInput, BRow } from "bootstrap-v
 import Vue, { computed, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { createBroadcast, loadBroadcast, updateBroadcast } from "@/api/notifications.broadcast";
+import { createBroadcast, fetchBroadcast, updateBroadcast } from "@/api/notifications.broadcast";
 import { type components } from "@/api/schema";
 import { Toast } from "@/composables/toast";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -106,7 +106,7 @@ async function createOrUpdateBroadcast() {
 async function loadBroadcastData() {
     loading.value = true;
     try {
-        const loadedBroadcast = await loadBroadcast(props.id);
+        const loadedBroadcast = await fetchBroadcast(props.id);
 
         broadcastData.value.publication_time = convertUTCtoLocal(loadedBroadcast.publication_time);
 
