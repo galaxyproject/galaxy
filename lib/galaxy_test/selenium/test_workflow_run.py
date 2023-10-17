@@ -1,3 +1,6 @@
+import json
+
+import yaml
 from selenium.webdriver.common.by import By
 
 from galaxy_test.base import rules_test_data
@@ -176,6 +179,25 @@ steps:
         # Check that this tool form contains a warning about different versions.
         self.assert_message(self.components.workflow_run.warning, contains="different versions")
         self.screenshot("workflow_run_tool_upgrade")
+
+    @selenium_test
+    def test_run_form_safe_upgrade_handling(self):
+        workflow_with_rules = yaml.safe_load(WORKFLOW_WITH_RULES_1)
+        # 0.9.0 is a version that does not exist in WORKFLOW_SAFE_TOOL_VERSION_UPDATES
+        workflow_with_rules["steps"]["apply"]["tool_version"] = "0.9.0"
+        workflow_with_rules_json = json.dumps(workflow_with_rules)
+        name = self.workflow_upload_yaml_with_random_name(workflow_with_rules_json, exact_tools=True)
+        self.workflow_run_with_name(name)
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+        self.assert_message(self.components.workflow_run.warning, contains="different versions")
+        # 1.0.0 is a version that exists in WORKFLOW_SAFE_TOOL_VERSION_UPDATES
+        workflow_with_rules["steps"]["apply"]["tool_version"] = "1.0.0"
+        workflow_with_rules_json = json.dumps(workflow_with_rules)
+        name = self.workflow_upload_yaml_with_random_name(workflow_with_rules_json, exact_tools=True)
+        self.workflow_run_with_name(name)
+        self.sleep_for(self.wait_types.UX_TRANSITION)
+        # Check that this tool form does not contain a warning about different versions.
+        assert self.components.workflow_run.warning.is_absent
 
     @selenium_test
     @managed_history
