@@ -231,7 +231,7 @@ class JobManager:
         )
         return self.job_lock()
 
-    def get_accessible_job(self, trans, decoded_job_id):
+    def get_accessible_job(self, trans, decoded_job_id, stdout_position=-1, stdout_length=0, stderr_position=-1, stderr_length=0):
         job = trans.sa_session.query(trans.app.model.Job).filter(trans.app.model.Job.id == decoded_job_id).first()
         if job is None:
             raise ObjectNotFound()
@@ -248,6 +248,30 @@ class JobManager:
                 if not self.dataset_manager.is_accessible(data_assoc.dataset.dataset, trans.user):
                     raise ItemAccessibilityException("You are not allowed to rerun this job.")
         trans.sa_session.refresh(job)
+
+        # If stdout_length and stdout_position are legitimate values, then return stdout with status.
+        if job.state == job.states.RUNNING:
+            working_directory = trans.app.object_store.get_filename(
+                job, base_dir="job_work", dir_only=True, obj_dir=True
+            )
+            if stdout_length > 0 and stdout_position > -1:
+                try:
+                    stdout_path = Path(working_directory) / STDOUT_LOCATION
+                    stdout_file = open(stdout_path, "r")
+                    stdout_file.seek(stdout_position)
+                    job.job_stdout = stdout_file.read(stdout_length)
+                    job.tool_stdout = job.job_stdout
+                except Exception as e:
+                    log.error("Could not read STDOUT: %s", e)
+            if stderr_length > 0 and stderr_position > -1:
+                try:
+                    stderr_path = Path(working_directory) / STDERR_LOCATION
+                    stderr_file = open(stderr_path, "r")
+                    stderr_file.seek(stderr_position)
+                    job.job_stderr = stderr_file.read(stderr_length)
+                    job.tool_stderr = job.job_stderr
+                except Exception as e:
+                    log.error("Could not read STDERR: %s", e)
         return job
 
     def stop(self, job, message=None):
