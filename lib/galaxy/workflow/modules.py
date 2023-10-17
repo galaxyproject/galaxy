@@ -47,11 +47,10 @@ from galaxy.schema.invocation import (
 )
 from galaxy.tool_util.cwl.util import set_basename_and_derived_properties
 from galaxy.tool_util.parser.output_objects import ToolExpressionOutput
-from galaxy.tool_util.version import parse_version
 from galaxy.tools import (
     DatabaseOperationTool,
     DefaultToolState,
-    WORKFLOW_SAFE_TOOL_VERSION_UPDATES,
+    get_safe_version,
 )
 from galaxy.tools.actions import filter_output
 from galaxy.tools.execute import (
@@ -1706,21 +1705,14 @@ class ToolModule(WorkflowModule):
                 tool_id, tool_version=tool_version, exact=exact_tools, tool_uuid=tool_uuid
             )
         if self.tool:
-            current_tool_id = self.tool.id
             current_tool_version = str(self.tool.version)
-            if tool_version and exact_tools and self.tool_version != current_tool_version:
-                safe_version = WORKFLOW_SAFE_TOOL_VERSION_UPDATES.get(current_tool_id)
-                safe_version_found = False
-                if safe_version and self.tool.lineage:
-                    # tool versions are sorted from old to new, so check newest version first
-                    for lineage_version in reversed(self.tool.lineage.tool_versions):
-                        if safe_version.current_version >= parse_version(lineage_version) >= safe_version.min_version:
-                            self.tool = trans.app.toolbox.get_tool(
-                                tool_id, tool_version=lineage_version, exact=True, tool_uuid=tool_uuid
-                            )
-                            safe_version_found = True
-                            break
-                if not safe_version_found:
+            if exact_tools and self.tool_version and self.tool_version != current_tool_version:
+                safe_version = get_safe_version(self.tool, self.tool_version)
+                if safe_version:
+                    self.tool = trans.app.toolbox.get_tool(
+                        tool_id, tool_version=safe_version, exact=True, tool_uuid=tool_uuid
+                    )
+                else:
                     log.info(
                         f"Exact tool specified during workflow module creation for [{tool_id}] but couldn't find correct version [{tool_version}]."
                     )
@@ -1799,7 +1791,9 @@ class ToolModule(WorkflowModule):
                     new_tool_shed_url = new_url.split("/view")[0]
                     message += f'The tool \'{module.tool.name}\', version {tool_version} by the owner {module.tool.repository_owner} installed from <a href="{old_url}" target="_blank">{old_tool_shed_url}</a> is not available. '
                     message += f'A derivation of this tool installed from <a href="{new_url}" target="_blank">{new_tool_shed_url}</a> will be used instead. '
-            if step.tool_version and (step.tool_version != module.tool.version):
+            if step.tool_version and (
+                step.tool_version != module.tool.version and not get_safe_version(module.tool, step.tool_version)
+            ):
                 message += f"<span title=\"tool id '{step.tool_id}'\">Using version '{module.tool.version}' instead of version '{step.tool_version}' specified in this workflow. "
             if message:
                 log.debug(message)
