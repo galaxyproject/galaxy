@@ -1161,6 +1161,14 @@ steps:
             self._assert_status_code_is(other_import_response, 200)
             self._assert_user_has_workflow_with_name("imported: test_import_published")
 
+    def test_import_published_api(self):
+        workflow_id = self.workflow_populator.simple_workflow("test_import_published", publish=True)
+        with self._different_user():
+            other_import_response = self.__import_workflow(workflow_id, deprecated_route=False)
+            self._assert_status_code_is(other_import_response, 200)
+            workflow = self._download_workflow(other_import_response.json()["id"])
+            assert workflow["steps"]["2"]["tool_version"] == "1.0.0"
+
     def test_export(self):
         uploaded_workflow_id = self.workflow_populator.simple_workflow("test_for_export")
         downloaded_workflow = self._download_workflow(uploaded_workflow_id)
