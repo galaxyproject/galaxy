@@ -1,7 +1,7 @@
 import axios from "axios";
 
 import { withPrefix } from "@/utils/redirect";
-import { errorMessageAsString } from "@/utils/simple-error";
+import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
 
 export const VisualizationsGrid = {
     url: "/api/visualizations?view=detailed&sharing=true",
@@ -89,7 +89,16 @@ export const VisualizationsGrid = {
             title: "Tags",
             type: "tags",
             handler: async (data) => {
-                alert(data.tags);
+                const tagPayload = {
+                    item_id: data.id,
+                    item_class: "Visualization",
+                    item_tags: data.tags,
+                };
+                try {
+                    await axios.put(withPrefix(`/api/tags`), tagPayload);
+                } catch (e) {
+                    rethrowSimple(e);
+                }
             },
         },
         {
