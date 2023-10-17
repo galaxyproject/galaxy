@@ -61,7 +61,6 @@ export const useUserStore = defineStore("userStore", () => {
         if (!loadPromise) {
             loadPromise = getCurrentUser()
                 .then(async (user) => {
-                    const historyStore = useHistoryStore();
                     if ('email' in user) {
                         currentUser.value = { ...user, isAnonymous: false };
                         currentPreferences.value = user.preferences;
