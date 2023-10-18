@@ -40,6 +40,7 @@ function tusUpload(uploadables, index, data, tusEndpoint, cnf) {
         fingerprint: buildFingerprint(cnf),
         chunkSize: chunkSize,
         metadata: data.payload,
+        storeFingerprintForResuming: false,
         onError: function (err) {
             const status = err.originalResponse?.getStatus();
             if (status == 403) {
