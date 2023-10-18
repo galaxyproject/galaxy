@@ -4032,11 +4032,6 @@ chalk@^4.0.0, chalk@^4.1.0, chalk@~4.1.0:
     ansi-styles "^4.1.0"
     supports-color "^7.1.0"
 
-change-case@^5.0.2:
-  version "5.0.2"
-  resolved "https://registry.yarnpkg.com/change-case/-/change-case-5.0.2.tgz#0f1885d310b84065a17b20e8231c7dff37207627"
-  integrity sha512-tH6YZXViaeC2/Mnt8m4gSmbZfNorC2rhwCX2bXw8SYZWr8ljCPB7iA+1TLG9t7yroWBFauc63LlOZ1gucMVCWw==
-
 char-regex@^1.0.2:
   version "1.0.2"
   resolved "https://registry.npmjs.org/char-regex/-/char-regex-1.0.2.tgz"
