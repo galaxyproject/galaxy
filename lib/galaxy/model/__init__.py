@@ -6146,9 +6146,9 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
             inner_dc = alias(DatasetCollection)
             inner_dce = alias(DatasetCollectionElement)
             order_by_columns.append(inner_dce.c.element_index)
-            q = q.join(inner_dc, inner_dc.c.id == dce.c.child_collection_id).outerjoin(
-                inner_dce, inner_dce.c.dataset_collection_id == inner_dc.c.id
-            )
+            q = q.join(
+                inner_dc, and_(inner_dc.c.id == dce.c.child_collection_id, dce.c.dataset_collection_id == dc.c.id)
+            ).outerjoin(inner_dce, inner_dce.c.dataset_collection_id == inner_dc.c.id)
             q = q.add_columns(
                 *attribute_columns(inner_dce.c, element_attributes, nesting_level),
                 *attribute_columns(inner_dc.c, collection_attributes, nesting_level),
