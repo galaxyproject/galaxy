@@ -4032,6 +4032,11 @@ chalk@^4.0.0, chalk@^4.1.0, chalk@~4.1.0:
     ansi-styles "^4.1.0"
     supports-color "^7.1.0"
 
+change-case@^5.0.2:
+  version "5.0.2"
+  resolved "https://registry.yarnpkg.com/change-case/-/change-case-5.0.2.tgz#0f1885d310b84065a17b20e8231c7dff37207627"
+  integrity sha512-tH6YZXViaeC2/Mnt8m4gSmbZfNorC2rhwCX2bXw8SYZWr8ljCPB7iA+1TLG9t7yroWBFauc63LlOZ1gucMVCWw==
+
 char-regex@^1.0.2:
   version "1.0.2"
   resolved "https://registry.npmjs.org/char-regex/-/char-regex-1.0.2.tgz"
@@ -5231,14 +5236,6 @@ domutils@^3.0.1:
     dom-serializer "^2.0.0"
     domelementtype "^2.3.0"
     domhandler "^5.0.3"
-
-dot-case@^3.0.4:
-  version "3.0.4"
-  resolved "https://registry.npmjs.org/dot-case/-/dot-case-3.0.4.tgz"
-  integrity sha512-Kv5nKlh6yRrdrGvxeJ2e5y2eRUpkUosIW4A2AS38zwSz27zu7ufDwQPi5Jhs3XAlGNetl3bmnGhQsMtkKJnj3w==
-  dependencies:
-    no-case "^3.0.4"
-    tslib "^2.0.3"
 
 dumpmeta-webpack-plugin@^0.2.0:
   version "0.2.0"
@@ -8338,13 +8335,6 @@ lodash@^4.17.15, lodash@^4.17.19, lodash@^4.17.21:
   resolved "https://registry.yarnpkg.com/lodash/-/lodash-4.17.21.tgz#679591c564c3bffaae8454cf0b3df370c3d6911c"
   integrity sha512-v2kDEe57lecTulaDIuNTPy3Ry4gLGJ6Z1O3vE1krgXZNrsQ+LFTGHVxVjcXPs17LhbZVGedAJv8XZ1tvj5FvSg==
 
-lower-case@^2.0.2:
-  version "2.0.2"
-  resolved "https://registry.npmjs.org/lower-case/-/lower-case-2.0.2.tgz"
-  integrity sha512-7fm3l3NAF9WfN6W3JOmf5drwpVqX78JtoGJ3A6W0a6ZnldM41w2fV5D490psKFTpMds8TJse/eHLFFsNHHjHgg==
-  dependencies:
-    tslib "^2.0.3"
-
 lru-cache@^4.1.2, lru-cache@^4.1.5:
   version "4.1.5"
   resolved "https://registry.npmjs.org/lru-cache/-/lru-cache-4.1.5.tgz"
@@ -8699,14 +8689,6 @@ next-tick@^1.1.0:
   version "1.1.0"
   resolved "https://registry.npmjs.org/next-tick/-/next-tick-1.1.0.tgz"
   integrity sha512-CXdUiJembsNjuToQvxayPZF9Vqht7hewsvy2sOWafLvi2awflj9mOC6bHIg50orX8IJvWKY9wYQ/zB2kogPslQ==
-
-no-case@^3.0.4:
-  version "3.0.4"
-  resolved "https://registry.npmjs.org/no-case/-/no-case-3.0.4.tgz"
-  integrity sha512-fgAN3jGAh+RoxUGZHTSOLJIqUc2wmoBwGR4tbpNAKmmovFoWq0OdRkb0VkldReO2a2iBT/OEulG9XSUc10r3zg==
-  dependencies:
-    lower-case "^2.0.2"
-    tslib "^2.0.3"
 
 node-fetch@^2.6.1, node-fetch@^2.6.7, node-fetch@~2.6.1:
   version "2.6.7"
@@ -10524,14 +10506,6 @@ slugify@^1.6.6:
   resolved "https://registry.yarnpkg.com/slugify/-/slugify-1.6.6.tgz#2d4ac0eacb47add6af9e04d3be79319cbcc7924b"
   integrity sha512-h+z7HKHYXj6wJU+AnS/+IH8Uh9fdcX1Lrhg1/VMdf9PwoBQXFcXiAdsy2tSK0P6gKwJLXp02r90ahUCqHk9rrw==
 
-snake-case@^3.0.4:
-  version "3.0.4"
-  resolved "https://registry.npmjs.org/snake-case/-/snake-case-3.0.4.tgz"
-  integrity sha512-LAOh4z89bGQvl9pFfNF8V146i7o7/CqFPbqzYgP+yYzDIDeS9HaNFtXABamRW+AQzEVODcvE79ljJ+8a9YSdMg==
-  dependencies:
-    dot-case "^3.0.4"
-    tslib "^2.0.3"
-
 snapdragon-node@^2.0.1:
   version "2.1.1"
   resolved "https://registry.npmjs.org/snapdragon-node/-/snapdragon-node-2.1.1.tgz"
@@ -11306,7 +11280,7 @@ tslib@^1.9.0:
   resolved "https://registry.npmjs.org/tslib/-/tslib-1.14.1.tgz"
   integrity sha512-Xni35NKzjgMrwevysHTCArtLDpPvye8zV/0E4EyYn43P7/7qvQwPh9BGkHewbMulVntbigmcT7rdX3BNo9wRJg==
 
-tslib@^2.0.3, tslib@^2.1.0:
+tslib@^2.1.0:
   version "2.4.0"
   resolved "https://registry.npmjs.org/tslib/-/tslib-2.4.0.tgz"
   integrity sha512-d6xOpEDfsi2CZVlPQzGeux8XMwLT9hssAsaPYExaQMuYskwb+x1x7J371tWlbBdWHroy99KnVB6qIkUbs5X3UQ==

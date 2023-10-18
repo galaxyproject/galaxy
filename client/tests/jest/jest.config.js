@@ -7,6 +7,7 @@ const { defaults: tsjPreset } = require("ts-jest/presets");
 const modulesToTransform = [
     "axios",
     "bootstrap-vue",
+    "change-case",
     "rxjs",
     "@hirez_io",
     "winbox",
