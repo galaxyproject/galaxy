@@ -57,6 +57,18 @@ class FastAPICategories:
         return [self.category_manager.to_model(c) for c in categories]
 
     @router.get(
+        "/api/categories/{encoded_category_id}",
+        description="show category",
+        operation_id="categories__show",
+    )
+    def show(self, encoded_category_id: str = CategoryIdPathParam) -> CategoryResponse:
+        """
+        Return a list of dictionaries that contain information about each Category.
+        """
+        category = self.category_manager.get(encoded_category_id)
+        return self.category_manager.to_model(category)
+
+    @router.get(
         "/api/categories/{encoded_category_id}/repositories",
         description="display repositories by category",
         operation_id="categories__repositories",

@@ -20,6 +20,13 @@ export interface paths {
          */
         post: operations["categories__create"]
     }
+    "/api/categories/{encoded_category_id}": {
+        /**
+         * Show
+         * @description show category
+         */
+        get: operations["categories__show"]
+    }
     "/api/categories/{encoded_category_id}/repositories": {
         /**
          * Repositories
@@ -261,6 +268,8 @@ export interface components {
         }
         /** Category */
         Category: {
+            /** Deleted */
+            deleted: boolean
             /** Description */
             description: string
             /** Id */
@@ -1111,6 +1120,32 @@ export interface operations {
         requestBody: {
             content: {
                 "application/json": components["schemas"]["CreateCategoryRequest"]
+            }
+        }
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["Category"]
+                }
+            }
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"]
+                }
+            }
+        }
+    }
+    categories__show: {
+        /**
+         * Show
+         * @description show category
+         */
+        parameters: {
+            /** @description The encoded database identifier of the category. */
+            path: {
+                encoded_category_id: string
             }
         }
         responses: {
