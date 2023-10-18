@@ -3230,7 +3230,9 @@ class UnzipCollectionTool(DatabaseOperationTool):
 
         assert collection.collection_type == "paired"
         forward_o, reverse_o = collection.dataset_instances
-        forward, reverse = forward_o.copy(copy_tags=forward_o.tags), reverse_o.copy(copy_tags=reverse_o.tags)
+        forward, reverse = forward_o.copy(copy_tags=forward_o.tags, flush=False), reverse_o.copy(
+            copy_tags=reverse_o.tags, flush=False
+        )
         self._add_datasets_to_history(history, [forward, reverse])
 
         out_data["forward"] = forward
@@ -3246,7 +3248,9 @@ class ZipCollectionTool(DatabaseOperationTool):
         forward_o = incoming["input_forward"]
         reverse_o = incoming["input_reverse"]
 
-        forward, reverse = forward_o.copy(copy_tags=forward_o.tags), reverse_o.copy(copy_tags=reverse_o.tags)
+        forward, reverse = forward_o.copy(copy_tags=forward_o.tags, flush=False), reverse_o.copy(
+            copy_tags=reverse_o.tags, flush=False
+        )
         new_elements = {}
         new_elements["forward"] = forward
         new_elements["reverse"] = reverse
@@ -3277,7 +3281,9 @@ class BuildListCollectionTool(DatabaseOperationTool):
                     identifier = getattr(incoming_repeat["input"], "element_identifier", incoming_repeat["input"].name)
                 elif id_select == "manual":
                     identifier = incoming_repeat["id_cond"]["identifier"]
-                new_elements[identifier] = incoming_repeat["input"].copy(copy_tags=incoming_repeat["input"].tags)
+                new_elements[identifier] = incoming_repeat["input"].copy(
+                    copy_tags=incoming_repeat["input"].tags, flush=False
+                )
 
         self._add_datasets_to_history(history, new_elements.values())
         output_collections.create_collection(
@@ -3311,7 +3317,9 @@ class ExtractDatasetCollectionTool(DatabaseOperationTool):
         else:
             raise Exception("Invalid tool parameters.")
         extracted = extracted_element.element_object
-        extracted_o = extracted.copy(copy_tags=extracted.tags, new_name=extracted_element.element_identifier)
+        extracted_o = extracted.copy(
+            copy_tags=extracted.tags, new_name=extracted_element.element_identifier, flush=False
+        )
         self._add_datasets_to_history(history, [extracted_o], datasets_visible=True)
 
         out_data["output"] = extracted_o
@@ -3394,7 +3402,7 @@ class MergeCollectionTool(DatabaseOperationTool):
             if getattr(value, "history_content_type", None) == "dataset":
                 copied_value = value.copy(copy_tags=value.tags, flush=False)
             else:
-                copied_value = value.copy()
+                copied_value = value.copy(flush=False)
             new_elements[key] = copied_value
 
         self._add_datasets_to_history(history, new_elements.values())
@@ -3414,7 +3422,7 @@ class FilterDatasetsTool(DatabaseOperationTool):
             if getattr(dce.element_object, "history_content_type", None) == "dataset":
                 copied_value = dce.element_object.copy(copy_tags=dce.element_object.tags, flush=False)
             else:
-                copied_value = dce.element_object.copy()
+                copied_value = dce.element_object.copy(flush=False)
             new_elements[element_identifier] = copied_value
         return new_elements
 
@@ -3582,7 +3590,7 @@ class RelabelFromFileTool(DatabaseOperationTool):
             if getattr(dce_object, "history_content_type", None) == "dataset":
                 copied_value = dce_object.copy(copy_tags=dce_object.tags, flush=False)
             else:
-                copied_value = dce_object.copy()
+                copied_value = dce_object.copy(flush=False)
             new_elements[new_label] = copied_value
 
         new_labels_path = new_labels_dataset_assoc.file_name
@@ -3688,7 +3696,7 @@ class TagFromFileTool(DatabaseOperationTool):
                     )
             else:
                 # We have a collection, and we copy the elements so that we don't manipulate the original tags
-                copied_value = dce.element_object.copy(element_destination=history)
+                copied_value = dce.element_object.copy(element_destination=history, flush=False)
                 for new_element, old_element in zip(copied_value.dataset_elements, dce.element_object.dataset_elements):
                     # TODO: This should be eliminated, but collections created by the collection builder
                     # don't set `visible` to `False` if you don't hide the original elements.
@@ -3748,7 +3756,7 @@ class FilterFromFileTool(DatabaseOperationTool):
             if getattr(dce_object, "history_content_type", None) == "dataset":
                 copied_value = dce_object.copy(copy_tags=dce_object.tags, flush=False)
             else:
-                copied_value = dce_object.copy()
+                copied_value = dce_object.copy(flush=False)
 
             if passes_filter:
                 filtered_elements[element_identifier] = copied_value

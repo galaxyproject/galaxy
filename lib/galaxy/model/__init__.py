@@ -5721,7 +5721,7 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, Serializable):
             sa_session.commit()
         return hda
 
-    def copy(self, parent_id=None, target_folder=None):
+    def copy(self, parent_id=None, target_folder=None, flush=True):
         sa_session = object_session(self)
         ldda = LibraryDatasetDatasetAssociation(
             name=self.name,
