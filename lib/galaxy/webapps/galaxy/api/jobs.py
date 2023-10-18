@@ -291,10 +291,6 @@ class FastAPIJobs:
         id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> JobErrorSummary:
-        """
-        :rtype:     dictionary
-        :returns:   dictionary containing information regarding where the error report was sent.
-        """
         # Get dataset on which this error was triggered
         dataset_id = payload.dataset_id
         dataset = self.hda_manager.get_accessible(id=dataset_id, user=trans.user)
@@ -328,13 +324,6 @@ class FastAPIJobs:
         trans: ProvidesHistoryContext = DependsOnTrans,
     ):
         """
-        :type   payload: dict
-        :param  payload: Dictionary containing description of requested job. This is in the same format as
-            a request to POST /apt/tools would take to initiate a job
-
-        :rtype:     list
-        :returns:   list of dictionaries containing summary job information of the jobs that match the requested job run
-
         This method is designed to scan the list of previously run jobs and find records of jobs that had
         the exact some input parameters and datasets. This can be used to minimize the amount of repeated work, and simply
         recycle the old results.
@@ -344,6 +333,8 @@ class FastAPIJobs:
         tool = trans.app.toolbox.get_tool(tool_id)
         if tool is None:
             raise exceptions.ObjectNotFound("Requested tool not found")
+        # TODO the inputs are actually a dict, but are passed as a JSON string
+        # maybe change it?
         inputs = json.loads(payload.inputs)
         # Find files coming in as multipart file data and add to inputs.
         for k, v in payload.__annotations__.items():
