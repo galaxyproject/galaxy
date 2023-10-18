@@ -262,7 +262,10 @@ onMounted(() => {
     position: absolute;
     width: 100%;
     height: 100%;
-    z-index: 200;
+
+    .resize-container {
+        z-index: 200;
+    }
 
     &:focus-within {
         .style-buttons {

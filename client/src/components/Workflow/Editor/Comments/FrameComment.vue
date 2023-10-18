@@ -276,6 +276,10 @@ onMounted(() => {
     width: 100%;
     height: 100%;
 
+    .resize-container {
+        z-index: 0;
+    }
+
     &:focus-within {
         .resize-container {
             resize: both;

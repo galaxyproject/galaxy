@@ -195,7 +195,10 @@ $min-height: 1.5em;
     position: absolute;
     width: 100%;
     height: 100%;
-    z-index: 50;
+
+    .resize-container {
+        z-index: 50;
+    }
 
     &:focus-within {
         .resize-container {
