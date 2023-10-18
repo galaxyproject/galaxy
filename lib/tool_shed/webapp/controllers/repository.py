@@ -16,10 +16,6 @@ from sqlalchemy import (
     null,
     select,
 )
-from toolshed.webapp.model import (
-    Repository,
-    RepositoryMetadata,
-)
 
 import tool_shed.grids.repository_grids as repository_grids
 import tool_shed.grids.util as grids_util
@@ -62,7 +58,9 @@ from tool_shed.utility_containers import ToolShedUtilityContainerManager
 from tool_shed.webapp.framework.decorators import require_login
 from tool_shed.webapp.model import (
     Category,
+    Repository,
     RepositoryCategoryAssociation,
+    RepositoryMetadata,
 )
 from tool_shed.webapp.util import ratings_util
 
