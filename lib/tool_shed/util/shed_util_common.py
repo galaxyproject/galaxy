@@ -11,6 +11,7 @@ from sqlalchemy import (
     select,
     true,
 )
+from sqlalchemy.orm import scoped_session
 
 from galaxy import util
 from galaxy.tool_shed.util.shed_util_common import (
@@ -331,7 +332,7 @@ def handle_email_alerts(app, host, repository, content_alert_str="", new_repo_al
             subject = f"Galaxy tool shed alert for new repository named {str(repository.name)}"
             subject = subject[:80]
             email_alerts = []
-            for user in get_users_with_repo_alert(sa_session.query, app.model.User):
+            for user in get_users_with_repo_alert(sa_session, app.model.User):
                 if admin_only:
                     if user.email in admin_users:
                         email_alerts.append(user.email)
@@ -463,6 +464,6 @@ __all__ = (
 )
 
 
-def get_users_with_repo_alert(session, user_model):
+def get_users_with_repo_alert(session: scoped_session, user_model):
     stmt = select(user_model).where(user_model.deleted == false()).where(user_model.new_repo_alert == true())
     return session.scalars(stmt)
