@@ -69,13 +69,17 @@ anilthanki, thanki.anil@gmail.com, https://github.com/galaxyproject/galaxy/pull/
 HadleyKing, king@gwu.edu, https://github.com/galaxyproject/galaxy/pull/14374
 jj-umn, jj@umn.edu, https://github.com/galaxyproject/galaxy/pull/13087
 jancrichter, 40425803+jancrichter@users.noreply.github.com, https://github.com/galaxyproject/galaxy/pull/14475
-scholtalbers, j.scholtalbers@gmail.com, https://github.com/galaxyproject/galaxy/pull/12752
+scholtalbers, https://github.com/galaxyproject/galaxy/pull/11882
 jennaj, jen@bx.psu.edu, https://github.com/galaxyproject/galaxy/pull/13148
 jhl667, jhl667@yahoo.com, https://github.com/galaxyproject/galaxy/pull/15280
 johanneskoester, johannes.koester@uni-due.de, https://github.com/galaxyproject/galaxy/pull/14770
 laperlej, jonathan.laperle@usherbrooke.ca, https://github.com/galaxyproject/galaxy/pull/16320
 kysrpex, dominguj@informatik.uni-freiburg.de, https://github.com/galaxyproject/galaxy/pull/16449
 jvanbraekel, juvanbraekel@bioit-galaxy-test.sciensano.be, https://github.com/galaxyproject/galaxy/pull/16132
+SandyRogers, https://github.com/galaxyproject/galaxy/pull/16179
+selten, https://github.com/galaxyproject/galaxy/pull/12333
+simonbray, https://github.com/galaxyproject/galaxy/pull/11844
+sveinugu, https://github.com/galaxyproject/galaxy/pull/14694
 
 # not yet agreed, needs research
 Daniel Bouchard <danieljosephbouchard@gmail.com> # GH user: Airistotal
@@ -132,7 +136,7 @@ Frederik Delaere <frederik.delaere@gmail.com  # GH user: ??
 Freek de Bruijn <freek.de.bruijn@nbic.nl>  # GH user: FreekDB
 Ross <ross.lazarus@gmail.com>  # GH user: fubar2
 Galaxy <galaxy-dev@plantandfood.co.nz>  # GH user: ???
-Scott Szakonyi <sszakony@nd.edu>  # GH user: sszakony
+Scott Szakonyi <sszakony@nd.edu>  # GH user: sszakony, last contribution in 2016
 Gert Hulselmans <gert.hulselmans@med.kuleuven.be>  # GH user: ghuls
 Gildas Le Corguillé <lecorguille@users.noreply.github.com>  # GH user: lecorguille
 Guruprasad Anada <gua110@bx.psu.edu>  # GH user: ??
@@ -177,6 +181,11 @@ Juleen Graham <juleengrah@gmail.com>  # GH user: juleengraham
 Julien Seiler <seilerj@igbmc.fr>  # GH user: julozi
 Junzhou Wang <junzhouwang@gmail.com>  # GH user: junzwang
 Jeremy Volkening <jdv@base2bio.com>  # GH user: jvolkening
+Saket Choudhary <saketkc@gmail.com>  # GH user: saketkc, last contribution in 2014
+Saskia Hiltemann <zazkia@gmail.com>  # GH user: shiltemann, last contribution in 2018
+Scott McManus <scottmcmanus@gatech.edu>  # No GH user, last contribution in 2012
+Sebastian Kapust <sebastian@kapust.org>  # GH user: scrathat, last contribution in 2020
+Steven Weaver <sweaver@temple.edu>  # GH user: stevenweaver, last contribution 2018
 
 # not agreed, but contributions no longer present
 Adam Brenner <aebrenne@uci.edu> # GH user: abrenner, only commits to tools moved to tool shed (no longer in galaxy)
