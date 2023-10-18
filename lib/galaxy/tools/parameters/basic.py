@@ -2574,97 +2574,6 @@ class HiddenDataToolParameter(HiddenToolParameter, DataToolParameter):
         self.hidden = True
 
 
-class LibraryDatasetToolParameter(ToolParameter):
-    """
-    Parameter that lets users select a LDDA from a modal window, then use it within the wrapper.
-    """
-
-    def __init__(self, tool, input_source, context=None):
-        input_source = ensure_input_source(input_source)
-        super().__init__(tool, input_source)
-        self.multiple = input_source.get_bool("multiple", True)
-
-    def from_json(self, value, trans, other_values=None):
-        other_values = other_values or {}
-        return self.to_python(value, trans.app, other_values=other_values, validate=True)
-
-    def to_param_dict_string(self, value, other_values=None):
-        if value is None:
-            return "None"
-        elif self.multiple:
-            return [dataset.get_file_name() for dataset in value]
-        else:
-            return value[0].get_file_name()
-
-    # converts values to json representation:
-    #   { id: LibraryDatasetDatasetAssociation.id, name: LibraryDatasetDatasetAssociation.name, src: 'lda' }
-    def to_json(self, value, app, use_security):
-        if not isinstance(value, list):
-            value = [value]
-        lst: List[Dict[str, str]] = []
-        for item in value:
-            lda_id = lda_name = None
-            if isinstance(item, LibraryDatasetDatasetAssociation):
-                lda_id = app.security.encode_id(item.id) if use_security else item.id
-                lda_name = item.name
-            elif isinstance(item, dict):
-                lda_id = item.get("id")
-                lda_name = item.get("name")
-            else:
-                lst = []
-                break
-            if lda_id is not None:
-                lst.append({"id": lda_id, "name": lda_name, "src": "ldda"})
-        if len(lst) == 0:
-            return None
-        else:
-            return lst
-
-    # converts values into python representation:
-    #   LibraryDatasetDatasetAssociation
-    # valid input values (incl. arrays of mixed sets) are:
-    #   1. LibraryDatasetDatasetAssociation
-    #   2. LibraryDatasetDatasetAssociation.id
-    #   3. { id: LibraryDatasetDatasetAssociation.id, ... }
-    def to_python(self, value, app, other_values=None, validate=False):
-        other_values = other_values or {}
-        if not isinstance(value, list):
-            value = [value]
-        lst = []
-        session = app.model.context
-        for item in value:
-            if isinstance(item, LibraryDatasetDatasetAssociation):
-                lst.append(item)
-            else:
-                lda_id = None
-                if isinstance(item, dict):
-                    lda_id = item.get("id")
-                elif isinstance(item, str):
-                    lda_id = item
-                else:
-                    lst = []
-                    break
-                id = lda_id if isinstance(lda_id, int) else app.security.decode_id(lda_id)
-                lda = session.get(LibraryDatasetDatasetAssociation, id)
-                if lda is not None:
-                    lst.append(lda)
-                elif validate:
-                    raise ParameterValueError(
-                        "one of the selected library datasets is invalid or not available anymore", self.name
-                    )
-        if len(lst) == 0:
-            if not self.optional and validate:
-                raise ParameterValueError("invalid library dataset selected", self.name)
-            return None
-        else:
-            return lst
-
-    def to_dict(self, trans, other_values=None):
-        d = super().to_dict(trans)
-        d["multiple"] = self.multiple
-        return d
-
-
 class BaseJsonToolParameter(ToolParameter):
     """
     Class of parameter that tries to keep values as close to JSON as possible.
@@ -2766,7 +2675,6 @@ parameter_types = dict(
     ftpfile=FTPFileToolParameter,
     data=DataToolParameter,
     data_collection=DataCollectionToolParameter,
-    library_data=LibraryDatasetToolParameter,
     rules=RulesListToolParameter,
     directory_uri=DirectoryUriToolParameter,
     drill_down=DrillDownSelectToolParameter,

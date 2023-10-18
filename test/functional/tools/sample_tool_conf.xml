@@ -21,7 +21,6 @@
   <tool file="code_file.xml" />
   <tool file="disambiguate_cond.xml" />
   <tool file="multi_repeats.xml" />
-  <tool file="library_data.xml" />
   <tool file="remove_value.xml" />
   <tool file="bibtex.xml" />
   <tool file="multi_select.xml" />

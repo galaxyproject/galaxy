@@ -102,101 +102,6 @@ var Button = Backbone.View.extend({
     },
 });
 
-/** This button allows the right-click/open-in-new-tab feature, its used e.g. for panel buttons. */
-var ButtonLink = Button.extend({
-    initialize: function (options) {
-        this.model =
-            (options && options.model) ||
-            new Backbone.Model({
-                id: Utils.uid(),
-                visible: true,
-                title: "",
-                icon: "",
-                cls: "",
-            }).set(options);
-        this.setElement($("<a/>").append((this.$icon = $("<span/>"))));
-        this.listenTo(this.model, "change", this.render, this);
-        this.render();
-    },
-
-    render: function () {
-        var options = this.model.attributes;
-        this.$el
-            .removeClass()
-            .addClass(options.cls)
-            .attr({
-                id: options.id,
-                href: options.href || "javascript:void(0)",
-                title: options.title,
-                target: options.target || "_top",
-                disabled: options.disabled,
-                "data-description": options.description,
-            })
-            .css("display", options.visible ? "inline-block" : "none")
-            .tooltip({ placement: "bottom" })
-            .off("click")
-            .on("click", () => {
-                options.onclick && !options.disabled && options.onclick();
-            });
-        this.$icon.removeClass().addClass(options.icon);
-    },
-});
-
-/** The check button is used in the tool form and allows to distinguish between multiple states e.g. all, partially and nothing selected. */
-var ButtonCheck = Backbone.View.extend({
-    initialize: function (options) {
-        this.model =
-            (options && options.model) ||
-            new Backbone.Model({
-                id: Utils.uid(),
-                title: "Select/Unselect all",
-                icons: ["fa-square-o", "fa-minus-square-o", "fa-check-square-o"],
-                value: 0,
-                visible: true,
-                onchange: function () {},
-            }).set(options);
-        this.setElement(
-            $("<div/>")
-                .addClass("mb-2")
-                .append((this.$icon = $("<span/>")))
-                .append((this.$title = $("<span/>")))
-        );
-        this.listenTo(this.model, "change", this.render, this);
-        this.render();
-    },
-
-    render: function (options) {
-        options = this.model.attributes;
-        this.$el
-            .addClass("ui-button-check")
-            .css("display", options.visible ? "inline-block" : "none")
-            .off("click")
-            .on("click", () => {
-                this.model.set("value", (this.model.get("value") === 0 && 2) || 0);
-                options.onclick && options.onclick();
-            });
-        this.$title.html(options.title);
-        this.$icon.removeClass().addClass("icon fa mr-1").addClass(options.icons[options.value]);
-    },
-
-    /* Sets a new value and/or returns the value.
-     * @param{Integer}   new_val - Set a new value 0=unchecked, 1=partial and 2=checked.
-     * OR:
-     * @param{Integer}   new_val - Number of selected options.
-     * @param{Integer}   total   - Total number of available options.
-     */
-    value: function (new_val, total) {
-        if (new_val !== undefined) {
-            if (total && new_val !== 0) {
-                new_val = (new_val !== total && 1) || 2;
-            }
-            this.model.set("value", new_val);
-            this.model.get("onchange")(this.model.get("value"));
-        }
-        return this.model.get("value");
-    },
-});
-
 /** This class creates a button with dropdown menu. */
 var ButtonMenu = Backbone.View.extend({
     $menu: null,
@@ -306,7 +211,5 @@ var ButtonMenu = Backbone.View.extend({
 
 export default {
     Button: Button,
-    ButtonLink: ButtonLink,
-    ButtonCheck: ButtonCheck,
     ButtonMenu: ButtonMenu,
 };

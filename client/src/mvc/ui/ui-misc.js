@@ -5,8 +5,6 @@ import Backbone from "backbone";
 import $ from "jquery";
 import Buttons from "mvc/ui/ui-buttons";
 import Modal from "mvc/ui/ui-modal";
-import Options from "mvc/ui/ui-options";
-import Select from "mvc/ui/ui-select-default";
 import _ from "underscore";
 
 /** Displays messages used e.g. in the tool form */
@@ -129,25 +127,13 @@ export var Input = Backbone.View.extend({
  */
 
 export const Button = Buttons.Button;
-export const ButtonCheck = Buttons.ButtonCheck;
 export const ButtonMenu = Buttons.ButtonMenu;
-export const ButtonLink = Buttons.ButtonLink;
-export const Checkbox = Options.Checkbox;
-export const RadioButton = Options.RadioButton;
-export const Radio = Options.Radio;
-export { Select };
 
 export default {
     Button: Buttons.Button,
-    ButtonCheck: Buttons.ButtonCheck,
     ButtonMenu: Buttons.ButtonMenu,
-    ButtonLink: Buttons.ButtonLink,
     Input: Input,
     Message: Message,
     UnescapedMessage: UnescapedMessage,
     Modal: Modal,
-    RadioButton: Options.RadioButton,
-    Checkbox: Options.Checkbox,
-    Radio: Options.Radio,
-    Select: Select,
 };
