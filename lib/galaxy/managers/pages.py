@@ -45,11 +45,15 @@ from galaxy.managers.markdown_util import (
     ready_galaxy_markdown_for_import,
 )
 from galaxy.model import (
+    History,
+    HistoryDatasetAssociation,
     Page,
     PageRevision,
     PageTagAssociation,
     PageUserShareAssociation,
+    StoredWorkflow,
     User,
+    Visualization,
 )
 from galaxy.model.base import transaction
 from galaxy.model.index_filter_util import (
@@ -242,9 +246,7 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
             raise exceptions.ObjectAttributeInvalidException(
                 "Page identifier must consist of only lowercase letters, numbers, and the '-' character"
             )
-        elif (
-            trans.sa_session.query(trans.app.model.Page).filter_by(user=user, slug=payload.slug, deleted=False).first()
-        ):
+        elif page_exists(trans.sa_session, user, payload.slug):
             raise exceptions.DuplicatedSlugException("Page identifier must be unique")
 
         if payload.invocation_id:
@@ -606,20 +608,20 @@ def placeholderRenderForSave(trans: ProvidesHistoryContext, item_class, item_id,
     encoded_item_id, decoded_item_id = get_page_identifiers(item_id, trans.app)
     item_name = ""
     if item_class == "History":
-        history = trans.sa_session.query(model.History).get(decoded_item_id)
+        history = trans.sa_session.get(History, decoded_item_id)
         history = base.security_check(trans, history, False, True)
         item_name = history.name
     elif item_class == "HistoryDatasetAssociation":
-        hda = trans.sa_session.query(model.HistoryDatasetAssociation).get(decoded_item_id)
+        hda = trans.sa_session.get(HistoryDatasetAssociation, decoded_item_id)
         hda_manager = trans.app.hda_manager
         hda = hda_manager.get_accessible(decoded_item_id, trans.user)
         item_name = hda.name
     elif item_class == "StoredWorkflow":
-        wf = trans.sa_session.query(model.StoredWorkflow).get(decoded_item_id)
+        wf = trans.sa_session.get(StoredWorkflow, decoded_item_id)
         wf = base.security_check(trans, wf, False, True)
         item_name = wf.name
     elif item_class == "Visualization":
-        visualization = trans.sa_session.query(model.Visualization).get(decoded_item_id)
+        visualization = trans.sa_session.get(Visualization, decoded_item_id)
         visualization = base.security_check(trans, visualization, False, True)
         item_name = visualization.title
     class_shorthand = PAGE_CLASS_MAPPING[item_class]
