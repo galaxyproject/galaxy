@@ -24,10 +24,10 @@ from gxformat2.cytoscape import to_cytoscape
 from gxformat2.yaml import ordered_dump
 from pydantic import BaseModel
 from sqlalchemy import (
-    and_,
     desc,
     false,
     or_,
+    select,
     true,
 )
 from sqlalchemy.orm import (
@@ -50,7 +50,11 @@ from galaxy.managers import (
 from galaxy.managers.base import decode_id
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.executables import artifact_class
-from galaxy.model import StoredWorkflow
+from galaxy.model import (
+    StoredWorkflow,
+    Workflow,
+    WorkflowInvocationStep,
+)
 from galaxy.model.base import transaction
 from galaxy.model.index_filter_util import (
     append_user_filter,
@@ -253,38 +257,17 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
         a workflow.
         """
         if util.is_uuid(workflow_id):
-            # see if they have passed in the UUID for a workflow that is attached to a stored workflow
             workflow_uuid = uuid.UUID(workflow_id)
-            workflow_query = trans.sa_session.query(trans.app.model.StoredWorkflow).filter(
-                and_(
-                    trans.app.model.StoredWorkflow.id == trans.app.model.Workflow.stored_workflow_id,
-                    trans.app.model.Workflow.uuid == workflow_uuid,
-                )
-            )
         else:
+            workflow_uuid = None
             workflow_id = workflow_id if isinstance(workflow_id, int) else decode_id(self.app, workflow_id)
-            if by_stored_id:
-                workflow_query = trans.sa_session.query(trans.app.model.StoredWorkflow).filter(
-                    trans.app.model.StoredWorkflow.id == workflow_id
-                )
-            else:
-                workflow_query = trans.sa_session.query(trans.app.model.StoredWorkflow).filter(
-                    and_(
-                        trans.app.model.StoredWorkflow.id == trans.app.model.Workflow.stored_workflow_id,
-                        trans.app.model.Workflow.id == workflow_id,
-                    )
-                )
-        stored_workflow = workflow_query.options(
-            joinedload(trans.app.model.StoredWorkflow.annotations),
-            joinedload(trans.app.model.StoredWorkflow.tags),
-            subqueryload(trans.app.model.StoredWorkflow.latest_workflow)
-            .joinedload(trans.app.model.Workflow.steps)
-            .joinedload("*"),
-        ).first()
+
+        stored_workflow = _get_stored_workflow(trans.sa_session, workflow_uuid, workflow_id, by_stored_id)
+
         if stored_workflow is None:
             if not by_stored_id:
                 # May have a subworkflow without attached StoredWorkflow object, this was the default prior to 20.09 release.
-                workflow = trans.sa_session.query(trans.app.model.Workflow).get(workflow_id)
+                workflow = trans.sa_session.get(Workflow, workflow_id)
                 stored_workflow = self.attach_stored_workflow(trans=trans, workflow=workflow)
                 if stored_workflow:
                     return stored_workflow
@@ -329,7 +312,7 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
         make sure it accessible to the user.
         """
         workflow_id = decode_id(self.app, encoded_workflow_id)
-        workflow = trans.sa_session.query(model.Workflow).get(workflow_id)
+        workflow = trans.sa_session.get(Workflow, workflow_id)
         self.check_security(trans, workflow, check_ownership=True)
         return workflow
 
@@ -457,9 +440,7 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
 
     def get_invocation_step(self, trans, decoded_workflow_invocation_step_id):
         try:
-            workflow_invocation_step = trans.sa_session.query(model.WorkflowInvocationStep).get(
-                decoded_workflow_invocation_step_id
-            )
+            workflow_invocation_step = trans.sa_session.get(WorkflowInvocationStep, decoded_workflow_invocation_step_id)
         except Exception:
             raise exceptions.ObjectNotFound()
         self.check_security(
@@ -506,7 +487,7 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
         sa_session = trans.sa_session
         invocations_query = sa_session.query(model.WorkflowInvocation)
         if stored_workflow_id is not None:
-            stored_workflow = sa_session.query(model.StoredWorkflow).get(stored_workflow_id)
+            stored_workflow = sa_session.get(StoredWorkflow, stored_workflow_id)
             if not stored_workflow:
                 raise exceptions.ObjectNotFound()
             invocations_query = invocations_query.join(model.Workflow).filter(
@@ -2064,3 +2045,20 @@ class Format2ConverterGalaxyInterface(ImporterGalaxyInterface):
         raise NotImplementedError(
             "Direct format 2 import of nested workflows is not yet implemented, use bioblend client."
         )
+
+
+def _get_stored_workflow(session, workflow_uuid, workflow_id, by_stored_id):
+    stmt = select(StoredWorkflow)
+    if workflow_uuid is not None:
+        stmt = stmt.where(StoredWorkflow.id == Workflow.stored_workflow_id).where(Workflow.uuid == workflow_uuid)
+    else:
+        if by_stored_id:
+            stmt = stmt.where(StoredWorkflow.id == workflow_id)
+        else:
+            stmt = stmt.where(StoredWorkflow.id == Workflow.stored_workflow_id).where(Workflow.id == workflow_id)
+    stmt = stmt.options(
+        joinedload(StoredWorkflow.annotations),
+        joinedload(StoredWorkflow.tags),
+        subqueryload(StoredWorkflow.latest_workflow).joinedload(Workflow.steps).joinedload("*"),
+    ).limit(1)
+    return session.scalars(stmt).first()
