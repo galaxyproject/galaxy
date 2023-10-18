@@ -26,6 +26,7 @@ from pydantic import BaseModel
 from sqlalchemy import (
     desc,
     false,
+    func,
     or_,
     select,
     true,
@@ -51,8 +52,13 @@ from galaxy.managers.base import decode_id
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.executables import artifact_class
 from galaxy.model import (
+    ImplicitCollectionJobs,
+    ImplicitCollectionJobsJobAssociation,
+    Job,
     StoredWorkflow,
+    StoredWorkflowUserShareAssociation,
     Workflow,
+    WorkflowInvocation,
     WorkflowInvocationStep,
 )
 from galaxy.model.base import transaction
@@ -282,12 +288,10 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
 
         # check to see if user has permissions to selected workflow
         if stored_workflow.user != trans.user and not trans.user_is_admin and not stored_workflow.importable:
-            if (
-                trans.sa_session.query(trans.app.model.StoredWorkflowUserShareAssociation)
-                .filter_by(user=trans.user, stored_workflow=stored_workflow)
-                .count()
-                == 0
-            ):
+            stmt = select(StoredWorkflowUserShareAssociation).filter_by(
+                user=trans.user, stored_workflow=stored_workflow
+            )
+            if get_count(trans.sa_session, stmt) == 0:
                 message = "Workflow is not owned by or shared with current user"
                 raise exceptions.ItemAccessibilityException(message)
 
@@ -344,12 +348,10 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
             if check_ownership:
                 raise exceptions.ItemOwnershipException()
             # else check_accessible...
-            if (
-                trans.sa_session.query(model.StoredWorkflowUserShareAssociation)
-                .filter_by(user=trans.user, stored_workflow=stored_workflow)
-                .count()
-                == 0
-            ):
+            stmt = select(StoredWorkflowUserShareAssociation).filter_by(
+                user=trans.user, stored_workflow=stored_workflow
+            )
+            if get_count(trans.sa_session, stmt) == 0:
                 raise exceptions.ItemAccessibilityException()
 
         return True
@@ -386,17 +388,8 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
         workflow_canvas.add_steps()
         return workflow_canvas.finish(for_embed=for_embed)
 
-    def get_invocation(self, trans, decoded_invocation_id, eager=False) -> model.WorkflowInvocation:
-        q = trans.sa_session.query(model.WorkflowInvocation)
-        if eager:
-            q = q.options(
-                subqueryload(model.WorkflowInvocation.steps)
-                .joinedload(model.WorkflowInvocationStep.implicit_collection_jobs)
-                .joinedload(model.ImplicitCollectionJobs.jobs)
-                .joinedload(model.ImplicitCollectionJobsJobAssociation.job)
-                .joinedload(model.Job.input_datasets)
-            )
-        workflow_invocation = q.get(decoded_invocation_id)
+    def get_invocation(self, trans, decoded_invocation_id, eager=False) -> WorkflowInvocation:
+        workflow_invocation = _get_invocation(trans.sa_session, eager, decoded_invocation_id)
         if not workflow_invocation:
             encoded_wfi_id = trans.security.encode_id(decoded_invocation_id)
             message = f"'{encoded_wfi_id}' is not a valid workflow invocation id"
@@ -2062,3 +2055,22 @@ def _get_stored_workflow(session, workflow_uuid, workflow_id, by_stored_id):
         subqueryload(StoredWorkflow.latest_workflow).joinedload(Workflow.steps).joinedload("*"),
     ).limit(1)
     return session.scalars(stmt).first()
+
+
+def _get_invocation(session, eager, invocation_id):
+    stmt = select(WorkflowInvocation)
+    if eager:
+        stmt = stmt.options(
+            subqueryload(WorkflowInvocation.steps)
+            .joinedload(WorkflowInvocationStep.implicit_collection_jobs)
+            .joinedload(ImplicitCollectionJobs.jobs)
+            .joinedload(ImplicitCollectionJobsJobAssociation.job)
+            .joinedload(Job.input_datasets)
+        )
+    stmt = stmt.where(WorkflowInvocation.id == invocation_id).limit(1)
+    return session.scalars(stmt).first()
+
+
+def get_count(session, statement):
+    stmt = select(func.count()).select_from(statement)
+    return session.scalar(stmt)
