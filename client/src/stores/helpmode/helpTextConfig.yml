@@ -1,2 +1,26 @@
 ---
-quotaMeterHelpString: This is your Quota storage meter. It is an indication of how much storage you are using. To learn more about Quota Storage, check out this GTN tutorial.s
+quotaMeterHelpString: This is your Quota storage meter. It is an indication of how much storage you are using. To learn more about Quota Storage, check out this GTN tutorial.
+unix_terms:
+    exitCodeHelpString: Some text about exit codes.
+    stdoutHelpString: Some text about stdout.
+    stderrHelpString: Some text about stderr.
+    commandLineHelpString: Some text about command line.
+    tracebackHelpString: Some text about traceback.
+
+galaxy_terms:
+    historyIDHelpString: Some text about history ID.
+    historyContentIDHelpString: Some text about history content ID.
+    historyDatasetCollectionAssociationHelpString: Some text about history dataset collection association.
+    historyDatasetAssociationHelpString: Some text about history dataset association.
+    datasetHelpString: Some text about dataset.
+    invocationHelpString: Some text about invocation.
+    datatypeHelpString: Some text about datatype.
+    dbkeyHelpString: Some text about dbkey.
+    jobStatesHelpString: Some text about job states.
+
+tool_form_base: |
+    ## [HelpMode] How to use a tool form
+
+    1. Select data **inputs**
+    2. Set tool **parameters**
+    3. Click **Run Tool**

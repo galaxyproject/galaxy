@@ -15,7 +15,10 @@
 </template>
 
 <script>
+import { mapStores } from "pinia";
 import Vue from "vue";
+
+import { useHelpModeTextStore } from "@/stores/helpmode/helpModeTextStore";
 
 import FormInputs from "./FormInputs";
 import { matchInputs, validateInputs, visitInputs } from "./utilities";
@@ -90,6 +93,7 @@ export default {
         };
     },
     computed: {
+        ...mapStores(useHelpModeTextStore),
         validation() {
             return validateInputs(this.formIndex, this.formData);
         },
@@ -129,6 +133,7 @@ export default {
         },
     },
     created() {
+        this.callHelpMode();
         this.onCloneInputs();
         // build flat formData that is ready to be submitted
         this.formData = this.buildFormData();
@@ -140,6 +145,9 @@ export default {
         this.onErrors();
     },
     methods: {
+        callHelpMode() {
+            this.helpModeTextStore.addHelpModeText("tool_form_base");
+        },
         buildFormData() {
             const params = {};
             Object.entries(this.formIndex).forEach(([key, input]) => {
