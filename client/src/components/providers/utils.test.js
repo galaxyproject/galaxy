@@ -16,20 +16,20 @@ describe("Providers utils", () => {
         requestParams = {
             perPage: 1,
             current_page: 2,
-            randomParam: "randomValue"
+            randomParam: "randomValue",
         };
         cleanParams = cleanPaginationParameters(requestParams);
         expect(cleanParams).toEqual({
             limit: 1,
             offset: 1,
-            random_param: "randomValue"
+            random_param: "randomValue",
         });
         requestParams = {
-            offset: 3
+            offset: 3,
         };
         cleanParams = cleanPaginationParameters(requestParams);
         expect(cleanParams).toEqual({
-            offset: 3
+            offset: 3,
         });
-    })
-})
+    });
+});
