@@ -42,7 +42,7 @@ BACKENDS = {
     "elixir": "social_core.backends.elixir.ElixirOpenIdConnect",
     "okta": "social_core.backends.okta_openidconnect.OktaOpenIdConnect",
     "azure": "social_core.backends.azuread_tenant.AzureADV2TenantOAuth2",
-    "egi_checkin": "social_core.backends.checkin.EGICheckinOpenIdConnect",
+    "egi_checkin": "social_core.backends.egi_checkin.EGICheckinOpenIdConnect",
 }
 
 BACKENDS_NAME = {
