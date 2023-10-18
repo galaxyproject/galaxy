@@ -22,7 +22,9 @@ from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.schema import (
     SerializationParams,
 )
-
+from galaxy.schema.schema import (
+    PageIndexQueryPayload,
+)
 from galaxy.webapps.galaxy.services.base import ServiceBase
 from galaxy.webapps.galaxy.services.sharable import ShareableService
 
@@ -54,8 +56,7 @@ class VisualizationsService(ServiceBase):
         self,
         trans: ProvidesHistoryContext,
         serialization_params: SerializationParams,
-        sharing: bool = False,
-        deleted: bool = False,
+        payload: PageIndexQueryPayload, include_total_count: bool = False
     ) -> List[Any]:
         """
         Search visualizations using a query system and returns a list
@@ -71,10 +72,10 @@ class VisualizationsService(ServiceBase):
             result = self.serializer.serialize_to_view(
                 content, user=user, trans=trans, **serialization_params.dict()
             )
-            if content.deleted is False and sharing:
+            if content.deleted is False and payload.sharing:
                 sharing_dict = self.shareable_service.sharing(trans, content.id)
                 result.update(sharing_dict)
-            if content.deleted == deleted:
+            if content.deleted == payload.deleted:
                 response.append(result)
         return response
 

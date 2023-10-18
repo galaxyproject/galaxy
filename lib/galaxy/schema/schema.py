@@ -572,6 +572,21 @@ class Visualization(Model):  # TODO annotate this model
         extra = Extra.allow  # Allow any fields temporarily until the model is annotated
 
 
+VisualizationSortByEnum = Literal["update_time", "title", "username"]
+
+
+class VisualizationIndexQueryPayload(Model):
+    deleted: bool = False
+    show_published: Optional[bool] = None
+    show_shared: Optional[bool] = None
+    user_id: Optional[DecodedDatabaseIdField] = None
+    sort_by: VisualizationSortByEnum = Field("update_time", title="Sort By", description="Sort pages by this attribute.")
+    sort_desc: Optional[bool] = Field(default=False, title="Sort descending", description="Sort in descending order.")
+    search: Optional[str] = Field(default=None, title="Filter text", description="Freetext to search.")
+    limit: Optional[int] = Field(default=100, lt=1000, title="Limit", description="Maximum number of pages to return.")
+    offset: Optional[int] = Field(default=0, title="Offset", description="Number of pages to skip.")
+
+
 class HistoryItemBase(Model):
     """Basic information provided by items contained in a History."""
 

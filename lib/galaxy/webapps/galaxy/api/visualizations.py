@@ -10,12 +10,14 @@ import logging
 from typing import (
     Any,
     List,
+    Optional,
 )
 
 from fastapi import (
     Body,
     Depends,
     Path,
+    Query,
     Response,
     status,
 )
@@ -29,7 +31,6 @@ from galaxy.managers.context import ProvidesUserContext
 from galaxy.model.base import transaction
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.schema import (
-    FilterQueryParams,
     SerializationParams,
 )
 from galaxy.schema.fields import DecodedDatabaseIdField
@@ -38,6 +39,8 @@ from galaxy.schema.schema import (
     ShareWithPayload,
     ShareWithStatus,
     SharingStatus,
+    VisualizationIndexQueryPayload,
+    VisualizationSortByEnum,
 )
 from galaxy.util.hash_util import md5_hash_str
 from galaxy.web import expose_api
@@ -47,17 +50,62 @@ from galaxy.webapps.galaxy.api import (
     BaseGalaxyAPIController,
     depends,
     DependsOnTrans,
+    IndexQueryTag,
     Router,
+    search_query_param,
 )
 from galaxy.webapps.galaxy.api.common import (
-    get_filter_query_params,
     query_serialization_params,
+    LimitQueryParam,
+    OffsetQueryParam,
 )
 from galaxy.webapps.galaxy.services.visualizations import VisualizationsService
 
 log = logging.getLogger(__name__)
 
 router = Router(tags=["visualizations"])
+
+DeletedQueryParam: bool = Query(
+    default=False, title="Display deleted", description="Whether to include deleted pages in the result."
+)
+
+UserIdQueryParam: Optional[DecodedDatabaseIdField] = Query(
+    default=None,
+    title="Encoded user ID to restrict query to, must be own id if not an admin user",
+)
+
+query_tags = [
+    IndexQueryTag("title", "The page's title."),
+    IndexQueryTag("slug", "The page's slug.", "s"),
+    IndexQueryTag("tag", "The page's tags.", "t"),
+    IndexQueryTag("user", "The page's owner's username.", "u"),
+]
+
+SearchQueryParam: Optional[str] = search_query_param(
+    model_name="Visualization",
+    tags=query_tags,
+    free_text_fields=["title", "slug", "tag", "type"],
+)
+
+SharingQueryParam: bool = Query(
+    default=False, title="Provide sharing status", description="Whether to provide sharing details in the result."
+)
+
+ShowPublishedQueryParam: bool = Query(default=True, title="Include published visualizations.", description="")
+
+ShowSharedQueryParam: bool = Query(default=False, title="Include visualizations shared with authenticated user.", description="")
+
+SortByQueryParam: VisualizationSortByEnum = Query(
+    default="update_time",
+    title="Sort attribute",
+    description="Sort page index by this specified attribute on the page model",
+)
+
+SortDescQueryParam: bool = Query(
+    default=False,
+    title="Sort Descending",
+    description="Sort in descending order?",
+)
 
 VisualizationIdPathParam: DecodedDatabaseIdField = Path(
     ..., title="Visualization ID", description="The encoded database identifier of the Visualization."
@@ -75,11 +123,32 @@ class FastAPIVisualizations:
     def index(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
+        deleted: bool = DeletedQueryParam,
+        limit: int = LimitQueryParam,
+        offset: int = OffsetQueryParam,
         serialization_params: SerializationParams = Depends(query_serialization_params),
-        sharing: bool = False,
+        sharing: bool = SharingQueryParam,
+        user_id: Optional[DecodedDatabaseIdField] = UserIdQueryParam,
+        show_published: bool = ShowPublishedQueryParam,
+        show_shared: bool = ShowSharedQueryParam,
+        sort_by: VisualizationSortByEnum = SortByQueryParam,
+        sort_desc: bool = SortDescQueryParam,
+        search: Optional[str] = SearchQueryParam,
     ) -> List[Any]:
+        payload = VisualizationIndexQueryPayload.construct(
+            deleted=deleted,
+            user_id=user_id,
+            show_published=show_published,
+            show_shared=show_shared,
+            sharing=sharing,
+            sort_by=sort_by,
+            sort_desc=sort_desc,
+            limit=limit,
+            offset=offset,
+            search=search,
+        )
         return self.service.index(
-            trans, serialization_params, sharing,
+            trans, serialization_params, payload,
         )
 
     @router.get(
