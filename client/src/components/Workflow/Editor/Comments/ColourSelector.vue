@@ -17,7 +17,7 @@ function onClickColour(colour: WorkflowCommentColour) {
 </script>
 
 <template>
-    <div class="annotation-colour-selector">
+    <div class="comment-colour-selector">
         <button
             class="colour-button prevent-zoom"
             title="No Colour"
@@ -42,8 +42,9 @@ function onClickColour(colour: WorkflowCommentColour) {
 <style scoped lang="scss">
 @import "theme/blue.scss";
 
-.annotation-colour-selector {
+.comment-colour-selector {
     position: absolute;
+    z-index: 10000;
 
     display: grid;
     grid-template-rows: 1rem 1rem;
