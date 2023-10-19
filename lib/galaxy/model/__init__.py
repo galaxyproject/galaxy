@@ -604,7 +604,7 @@ WHERE id = :id
         )
         if for_sqlite:
             # hacky alternative for older sqlite
-            statement = """
+            statement = f"""
 WITH new (user_id, quota_source_label, disk_usage) AS (
     VALUES(:id, :label, ({label_usage}))
 )
@@ -614,9 +614,7 @@ FROM new
     LEFT JOIN user_quota_source_usage AS old
         ON new.user_id = old.user_id
             AND new.quota_source_label = old.quota_source_label
-""".format(
-                label_usage=label_usage
-            )
+"""
         else:
             statement = f"""
 INSERT INTO user_quota_source_usage(user_id, quota_source_label, disk_usage)
@@ -996,11 +994,7 @@ ON CONFLICT
         exclude_objectstore_ids = quota_source_map.default_usage_excluded_ids()
         default_cond = "dataset.object_store_id IS NULL OR" if default_quota_enabled and exclude_objectstore_ids else ""
         default_usage_dataset_condition = (
-            (
-                "AND ( {default_cond} dataset.object_store_id NOT IN :exclude_object_store_ids )".format(
-                    default_cond=default_cond,
-                )
-            )
+            f"AND ( {default_cond} dataset.object_store_id NOT IN :exclude_object_store_ids )"
             if exclude_objectstore_ids
             else ""
         )

@@ -93,11 +93,11 @@ class CloudAuthzController(BaseGalaxyAPIController):
             *   status:     HTTP response code
             *   message:    A message complementary to the response code.
         """
-        msg_template = f"Rejected user `{str(trans.user.id)}`'s request to create cloudauthz config because of {{}}."
+        msg_template = f"Rejected user `{trans.user.id}`'s request to create cloudauthz config because of {{}}."
         if not isinstance(payload, dict):
             raise ActionInputError(
                 "Invalid payload data type. The payload is expected to be a dictionary, but "
-                "received data of type `{}`.".format(str(type(payload)))
+                f"received data of type `{type(payload)}`."
             )
 
         missing_arguments = []
@@ -116,7 +116,7 @@ class CloudAuthzController(BaseGalaxyAPIController):
         if len(missing_arguments) > 0:
             log.debug(msg_template.format(f"missing required config {missing_arguments}"))
             raise RequestParameterMissingException(
-                "The following required arguments are missing in the payload: " "{}".format(missing_arguments)
+                f"The following required arguments are missing in the payload: {missing_arguments}"
             )
 
         description = payload.get("description", "")
@@ -200,9 +200,7 @@ class CloudAuthzController(BaseGalaxyAPIController):
             return view
         except Exception as e:
             log.exception(
-                msg_template.format(
-                    "exception while deleting the cloudauthz record with " "ID: `{}`.".format(encoded_authz_id)
-                )
+                msg_template.format(f"exception while deleting the cloudauthz record with ID: `{encoded_authz_id}`.")
             )
             raise InternalServerError(
                 "An unexpected error has occurred while responding to the DELETE request of the "
@@ -270,9 +268,7 @@ class CloudAuthzController(BaseGalaxyAPIController):
             raise e
         except Exception as e:
             log.exception(
-                msg_template.format(
-                    "exception while updating the cloudauthz record with " "ID: `{}`.".format(encoded_authz_id)
-                )
+                msg_template.format(f"exception while updating the cloudauthz record with ID: `{encoded_authz_id}`.")
             )
             raise InternalServerError(
                 "An unexpected error has occurred while responding to the PUT request of the "

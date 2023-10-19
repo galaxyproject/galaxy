@@ -179,16 +179,14 @@ FROM (
     def _default_quota(self, default_type, quota_source_label):
         label_condition = "IS NULL" if quota_source_label is None else "= :label"
         query = text(
-            """
+            f"""
 SELECT bytes
 FROM quota as default_quota
 LEFT JOIN default_quota_association on default_quota.id = default_quota_association.quota_id
 WHERE default_quota_association.type = :default_type
     AND default_quota.deleted != :is_true
     AND default_quota.quota_source_label {label_condition}
-""".format(
-                label_condition=label_condition
-            )
+"""
         )
 
         conn = self.sa_session.connection()
