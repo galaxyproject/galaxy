@@ -565,12 +565,15 @@ def get_repositories(
     if installable:
         stmt1 = select(RepositoryMetadata.repository_id)
         stmt = stmt.where(Repository.id.in_(stmt1))
+
     if sort_key == "owner":
-        stmt = stmt.order_by(User.username)
+        sort_by = User.username
     else:
-        stmt = stmt.order_by(Repository.name)
+        sort_by = Repository.name
     if sort_order == "desc":
-        stmt = stmt.desc()
+        sort_by = sort_by.desc()
+    stmt = stmt.order_by(sort_by)
+
     if page is not None:
         page = int(page)
         stmt = stmt.limit(per_page)
