@@ -420,14 +420,14 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
             return []
 
         # create a union of select statements for each tag model for this user - getting only the tname and user_value
-        all_tags_stmt = None
+        all_stmts = []
         for tag_model in tag_models:
             stmt = select(tag_model.user_tname, tag_model.user_value).where(tag_model.user == user)
-            all_tags_stmt = stmt if all_tags_stmt is None else stmt.union(all_tags_stmt.union)
+            all_stmts.append(stmt)
+        union_stmt = all_stmts[0].union(*all_stmts[1:])  # union the first select with the rest
 
         # boil the tag tuples down into a sorted list of DISTINCT name:val strings
-        all_tags_stmt = all_tags_stmt.distinct()
-        tag_tuples = self.session().exectute(all_tags_stmt)
+        tag_tuples = self.session().execute(union_stmt)  # no need for DISTINCT: union is a set operation.
         tags = [(f"{name}:{val}" if val else name) for name, val in tag_tuples]
         # consider named tags while sorting
         return sorted(tags, key=lambda str: re.sub("^name:", "#", str))
