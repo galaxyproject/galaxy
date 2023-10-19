@@ -1097,7 +1097,7 @@ def get_current_repositories(session, order=False):
 
 
 def get_filtered_repositories(session, repo_ids, order):
-    stmt = select(Repository).where(Repository.in_(repo_ids))
+    stmt = select(Repository).where(Repository.id.in_(repo_ids))
     if order:
         stmt = stmt.order_by(Repository.name, Repository.user_id)
     return session.scalars(stmt)
