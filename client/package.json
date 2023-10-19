@@ -25,9 +25,9 @@
     "vue-loader": "15.10.0"
   },
   "dependencies": {
-    "@citation-js/core": "^0.6.1",
-    "@citation-js/plugin-bibtex": "^0.6.1",
-    "@citation-js/plugin-csl": "^0.6.4",
+    "@citation-js/core": "^0.7.1",
+    "@citation-js/plugin-bibtex": "^0.7.2",
+    "@citation-js/plugin-csl": "^0.7.2",
     "@fontsource/atkinson-hyperlegible": "^5.0.15",
     "@fortawesome/fontawesome-free": "^5.15.4",
     "@fortawesome/fontawesome-svg-core": "^6.2.1",

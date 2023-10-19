@@ -1350,10 +1350,10 @@
     lodash.groupby "^4.6.0"
     semver "^7.3.4"
 
-"@citation-js/core@^0.6.1":
-  version "0.6.1"
-  resolved "https://registry.npmjs.org/@citation-js/core/-/core-0.6.1.tgz"
-  integrity sha512-zvVxsAP4ciVHiZ60TmKTfjui4m6xeISSp/rtIhOcvZxZ70bBfkt83+kGnuI4xRlhB/oUrZN2fC9BSRKdivSobQ==
+"@citation-js/core@^0.7.1":
+  version "0.7.1"
+  resolved "https://registry.yarnpkg.com/@citation-js/core/-/core-0.7.1.tgz#61d9cd5a848db5cc7f26650f550fee4af1f6734a"
+  integrity sha512-vt7O/KbWNj6v0/fTKRJfjLE0VU4bV13LR69bG4V4lvWEq8TqXSNR4TVEINJuAwBLCofTk6LRyF82oGpb9AgaPQ==
   dependencies:
     "@citation-js/date" "^0.5.0"
     "@citation-js/name" "^0.4.2"
@@ -1370,19 +1370,19 @@
   resolved "https://registry.npmjs.org/@citation-js/name/-/name-0.4.2.tgz"
   integrity sha512-brSPsjs2fOVzSnARLKu0qncn6suWjHVQtrqSUrnqyaRH95r/Ad4wPF5EsoWr+Dx8HzkCGb/ogmoAzfCsqlTwTQ==
 
-"@citation-js/plugin-bibtex@^0.6.1":
-  version "0.6.1"
-  resolved "https://registry.npmjs.org/@citation-js/plugin-bibtex/-/plugin-bibtex-0.6.1.tgz"
-  integrity sha512-JMw9h9MUXH7YWvgN0j+A5xI4Fw3cHYcDMzpweeAcXBfjfnC6q30Dyvs2YxfUxNEKvWDgRQjAiNNIzgWXs9uK1Q==
+"@citation-js/plugin-bibtex@^0.7.2":
+  version "0.7.2"
+  resolved "https://registry.yarnpkg.com/@citation-js/plugin-bibtex/-/plugin-bibtex-0.7.2.tgz#0b87d86a0a0f9365aa690b7ab9d0383dd5f24605"
+  integrity sha512-QkgPfYbs1dierenxKWzIlPV7450Jci8bvZbcpjO3HQTfTaj15SV2C2AaeKhUotXZmTjm49AJQWHZtrNh+7YWjg==
   dependencies:
     "@citation-js/date" "^0.5.0"
     "@citation-js/name" "^0.4.2"
     moo "^0.5.1"
 
-"@citation-js/plugin-csl@^0.6.4":
-  version "0.6.4"
-  resolved "https://registry.npmjs.org/@citation-js/plugin-csl/-/plugin-csl-0.6.4.tgz"
-  integrity sha512-RG4NrFIx0CZTfNeMCC8CL7UGFRiUv5/bNd/Nc6Q/NHx0cS/tYDQcKt0M24dpOI7PAZwVoddbDW4Iakn6nS4QsQ==
+"@citation-js/plugin-csl@^0.7.2":
+  version "0.7.2"
+  resolved "https://registry.yarnpkg.com/@citation-js/plugin-csl/-/plugin-csl-0.7.2.tgz#0062b3a07b949e2aa4eff70cac27abdee9c6e866"
+  integrity sha512-ogNb/gdcZ/EXZq+We+/aw6RkiYxjF+h7myJypyR0PApGJq9GzwcfGHW9ded2JdQIxyz4fO46pCTR4nv6FPUvMA==
   dependencies:
     "@citation-js/date" "^0.5.0"
     citeproc "^2.4.6"
