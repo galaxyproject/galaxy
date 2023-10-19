@@ -99,7 +99,7 @@ SortByQueryParam: VisualizationSortByEnum = Query(
 )
 
 SortDescQueryParam: bool = Query(
-    default=False,
+    default=True,
     title="Sort Descending",
     description="Sort in descending order?",
 )

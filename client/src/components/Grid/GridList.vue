@@ -97,28 +97,36 @@ function onTagClick() {}
             <h1 class="mb-3 h-lg">
                 {{ gridConfig.title }}
             </h1>
-            <table class="table table-striped">
+            <table class="table">
                 <thead>
                     <th v-for="(fieldEntry, fieldIndex) in gridConfig.fields" :key="fieldIndex">
                         {{ fieldEntry.title || fieldEntry.key }}
                     </th>
                 </thead>
-                <tr v-for="(rowData, rowIndex) in gridData" :key="rowIndex">
+                <tr
+                    v-for="(rowData, rowIndex) in gridData"
+                    :key="rowIndex"
+                    :class="{ 'grid-list-dark-row': rowIndex % 2 }">
                     <td v-for="(fieldEntry, fieldIndex) in gridConfig.fields" :key="fieldIndex">
                         <span v-if="!!fieldEntry.operations">
-                            <b-dropdown text="Selection" size="sm" variant="primary" data-description="grid operations">
-                                <template v-slot:button-content>
-                                    <span>
-                                        {{ rowData.title }}
-                                    </span>
-                                </template>
-                                <b-dropdown-item
+                            <b-link
+                                id="grid-operations"
+                                class="p-2"
+                                data-toggle="dropdown"
+                                aria-haspopup="true"
+                                aria-expanded="false">
+                                <icon icon="caret-down" class="fa-lg" />
+                                <span class="font-weight-bold">{{ rowData.title }}</span>
+                            </b-link>
+                            <div class="dropdown-menu" aria-labelledby="dataset-dropdown">
+                                <a
                                     v-for="(operation, operationIndex) in fieldEntry.operations"
                                     :key="operationIndex"
-                                    @click="executeOperation(operation, rowData)">
+                                    class="dropdown-item"
+                                    @click.prevent="executeOperation(operation, rowData)">
                                     <span v-localize>{{ operation.title }}</span>
-                                </b-dropdown-item>
-                            </b-dropdown>
+                                </a>
+                            </div>
                         </span>
                         <span v-else-if="fieldEntry.type == 'string'">
                             {{ rowData[fieldEntry.key] }}
@@ -171,3 +179,11 @@ function onTagClick() {}
         </div>
     </div>
 </template>
+
+<style lang="scss">
+@import "theme/blue.scss";
+
+.grid-list-dark-row {
+    background: $gray-200;
+}
+</style>
