@@ -587,51 +587,36 @@ class VisualizationIndexQueryPayload(Model):
     offset: Optional[int] = Field(default=0, title="Offset", description="Number of pages to skip.")
 
 
-class VisualizationDetails(Model):
+class VisualizationSummary(Model):
     id: DecodedDatabaseIdField = Field(
         ...,  # Required
         title="ID",
         description="Encoded ID of the Visualization.",
     )
-    model_class: PAGE_MODEL_CLASS = ModelClassField(PAGE_MODEL_CLASS)
-    username: str = Field(
-        ...,  # Required
-        title="Username",
-        description="The name of the user owning this Visualization.",
+    title: str = Field(
+        title="Title",
+        description="The name of the visualization.",
     )
-    email_hash: str = Field(
+    type: str = Field(
         ...,  # Required
-        title="Encoded email",
-        description="The encoded email of the user.",
+        title="Type",
+        description="The type of the visualization.",
     )
-    published: bool = Field(
-        ...,  # Required
-        title="Published",
-        description="Whether this Visualization has been published.",
+    dbkey: str = Field(
+        default=None,
+        title="DbKey",
+        description="The database key of the visualization.",
     )
-    importable: bool = Field(
-        ...,  # Required
-        title="Importable",
-        description="Whether this Visualization can be imported.",
-    )
-    deleted: bool = Field(
-        ...,  # Required
-        title="Deleted",
-        description="Whether this Visualization has been deleted.",
-    )
-    latest_revision_id: DecodedDatabaseIdField = Field(
-        ...,  # Required
-        title="Latest revision ID",
-        description="The encoded ID of the last revision of this Visualization.",
-    )
-    revision_ids: List[DecodedDatabaseIdField] = Field(
-        ...,  # Required
-        title="List of revisions",
-        description="The history with the encoded ID of each revision of the Visualization.",
-    )
+
+
+class VisualizationDetails(VisualizationSummary):
     create_time: Optional[datetime] = CreateTimeField
     update_time: Optional[datetime] = UpdateTimeField
-    tags: TagCollection
+    tags: Optional[TagCollection] = Field(
+        ...,  # Required
+        title="Tags",
+        description="A list of tags to add to this item.",
+    )
 
     class Config:
         extra = Extra.allow  # Allow any other extra fields

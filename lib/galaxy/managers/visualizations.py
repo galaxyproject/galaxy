@@ -7,22 +7,18 @@ reproduce a specific view in a Galaxy visualization.
 import logging
 
 from typing import (
-    Any,
     Dict,
     List,
     Tuple,
 )
 
 from sqlalchemy import (
-    desc,
     false,
     or_,
-    select,
     true,
 )
 from sqlalchemy.orm import (
     aliased,
-    Session,
 )
 
 from galaxy import (
@@ -40,7 +36,6 @@ from galaxy.model.index_filter_util import (
 )
 
 from galaxy.schema.schema import (
-    VisualizationDetailsList,
     VisualizationIndexQueryPayload,
 )
 
@@ -177,8 +172,6 @@ class VisualizationManager(sharable.SharableModelManager):
             query = query.limit(payload.limit)
         if payload.offset is not None:
             query = query.offset(payload.offset)
-        log.debug(query)
-        log.debug(total_matches)
         return query, total_matches
 
 

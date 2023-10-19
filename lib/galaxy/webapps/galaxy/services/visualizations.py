@@ -1,20 +1,12 @@
 import logging
 
 from typing import (
-    Any,
     List,
     Tuple,
 )
 
 from galaxy import exceptions
 
-from sqlalchemy import (
-    select,
-    true,
-)
-from galaxy.model import (Visualization, VisualizationUserShareAssociation)
-
-from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.managers.notification import NotificationManager
 from galaxy.managers.visualizations import (
     VisualizationManager,
@@ -62,7 +54,7 @@ class VisualizationsService(ServiceBase):
         serialization_params: SerializationParams,
         payload: VisualizationIndexQueryPayload,
         include_total_count: bool = False
-    ) -> Tuple[List[Any], int]:
+    ) -> Tuple[VisualizationDetailsList, int]:
         """Return a list of Visualizations viewable by the user
 
         :rtype:     list
@@ -74,11 +66,11 @@ class VisualizationsService(ServiceBase):
                 raise exceptions.AdminRequiredException("Only admins can index the visualizations of others")
 
         entries, total_matches = self.manager.index_query(trans, payload, include_total_count)
-        response = [self.serializer.serialize_to_view(
-            content, user=trans.user, trans=trans, **serialization_params.dict()
+        results = [self.serializer.serialize_to_view(
+            content, user=trans.user, trans=trans, view="detailed"
         ) for content in entries]
 
         return (
-            response,
+            VisualizationDetailsList.construct(__root__=results),
             total_matches,
         )

@@ -39,6 +39,7 @@ from galaxy.schema.schema import (
     ShareWithPayload,
     ShareWithStatus,
     SharingStatus,
+    VisualizationDetailsList,
     VisualizationIndexQueryPayload,
     VisualizationSortByEnum,
 )
@@ -135,7 +136,7 @@ class FastAPIVisualizations:
         sort_by: VisualizationSortByEnum = SortByQueryParam,
         sort_desc: bool = SortDescQueryParam,
         search: Optional[str] = SearchQueryParam,
-    ) -> List[Any]:
+    ) -> VisualizationDetailsList:
         payload = VisualizationIndexQueryPayload.construct(
             deleted=deleted,
             user_id=user_id,
