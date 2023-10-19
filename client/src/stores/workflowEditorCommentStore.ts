@@ -3,6 +3,8 @@ import { computed, del, ref, set } from "vue";
 
 import type { Colour } from "@/components/Workflow/Editor/Comments/colours";
 import {
+    AxisAlignedBoundingBox,
+    type Rectangle,
     vecAdd,
     vecMax,
     vecMin,
@@ -13,6 +15,9 @@ import {
 import { assertDefined } from "@/utils/assertions";
 import { hasKeys, match } from "@/utils/utils";
 
+import { useWorkflowStateStore } from "./workflowEditorStateStore";
+import { Step, useWorkflowStepStore } from "./workflowStepStore";
+
 export type WorkflowCommentColour = Colour | "none";
 
 export interface BaseWorkflowComment {
@@ -22,6 +27,8 @@ export interface BaseWorkflowComment {
     position: [number, number];
     size: [number, number];
     data: unknown;
+    child_comments?: number[];
+    child_steps?: number[];
 }
 
 export interface TextWorkflowComment extends BaseWorkflowComment {
@@ -194,6 +201,90 @@ export const useWorkflowCommentStore = (workflowId: string) => {
             });
         }
 
+        function commentToRectangle(comment: WorkflowComment): Rectangle {
+            return {
+                x: comment.position[0],
+                y: comment.position[1],
+                width: comment.size[0],
+                height: comment.size[1],
+            };
+        }
+
+        /** Calculates which comments are within frames and attaches that information to the parent comments */
+        function resolveCommentsInFrames() {
+            // reverse to give frames on top of other frames higher precedence
+            const frameComments = comments.value.filter((comment) => comment.type === "frame").reverse();
+            let candidates = [...comments.value];
+
+            frameComments.forEach((frame) => {
+                const bounds = new AxisAlignedBoundingBox();
+                bounds.fitRectangle(commentToRectangle(frame));
+                frame.child_comments = [];
+
+                // remove when matched, so each comment can only be linked to one frame
+                candidates = candidates.flatMap((comment) => {
+                    const rect: Rectangle = commentToRectangle(comment);
+
+                    if (comment !== frame && bounds.contains(rect)) {
+                        // push id and remove from candidates when in bounds
+                        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                        frame.child_comments!.push(comment.id);
+                        return [];
+                    } else {
+                        // otherwise do nothing and keep in list
+                        return [comment];
+                    }
+                });
+            });
+        }
+
+        const stateStore = useWorkflowStateStore(workflowId);
+
+        function stepToRectangle(step: Step): Rectangle | null {
+            const rect = stateStore.stepPosition[step.id];
+
+            if (rect && step.position) {
+                return {
+                    x: step.position.left,
+                    y: step.position.top,
+                    width: rect.width,
+                    height: rect.height,
+                };
+            } else {
+                return null;
+            }
+        }
+
+        const stepStore = useWorkflowStepStore(workflowId);
+
+        /** Calculates which steps are within frames and attaches that information to the parent comments */
+        function resolveStepsInFrames() {
+            // reverse to give frames on top of other frames higher precedence
+            const frameComments = comments.value.filter((comment) => comment.type === "frame").reverse();
+            let candidates = [...Object.values(stepStore.steps)];
+
+            frameComments.forEach((frame) => {
+                const bounds = new AxisAlignedBoundingBox();
+                bounds.fitRectangle(commentToRectangle(frame));
+                frame.child_steps = [];
+
+                // remove when matched, so each step can only be linked to one frame
+                candidates = candidates.flatMap((step) => {
+                    const rect = stepToRectangle(step);
+
+                    if (rect && bounds.contains(rect)) {
+                        // push id and remove from candidates when in bounds
+                        // eslint-disable-next-line @typescript-eslint/no-non-null-assertion
+                        frame.child_steps!.push(step.id);
+                        return [];
+                    } else {
+                        // otherwise do nothing and keep in list
+                        return [step];
+                    }
+                });
+            });
+        }
+
         return {
             commentsRecord,
             comments,
@@ -209,6 +300,8 @@ export const useWorkflowCommentStore = (workflowId: string) => {
             createComment,
             clearJustCreated,
             deleteFreehandComments,
+            resolveCommentsInFrames,
+            resolveStepsInFrames,
             $reset,
         };
     })();

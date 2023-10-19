@@ -514,7 +514,7 @@ export default {
             formData.append("workflow_name", rename_name);
             formData.append("workflow_annotation", rename_annotation);
             formData.append("from_tool_form", true);
-            formData.append("workflow_data", JSON.stringify(toSimple(this)));
+            formData.append("workflow_data", JSON.stringify(toSimple(this.id, this)));
 
             axios
                 .post(`${getAppRoot()}workflow/save_workflow_as`, formData)

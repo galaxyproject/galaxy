@@ -73,13 +73,18 @@ export async function fromSimple(
     commentStore.addComments(data.comments, [defaultPosition.left, defaultPosition.top]);
 }
 
-export function toSimple(workflow: Workflow): Omit<Workflow, "version"> {
+export function toSimple(id: string, workflow: Workflow): Omit<Workflow, "version"> {
     const steps = workflow.steps;
     const report = workflow.report;
     const license = workflow.license;
     const creator = workflow.creator;
     const annotation = workflow.annotation;
     const name = workflow.name;
+
+    const commentStore = useWorkflowCommentStore(id);
+    commentStore.resolveCommentsInFrames();
+    commentStore.resolveStepsInFrames();
+
     const comments = workflow.comments.filter((comment) => !(comment.type === "text" && comment.data.text === ""));
 
     return { steps, report, license, creator, annotation, name, comments };
