@@ -2,8 +2,7 @@ import { defineStore } from "pinia";
 import { computed, del, ref, set } from "vue";
 
 import { CollectionEntry, DCESummary, HDCASummary, HistoryContentItemBase, isHDCA } from "@/api";
-
-import { fetchCollectionDetails, fetchElementsFromCollection } from "./services/datasetCollection.service";
+import { fetchCollectionDetails, fetchElementsFromCollection } from "@/api/datasetCollections";
 
 /**
  * Represents an element in a collection that has not been fetched yet.
