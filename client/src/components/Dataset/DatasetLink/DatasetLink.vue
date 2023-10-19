@@ -7,7 +7,7 @@
 <script>
 import { mapCacheActions } from "vuex-cache";
 
-import { fetchDatasetDetails } from "@/stores/services/dataset.service";
+import { fetchDatasetDetails } from "@/api/datasets";
 
 export default {
     props: {

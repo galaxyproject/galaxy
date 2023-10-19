@@ -1,8 +1,8 @@
 import axios from "axios";
 import { getAppRoot } from "onload/loadConfig";
 
+import { fetchDatasetDetails } from "@/api/datasets";
 import { SingleQueryProvider } from "@/components/providers/SingleQueryProvider";
-import { fetchDatasetDetails } from "@/stores/services/dataset.service";
 import { rethrowSimple } from "@/utils/simple-error";
 
 import { stateIsTerminal } from "./utils";
