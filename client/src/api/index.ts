@@ -1,3 +1,5 @@
+/** Contains type alias and definitions related to Galaxy API models. */
+
 import { components } from "@/api/schema";
 
 /**

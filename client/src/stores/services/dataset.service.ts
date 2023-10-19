@@ -1,6 +1,5 @@
+import { DatasetDetails } from "@/api";
 import { fetcher } from "@/api/schema";
-
-import { DatasetDetails } from ".";
 
 const getDataset = fetcher.path("/api/datasets/{dataset_id}").method("get").create();
 

@@ -1,9 +1,9 @@
 import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
 
+import { DCESummary, HDCASummary } from "@/api";
 import { mockFetcher } from "@/api/schema/__mocks__";
 import { DCEEntry, useCollectionElementsStore } from "@/stores/collectionElementsStore";
-import { DCESummary, HDCASummary } from "@/stores/services";
 
 jest.mock("@/api/schema");
 

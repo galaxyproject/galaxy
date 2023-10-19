@@ -1,7 +1,8 @@
 import { defineStore } from "pinia";
 import { computed, del, ref, set } from "vue";
 
-import { DatasetCollectionAttributes } from "./services";
+import { DatasetCollectionAttributes } from "@/api";
+
 import { fetchCollectionAttributes } from "./services/datasetCollection.service";
 
 export const useCollectionAttributesStore = defineStore("collectionAttributesStore", () => {

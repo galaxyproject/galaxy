@@ -1,8 +1,8 @@
 import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
 
+import { DatasetCollectionAttributes } from "@/api";
 import { mockFetcher } from "@/api/schema/__mocks__";
-import { DatasetCollectionAttributes } from "@/stores/services";
 
 import { useCollectionAttributesStore } from "./collectionAttributesStore";
 
