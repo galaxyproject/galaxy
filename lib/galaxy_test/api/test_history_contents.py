@@ -1028,9 +1028,10 @@ class TestHistoryContentsApiBulkOperation(ApiTestCase):
 
     def test_deleting_collection_should_delete_contents_only_if_orphaned(self):
         with self.dataset_populator.test_history() as history_id:
-            num_expected_collections = 1
+            num_expected_collections = 2
             num_expected_datasets = 2
-            collection_ids = self._create_collection_in_history(history_id, num_expected_collections)
+            # Create original collections and datasets
+            collection_ids = self._create_collection_in_history(history_id, num_collections=1)
             original_collection_id = collection_ids[0]
             # Check datasets are hidden and not deleted
             history_contents = self._get_history_contents(history_id)
@@ -1069,8 +1070,12 @@ class TestHistoryContentsApiBulkOperation(ApiTestCase):
             bulk_operation_result = self._apply_bulk_operation(history_id, payload)
             self._assert_bulk_success(bulk_operation_result, 1)
 
-            # Check datasets are still not deleted
+            # We expect the original collection, the new collection and the datasets shared by both
+            num_expected_history_contents = num_expected_datasets + num_expected_collections
+
             history_contents = self._get_history_contents(history_id)
+            assert len(history_contents) == num_expected_history_contents
+            # Check datasets are still not deleted
             for item in history_contents:
                 if item["history_content_type"] == "dataset":
                     assert item["deleted"] is False
@@ -1090,6 +1095,7 @@ class TestHistoryContentsApiBulkOperation(ApiTestCase):
 
             # Check datasets are deleted (and collections too)
             history_contents = self._get_history_contents(history_id)
+            assert len(history_contents) == num_expected_history_contents
             for item in history_contents:
                 assert item["deleted"] is True
 
