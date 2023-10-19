@@ -1,7 +1,6 @@
 import logging
 
 from typing import (
-    List,
     Tuple,
 )
 
@@ -14,10 +13,7 @@ from galaxy.managers.visualizations import (
 )
 from galaxy.security.idencoding import IdEncodingHelper
 
-from galaxy.schema import (
-    SerializationParams,
-)
-from galaxy.schema.schema import (
+from galaxy.schema.visualization import (
     VisualizationDetailsList,
     VisualizationIndexQueryPayload,
 )
@@ -48,12 +44,12 @@ class VisualizationsService(ServiceBase):
 
     # TODO: add the rest of the API actions here and call them directly from the API controller
 
-    def index(
+    def index_detailed(
         self,
         trans,
-        serialization_params: SerializationParams,
         payload: VisualizationIndexQueryPayload,
-        include_total_count: bool = False
+        include_total_count: bool = False,
+        sharing: bool = False,
     ) -> Tuple[VisualizationDetailsList, int]:
         """Return a list of Visualizations viewable by the user
 
@@ -66,9 +62,16 @@ class VisualizationsService(ServiceBase):
                 raise exceptions.AdminRequiredException("Only admins can index the visualizations of others")
 
         entries, total_matches = self.manager.index_query(trans, payload, include_total_count)
-        results = [self.serializer.serialize_to_view(
-            content, user=trans.user, trans=trans, view="detailed"
-        ) for content in entries]
+
+        results = []
+        for content in entries:
+            serialized_content = self.serializer.serialize_to_view(
+                content, user=trans.user, trans=trans, view="detailed"
+            )
+            if content.deleted is False and sharing:
+                sharing_dict = self.shareable_service.sharing(trans, content.id)
+                serialized_content.update(sharing_dict)
+            results.append(serialized_content)
 
         return (
             VisualizationDetailsList.construct(__root__=results),

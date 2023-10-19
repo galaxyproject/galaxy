@@ -35,7 +35,7 @@ from galaxy.model.index_filter_util import (
     text_column_filter,
 )
 
-from galaxy.schema.schema import (
+from galaxy.schema.visualization import (
     VisualizationIndexQueryPayload,
 )
 

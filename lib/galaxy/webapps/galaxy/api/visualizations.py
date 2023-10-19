@@ -8,14 +8,11 @@ import json
 import logging
 
 from typing import (
-    Any,
-    List,
     Optional,
 )
 
 from fastapi import (
     Body,
-    Depends,
     Path,
     Query,
     Response,
@@ -30,15 +27,14 @@ from galaxy import (
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.model.base import transaction
 from galaxy.model.item_attrs import UsesAnnotations
-from galaxy.schema import (
-    SerializationParams,
-)
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     SetSlugPayload,
     ShareWithPayload,
     ShareWithStatus,
     SharingStatus,
+)
+from galaxy.schema.visualization import (
     VisualizationDetailsList,
     VisualizationIndexQueryPayload,
     VisualizationSortByEnum,
@@ -56,7 +52,6 @@ from galaxy.webapps.galaxy.api import (
     search_query_param,
 )
 from galaxy.webapps.galaxy.api.common import (
-    query_serialization_params,
     LimitQueryParam,
     OffsetQueryParam,
 )
@@ -118,17 +113,16 @@ class FastAPIVisualizations:
     service: VisualizationsService = depends(VisualizationsService)
 
     @router.get(
-        "/api/visualizations",
+        "/api/visualizations/detailed",
         summary="Returns visualizations for the current user.",
     )
-    def index(
+    def index_detailed(
         self,
         response: Response,
         trans: ProvidesUserContext = DependsOnTrans,
         deleted: bool = DeletedQueryParam,
         limit: int = LimitQueryParam,
         offset: int = OffsetQueryParam,
-        serialization_params: SerializationParams = Depends(query_serialization_params),
         sharing: bool = SharingQueryParam,
         user_id: Optional[DecodedDatabaseIdField] = UserIdQueryParam,
         show_published: bool = ShowPublishedQueryParam,
@@ -149,7 +143,7 @@ class FastAPIVisualizations:
             offset=offset,
             search=search,
         )
-        entries, total_matches = self.service.index(trans, serialization_params, payload, include_total_count=True)
+        entries, total_matches = self.service.index_detailed(trans, payload, include_total_count=True, sharing=sharing)
         response.headers["total_matches"] = str(total_matches)
         return entries
 
