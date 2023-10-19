@@ -38,6 +38,7 @@ from galaxy.schema.visualization import (
     VisualizationDetailsList,
     VisualizationIndexQueryPayload,
     VisualizationSortByEnum,
+    VisualizationSummaryList,
 )
 from galaxy.util.hash_util import md5_hash_str
 from galaxy.web import expose_api
@@ -113,8 +114,41 @@ class FastAPIVisualizations:
     service: VisualizationsService = depends(VisualizationsService)
 
     @router.get(
-        "/api/visualizations/detailed",
+        "/api/visualizations",
         summary="Returns visualizations for the current user.",
+    )
+    def index(
+        self,
+        response: Response,
+        trans: ProvidesUserContext = DependsOnTrans,
+        deleted: bool = DeletedQueryParam,
+        limit: int = LimitQueryParam,
+        offset: int = OffsetQueryParam,
+        user_id: Optional[DecodedDatabaseIdField] = UserIdQueryParam,
+        show_published: bool = ShowPublishedQueryParam,
+        show_shared: bool = ShowSharedQueryParam,
+        sort_by: VisualizationSortByEnum = SortByQueryParam,
+        sort_desc: bool = SortDescQueryParam,
+        search: Optional[str] = SearchQueryParam,
+    ) -> VisualizationSummaryList:
+        payload = VisualizationIndexQueryPayload.construct(
+            deleted=deleted,
+            user_id=user_id,
+            show_published=show_published,
+            show_shared=show_shared,
+            sort_by=sort_by,
+            sort_desc=sort_desc,
+            limit=limit,
+            offset=offset,
+            search=search,
+        )
+        entries, total_matches = self.service.index(trans, payload, include_total_count=True)
+        response.headers["total_matches"] = str(total_matches)
+        return VisualizationSummaryList.construct(__root__=entries)
+
+    @router.get(
+        "/api/visualizations/detailed",
+        summary="Returns visualizations for the current user with detailed resolution.",
     )
     def index_detailed(
         self,
@@ -123,7 +157,6 @@ class FastAPIVisualizations:
         deleted: bool = DeletedQueryParam,
         limit: int = LimitQueryParam,
         offset: int = OffsetQueryParam,
-        sharing: bool = SharingQueryParam,
         user_id: Optional[DecodedDatabaseIdField] = UserIdQueryParam,
         show_published: bool = ShowPublishedQueryParam,
         show_shared: bool = ShowSharedQueryParam,
@@ -136,16 +169,15 @@ class FastAPIVisualizations:
             user_id=user_id,
             show_published=show_published,
             show_shared=show_shared,
-            sharing=sharing,
             sort_by=sort_by,
             sort_desc=sort_desc,
             limit=limit,
             offset=offset,
             search=search,
         )
-        entries, total_matches = self.service.index_detailed(trans, payload, include_total_count=True, sharing=sharing)
+        entries, total_matches = self.service.index(trans, payload, detailed=True, include_total_count=True)
         response.headers["total_matches"] = str(total_matches)
-        return entries
+        return VisualizationDetailsList.construct(__root__=entries)
 
     @router.get(
         "/api/visualizations/{id}/sharing",

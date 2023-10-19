@@ -20,6 +20,7 @@ from galaxy.schema.schema import (
     TagCollection,
     UpdateTimeField,
     Model,
+    SharingStatus,
 )
 
 
@@ -40,7 +41,7 @@ class VisualizationIndexQueryPayload(Model):
 
 class VisualizationSummary(Model):
     id: DecodedDatabaseIdField = Field(
-        ...,  # Required
+        ...,
         title="ID",
         description="Encoded ID of the Visualization.",
     )
@@ -49,7 +50,7 @@ class VisualizationSummary(Model):
         description="The name of the visualization.",
     )
     type: str = Field(
-        ...,  # Required
+        ...,
         title="Type",
         description="The type of the visualization.",
     )
@@ -60,11 +61,19 @@ class VisualizationSummary(Model):
     )
 
 
+class VisualizationSummaryList(Model):
+    __root__: List[VisualizationSummary] = Field(
+        default=[],
+        title="List with detailed information of Visualizations.",
+    )
+
+
 class VisualizationDetails(VisualizationSummary):
     create_time: Optional[datetime] = CreateTimeField
     update_time: Optional[datetime] = UpdateTimeField
+    sharing_status: Optional[SharingStatus]
     tags: Optional[TagCollection] = Field(
-        ...,  # Required
+        ...,
         title="Tags",
         description="A list of tags to add to this item.",
     )

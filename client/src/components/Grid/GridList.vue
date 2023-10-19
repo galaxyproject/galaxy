@@ -127,19 +127,19 @@ function onTagClick() {}
                             {{ rowData[fieldEntry.key] }}
                         </a>
                         <span v-else-if="fieldEntry.type == 'sharing'">
-                            <span v-if="isShared(rowData)">
-                                <span v-if="rowData.published" v-b-tooltip.hover title="Published" class="mr-1">
+                            <span v-if="isShared(rowData.sharing_status)">
+                                <span v-if="rowData.sharing_status.published" v-b-tooltip.hover title="Published" class="mr-1">
                                     <icon icon="globe" />
                                 </span>
                                 <span
-                                    v-if="rowData.importable"
+                                    v-if="rowData.sharing_status.importable"
                                     v-b-tooltip.hover
                                     title="Accessible by link"
                                     class="mr-1">
                                     <icon icon="link" />
                                 </span>
                                 <span
-                                    v-if="rowData.users_shared_with.length > 0"
+                                    v-if="rowData.sharing_status.users_shared_with.length > 0"
                                     v-b-tooltip.hover
                                     title="Shared with users"
                                     class="mr-1">

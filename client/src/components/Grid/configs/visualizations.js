@@ -4,7 +4,7 @@ import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
 
 export const VisualizationsGrid = {
-    url: "/api/visualizations/detailed?sharing=true",
+    url: "/api/visualizations/detailed",
     resource: "visualizations",
     item: "visualization",
     plural: "Visualizations",
