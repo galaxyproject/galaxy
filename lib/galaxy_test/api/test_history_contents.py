@@ -1026,42 +1026,12 @@ class TestHistoryContentsApiBulkOperation(ApiTestCase):
                 if item["history_content_type"] == "dataset":
                     self.dataset_populator.wait_for_purge(history_id=history_id, content_id=item["id"])
 
-    def test_deleting_collection_should_delete_contents_if_orphaned(self):
+    def test_deleting_collection_should_delete_contents_only_if_orphaned(self):
         with self.dataset_populator.test_history() as history_id:
             num_expected_collections = 1
             num_expected_datasets = 2
             collection_ids = self._create_collection_in_history(history_id, num_expected_collections)
-            # Check datasets are hidden and not deleted
-            history_contents = self._get_history_contents(history_id)
-            datasets = list(filter(lambda item: item["history_content_type"] == "dataset", history_contents))
-            assert len(datasets) == num_expected_datasets
-            for dataset in datasets:
-                assert dataset["deleted"] is False
-                assert dataset["visible"] is False
-
-            # Delete the collection
-            collection_id = collection_ids[0]
-            payload = {
-                "operation": "delete",
-                "items": [
-                    {
-                        "id": collection_id,
-                        "history_content_type": "dataset_collection",
-                    },
-                ],
-            }
-            bulk_operation_result = self._apply_bulk_operation(history_id, payload)
-            self._assert_bulk_success(bulk_operation_result, 1)
-            # Check also datasets are deleted
-            history_contents = self._get_history_contents(history_id)
-            for item in history_contents:
-                assert item["deleted"] is True
-
-    def test_deleting_collection_should_not_delete_contents_if_used_elsewhere(self):
-        with self.dataset_populator.test_history() as history_id:
-            num_expected_collections = 1
-            num_expected_datasets = 2
-            collection_ids = self._create_collection_in_history(history_id, num_expected_collections)
+            original_collection_id = collection_ids[0]
             # Check datasets are hidden and not deleted
             history_contents = self._get_history_contents(history_id)
             datasets = list(filter(lambda item: item["history_content_type"] == "dataset", history_contents))
@@ -1084,25 +1054,44 @@ class TestHistoryContentsApiBulkOperation(ApiTestCase):
             }
             create_response = self._post(f"histories/{history_id}/contents", payload, json=True)
             self._assert_status_code_is_ok(create_response)
+            new_collection_id = create_response.json()["id"]
 
-            # Delete the collection
-            collection_id = collection_ids[0]
+            # Delete the original collection
             payload = {
                 "operation": "delete",
                 "items": [
                     {
-                        "id": collection_id,
+                        "id": original_collection_id,
                         "history_content_type": "dataset_collection",
                     },
                 ],
             }
             bulk_operation_result = self._apply_bulk_operation(history_id, payload)
             self._assert_bulk_success(bulk_operation_result, 1)
-            # Check datasets are not deleted
+
+            # Check datasets are still not deleted
             history_contents = self._get_history_contents(history_id)
             for item in history_contents:
                 if item["history_content_type"] == "dataset":
                     assert item["deleted"] is False
+
+            # Delete the new collection too
+            payload = {
+                "operation": "delete",
+                "items": [
+                    {
+                        "id": new_collection_id,
+                        "history_content_type": "dataset_collection",
+                    },
+                ],
+            }
+            bulk_operation_result = self._apply_bulk_operation(history_id, payload)
+            self._assert_bulk_success(bulk_operation_result, 1)
+
+            # Check datasets are deleted (and collections too)
+            history_contents = self._get_history_contents(history_id)
+            for item in history_contents:
+                assert item["deleted"] is True
 
     @requires_new_user
     def test_only_owner_can_apply_bulk_operations(self):
