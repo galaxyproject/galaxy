@@ -52,6 +52,7 @@ from galaxy.managers.base import decode_id
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.executables import artifact_class
 from galaxy.model import (
+    History,
     ImplicitCollectionJobs,
     ImplicitCollectionJobsJobAssociation,
     Job,
@@ -477,42 +478,40 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
         sort_desc=None,
     ) -> Tuple[Query, int]:
         """Get invocations owned by the current user."""
-        sa_session = trans.sa_session
-        invocations_query = sa_session.query(model.WorkflowInvocation)
+
+        stmt = select(WorkflowInvocation)
         if stored_workflow_id is not None:
-            stored_workflow = sa_session.get(StoredWorkflow, stored_workflow_id)
+            stored_workflow = trans.sa_session.get(StoredWorkflow, stored_workflow_id)
             if not stored_workflow:
                 raise exceptions.ObjectNotFound()
-            invocations_query = invocations_query.join(model.Workflow).filter(
-                model.Workflow.table.c.stored_workflow_id == stored_workflow_id
-            )
+            stmt = stmt.join(Workflow).where(Workflow.stored_workflow_id == stored_workflow_id)
         if user_id is not None:
-            invocations_query = invocations_query.join(model.History).filter(model.History.table.c.user_id == user_id)
+            stmt = stmt.join(History).where(History.user_id == user_id)
         if history_id is not None:
-            invocations_query = invocations_query.filter(model.WorkflowInvocation.table.c.history_id == history_id)
+            stmt = stmt.where(WorkflowInvocation.history_id == history_id)
         if job_id is not None:
-            invocations_query = invocations_query.join(model.WorkflowInvocationStep).filter(
-                model.WorkflowInvocationStep.table.c.job_id == job_id
-            )
+            stmt = stmt.join(WorkflowInvocationStep).where(WorkflowInvocationStep.job_id == job_id)
         if not include_terminal:
-            invocations_query = invocations_query.filter(
-                model.WorkflowInvocation.table.c.state.in_(model.WorkflowInvocation.non_terminal_states)
-            )
-        total_matches = invocations_query.count()
+            stmt = stmt.where(WorkflowInvocation.state.in_(WorkflowInvocation.non_terminal_states))
+
+        total_matches = get_count(trans.sa_session, stmt)
+
         if sort_by:
-            sort_column = getattr(model.WorkflowInvocation, sort_by)
+            sort_column = getattr(WorkflowInvocation, sort_by)
             if sort_desc:
                 sort_column = sort_column.desc()
-            invocations_query = invocations_query.order_by(sort_column)
         else:
-            invocations_query = invocations_query.order_by(model.WorkflowInvocation.table.c.id.desc())
+            sort_column = WorkflowInvocation.id.desc()
+        stmt = stmt.order_by(sort_column)
+
         if limit is not None:
-            invocations_query = invocations_query.limit(limit)
+            stmt = stmt.limit(limit)
         if offset is not None:
-            invocations_query = invocations_query.offset(offset)
+            stmt = stmt.offset(offset)
+
         invocations = [
             inv
-            for inv in invocations_query
+            for inv in trans.sa_session.scalars(stmt)
             if self.check_security(trans, inv, check_ownership=True, check_accessible=False)
         ]
         return invocations, total_matches
