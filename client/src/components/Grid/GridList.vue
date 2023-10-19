@@ -128,7 +128,11 @@ function onTagClick() {}
                         </a>
                         <span v-else-if="fieldEntry.type == 'sharing'">
                             <span v-if="isShared(rowData.sharing_status)">
-                                <span v-if="rowData.sharing_status.published" v-b-tooltip.hover title="Published" class="mr-1">
+                                <span
+                                    v-if="rowData.sharing_status.published"
+                                    v-b-tooltip.hover
+                                    title="Published"
+                                    class="mr-1">
                                     <icon icon="globe" />
                                 </span>
                                 <span

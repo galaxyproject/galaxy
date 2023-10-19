@@ -92,25 +92,25 @@ class VisualizationManager(sharable.SharableModelManager):
             message = "show_shared and show_deleted cannot both be specified as true"
             raise exceptions.RequestParameterInvalidException(message)
 
-        query = trans.sa_session.query(model.Visualization)
+        query = trans.sa_session.query(self.model_class)
 
         if not is_admin:
-            filters = [model.Visualization.user == trans.user]
+            filters = [self.model_class.user == trans.user]
             if payload.show_published:
-                filters.append(model.Visualization.published == true())
+                filters.append(self.model_class.published == true())
             if user and show_shared:
                 filters.append(model.VisualizationUserShareAssociation.user == user)
-                query = query.outerjoin(model.Visualization.users_shared_with)
+                query = query.outerjoin(self.model_class.users_shared_with)
             query = query.filter(or_(*filters))
 
         if not show_deleted:
-            query = query.filter(model.Visualization.deleted == false())
+            query = query.filter(self.model_class.deleted == false())
         elif not is_admin:
             # don't let non-admins see other user's deleted entries
-            query = query.filter(or_(model.Visualization.deleted == false(), model.Visualization.user == user))
+            query = query.filter(or_(self.model_class.deleted == false(), self.model_class.user == user))
 
         if payload.user_id:
-            query = query.filter(model.Visualization.user_id == payload.user_id)
+            query = query.filter(self.model_class.user_id == payload.user_id)
 
         if payload.search:
             search_query = payload.search
@@ -119,7 +119,7 @@ class VisualizationManager(sharable.SharableModelManager):
             def p_tag_filter(term_text: str, quoted: bool):
                 nonlocal query
                 alias = aliased(model.VisualizationTagAssociation)
-                query = query.outerjoin(model.Visualization.tags.of_type(alias))
+                query = query.outerjoin(self.model_class.tags.of_type(alias))
                 return tag_filter(alias, term_text, quoted)
 
             for term in parsed_search.terms:
@@ -130,16 +130,16 @@ class VisualizationManager(sharable.SharableModelManager):
                         pg = p_tag_filter(term.text, term.quoted)
                         query = query.filter(pg)
                     elif key == "title":
-                        query = query.filter(text_column_filter(model.Visualization.title, term))
+                        query = query.filter(text_column_filter(self.model_class.title, term))
                     elif key == "slug":
-                        query = query.filter(text_column_filter(model.Visualization.slug, term))
+                        query = query.filter(text_column_filter(self.model_class.slug, term))
                     elif key == "user":
                         query = append_user_filter(query, model.Visualization, term)
                     elif key == "is":
                         if q == "published":
-                            query = query.filter(model.Visualization.published == true())
+                            query = query.filter(self.model_class.published == true())
                         if q == "importable":
-                            query = query.filter(model.Visualization.importable == true())
+                            query = query.filter(self.model_class.importable == true())
                         elif q == "shared_with_me":
                             if not show_shared:
                                 message = "Can only use tag is:shared_with_me if show_shared parameter also true."
@@ -148,12 +148,12 @@ class VisualizationManager(sharable.SharableModelManager):
                 elif isinstance(term, RawTextTerm):
                     tf = p_tag_filter(term.text, False)
                     alias = aliased(model.User)
-                    query = query.outerjoin(model.Visualization.user.of_type(alias))
+                    query = query.outerjoin(self.model_class.user.of_type(alias))
                     query = query.filter(
                         raw_text_column_filter(
                             [
-                                model.Visualization.title,
-                                model.Visualization.slug,
+                                self.model_class.title,
+                                self.model_class.slug,
                                 tf,
                                 alias.username,
                             ],
