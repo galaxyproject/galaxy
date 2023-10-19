@@ -2092,7 +2092,7 @@ def get_installed_repository(session, name, owner, changeset):
     if owner is not None:
         stmt = stmt.where(ToolShedRepository.owner == owner)
     if changeset is not None:
-        stmt = stmt.wehre(ToolShedRepository.changeset_revision == changeset)
+        stmt = stmt.where(ToolShedRepository.changeset_revision == changeset)
     stmt = stmt.where(ToolShedRepository.deleted == false())
     stmt = stmt.where(ToolShedRepository.uninstalled == false())
     return session.scalars(stmt).one_or_none()
