@@ -12,7 +12,7 @@ const props = defineProps<{
 const { toolbarStore } = useWorkflowStores();
 
 const inputCatcher = ref<HTMLDivElement>();
-const events = ["pointerup", "pointerdown", "pointermove"] as const;
+const events = ["pointerup", "pointerdown", "pointermove", "pointerleave"] as const;
 
 const inverseCanvasTransform = computed(() =>
     new Transform()

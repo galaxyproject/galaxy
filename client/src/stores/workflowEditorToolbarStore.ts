@@ -8,7 +8,12 @@ import { WorkflowCommentColour } from "./workflowEditorCommentStore";
 
 export type CommentTool = "textComment" | "markdownComment" | "frameComment" | "freehandComment" | "freehandEraser";
 export type EditorTool = "pointer" | CommentTool;
-export type InputCatcherEventType = "pointerdown" | "pointerup" | "pointermove" | "temporarilyDisabled";
+export type InputCatcherEventType =
+    | "pointerdown"
+    | "pointerup"
+    | "pointermove"
+    | "pointerleave"
+    | "temporarilyDisabled";
 
 interface InputCatcherEventListener {
     type: InputCatcherEventType;

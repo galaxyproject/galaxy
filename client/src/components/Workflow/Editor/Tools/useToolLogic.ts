@@ -79,8 +79,6 @@ export function useToolLogic(toolbarStore: WorkflowEditorToolbarStore, commentSt
             });
 
             commentStore.createComment(comment);
-        } else {
-            positionComment(start, position, comment);
         }
     });
 
@@ -103,11 +101,18 @@ export function useToolLogic(toolbarStore: WorkflowEditorToolbarStore, commentSt
             return;
         } else if (comment?.type === "freehand") {
             finalizeFreehandComment(comment);
-        } else {
+        } else if (toolbarStore.currentTool !== "freehandComment") {
             toolbarStore.currentTool = "pointer";
         }
 
         comment = null;
+    });
+
+    toolbarStore.onInputCatcherEvent("pointerleave", () => {
+        if (comment?.type === "freehand") {
+            finalizeFreehandComment(comment);
+            comment = null;
+        }
     });
 
     toolbarStore.onInputCatcherEvent("temporarilyDisabled", () => {
