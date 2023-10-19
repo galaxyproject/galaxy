@@ -808,17 +808,17 @@ class WorkflowContentsManager(UsesAnnotations):
 
         workflow.comments = comments
 
-        # populate "parent_comment_id" foreign key
+        # populate parent_comment
         for comment, comment_dict in zip(comments, data.get("comments", [])):
             for step_external_id in comment_dict.get("child_steps", []):
                 child_step = steps_by_external_id.get(step_external_id)
                 if child_step:
-                    child_step.parent_comment_id = comment.id
+                    child_step.parent_comment = comment
 
             for comment_external_id in comment_dict.get("child_comments", []):
                 child_comment = comments_by_external_id.get(comment_external_id)
                 if child_comment:
-                    child_comment.parent_comment_id = comment.id
+                    child_comment.parent_comment = comment
 
         # we can't reorder subworkflows, as step connections would become invalid
         if not is_subworkflow:

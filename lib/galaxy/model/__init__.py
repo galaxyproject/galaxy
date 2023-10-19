@@ -7558,6 +7558,12 @@ class WorkflowStep(Base, RepresentById):
     temp_input_connections: Optional[InputConnDictType]
     parent_comment_id = Column(Integer, ForeignKey("workflow_comment.id"), nullable=True)
 
+    parent_comment = relationship(
+        "WorkflowComment",
+        primaryjoin=(lambda: WorkflowComment.id == WorkflowStep.parent_comment_id),
+        back_populates="child_steps",
+    )
+
     subworkflow: Optional[Workflow] = relationship(
         "Workflow",
         primaryjoin=(lambda: Workflow.id == WorkflowStep.subworkflow_id),
@@ -7991,11 +7997,22 @@ class WorkflowComment(Base, RepresentById):
     )
 
     child_steps: List["WorkflowStep"] = relationship(
-        "WorkflowStep", primaryjoin=(lambda: WorkflowStep.parent_comment_id == WorkflowComment.id)
+        "WorkflowStep",
+        primaryjoin=(lambda: WorkflowStep.parent_comment_id == WorkflowComment.id),
+        back_populates="parent_comment",
+    )
+
+    parent_comment: "WorkflowComment" = relationship(
+        "WorkflowComment",
+        primaryjoin=(lambda: WorkflowComment.id == WorkflowComment.parent_comment_id),
+        back_populates="child_comments",
+        remote_side=[id],
     )
 
     child_comments: List["WorkflowComment"] = relationship(
-        "WorkflowComment", primaryjoin=(lambda: WorkflowComment.parent_comment_id == WorkflowComment.id)
+        "WorkflowComment",
+        primaryjoin=(lambda: WorkflowComment.parent_comment_id == WorkflowComment.id),
+        back_populates="parent_comment",
     )
 
     def to_dict(self):
