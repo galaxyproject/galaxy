@@ -99,7 +99,7 @@ class VisualizationManager(sharable.SharableModelManager):
             if payload.show_published:
                 filters.append(self.model_class.published == true())
             if user and show_shared:
-                filters.append(model.VisualizationUserShareAssociation.user == user)
+                filters.append(self.user_share_model.user == user)
                 query = query.outerjoin(self.model_class.users_shared_with)
             query = query.filter(or_(*filters))
 
@@ -134,7 +134,7 @@ class VisualizationManager(sharable.SharableModelManager):
                     elif key == "slug":
                         query = query.filter(text_column_filter(self.model_class.slug, term))
                     elif key == "user":
-                        query = append_user_filter(query, model.Visualization, term)
+                        query = append_user_filter(query, self.model_class, term)
                     elif key == "is":
                         if q == "published":
                             query = query.filter(self.model_class.published == true())
@@ -144,7 +144,7 @@ class VisualizationManager(sharable.SharableModelManager):
                             if not show_shared:
                                 message = "Can only use tag is:shared_with_me if show_shared parameter also true."
                                 raise exceptions.RequestParameterInvalidException(message)
-                            query = query.filter(model.VisualizationUserShareAssociation.user == user)
+                            query = query.filter(self.user_share_model.user == user)
                 elif isinstance(term, RawTextTerm):
                     tf = p_tag_filter(term.text, False)
                     alias = aliased(model.User)
