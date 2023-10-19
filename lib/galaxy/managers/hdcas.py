@@ -8,6 +8,7 @@ import logging
 from typing import Dict
 
 from sqlalchemy import (
+    false,
     func,
     select,
 )
@@ -115,12 +116,21 @@ class HDCAManager(
     def _delete_hda_if_orphaned_and_hidden(self, dataset, *parents):
         if isinstance(dataset, model.HistoryDatasetAssociation):
             if not dataset.deleted and not dataset.purged and not dataset.visible:
-                if not self._is_hda_used_in_multiple_collections(dataset):
+                if not self._is_hda_used_in_multiple_active_collections(dataset):
                     super().delete(dataset, flush=False)
 
-    def _is_hda_used_in_multiple_collections(self, dataset: model.HistoryDatasetAssociation):
-        stmt = select(func.count(model.DatasetCollectionElement.id)).where(
-            model.DatasetCollectionElement.hda_id == dataset.id,
+    def _is_hda_used_in_multiple_active_collections(self, dataset: model.HistoryDatasetAssociation):
+        stmt = (
+            select(func.count(model.DatasetCollectionElement.id))
+            .join(
+                model.HistoryDatasetCollectionAssociation,
+                model.DatasetCollectionElement.dataset_collection_id
+                == model.HistoryDatasetCollectionAssociation.collection_id,
+            )
+            .where(
+                model.DatasetCollectionElement.hda_id == dataset.id,
+                model.HistoryDatasetCollectionAssociation.deleted == false(),
+            )
         )
         usage_count = self.session().execute(stmt).scalar()
         return usage_count > 1
