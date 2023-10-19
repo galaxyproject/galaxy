@@ -30,7 +30,7 @@ const emit = defineEmits<{
     (e: "moveTo", position: { x: number; y: number }): void;
 }>();
 
-const { stateStore, commentStore } = useWorkflowStores();
+const { stateStore, commentStore, toolbarStore } = useWorkflowStores();
 const { isJustCreated } = commentStore;
 
 /** reference to the main canvas element */
@@ -91,10 +91,12 @@ function recalculateAABB() {
 
 // redraw if any steps or comments change
 watch(
-    () => [props.steps, props.comments],
+    () => [props.steps, props.comments, toolbarStore.inputCatcherPressed],
     () => {
-        redraw = true;
-        aabbChanged = true;
+        if (!toolbarStore.inputCatcherPressed) {
+            redraw = true;
+            aabbChanged = true;
+        }
     },
     { deep: true }
 );
