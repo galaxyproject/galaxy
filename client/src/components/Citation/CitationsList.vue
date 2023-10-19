@@ -54,8 +54,8 @@ import Vue from "vue";
 
 import { useConfig } from "@/composables/config";
 
-import { getCitations } from "./services";
 import CitationItem from "./CitationItem";
+import { getCitations } from "./services";
 
 Vue.use(BootstrapVue);
 
