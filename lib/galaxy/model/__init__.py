@@ -7975,7 +7975,7 @@ class WorkflowComment(Base, RepresentById):
     __tablename__ = "workflow_comment"
 
     id = Column(Integer, primary_key=True)
-    order_index = Column(Integer)
+    order_index: int = Column(Integer)
     workflow_id = Column(Integer, ForeignKey("workflow.id"), index=True, nullable=False)
     position = Column(MutableJSONType)
     size = Column(JSONType)
@@ -8006,6 +8006,8 @@ class WorkflowComment(Base, RepresentById):
             "type": self.type,
             "colour": self.colour,
             "data": self.data,
+            "child_steps": [step.order_index for step in self.child_steps],
+            "child_comments": [comment.order_index for comment in self.child_comments],
         }
 
     def from_dict(dict):

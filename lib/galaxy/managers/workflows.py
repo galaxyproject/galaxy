@@ -798,9 +798,21 @@ class WorkflowContentsManager(UsesAnnotations):
         workflow.steps = steps
 
         comments: List[model.WorkflowComment] = []
+        comments_by_external_id: Dict[str, model.WorkflowComment] = {}
         for comment_dict in data.get("comments", []):
             comment = model.WorkflowComment.from_dict(comment_dict)
             comments.append(comment)
+            external_id = comment_dict.get("id")
+            if external_id:
+                comments_by_external_id[external_id] = comment
+
+        # populate "parent_comment_id" foreign key
+        for comment, comment_dict in zip(comments, data.get("comments", [])):
+            for step_external_id in comment_dict.get("child_steps", []):
+                steps_by_external_id.get(step_external_id).parent_comment_id = comment.id
+
+            for comment_external_id in comment_dict.get("child_comments", []):
+                comments_by_external_id.get(comment_external_id).parent_comment_id = comment.id
 
         workflow.comments = comments
 
