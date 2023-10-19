@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faTrashAlt } from "@fortawesome/free-regular-svg-icons";
-import { faObjectGroup, faPalette } from "@fortawesome/free-solid-svg-icons";
+import { faCompressAlt, faObjectGroup, faPalette } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { type UseElementBoundingReturn, useFocusWithin } from "@vueuse/core";
 import { BButton, BButtonGroup } from "bootstrap-vue";
@@ -20,7 +20,7 @@ import { selectAllText } from "./utilities";
 import ColourSelector from "./ColourSelector.vue";
 import DraggablePan from "@/components/Workflow/Editor/DraggablePan.vue";
 
-library.add(faObjectGroup, faTrashAlt, faPalette);
+library.add(faObjectGroup, faTrashAlt, faPalette, faCompressAlt);
 
 const props = defineProps<{
     comment: FrameWorkflowComment;
@@ -127,7 +127,7 @@ function getCommentsInBounds(bounds: AxisAlignedBoundingBox) {
             height: comment.size[1],
         };
 
-        if (bounds.contains(commentRect)) {
+        if (comment !== props.comment && bounds.contains(commentRect)) {
             comments.push(comment);
         }
     });
@@ -142,12 +142,17 @@ let commentsInBounds: WorkflowComment[] = [];
 const stepStartOffsets = new Map<number, [number, number]>();
 const commentStartOffsets = new Map<number, [number, number]>();
 
-function onDragStart() {
+function getAABB() {
     const aabb = new AxisAlignedBoundingBox();
     aabb.x = props.comment.position[0];
     aabb.y = props.comment.position[1];
     aabb.width = props.comment.size[0];
     aabb.height = props.comment.size[1];
+    return aabb;
+}
+
+function onDragStart() {
+    const aabb = getAABB();
 
     stepsInBounds = getStepsInBounds(aabb);
     commentsInBounds = getCommentsInBounds(aabb);
@@ -191,6 +196,47 @@ function onDoubleClick() {
     if (editableElement.value) {
         selectAllText(editableElement.value);
     }
+}
+
+function onFitToContent() {
+    const aabb = getAABB();
+
+    stepsInBounds = getStepsInBounds(aabb);
+    commentsInBounds = getCommentsInBounds(aabb);
+
+    const targetAABB = new AxisAlignedBoundingBox();
+
+    stepsInBounds.forEach((step) => {
+        const rect = stateStore.stepPosition[step.id];
+
+        if (rect && step.position) {
+            const stepRect: Rectangle = {
+                x: step.position.left,
+                y: step.position.top,
+                width: rect.width,
+                height: rect.height,
+            };
+
+            targetAABB.fitRectangle(stepRect);
+        }
+    });
+
+    commentsInBounds.forEach((comment) => {
+        const commentRect: Rectangle = {
+            x: comment.position[0],
+            y: comment.position[1],
+            width: comment.size[0],
+            height: comment.size[1],
+        };
+
+        targetAABB.fitRectangle(commentRect);
+    });
+
+    targetAABB.expand(20);
+    targetAABB.y -= 30;
+
+    emit("move", [targetAABB.x, targetAABB.y]);
+    emit("resize", [targetAABB.width, targetAABB.height]);
 }
 
 const cssVariables = computed(() => {
@@ -247,6 +293,13 @@ onMounted(() => {
         </div>
 
         <BButtonGroup v-if="!props.readonly" class="style-buttons">
+            <BButton
+                class="button prevent-zoom"
+                variant="outline-primary"
+                title="Fit to content"
+                @click="onFitToContent">
+                <FontAwesomeIcon icon="fa-compress-alt" class="prevent-zoom" />
+            </BButton>
             <BButton
                 class="button prevent-zoom"
                 variant="outline-primary"
