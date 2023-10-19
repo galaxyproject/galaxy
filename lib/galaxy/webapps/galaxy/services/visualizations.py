@@ -3,7 +3,10 @@ import logging
 from typing import (
     Any,
     List,
+    Tuple,
 )
+
+from galaxy import exceptions
 
 from sqlalchemy import (
     select,
@@ -23,7 +26,8 @@ from galaxy.schema import (
     SerializationParams,
 )
 from galaxy.schema.schema import (
-    PageIndexQueryPayload,
+    VisualizationDetailsList,
+    VisualizationIndexQueryPayload,
 )
 from galaxy.webapps.galaxy.services.base import ServiceBase
 from galaxy.webapps.galaxy.services.sharable import ShareableService
@@ -54,54 +58,27 @@ class VisualizationsService(ServiceBase):
 
     def index(
         self,
-        trans: ProvidesHistoryContext,
+        trans,
         serialization_params: SerializationParams,
-        payload: PageIndexQueryPayload, include_total_count: bool = False
-    ) -> List[Any]:
+        payload: VisualizationIndexQueryPayload,
+        include_total_count: bool = False
+    ) -> Tuple[List[Any], int]:
+        """Return a list of Visualizations viewable by the user
+
+        :rtype:     list
+        :returns:   dictionaries containing summary or detailed Visualization information
         """
-        Search visualizations using a query system and returns a list
-        containing visualization information.
-        """
-        user = self.get_authenticated_user(trans)
-        visualizations = self.get_visualizations_by_user(trans, user)
-        visualizations += self.get_visualizations_shared_with_user(trans, user)
-        visualizations += self.get_published_visualizations(trans, exclude_user=user)
+        if not trans.user_is_admin:
+            user_id = trans.user and trans.user.id
+            if payload.user_id and payload.user_id != user_id:
+                raise exceptions.AdminRequiredException("Only admins can index the visualizations of others")
 
-        response = []
-        for content in visualizations:
-            result = self.serializer.serialize_to_view(
-                content, user=user, trans=trans, **serialization_params.dict()
-            )
-            if content.deleted is False and payload.sharing:
-                sharing_dict = self.shareable_service.sharing(trans, content.id)
-                result.update(sharing_dict)
-            if content.deleted == payload.deleted:
-                response.append(result)
-        return response
+        entries, total_matches = self.manager.index_query(trans, payload, include_total_count)
+        response = [self.serializer.serialize_to_view(
+            content, user=trans.user, trans=trans, **serialization_params.dict()
+        ) for content in entries]
 
-    def get_visualizations_by_user(self, trans, user):
-        """Return query results of visualizations filtered by a user."""
-        stmt = select(Visualization).filter(Visualization.user == user).order_by(Visualization.title)
-        return trans.sa_session.scalars(stmt).all()
-
-    def get_visualizations_shared_with_user(self, trans, user):
-        """Return query results for visualizations shared with the given user."""
-        # The second `where` clause removes duplicates when a user shares with themselves.
-        stmt = (
-            select(Visualization)
-            .join(VisualizationUserShareAssociation)
-            .where(VisualizationUserShareAssociation.user_id == user.id)
-            .where(Visualization.user_id != user.id)
-            .order_by(Visualization.title)
+        return (
+            response,
+            total_matches,
         )
-        return trans.sa_session.scalars(stmt).all()
-
-    def get_published_visualizations(self, trans, exclude_user=None):
-        """
-        Return query results for published visualizations optionally excluding the user in `exclude_user`.
-        """
-        stmt = select(Visualization).filter(Visualization.published == true())
-        if exclude_user:
-            stmt = stmt.filter(Visualization.user != exclude_user)
-        stmt = stmt.order_by(Visualization.title)
-        return trans.sa_session.scalars(stmt).all()

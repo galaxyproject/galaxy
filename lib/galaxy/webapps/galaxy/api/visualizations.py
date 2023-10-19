@@ -122,6 +122,7 @@ class FastAPIVisualizations:
     )
     def index(
         self,
+        response: Response,
         trans: ProvidesUserContext = DependsOnTrans,
         deleted: bool = DeletedQueryParam,
         limit: int = LimitQueryParam,
@@ -147,9 +148,9 @@ class FastAPIVisualizations:
             offset=offset,
             search=search,
         )
-        return self.service.index(
-            trans, serialization_params, payload,
-        )
+        entries, total_matches = self.service.index(trans, serialization_params, payload, include_total_count=True)
+        response.headers["total_matches"] = str(total_matches)
+        return entries
 
     @router.get(
         "/api/visualizations/{id}/sharing",
