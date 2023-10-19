@@ -7999,16 +7999,22 @@ class WorkflowComment(Base, RepresentById):
     )
 
     def to_dict(self):
-        return {
+        comment_dict = {
             "id": self.order_index,
             "position": self.position,
             "size": self.size,
             "type": self.type,
             "colour": self.colour,
             "data": self.data,
-            "child_steps": [step.order_index for step in self.child_steps],
-            "child_comments": [comment.order_index for comment in self.child_comments],
         }
+
+        if self.child_steps:
+            comment_dict["child_steps"] = [step.order_index for step in self.child_steps]
+
+        if self.child_comments:
+            comment_dict["child_comments"] = [comment.order_index for comment in self.child_comments]
+
+        return comment_dict
 
     def from_dict(dict):
         comment = WorkflowComment()
