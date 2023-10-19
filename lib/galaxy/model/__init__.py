@@ -7556,6 +7556,7 @@ class WorkflowStep(Base, RepresentById):
     uuid = Column(UUIDType)
     label = Column(Unicode(255))
     temp_input_connections: Optional[InputConnDictType]
+    parent_comment_id = Column(Integer, ForeignKey("workflow_comment.id"), nullable=True)
 
     subworkflow: Optional[Workflow] = relationship(
         "Workflow",
@@ -7974,21 +7975,32 @@ class WorkflowComment(Base, RepresentById):
     __tablename__ = "workflow_comment"
 
     id = Column(Integer, primary_key=True)
+    order_index = Column(Integer)
     workflow_id = Column(Integer, ForeignKey("workflow.id"), index=True, nullable=False)
     position = Column(MutableJSONType)
     size = Column(JSONType)
     type = Column(String(16))
     colour = Column(String(16))
     data = Column(JSONType)
+    parent_comment_id = Column(Integer, ForeignKey("workflow_comment.id"), nullable=True)
+
     workflow = relationship(
         "Workflow",
         primaryjoin=(lambda: Workflow.id == WorkflowComment.workflow_id),
         back_populates="comments",
     )
 
+    child_steps: List["WorkflowStep"] = relationship(
+        "WorkflowStep", primaryjoin=(lambda: WorkflowStep.parent_comment_id == WorkflowComment.id)
+    )
+
+    child_comments: List["WorkflowComment"] = relationship(
+        "WorkflowComment", primaryjoin=(lambda: WorkflowComment.parent_comment_id == WorkflowComment.id)
+    )
+
     def to_dict(self):
         return {
-            "id": self.id,
+            "id": self.order_index,
             "position": self.position,
             "size": self.size,
             "type": self.type,
@@ -7998,6 +8010,7 @@ class WorkflowComment(Base, RepresentById):
 
     def from_dict(dict):
         comment = WorkflowComment()
+        comment.order_index = dict.get("id", 0)
         comment.type = dict.get("type", "text")
         comment.position = dict.get("position", None)
         comment.size = dict.get("size", None)
