@@ -8,7 +8,7 @@ import { iconPlugin } from "components/plugins/icons";
 import { localizationPlugin } from "components/plugins/localization";
 import { vueRxShortcutPlugin } from "components/plugins/vueRxShortcuts";
 import { PiniaVuePlugin } from "pinia";
-import { fromEventPattern,timer } from "rxjs";
+import { fromEventPattern, timer } from "rxjs";
 import { debounceTime, take, takeUntil } from "rxjs/operators";
 import _l from "utils/localization";
 import Vuex from "vuex";
