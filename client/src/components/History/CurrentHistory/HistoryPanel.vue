@@ -320,13 +320,15 @@ export default {
         ...mapActions(useHistoryItemsStore, ["fetchHistoryItems"]),
         getHighlight(item) {
             const highlightsKey = FilterClass.getFilterValue(this.filterText, "related");
-            if (highlightsKey == item.hid) {
-                return "active";
-            } else if (highlightsKey) {
-                if (item.hid > highlightsKey) {
-                    return "output";
-                } else {
-                    return "input";
+            if (!this.loading) {
+                if (highlightsKey == item.hid) {
+                    return "active";
+                } else if (highlightsKey) {
+                    if (item.hid > highlightsKey) {
+                        return "output";
+                    } else {
+                        return "input";
+                    }
                 }
             } else {
                 return null;
