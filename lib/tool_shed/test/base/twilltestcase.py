@@ -1040,7 +1040,7 @@ class ShedTwillTestCase(ShedApiTestCase):
 
     def create_repository_dependency(
         self,
-        repository: Optional[Repository] = None,
+        repository: Repository,
         repository_tuples=None,
         filepath=None,
         prior_installation_required=False,
@@ -1050,7 +1050,6 @@ class ShedTwillTestCase(ShedApiTestCase):
         strings_displayed=None,
         strings_not_displayed=None,
     ):
-        assert repository
         repository_tuples = repository_tuples or []
         repository_names = []
         if complex:
