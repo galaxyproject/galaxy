@@ -312,7 +312,7 @@ class LibraryContentsController(
                         trans.sa_session.add(meta_i)
                     with transaction(trans.sa_session):
                         trans.sa_session.commit()
-                if type(v) == trans.app.model.LibraryDatasetDatasetAssociation:
+                if isinstance(v, trans.app.model.LibraryDatasetDatasetAssociation):
                     v = v.library_dataset
                 encoded_id = trans.security.encode_id(v.id)
                 if create_type == "folder":

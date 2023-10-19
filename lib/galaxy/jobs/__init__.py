@@ -1674,7 +1674,7 @@ class MinimalJobWrapper(HasResourceParameters):
                 # the outputs and set them accordingly
                 object_store_id_overrides = {o: preferred_outputs_object_store_id for o in output_names}
 
-                def split_object_stores(output_name):
+                def split_object_stores(output_name):  # noqa: F811 https://github.com/PyCQA/pyflakes/issues/783
                     if "|__part__|" in output_name:
                         output_name = output_name.split("|__part__|", 1)[0]
                     if output_name in output_names:

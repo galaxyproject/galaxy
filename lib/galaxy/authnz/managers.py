@@ -67,7 +67,7 @@ class AuthnzManager:
             if root.tag != "OIDC":
                 raise etree.ParseError(
                     "The root element in OIDC_Config xml file is expected to be `OIDC`, "
-                    "found `{}` instead -- unable to continue.".format(root.tag)
+                    f"found `{root.tag}` instead -- unable to continue."
                 )
             for child in root:
                 if child.tag != "Setter":
@@ -79,7 +79,7 @@ class AuthnzManager:
                 if "Property" not in child.attrib or "Value" not in child.attrib or "Type" not in child.attrib:
                     log.error(
                         "Could not find the node attributes `Property` and/or `Value` and/or `Type`;"
-                        " found these attributes: `{}`; skipping this node.".format(child.attrib)
+                        f" found these attributes: `{child.attrib}`; skipping this node."
                     )
                     continue
                 try:
@@ -110,7 +110,7 @@ class AuthnzManager:
             if root.tag != "OIDC":
                 raise etree.ParseError(
                     "The root element in OIDC config xml file is expected to be `OIDC`, "
-                    "found `{}` instead -- unable to continue.".format(root.tag)
+                    f"found `{root.tag}` instead -- unable to continue."
                 )
             for child in root:
                 if child.tag != "provider":
