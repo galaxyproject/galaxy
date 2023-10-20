@@ -3,7 +3,7 @@ import { defineStore } from "pinia"
 import { fetcher, components } from "@/schema"
 const usersFetcher = fetcher.path("/api/users").method("get").create()
 
-type User = components["schemas"]["User"]
+type User = components["schemas"]["UserV2"]
 
 export const useUsersStore = defineStore({
     id: "users",

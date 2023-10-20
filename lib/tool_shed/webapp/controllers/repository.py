@@ -16,10 +16,6 @@ from sqlalchemy import (
     null,
     select,
 )
-from toolshed.webapp.model import (
-    Repository,
-    RepositoryMetadata,
-)
 
 import tool_shed.grids.repository_grids as repository_grids
 import tool_shed.grids.util as grids_util
@@ -62,7 +58,9 @@ from tool_shed.utility_containers import ToolShedUtilityContainerManager
 from tool_shed.webapp.framework.decorators import require_login
 from tool_shed.webapp.model import (
     Category,
+    Repository,
     RepositoryCategoryAssociation,
+    RepositoryMetadata,
 )
 from tool_shed.webapp.util import ratings_util
 
@@ -2661,7 +2659,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
 
 def get_first_repository_metadata(session):
     stmt = select(RepositoryMetadata).limit(1)
-    return session.select(stmt).first()
+    return session.scalars(stmt).first()
 
 
 def get_current_repositories(session):

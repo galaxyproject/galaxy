@@ -764,7 +764,7 @@ class ShedTwillTestCase(ShedApiTestCase):
         )
         # v2 doesn't log you in on account creation... so force a login here
         if previously_created or self.is_v2:
-            # The acount has previously been created, so just login.
+            # The account has previously been created, so just login.
             # HACK: don't use panels because late_javascripts() messes up the twill browser and it
             # can't find form fields (and hence user can't be logged in).
             params = {"use_panels": False}
@@ -1040,7 +1040,7 @@ class ShedTwillTestCase(ShedApiTestCase):
 
     def create_repository_dependency(
         self,
-        repository: Optional[Repository] = None,
+        repository: Repository,
         repository_tuples=None,
         filepath=None,
         prior_installation_required=False,
@@ -1050,7 +1050,6 @@ class ShedTwillTestCase(ShedApiTestCase):
         strings_displayed=None,
         strings_not_displayed=None,
     ):
-        assert repository
         repository_tuples = repository_tuples or []
         repository_names = []
         if complex:
@@ -1402,21 +1401,20 @@ class ShedTwillTestCase(ShedApiTestCase):
             self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def get_or_create_repository(
-        self, category: Category, owner=None, strings_displayed=None, strings_not_displayed=None, **kwd
+        self, category: Category, owner: str, name: str, strings_displayed=None, strings_not_displayed=None, **kwd
     ) -> Optional[Repository]:
         # If not checking for a specific string, it should be safe to assume that
         # we expect repository creation to be successful.
         if strings_displayed is None:
-            strings_displayed = ["Repository", kwd["name"], "has been created"]
+            strings_displayed = ["Repository", name, "has been created"]
         if strings_not_displayed is None:
             strings_not_displayed = []
-        name = kwd["name"]
         repository = self.populator.get_repository_for(owner, name)
-        category_id = category.id
-        assert category_id
         if repository is None:
+            category_id = category.id
+            assert category_id
             self.visit_url("/repository/create_repository")
-            self.submit_form(button="create_repository_button", category_id=category_id, **kwd)
+            self.submit_form(button="create_repository_button", name=name, category_id=category_id, **kwd)
             self.check_for_strings(strings_displayed, strings_not_displayed)
             repository = self.populator.get_repository_for(owner, name)
         return repository
@@ -2093,7 +2091,7 @@ def get_installed_repository(session, name, owner, changeset):
     if owner is not None:
         stmt = stmt.where(ToolShedRepository.owner == owner)
     if changeset is not None:
-        stmt = stmt.wehre(ToolShedRepository.changeset_revision == changeset)
+        stmt = stmt.where(ToolShedRepository.changeset_revision == changeset)
     stmt = stmt.where(ToolShedRepository.deleted == false())
     stmt = stmt.where(ToolShedRepository.uninstalled == false())
     return session.scalars(stmt).one_or_none()

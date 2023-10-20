@@ -69,6 +69,7 @@ class Category(BaseModel):
     id: str
     name: str
     description: str
+    deleted: bool
     repositories: int
 
 

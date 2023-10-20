@@ -83,6 +83,7 @@ class TestShedRepositoriesApi(ShedApiTestCase):
         assert repository_id in repository_ids
 
         repository = self.populator.get_repository_for(repo.owner, repo.name)
+        assert repository
         assert repository.owner == repo.owner
         assert repository.name == repo.name
 

@@ -266,9 +266,12 @@ class ToolShedPopulator:
         response.raise_for_status()
         return [Category(**c) for c in response.json()]
 
-    def get_category_with_name(self, name: str) -> Optional[Category]:
-        response = self._api_interactor.get("categories")
+    def get_category_with_id(self, category_id: str) -> Category:
+        response = self._api_interactor.get(f"categories/{category_id}")
         response.raise_for_status()
+        return Category(**response.json())
+
+    def get_category_with_name(self, name: str) -> Optional[Category]:
         categories = [c for c in self.get_categories() if c.name == name]
         return categories[0] if categories else None
 

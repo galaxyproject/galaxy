@@ -20,6 +20,7 @@ from sqlalchemy import (
     false,
     select,
 )
+from sqlalchemy.orm import scoped_session
 
 from galaxy import web
 from galaxy.exceptions import (
@@ -254,7 +255,9 @@ def index_tool_ids(app: ToolShedApp, tool_ids: List[str]) -> Dict[str, Any]:
 
 
 def index_repositories(app: ToolShedApp, name: Optional[str], owner: Optional[str], deleted: bool):
-    return list(_get_repository_by_name_and_owner_and_deleted(app.model.context, name, owner, deleted, app.model.User))
+    return list(
+        _get_repositories_by_name_and_owner_and_deleted(app.model.context, name, owner, deleted, app.model.User)
+    )
 
 
 def can_manage_repo(trans: ProvidesUserContext, repository: Repository) -> bool:
@@ -579,7 +582,7 @@ def upload_tar_and_set_metadata(
     return message
 
 
-def _get_repository_by_name_and_owner(session, name, owner, user_model):
+def _get_repository_by_name_and_owner(session: scoped_session, name: str, owner: str, user_model):
     stmt = (
         select(Repository)
         .where(Repository.deprecated == false())
@@ -592,12 +595,14 @@ def _get_repository_by_name_and_owner(session, name, owner, user_model):
     return session.scalars(stmt).first()
 
 
-def _get_repository_by_name_and_owner_and_deleted(session, name, owner, deleted, user_model):
+def _get_repositories_by_name_and_owner_and_deleted(
+    session: scoped_session, name: Optional[str], owner: Optional[str], deleted: bool, user_model
+):
     stmt = select(Repository).where(Repository.deprecated == false()).where(Repository.deleted == deleted)
     if owner is not None:
         stmt = stmt.where(user_model.username == owner)
         stmt = stmt.where(Repository.user_id == user_model.id)
     if name is not None:
         stmt = stmt.where(Repository.name == name)
-    stmt = stmt.order_by(Repository.name).limit(1)
-    return session.scalars(stmt).first()
+    stmt = stmt.order_by(Repository.name)
+    return session.scalars(stmt)
