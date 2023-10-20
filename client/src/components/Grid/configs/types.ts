@@ -1,6 +1,6 @@
 type Field = FieldKey | FieldOperations;
 
-type FieldType = "date" | "operations" | "sharing" | "tags" | "text" | undefined;
+// TODO: type FieldType = "date" | "operations" | "sharing" | "tags" | "text" | undefined;
 
 interface FieldKey {
     key?: string;
@@ -16,7 +16,7 @@ interface OperationHandlerMessage {
 type OperationHandlerReturn = OperationHandlerMessage | void;
 
 export interface Config {
-    url: string;
+    getUrl: (currentPage: number, perPage: number, search: string) => string;
     resource: string;
     item: string;
     plural: string;

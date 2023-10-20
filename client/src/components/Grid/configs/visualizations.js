@@ -4,7 +4,10 @@ import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
 
 export const VisualizationsGrid = {
-    url: "/api/visualizations/detailed",
+    getUrl: (currentPage, perPage, searchTerm) => {
+        const offset = perPage * (currentPage - 1);
+        return `/api/visualizations/detailed?limit=${perPage}&offset=${offset}`;
+    },
     resource: "visualizations",
     item: "visualization",
     plural: "Visualizations",
