@@ -19,7 +19,7 @@ export const useNotificationsStore = defineStore("notificationsStore", () => {
     const totalUnreadCount = ref<number>(0);
     const notifications = ref<UserNotification[]>([]);
 
-    const pollId = ref<any>(null);
+    const pollId = ref<NodeJS.Timeout | undefined>(undefined);
     const loadingNotifications = ref<boolean>(false);
     const lastNotificationUpdate = ref<Date | null>(null);
 
@@ -62,7 +62,8 @@ export const useNotificationsStore = defineStore("notificationsStore", () => {
     }
 
     function stopPollingNotifications() {
-        pollId.value = clearTimeout(pollId.value);
+        clearTimeout(pollId.value);
+        pollId.value = undefined;
     }
 
     async function updateBatchNotification(request: UserNotificationsBatchUpdateRequest) {
