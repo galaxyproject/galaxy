@@ -347,7 +347,9 @@ class DRMAAJobRunner(AsynchronousJobRunner):
             if state is None:
                 continue
             if state != old_state:
-                log.debug("(%s/%s) state change: %s", galaxy_id_tag, external_job_id, self.drmaa_job_state_strings[state])
+                log.debug(
+                    "(%s/%s) state change: %s", galaxy_id_tag, external_job_id, self.drmaa_job_state_strings[state]
+                )
             if state == drmaa.JobState.RUNNING and not ajs.running:
                 ajs.running = True
                 ajs.job_wrapper.change_state(model.Job.states.RUNNING)
@@ -403,12 +405,21 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         )
         ajs.command_line = job.get_command_line()
         if job.state in (model.Job.states.RUNNING, model.Job.states.STOPPED):
-            log.debug("(%s/%s) is still in %s state, adding to the DRM queue", job.id, job.get_job_runner_external_id(), job.state)
+            log.debug(
+                "(%s/%s) is still in %s state, adding to the DRM queue",
+                job.id,
+                job.get_job_runner_external_id(),
+                job.state,
+            )
             ajs.old_state = drmaa.JobState.RUNNING
             ajs.running = True
             self.monitor_queue.put(ajs)
         elif job.get_state() == model.Job.states.QUEUED:
-            log.debug("(%s/%s) is still in DRM queued state, adding to the DRM queue", job.id, job.get_job_runner_external_id())
+            log.debug(
+                "(%s/%s) is still in DRM queued state, adding to the DRM queue",
+                job.id,
+                job.get_job_runner_external_id(),
+            )
             ajs.old_state = drmaa.JobState.QUEUED_ACTIVE
             ajs.running = False
             self.monitor_queue.put(ajs)
@@ -428,7 +439,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         """
         cmd = shlex.split(external_runjob_script)
         cmd.extend([str(username), jobtemplate_filename])
-        log.info("Running command: %s", ' '.join(cmd))
+        log.info("Running command: %s", " ".join(cmd))
         try:
             stdoutdata = commands.execute(cmd).strip()
         except commands.CommandLineException:

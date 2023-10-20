@@ -276,11 +276,18 @@ class CondorJobRunner(AsynchronousJobRunner):
         cjs.user_log = os.path.join(job_wrapper.working_directory, f"galaxy_{galaxy_id_tag}.condor.log")
         cjs.register_cleanup_file_attribute("user_log")
         if job.state in (model.Job.states.RUNNING, model.Job.states.STOPPED):
-            log.debug("(%s/%s) is still in %s state, adding to the DRM queue", job.id, job.get_job_runner_external_id(), job.state)
+            log.debug(
+                "(%s/%s) is still in %s state, adding to the DRM queue",
+                job.id,
+                job.get_job_runner_external_id(),
+                job.state,
+            )
             cjs.running = True
             self.monitor_queue.put(cjs)
         elif job.state == model.Job.states.QUEUED:
-            log.debug("(%s/%s) is still in DRM queued state, adding to the DRM queue", job.id, job.job_runner_external_id)
+            log.debug(
+                "(%s/%s) is still in DRM queued state, adding to the DRM queue", job.id, job.job_runner_external_id
+            )
             cjs.running = False
             self.monitor_queue.put(cjs)
 

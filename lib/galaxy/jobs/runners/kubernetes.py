@@ -932,12 +932,21 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         )
         ajs.command_line = job.command_line
         if job.state in (model.Job.states.RUNNING, model.Job.states.STOPPED):
-            log.debug("(%s/%s) is still in %s state, adding to the runner monitor queue", job.id, job.job_runner_external_id, job.state)
+            log.debug(
+                "(%s/%s) is still in %s state, adding to the runner monitor queue",
+                job.id,
+                job.job_runner_external_id,
+                job.state,
+            )
             ajs.old_state = model.Job.states.RUNNING
             ajs.running = True
             self.monitor_queue.put(ajs)
         elif job.state == model.Job.states.QUEUED:
-            log.debug("(%s/%s) is still in queued state, adding to the runner monitor queue", job.id, job.job_runner_external_id)
+            log.debug(
+                "(%s/%s) is still in queued state, adding to the runner monitor queue",
+                job.id,
+                job.job_runner_external_id,
+            )
             ajs.old_state = model.Job.states.QUEUED
             ajs.running = False
             self.monitor_queue.put(ajs)

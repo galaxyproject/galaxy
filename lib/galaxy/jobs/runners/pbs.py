@@ -374,7 +374,11 @@ class PBSJobRunner(AsynchronousJobRunner):
                 try:
                     # Recheck to make sure it wasn't a communication problem
                     self.check_single_job(pbs_server_name, job_id)
-                    log.warning("(%s/%s) PBS job was not in state check list, but was found with individual state check", galaxy_job_id, job_id)
+                    log.warning(
+                        "(%s/%s) PBS job was not in state check list, but was found with individual state check",
+                        galaxy_job_id,
+                        job_id,
+                    )
                     new_watched.append(pbs_job_state)
                 except Exception:
                     errno, text = pbs.error()
@@ -384,11 +388,15 @@ class PBSJobRunner(AsynchronousJobRunner):
                         self.work_queue.put((self.finish_job, pbs_job_state))
                     else:
                         # Unhandled error, continue to monitor
-                        log.info("(%s/%s) PBS state check resulted in error (%d): %s", galaxy_job_id, job_id, errno, text)
+                        log.info(
+                            "(%s/%s) PBS state check resulted in error (%d): %s", galaxy_job_id, job_id, errno, text
+                        )
                         new_watched.append(pbs_job_state)
                 continue
             if status.job_state != old_state:
-                log.debug("(%s/%s) PBS job state changed from %s to %s", galaxy_job_id, job_id, old_state, status.job_state)
+                log.debug(
+                    "(%s/%s) PBS job state changed from %s to %s", galaxy_job_id, job_id, old_state, status.job_state
+                )
             if status.job_state == "R" and not pbs_job_state.running:
                 pbs_job_state.running = True
                 pbs_job_state.job_wrapper.change_state(model.Job.states.RUNNING)
@@ -542,12 +550,21 @@ class PBSJobRunner(AsynchronousJobRunner):
         pbs_job_state.runner_url = job_wrapper.get_job_runner_url()
         job_wrapper.command_line = job.command_line
         if job.state in (model.Job.states.RUNNING, model.Job.states.STOPPED):
-            log.debug("(%s/%s) is still in %s state, adding to the PBS queue", job.id, job.get_job_runner_external_id(), job.state)
+            log.debug(
+                "(%s/%s) is still in %s state, adding to the PBS queue",
+                job.id,
+                job.get_job_runner_external_id(),
+                job.state,
+            )
             pbs_job_state.old_state = "R"
             pbs_job_state.running = True
             self.monitor_queue.put(pbs_job_state)
         elif job.state == model.Job.states.QUEUED:
-            log.debug("(%s/%s) is still in PBS queued state, adding to the PBS queue", job.id, job.get_job_runner_external_id())
+            log.debug(
+                "(%s/%s) is still in PBS queued state, adding to the PBS queue",
+                job.id,
+                job.get_job_runner_external_id(),
+            )
             pbs_job_state.old_state = "Q"
             pbs_job_state.running = False
             self.monitor_queue.put(pbs_job_state)

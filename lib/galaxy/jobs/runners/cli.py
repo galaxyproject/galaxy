@@ -136,7 +136,11 @@ class ShellJobRunner(AsynchronousJobRunner):
         if returncode == 0:
             stdout = cmd_out.stdout
             if not stdout or not stdout.strip():
-                log.warning("(%s) Execute returned a 0 exit code but no external identifier will be recovered from empty stdout - stderr is %s", galaxy_id_tag, cmd_out.stderr)
+                log.warning(
+                    "(%s) Execute returned a 0 exit code but no external identifier will be recovered from empty stdout - stderr is %s",
+                    galaxy_id_tag,
+                    cmd_out.stderr,
+                )
             return returncode, stdout
         stdout = f"({galaxy_id_tag}) submission failed (stdout): {cmd_out.stdout}"
         stderr = f"({galaxy_id_tag}) submission failed (stderr): {cmd_out.stderr}"
@@ -174,7 +178,11 @@ class ShellJobRunner(AsynchronousJobRunner):
                 cmd_out = shell.execute(job_interface.get_single_status(external_job_id))
                 state = job_interface.parse_single_status(cmd_out.stdout, external_job_id)
                 if not state == model.Job.states.OK:
-                    log.warning("(%s/%s) job not found in batch state check, but found in individual state check", id_tag, external_job_id)
+                    log.warning(
+                        "(%s/%s) job not found in batch state check, but found in individual state check",
+                        id_tag,
+                        external_job_id,
+                    )
             job_state = ajs.job_wrapper.get_state()
             if state != old_state:
                 log.debug("(%s/%s) state change: from %s to %s", id_tag, external_job_id, old_state, state)
@@ -251,7 +259,12 @@ class ShellJobRunner(AsynchronousJobRunner):
             assert cmd_out.returncode == 0, cmd_out.stderr
             log.debug("(%s/%s) Terminated at user's request", job.id, job.job_runner_external_id)
         except Exception as e:
-            log.debug("(%s/%s) User killed running job, but error encountered during termination: %s", job.id, job.job_runner_external_id, e)
+            log.debug(
+                "(%s/%s) User killed running job, but error encountered during termination: %s",
+                job.id,
+                job.job_runner_external_id,
+                e,
+            )
 
     def recover(self, job, job_wrapper):
         """Recovers jobs stuck in the queued/running state when Galaxy started"""
@@ -267,12 +280,21 @@ class ShellJobRunner(AsynchronousJobRunner):
         )
         ajs.command_line = job.command_line
         if job.state in (model.Job.states.RUNNING, model.Job.states.STOPPED):
-            log.debug("(%s/%s) is still in %s state, adding to the runner monitor queue", job.id, job.job_runner_external_id, job.state)
+            log.debug(
+                "(%s/%s) is still in %s state, adding to the runner monitor queue",
+                job.id,
+                job.job_runner_external_id,
+                job.state,
+            )
             ajs.old_state = model.Job.states.RUNNING
             ajs.running = True
             self.monitor_queue.put(ajs)
         elif job.state == model.Job.states.QUEUED:
-            log.debug("(%s/%s) is still in queued state, adding to the runner monitor queue", job.id, job.job_runner_external_id)
+            log.debug(
+                "(%s/%s) is still in queued state, adding to the runner monitor queue",
+                job.id,
+                job.job_runner_external_id,
+            )
             ajs.old_state = model.Job.states.QUEUED
             ajs.running = False
             self.monitor_queue.put(ajs)

@@ -186,7 +186,7 @@ class GodockerJobRunner(AsynchronousJobRunner):
         # Get task from GoDocker
         job_persisted_state = job_state.job_wrapper.get_state()
         job_status_god = self.get_task(job_state.job_id)
-        log.debug("Job ID: %s Job Status: %s", str(job_state.job_id), str(job_status_god['status']['primary']))
+        log.debug("Job ID: %s Job Status: %s", str(job_state.job_id), str(job_status_god["status"]["primary"]))
 
         if job_status_god["status"]["primary"] == "over" or job_persisted_state == model.Job.states.STOPPED:
             job_state.running = False
@@ -260,13 +260,22 @@ class GodockerJobRunner(AsynchronousJobRunner):
         )
         job_wrapper.command_line = job.command_line
         if job.state in (model.Job.states.RUNNING, model.Job.states.STOPPED):
-            log.debug("(%s/%s) is still in %s state, adding to the god queue", job.id, job.get_job_runner_external_id(), job.state)
+            log.debug(
+                "(%s/%s) is still in %s state, adding to the god queue",
+                job.id,
+                job.get_job_runner_external_id(),
+                job.state,
+            )
             ajs.old_state = "R"
             ajs.running = True
             self.monitor_queue.put(ajs)
 
         elif job.state == model.Job.states.QUEUED:
-            log.debug("(%s/%s) is still in god queued state, adding to the god queue", job.id, job.get_job_runner_external_id())
+            log.debug(
+                "(%s/%s) is still in god queued state, adding to the god queue",
+                job.id,
+                job.get_job_runner_external_id(),
+            )
             ajs.old_state = "Q"
             ajs.running = False
             self.monitor_queue.put(ajs)

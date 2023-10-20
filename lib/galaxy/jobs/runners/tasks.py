@@ -232,7 +232,14 @@ class TaskedJobRunner(BaseJobRunner):
             except OSError as e:
                 # This warning could be bogus; many tasks are stopped with
                 # SIGTERM (signal 15), but ymmv depending on the platform.
-                log.warning("_stop_pid(): %s: Got errno %s when attempting to signal %d to PID %d: %s", job_id, errno.errorcode[e.errno], sig, pid, e.strerror)
+                log.warning(
+                    "_stop_pid(): %s: Got errno %s when attempting to signal %d to PID %d: %s",
+                    job_id,
+                    errno.errorcode[e.errno],
+                    sig,
+                    pid,
+                    e.strerror,
+                )
                 return
             # TODO: If we're stopping lots of tasks, then we will want to put this
             # avoid a two-second overhead using some other asynchronous method.
