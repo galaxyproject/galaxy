@@ -174,7 +174,7 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
         if show_published or user is None and show_published is None:
             filters.append(model.StoredWorkflow.published == true())
 
-        query = trans.sa_session.query(model.StoredWorkflow)
+        query = select(model.StoredWorkflow)
         if show_shared:
             query = query.outerjoin(model.StoredWorkflow.users_shared_with)
         query = query.outerjoin(model.StoredWorkflow.tags)
@@ -241,7 +241,7 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
                     )
         query = query.filter(model.StoredWorkflow.table.c.deleted == (true() if show_deleted else false()))
         if include_total_count:
-            total_matches = query.count()
+            total_matches = get_count(trans.sa_session, query)
         else:
             total_matches = None
         if payload.sort_by is None:
@@ -257,7 +257,8 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
             query = query.limit(payload.limit)
         if payload.offset is not None:
             query = query.offset(payload.offset)
-        return query, total_matches
+        result = trans.sa_session.scalars(query).unique()
+        return result, total_matches
 
     def get_stored_workflow(self, trans, workflow_id, by_stored_id=True) -> StoredWorkflow:
         """Use a supplied ID (UUID or encoded stored workflow ID) to find
