@@ -144,7 +144,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         # prepare the job
         # We currently don't need to include_metadata or include_work_dir_outputs, as working directory is the same
         # where galaxy will expect results.
-        log.debug(f"Starting queue_job for job {job_wrapper.get_id_tag()}")
+        log.debug("Starting queue_job for job %s", job_wrapper.get_id_tag())
 
         ajs = AsynchronousJobState(
             files_dir=job_wrapper.working_directory,
@@ -226,7 +226,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         # Configure additional k8s service and ingress for tools with guest ports
         k8s_job_prefix = self.__produce_k8s_job_prefix()
         k8s_job_name = self.__get_k8s_job_name(k8s_job_prefix, ajs.job_wrapper)
-        log.debug(f"Configuring entry points and deploying service/ingress for job with ID {ajs.job_id}")
+        log.debug("Configuring entry points and deploying service/ingress for job with ID %s", ajs.job_id)
         k8s_service_obj = service_object_dict(self.runner_params, k8s_job_name, self.__get_k8s_service_spec(ajs))
 
         k8s_ingress_obj = ingress_object_dict(self.runner_params, k8s_job_name, self.__get_k8s_ingress_spec(ajs))
@@ -879,7 +879,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
     def __cleanup_k8s_guest_ports(self, job_wrapper, k8s_job):
         k8s_job_prefix = self.__produce_k8s_job_prefix()
         k8s_job_name = f"{k8s_job_prefix}-{self.__force_label_conformity(job_wrapper.get_id_tag())}"
-        log.debug(f"Deleting service/ingress for job with ID {job_wrapper.get_id_tag()}")
+        log.debug("Deleting service/ingress for job with ID %s", job_wrapper.get_id_tag())
         job_failed = k8s_job.obj["status"]["failed"] > 0 if "failed" in k8s_job.obj["status"] else False
         ingress_to_delete = find_ingress_object_by_name(
             self._pykube_api, k8s_job_name, self.runner_params["k8s_namespace"]
@@ -908,7 +908,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
                 self.__cleanup_k8s_job(k8s_job)
             # TODO assert whether job parallelism == 0
             # assert not job_to_delete.exists(), "Could not delete job,"+job.job_runner_external_id+" it still exists"
-            log.debug(f"({job.id}/{job.job_runner_external_id}) Terminated at user's request")
+            log.debug("(%s/%s) Terminated at user's request", job.id, job.job_runner_external_id)
 
         except Exception as e:
             log.exception(
@@ -920,7 +920,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
     def recover(self, job, job_wrapper):
         """Recovers jobs stuck in the queued/running state when Galaxy started"""
         job_id = job.get_job_runner_external_id()
-        log.debug(f"k8s trying to recover job: {job_id}")
+        log.debug("k8s trying to recover job: %s", job_id)
         if job_id is None:
             self.put(job_wrapper)
             return
@@ -932,20 +932,12 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         )
         ajs.command_line = job.command_line
         if job.state in (model.Job.states.RUNNING, model.Job.states.STOPPED):
-            log.debug(
-                "({}/{}) is still in {} state, adding to the runner monitor queue".format(
-                    job.id, job.job_runner_external_id, job.state
-                )
-            )
+            log.debug("(%s/%s) is still in %s state, adding to the runner monitor queue", job.id, job.job_runner_external_id, job.state)
             ajs.old_state = model.Job.states.RUNNING
             ajs.running = True
             self.monitor_queue.put(ajs)
         elif job.state == model.Job.states.QUEUED:
-            log.debug(
-                "({}/{}) is still in queued state, adding to the runner monitor queue".format(
-                    job.id, job.job_runner_external_id
-                )
-            )
+            log.debug("(%s/%s) is still in queued state, adding to the runner monitor queue", job.id, job.job_runner_external_id)
             ajs.old_state = model.Job.states.QUEUED
             ajs.running = False
             self.monitor_queue.put(ajs)

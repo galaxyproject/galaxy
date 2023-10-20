@@ -255,7 +255,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
             if pulsar_conf_path is None:
                 log.info("Creating a Pulsar app with default configuration (no pulsar_conf specified).")
             else:
-                log.info(f"Loading Pulsar app configuration from {pulsar_conf_path}")
+                log.info("Loading Pulsar app configuration from %s", pulsar_conf_path)
                 with open(pulsar_conf_path) as f:
                     conf.update(yaml.safe_load(f) or {})
         if "job_metrics_config_file" not in conf:
@@ -403,7 +403,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
             config_files = job_wrapper.extra_filenames
             tool_script = os.path.join(job_wrapper.working_directory, "tool_script.sh")
             if os.path.exists(tool_script):
-                log.debug(f"Registering tool_script for Pulsar transfer [{tool_script}]")
+                log.debug("Registering tool_script for Pulsar transfer [%s]", tool_script)
                 job_directory_files.append(tool_script)
                 config_files.append(tool_script)
             # Following is job destination environment variables
@@ -437,7 +437,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 tool_directory_required_files=tool_directory_required_files,
             )
             external_job_id = pulsar_submit_job(client, client_job_description, remote_job_config)
-            log.info(f"Pulsar job submitted with job_id {external_job_id}")
+            log.info("Pulsar job submitted with job_id %s", external_job_id)
             job = job_wrapper.get_job()
             # Set the job destination here (unlike other runners) because there are likely additional job destination
             # params from the Pulsar client.
@@ -567,7 +567,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
         for key, value in self.destination_defaults.items():
             if key in params:
                 if value is PARAMETER_SPECIFICATION_IGNORED:
-                    log.warning(f"Pulsar runner in selected configuration ignores parameter {key}")
+                    log.warning("Pulsar runner in selected configuration ignores parameter %s", key)
                 continue
             # if self.runner_params.get( key, None ):
             #    # Let plugin define defaults for some parameters -
@@ -711,12 +711,9 @@ class PulsarJobRunner(AsynchronousJobRunner):
             return True
         except OSError as e:
             if e.errno == errno.ESRCH:
-                log.debug("check_pid(): PID %d is dead" % pid)
+                log.debug("check_pid(): PID %d is dead", pid)
             else:
-                log.warning(
-                    "check_pid(): Got errno %s when attempting to check PID %d: %s"
-                    % (errno.errorcode[e.errno], pid, e.strerror)
-                )
+                log.warning("check_pid(): Got errno %s when attempting to check PID %d: %s", (errno.errorcode[e.errno], pid, e.strerror))
             return False
 
     def stop_job(self, job_wrapper):
@@ -731,32 +728,29 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 0
             ].job_runner_external_pid  # every JobExternalOutputMetadata has a pid set, we just need to take from one of them
             if pid in [None, ""]:
-                log.warning(f"stop_job(): {job.id}: no PID in database for job, unable to stop")
+                log.warning("stop_job(): %s: no PID in database for job, unable to stop", job.id)
                 return
             pid = int(pid)
             if not self.check_pid(pid):
-                log.warning("stop_job(): %s: PID %d was already dead or can't be signaled" % (job.id, pid))
+                log.warning("stop_job(): %s: PID %d was already dead or can't be signaled", (job.id, pid))
                 return
             for sig in [15, 9]:
                 try:
                     os.killpg(pid, sig)
                 except OSError as e:
-                    log.warning(
-                        "stop_job(): %s: Got errno %s when attempting to signal %d to PID %d: %s"
-                        % (job.id, errno.errorcode[e.errno], sig, pid, e.strerror)
-                    )
+                    log.warning("stop_job(): %s: Got errno %s when attempting to signal %d to PID %d: %s", (job.id, errno.errorcode[e.errno], sig, pid, e.strerror))
                     return  # give up
                 sleep(2)
                 if not self.check_pid(pid):
-                    log.debug("stop_job(): %s: PID %d successfully killed with signal %d" % (job.id, pid, sig))
+                    log.debug("stop_job(): %s: PID %d successfully killed with signal %d", (job.id, pid, sig))
                     return
                 else:
-                    log.warning("stop_job(): %s: PID %d refuses to die after signaling TERM/KILL" % (job.id, pid))
+                    log.warning("stop_job(): %s: PID %d refuses to die after signaling TERM/KILL", (job.id, pid))
         else:
             # Remote kill
             pulsar_url = job.job_runner_name
             job_id = job.job_runner_external_id
-            log.debug(f"Attempt remote Pulsar kill of job with url {pulsar_url} and id {job_id}")
+            log.debug("Attempt remote Pulsar kill of job with url %s and id %s", pulsar_url, job_id)
             client = self.get_client(job.destination_params, job_id)
             client.kill()
 
@@ -766,7 +760,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
         job_wrapper.command_line = job.get_command_line()
         state = job.get_state()
         if state in [model.Job.states.RUNNING, model.Job.states.QUEUED, model.Job.states.STOPPED]:
-            log.debug(f"(Pulsar/{job.id}) is still in {state} state, adding to the Pulsar queue")
+            log.debug("(Pulsar/%s) is still in %s state, adding to the Pulsar queue", job.id, state)
             job_state.old_state = True
             job_state.running = state == model.Job.states.RUNNING
             self.monitor_queue.put(job_state)
@@ -838,7 +832,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
         # 0.6.0 was newest Pulsar version that did not report it's version.
         pulsar_version = PulsarJobRunner.pulsar_version(remote_job_config)
         needed_version = Version("0.0.0")
-        log.info(f"pulsar_version is {pulsar_version}")
+        log.info("pulsar_version is %s", pulsar_version)
         for feature, needed in list(check_features.items()) + [("_default_", True)]:
             if not needed:
                 continue
@@ -1153,7 +1147,7 @@ class PulsarComputeEnvironment(ComputeEnvironment):
             metadata_val, client_input_path_type=CLIENT_INPUT_PATH_TYPES.INPUT_METADATA_PATH
         )
         if remote_input_path:
-            log.info(f"input_metadata_rewrite is {remote_input_path} from {metadata_val}")
+            log.info("input_metadata_rewrite is %s from %s", remote_input_path, metadata_val)
             self.path_rewrites_input_metadata[metadata_val] = remote_input_path
             return remote_input_path
 
