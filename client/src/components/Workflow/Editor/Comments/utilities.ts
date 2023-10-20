@@ -8,5 +8,15 @@ export function selectAllText(element: HTMLElement) {
         range.selectNodeContents(element);
         window.getSelection()?.removeAllRanges();
         window.getSelection()?.addRange(range);
+        deselectOnClick();
     }
+}
+
+function deselectOnClick() {
+    const listener = () => {
+        window.getSelection()?.removeAllRanges();
+        window.removeEventListener("click", listener, { capture: true });
+    };
+
+    window.addEventListener("click", listener, { capture: true });
 }
