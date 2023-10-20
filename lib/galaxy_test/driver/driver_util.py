@@ -227,7 +227,6 @@ def setup_galaxy_config(
         template_cache_path=template_cache_path,
         tool_config_file=tool_config_file,
         tool_data_table_config_path=tool_data_table_config_path,
-        tool_parse_help=False,
         tool_path=tool_path,
         update_integrated_tool_panel=update_integrated_tool_panel,
         use_tasked_jobs=True,

@@ -103,7 +103,6 @@ class ToolShedTestDriver(driver_util.TestDriver):
             shed_tool_data_table_config=shed_tool_data_table_conf_file,
             smtp_server="smtp.dummy.string.tld",
             email_from="functional@localhost",
-            tool_parse_help=False,
             use_heartbeat=False,
         )
         kwargs.update(toolshed_database_conf)
