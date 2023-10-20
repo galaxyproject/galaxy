@@ -7,12 +7,6 @@ history.
 import logging
 from typing import Dict
 
-from sqlalchemy import (
-    false,
-    func,
-    select,
-)
-
 from galaxy import model
 from galaxy.managers import (
     annotatable,
@@ -108,32 +102,6 @@ class HDCAManager(
     def update_attributes(self, content, payload: Dict):
         # pre-requisite checked that attributes are valid
         self.map_datasets(content, fn=lambda item, *args: set_collection_attributes(item, payload.items()))
-
-    def delete(self, item, flush=True, **kwargs):
-        super().delete(item, flush=flush, **kwargs)
-        self.map_datasets(item, fn=self._delete_hda_if_orphaned_and_hidden)
-
-    def _delete_hda_if_orphaned_and_hidden(self, dataset, *parents):
-        if isinstance(dataset, model.HistoryDatasetAssociation):
-            if not dataset.deleted and not dataset.purged and not dataset.visible:
-                if not self._is_hda_used_in_multiple_active_collections(dataset):
-                    super().delete(dataset, flush=False)
-
-    def _is_hda_used_in_multiple_active_collections(self, dataset: model.HistoryDatasetAssociation):
-        stmt = (
-            select(func.count(model.DatasetCollectionElement.id))
-            .join(
-                model.HistoryDatasetCollectionAssociation,
-                model.DatasetCollectionElement.dataset_collection_id
-                == model.HistoryDatasetCollectionAssociation.collection_id,
-            )
-            .where(
-                model.DatasetCollectionElement.hda_id == dataset.id,
-                model.HistoryDatasetCollectionAssociation.deleted == false(),
-            )
-        )
-        usage_count = self.session().execute(stmt).scalar()
-        return usage_count > 1
 
 
 # serializers
