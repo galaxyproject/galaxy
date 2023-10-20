@@ -10,12 +10,19 @@ import {
     removeFavoriteToolQuery,
     setCurrentThemeQuery,
 } from "@/stores/users/queries";
+import { expand } from "rxjs";
 
 
-type AnonymousUser = components["schemas"]["AnonUserModel"]
-type User = components["schemas"]["DetailedUserModel"]
+type DetailedAnonymousUser = components["schemas"]["AnonUserModel"]
+type DetailedUserModelUser = components["schemas"]["DetailedUserModel"]
 
+interface AnonymousUser extends DetailedAnonymousUser {
+    isAnonymous: true
+}
 
+interface User extends DetailedUserModelUser {
+    isAnonymous: false;
+}
 interface Preferences {
     theme: string;
     favorites: { tools: string[] };
@@ -55,10 +62,10 @@ export const useUserStore = defineStore("userStore", () => {
                 .then(async (user) => {
                     if ('email' in user) {
                         currentUser.value = { ...user, isAnonymous: false };
-                        currentPreferences.value = user.preferences;
+                        currentPreferences.value = user.preferences as unknown as Preferences;
                     }
                     else {
-                        currentUser.value = { isAnonymous: true };
+                        currentUser.value = { ...user, isAnonymous: true };
                         currentPreferences.value = null;
                     }
                     // TODO: This is a hack to get around the fact that the API returns a string
