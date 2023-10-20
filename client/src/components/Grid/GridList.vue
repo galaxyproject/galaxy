@@ -46,6 +46,9 @@ const totalRows = ref(0);
 // loading indicator
 const loading = ref(true);
 
+// search term
+const searchTerm = ref("");
+
 // current grid configuration
 const gridConfig = computed(() => {
     return registry[props.id];
@@ -54,13 +57,27 @@ const gridConfig = computed(() => {
 // check if loading has completed and data rows are available
 const isAvailable = computed(() => !loading.value && totalRows.value > 0);
 
+// sort references
+const sortBy = ref(gridConfig.value ? gridConfig.value.sortBy : "");
+const sortDesc = ref(gridConfig.value ? gridConfig.value.sortDesc : false);
+
 /**
  * Request grid data
  */
 async function getGridData() {
     if (gridConfig.value) {
         try {
-            const response = await axios.get(withPrefix(gridConfig.value.getUrl(currentPage.value, props.perPage, "")));
+            const response = await axios.get(
+                withPrefix(
+                    gridConfig.value.getUrl(
+                        currentPage.value,
+                        props.perPage,
+                        sortBy.value,
+                        sortDesc.value,
+                        searchTerm.value
+                    )
+                )
+            );
             if (response.headers.total_matches) {
                 totalRows.value = parseInt(response.headers.total_matches);
             }
@@ -77,12 +94,20 @@ async function getGridData() {
 /**
  * Execute grid operation and display message if available
  */
-async function executeOperation(operation: Operation, rowData: RowData) {
+async function onOperation(operation: Operation, rowData: RowData) {
     const response = await operation.handler(rowData, router);
     if (response) {
         await getGridData();
         operationMessage.value = response.message;
         operationStatus.value = response.status || "success";
+    }
+}
+
+function onSort(sortKey: string) {
+    if (sortBy.value !== sortKey) {
+        sortBy.value = sortKey;
+    } else {
+        sortDesc.value = !sortDesc.value;
     }
 }
 
@@ -106,7 +131,7 @@ onMounted(() => {
 /**
  * Load current page
  */
-watch(currentPage, () => getGridData());
+watch([currentPage, sortDesc, sortBy], () => getGridData());
 
 /**
  * Operation message timeout handler
@@ -131,8 +156,17 @@ watch(operationMessage, () => {
         <BAlert v-else-if="!isAvailable" v-localize variant="info" show>No entries found.</BAlert>
         <table v-else class="grid-table">
             <thead>
-                <th v-for="(fieldEntry, fieldIndex) in gridConfig.fields" :key="fieldIndex" class="px-2">
-                    {{ fieldEntry.title || fieldEntry.key }}
+                <th v-for="(fieldEntry, fieldIndex) in gridConfig.fields" :key="fieldIndex" class="text-nowrap px-2">
+                    <span v-if="gridConfig.sortKeys.includes(fieldEntry.key)">
+                        <b-link @click="onSort(fieldEntry.key)">
+                            <span>{{ fieldEntry.title || fieldEntry.key }}</span>
+                            <span v-if="sortBy === fieldEntry.key">
+                                <icon v-if="sortDesc" icon="caret-up" />
+                                <icon v-else icon="caret-down" />
+                            </span>
+                        </b-link>
+                    </span>
+                    <span v-else>{{ fieldEntry.title || fieldEntry.key }}</span>
                 </th>
             </thead>
             <tr v-for="(rowData, rowIndex) in gridData" :key="rowIndex" :class="{ 'grid-dark-row': rowIndex % 2 }">
@@ -141,7 +175,7 @@ watch(operationMessage, () => {
                         v-if="fieldEntry.type == 'operations'"
                         :title="rowData.title"
                         :operations="fieldEntry.operations"
-                        @execute="executeOperation($event, rowData)" />
+                        @execute="onOperation($event, rowData)" />
                     <GridText v-else-if="fieldEntry.type == 'text'" :text="rowData[fieldEntry.key]" />
                     <GridSharing
                         v-else-if="fieldEntry.type == 'sharing'"

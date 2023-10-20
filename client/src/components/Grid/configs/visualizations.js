@@ -4,17 +4,21 @@ import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
 
 export const VisualizationsGrid = {
-    getUrl: (currentPage, perPage, searchTerm) => {
+    getUrl: (currentPage, perPage, sortBy, sortDesc, searchTerm) => {
         const offset = perPage * (currentPage - 1);
-        return `/api/visualizations/detailed?limit=${perPage}&offset=${offset}`;
+        return `/api/visualizations/detailed?limit=${perPage}&offset=${offset}&sort_by=${sortBy}&sort_desc=${sortDesc}`;
     },
     resource: "visualizations",
     item: "visualization",
     plural: "Visualizations",
     title: "Saved Visualizations",
+    sortBy: "update_time",
+    sortDesc: true,
+    sortKeys: ["create_time", "title", "update_time"],
     fields: [
         {
             title: "Title",
+            key: "title",
             type: "operations",
             operations: [
                 {
@@ -107,7 +111,7 @@ export const VisualizationsGrid = {
         },
         {
             key: "update_time",
-            title: "Last updated",
+            title: "Updated",
             type: "date",
         },
         {

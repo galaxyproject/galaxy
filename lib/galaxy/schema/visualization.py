@@ -24,7 +24,7 @@ from galaxy.schema.schema import (
 )
 
 
-VisualizationSortByEnum = Literal["update_time", "title", "username"]
+VisualizationSortByEnum = Literal["create_time", "title", "update_time", "username"]
 
 
 class VisualizationIndexQueryPayload(Model):

@@ -3,7 +3,7 @@ type Field = FieldKey | FieldOperations;
 // TODO: type FieldType = "date" | "operations" | "sharing" | "tags" | "text" | undefined;
 
 interface FieldKey {
-    key?: string;
+    key: string;
     type: string;
     handler?: FieldKeyHandler;
 }
@@ -16,15 +16,19 @@ interface OperationHandlerMessage {
 type OperationHandlerReturn = OperationHandlerMessage | void;
 
 export interface Config {
-    getUrl: (currentPage: number, perPage: number, search: string) => string;
+    getUrl: (currentPage: number, perPage: number, sortBy: string, sortDesc: boolean, search: string) => string;
     resource: string;
     item: string;
     plural: string;
     title: string;
     fields: Array<Field>;
+    sortBy: string;
+    sortKeys: Array<string>;
+    sortDesc: boolean;
 }
 
 export interface FieldOperations {
+    key: string;
     title: string;
     operations: Array<Operation>;
 }
