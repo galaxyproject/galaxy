@@ -1,19 +1,15 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 
-import type { components } from "@/api/schema";
-import type { UserNotification } from "@/components/Notifications";
+import type { NotificationChanges, UserNotification, UserNotificationsBatchUpdateRequest } from "@/api/notifications";
 import {
     loadNotificationsFromServer,
     loadNotificationsStatus,
     updateBatchNotificationsOnServer,
-} from "@/stores/services/notifications.service";
+} from "@/api/notifications";
 import { mergeObjectListsById } from "@/utils/utils";
 
 import { useBroadcastsStore } from "./broadcastsStore";
-
-type NotificationChanges = components["schemas"]["UserNotificationUpdateRequest"];
-type UserNotificationsBatchUpdateRequest = components["schemas"]["UserNotificationsBatchUpdateRequest"];
 
 const STATUS_POLLING_DELAY = 5000;
 

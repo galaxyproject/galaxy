@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { type UserNotification } from ".";
+import { type UserNotification } from "@/api/notifications";
 
 import MessageNotification from "./Categories/MessageNotification.vue";
 import SharedItemNotification from "./Categories/SharedItemNotification.vue";
