@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import Vue, { computed, ref } from "vue";
 
-import { DatasetDetails, DatasetEntry, HistoryContentItemBase } from "@/api";
+import type { DatasetDetails, DatasetEntry, HistoryContentItemBase } from "@/api";
 import { fetchDatasetDetails } from "@/api/datasets";
 
 export const useDatasetStore = defineStore("datasetStore", () => {

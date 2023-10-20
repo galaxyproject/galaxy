@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 
-import { components } from "@/api/schema";
+import type { components } from "@/api/schema";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import { useHistoryStore } from "@/stores/historyStore";
 import {

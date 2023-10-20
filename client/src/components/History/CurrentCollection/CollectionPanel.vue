@@ -3,8 +3,8 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 
-import type { HistorySummary } from "@/api";
-import { CollectionEntry, DCESummary, isCollectionElement, isHDCA, SubCollection } from "@/api";
+import type { CollectionEntry, DCESummary, HistorySummary, SubCollection } from "@/api";
+import { isCollectionElement, isHDCA } from "@/api";
 import ExpandedItems from "@/components/History/Content/ExpandedItems";
 import { updateContentFields } from "@/components/History/model/queries";
 import { useCollectionElementsStore } from "@/stores/collectionElementsStore";

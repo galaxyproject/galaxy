@@ -1,7 +1,8 @@
 import { defineStore } from "pinia";
 import { computed, del, ref, set } from "vue";
 
-import { CollectionEntry, DCESummary, HDCASummary, HistoryContentItemBase, isHDCA } from "@/api";
+import type { CollectionEntry, DCESummary, HDCASummary, HistoryContentItemBase } from "@/api";
+import { isHDCA } from "@/api";
 import { fetchCollectionDetails, fetchElementsFromCollection } from "@/api/datasetCollections";
 
 /**
