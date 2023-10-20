@@ -1,7 +1,7 @@
 <template>
     <div
         :id="contentId"
-        :class="['content-item m-1 p-0 rounded btn-transparent-background', contentCls]"
+        :class="['content-item m-1 p-0 rounded btn-transparent-background', contentCls, isBeingUsed]"
         :data-hid="id"
         :data-state="state"
         tabindex="0"
@@ -211,6 +211,9 @@ export default {
                 visualize: `/visualizations?dataset_id=${id}`,
             };
         },
+        isBeingUsed() {
+            return Object.values(this.itemUrls).includes(this.$route.path) ? "being-used" : "";
+        },
     },
     methods: {
         onKeyDown(event) {
@@ -286,7 +289,8 @@ export default {
     }
 
     // improve focus visibility
-    &:deep(.btn:focus) {
+    &:deep(.btn:focus),
+    &.being-used {
         box-shadow: 0 0 0 0.2rem transparentize($brand-primary, 0.75);
     }
 }

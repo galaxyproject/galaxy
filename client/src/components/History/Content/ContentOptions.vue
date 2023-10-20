@@ -1,11 +1,8 @@
 <script setup lang="ts">
 import { BDropdown } from "bootstrap-vue";
 import { computed, type Ref, ref } from "vue";
-import { useRoute } from "vue-router/composables";
 
 import { prependPath } from "@/utils/redirect";
-
-const route = useRoute();
 
 const props = defineProps({
     writable: { type: Boolean, default: true },
@@ -49,12 +46,6 @@ const canShowCollectionDetails = computed(() => props.itemUrls.showDetails);
 
 const showCollectionDetailsUrl = computed(() => prependPath(props.itemUrls.showDetails));
 
-const isDisplaying = computed(() => route.path === displayUrl.value);
-
-const isEditing = computed(() => route.path === editUrl.value);
-
-const isShowingDetails = computed(() => route.path === showCollectionDetailsUrl.value);
-
 const tabindex = computed(() => (props.keyboardSelectable ? "0" : "-1"));
 
 function onDelete($event: MouseEvent) {
@@ -93,7 +84,7 @@ function onDisplay($event: MouseEvent) {
             class="collection-job-details-btn px-1"
             title="Show Details"
             size="sm"
-            :variant="!isShowingDetails ? 'link' : 'primary'"
+            variant="link"
             :href="showCollectionDetailsUrl"
             @click.prevent.stop="emit('showCollectionInfo')">
             <icon icon="info-circle" />
@@ -106,7 +97,7 @@ function onDisplay($event: MouseEvent) {
             :tabindex="tabindex"
             class="display-btn px-1"
             size="sm"
-            :variant="!isDisplaying ? 'link' : 'primary'"
+            variant="link"
             :href="displayUrl"
             @click.prevent.stop="onDisplay($event)">
             <icon icon="eye" />
@@ -118,7 +109,7 @@ function onDisplay($event: MouseEvent) {
             :tabindex="tabindex"
             class="edit-btn px-1"
             size="sm"
-            :variant="!isEditing ? 'link' : 'primary'"
+            variant="link"
             :href="editUrl"
             @click.prevent.stop="emit('edit')">
             <icon icon="pen" />
