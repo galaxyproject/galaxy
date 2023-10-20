@@ -19,7 +19,7 @@ class OpenPBS(Torque):
         try:
             data = json.loads(status)
         except Exception:
-            log.warning(f"No valid qstat JSON return from `qstat -f -F json`, got the following: {status}")
+            log.warning("No valid qstat JSON return from `qstat -f -F json`, got the following: %s", status)
         rval = {}
         for job_id, job in data.get("Jobs", {}).items():
             if job_id in job_ids:
