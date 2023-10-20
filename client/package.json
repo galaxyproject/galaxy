@@ -22,13 +22,13 @@
     "chokidar": "3.5.3",
     "prismjs": "1.29.0",
     "vue": "2.7.14",
-    "vue-loader": "15.10.0"
+    "vue-loader": "15.11.1"
   },
   "dependencies": {
     "@citation-js/core": "^0.7.1",
     "@citation-js/plugin-bibtex": "^0.7.2",
     "@citation-js/plugin-csl": "^0.7.2",
-    "@fontsource/atkinson-hyperlegible": "^5.0.15",
+    "@fontsource/atkinson-hyperlegible": "^5.0.16",
     "@fortawesome/fontawesome-free": "^5.15.4",
     "@fortawesome/fontawesome-svg-core": "^6.2.1",
     "@fortawesome/free-brands-svg-icons": "^5.15.4",
@@ -48,7 +48,7 @@
     "backbone": "1.5.0",
     "bootstrap": "4.6",
     "bootstrap-vue": "^2.23.0",
-    "core-js": "^3.33.0",
+    "core-js": "^3.33.1",
     "csv-parse": "^5.5.2",
     "d3": "^7.8.5",
     "d3-zoom": "^3.0.0",
