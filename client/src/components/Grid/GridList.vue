@@ -5,6 +5,7 @@ import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { withPrefix } from "@/utils/redirect";
+import { timeout } from "@/utils/timeout";
 
 import { registry } from "./configs/registry";
 import { FieldKeyHandler, Operation, RowData } from "./configs/types";
@@ -74,13 +75,6 @@ async function getGridData() {
 }
 
 /**
- * Initialize grid data
- */
-onMounted(() => {
-    getGridData();
-});
-
-/**
  * Execute grid operation and display message if available
  */
 async function executeOperation(operation: Operation, rowData: RowData) {
@@ -102,13 +96,32 @@ async function onTagInput(data: RowData, tags: Array<string>, tagsHandler: Field
 
 function onTagClick() {}
 
+/**
+ * Initialize grid data
+ */
+onMounted(() => {
+    getGridData();
+});
+
+/**
+ * Load current page
+ */
 watch(currentPage, () => getGridData());
+
+/**
+ * Operation message timeout handler
+ */
+watch(operationMessage, () => {
+    timeout(() => {
+        operationMessage.value = "";
+    });
+});
 </script>
 
 <template>
     <div class="grid-list">
         <BAlert v-if="!!errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
-        <BAlert v-if="!!operationMessage" :variant="operationStatus" show>{{ operationMessage }}</BAlert>
+        <BAlert v-if="!!operationMessage" :variant="operationStatus" fade show>{{ operationMessage }}</BAlert>
         <div class="grid-header">
             <h1>
                 {{ gridConfig.title }}
