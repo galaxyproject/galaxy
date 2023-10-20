@@ -12,6 +12,7 @@ export const VisualizationsGrid = {
     fields: [
         {
             title: "Title",
+            type: "operations",
             operations: [
                 {
                     title: "Open",
@@ -77,7 +78,7 @@ export const VisualizationsGrid = {
         {
             key: "type",
             title: "Type",
-            type: "string",
+            type: "text",
         },
         {
             key: "tags",

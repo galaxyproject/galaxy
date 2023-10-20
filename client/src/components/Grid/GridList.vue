@@ -9,7 +9,9 @@ import { withPrefix } from "@/utils/redirect";
 import { registry } from "./configs/registry";
 import { FieldKeyHandler, Operation, RowData } from "./configs/types";
 
+import GridOperations from "./GridElements/GridOperations.vue";
 import GridSharing from "./GridElements/GridSharing.vue";
+import GridText from "./GridElements/GridText.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 //@ts-ignore
 import UtcDate from "@/components/UtcDate.vue";
@@ -100,48 +102,25 @@ function onTagClick() {}
                     :key="rowIndex"
                     :class="{ 'grid-list-dark-row': rowIndex % 2 }">
                     <td v-for="(fieldEntry, fieldIndex) in gridConfig.fields" :key="fieldIndex">
-                        <span v-if="!!fieldEntry.operations">
-                            <b-link
-                                id="grid-operations"
-                                data-toggle="dropdown"
-                                aria-haspopup="true"
-                                aria-expanded="false">
-                                <icon icon="caret-down" class="fa-lg" />
-                                <span class="font-weight-bold">{{ rowData.title }}</span>
-                            </b-link>
-                            <div class="dropdown-menu" aria-labelledby="dataset-dropdown">
-                                <a
-                                    v-for="(operation, operationIndex) in fieldEntry.operations"
-                                    :key="operationIndex"
-                                    class="dropdown-item"
-                                    @click.prevent="executeOperation(operation, rowData)">
-                                    <span v-localize>{{ operation.title }}</span>
-                                </a>
-                            </div>
-                        </span>
-                        <span v-else-if="fieldEntry.type == 'string'">
-                            {{ rowData[fieldEntry.key] }}
-                        </span>
-                        <a v-else-if="fieldEntry.type == 'link'" :href="rowData[fieldEntry.key]">
-                            {{ rowData[fieldEntry.key] }}
-                        </a>
-                        <span v-else-if="fieldEntry.type == 'sharing'">
-                            <GridSharing
-                                :published="rowData.sharing_status.published"
-                                :importable="rowData.sharing_status.importable"
-                                :users_shared_with_length="rowData.sharing_status.users_shared_with.length" />
-                        </span>
-                        <span v-else-if="fieldEntry.type == 'date'">
-                            <UtcDate :date="rowData[fieldEntry.key]" mode="elapsed" />
-                        </span>
-                        <span v-else-if="fieldEntry.type == 'tags'">
-                            <StatelessTags
-                                clickable
-                                :value="rowData[fieldEntry.key]"
-                                :disabled="rowData.published"
-                                @input="(tags) => onTagInput(rowData, tags, fieldEntry.handler)"
-                                @tag-click="onTagClick" />
-                        </span>
+                        <GridOperations
+                            v-if="fieldEntry.type == 'operations'"
+                            :title="rowData.title"
+                            :operations="fieldEntry.operations"
+                            @execute="executeOperation($event, rowData)" />
+                        <GridText v-else-if="fieldEntry.type == 'text'" :text="rowData[fieldEntry.key]" />
+                        <GridSharing
+                            v-else-if="fieldEntry.type == 'sharing'"
+                            :published="rowData.sharing_status.published"
+                            :importable="rowData.sharing_status.importable"
+                            :users_shared_with_length="rowData.sharing_status.users_shared_with.length" />
+                        <UtcDate v-else-if="fieldEntry.type == 'date'" :date="rowData[fieldEntry.key]" mode="elapsed" />
+                        <StatelessTags
+                            v-else-if="fieldEntry.type == 'tags'"
+                            clickable
+                            :value="rowData[fieldEntry.key]"
+                            :disabled="rowData.published"
+                            @input="(tags) => onTagInput(rowData, tags, fieldEntry.handler)"
+                            @tag-click="onTagClick" />
                     </td>
                 </tr>
             </table>

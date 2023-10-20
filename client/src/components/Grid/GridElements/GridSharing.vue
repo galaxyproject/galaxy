@@ -21,7 +21,7 @@ const isShared = computed(() => {
  */
 const sharedTitle = computed(() => {
     const title = `Shared with ${props.users_shared_with_length}`;
-    props.users_shared_with_length > 1 ? `${title} users` : `${title} user`;
+    return props.users_shared_with_length > 1 ? `${title} users` : `${title} user`;
 });
 </script>
 
