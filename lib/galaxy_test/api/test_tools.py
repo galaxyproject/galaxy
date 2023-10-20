@@ -164,7 +164,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
         assert "Grep1" in get_response
 
     def test_no_panel_index(self):
-        index = self._get("tools", data=dict(in_panel=False))
+        index = self._get("tool_panel", data=dict(in_panel=False))
         tools_index = index.json().get("tools", {})
         # No need to flatten out sections, with in_panel=False, only tools by
         # ids are returned.
@@ -2640,7 +2640,7 @@ class TestToolsApi(ApiTestCase, TestsTools):
         return self._run("cat1", history_id, inputs, assert_ok=assert_ok, **kwargs)
 
     def __tool_ids(self):
-        index = self._get("tools")
+        index = self._get("tool_panel")
         tools_index = index.json().get("default", {})
         # In panels by default, so flatten out sections...
         tool_ids = []

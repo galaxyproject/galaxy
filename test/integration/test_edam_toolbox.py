@@ -10,7 +10,7 @@ class TestEdamToolboxIntegration(integration_util.IntegrationTestCase):
         config["edam_panel_views"] = "merged"
 
     def test_edam_toolbox(self):
-        index = self.galaxy_interactor.get("tools", data=dict(in_panel=True, view="ontology:edam_merged"))
+        index = self.galaxy_interactor.get("tool_panel", data=dict(in_panel=True, view="ontology:edam_merged"))
         index.raise_for_status()
         index_panel = index.json().get("ontology:edam_merged", {})
         sections = [x for _, x in index_panel.items() if x["model_class"] == "ToolSection"]
@@ -40,7 +40,7 @@ class TestEdamToolboxDefaultIntegration(integration_util.IntegrationTestCase):
         config["default_panel_view"] = "ontology:edam_topics"
 
     def test_edam_toolbox(self):
-        index = self.galaxy_interactor.get("tools", data=dict(in_panel=True))
+        index = self.galaxy_interactor.get("tool_panel", data=dict(in_panel=True))
         index.raise_for_status()
         index_panel = index.json().get("ontology:edam_topics", {})
         sections = [x for _, x in index_panel.items() if x["model_class"] == "ToolSection"]

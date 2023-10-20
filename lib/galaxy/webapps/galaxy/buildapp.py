@@ -367,6 +367,7 @@ def populate_api_routes(webapp, app):
     # ====== TOOLS API ======
     # =======================
 
+    webapp.mapper.connect("/api/tool_panel", action="panel_view", controller="tools")
     webapp.mapper.connect("/api/tools/all_requirements", action="all_requirements", controller="tools")
     webapp.mapper.connect("/api/tools/error_stack", action="error_stack", controller="tools")
     webapp.mapper.connect("/api/tools/{id:.+?}/build", action="build", controller="tools")

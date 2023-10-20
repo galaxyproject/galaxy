@@ -10,7 +10,7 @@ class TestShedGalaxyInstallApi(ShedApiTestCase):
         installable_revisions = populator.get_ordered_installable_revisions(owner, name)
         latest_install_revision = installable_revisions.__root__[-1]
         self.install_repository(owner, name, latest_install_revision, tool_shed_url=self.url)
-        response = self.galaxy_interactor._get("tools?in_panel=False")
+        response = self.galaxy_interactor._get("tool_panel?in_panel=False")
         response.raise_for_status()
         expected_tool = populator.tool_guid(self, repository, "Add_a_column1", "1.1.0")
         tool_ids = list((response.json().get("tools", {})).keys())
@@ -26,7 +26,7 @@ class TestShedGalaxyInstallApi(ShedApiTestCase):
         metadata_response = populator.reset_metadata(repository)
         assert metadata_response.status == "ok"
         self.install_repository(owner, name, latest_install_revision, tool_shed_url=self.url)
-        response = self.galaxy_interactor._get("tools?in_panel=False")
+        response = self.galaxy_interactor._get("tool_panel?in_panel=False")
         response.raise_for_status()
         expected_tool = f"{self.host}:{self.port}/repos/{owner}/{name}/Add_a_column1/1.1.0"
         tool_ids = list((response.json().get("tools", {})).keys())

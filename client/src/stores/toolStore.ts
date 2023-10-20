@@ -156,7 +156,7 @@ export const useToolStore = defineStore("toolStore", () => {
         if (!loading.value && !allToolsByIdFetched.value) {
             loading.value = true;
             await axios
-                .get(`${getAppRoot()}api/tools?in_panel=False`)
+                .get(`${getAppRoot()}api/tool_panel?in_panel=False`)
                 .then(({ data }) => {
                     saveAllTools(data.tools);
                     loading.value = false;
@@ -177,7 +177,7 @@ export const useToolStore = defineStore("toolStore", () => {
                 currentPanelView.value = panelView;
             }
             await axios
-                .get(`${getAppRoot()}api/tools?in_panel=true&view=${panelView}`)
+                .get(`${getAppRoot()}api/tool_panel?in_panel=true&view=${panelView}`)
                 .then(({ data }) => {
                     loading.value = false;
                     savePanelView(panelView, data[panelView]);
@@ -199,14 +199,14 @@ export const useToolStore = defineStore("toolStore", () => {
                 return;
             }
             loading.value = true;
-            const { data } = await axios.get(`${getAppRoot()}api/tools?in_panel=true&view=${panelView}`);
+            const { data } = await axios.get(`${getAppRoot()}api/tool_panel?in_panel=true&view=${panelView}`);
             savePanelView(panelView, data[panelView]);
             loading.value = false;
         }
     }
 
     async function fetchPanel(panelView: string) {
-        const { data } = await axios.get(`${getAppRoot()}api/tools?in_panel=true&view=${panelView}`);
+        const { data } = await axios.get(`${getAppRoot()}api/tool_panel?in_panel=true&view=${panelView}`);
         savePanelView(panelView, data[panelView]);
     }
 

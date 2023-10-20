@@ -13,7 +13,7 @@ export default {
     async created() {
         let tools = {};
         await axios
-            .get(`${getAppRoot()}api/tools?in_panel=False&tool_help=True`)
+            .get(`${getAppRoot()}api/tool_panel?in_panel=False&tool_help=True`)
             .then(({ data }) => {
                 tools = data.tools;
             })
@@ -22,7 +22,7 @@ export default {
             });
         if (Object.keys(tools).length > 0) {
             await axios
-                .get(`${getAppRoot()}api/tools`)
+                .get(`${getAppRoot()}api/tool_panel`)
                 .then(({ data }) => {
                     this.schemaTagObj = this.createToolsJson(tools, data.default);
                     const el = document.createElement("script");

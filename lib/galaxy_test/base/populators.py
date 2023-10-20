@@ -154,7 +154,7 @@ def skip_without_tool(tool_id: str):
     def method_wrapper(method):
         def get_tool_ids(api_test_case: HasAnonymousGalaxyInteractor):
             interactor = api_test_case.anonymous_galaxy_interactor
-            index = interactor.get("tools", data=dict(in_panel=False))
+            index = interactor.get("tool_panel", data=dict(in_panel=False))
             api_asserts.assert_status_code_is_ok(index, "Failed to fetch toolbox for target Galaxy.")
             tools = index.json().get("tools", {})
             # `in_panel=False`, so we have a toolsById dict...
@@ -2287,7 +2287,7 @@ class CwlPopulator:
 
         if os.path.exists(tool_id):
             raw_tool_id = os.path.basename(tool_id)
-            index = self.dataset_populator._get("tools", data=dict(in_panel=False))
+            index = self.dataset_populator._get("tool_panel", data=dict(in_panel=False))
             index.raise_for_status()
             tools = index.json().get("tools", {})
             tool_ids = list(tools.keys())
