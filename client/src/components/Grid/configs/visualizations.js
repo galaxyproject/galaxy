@@ -1,12 +1,44 @@
 import axios from "axios";
 
+import Filtering, { contains, equals, expandNameTagWithQuotes, toBool } from "@/utils/filtering";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
+
+const validFilters = {
+    title: { placeholder: "title", type: String, handler: contains("title"), menuItem: true },
+    slug: { handler: contains("slug"), menuItem: false },
+    tag: {
+        placeholder: "tag(s)",
+        type: "MultiTags",
+        handler: contains("tag", "tag", expandNameTagWithQuotes),
+        menuItem: true,
+    },
+    user: { placeholder: "user name", type: String, handler: contains("user"), menuItem: true },
+    published: {
+        placeholder: "Filter on published visualizations",
+        type: Boolean,
+        boolType: "is",
+        handler: equals("published", "published", toBool),
+        menuItem: true,
+    },
+    importable: {
+        placeholder: "Filter on importable visualizations",
+        type: Boolean,
+        boolType: "is",
+        handler: equals("importable", "importable", toBool),
+        menuItem: true,
+    },
+};
+const PageFilters = new Filtering(validFilters, undefined, false, false);
 
 export const VisualizationsGrid = {
     getUrl: (currentPage, perPage, sortBy, sortDesc, searchTerm) => {
         const offset = perPage * (currentPage - 1);
-        return `/api/visualizations/detailed?limit=${perPage}&offset=${offset}&sort_by=${sortBy}&sort_desc=${sortDesc}`;
+        let q = `/api/visualizations/detailed?limit=${perPage}&offset=${offset}&sort_by=${sortBy}&sort_desc=${sortDesc}`;
+        if (searchTerm) {
+            q += `&search=${searchTerm}`;
+        }
+        return q;
     },
     resource: "visualizations",
     item: "visualization",
@@ -15,6 +47,7 @@ export const VisualizationsGrid = {
     sortBy: "update_time",
     sortDesc: true,
     sortKeys: ["create_time", "title", "update_time"],
+    filterClass: PageFilters,
     fields: [
         {
             title: "Title",

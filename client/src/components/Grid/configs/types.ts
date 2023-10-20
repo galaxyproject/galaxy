@@ -1,3 +1,5 @@
+import Filtering from "@/utils/filtering";
+
 type Field = FieldKey | FieldOperations;
 
 // TODO: type FieldType = "date" | "operations" | "sharing" | "tags" | "text" | undefined;
@@ -24,6 +26,7 @@ export interface Config {
     fields: Array<Field>;
     sortBy: string;
     sortKeys: Array<string>;
+    filterClass: Filtering<string>;
     sortDesc: boolean;
 }
 

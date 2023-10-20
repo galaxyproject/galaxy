@@ -13,6 +13,7 @@ import { FieldKeyHandler, Operation, RowData } from "./configs/types";
 import GridOperations from "./GridElements/GridOperations.vue";
 import GridSharing from "./GridElements/GridSharing.vue";
 import GridText from "./GridElements/GridText.vue";
+import FilterMenu from "@/components/Common/FilterMenu.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 //@ts-ignore
@@ -46,9 +47,6 @@ const totalRows = ref(0);
 // loading indicator
 const loading = ref(true);
 
-// search term
-const searchTerm = ref("");
-
 // current grid configuration
 const gridConfig = computed(() => {
     return registry[props.id];
@@ -60,6 +58,11 @@ const isAvailable = computed(() => !loading.value && totalRows.value > 0);
 // sort references
 const sortBy = ref(gridConfig.value ? gridConfig.value.sortBy : "");
 const sortDesc = ref(gridConfig.value ? gridConfig.value.sortDesc : false);
+
+// filtering refs and handlers
+const filterText = ref("");
+const searchTerm = ref("");
+const showAdvanced = ref(false);
 
 /**
  * Request grid data
@@ -92,6 +95,14 @@ async function getGridData() {
 }
 
 /**
+ * Apply backend formatted filter and execute grid search
+ */
+async function onSearch(query: string) {
+    searchTerm.value = query;
+    await getGridData();
+}
+
+/**
  * Execute grid operation and display message if available
  */
 async function onOperation(operation: Operation, rowData: RowData) {
@@ -119,7 +130,13 @@ async function onTagInput(data: RowData, tags: Array<string>, tagsHandler: Field
     data.tags = tags;
 }
 
-function onTagClick() {}
+function applyFilter(filter: string, value: string, quoted = false) {
+    if (quoted) {
+        filterText.value = gridConfig.value?.filterClass.setFilterValue(filterText.value, filter, `'${value}'`) || "";
+    } else {
+        filterText.value = gridConfig.value?.filterClass.setFilterValue(filterText.value, filter, value) || "";
+    }
+}
 
 /**
  * Initialize grid data
@@ -152,6 +169,15 @@ watch(operationMessage, () => {
                 {{ gridConfig.title }}
             </h1>
         </div>
+        <FilterMenu
+            class="mb-1"
+            :name="gridConfig.plural"
+            placeholder="search visualizations"
+            :filter-class="gridConfig.filterClass"
+            :filter-text.sync="filterText"
+            :loading="loading"
+            :show-advanced.sync="showAdvanced"
+            @on-backend-filter="onSearch" />
         <LoadingSpan v-if="loading" />
         <BAlert v-else-if="!isAvailable" v-localize variant="info" show>No entries found.</BAlert>
         <table v-else class="grid-table">
@@ -193,7 +219,7 @@ watch(operationMessage, () => {
                         :value="rowData[fieldEntry.key]"
                         :disabled="rowData.published"
                         @input="(tags) => onTagInput(rowData, tags, fieldEntry.handler)"
-                        @tag-click="onTagClick" />
+                        @tag-click="(t) => applyFilter('tag', t, true)" />
                 </td>
             </tr>
         </table>
@@ -230,7 +256,7 @@ watch(operationMessage, () => {
     }
     .grid-header {
         @extend .grid-sticky;
-        @extend .pb-3;
+        @extend .pb-2;
         position: sticky;
         top: 0;
         h1 {
