@@ -233,7 +233,7 @@ function onFitToContent() {
     });
 
     targetAABB.expand(20);
-    targetAABB.y -= 30;
+    targetAABB.y -= 20;
 
     emit("move", [targetAABB.x, targetAABB.y]);
     emit("resize", [targetAABB.width, targetAABB.height]);
