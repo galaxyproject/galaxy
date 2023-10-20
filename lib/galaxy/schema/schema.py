@@ -1820,18 +1820,21 @@ class JobIdResponse(Model):
     )
 
 
-class JobBaseModel(Model):
+class JobIDs(Model):
     id: DecodedDatabaseIdField = EntityIdField
+    history_id: Optional[DecodedDatabaseIdField] = Field(
+        None,
+        title="History ID",
+        description="The encoded ID of the history associated with this item.",
+    )
+
+
+class JobBaseModel(Model):
     model_class: JOB_MODEL_CLASS = ModelClassField(JOB_MODEL_CLASS)
     tool_id: str = Field(
         ...,
         title="Tool ID",
         description="Identifier of the tool that generated this job.",
-    )
-    history_id: Optional[DecodedDatabaseIdField] = Field(
-        None,
-        title="History ID",
-        description="The encoded ID of the history associated with this item.",
     )
     state: JobState = Field(
         ...,
@@ -1853,7 +1856,7 @@ class JobBaseModel(Model):
     )
 
 
-class JobImportHistoryResponse(JobBaseModel):
+class JobImportHistoryResponse(JobBaseModel, JobIDs):
     message: str = Field(
         ...,
         title="Message",
@@ -1929,7 +1932,7 @@ class DatasetJobInfo(DatasetSourceId):
     uuid: UUID4 = UuidField
 
 
-class JobDetails(JobSummary):
+class JobDetails(JobSummary, JobIDs):
     command_version: str = Field(
         ...,
         title="Command Version",
