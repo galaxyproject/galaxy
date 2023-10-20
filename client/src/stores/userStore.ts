@@ -69,7 +69,7 @@ export const useUserStore = defineStore("userStore", () => {
                         currentPreferences.value = null;
                     }
                     // TODO: This is a hack to get around the fact that the API returns a string
-                    if (currentPreferences.value?.favorites) {
+                    if (currentPreferences.value?.favorites && isRegisteredUser(user)) {
                         currentPreferences.value.favorites = JSON.parse(user?.preferences?.favorites ?? { tools: [] });
                     }
                     if (includeHistories) {
@@ -87,7 +87,11 @@ export const useUserStore = defineStore("userStore", () => {
                 });
         }
     }
-
+    function isRegisteredUser(user?: any): user is User {
+        return (
+            user !== undefined && "email" in user
+        );
+    }
     async function setCurrentTheme(theme: string) {
         if (!currentUser.value || currentUser.value.isAnonymous) {
             return;
