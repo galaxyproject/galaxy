@@ -3,11 +3,11 @@ import { BAlert, BButton, BFormCheckbox, BModal } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
 import { RouterLink } from "vue-router";
 
+import type { HistorySummary } from "@/api";
 import { exportHistoryToFileSource, fetchHistoryExportRecords } from "@/api/histories.export";
 import type { ExportRecord } from "@/components/Common/models/exportRecordModel";
 import { DEFAULT_EXPORT_PARAMS } from "@/composables/shortTermStorage";
 import { useTaskMonitor } from "@/composables/taskMonitor";
-import type { HistorySummary } from "@/stores/historyStore";
 
 import ExportRecordCard from "./ExportRecordCard.vue";
 import ExportToFileSourceForm from "@/components/Common/ExportForm.vue";

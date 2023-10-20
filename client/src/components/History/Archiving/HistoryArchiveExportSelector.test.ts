@@ -5,6 +5,7 @@ import { BFormCheckbox } from "bootstrap-vue";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 
+import type { HistorySummary } from "@/api";
 import { mockFetcher } from "@/api/schema/__mocks__";
 import {
     FAILED_FILE_SOURCE_STORE_RESPONSE,
@@ -13,7 +14,6 @@ import {
     RECENT_FILE_SOURCE_STORE_RESPONSE,
     RECENT_STS_DOWNLOAD_RESPONSE,
 } from "@/components/Common/models/testData/exportData";
-import type { HistorySummary } from "@/stores/historyStore";
 
 import HistoryArchiveExportSelector from "./HistoryArchiveExportSelector.vue";
 

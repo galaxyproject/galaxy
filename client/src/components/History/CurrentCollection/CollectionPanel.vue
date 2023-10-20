@@ -3,11 +3,11 @@
 <script setup lang="ts">
 import { computed, ref, watch } from "vue";
 
+import type { HistorySummary } from "@/api";
 import { CollectionEntry, DCESummary, isCollectionElement, isHDCA, SubCollection } from "@/api";
 import ExpandedItems from "@/components/History/Content/ExpandedItems";
 import { updateContentFields } from "@/components/History/model/queries";
 import { useCollectionElementsStore } from "@/stores/collectionElementsStore";
-import { HistorySummary } from "@/stores/historyStore";
 
 import CollectionDetails from "./CollectionDetails.vue";
 import CollectionNavigation from "./CollectionNavigation.vue";

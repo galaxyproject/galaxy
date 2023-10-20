@@ -4,6 +4,7 @@ import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 
+import type { HistorySummary } from "@/api";
 import { fetchHistoryExportRecords } from "@/api/histories.export";
 import type { components } from "@/api/schema";
 import { mockFetcher } from "@/api/schema/__mocks__";
@@ -12,7 +13,7 @@ import {
     FILE_SOURCE_STORE_RECORD,
     RECENT_STS_DOWNLOAD_RECORD,
 } from "@/components/Common/models/testData/exportData";
-import { type HistorySummary, useHistoryStore } from "@/stores/historyStore";
+import { useHistoryStore } from "@/stores/historyStore";
 
 import HistoryExport from "./HistoryExport.vue";
 

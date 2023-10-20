@@ -1,8 +1,8 @@
 import { defineStore } from "pinia";
 import Vue, { computed, ref } from "vue";
 
+import type { HistorySummary } from "@/api";
 import { archiveHistory, unarchiveHistory } from "@/api/histories.archived";
-import type { components } from "@/api/schema";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import {
@@ -18,8 +18,6 @@ import {
     updateHistoryFields,
 } from "@/stores/services/history.services";
 import { sortByObjectProp } from "@/utils/sorting";
-
-export type HistorySummary = components["schemas"]["HistorySummary"];
 
 const PAGINATION_LIMIT = 10;
 const isLoadingHistory = new Set();

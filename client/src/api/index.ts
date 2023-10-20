@@ -3,6 +3,16 @@
 import { components } from "@/api/schema";
 
 /**
+ * Contains minimal information about a History.
+ */
+export type HistorySummary = components["schemas"]["HistorySummary"];
+
+/**
+ * Contains additional details about a History.
+ */
+export type HistoryDetailed = components["schemas"]["HistoryDetailed"];
+
+/**
  * Contains minimal information about a HistoryContentItem.
  */
 export type HistoryContentItemBase = components["schemas"]["EncodedHistoryContentItem"];

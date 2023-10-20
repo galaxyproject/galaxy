@@ -4,8 +4,9 @@ import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 
+import type { HistorySummary } from "@/api";
 import { mockFetcher } from "@/api/schema/__mocks__";
-import { type HistorySummary, useHistoryStore } from "@/stores/historyStore";
+import { useHistoryStore } from "@/stores/historyStore";
 
 import HistoryArchiveWizard from "./HistoryArchiveWizard.vue";
 
