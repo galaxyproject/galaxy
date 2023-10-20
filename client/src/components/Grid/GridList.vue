@@ -9,6 +9,7 @@ import { withPrefix } from "@/utils/redirect";
 import { registry } from "./configs/registry";
 import { FieldKeyHandler, Operation, RowData } from "./configs/types";
 
+import GridSharing from "./GridElements/GridSharing.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 //@ts-ignore
 import UtcDate from "@/components/UtcDate.vue";
@@ -70,15 +71,6 @@ async function executeOperation(operation: Operation, rowData: RowData) {
 }
 
 /**
- * Verify if row item has been shared
- */
-function isShared(data: RowData) {
-    if (data.users_shared_with && Array.isArray(data.users_shared_with)) {
-        return data.published || data.importable || data.users_shared_with.length > 0;
-    }
-}
-
-/**
  * Process tag inputs
  */
 async function onTagInput(data: RowData, tags: Array<string>, tagsHandler: FieldKeyHandler) {
@@ -90,11 +82,11 @@ function onTagClick() {}
 </script>
 
 <template>
-    <div>
+    <div class="grid-list">
         <BAlert v-if="!!errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
         <BAlert v-if="!!operationMessage" :variant="operationStatus" show>{{ operationMessage }}</BAlert>
         <div>
-            <h1 class="mb-3 h-lg">
+            <h1 class="grid-header pb-3 h-lg">
                 {{ gridConfig.title }}
             </h1>
             <table class="table">
@@ -111,7 +103,6 @@ function onTagClick() {}
                         <span v-if="!!fieldEntry.operations">
                             <b-link
                                 id="grid-operations"
-                                class="p-2"
                                 data-toggle="dropdown"
                                 aria-haspopup="true"
                                 aria-expanded="false">
@@ -135,32 +126,10 @@ function onTagClick() {}
                             {{ rowData[fieldEntry.key] }}
                         </a>
                         <span v-else-if="fieldEntry.type == 'sharing'">
-                            <span v-if="isShared(rowData.sharing_status)">
-                                <span
-                                    v-if="rowData.sharing_status.published"
-                                    v-b-tooltip.hover
-                                    title="Published"
-                                    class="mr-1">
-                                    <icon icon="globe" />
-                                </span>
-                                <span
-                                    v-if="rowData.sharing_status.importable"
-                                    v-b-tooltip.hover
-                                    title="Accessible by link"
-                                    class="mr-1">
-                                    <icon icon="link" />
-                                </span>
-                                <span
-                                    v-if="rowData.sharing_status.users_shared_with.length > 0"
-                                    v-b-tooltip.hover
-                                    title="Shared with users"
-                                    class="mr-1">
-                                    <icon icon="users" />
-                                </span>
-                            </span>
-                            <span v-else v-b-tooltip.hover title="Not shared">
-                                <icon icon="lock" />
-                            </span>
+                            <GridSharing
+                                :published="rowData.sharing_status.published"
+                                :importable="rowData.sharing_status.importable"
+                                :users_shared_with_length="rowData.sharing_status.users_shared_with.length" />
                         </span>
                         <span v-else-if="fieldEntry.type == 'date'">
                             <UtcDate :date="rowData[fieldEntry.key]" mode="elapsed" />
@@ -183,7 +152,17 @@ function onTagClick() {}
 <style lang="scss">
 @import "theme/blue.scss";
 
-.grid-list-dark-row {
-    background: $gray-200;
+.grid-list {
+    overflow: auto;
+    .grid-header {
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        background: $white;
+        opacity: 0.95;
+    }
+    .grid-list-dark-row {
+        background: $gray-200;
+    }
 }
 </style>
