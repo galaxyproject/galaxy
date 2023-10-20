@@ -20,6 +20,7 @@ export const VisualizationsGrid = {
             title: "Title",
             key: "title",
             type: "operations",
+            width: "40%",
             operations: [
                 {
                     title: "Open",

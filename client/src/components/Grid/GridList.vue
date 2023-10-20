@@ -170,7 +170,11 @@ watch(operationMessage, () => {
                 </th>
             </thead>
             <tr v-for="(rowData, rowIndex) in gridData" :key="rowIndex" :class="{ 'grid-dark-row': rowIndex % 2 }">
-                <td v-for="(fieldEntry, fieldIndex) in gridConfig.fields" :key="fieldIndex" class="px-2 py-3">
+                <td
+                    v-for="(fieldEntry, fieldIndex) in gridConfig.fields"
+                    :key="fieldIndex"
+                    class="px-2 py-3"
+                    :style="{ width: fieldEntry.width }">
                     <GridOperations
                         v-if="fieldEntry.type == 'operations'"
                         :title="rowData.title"
