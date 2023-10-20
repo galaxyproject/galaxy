@@ -738,7 +738,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
                 try:
                     os.killpg(pid, sig)
                 except OSError as e:
-\                    log.warning("stop_job(): %s: Got errno %s when attempting to signal %d to PID %d: %s", job.id, errno.errorcode[e.errno], sig, pid, e.strerror)
+                    log.warning("stop_job(): %s: Got errno %s when attempting to signal %d to PID %d: %s", job.id, errno.errorcode[e.errno], sig, pid, e.strerror)
                     return  # give up
                 sleep(2)
                 if not self.check_pid(pid):
