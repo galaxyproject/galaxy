@@ -333,7 +333,7 @@ class FastAPIJobs:
         tool = trans.app.toolbox.get_tool(tool_id)
         if tool is None:
             raise exceptions.ObjectNotFound("Requested tool not found")
-        # TODO the inputs are actually a dict, but are passed as a JSON string
+        # TODO the inputs are actually a dict, but are passed as a JSON dump
         # maybe change it?
         inputs = json.loads(payload.inputs)
         # Find files coming in as multipart file data and add to inputs.
