@@ -896,14 +896,7 @@ export interface paths {
     "/api/jobs/search": {
         /**
          * Return jobs for current user
-         * @description :type   payload: dict
-         * :param  payload: Dictionary containing description of requested job. This is in the same format as
-         *     a request to POST /apt/tools would take to initiate a job
-         *
-         * :rtype:     list
-         * :returns:   list of dictionaries containing summary job information of the jobs that match the requested job run
-         *
-         * This method is designed to scan the list of previously run jobs and find records of jobs that had
+         * @description This method is designed to scan the list of previously run jobs and find records of jobs that had
          * the exact some input parameters and datasets. This can be used to minimize the amount of repeated work, and simply
          * recycle the old results.
          */
@@ -925,11 +918,7 @@ export interface paths {
         get: operations["check_common_problems_api_jobs__id__common_problems_get"];
     };
     "/api/jobs/{id}/error": {
-        /**
-         * Submits a bug report via the API.
-         * @description :rtype:     dictionary
-         * :returns:   dictionary containing information regarding where the error report was sent.
-         */
+        /** Submits a bug report via the API. */
         post: operations["report_error_api_jobs__id__error_post"];
     };
     "/api/jobs/{id}/resume": {
@@ -6143,8 +6132,15 @@ export interface components {
          * @description Base model definition with common configuration used by all derived models.
          */
         JobAssociation: {
+            /**
+             * dataset
+             * @description The associated dataset.
+             */
             dataset: components["schemas"]["EncodedDatasetSourceId"];
-            /** Name */
+            /**
+             * name
+             * @description The name of the associated dataset.
+             */
             name: string;
         };
         /**
@@ -6152,7 +6148,10 @@ export interface components {
          * @description Base model definition with common configuration used by all derived models.
          */
         JobErrorSummary: {
-            /** Messages */
+            /**
+             * Error messages
+             * @description The error messages for the specified job.
+             */
             messages: string[][];
         };
         /**
@@ -6302,9 +6301,15 @@ export interface components {
          * @description Base model definition with common configuration used by all derived models.
          */
         JobInputSummary: {
-            /** Has Duplicate Inputs */
+            /**
+             * Duplicate inputs
+             * @description Job has duplicate inputs.
+             */
             has_duplicate_inputs: boolean;
-            /** Has Empty Inputs */
+            /**
+             * Empty inputs
+             * @description Job has empty inputs.
+             */
             has_empty_inputs: boolean;
         };
         /** JobLock */
@@ -8180,13 +8185,17 @@ export interface components {
          */
         ReportJobErrorPayload: {
             /**
-             * Dataset Id
+             * Dataset ID
+             * @description The dataset ID related to the error.
              * @example 0123456789ABCDEF
              */
             dataset_id: string;
             /** Email */
             email?: string;
-            /** Message */
+            /**
+             * Message
+             * @description The optional message sent with the error report.
+             */
             message?: string;
         };
         /**
@@ -8285,11 +8294,20 @@ export interface components {
          * @description Base model definition with common configuration used by all derived models.
          */
         SearchJobsPayload: {
-            /** Inputs */
+            /**
+             * Inputs
+             * @description The inputs of the job as a JSON dump.
+             */
             inputs: string;
-            /** State */
+            /**
+             * State
+             * @description The state of the job.
+             */
             state: string;
-            /** Tool Id */
+            /**
+             * Tool ID
+             * @description The tool ID related to the job.
+             */
             tool_id: string;
         };
         /**
@@ -14756,14 +14774,7 @@ export interface operations {
     search_jobs_api_jobs_search_post: {
         /**
          * Return jobs for current user
-         * @description :type   payload: dict
-         * :param  payload: Dictionary containing description of requested job. This is in the same format as
-         *     a request to POST /apt/tools would take to initiate a job
-         *
-         * :rtype:     list
-         * :returns:   list of dictionaries containing summary job information of the jobs that match the requested job run
-         *
-         * This method is designed to scan the list of previously run jobs and find records of jobs that had
+         * @description This method is designed to scan the list of previously run jobs and find records of jobs that had
          * the exact some input parameters and datasets. This can be used to minimize the amount of repeated work, and simply
          * recycle the old results.
          */
@@ -14857,11 +14868,7 @@ export interface operations {
         };
     };
     report_error_api_jobs__id__error_post: {
-        /**
-         * Submits a bug report via the API.
-         * @description :rtype:     dictionary
-         * :returns:   dictionary containing information regarding where the error report was sent.
-         */
+        /** Submits a bug report via the API. */
         parameters: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
