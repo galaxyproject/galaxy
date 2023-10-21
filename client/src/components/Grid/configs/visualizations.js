@@ -57,18 +57,21 @@ export const VisualizationsGrid = {
             operations: [
                 {
                     title: "Open",
+                    icon: "eye",
                     handler: (data) => {
                         window.location = withPrefix(`/plugins/visualizations/${data.type}/saved?id=${data.id}`);
                     },
                 },
                 {
                     title: "Edit Attributes",
+                    icon: "edit",
                     handler: (data, router) => {
                         router.push(`/visualizations/edit?id=${data.id}`);
                     },
                 },
                 {
                     title: "Copy",
+                    icon: "copy",
                     handler: async (data) => {
                         try {
                             const copyResponse = await axios.get(withPrefix(`/api/visualizations/${data.id}`));
@@ -93,12 +96,14 @@ export const VisualizationsGrid = {
                 },
                 {
                     title: "Share and Publish",
+                    icon: "share-alt",
                     handler: (data, router) => {
                         router.push(`/visualizations/sharing?id=${data.id}`);
                     },
                 },
                 {
                     title: "Delete",
+                    icon: "trash",
                     handler: async (data) => {
                         try {
                             await axios.put(withPrefix(`/api/visualizations/${data.id}`), { deleted: true });

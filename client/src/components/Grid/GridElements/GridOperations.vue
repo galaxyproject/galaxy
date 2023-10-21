@@ -21,6 +21,7 @@ defineProps<Props>();
                 :key="operationIndex"
                 class="dropdown-item"
                 @click.prevent="$emit('execute', operation)">
+                <icon :icon="operation.icon" />
                 <span v-localize>{{ operation.title }}</span>
             </a>
         </div>

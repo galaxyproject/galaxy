@@ -43,5 +43,6 @@ export type RowData = Record<string, unknown>;
 
 export interface Operation {
     title: string;
+    icon?: string;
     handler: (data: RowData, router: any) => OperationHandlerReturn;
 }
