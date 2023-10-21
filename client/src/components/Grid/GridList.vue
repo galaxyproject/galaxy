@@ -1,10 +1,8 @@
 <script setup lang="ts">
-import axios from "axios";
 import { BAlert } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { withPrefix } from "@/utils/redirect";
 import { timeout } from "@/utils/timeout";
 
 import { registry } from "./configs/registry";
@@ -65,21 +63,28 @@ const searchTerm = ref("");
 const showAdvanced = ref(false);
 
 /**
+ * Manually set filter value, used for tags
+ */
+function applyFilter(filter: string, value: string, quoted = false) {
+    const setFilterValue = gridConfig.value?.filtering.setFilterValue;
+    const quotedValue = quoted ? `'${value}'` : value;
+    if (setFilterValue) {
+        filterText.value = setFilterValue(filterText.value, filter, quotedValue) || "";
+    }
+}
+
+/**
  * Request grid data
  */
 async function getGridData() {
     if (gridConfig.value) {
         try {
-            const response = await axios.get(
-                withPrefix(
-                    gridConfig.value.getUrl(
-                        currentPage.value,
-                        props.perPage,
-                        sortBy.value,
-                        sortDesc.value,
-                        searchTerm.value
-                    )
-                )
+            const response = await gridConfig.value.getData(
+                currentPage.value,
+                props.perPage,
+                sortBy.value,
+                sortDesc.value,
+                searchTerm.value
             );
             if (response.headers.total_matches) {
                 totalRows.value = parseInt(response.headers.total_matches);
@@ -95,14 +100,6 @@ async function getGridData() {
 }
 
 /**
- * Apply backend formatted filter and execute grid search
- */
-async function onSearch(query: string) {
-    searchTerm.value = query;
-    await getGridData();
-}
-
-/**
  * Execute grid operation and display message if available
  */
 async function onOperation(operation: Operation, rowData: RowData) {
@@ -114,6 +111,16 @@ async function onOperation(operation: Operation, rowData: RowData) {
     }
 }
 
+/**
+ * Apply backend formatted filter and execute grid search
+ */
+function onSearch(query: string) {
+    searchTerm.value = query;
+}
+
+/**
+ * User changes sorting
+ */
 function onSort(sortKey: string) {
     if (sortBy.value !== sortKey) {
         sortBy.value = sortKey;
@@ -130,14 +137,6 @@ async function onTagInput(data: RowData, tags: Array<string>, tagsHandler: Field
     data.tags = tags;
 }
 
-function applyFilter(filter: string, value: string, quoted = false) {
-    if (quoted) {
-        filterText.value = gridConfig.value?.filterClass.setFilterValue(filterText.value, filter, `'${value}'`) || "";
-    } else {
-        filterText.value = gridConfig.value?.filterClass.setFilterValue(filterText.value, filter, value) || "";
-    }
-}
-
 /**
  * Initialize grid data
  */
@@ -148,7 +147,7 @@ onMounted(() => {
 /**
  * Load current page
  */
-watch([currentPage, sortDesc, sortBy], () => getGridData());
+watch([currentPage, searchTerm, sortDesc, sortBy], () => getGridData());
 
 /**
  * Operation message timeout handler
@@ -168,16 +167,16 @@ watch(operationMessage, () => {
             <h1>
                 {{ gridConfig.title }}
             </h1>
+            <FilterMenu
+                class="py-2"
+                :name="gridConfig.plural"
+                placeholder="search visualizations"
+                :filter-class="gridConfig.filtering"
+                :filter-text.sync="filterText"
+                :loading="loading"
+                :show-advanced.sync="showAdvanced"
+                @on-backend-filter="onSearch" />
         </div>
-        <FilterMenu
-            class="mb-1"
-            :name="gridConfig.plural"
-            placeholder="search visualizations"
-            :filter-class="gridConfig.filterClass"
-            :filter-text.sync="filterText"
-            :loading="loading"
-            :show-advanced.sync="showAdvanced"
-            @on-backend-filter="onSearch" />
         <LoadingSpan v-if="loading" />
         <BAlert v-else-if="!isAvailable" v-localize variant="info" show>No entries found.</BAlert>
         <table v-else class="grid-table">

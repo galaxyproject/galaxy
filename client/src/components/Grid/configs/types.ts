@@ -1,3 +1,5 @@
+import type { AxiosResponse } from "axios";
+
 import Filtering from "@/utils/filtering";
 
 type Field = FieldKey | FieldOperations;
@@ -18,16 +20,21 @@ interface OperationHandlerMessage {
 type OperationHandlerReturn = OperationHandlerMessage | void;
 
 export interface Config {
-    getUrl: (currentPage: number, perPage: number, sortBy: string, sortDesc: boolean, search: string) => string;
-    resource: string;
+    fields: Array<Field>;
+    filtering: Filtering<string>;
+    getData: (
+        currentPage: number,
+        perPage: number,
+        sortBy: string,
+        sortDesc: boolean,
+        search: string
+    ) => Promise<AxiosResponse>;
     item: string;
     plural: string;
-    title: string;
-    fields: Array<Field>;
     sortBy: string;
     sortKeys: Array<string>;
-    filterClass: Filtering<string>;
     sortDesc: boolean;
+    title: string;
 }
 
 export interface FieldOperations {
