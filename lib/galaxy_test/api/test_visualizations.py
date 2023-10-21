@@ -7,7 +7,7 @@ from galaxy_test.api.sharable import SharingApiTests
 from galaxy_test.base.api_asserts import assert_has_keys
 from ._framework import ApiTestCase
 
-INDEX_KEYS = ["id", "title", "type", "dbkey", "url"]
+INDEX_KEYS = ["id", "title", "type", "dbkey"]
 SHOW_KEYS = INDEX_KEYS + ["user_id", "model_class", "revisions", "latest_revision", "annotation"]
 REVISION_KEYS = ["id", "title", "visualization_id", "dbkey", "model_class", "config"]
 
