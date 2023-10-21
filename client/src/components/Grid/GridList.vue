@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import { BAlert } from "bootstrap-vue";
+import { BAlert, BButton, BLink, BPagination } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -198,13 +198,13 @@ watch(operationMessage, () => {
             <thead>
                 <th v-for="(fieldEntry, fieldIndex) in gridConfig.fields" :key="fieldIndex" class="text-nowrap px-2">
                     <span v-if="gridConfig.sortKeys.includes(fieldEntry.key)">
-                        <b-link @click="onSort(fieldEntry.key)">
+                        <BLink @click="onSort(fieldEntry.key)">
                             <span>{{ fieldEntry.title || fieldEntry.key }}</span>
                             <span v-if="sortBy === fieldEntry.key">
                                 <icon v-if="sortDesc" icon="caret-up" />
                                 <icon v-else icon="caret-down" />
                             </span>
-                        </b-link>
+                        </BLink>
                     </span>
                     <span v-else>{{ fieldEntry.title || fieldEntry.key }}</span>
                 </th>
@@ -239,7 +239,7 @@ watch(operationMessage, () => {
         </table>
         <div class="flex-grow-1 h-100" />
         <div v-if="isAvailable" class="grid-footer d-flex justify-content-center pt-3">
-            <b-pagination
+            <BPagination
                 v-model="currentPage"
                 :total-rows="totalRows"
                 :per-page="perPage"
