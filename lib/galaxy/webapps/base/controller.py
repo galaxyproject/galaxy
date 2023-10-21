@@ -8,10 +8,6 @@ from typing import (
     Optional,
 )
 
-from sqlalchemy import (
-    select,
-    true,
-)
 from webob.exc import (
     HTTPBadRequest,
     HTTPInternalServerError,
