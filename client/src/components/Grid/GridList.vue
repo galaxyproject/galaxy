@@ -164,7 +164,7 @@ watch(operationMessage, () => {
         <BAlert v-if="!!errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
         <BAlert v-if="!!operationMessage" :variant="operationStatus" fade show>{{ operationMessage }}</BAlert>
         <div class="grid-header d-flex justify-content-between pb-2">
-            <div class="w-50">
+            <div>
                 <h1 class="m-0">
                     {{ gridConfig.title }}
                 </h1>
@@ -178,6 +178,18 @@ watch(operationMessage, () => {
                     :show-advanced.sync="showAdvanced"
                     @on-backend-filter="onSearch" />
                 <hr v-if="showAdvanced" />
+            </div>
+            <div v-if="!showAdvanced" class="py-3">
+                <BButton
+                    v-for="(action, actionIndex) in gridConfig.actions"
+                    :key="actionIndex"
+                    class="m-1"
+                    size="sm"
+                    variant="primary"
+                    @click="action.handler(router)">
+                    <icon :icon="action.icon" class="mr-1" />
+                    <span v-localize>Create</span>
+                </BButton>
             </div>
         </div>
         <LoadingSpan v-if="loading" />

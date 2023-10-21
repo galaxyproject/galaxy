@@ -17,6 +17,19 @@ function getData(currentPage, perPage, sortBy, sortDesc, searchTerm) {
 }
 
 /**
+ * Actions are grid-wide operations
+ */
+const actions = [
+    {
+        title: "Create",
+        icon: "plus",
+        handler: (router) => {
+            router.push(`/visualizations`);
+        },
+    },
+];
+
+/**
  * Declare columns to be displayed
  */
 const fields = [
@@ -164,6 +177,7 @@ const validFilters = {
  * Grid configuration
  */
 export const VisualizationsGrid = {
+    actions: actions,
     fields: fields,
     filtering: new Filtering(validFilters, undefined, false, false),
     getData: getData,

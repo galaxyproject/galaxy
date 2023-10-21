@@ -2,15 +2,22 @@ import type { AxiosResponse } from "axios";
 
 import Filtering from "@/utils/filtering";
 
-type Field = FieldKey | FieldOperations;
+interface Action {
+    title: string;
+    icon?: string;
+    handler: (router: any) => void;
+}
 
-// TODO: type FieldType = "date" | "operations" | "sharing" | "tags" | "text" | undefined;
+type Field = FieldKey | FieldOperations;
 
 interface FieldKey {
     key: string;
     type: string;
     handler?: FieldKeyHandler;
 }
+
+// TODO: Apply strict literals
+// type FieldType = "date" | "operations" | "sharing" | "tags" | "text" | undefined;
 
 interface OperationHandlerMessage {
     message: string;
@@ -19,7 +26,11 @@ interface OperationHandlerMessage {
 
 type OperationHandlerReturn = OperationHandlerMessage | void;
 
+/**
+ * Exported Type declarations
+ */
 export interface Config {
+    actions: Array<Action>;
     fields: Array<Field>;
     filtering: Filtering<string>;
     getData: (
