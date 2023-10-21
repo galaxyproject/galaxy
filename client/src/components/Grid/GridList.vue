@@ -160,22 +160,25 @@ watch(operationMessage, () => {
 </script>
 
 <template>
-    <div class="grid-list">
+    <div class="d-flex flex-column overflow-auto">
         <BAlert v-if="!!errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
         <BAlert v-if="!!operationMessage" :variant="operationStatus" fade show>{{ operationMessage }}</BAlert>
-        <div class="grid-header">
-            <h1>
-                {{ gridConfig.title }}
-            </h1>
-            <FilterMenu
-                class="py-2"
-                :name="gridConfig.plural"
-                placeholder="search visualizations"
-                :filter-class="gridConfig.filtering"
-                :filter-text.sync="filterText"
-                :loading="loading"
-                :show-advanced.sync="showAdvanced"
-                @on-backend-filter="onSearch" />
+        <div class="grid-header d-flex justify-content-between pb-2">
+            <div class="w-50">
+                <h1 class="m-0">
+                    {{ gridConfig.title }}
+                </h1>
+                <FilterMenu
+                    class="py-2"
+                    :name="gridConfig.plural"
+                    placeholder="search visualizations"
+                    :filter-class="gridConfig.filtering"
+                    :filter-text.sync="filterText"
+                    :loading="loading"
+                    :show-advanced.sync="showAdvanced"
+                    @on-backend-filter="onSearch" />
+                <hr v-if="showAdvanced" />
+            </div>
         </div>
         <LoadingSpan v-if="loading" />
         <BAlert v-else-if="!isAvailable" v-localize variant="info" show>No entries found.</BAlert>
@@ -223,52 +226,36 @@ watch(operationMessage, () => {
             </tr>
         </table>
         <div class="flex-grow-1 h-100" />
-        <div v-if="isAvailable" class="grid-footer">
+        <div v-if="isAvailable" class="grid-footer d-flex justify-content-center pt-3">
             <b-pagination
                 v-model="currentPage"
                 :total-rows="totalRows"
                 :per-page="perPage"
+                class="m-0"
                 size="sm"
                 aria-controls="grid-table" />
         </div>
     </div>
 </template>
 
-<style lang="scss">
+<style scoped lang="scss">
 @import "theme/blue.scss";
-@import "~bootstrap/scss/bootstrap.scss";
 
-.grid-list {
-    @extend .d-flex;
-    @extend .flex-column;
-    overflow: auto;
-    .grid-footer {
-        @extend .d-flex;
-        @extend .grid-sticky;
-        @extend .justify-content-center;
-        @extend .pt-3;
-        position: sticky;
-        bottom: 0;
-        .pagination {
-            @extend .m-0;
-        }
-    }
-    .grid-header {
-        @extend .grid-sticky;
-        @extend .pb-2;
-        position: sticky;
-        top: 0;
-        h1 {
-            @extend .m-0;
-        }
-    }
-    .grid-sticky {
-        z-index: 1;
-        background: $white;
-        opacity: 0.95;
-    }
-    .grid-dark-row {
-        background: $gray-200;
-    }
+.grid-footer {
+    @extend .grid-sticky;
+    bottom: 0;
+}
+.grid-header {
+    @extend .grid-sticky;
+    top: 0;
+}
+.grid-sticky {
+    z-index: 1;
+    background: $white;
+    opacity: 0.95;
+    position: sticky;
+}
+.grid-dark-row {
+    background: $gray-200;
 }
 </style>
