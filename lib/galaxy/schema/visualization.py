@@ -54,7 +54,7 @@ class VisualizationSummary(Model):
         title="Type",
         description="The type of the visualization.",
     )
-    dbkey: str = Field(
+    dbkey: Optional[str] = Field(
         default=None,
         title="DbKey",
         description="The database key of the visualization.",
