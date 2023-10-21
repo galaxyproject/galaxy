@@ -79,21 +79,19 @@ function applyFilter(filter: string, value: string, quoted = false) {
 async function getGridData() {
     if (gridConfig.value) {
         try {
-            const response = await gridConfig.value.getData(
+            const [responseData, responseTotal] = await gridConfig.value.getData(
                 currentPage.value,
                 props.perPage,
                 sortBy.value,
                 sortDesc.value,
                 searchTerm.value
             );
-            if (response.headers.total_matches) {
-                totalRows.value = parseInt(response.headers.total_matches);
-            }
-            gridData.value = response.data;
+            gridData.value = responseData;
+            totalRows.value = responseTotal;
             errorMessage.value = "";
             loading.value = false;
         } catch (e) {
-            errorMessage.value = "Failed to obtain grid data.";
+            errorMessage.value = `Failed to obtain grid data: ${e}`;
             loading.value = false;
         }
     }

@@ -1,5 +1,3 @@
-import type { AxiosResponse } from "axios";
-
 import Filtering from "@/utils/filtering";
 
 interface Action {
@@ -33,13 +31,7 @@ export interface Config {
     actions: Array<Action>;
     fields: Array<Field>;
     filtering: Filtering<string>;
-    getData: (
-        currentPage: number,
-        perPage: number,
-        sortBy: string,
-        sortDesc: boolean,
-        search: string
-    ) => Promise<AxiosResponse>;
+    getData: (currentPage: number, perPage: number, sortBy: string, sortDesc: boolean, search: string) => Promise<any>;
     item: string;
     plural: string;
     sortBy: string;

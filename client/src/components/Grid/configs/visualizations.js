@@ -7,13 +7,15 @@ import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
 /**
  * Request and return data from server
  */
-function getData(currentPage, perPage, sortBy, sortDesc, searchTerm) {
+async function getData(currentPage, perPage, sortBy, sortDesc, searchTerm) {
     const offset = perPage * (currentPage - 1);
     let q = `/api/visualizations/detailed?limit=${perPage}&offset=${offset}&sort_by=${sortBy}&sort_desc=${sortDesc}`;
     if (searchTerm) {
         q += `&search=${searchTerm}`;
     }
-    return axios.get(withPrefix(q));
+    const response = await axios.get(withPrefix(q));
+    const responseTotal = parseInt(response.headers.total_matches);
+    return [response.data, responseTotal];
 }
 
 /**
