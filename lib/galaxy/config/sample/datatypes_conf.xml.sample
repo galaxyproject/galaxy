@@ -136,6 +136,9 @@
     </datatype>
     <datatype extension="fastg" type="galaxy.datatypes.sequence:Fastg" display_in_upload="true" description="fastg format faithfully represents genome assemblies in the face of allelic polymorphism and assembly uncertainty" description_url="http://fastg.sourceforge.net/FASTG_Spec_v1.00.pdf"/>
     <datatype extension="fastq" auto_compressed_types="gz,bz2" type="galaxy.datatypes.sequence:Fastq" display_in_upload="true" description="FASTQ format is a text-based format for storing both a biological sequence (usually nucleotide sequence) and its corresponding quality scores." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Fastq">
+      <upload_warning>
+        Generally a more specific fastq datatype should be specified, please consider selecting fastqsanger${auto_compressed_type} instead.
+      </upload_warning>
       <converter file="fastq_to_fqtoc.xml" target_datatype="fqtoc"/>
     </datatype>
     <datatype extension="fastqsanger" auto_compressed_types="gz,bz2" type="galaxy.datatypes.sequence:FastqSanger" display_in_upload="true" description="Sanger variant of the FASTQ format: phred+33">
@@ -147,6 +150,9 @@
       <converter file="fastq_to_fqtoc.xml" target_datatype="fqtoc"/>
     </datatype>
     <datatype extension="fastqcssanger" auto_compressed_types="gz,bz2" type="galaxy.datatypes.sequence:FastqCSSanger" display_in_upload="true" description="sequence in in color space phred scored quality values 0:93 represented by ASCII 33:126">
+      <upload_warning>
+        Color space data is rarely used in modern analyses, please consider selecting fastqsanger${auto_compressed_type} instead.
+      </upload_warning>
       <converter file="fastq_to_fqtoc.xml" target_datatype="fqtoc"/>
     </datatype>
     <datatype extension="fastqillumina" auto_compressed_types="gz,bz2" type="galaxy.datatypes.sequence:FastqIllumina" display_in_upload="true" description="Sanger variant of the FASTQ format: phred+64">
@@ -223,6 +229,9 @@
     <datatype extension="gatk_dbsnp" type="galaxy.datatypes.tabular:Tabular" subclass="true" display_in_upload="true"/>
     <datatype extension="gatk_tranche" type="galaxy.datatypes.tabular:Tabular" subclass="true" display_in_upload="true"/>
     <datatype extension="gatk_recal" type="galaxy.datatypes.tabular:Tabular" subclass="true" display_in_upload="true"/>
+    <datatype extension="cnn" type="galaxy.datatypes.tabular:Tabular" subclass="true" display_in_upload="true"/>
+    <datatype extension="cns" type="galaxy.datatypes.tabular:Tabular" subclass="true" display_in_upload="true"/>
+    <datatype extension="cnr" type="galaxy.datatypes.tabular:Tabular" subclass="true" display_in_upload="true"/>
     <datatype extension="hhr" type="galaxy.datatypes.data:Text" subclass="true" display_in_upload="true"/>
     <datatype extension="jpg" type="galaxy.datatypes.images:Jpg" mimetype="image/jpeg"/>
     <datatype extension="tiff" type="galaxy.datatypes.images:Tiff" mimetype="image/tiff" display_in_upload="true"/>
@@ -434,6 +443,7 @@
     <datatype extension="taxonomy" type="galaxy.datatypes.tabular:Taxonomy" display_in_upload="true"/>
     <datatype extension="tabular" type="galaxy.datatypes.tabular:Tabular" auto_compressed_types="gz" display_in_upload="true" description="Any data in tab delimited format (tabular)." description_url="https://wiki.galaxyproject.org/Learn/Datatypes#Tabular_.28tab_delimited.29">
       <converter file="tabular_to_csv.xml" target_datatype="csv"/>
+      <display file="minerva/tabular.xml"/>
     </datatype>
     <datatype extension="twobit" type="galaxy.datatypes.binary:TwoBit" mimetype="application/octet-stream" display_in_upload="true"/>
     <datatype extension="sqmass" type="galaxy.datatypes.binary:SQmass" mimetype="application/octet-stream" display_in_upload="true"/>
@@ -957,6 +967,7 @@
     <datatype extension="shp" type="galaxy.datatypes.gis:Shapefile" mimetype="application/octet-stream" display_in_upload="true" description="geospatial vector data format for geographic information system"/>
     <!-- Flexible Image Transport System (FITS) used in Astronomy https://fits.gsfc.nasa.gov/ https://fits.gsfc.nasa.gov/rfc4047.txt -->
     <datatype extension="fits" type="galaxy.datatypes.binary:FITS" mimetype="application/octet-stream" display_in_upload="true" description="Flexible Image Transport System (FITS) used in Astronomy"/>
+    <datatype extension="chain" type="galaxy.datatypes.chain:Chain" display_in_upload="true"/>
   </registration>
   <sniffers>
     <!--
@@ -1058,6 +1069,7 @@
     <sniffer type="galaxy.datatypes.binary:Pretext"/>
     <sniffer type="galaxy.datatypes.annotation:Augustus"/>
     <sniffer type="galaxy.datatypes.xml:Owl"/>
+    <sniffer type="galaxy.datatypes.chain:Chain"/>
     <sniffer type="galaxy.datatypes.triples:Rdf"/>
     <sniffer type="galaxy.datatypes.blast:BlastXml"/>
     <sniffer type="galaxy.datatypes.images:Gifti" />

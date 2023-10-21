@@ -183,7 +183,7 @@ class LibraryFolderContentsService(ServiceBase, UsesLibraryMixinItems):
             file_size=util.nice_size(raw_size),
             raw_size=raw_size,
             ldda_id=ldda.id,
-            tags=tag_manager.get_tags_str(ldda.tags),
+            tags=tag_manager.get_tags_list(ldda.tags),
             message=ldda.message or ldda.info,
         )
         return dataset_item

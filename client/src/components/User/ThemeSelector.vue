@@ -6,7 +6,7 @@ import { useCurrentTheme } from "@/composables/user";
 import { withPrefix } from "@/utils/redirect";
 
 const { currentTheme, setCurrentTheme } = useCurrentTheme();
-const { config, isLoaded } = useConfig();
+const { config, isConfigLoaded } = useConfig();
 
 const show = ref(false);
 const currentValue = computed({
@@ -23,7 +23,7 @@ function getLogo(themeDetails) {
 }
 
 watch(
-    () => isLoaded.value,
+    () => isConfigLoaded.value,
     () => {
         const themes = Object.keys(config.value.themes);
         show.value = themes?.length > 1 ?? false;

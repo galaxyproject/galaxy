@@ -94,12 +94,19 @@ class Tree(BaseTree):
             def get_element(collection):
                 return collection[index]  # noqa: B023
 
+            when_value = None
+            if self.when_values:
+                if len(self.when_values) == 1:
+                    when_value = self.when_values[0]
+                else:
+                    when_value = self.when_values[index]
+
             if substructure.is_leaf:
-                yield dict_map(get_element, collection_dict), self.when_values[index] if self.when_values else None
+                yield dict_map(get_element, collection_dict), when_value
             else:
                 sub_collections = dict_map(lambda collection: get_element(collection).child_collection, collection_dict)
                 for element, _when_value in substructure._walk_collections(sub_collections):
-                    yield element, self.when_values[index] if self.when_values else None
+                    yield element, when_value
 
     @property
     def is_leaf(self):

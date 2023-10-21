@@ -86,13 +86,6 @@ except ImportError:
         ElementTree,
     )
 
-try:
-    import docutils.core as docutils_core
-    import docutils.writers.html4css1 as docutils_html4css1
-except ImportError:
-    docutils_core = None  # type: ignore[assignment]
-    docutils_html4css1 = None  # type: ignore[assignment]
-
 from .custom_logging import get_logger
 from .inflection import Inflector
 from .path import (  # noqa: F401
@@ -101,6 +94,7 @@ from .path import (  # noqa: F401
     safe_relpath,
     StrPath,
 )
+from .rst_to_html import rst_to_html  # noqa: F401
 
 try:
     shlex_join = shlex.join  # type: ignore[attr-defined]
@@ -544,7 +538,7 @@ def pretty_print_time_interval(time=False, precise=False, utc=False):
         now = datetime.utcnow()
     else:
         now = datetime.now()
-    if type(time) is int:
+    if isinstance(time, (int, float)):
         diff = now - datetime.fromtimestamp(time)
     elif isinstance(time, datetime):
         diff = now - time
@@ -956,33 +950,6 @@ class Params:
         self.__dict__.update(values)
 
 
-def rst_to_html(s, error=False):
-    """Convert a blob of reStructuredText to HTML"""
-    log = get_logger("docutils")
-
-    if docutils_core is None:
-        raise Exception("Attempted to use rst_to_html but docutils unavailable.")
-
-    class FakeStream:
-        def write(self, str):
-            if len(str) > 0 and not str.isspace():
-                if error:
-                    raise Exception(str)
-                log.warning(str)
-
-    settings_overrides = {
-        "embed_stylesheet": False,
-        "template": os.path.join(os.path.dirname(__file__), "docutils_template.txt"),
-        "warning_stream": FakeStream(),
-        "doctitle_xform": False,  # without option, very different rendering depending on
-        # number of sections in help content.
-    }
-
-    return unicodify(
-        docutils_core.publish_string(s, writer=docutils_html4css1.Writer(), settings_overrides=settings_overrides)
-    )
-
-
 def xml_text(root, name=None):
     """Returns the text inside an element"""
     if name is not None:
@@ -1012,7 +979,7 @@ def parse_resource_parameters(resource_param_file):
         resource_definitions_root = resource_definitions.getroot()
         for parameter_elem in resource_definitions_root.findall("param"):
             name = parameter_elem.get("name")
-            resource_parameters[name] = parameter_elem
+            resource_parameters[name] = etree.tostring(parameter_elem)
 
     return resource_parameters
 

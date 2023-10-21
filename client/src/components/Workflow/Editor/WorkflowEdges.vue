@@ -2,7 +2,8 @@
 import { storeToRefs } from "pinia";
 import { computed, type Ref } from "vue";
 
-import { type Connection, type OutputTerminal, useConnectionStore } from "@/stores/workflowConnectionStore";
+import { useWorkflowStores } from "@/composables/workflowStores";
+import type { Connection, OutputTerminal } from "@/stores/workflowConnectionStore";
 import type { TerminalPosition } from "@/stores/workflowEditorStateStore";
 
 import type { OutputTerminals } from "./modules/terminals";
@@ -15,7 +16,7 @@ const props = defineProps<{
     transform: { x: number; y: number; k: number };
 }>();
 
-const connectionStore = useConnectionStore();
+const { connectionStore } = useWorkflowStores();
 const { connections } = storeToRefs(connectionStore);
 
 const draggingConnection: Ref<[Connection, TerminalPosition] | null> = computed(() => {

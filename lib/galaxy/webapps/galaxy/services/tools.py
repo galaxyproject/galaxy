@@ -23,7 +23,10 @@ from galaxy.managers.context import (
     ProvidesUserContext,
 )
 from galaxy.managers.histories import HistoryManager
-from galaxy.model import PostJobAction
+from galaxy.model import (
+    LibraryDatasetDatasetAssociation,
+    PostJobAction,
+)
 from galaxy.model.base import transaction
 from galaxy.schema.fetch_data import (
     FetchDataFormPayload,
@@ -277,7 +280,7 @@ class ToolsService(ServiceBase):
 
     def _patch_library_dataset(self, trans: ProvidesHistoryContext, v, target_history):
         if isinstance(v, dict) and "id" in v and v.get("src") == "ldda":
-            ldda = trans.sa_session.query(trans.app.model.LibraryDatasetDatasetAssociation).get(self.decode_id(v["id"]))
+            ldda = trans.sa_session.get(LibraryDatasetDatasetAssociation, self.decode_id(v["id"]))
             if trans.user_is_admin or trans.app.security_agent.can_access_dataset(
                 trans.get_current_user_roles(), ldda.dataset
             ):

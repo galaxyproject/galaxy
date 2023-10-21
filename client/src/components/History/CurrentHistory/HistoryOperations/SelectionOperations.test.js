@@ -1,11 +1,15 @@
 import { shallowMount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
-import MockConfigProvider from "components/providers/MockConfigProvider";
 import flushPromises from "flush-promises";
+import { createPinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 
+import { mockFetcher } from "@/schema/__mocks__";
+
 import SelectionOperations from "./SelectionOperations.vue";
+
+jest.mock("@/schema");
 
 const localVue = getLocalVue();
 
@@ -29,23 +33,20 @@ const getPurgedContentSelection = () => new Map([["FAKE_ID", { purged: true }]])
 const getNonPurgedContentSelection = () => new Map([["FAKE_ID", { purged: false }]]);
 
 async function mountSelectionOperationsWrapper(config) {
-    const wrapper = shallowMount(
-        SelectionOperations,
-        {
-            propsData: {
-                history: FAKE_HISTORY,
-                filterText: "",
-                contentSelection: new Map(),
-                selectionSize: 1,
-                isQuerySelection: false,
-                totalItemsInQuery: 5,
-            },
-            stubs: {
-                ConfigProvider: MockConfigProvider(config),
-            },
+    mockFetcher.path("/api/configuration").method("get").mock({ data: config });
+    const pinia = createPinia();
+    const wrapper = shallowMount(SelectionOperations, {
+        propsData: {
+            history: FAKE_HISTORY,
+            filterText: "",
+            contentSelection: new Map(),
+            selectionSize: 1,
+            isQuerySelection: false,
+            totalItemsInQuery: 5,
         },
-        localVue
-    );
+        localVue,
+        pinia,
+    });
     await flushPromises();
     return wrapper;
 }

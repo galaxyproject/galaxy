@@ -122,7 +122,7 @@ class PBSJobRunner(AsynchronousJobRunner):
         if not url:
             return
 
-        # Determine the the PBS server
+        # Determine the PBS server
         url_split = url.split("/")
         server = url_split[2]
         if server == "":

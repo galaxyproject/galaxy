@@ -1174,8 +1174,10 @@ class ToolDataTableManager(Dictifiable):
         out_data: Dict[str, OutputDataset],
         bundle_description: DataTableBundleProcessorDescription,
         repo_info: Optional[RepoInfo],
-    ) -> None:
+    ) -> Dict[str, OutputDataset]:
+        """Writes bundle and returns bundle path."""
         data_manager_dict = _data_manager_dict(out_data, ensure_single_output=True)
+        bundle_datasets: Dict[str, OutputDataset] = {}
         for output_name, dataset in out_data.items():
             if dataset.ext != "data_manager_json":
                 continue
@@ -1190,6 +1192,8 @@ class ToolDataTableManager(Dictifiable):
             bundle_path = os.path.join(extra_files_path, BUNDLE_INDEX_FILE_NAME)
             with open(bundle_path, "w") as fw:
                 json.dump(bundle.dict(), fw)
+            bundle_datasets[bundle_path] = dataset
+        return bundle_datasets
 
 
 SUPPORTED_DATA_TABLE_TYPES = TabularToolDataTable

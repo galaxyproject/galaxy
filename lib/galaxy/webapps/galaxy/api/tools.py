@@ -178,6 +178,62 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
             raise exceptions.InternalServerError("Error: Could not convert toolbox to dictionary")
 
     @expose_api_anonymous_and_sessionless
+    def panel_view(self, trans: GalaxyWebTransaction, **kwds):
+        """
+        GET /api/tool_panel
+
+        returns a dictionary of all tools or panels defined by parameters
+
+        :param in_panel: if true, tool sections are returned in panel
+                         structure, with tool ids and labels
+        :param view: ToolBox view to apply (default is 'default')
+        :param trackster: if true, only tools that are compatible with
+                          Trackster are returned
+        :param q: if present search on the given query will be performed
+        :param tool_id: if present the given tool_id will be searched for
+                        all installed versions
+        """
+
+        # Read params.
+        in_panel = util.string_as_bool(kwds.get("in_panel", "True"))
+        trackster = util.string_as_bool(kwds.get("trackster", "False"))
+        q = kwds.get("q", "")
+        tool_id = kwds.get("tool_id", "")
+        tool_help = util.string_as_bool(kwds.get("tool_help", "False"))
+        view = kwds.get("view", None)
+
+        # Find whether to search.
+        if q:
+            hits = self.service._search(q, view)
+            results = []
+            if hits:
+                for hit in hits:
+                    try:
+                        tool = self.service._get_tool(trans, hit, user=trans.user)
+                        if tool:
+                            results.append(tool.id)
+                    except exceptions.AuthenticationFailed:
+                        pass
+                    except exceptions.ObjectNotFound:
+                        pass
+            return results
+
+        # Find whether to detect.
+        if tool_id:
+            detected_versions = self.service._detect(trans, tool_id)
+            return detected_versions
+
+        # Return everything.
+        try:
+            return self.app.toolbox.to_panel_view(
+                trans, in_panel=in_panel, trackster=trackster, tool_help=tool_help, view=view
+            )
+        except exceptions.MessageException:
+            raise
+        except Exception:
+            raise exceptions.InternalServerError("Error: Could not convert toolbox to dictionary")
+
+    @expose_api_anonymous_and_sessionless
     def show(self, trans: GalaxyWebTransaction, id, **kwd):
         """
         GET /api/tools/{tool_id}

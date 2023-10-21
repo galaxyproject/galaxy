@@ -7,9 +7,9 @@
 import { getGalaxyInstance } from "app";
 import { defer } from "rxjs";
 import { shareReplay } from "rxjs/operators";
-import { syncConfigToGalaxy } from "store/configStore";
-import { syncUserToGalaxy } from "stores/users/syncUserToGalaxy";
 import { waitForInit } from "utils/observable";
+
+import { syncUserToGalaxy } from "@/stores/users/syncUserToGalaxy";
 
 // store subscriptions
 
@@ -18,9 +18,6 @@ export const syncVuextoGalaxy = (store) => {
         return waitForInit(() => getGalaxyInstance()).pipe(shareReplay(1));
     });
 
-    // sets current user when glaaxy changes
-    syncUserToGalaxy(globalGalaxy$, store);
-
-    // configuration
-    syncConfigToGalaxy(globalGalaxy$, store);
+    // sets current user when galaxy changes
+    syncUserToGalaxy(globalGalaxy$);
 };

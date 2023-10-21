@@ -7,13 +7,14 @@
             size="sm"
             autocomplete="off"
             :placeholder="placeholder"
+            data-description="filter text input"
             @input="delayQuery"
             @change="setQuery"
             @keydown.esc="setQuery('')" />
         <b-input-group-append>
             <b-button
                 v-if="enableAdvanced"
-                v-b-tooltip.hover
+                v-b-tooltip.hover.bottom.noninteractive
                 aria-haspopup="true"
                 size="sm"
                 :pressed="showAdvanced"
@@ -25,7 +26,7 @@
                 <icon v-else fixed-width icon="angle-double-down" />
             </b-button>
             <b-button
-                v-b-tooltip.hover
+                v-b-tooltip.hover.bottom.noninteractive
                 aria-haspopup="true"
                 class="search-clear"
                 size="sm"
@@ -79,6 +80,11 @@ export default {
         query(queryNew) {
             this.setQuery(queryNew);
         },
+    },
+    created() {
+        if (this.query) {
+            this.setQuery(this.query);
+        }
     },
     methods: {
         clearTimer() {

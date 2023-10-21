@@ -9,7 +9,7 @@ The containers can be either explicit or mulled (also called multi package conta
 The former are given by ``<container>`` requirements pointing to a specific container.
 The latter are containers built for a set of requirements of type ``package``.
 Mulled containers are described by a hash that is unique for a set of
-packages and versions (for mulled v2), e.g. 
+packages and versions (for mulled v2), e.g.
 ``mulled-v2-0d814cbcd5aa81b280ecadbee9e4aba8d9ab33f7:0fb38379c04f2a8a345a2c8f74b190ea9a51b6f3-0``
 (mulled-v2-PACKAGEHASH:VERSIONHASH-BUILDNUMBER). For mulled containers
 of single packages simply the package name and version are used instead of the hashes,
@@ -23,7 +23,7 @@ container registry.
 2. Mulled containers are created and deployed by the infrastructure provided by the
    `multi-package-containers <https://github.com/BioContainers/multi-package-containers>`_
    repository. Mulled containers are added automatically to this repository for all tools
-   in tool repositories that are crawled by the 
+   in tool repositories that are crawled by the
    `planemo monitor <https://github.com/galaxyproject/planemo-monitor>`_ repository
    (which includes for instance tools-iuc and several other tool repositories).
 
@@ -34,10 +34,10 @@ A container resolver tries to get a container description, i.e. the information
 (URI/path to the container image, ...) that is needed to execute a tool in a
 container (in the execution environment), given the requirements specified in
 this tool. Galaxy implements various container resolvers that are suitable for
-different needs. 
+different needs.
 
 Galaxy tries to execute jobs using containers if they are sent
-to execution environments (previously called destinations) with either 
+to execution environments (previously called destinations) with either
 `docker_enabled <https://github.com/galaxyproject/galaxy/blob/0742d6e27702c60d1b8fe358ae03a267e3f252c3/lib/galaxy/config/sample/job_conf.sample.yml#L419>`_ or
 `singularity_enabled <https://github.com/galaxyproject/galaxy/blob/0742d6e27702c60d1b8fe358ae03a267e3f252c3/lib/galaxy/config/sample/job_conf.sample.yml#L556>`_
 enabled. Note, the links to the sample configurations exemplify this for local execution environments,
@@ -49,7 +49,7 @@ container description by sequentially executing the configured container
 resolvers (see below). The job is then executed using the description returned
 by the first successful container resolver.
 If all configured container resolvers failed, i.e. no container description
-could be obtained, the tool is by default executed using 
+could be obtained, the tool is by default executed using
 :doc:`standard dependency resolvers <dependency_resolvers>`, e.g. ``conda``.
 Alternatively, if the execution environment specifies
 `require_container <https://github.com/galaxyproject/galaxy/blob/0742d6e27702c60d1b8fe358ae03a267e3f252c3/lib/galaxy/config/sample/job_conf.sample.yml#L528>`_
@@ -80,11 +80,11 @@ yields a container description.
 Main resolver types:
 --------------------
 
-The main types of container resolvers follow this naming scheme: 
+The main types of container resolvers follow this naming scheme:
 ``[cached_][explicit,mulled][_singularity]``. That is
 
 - a container resolver is either ``explicit`` or ``mulled``
-- cached if it is prefixed with ``cached_`` and non-cached otherwise. 
+- cached if it is prefixed with ``cached_`` and non-cached otherwise.
 - yield a container description suitable for singularity if
   suffixed by ``_singularity`` and docker otherwise.
 
@@ -153,7 +153,7 @@ See also :ref:`additional_resolver_types`.
 
 While non-cached resolvers will yield a container description pointing to an online
 available docker container, cached resolvers will store container images on disk and
-use those. 
+use those.
 
 This distinction is the weakest: some (by name) non-cached container resolvers
 can also resolve cached containers and are even responsible for the caching itself,
@@ -183,11 +183,11 @@ directory.
 Function and use of the ``resolve`` function of the main resolver types:
 ------------------------------------------------------------------------
 
-The resolve function is called when 
+The resolve function is called when
 
 1. listing the container tab in the dependency admin UI (using ``api/container_resolvers/toolbox``)
 2. triggering a build from the admin UI (using ``api/container_resolvers/toolbox/install``)
-3. when a job is prepared 
+3. when a job is prepared
 
 If the ``resolve`` function implements the caching of images then this only
 happens if its ``install`` parameter is set to ``True``. This is the case
@@ -324,7 +324,7 @@ Parameters:
   hash that is used in the image name.
 - ``shell`` Defaults to ``/bin/bash`` and sets the shell to be used in the container.
   Applies only to the resolvers listed in `Additional resolver types`_.
-- ``auto_install``: defaults to ``True``. 
+- ``auto_install``: defaults to ``True``.
   Applies to ``mulled``, ``mulled_singularity``, ``build_mulled``, and ``build_mulled_singularity``.
   For the non-building resolvers this controls if a container description pointing to the
   cached image shall be returned (``auto_install==False``). For the building
@@ -364,7 +364,7 @@ admins might want to control.
 
 .. note::
 
-   For the the execution of jobs Galaxy already implement the `support for using
+   For the execution of jobs Galaxy already implement the `support for using
    tarballs of container images
    <https://github.com/galaxyproject/galaxy/blob/c517e805771cc16807dfe675075a13fe6343f01f/lib/galaxy/tool_util/deps/container_classes.py#L319>`_.
    from ``container_image_cache_path`` (set in galaxy.yml) or the destination
@@ -381,16 +381,15 @@ Setting up Galaxy using docker / singularity on distributed compute resources
 Other considerations
 ====================
 
-Frequently tools use ``$TMP``, ``$TEMP``, or ``$TMPDIR`` (or simply use hardcoded
+Tools frequently use ``$TMP``, ``$TEMP``, or ``$TMPDIR`` (or simply use hardcoded
 ``/tmp``) for storing temporary data. In containerized environments ``/tmp``
 is by default bound to a directory in the job working dir (``$_GALAXY_JOB_TMP_DIR``),
 i.e. ``$_GALAXY_JOB_TMP_DIR:/tmp:rw`` is in the bind strings (in addition to
 ``$_GALAXY_JOB_TMP_DIR:$_GALAXY_JOB_TMP_DIR:rw``).
 Galaxy automatically passes the environment variables ``$TMP``, ``$TEMP``, and
-``$TMPDIR`` to the container, but the admin is responsible to 
-bind the corresponding directories as writable volumes to the container.
-This can be done by setting the 
+``$TMPDIR`` to the container and bind-mounts these.
+
+The default bind for `/tmp` can be overwritten by setting the
 `docker_volumes <https://github.com/galaxyproject/galaxy/blob/85f16381694224598dff139bcfe307d9fd4f22bc/lib/galaxy/config/sample/job_conf.sample.yml#L455>`_ and
-`singularity_volumes <https://github.com/galaxyproject/galaxy/blob/85f16381694224598dff139bcfe307d9fd4f22bc/lib/galaxy/config/sample/job_conf.sample.yml#L567>`_, resp., 
-configuration in the :doc:`job configuration <jobs>`.
-Note that also the default bind for `/tmp` can be overwritten this way.
+`singularity_volumes <https://github.com/galaxyproject/galaxy/blob/85f16381694224598dff139bcfe307d9fd4f22bc/lib/galaxy/config/sample/job_conf.sample.yml#L567>`_, resp.,
+configuration properties in the :doc:`job configuration <jobs>`.

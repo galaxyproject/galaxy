@@ -19,7 +19,7 @@ export default {
     computed: {
         content() {
             const invocation = this.invocations[this.args.invocation_id];
-            return invocation && invocation["create_time"];
+            return invocation && new Date(invocation["create_time"]).toUTCString();
         },
     },
 };

@@ -109,7 +109,6 @@ class UsesTools(UsesApp):
     def __setup_tool(self):
         tool_source = get_tool_source(self.tool_file)
         self.tool = create_tool_from_source(self.app, tool_source, config_file=self.tool_file)
-        self.tool.assert_finalized()
         if getattr(self, "tool_action", None):
             self.tool.tool_action = self.tool_action
         return self.tool
@@ -134,11 +133,17 @@ class MockContext:
     def query(self, clazz):
         return MockQuery(self.model_objects.get(clazz))
 
+    def get(self, clazz, id):
+        return self.query(clazz).get(id)
+
     def flush(self):
         self.flushed = True
 
     def add(self, object):
         self.created_objects.append(object)
+
+    def commit(self):
+        pass
 
 
 class MockQuery:

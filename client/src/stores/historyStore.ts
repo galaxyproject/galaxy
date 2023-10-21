@@ -151,7 +151,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
         if (currentHistoryId.value !== historyId) {
             await setCurrentHistory(historyId);
         }
-        const filterText = HistoryFilters.getFilterText(HistoryFilters.getValidFilterSettings(filters));
+        const filterText = HistoryFilters.getFilterText(filters);
         setFilterText(historyId, filterText);
     }
 

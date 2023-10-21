@@ -4,6 +4,8 @@ import os
 import shutil
 from typing import Optional
 
+from sqlalchemy import select
+
 from galaxy import model
 from galaxy.model import store
 from galaxy.model.base import transaction
@@ -49,7 +51,8 @@ class JobImportHistoryArchiveWrapper:
         # Import history.
         #
 
-        jiha = self.sa_session.query(model.JobImportHistoryArchive).filter_by(job_id=self.job_id).first()
+        stmt = select(model.JobImportHistoryArchive).filter_by(job_id=self.job_id).limit(1)
+        jiha = self.sa_session.scalars(stmt).first()
         if not jiha:
             return None
         user = jiha.job.user
@@ -65,7 +68,10 @@ class JobImportHistoryArchiveWrapper:
                     "history import archive directory",
                 )
             model_store = store.get_import_model_store_for_directory(
-                archive_dir, app=self.app, user=user, tag_handler=self.app.tag_handler.create_tag_handler_session()
+                archive_dir,
+                app=self.app,
+                user=user,
+                tag_handler=self.app.tag_handler.create_tag_handler_session(jiha.job.galaxy_session),
             )
             job = jiha.job
             with model_store.target_history(default_history=job.history) as new_history:

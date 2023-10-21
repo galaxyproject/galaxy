@@ -43,7 +43,10 @@ from galaxy.managers.collections_util import (
     api_payload_to_create_params,
     dictify_dataset_collection_instance,
 )
-from galaxy.managers.context import ProvidesHistoryContext
+from galaxy.managers.context import (
+    ProvidesHistoryContext,
+    ProvidesUserContext,
+)
 from galaxy.managers.genomes import GenomesManager
 from galaxy.managers.history_contents import (
     HistoryContentsFilters,
@@ -236,12 +239,11 @@ class CreateHistoryContentPayloadFromCollection(CreateHistoryContentPayloadFromC
         description="TODO",
     )
     copy_elements: Optional[bool] = Field(
-        default=False,
+        default=True,
         title="Copy Elements",
         description=(
             "If the source is a collection, whether to copy child HDAs into the target "
-            "history as well, defaults to False but this is less than ideal and may "
-            "be changed in future releases."
+            "history as well. Prior to the galaxy release 23.1 this defaulted to false."
         ),
     )
 
@@ -1267,9 +1269,9 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
                 raise exceptions.RequestParameterMissingException("'content' id of target to copy is missing")
             dbkey = payload.dbkey
             copy_required = dbkey is not None
-            copy_elements = payload.copy_elements or copy_required
+            copy_elements = payload.copy_elements
             if copy_required and not copy_elements:
-                raise exceptions.RequestParameterMissingException(
+                raise exceptions.RequestParameterInvalidException(
                     "copy_elements passed as 'false' but it is required to change specified attributes"
                 )
             dataset_instance_attributes = {}
@@ -1391,10 +1393,8 @@ class HistoryItemOperator:
                 item, params, trans
             ),
             HistoryContentItemOperation.change_dbkey: lambda item, params, trans: self._change_dbkey(item, params),
-            HistoryContentItemOperation.add_tags: lambda item, params, trans: self._add_tags(item, trans.user, params),
-            HistoryContentItemOperation.remove_tags: lambda item, params, trans: self._remove_tags(
-                item, trans.user, params
-            ),
+            HistoryContentItemOperation.add_tags: lambda item, params, trans: self._add_tags(trans, item, params),
+            HistoryContentItemOperation.remove_tags: lambda item, params, trans: self._remove_tags(trans, item, params),
         }
 
     def apply(
@@ -1489,10 +1489,8 @@ class HistoryItemOperator:
             for dataset_instance in item.dataset_instances:
                 dataset_instance.set_dbkey(params.dbkey)
 
-    def _add_tags(self, item: HistoryItemModel, user: User, params: TagOperationParams):
-        manager = self._get_item_manager(item)
-        manager.tag_handler.add_tags_from_list(user, item, params.tags, flush=self.flush)
+    def _add_tags(self, trans: ProvidesUserContext, item: HistoryItemModel, params: TagOperationParams):
+        trans.tag_handler.add_tags_from_list(trans.user, item, params.tags, flush=self.flush)
 
-    def _remove_tags(self, item: HistoryItemModel, user: User, params: TagOperationParams):
-        manager = self._get_item_manager(item)
-        manager.tag_handler.remove_tags_from_list(user, item, params.tags, flush=self.flush)
+    def _remove_tags(self, trans: ProvidesUserContext, item: HistoryItemModel, params: TagOperationParams):
+        trans.tag_handler.remove_tags_from_list(trans.user, item, params.tags, flush=self.flush)

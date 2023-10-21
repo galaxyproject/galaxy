@@ -23,7 +23,7 @@ define({
     User: "Benutzer",
     Login: "Anmeldung",
     Register: "Neu registrieren",
-    "Login or Register": "Einloggen oder Registrieren",
+    "Log in or Register": "Einloggen oder Registrieren",
     "Signed in as": "Angemeldet als",
     Preferences: "Präferenzen",
     "Custom Builds": "Custom Builds",

@@ -10,6 +10,7 @@ from galaxy.exceptions import UserActivationRequiredException
 from galaxy.model.base import transaction
 from galaxy.objectstore import BaseObjectStore
 from galaxy.tool_util.parser.output_objects import ToolOutput
+from galaxy.tool_util.parser.xml import parse_change_format
 from galaxy.tools.actions import (
     DefaultToolAction,
     determine_output_format,
@@ -243,7 +244,7 @@ def quick_output(
     test_output.format = format
     test_output.format_source = format_source
     if change_format_xml:
-        test_output.change_format = XML(change_format_xml).findall("change_format")
+        test_output.change_format = parse_change_format(XML(change_format_xml).findall("change_format"))
     else:
         test_output.change_format = []
     return test_output
@@ -258,6 +259,10 @@ class MockTrans:
         self.model = app.model
         self._user_is_active = True
         self.user_is_admin = False
+
+    @property
+    def tag_handler(self):
+        return self.app.tag_handler
 
     def get_user_is_active(self):
         # NOTE: the real user_is_active also checks whether activation is enabled in the config

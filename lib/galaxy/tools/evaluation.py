@@ -192,8 +192,6 @@ class ToolEvaluator:
         param_dict["__datatypes_config__"] = param_dict["GALAXY_DATATYPES_CONF_FILE"] = os.path.join(
             job_working_directory, "registry.xml"
         )
-        if self.job.tool_id == "upload1":
-            param_dict["paramfile"] = os.path.join(job_working_directory, "upload_params.json")
         if self._history:
             param_dict["__history_id__"] = self.app.security.encode_id(self._history.id)
         param_dict["__galaxy_url__"] = self.compute_environment.galaxy_url()
@@ -210,6 +208,11 @@ class ToolEvaluator:
         self.__sanitize_param_dict(param_dict)
         # Parameters added after this line are not sanitized
         self.__populate_non_job_params(param_dict)
+
+        # MinimalJobWrapper.__prepare_upload_paramfile copies the paramfile to the job working directory
+        # so we should use it (otherwise the upload tool does not work in real user setups)
+        if self.job.tool_id == "upload1":
+            param_dict["paramfile"] = os.path.join(job_working_directory, "upload_params.json")
 
         if "input" not in param_dict.data:
 
@@ -268,7 +271,9 @@ class ToolEvaluator:
         visit_input_values(self.tool.inputs, incoming, replace_deferred)
 
     def _validate_incoming(self, incoming: dict):
-        request_context = WorkRequestContext(app=self.app, user=self._user, history=self._history)
+        request_context = WorkRequestContext(
+            app=self.app, user=self._user, history=self._history, galaxy_session=self.job.galaxy_session
+        )
 
         def validate_inputs(input, value, context, **kwargs):
             value = input.from_json(value, request_context, context)
@@ -454,12 +459,6 @@ class ToolEvaluator:
             if not os.path.exists(output_path) and os.path.exists(os.path.dirname(output_path)):
                 open(output_path, "w").close()
 
-            # Provide access to a path to store additional files
-            # TODO: move compute path logic into compute environment, move setting files_path
-            # logic into DatasetFilenameWrapper. Currently this sits in the middle and glues
-            # stuff together inconsistently with the way the rest of path rewriting works.
-            file_name = hda.dataset.extra_files_path_name
-            param_dict[name].files_path = os.path.abspath(os.path.join(job_working_directory, "working", file_name))
         for out_name, output in self.tool.outputs.items():
             if out_name not in param_dict and output.filters:
                 # Assume the reason we lack this output is because a filter

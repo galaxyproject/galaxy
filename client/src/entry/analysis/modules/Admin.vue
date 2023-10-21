@@ -6,7 +6,7 @@ import { useConfig } from "@/composables/config";
 import AdminPanel from "@/components/admin/AdminPanel.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
 
-const { config, isLoaded } = useConfig();
+const { config, isConfigLoaded } = useConfig();
 
 const panelProperties = computed(() => {
     return {
@@ -18,7 +18,7 @@ const panelProperties = computed(() => {
 </script>
 
 <template>
-    <div v-if="isLoaded" id="columns" class="d-flex">
+    <div v-if="isConfigLoaded" id="columns" class="d-flex">
         <FlexPanel side="left">
             <AdminPanel v-bind="panelProperties" />
         </FlexPanel>

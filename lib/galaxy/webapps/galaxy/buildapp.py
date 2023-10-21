@@ -56,7 +56,7 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
         galaxy.app.app = app
     else:
         try:
-            app = galaxy.app.UniverseApplication(global_conf=global_conf, **kwargs)
+            app = galaxy.app.UniverseApplication(global_conf=global_conf, is_webapp=True, **kwargs)
             galaxy.app.app = app
         except Exception:
             traceback.print_exc()
@@ -194,6 +194,7 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/admin/invocations")
     webapp.add_client_route("/admin/toolbox_dependencies")
     webapp.add_client_route("/admin/data_manager{path_info:.*}")
+    webapp.add_client_route("/admin/notifications{path_info:.*}")
     webapp.add_client_route("/admin/error_stack")
     webapp.add_client_route("/admin/users")
     webapp.add_client_route("/admin/users/create")
@@ -366,6 +367,7 @@ def populate_api_routes(webapp, app):
     # ====== TOOLS API ======
     # =======================
 
+    webapp.mapper.connect("/api/tool_panel", action="panel_view", controller="tools")
     webapp.mapper.connect("/api/tools/all_requirements", action="all_requirements", controller="tools")
     webapp.mapper.connect("/api/tools/error_stack", action="error_stack", controller="tools")
     webapp.mapper.connect("/api/tools/{id:.+?}/build", action="build", controller="tools")
@@ -571,7 +573,6 @@ def populate_api_routes(webapp, app):
         conditions=dict(method=["POST"]),
     )
 
-    webapp.mapper.resource_with_deleted("user", "users", path_prefix="/api")
     webapp.mapper.resource("visualization", "visualizations", path_prefix="/api")
     webapp.mapper.resource("plugins", "plugins", path_prefix="/api")
     webapp.mapper.connect("/api/workflows/build_module", action="build_module", controller="workflows")
@@ -582,8 +583,6 @@ def populate_api_routes(webapp, app):
         "/api/workflows/{id}/refactor", action="refactor", controller="workflows", conditions=dict(method=["PUT"])
     )
     webapp.mapper.resource("workflow", "workflows", path_prefix="/api")
-
-    webapp.mapper.resource("search", "search", path_prefix="/api")
 
     # ---- visualizations registry ---- generic template renderer
     # @deprecated: this route should be considered deprecated
@@ -819,54 +818,6 @@ def populate_api_routes(webapp, app):
         "/api/users/{id}/toolbox_filters/inputs",
         controller="users",
         action="set_toolbox_filters",
-        conditions=dict(method=["PUT"]),
-    )
-
-    webapp.mapper.connect(
-        "get_custom_builds",
-        "/api/users/{id}/custom_builds",
-        controller="users",
-        action="get_custom_builds",
-        conditions=dict(method=["GET"]),
-    )
-
-    webapp.mapper.connect(
-        "add_custom_builds",
-        "/api/users/{id}/custom_builds/{key}",
-        controller="users",
-        action="add_custom_builds",
-        conditions=dict(method=["PUT"]),
-    )
-
-    webapp.mapper.connect(
-        "delete_custom_builds",
-        "/api/users/{id}/custom_builds/{key}",
-        controller="users",
-        action="delete_custom_builds",
-        conditions=dict(method=["DELETE"]),
-    )
-
-    webapp.mapper.connect(
-        "set_favorite_tool",
-        "/api/users/{id}/favorites/{object_type}",
-        controller="users",
-        action="set_favorite",
-        conditions=dict(method=["PUT"]),
-    )
-
-    webapp.mapper.connect(
-        "remove_favorite_tool",
-        "/api/users/{id}/favorites/{object_type}/{object_id:.*?}",
-        controller="users",
-        action="remove_favorite",
-        conditions=dict(method=["DELETE"]),
-    )
-
-    webapp.mapper.connect(
-        "set_theme",
-        "/api/users/{id}/theme/{theme}",
-        controller="users",
-        action="set_theme",
         conditions=dict(method=["PUT"]),
     )
 
@@ -1268,12 +1219,6 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
                 normalize_remote_user_email=conf.get("normalize_remote_user_email", False),
             ),
         )
-    # The recursive middleware allows for including requests in other
-    # requests or forwarding of requests, all on the server side.
-    if asbool(conf.get("use_recursive", True)):
-        from paste import recursive
-
-        app = wrap_if_allowed(app, stack, recursive.RecursiveMiddleware, args=(conf,))
 
     # Error middleware
     app = wrap_if_allowed(app, stack, ErrorMiddleware, args=(conf,))

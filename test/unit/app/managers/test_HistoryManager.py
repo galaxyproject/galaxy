@@ -95,13 +95,13 @@ class TestHistoryManager(BaseTestCase):
         history1 = self.history_manager.create(name="history1", user=user2)
         tags = ["tag-one"]
         annotation = "history annotation"
-        self.history_manager.set_tags(history1, tags, user=user2)
+        self.history_manager.tag_handler.set_tags_from_list(user=user2, item=history1, new_tags_list=tags)
         self.history_manager.annotate(history1, annotation, user=user2)
 
         hda = self.add_hda_to_history(history1, name="wat")
         hda_tags = ["tag-one", "tag-two"]
         hda_annotation = "annotation"
-        self.hda_manager.set_tags(hda, hda_tags, user=user2)
+        self.app.tag_handler.set_tags_from_list(user=user2, item=hda, new_tags_list=hda_tags)
         self.hda_manager.annotate(hda, hda_annotation, user=user2)
 
         history2 = self.history_manager.copy(history1, user=user3)
@@ -112,8 +112,7 @@ class TestHistoryManager(BaseTestCase):
         assert history2 != history1
 
         copied_hda = history2.datasets[0]
-        copied_hda_tags = self.hda_manager.get_tags(copied_hda)
-        assert sorted(hda_tags) == sorted(copied_hda_tags)
+        assert hda.make_tag_string_list() == copied_hda.make_tag_string_list()
         copied_hda_annotation = self.hda_manager.annotation(copied_hda)
         assert hda_annotation == copied_hda_annotation
 
@@ -796,10 +795,57 @@ class TestHistoryFilters(BaseTestCase):
 
     def test_fn_filter_parsing(self):
         user2 = self.user_manager.create(**user2_data)
+        user3 = self.user_manager.create(**user3_data)
         history1 = self.history_manager.create(name="history1", user=user2)
         history2 = self.history_manager.create(name="history2", user=user2)
         history3 = self.history_manager.create(name="history3", user=user2)
+        history4 = self.history_manager.create(name="history4", user=user3)
 
+        # test username eq filter
+        filters_2 = self.filter_parser.parse_filters(
+            [
+                ("username", "eq", "user2"),
+            ]
+        )
+        filters_3 = self.filter_parser.parse_filters(
+            [
+                ("username", "eq", "user3"),
+            ]
+        )
+        username_filter_2 = filters_2[0].filter
+        username_filter_3 = filters_3[0].filter
+
+        assert username_filter_2(history1)
+        assert username_filter_2(history2)
+        assert username_filter_2(history3)
+        assert not username_filter_2(history4)
+        assert not username_filter_3(history1)
+        assert not username_filter_3(history2)
+        assert not username_filter_3(history3)
+        assert username_filter_3(history4)
+
+        assert self.history_manager.list(filters=filters_2) == [history1, history2, history3]
+        assert self.history_manager.list(filters=filters_3) == [history4]
+
+        # test username contains filter
+        filters = self.filter_parser.parse_filters(
+            [
+                ("username", "contains", "user"),
+            ]
+        )
+
+        assert self.history_manager.list(filters=filters) == [history1, history2, history3, history4]
+
+        # test username eq filter (inequality)
+        filters = self.filter_parser.parse_filters(
+            [
+                ("username", "eq", "user"),
+            ]
+        )
+
+        assert self.history_manager.list(filters=filters) == []
+
+        # test annotation filter
         filters = self.filter_parser.parse_filters(
             [
                 ("annotation", "has", "no play"),

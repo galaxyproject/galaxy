@@ -3,7 +3,7 @@
  */
 import { errorMessageAsString, rethrowSimple } from "utils/simple-error";
 
-import { getDatatypes, getGenomes, getRemoteFiles } from "./services";
+import { getDatatypes, getDbKeys, getRemoteFiles } from "./services";
 
 export const AUTO_EXTENSION = {
     id: "auto",
@@ -11,8 +11,18 @@ export const AUTO_EXTENSION = {
     description:
         "This system will try to detect the file type automatically. If your file is not detected properly as one of the known formats, it most likely means that it has some format problems (e.g., different number of columns on different rows). You can still coerce the system to set your data to the format you think it should be.  You can also upload compressed files, which will automatically be decompressed.",
 };
+export const COLLECTION_TYPES = [
+    { id: "list", text: "List" },
+    { id: "paired", text: "Pair" },
+    { id: "list:paired", text: "List of Pairs" },
+];
 export const DEFAULT_DBKEY = "?";
 export const DEFAULT_EXTENSION = "auto";
+export const DEFAULT_FILE_NAME = "New File";
+export const RULES_TYPES = [
+    { id: "collections", text: "Collections" },
+    { id: "datasets", text: "Datasets" },
+];
 
 /**
  * Local cache.
@@ -39,7 +49,7 @@ async function loadDbKeys() {
     if (_cachedDbKeys) {
         return _cachedDbKeys;
     }
-    const { data: dbKeys } = await getGenomes();
+    const { data: dbKeys } = await getDbKeys();
     const dbKeyList = [];
     for (var key in dbKeys) {
         dbKeyList.push({
@@ -64,6 +74,7 @@ async function loadUploadDatatypes() {
             description: datatypes[key].description,
             description_url: datatypes[key].description_url,
             composite_files: datatypes[key].composite_files,
+            upload_warning: datatypes[key].upload_warning,
         });
     }
     listExtensions.sort((a, b) => {
@@ -79,7 +90,7 @@ async function loadUploadDatatypes() {
  * Exported utilities.
  */
 export function findExtension(extensions, id) {
-    return extensions.find((extension) => extension.id == id);
+    return extensions.find((extension) => extension.id == id) || {};
 }
 
 export async function getUploadDatatypes(datatypesDisableAuto, auto) {
@@ -114,6 +125,10 @@ export async function getRemoteEntriesAt(target) {
     } catch (e) {
         rethrowSimple(e);
     }
+}
+
+export function hasBrowserSupport() {
+    return window.File && window.FormData && window.XMLHttpRequest && window.FileList;
 }
 
 export default {

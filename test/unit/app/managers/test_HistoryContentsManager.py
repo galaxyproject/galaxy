@@ -56,6 +56,7 @@ class HistoryAsContainerBaseTestCase(BaseTestCase, CreatesCollectionsMixin):
 class TestHistoryAsContainer(HistoryAsContainerBaseTestCase):
     def test_contents(self):
         user2 = self.user_manager.create(**user2_data)
+        self.trans.set_user(user2)
         history = self.history_manager.create(name="history", user=user2)
 
         self.log("calling contents on an empty history should return an empty list")
@@ -72,20 +73,9 @@ class TestHistoryAsContainer(HistoryAsContainerBaseTestCase):
         all_contents = list(self.contents_manager.contents(history))
         assert all_contents == list(ordered_hda_contents) + [hdca]
 
-    def test_contained(self):
-        user2 = self.user_manager.create(**user2_data)
-        history = self.history_manager.create(name="history", user=user2)
-
-        self.log("calling contained on an empty history should return an empty list")
-        assert [] == list(self.contents_manager.contained(history))
-
-        self.log("calling contained on an history with both hdas and collections should return only hdas")
-        hdas = [self.add_hda_to_history(history, name=("hda-" + str(x))) for x in range(3)]
-        self.add_list_collection_to_history(history, hdas)
-        assert list(self.contents_manager.contained(history)) == hdas
-
     def test_copy_elements_on_collection_creation(self):
         user2 = self.user_manager.create(**user2_data)
+        self.trans.set_user(user2)
         history = self.history_manager.create(name="history", user=user2)
         hdas = [self.add_hda_to_history(history, name=("hda-" + str(x))) for x in range(3)]
         hdca = self.add_list_collection_to_history(history, hdas)
@@ -94,21 +84,9 @@ class TestHistoryAsContainer(HistoryAsContainerBaseTestCase):
         hdca = self.add_list_collection_to_history(history, hdas, copy_elements=True)
         assert hdas != hdca.dataset_instances
 
-    def test_subcontainers(self):
-        user2 = self.user_manager.create(**user2_data)
-        history = self.history_manager.create(name="history", user=user2)
-
-        self.log("calling subcontainers on an empty history should return an empty list")
-        assert [] == list(self.contents_manager.subcontainers(history))
-
-        self.log("calling subcontainers on an history with both hdas and collections should return only collections")
-        hdas = [self.add_hda_to_history(history, name=("hda-" + str(x))) for x in range(3)]
-        hdca = self.add_list_collection_to_history(history, hdas)
-        subcontainers = list(self.contents_manager.subcontainers(history))
-        assert subcontainers == [hdca]
-
     def test_limit_and_offset(self):
         user2 = self.user_manager.create(**user2_data)
+        self.trans.set_user(user2)
         history = self.history_manager.create(name="history", user=user2)
         contents = []
         contents.extend([self.add_hda_to_history(history, name=("hda-" + str(x))) for x in range(3)])
@@ -130,6 +108,7 @@ class TestHistoryAsContainer(HistoryAsContainerBaseTestCase):
     def test_orm_filtering(self):
         parse_filter = self.history_contents_filters.parse_filter
         user2 = self.user_manager.create(**user2_data)
+        self.trans.set_user(user2)
         history = self.history_manager.create(name="history", user=user2)
         contents = []
         contents.extend([self.add_hda_to_history(history, name=("hda-" + str(x))) for x in range(3)])
@@ -221,13 +200,10 @@ class TestHistoryAsContainer(HistoryAsContainerBaseTestCase):
         assert [contents[4]] == self.contents_manager.contents(
             history, filters=[parsed_filter("orm", HDA.name.like("%-4"))]
         )
-        # the collections added above have the default name 'test collection'
-        assert self.contents_manager.subcontainers(history) == self.contents_manager.contents(
-            history, filters=[parsed_filter("orm", HDA.name.like("%collect%"))]
-        )
 
     def test_order_by(self):
         user2 = self.user_manager.create(**user2_data)
+        self.trans.set_user(user2)
         history = self.history_manager.create(name="history", user=user2)
         contents = []
         contents.extend([self.add_hda_to_history(history, name=("hda-" + str(x))) for x in range(3)])
@@ -263,6 +239,7 @@ class TestHistoryAsContainer(HistoryAsContainerBaseTestCase):
 
     def test_update_time_filter(self):
         user2 = self.user_manager.create(**user2_data)
+        self.trans.set_user(user2)
         history = self.history_manager.create(name="history", user=user2)
         contents = []
         contents.extend([self.add_hda_to_history(history, name=("hda-" + str(x))) for x in range(3)])
@@ -292,6 +269,7 @@ class TestHistoryAsContainer(HistoryAsContainerBaseTestCase):
     def test_filtered_counting(self):
         parse_filter = self.history_contents_filters.parse_filter
         user2 = self.user_manager.create(**user2_data)
+        self.trans.set_user(user2)
         history = self.history_manager.create(name="history", user=user2)
         contents = []
         contents.extend([self.add_hda_to_history(history, name=("hda-" + str(x))) for x in range(3)])
@@ -324,6 +302,7 @@ class TestHistoryAsContainer(HistoryAsContainerBaseTestCase):
 
     def test_type_id(self):
         user2 = self.user_manager.create(**user2_data)
+        self.trans.set_user(user2)
         history = self.history_manager.create(name="history", user=user2)
         contents = []
         contents.extend([self.add_hda_to_history(history, name=("hda-" + str(x))) for x in range(3)])

@@ -96,7 +96,7 @@ class CondaContext(installable.InstallableContext):
     installable_description = "Conda"
     _conda_build_available: Optional[bool]
     _conda_version: Optional[Version]
-    _experimental_solver_available: Optional[bool]
+    _libmamba_solver_available: Optional[bool]
 
     def __init__(
         self,
@@ -137,7 +137,7 @@ class CondaContext(installable.InstallableContext):
     def _reset_conda_properties(self) -> None:
         self._conda_version = None
         self._conda_build_available = None
-        self._experimental_solver_available = None
+        self._libmamba_solver_available = None
 
     @property
     def conda_version(self) -> Version:
@@ -175,13 +175,17 @@ class CondaContext(installable.InstallableContext):
         return override_channels_args
 
     @property
-    def _experimental_solver_args(self) -> List[str]:
-        if self._experimental_solver_available is None:
-            self._experimental_solver_available = self.conda_version >= Version("4.12.0") and self.is_package_installed(
+    def _solver_args(self) -> List[str]:
+        if self._libmamba_solver_available is None:
+            self._libmamba_solver_available = self.conda_version >= Version("4.12.0") and self.is_package_installed(
                 "conda-libmamba-solver"
             )
-        if self._experimental_solver_available:
-            return ["--experimental-solver", "libmamba"]
+        if self._libmamba_solver_available:
+            # The "--solver" option was introduced in conda 22.11.0, when the
+            # "--experimental-solver" option was deprecated.
+            # The "--experimental-solver" option was removed in conda 23.9.0 .
+            solver_option = "--solver" if self.conda_version >= Version("22.11.0") else "--experimental-solver"
+            return [solver_option, "libmamba"]
         else:
             return []
 
@@ -296,7 +300,7 @@ class CondaContext(installable.InstallableContext):
                     continue
             if allow_local and self.use_local:
                 create_args.append("--use-local")
-            create_args.extend(self._experimental_solver_args)
+            create_args.extend(self._solver_args)
             create_args.extend(self._override_channels_args)
             create_args.extend(args)
             ret = self.exec_command("create", create_args, stdout_path=stdout_path)
@@ -327,7 +331,7 @@ class CondaContext(installable.InstallableContext):
                     continue
             if allow_local and self.use_local:
                 install_args.append("--use-local")
-            install_args.extend(self._experimental_solver_args)
+            install_args.extend(self._solver_args)
             install_args.extend(self._override_channels_args)
             install_args.extend(args)
             ret = self.exec_command("install", install_args, stdout_path=stdout_path)

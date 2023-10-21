@@ -166,7 +166,7 @@ export function fetchMenu(options = {}) {
         if (options.allow_user_creation) {
             userTab = {
                 id: "user",
-                title: _l("Login or Register"),
+                title: _l("Log in or Register"),
                 cls: "loggedout-only",
                 url: "/login",
                 tooltip: _l("Log in or register a new account"),

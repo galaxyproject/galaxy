@@ -10,16 +10,16 @@ class TestEdamToolboxIntegration(integration_util.IntegrationTestCase):
         config["edam_panel_views"] = "merged"
 
     def test_edam_toolbox(self):
-        index = self.galaxy_interactor.get("tools", data=dict(in_panel=True, view="ontology:edam_merged"))
+        index = self.galaxy_interactor.get("tool_panel", data=dict(in_panel=True, view="ontology:edam_merged"))
         index.raise_for_status()
-        index_as_list = index.json()
-        sections = [x for x in index_as_list if x["model_class"] == "ToolSection"]
+        index_panel = index.json().get("ontology:edam_merged", {})
+        sections = [x for _, x in index_panel.items() if x["model_class"] == "ToolSection"]
         section_names = [s["name"] for s in sections]
         assert "Mapping" in section_names
         mapping_section = [s for s in sections if s["name"] == "Mapping"][0]
-        mapping_section_elems = mapping_section["elems"]
+        mapping_section_tools = mapping_section["tools"]
         # make sure our mapper tool was mapped using Edam correctly...
-        assert [x for x in mapping_section_elems if x["id"] == "mapper"]
+        assert [x for x in mapping_section_tools if x == "mapper"]
 
         config_index = self.galaxy_interactor.get("configuration")
         config_index.raise_for_status()
@@ -40,16 +40,16 @@ class TestEdamToolboxDefaultIntegration(integration_util.IntegrationTestCase):
         config["default_panel_view"] = "ontology:edam_topics"
 
     def test_edam_toolbox(self):
-        index = self.galaxy_interactor.get("tools", data=dict(in_panel=True))
+        index = self.galaxy_interactor.get("tool_panel", data=dict(in_panel=True))
         index.raise_for_status()
-        index_as_list = index.json()
-        sections = [x for x in index_as_list if x["model_class"] == "ToolSection"]
+        index_panel = index.json().get("ontology:edam_topics", {})
+        sections = [x for _, x in index_panel.items() if x["model_class"] == "ToolSection"]
         section_names = [s["name"] for s in sections]
         assert "Mapping" in section_names
         mapping_section = [s for s in sections if s["name"] == "Mapping"][0]
-        mapping_section_elems = mapping_section["elems"]
+        mapping_section_tools = mapping_section["tools"]
         # make sure our mapper tool was mapped using Edam correctly...
-        assert [x for x in mapping_section_elems if x["id"] == "mapper"]
+        assert [x for x in mapping_section_tools if x == "mapper"]
 
         config_index = self.galaxy_interactor.get("configuration")
         config_index.raise_for_status()

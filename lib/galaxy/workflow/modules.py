@@ -122,6 +122,76 @@ class ConditionalStepWhen(BooleanToolParameter):
     pass
 
 
+def to_cwl(value, hda_references, step):
+    element_identifier = None
+    if isinstance(value, model.DatasetCollectionElement) and value.hda:
+        element_identifier = value.element_identifier
+        value = value.hda
+    if isinstance(value, model.HistoryDatasetAssociation):
+        # I think the following two checks are needed but they may
+        # not be needed.
+        if not value.dataset.in_ready_state():
+            why = "dataset [%s] is needed for valueFrom expression and is non-ready" % value.id
+            raise DelayedWorkflowEvaluation(why=why)
+        if not value.is_ok:
+            raise FailWorkflowEvaluation(
+                why=InvocationFailureDatasetFailed(
+                    reason=FailureReason.dataset_failed, hda_id=value.id, workflow_step_id=step.id
+                )
+            )
+        if value.ext == "expression.json":
+            with open(value.file_name) as f:
+                # OUR safe_loads won't work, will not load numbers, etc...
+                return json.load(f)
+        else:
+            hda_references.append(value)
+            properties = {
+                "class": "File",
+                "location": "step_input://%d" % len(hda_references),
+            }
+            set_basename_and_derived_properties(
+                properties, value.dataset.created_from_basename or element_identifier or value.name
+            )
+            return properties
+    elif hasattr(value, "collection"):
+        collection = value.collection
+        if collection.collection_type == "list":
+            return [to_cwl(dce, hda_references=hda_references, step=step) for dce in collection.dataset_elements]
+        else:
+            # Could be record or nested lists
+            rval = {}
+            for element in collection.elements:
+                rval[element.element_identifier] = to_cwl(
+                    element.element_object, hda_references=hda_references, step=step
+                )
+            return rval
+    elif isinstance(value, list):
+        return [to_cwl(v, hda_references=hda_references, step=step) for v in value]
+    elif is_runtime_value(value):
+        return None
+    elif isinstance(value, dict):
+        # Nested tool state, such as conditionals
+        return {k: to_cwl(v, hda_references=hda_references, step=step) for k, v in value.items()}
+    else:
+        return value
+
+
+def from_cwl(value, hda_references, progress):
+    # TODO: turn actual files into HDAs here ... somehow I suppose. Things with
+    # file:// locations for instance.
+    if isinstance(value, dict) and "class" in value and "location" in value:
+        if value["class"] == "File":
+            # This is going to re-file -> HDA this each iteration I think, not a good
+            # implementation.
+            return progress.raw_to_galaxy(value)
+        assert value["location"].startswith("step_input://"), "Invalid location %s" % value
+        return hda_references[int(value["location"][len("step_input://") :]) - 1]
+    elif isinstance(value, dict):
+        raise NotImplementedError()
+    else:
+        return value
+
+
 def evaluate_value_from_expressions(progress, step, execution_state, extra_step_state):
     when_expression = step.when_expression
     value_from_expressions = {}
@@ -135,73 +205,14 @@ def evaluate_value_from_expressions(progress, step, execution_state, extra_step_
     if not value_from_expressions and when_expression is None:
         return {}
 
-    hda_references = []
-
-    def to_cwl(value):
-        element_identifier = None
-        if isinstance(value, model.DatasetCollectionElement) and value.hda:
-            element_identifier = value.element_identifier
-            value = value.hda
-        if isinstance(value, model.HistoryDatasetAssociation):
-            # I think the following two checks are needed but they may
-            # not be needed.
-            if not value.dataset.in_ready_state():
-                why = "dataset [%s] is needed for valueFrom expression and is non-ready" % value.id
-                raise DelayedWorkflowEvaluation(why=why)
-            if not value.is_ok:
-                raise FailWorkflowEvaluation(
-                    why=InvocationFailureDatasetFailed(
-                        reason=FailureReason.dataset_failed, hda_id=value.id, workflow_step_id=step.id
-                    )
-                )
-            if value.ext == "expression.json":
-                with open(value.file_name) as f:
-                    # OUR safe_loads won't work, will not load numbers, etc...
-                    return json.load(f)
-            else:
-                hda_references.append(value)
-                properties = {
-                    "class": "File",
-                    "location": "step_input://%d" % len(hda_references),
-                }
-                set_basename_and_derived_properties(
-                    properties, value.dataset.created_from_basename or element_identifier or value.name
-                )
-                return properties
-        elif hasattr(value, "collection"):
-            collection = value.collection
-            if collection.collection_type == "list":
-                return [to_cwl(dce) for dce in collection.dataset_elements]
-            else:
-                # Could be record or nested lists
-                rval = {}
-                for element in collection.elements:
-                    rval[element.element_identifier] = to_cwl(element.element_object)
-                return rval
-        else:
-            return value
-
-    def from_cwl(value):
-        # TODO: turn actual files into HDAs here ... somehow I suppose. Things with
-        # file:// locations for instance.
-        if isinstance(value, dict) and "class" in value and "location" in value:
-            if value["class"] == "File":
-                # This is going to re-file -> HDA this each iteration I think, not a good
-                # implementation.
-                return progress.raw_to_galaxy(value)
-            assert value["location"].startswith("step_input://"), "Invalid location %s" % value
-            return hda_references[int(value["location"][len("step_input://") :]) - 1]
-        elif isinstance(value, dict):
-            raise NotImplementedError()
-        else:
-            return value
+    hda_references: List[model.HistoryDatasetAssociation] = []
 
     step_state = {}
     for key, value in extra_step_state.items():
-        step_state[key] = to_cwl(value)
+        step_state[key] = to_cwl(value, hda_references=hda_references, step=step)
     if execution_state:
         for key, value in execution_state.inputs.items():
-            step_state[key] = to_cwl(value)
+            step_state[key] = to_cwl(value, hda_references=hda_references, step=step)
 
     if when_expression is not None:
         if when_expression == "${inputs.when}":
@@ -229,7 +240,7 @@ def evaluate_value_from_expressions(progress, step, execution_state, extra_step_
                     reason=FailureReason.expression_evaluation_failed, workflow_step_id=step.id
                 )
             )
-        when_value = from_cwl(as_cwl_value)
+        when_value = from_cwl(as_cwl_value, hda_references=hda_references, progress=progress)
         if not isinstance(when_value, bool):
             raise FailWorkflowEvaluation(
                 InvocationFailureWhenNotBoolean(
@@ -491,8 +502,11 @@ class WorkflowModule:
 
         progress.set_step_outputs(invocation_step, outputs, already_persisted=True)
 
-    def get_replacement_parameters(self, step):
-        """Return a list of replacement parameters."""
+    def get_informal_replacement_parameters(self, step) -> List[str]:
+        """Return a list of informal replacement parameters.
+
+        If replacement is handled via formal workflow inputs - do not include it in this list.
+        """
 
         return []
 
@@ -503,8 +517,15 @@ class WorkflowModule:
         collections_to_match = self._find_collections_to_match(progress, step, all_inputs)
         # Have implicit collections...
         collection_info = self.trans.app.dataset_collection_manager.match_collections(collections_to_match)
-        if collection_info and progress.subworkflow_collection_info:
-            collection_info.when_values = progress.subworkflow_collection_info.when_values
+        if collection_info:
+            if progress.subworkflow_collection_info:
+                # We've mapped over a subworkflow. Slices of the invocation might be conditional
+                # and progress.subworkflow_collection_info.when_values holds the appropriate when_values
+                collection_info.when_values = progress.subworkflow_collection_info.when_values
+            else:
+                # The invocation is not mapped over, but it might still be conditional.
+                # Multiplication and linking should be handled by slice_collection()
+                collection_info.when_values = progress.when_values
         return collection_info or progress.subworkflow_collection_info
 
     def _find_collections_to_match(self, progress, step, all_inputs):
@@ -754,12 +775,15 @@ class SubWorkflowModule(WorkflowModule):
                 assert len(progress.when_values) == 1, "Got more than 1 when value, this shouldn't be possible"
             iteration_elements_iter = [(None, progress.when_values[0] if progress.when_values else None)]
 
-        when_values = []
-        if step.when_expression:
-            for iteration_elements, when_value in iteration_elements_iter:
-                if when_value is False:
-                    when_values.append(when_value)
-                    continue
+        when_values: List[Union[bool, None]] = []
+        for iteration_elements, when_value in iteration_elements_iter:
+            if when_value is False or not step.when_expression:
+                # We're skipping this step (when==False) or we keep
+                # the current when_value if there is no explicit when_expression on this step.
+                when_values.append(when_value)
+            else:
+                # Got a conditional step and we could potentially run it,
+                # so we have to build the step state and evaluate the expression
                 extra_step_state = {}
                 for step_input in step.inputs:
                     step_input_name = step_input.name
@@ -774,8 +798,8 @@ class SubWorkflowModule(WorkflowModule):
                         progress, step, execution_state={}, extra_step_state=extra_step_state
                     )
                 )
-            if collection_info:
-                collection_info.when_values = when_values
+        if collection_info:
+            collection_info.when_values = when_values
 
         subworkflow_invoker = progress.subworkflow_invoker(
             trans,
@@ -826,14 +850,22 @@ class SubWorkflowModule(WorkflowModule):
 
         return inputs
 
-    def get_replacement_parameters(self, step):
+    def get_informal_replacement_parameters(self, step) -> List[str]:
         """Return a list of replacement parameters."""
         replacement_parameters = set()
+
+        formal_parameters = set()
+        for step in self.subworkflow.input_steps:
+            if step.label:
+                formal_parameters.add(step.label)
+
         for subworkflow_step in self.subworkflow.steps:
             module = subworkflow_step.module
             assert module
-            for replacement_parameter in module.get_replacement_parameters(subworkflow_step):
-                replacement_parameters.add(replacement_parameter)
+
+            for replacement_parameter in module.get_informal_replacement_parameters(subworkflow_step):
+                if replacement_parameter not in formal_parameters:
+                    replacement_parameters.add(replacement_parameter)
 
         return list(replacement_parameters)
 
@@ -1905,11 +1937,10 @@ class ToolModule(WorkflowModule):
                     formats = ["input"]  # default to special name "input" which remove restrictions on connections
                 else:
                     formats = [tool_output.format]
-                for change_elem in tool_output.change_format:
-                    for when_elem in change_elem.findall("when"):
-                        format = when_elem.get("format", None)
-                        if format and format not in formats:
-                            formats.append(format)
+                for change_format_model in tool_output.change_format:
+                    format = change_format_model["format"]
+                    if format and format not in formats:
+                        formats.append(format)
                 if tool_output.label:
                     try:
                         params = make_dict_copy(self.state.inputs)
@@ -2250,7 +2281,9 @@ class ToolModule(WorkflowModule):
                 invocation_step=invocation_step,
                 max_num_jobs=max_num_jobs,
                 validate_outputs=validate_outputs,
-                job_callback=lambda job: self._handle_post_job_actions(step, job, progress.replacement_dict),
+                job_callback=lambda job: self._handle_post_job_actions(
+                    step, job, progress.effective_replacement_dict()
+                ),
                 completed_jobs=completed_jobs,
                 workflow_resource_parameters=resource_parameters,
             )
@@ -2274,7 +2307,16 @@ class ToolModule(WorkflowModule):
             step_inputs = mapping_params.param_template
             step_inputs.update(collection_info.collections)
 
-            self._handle_mapped_over_post_job_actions(step, step_inputs, step_outputs, progress.replacement_dict)
+            self._handle_mapped_over_post_job_actions(
+                step, step_inputs, step_outputs, progress.effective_replacement_dict()
+            )
+            if progress.when_values == [False] and not progress.subworkflow_collection_info:
+                # Step skipped entirely. We hide the output to avoid confusion.
+                # Could be revisited if we have a nice visual way to say these are skipped ?
+                for output in step_outputs.values():
+                    if isinstance(output, (model.HistoryDatasetAssociation, model.HistoryDatasetCollectionAssociation)):
+                        output.visible = False
+
         if execution_tracker.execution_errors:
             # TODO: formalize into InvocationFailure ?
             message = f"Failed to create {len(execution_tracker.execution_errors)} job(s) for workflow step {step.order_index + 1}: {str(execution_tracker.execution_errors[0])}"
@@ -2336,7 +2378,7 @@ class ToolModule(WorkflowModule):
             action_arguments = None
         return PostJobAction(value["action_type"], step, output_name, action_arguments)
 
-    def get_replacement_parameters(self, step):
+    def get_informal_replacement_parameters(self, step) -> List[str]:
         """Return a list of replacement parameters."""
         replacement_parameters = set()
         for pja in step.post_job_actions:

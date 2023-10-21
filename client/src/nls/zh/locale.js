@@ -26,7 +26,7 @@ define({
     User: "账号管理",
     Login: "登陆",
     Register: "注册",
-    "Login or Register": "注册登陆",
+    "Log in or Register": "注册登陆",
     "Signed in as": "您已登陆为",
     Preferences: "用户偏好性",
     "Custom Builds": "自定义构建集",

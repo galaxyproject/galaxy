@@ -37,10 +37,10 @@ const REMOTE_FILES_API_RESPONSE: FilesSourcePluginList = [
     {
         id: "test-posix-source",
         type: "posix",
-        uri_root: "gxfiles://test-posix-source",
         label: "TestSource",
         doc: "For testing",
         writable: true,
+        browsable: true,
         requires_roles: undefined,
         requires_groups: undefined,
     },

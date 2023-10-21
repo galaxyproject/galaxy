@@ -164,11 +164,11 @@ class TestToolsApi(ApiTestCase, TestsTools):
         assert "Grep1" in get_response
 
     def test_no_panel_index(self):
-        index = self._get("tools", data=dict(in_panel=False))
-        tools_index = index.json()
-        # No need to flatten out sections, with in_panel=False, only tools are
-        # returned.
-        tool_ids = [_["id"] for _ in tools_index]
+        index = self._get("tool_panel", data=dict(in_panel=False))
+        tools_index = index.json().get("tools", {})
+        # No need to flatten out sections, with in_panel=False, only tools by
+        # ids are returned.
+        tool_ids = list(tools_index.keys())
         assert "upload1" in tool_ids
 
     @skip_without_tool("test_sam_to_bam_conversions")
@@ -2640,17 +2640,16 @@ class TestToolsApi(ApiTestCase, TestsTools):
         return self._run("cat1", history_id, inputs, assert_ok=assert_ok, **kwargs)
 
     def __tool_ids(self):
-        index = self._get("tools")
-        tools_index = index.json()
+        index = self._get("tool_panel")
+        tools_index = index.json().get("default", {})
         # In panels by default, so flatten out sections...
-        tools = []
-        for tool_or_section in tools_index:
-            if "elems" in tool_or_section:
-                tools.extend(tool_or_section["elems"])
+        tool_ids = []
+        for id, tool_or_section in tools_index.items():
+            if "tools" in tool_or_section:
+                tool_ids.extend([t for t in tool_or_section["tools"] if isinstance(t, str)])
             else:
-                tools.append(tool_or_section)
+                tool_ids.append(id)
 
-        tool_ids = [_["id"] for _ in tools]
         return tool_ids
 
     @skip_without_tool("collection_cat_group_tag_multiple")

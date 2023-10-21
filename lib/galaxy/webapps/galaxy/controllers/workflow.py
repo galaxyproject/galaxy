@@ -539,7 +539,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         web interface.
         """
         trans.workflow_building_mode = workflow_building_modes.ENABLED
-        stored = self.get_stored_workflow(trans, id, check_ownership=True, check_accessible=False)
+        stored = self.get_stored_workflow(trans, id, check_ownership=False, check_accessible=True)
         workflow_contents_manager = self.app.workflow_contents_manager
         return workflow_contents_manager.workflow_to_dict(trans, stored, style="editor", version=version)
 

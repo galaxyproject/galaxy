@@ -3,11 +3,15 @@ import "jest-location-mock";
 import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
-import MockConfigProvider from "components/providers/MockConfigProvider";
 import flushPromises from "flush-promises";
+import { createPinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 
+import { mockFetcher } from "@/schema/__mocks__";
+
 import StsDownloadButton from "./StsDownloadButton";
+
+jest.mock("@/schema");
 
 const localVue = getLocalVue();
 const NO_TASKS_CONFIG = {
@@ -21,16 +25,16 @@ const DOWNLOAD_ENDPOINT = "http://cow.com/prepare_download";
 const STORAGE_REQUEST_ID = "moocow1235";
 
 async function mountStsDownloadButtonWrapper(config) {
+    mockFetcher.path("/api/configuration").method("get").mock({ data: config });
+    const pinia = createPinia();
     const wrapper = mount(StsDownloadButton, {
         propsData: {
             title: "my title",
             fallbackUrl: FALLBACK_URL,
             downloadEndpoint: DOWNLOAD_ENDPOINT,
         },
-        stubs: {
-            ConfigProvider: MockConfigProvider(config),
-        },
         localVue,
+        pinia,
     });
     await flushPromises();
     return wrapper;

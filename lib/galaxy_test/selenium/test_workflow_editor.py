@@ -269,7 +269,7 @@ steps:
         tool_node = editor.node._(label="tool_exec")
         tool_input = tool_node.input_terminal(name="inttest")
         self.hover_over(tool_input.wait_for_visible())
-        editor.connector_destroy_callout.wait_for_and_click()
+        tool_node.connector_destroy_callout(name="inttest").wait_for_and_click()
         self.assert_not_connected("input_int#output", "tool_exec#inttest")
         self.screenshot("workflow_editor_parameter_connection_destroyed")
 
@@ -352,9 +352,9 @@ steps:
         cat_node = editor.node._(label="first_cat")
         cat_input = cat_node.input_terminal(name="input1")
         self.hover_over(cat_input.wait_for_visible())
-        editor.connector_destroy_callout.wait_for_visible()
+        cat_node.connector_destroy_callout(name="input1").wait_for_visible()
         self.screenshot("workflow_editor_connection_callout")
-        editor.connector_destroy_callout.wait_for_and_click()
+        cat_node.connector_destroy_callout(name="input1").wait_for_and_click()
         self.assert_not_connected("input1#output", "first_cat#input1")
         self.screenshot("workflow_editor_connection_destroyed")
 
@@ -500,6 +500,14 @@ steps:
         self.assert_workflow_has_changes_and_save()
         workflow = self.workflow_populator.download_workflow(workflow_id)
         assert workflow["steps"]["0"]["tool_version"] == "0.2"
+        editor.node._(label="multiple_versions").wait_for_and_click()
+        editor.tool_version_button.wait_for_and_click()
+        assert self.select_dropdown_item("Switch to 0.1+galaxy6"), "Switch to tool version dropdown item not found"
+        self.screenshot("workflow_editor_version_downgrade")
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.assert_workflow_has_changes_and_save()
+        workflow = self.workflow_populator.download_workflow(workflow_id)
+        assert workflow["steps"]["0"]["tool_version"] == "0.1+galaxy6"
 
     @selenium_test
     def test_editor_tool_upgrade_message(self):
@@ -1076,7 +1084,7 @@ steps:
         self.workflow_editor_destroy_connection("filter#how|filter_source")
         self.assert_node_output_is("filter#output_filtered", "list")
 
-    def assert_node_output_is(self, label: str, output_type: str, map_over_type: Optional[str] = None):
+    def assert_node_output_is(self, label: str, output_type: str, subcollection_type: Optional[str] = None):
         editor = self.components.workflow_editor
         node_label, output_name = label.split("#")
         node = editor.node._(label=node_label)
@@ -1085,18 +1093,18 @@ steps:
         self.hover_over(output_element)
         element = self.components._.tooltip_inner.wait_for_present()
         assert f"output is {output_type}" in element.text, element.text
-        if map_over_type is None:
+        if subcollection_type is None:
             assert "mapped-over" not in element.text
         else:
             fragment = " and mapped-over to produce a "
-            if map_over_type == "list:paired":
+            if subcollection_type == "list:paired":
                 fragment += "list of pairs dataset collection"
-            elif map_over_type == "list:list":
+            elif subcollection_type == "list:list":
                 fragment += "list of lists dataset collection"
-            elif map_over_type.count(":") > 1:
-                fragment += f"dataset collection with {map_over_type.count(':') + 1} levels of nesting"
+            elif subcollection_type.count(":") > 1:
+                fragment += f"dataset collection with {subcollection_type.count(':') + 1} levels of nesting"
             else:
-                fragment += f"{map_over_type}"
+                fragment += f"{subcollection_type}"
             assert fragment in element.text
         self.click_center()
 
@@ -1167,7 +1175,7 @@ steps:
     def workflow_editor_add_input(self, item_name="data_input"):
         editor = self.components.workflow_editor
 
-        # Make sure we're on the the workflow editor and not clicking the main tool panel.
+        # Make sure we're on the workflow editor and not clicking the main tool panel.
         editor.canvas_body.wait_for_visible()
 
         editor.tool_menu.wait_for_visible()
@@ -1181,7 +1189,7 @@ steps:
         sink_node = editor.node._(label=sink_node_label)
         sink_input = sink_node.input_terminal(name=sink_input_name).wait_for_visible()
         self.hover_over(sink_input)
-        editor.connector_destroy_callout.wait_for_and_click()
+        sink_node.connector_destroy_callout(name=sink_input_name).wait_for_and_click()
 
     def assert_input_mapped(self, sink):
         editor = self.components.workflow_editor

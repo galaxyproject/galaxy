@@ -1,4 +1,5 @@
 util
+schema
 config
 files
 job_metrics
@@ -17,3 +18,4 @@ web_apps
 test_base
 test_driver
 test_api
+tool_shed

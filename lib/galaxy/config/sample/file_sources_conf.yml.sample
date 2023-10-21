@@ -191,3 +191,16 @@
   label: Stock DRS filesource
   id: drsstock
   doc: Make sure to define this generic drs file source if you have defined any other drs file sources, or stock drs download capability will be disabled.
+
+- type: inveniordm
+  id: invenio
+  doc: Invenio RDM turn-key research data management repository
+  label: Invenio RDM Demo Repository
+  url: https://inveniordm.web.cern.ch/
+
+- type: onedata
+  id: onedata1
+  label: Onedata
+  doc: Your Onedata files - configure an access token via user preferences
+  accessToken: ${user.preferences['onedata|access_token']}
+  onezoneDomain: ${user.preferences['onedata|onezone_domain']}

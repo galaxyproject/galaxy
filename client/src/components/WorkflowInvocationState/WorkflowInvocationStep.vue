@@ -1,11 +1,12 @@
 <template>
     <div class="d-flex" :data-step="workflowStep.id">
         <div class="ui-portlet-section" style="width: 100%">
-            <div class="portlet-header portlet-title portlet-operations" @click="toggleStep">
+            <div class="portlet-header portlet-title portlet-operations cursor-pointer" @click="toggleStep">
                 <i :class="'portlet-title-icon fa mr-1 ' + stepIcon"></i>
                 <span class="portlet-title-text">
                     <u class="step-title">{{ stepLabel }}</u>
                 </span>
+                <FontAwesomeIcon class="float-right" :icon="expanded ? 'fa-chevron-up' : 'fa-chevron-down'" />
             </div>
             <div v-if="expanded" class="portlet-content">
                 <InvocationStepProvider
@@ -84,21 +85,27 @@
     </div>
 </template>
 <script>
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faChevronDown, faChevronUp } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import GenericHistoryItem from "components/History/Content/GenericItem";
 import LoadingSpan from "components/LoadingSpan";
 import { InvocationStepProvider } from "components/providers";
 import WorkflowIcons from "components/Workflow/icons";
 import { mapActions, mapState } from "pinia";
+import { useToolStore } from "stores/toolStore";
 import { useWorkflowStore } from "stores/workflowStore";
 import { mapActions as vuexMapActions, mapGetters } from "vuex";
-import { mapCacheActions } from "vuex-cache";
 
 import JobStep from "./JobStep";
 import ParameterStep from "./ParameterStep";
 
+library.add(faChevronUp, faChevronDown);
+
 export default {
     components: {
         LoadingSpan,
+        FontAwesomeIcon,
         JobStep,
         ParameterStep,
         InvocationStepProvider,
@@ -118,7 +125,8 @@ export default {
     },
     computed: {
         ...mapState(useWorkflowStore, ["getStoredWorkflowByInstanceId"]),
-        ...mapGetters(["getToolForId", "getToolNameById", "getInvocationStepById"]),
+        ...mapState(useToolStore, ["getToolForId", "getToolNameById"]),
+        ...mapGetters(["getInvocationStepById"]),
         isReady() {
             return this.invocation.steps.length > 0;
         },
@@ -146,8 +154,8 @@ export default {
         this.fetchSubworkflow();
     },
     methods: {
-        ...mapCacheActions(["fetchToolForId"]),
         ...mapActions(useWorkflowStore, ["fetchWorkflowForInstanceId"]),
+        ...mapActions(useToolStore, ["fetchToolForId"]),
         ...vuexMapActions(["fetchInvocationStepById"]),
         fetchTool() {
             if (this.workflowStep.tool_id && !this.getToolForId(this.workflowStep.tool_id)) {

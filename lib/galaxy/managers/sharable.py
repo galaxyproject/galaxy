@@ -58,7 +58,6 @@ class SharableModelManager(
     base.ModelManager,
     secured.OwnableManagerMixin,
     secured.AccessibleManagerMixin,
-    taggable.TaggableManagerMixin,
     annotatable.AnnotatableManagerMixin,
     ratable.RatableManagerMixin,
 ):

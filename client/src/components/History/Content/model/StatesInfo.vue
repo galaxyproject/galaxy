@@ -1,27 +1,14 @@
 <script setup lang="ts">
-import { computed } from "vue";
-
 import { STATES } from "./states";
 import type { HelpText, States } from "./stateTypes";
 
 const props = defineProps({
-    showHelp: { type: Boolean, default: false },
-    excludeStates: { type: Array<keyof typeof STATES>, required: false, default: () => [] },
+    excludeStates: { type: Array<keyof typeof STATES>, required: false, default: () => ["empty", "failed", "upload"] },
 });
 
 const emit = defineEmits<{
-    (e: "update:show-help", showHelp: boolean): void;
     (e: "set-filter", filter: string, value: string): void;
 }>();
-
-const propShowHelp = computed({
-    get: () => {
-        return props.showHelp;
-    },
-    set: (val) => {
-        emit("update:show-help", val);
-    },
-});
 
 const states = STATES as States;
 const helpText: HelpText = {
@@ -36,17 +23,16 @@ if (props.excludeStates) {
 }
 
 function onFilter(value: string) {
-    propShowHelp.value = false;
-    emit("set-filter", `state:`, value);
+    emit("set-filter", `state`, value);
 }
 </script>
 
 <template>
-    <b-modal v-model="propShowHelp" title="History Item States Help" ok-only>
+    <div>
         <p>Here are all available item states in Galaxy:</p>
         <p><i>(Note that the colors for each state correspond to content item state colors in the history)</i></p>
         <dl v-for="(state, key, index) in states" :key="index">
-            <b-alert :variant="state.status || 'success'" show>
+            <div :class="['alert', 'content-item', 'alert-' + state.status]" :data-state="key">
                 <dt>
                     <a class="text-decoration-none" href="javascript:void(0)" @click="onFilter(key)"
                         ><code>{{ key }}</code></a
@@ -54,7 +40,7 @@ function onFilter(value: string) {
                     <icon v-if="state.icon" :icon="state.icon" />
                 </dt>
                 <dd>{{ helpText[key] || state.text }}</dd>
-            </b-alert>
+            </div>
         </dl>
-    </b-modal>
+    </div>
 </template>

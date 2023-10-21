@@ -12,6 +12,7 @@ from cryptography.fernet import (
     Fernet,
     MultiFernet,
 )
+from sqlalchemy import select
 
 try:
     from custos.clients.resource_secret_management_client import ResourceSecretManagementClient
@@ -130,7 +131,7 @@ class DatabaseVault(Vault):
         return MultiFernet(self.fernet_keys)
 
     def _update_or_create(self, key: str, value: Optional[str]) -> model.Vault:
-        vault_entry = self.sa_session.query(model.Vault).filter_by(key=key).first()
+        vault_entry = self._get_vault_value(key)
         if vault_entry:
             if value:
                 vault_entry.value = value
@@ -149,7 +150,7 @@ class DatabaseVault(Vault):
         return vault_entry
 
     def read_secret(self, key: str) -> Optional[str]:
-        key_obj = self.sa_session.query(model.Vault).filter_by(key=key).first()
+        key_obj = self._get_vault_value(key)
         if key_obj and key_obj.value:
             f = self._get_multi_fernet()
             return f.decrypt(key_obj.value.encode("utf-8")).decode("utf-8")
@@ -162,6 +163,10 @@ class DatabaseVault(Vault):
 
     def list_secrets(self, key: str) -> List[str]:
         raise NotImplementedError()
+
+    def _get_vault_value(self, key):
+        stmt = select(model.Vault).filter_by(key=key).limit(1)
+        return self.sa_session.scalars(stmt).first()
 
 
 class CustosVault(Vault):

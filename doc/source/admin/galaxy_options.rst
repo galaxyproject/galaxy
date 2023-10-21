@@ -59,8 +59,7 @@
 
 :Description:
     Top level cache directory. Any other cache directories
-    (tool_cache_data_dir, template_cache_path, etc.) should be
-    subdirectories.
+    (template_cache_path, etc.) should be subdirectories.
     The value of this option will be resolved with respect to
     <data_dir>.
 :Default: ``cache``
@@ -1151,25 +1150,10 @@
     expanded XML strings. Enabling the tool cache results in slightly
     faster startup times. The tool cache is backed by a SQLite
     database, which cannot be stored on certain network disks. The
-    cache location is configurable using the ``tool_cache_data_dir``
-    setting, but can be disabled completely here.
+    cache location is configurable with the ``tool_cache_data_dir``
+    tag in tool config files.
 :Default: ``false``
 :Type: bool
-
-
-~~~~~~~~~~~~~~~~~~~~~~~
-``tool_cache_data_dir``
-~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Tool related caching. Fully expanded tools and metadata will be
-    stored at this path. Per tool_conf cache locations can be
-    configured in (``shed_``)tool_conf.xml files using the
-    tool_cache_data_dir attribute.
-    The value of this option will be resolved with respect to
-    <cache_dir>.
-:Default: ``tool_cache``
-:Type: str
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1181,18 +1165,6 @@
     of this option will be resolved with respect to <data_dir>.
 :Default: ``tool_search_index``
 :Type: str
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``delay_tool_initialization``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Set this to true to delay parsing of tool inputs and outputs until
-    they are needed. This results in faster startup times but uses
-    more memory when using forked Galaxy processes.
-:Default: ``false``
-:Type: bool
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~

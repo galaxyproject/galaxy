@@ -10,26 +10,39 @@ export default {
     data() {
         return { schemaTagObj: {} };
     },
-    created() {
-        axios
-            .get(`${getAppRoot()}api/tools?tool_help=True`)
-            .then((response) => {
-                this.schemaTagObj = this.createToolsJson(response.data);
-                const el = document.createElement("script");
-                el.id = "schema-json";
-                el.type = "application/ld+json";
-                el.text = JSON.stringify(this.schemaTagObj);
-                document.head.appendChild(el);
+    async created() {
+        let tools = {};
+        await axios
+            .get(`${getAppRoot()}api/tool_panel?in_panel=False&tool_help=True`)
+            .then(({ data }) => {
+                tools = data.tools;
             })
             .catch((error) => {
-                console.error(error);
+                console.error("All tools by id not loaded", error);
             });
+        if (Object.keys(tools).length > 0) {
+            await axios
+                .get(`${getAppRoot()}api/tool_panel`)
+                .then(({ data }) => {
+                    this.schemaTagObj = this.createToolsJson(tools, data.default);
+                    const el = document.createElement("script");
+                    el.id = "schema-json";
+                    el.type = "application/ld+json";
+                    el.text = JSON.stringify(this.schemaTagObj);
+                    document.head.appendChild(el);
+                })
+                .catch((error) => {
+                    console.error("Tool sections not loaded", error);
+                });
+        }
     },
     methods: {
-        createToolsJson(tools) {
+        createToolsJson(tools, panel) {
+            const sections = Object.values(panel);
             function extractSections(acc, section) {
-                function extractTools(_acc, tool) {
-                    return tool.name
+                function extractTools(_acc, toolId) {
+                    const tool = tools[toolId];
+                    return tool && tool.name
                         ? [
                               ..._acc,
                               {
@@ -44,15 +57,15 @@ export default {
                           ]
                         : _acc;
                 }
-                if ("elems" in section) {
-                    return acc.concat(section.elems.reduce(extractTools, []));
+                if ("tools" in section) {
+                    return acc.concat(section.tools.reduce(extractTools, []));
                 } else {
                     return acc;
                 }
             }
             return {
                 "@context": "http://schema.org",
-                "@graph": tools.reduce(extractSections, []),
+                "@graph": sections.reduce(extractSections, []),
             };
         },
     },

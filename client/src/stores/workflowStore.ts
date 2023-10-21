@@ -5,9 +5,12 @@ import { computed, ref, set } from "vue";
 import { getAppRoot } from "@/onload/loadConfig";
 import type { Steps } from "@/stores/workflowStepStore";
 
-interface Workflow {
-    [index: string]: any;
+export interface Workflow {
+    name: string;
+    id: string;
     steps: Steps;
+    step_count?: number;
+    latest_id?: string;
 }
 
 export const useWorkflowStore = defineStore("workflowStore", () => {

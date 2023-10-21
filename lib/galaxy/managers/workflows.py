@@ -339,7 +339,7 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
 
         # If given an invocation verify ownership of invocation
         if isinstance(has_workflow, model.WorkflowInvocation):
-            # We use the the owner of the history that is associated to the invocation as a proxy
+            # We use the owner of the history that is associated to the invocation as a proxy
             # for the owner of the invocation.
             if trans.user != has_workflow.history.user and not trans.user_is_admin:
                 raise exceptions.ItemOwnershipException()
@@ -639,7 +639,7 @@ class WorkflowContentsManager(UsesAnnotations):
             annotation = sanitize_html(data["annotation"])
             self.add_item_annotation(trans.sa_session, stored.user, stored, annotation)
         workflow_tags = data.get("tags", [])
-        trans.app.tag_handler.set_tags_from_list(user=trans.user, item=stored, new_tags_list=workflow_tags)
+        trans.tag_handler.set_tags_from_list(user=trans.user, item=stored, new_tags_list=workflow_tags)
 
         # Persist
         trans.sa_session.add(stored)
@@ -948,7 +948,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 inputs = step.module.get_runtime_inputs(connections=step.output_connections)
                 step_model = {"inputs": [input.to_dict(trans) for input in inputs.values()]}
             step_model["when"] = step.when_expression
-            step_model["replacement_parameters"] = step.module.get_replacement_parameters(step)
+            step_model["replacement_parameters"] = step.module.get_informal_replacement_parameters(step)
             step_model["step_type"] = step.type
             step_model["step_label"] = step.label
             step_model["step_name"] = step.module.get_name()
@@ -1057,7 +1057,15 @@ class WorkflowContentsManager(UsesAnnotations):
                     except KeyError:
                         continue
                 else:
-                    row_for_param(input_dict, input, values[input.name], other_values, prefix, step)
+                    row_for_param(
+                        input_dict,
+                        input,
+                        # Use values.get so that unspecified param values don't blow up the display
+                        values.get(input.name),
+                        other_values,
+                        prefix,
+                        step,
+                    )
                 input_dicts.append(input_dict)
             return input_dicts
 
@@ -1075,12 +1083,9 @@ class WorkflowContentsManager(UsesAnnotations):
                 step_dict["label"] = f"Unknown Tool with id '{e.tool_id}'"
                 step_dicts.append(step_dict)
                 continue
-            if step.type == "tool" or step.type is None:
-                tool = trans.app.toolbox.get_tool(step.tool_id)
-                if tool:
-                    step_dict["label"] = step.label or tool.name
-                else:
-                    step_dict["label"] = f"Unknown Tool with id '{step.tool_id}'"
+            if step.type == "tool":
+                tool = trans.app.toolbox.get_tool(step.tool_id, step.tool_version)
+                step_dict["label"] = step.label or tool.name
                 step_dict["inputs"] = do_inputs(tool.inputs, step.state.inputs, "", step)
             elif step.type == "subworkflow":
                 step_dict["label"] = step.label or (step.subworkflow.name if step.subworkflow else "Missing workflow.")
@@ -1158,6 +1163,8 @@ class WorkflowContentsManager(UsesAnnotations):
             input_connections_type = {}
             multiple_input = {}  # Boolean value indicating if this can be multiple
             if isinstance(module, ToolModule) and module.tool:
+                # Serialize tool version
+                step_dict["tool_version"] = module.tool.version
                 # Determine full (prefixed) names of valid input datasets
                 data_input_names = {}
 
@@ -1428,13 +1435,12 @@ class WorkflowContentsManager(UsesAnnotations):
                 if name:
                     input_dicts.append({"name": name, "description": annotation_str})
             for name, val in step_state.items():
-                input_type = type(val)
-                if input_type == RuntimeValue:
+                if isinstance(val, RuntimeValue):
                     input_dicts.append({"name": name, "description": f"runtime parameter for tool {module.get_name()}"})
-                elif input_type == dict:
+                elif isinstance(val, dict):
                     # Input type is described by a dict, e.g. indexed parameters.
                     for partval in val.values():
-                        if type(partval) == RuntimeValue:
+                        if isinstance(partval, RuntimeValue):
                             input_dicts.append(
                                 {"name": name, "description": f"runtime parameter for tool {module.get_name()}"}
                             )

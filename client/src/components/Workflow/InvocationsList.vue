@@ -50,7 +50,7 @@
                     :title="getStoredWorkflowNameByInstanceId(data.item.workflow_id)"
                     class="truncate">
                     <b-link href="#" @click.stop="swapRowDetails(data)">
-                        <b>{{ getStoredWorkflowNameByInstanceId(data.item.workflow_id) }}</b>
+                        {{ getStoredWorkflowNameByInstanceId(data.item.workflow_id) }}
                     </b-link>
                 </div>
             </template>
@@ -60,7 +60,7 @@
                     :title="`<b>Switch to</b><br>${getHistoryNameById(data.item.history_id)}`"
                     class="truncate">
                     <b-link id="switch-to-history" href="#" @click.stop="switchHistory(data.item.history_id)">
-                        <b>{{ getHistoryNameById(data.item.history_id) }}</b>
+                        {{ getHistoryNameById(data.item.history_id) }}
                     </b-link>
                 </div>
             </template>

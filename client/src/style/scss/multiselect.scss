@@ -1,24 +1,40 @@
 .multiselect {
     font-weight: normal;
+    .multiselect__content-wrapper {
+        background: darken($white, 2%);
+        overflow-x: hidden;
+    }
+    .multiselect__input {
+        background: transparent;
+    }
     .multiselect__option {
         white-space: normal;
         font-size: $font-size-base;
     }
     .multiselect__option--highlight {
-        background: $brand-light;
-        color: $brand-dark;
+        background-color: $brand-info;
+        color: $white;
     }
     .multiselect__option--selected {
         background: $brand-primary;
         color: $brand-light;
     }
-    .multiselect__single {
-        font-size: $font-size-base;
-    }
     .multiselect__tag {
         min-height: 0;
+        white-space: normal;
+        word-break: break-all;
     }
     .multiselect__tags {
+        background: transparent;
         border: $border-default;
+        min-height: unset;
+        .multiselect__single {
+            background: transparent;
+            color: $text-color;
+            font-size: $font-size-base;
+            overflow: hidden;
+            white-space: normal;
+            word-break: break-all;
+        }
     }
 }

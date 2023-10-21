@@ -6,7 +6,7 @@ import { useUserTags } from "composables/user";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import flushPromises from "flush-promises";
 import { PiniaVuePlugin } from "pinia";
-import { getLocalVue } from "tests/jest/helpers";
+import { getLocalVue, wait } from "tests/jest/helpers";
 import { computed } from "vue";
 
 import Tag from "../TagsMultiselect/Tag";
@@ -52,6 +52,8 @@ const defaultApiParams = {
     sort_desc: true,
 };
 
+const debounceDelay = 500; // in ms - see FilterMenu.props.debounceDelay
+
 describe("WorkflowList.vue", () => {
     let axiosMock;
     let wrapper;
@@ -72,6 +74,9 @@ describe("WorkflowList.vue", () => {
                 propsData,
                 localVue,
                 pinia: createTestingPinia(),
+                stubs: {
+                    icon: { template: "<div></div>" },
+                },
             });
         });
 
@@ -90,6 +95,9 @@ describe("WorkflowList.vue", () => {
                 propsData,
                 localVue,
                 pinia: createTestingPinia(),
+                stubs: {
+                    icon: { template: "<div></div>" },
+                },
             });
             flushPromises();
         });
@@ -100,6 +108,10 @@ describe("WorkflowList.vue", () => {
     });
 
     describe(" with single workflow", () => {
+        function findSearchBar(wrapper) {
+            return wrapper.find("[data-description='filter text input']");
+        }
+
         beforeEach(async () => {
             axiosMock
                 .onGet("/api/workflows", { params: { search: "", ...defaultApiParams } })
@@ -111,6 +123,9 @@ describe("WorkflowList.vue", () => {
                 propsData,
                 localVue,
                 pinia: createTestingPinia(),
+                stubs: {
+                    icon: { template: "<div></div>" },
+                },
             });
             flushPromises();
         });
@@ -152,14 +167,14 @@ describe("WorkflowList.vue", () => {
         });
 
         it("starts with an empty filter", async () => {
-            expect(wrapper.find("#workflow-search").element.value).toBe("");
+            expect(findSearchBar(wrapper).element.value).toBe("");
         });
 
         it("fetched filtered results when search filter is used", async () => {
-            await wrapper.find("#workflow-search").setValue("mytext");
-            flushPromises();
-            expect(wrapper.find("#workflow-search").element.value).toBe("mytext");
-            expect(wrapper.vm.filter).toBe("mytext");
+            await findSearchBar(wrapper).setValue("mytext");
+            expect(findSearchBar(wrapper).element.value).toBe("mytext");
+            await wait(debounceDelay);
+            expect(wrapper.vm.filterText).toBe("mytext");
         });
 
         it("update filter when a tag is clicked", async () => {
@@ -167,7 +182,7 @@ describe("WorkflowList.vue", () => {
             expect(tags.length).toBe(2);
             tags[0].trigger("click");
             flushPromises();
-            expect(wrapper.vm.filter).toBe("tag:'tagmoo'");
+            expect(wrapper.vm.filterText).toBe("tag:'tagmoo'");
         });
 
         it("update filter when a tag is clicked only happens on first click", async () => {
@@ -177,7 +192,7 @@ describe("WorkflowList.vue", () => {
             tags[0].trigger("click");
             tags[0].trigger("click");
             flushPromises();
-            expect(wrapper.vm.filter).toBe("tag:'tagmoo'");
+            expect(wrapper.vm.filterText).toBe("tag:'tagmoo'");
         });
 
         it("update filter when published icon is clicked", async () => {
@@ -185,7 +200,7 @@ describe("WorkflowList.vue", () => {
             const row = rows[0];
             row.find(".sharing-indicator-published").trigger("click");
             flushPromises();
-            expect(wrapper.vm.filter).toBe("is:published");
+            expect(wrapper.vm.filterText).toBe("is:published");
         });
 
         it("update filter when shared with me icon is clicked", async () => {
@@ -193,7 +208,7 @@ describe("WorkflowList.vue", () => {
             const row = rows[0];
             row.find(".fa-share-alt").trigger("click");
             flushPromises();
-            expect(wrapper.vm.filter).toBe("is:shared_with_me");
+            expect(wrapper.vm.filterText).toBe("is:shared_with_me");
         });
     });
 
@@ -217,6 +232,9 @@ describe("WorkflowList.vue", () => {
                 propsData,
                 localVue,
                 pinia: createTestingPinia(),
+                stubs: {
+                    icon: { template: "<div></div>" },
+                },
             });
             flushPromises();
         });

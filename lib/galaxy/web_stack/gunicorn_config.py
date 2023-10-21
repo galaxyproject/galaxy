@@ -1,8 +1,13 @@
 """
 Gunicorn config file based on https://gist.github.com/hynek/ba655c8756924a5febc5285c712a7946
 """
+import gc
 import os
 import sys
+
+
+def is_preload_app():
+    return "--preload" in os.environ.get("GUNICORN_CMD_ARGS", "") or "--preload" in sys.argv
 
 
 def on_starting(server):
@@ -45,6 +50,13 @@ def on_reload(server):
     server._worker_id_overload = set(range(1, server.cfg.workers + 1))
 
 
+def when_ready(server):
+    # freeze objects after preloading app
+    if is_preload_app():
+        gc.freeze()
+        print("Objects frozen in perm gen: ", gc.get_freeze_count())
+
+
 def pre_fork(server, worker):
     """
     Attach the next free worker_id before forking off.
@@ -58,7 +70,8 @@ def post_fork(server, worker):
     """
     os.environ["GUNICORN_WORKER_ID"] = str(worker._worker_id)
     os.environ["GUNICORN_LISTENERS"] = ",".join(str(bind) for bind in server.LISTENERS)
-    if "--preload" in os.environ.get("GUNICORN_CMD_ARGS", "") or "--preload" in sys.argv:
+    if is_preload_app():
+        gc.enable()
         from galaxy.web_stack import GunicornApplicationStack
 
         GunicornApplicationStack.late_postfork_event.set()

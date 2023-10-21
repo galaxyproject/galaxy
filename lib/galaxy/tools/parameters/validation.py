@@ -5,7 +5,8 @@ import abc
 import json
 import logging
 import os.path
-import re
+
+import regex
 
 from galaxy import (
     model,
@@ -98,7 +99,7 @@ class RegexValidator(Validator):
         if not isinstance(value, list):
             value = [value]
         for val in value:
-            match = re.match(self.expression, val or "")
+            match = regex.match(self.expression, val or "")
             super().validate(match is not None, value_to_show=val)
 
 
@@ -218,7 +219,7 @@ class DatasetEmptyValidator(Validator):
         message = elem.get("message")
         negate = elem.get("negate", "false")
         if not message:
-            message = f"The selected dataset is {'non-' if negate == 'true' else ''}empty, this tool expects {'non-' if negate=='false' else ''}empty files."
+            message = f"The selected dataset is {'non-' if negate == 'true' else ''}empty, this tool expects {'non-' if negate == 'false' else ''}empty files."
         return cls(message, negate)
 
     def validate(self, value, trans=None):
@@ -280,7 +281,7 @@ class MetadataValidator(Validator):
             super().validate(isinstance(value, model.DatasetInstance) and not missing, value_to_show=missing)
 
 
-class MetadataEqualsValidator(Validator):
+class MetadataEqualValidator(Validator):
     """
     Validator that checks for a metadata value for equality
 
@@ -620,7 +621,7 @@ validator_types = dict(
     in_range=InRangeValidator,
     length=LengthValidator,
     metadata=MetadataValidator,
-    dataset_metadata_equal=MetadataEqualsValidator,
+    dataset_metadata_equal=MetadataEqualValidator,
     unspecified_build=UnspecifiedBuildValidator,
     no_options=NoOptionsValidator,
     empty_field=EmptyTextfieldValidator,

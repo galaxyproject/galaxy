@@ -9,7 +9,6 @@ import os
 import re
 import tarfile
 import tempfile
-import threading
 from collections.abc import MutableMapping
 from pathlib import Path
 from typing import (
@@ -30,6 +29,11 @@ import webob.exc
 from lxml import etree
 from mako.template import Template
 from packaging.version import Version
+from sqlalchemy import (
+    delete,
+    func,
+    select,
+)
 
 from galaxy import (
     exceptions,
@@ -38,6 +42,10 @@ from galaxy import (
 from galaxy.exceptions import ToolInputsNotReadyException
 from galaxy.job_execution import output_collect
 from galaxy.metadata import get_metadata_compute_strategy
+from galaxy.model import (
+    Job,
+    StoredWorkflow,
+)
 from galaxy.model.base import transaction
 from galaxy.tool_shed.util.repository_util import get_installed_repository
 from galaxy.tool_shed.util.shed_util_common import set_image_paths
@@ -80,6 +88,7 @@ from galaxy.tool_util.toolbox import (
     ToolSection,
 )
 from galaxy.tool_util.toolbox.views.sources import StaticToolBoxViewSources
+from galaxy.tool_util.verify.interactor import ToolTestDescription
 from galaxy.tool_util.verify.test_data import TestDataNotFoundError
 from galaxy.tool_util.version import (
     LegacyVersion,
@@ -181,7 +190,6 @@ REQUIRES_JS_RUNTIME_MESSAGE = (
     "but node or nodejs could not be found. Please contact the Galaxy adminstrator"
 )
 
-HELP_UNINITIALIZED = threading.Lock()
 MODEL_TOOLS_PATH = os.path.abspath(os.path.dirname(__file__))
 # Tools that require Galaxy's Python environment to be preserved.
 GALAXY_LIB_TOOLS_UNVERSIONED = [
@@ -299,6 +307,12 @@ WORKFLOW_SAFE_TOOL_VERSION_UPDATES = {
     "Show tail1": safe_update(parse_version("1.0.0"), parse_version("1.0.1")),
     "sort1": safe_update(parse_version("1.1.0"), parse_version("1.2.0")),
     "CONVERTER_interval_to_bgzip_0": safe_update(parse_version("1.0.1"), parse_version("1.0.2")),
+    "CONVERTER_Bam_Bai_0": safe_update(parse_version("1.0.0"), parse_version("1.0.1")),
+    "CONVERTER_cram_to_bam_0": safe_update(parse_version("1.0.1"), parse_version("1.0.2")),
+    "CONVERTER_fasta_to_fai": safe_update(parse_version("1.0.0"), parse_version("1.0.1")),
+    "CONVERTER_sam_to_bigwig_0": safe_update(parse_version("1.0.2"), parse_version("1.0.3")),
+    "CONVERTER_bam_to_coodinate_sorted_bam": safe_update(parse_version("1.0.0"), parse_version("1.0.1")),
+    "CONVERTER_bam_to_qname_sorted_bam": safe_update(parse_version("1.0.0"), parse_version("1.0.1")),
 }
 
 
@@ -346,9 +360,9 @@ class PersistentToolTagManager(AbstractToolTagManager):
 
     def reset_tags(self):
         log.info(
-            f"removing all tool tag associations ({str(self.sa_session.query(self.app.model.ToolTagAssociation).count())})"
+            f"removing all tool tag associations ({str(self.sa_session.scalar(select(func.count(self.app.model.ToolTagAssociation))))})"
         )
-        self.sa_session.query(self.app.model.ToolTagAssociation).delete()
+        self.sa_session.execute(delete(self.app.model.ToolTagAssociation))
         with transaction(self.sa_session):
             self.sa_session.commit()
 
@@ -359,7 +373,8 @@ class PersistentToolTagManager(AbstractToolTagManager):
             for tag_name in tag_names:
                 if tag_name == "":
                     continue
-                tag = self.sa_session.query(self.app.model.Tag).filter_by(name=tag_name).first()
+                stmt = select(self.app.model.Tag).filter_by(name=tag_name).limit(1)
+                tag = self.sa_session.scalars(stmt).first()
                 if not tag:
                     tag = self.app.model.Tag(name=tag_name)
                     self.sa_session.add(tag)
@@ -490,13 +505,13 @@ class ToolBox(AbstractToolBox):
         return self._tools_by_id
 
     def get_cache_region(self, tool_cache_data_dir):
-        if self.app.config.enable_tool_document_cache:
+        if self.app.config.enable_tool_document_cache and tool_cache_data_dir:
             if tool_cache_data_dir not in self.cache_regions:
                 self.cache_regions[tool_cache_data_dir] = ToolDocumentCache(cache_dir=tool_cache_data_dir)
             return self.cache_regions[tool_cache_data_dir]
 
     def create_tool(self, config_file, tool_cache_data_dir=None, **kwds):
-        cache = self.get_cache_region(tool_cache_data_dir or self.app.config.tool_cache_data_dir)
+        cache = self.get_cache_region(tool_cache_data_dir)
         if config_file.endswith(".xml") and cache and not cache.disabled:
             tool_document = cache.get(config_file)
             if tool_document:
@@ -510,10 +525,7 @@ class ToolBox(AbstractToolBox):
                 cache.set(config_file, tool_source)
         else:
             tool_source = self.get_expanded_tool_source(config_file)
-        tool = self._create_tool_from_source(tool_source, config_file=config_file, **kwds)
-        if not self.app.config.delay_tool_initialization:
-            tool.assert_finalized(raise_if_invalid=True)
-        return tool
+        return self._create_tool_from_source(tool_source, config_file=config_file, **kwds)
 
     def get_expanded_tool_source(self, config_file, **kwargs):
         try:
@@ -618,7 +630,8 @@ class ToolBox(AbstractToolBox):
         which is encoded in the tool panel.
         """
         id = self.app.security.decode_id(workflow_id)
-        stored = self.app.model.context.query(self.app.model.StoredWorkflow).get(id)
+        session = self.app.model.context
+        stored = session.get(StoredWorkflow, id)
         return stored.latest_workflow
 
     def __build_tool_version_select_field(self, tools, tool_id, set_selected):
@@ -704,8 +717,7 @@ class Tool(Dictifiable):
     tool_action: ToolAction
     tool_type_local = False
     dict_collection_visible_keys = ["id", "name", "version", "description", "labels"]
-    __help: Optional[threading.Lock]
-    __help_by_page: Union[threading.Lock, List[str]]
+    __help: Optional[Template]
     job_search: "JobSearch"
     version: str
 
@@ -764,6 +776,7 @@ class Tool(Dictifiable):
         self.changeset_revision = None
         self.installed_changeset_revision = None
         self.sharable_url = None
+        self.npages = 0
         # The tool.id value will be the value of guid, but we'll keep the
         # guid attribute since it is useful to have.
         self.guid = guid
@@ -779,56 +792,20 @@ class Tool(Dictifiable):
         # Parse XML element containing configuration
         self.tool_source = tool_source
         self._is_workflow_compatible = None
-        self.finalized = False
+        self.__help = None
+        self.__tests: Optional[str] = None
         try:
             self.parse(tool_source, guid=guid, dynamic=dynamic)
         except Exception as e:
             global_tool_errors.add_error(config_file, "Tool Loading", e)
             raise e
+        mem_optimize = getattr(self.tool_source, "mem_optimize", None)
+        if mem_optimize is not None:
+            mem_optimize()
         # The job search is only relevant in a galaxy context, and breaks
         # loading tools into the toolshed for validation.
         if self.app.name == "galaxy":
             self.job_search = self.app.job_search
-
-    def __getattr__(self, name):
-        lazy_attributes = {
-            "action",
-            "check_values",
-            "display_by_page",
-            "enctype",
-            "has_multiple_pages",
-            "inputs",
-            "inputs_by_page",
-            "last_page",
-            "method",
-            "npages",
-            "nginx_upload",
-            "target",
-            "template_macro_params",
-            "outputs",
-            "output_collections",
-        }
-        if name in lazy_attributes:
-            self.assert_finalized()
-            return getattr(self, name)
-        raise AttributeError(name)
-
-    def assert_finalized(self, raise_if_invalid=False):
-        if self.finalized is False:
-            try:
-                self.parse_inputs(self.tool_source)
-                self.parse_outputs(self.tool_source)
-                self.finalized = True
-            except Exception:
-                toolbox = getattr(self.app, "toolbox", None)
-                if toolbox:
-                    toolbox.remove_tool_by_id(self.id)
-                if raise_if_invalid:
-                    raise
-                else:
-                    log.warning(
-                        "An error occured while parsing the tool wrapper xml, the tool is not functional", exc_info=True
-                    )
 
     def remove_from_cache(self):
         source_path = self.tool_source.source_path
@@ -1142,7 +1119,13 @@ class Tool(Dictifiable):
         self.hidden = tool_source.parse_hidden()
         self.license = tool_source.parse_license()
         self.creator = tool_source.parse_creator()
+        self.parse_inputs(self.tool_source)
+        self.parse_outputs(self.tool_source)
+        self.raw_help = None
 
+        if self.app.is_webapp:
+            self.raw_help = self.__get_help_with_images(tool_source.parse_help())
+            self.parse_tests()
         self.__parse_legacy_features(tool_source)
 
         # Load any tool specific options (optional)
@@ -1156,9 +1139,6 @@ class Tool(Dictifiable):
         # Read in name of galaxy.json metadata file and how to parse it.
         self.provided_metadata_file = tool_source.parse_provided_metadata_file()
         self.provided_metadata_style = tool_source.parse_provided_metadata_style()
-
-        # Parse tool help
-        self.parse_help(tool_source)
 
         # Parse result handling for tool exit codes and stdout/stderr messages:
         self.parse_stdio(tool_source)
@@ -1179,10 +1159,8 @@ class Tool(Dictifiable):
                 try:
                     expressions.find_engine(self.app.config)
                 except Exception:
-                    message = REQUIRES_JS_RUNTIME_MESSAGE % self.tool_id or self.tool_uuid
+                    message = REQUIRES_JS_RUNTIME_MESSAGE % self.id or getattr(self, "uuid", "unknown tool id")
                     raise Exception(message)
-        # Tests
-        self.__parse_tests(tool_source)
 
         # Requirements (dependencies)
         requirements, containers, resource_requirements = tool_source.parse_requirements_and_containers()
@@ -1220,6 +1198,8 @@ class Tool(Dictifiable):
         # Record macro paths so we can reload a tool if any of its macro has changes
         self._macro_paths = tool_source.macro_paths
         self.ports = tool_source.parse_interactivetool()
+
+        self._is_workflow_compatible = self.check_workflow_compatible(self.tool_source)
 
     def __parse_legacy_features(self, tool_source):
         self.code_namespace: Dict[str, str] = {}
@@ -1268,10 +1248,6 @@ class Tool(Dictifiable):
             for key, value in uihints_elem.attrib.items():
                 self.uihints[key] = value
 
-    def __parse_tests(self, tool_source):
-        self.__tests_source = tool_source
-        self.__tests_populated = False
-
     def __parse_config_files(self, tool_source):
         self.config_files = []
         if not hasattr(tool_source, "root"):
@@ -1310,21 +1286,20 @@ class Tool(Dictifiable):
         if trackster_conf is not None:
             self.trackster_conf = TracksterConfig.parse(trackster_conf)
 
+    def parse_tests(self):
+        tests_source = self.tool_source
+        if tests_source:
+            try:
+                self.__tests = json.dumps([t.to_dict() for t in parse_tests(self, tests_source)], indent=None)
+            except Exception:
+                self.__tests = None
+                log.exception("Failed to parse tool tests for tool '%s'", self.id)
+
     @property
     def tests(self):
-        self.assert_finalized()
-        if not self.__tests_populated:
-            tests_source = self.__tests_source
-            if tests_source:
-                try:
-                    self.__tests = parse_tests(self, tests_source)
-                except Exception:
-                    self.__tests = None
-                    log.exception("Failed to parse tool tests for tool '%s'", self.id)
-            else:
-                self.__tests = None
-            self.__tests_populated = True
-        return self.__tests
+        if self.__tests:
+            return [ToolTestDescription(d) for d in json.loads(self.__tests)]
+        return None
 
     @property
     def _repository_dir(self):
@@ -1466,17 +1441,6 @@ class Tool(Dictifiable):
             if not isinstance(param, (HiddenToolParameter, BaseURLToolParameter)):
                 self.input_required = True
                 break
-
-    def parse_help(self, tool_source):
-        """
-        Parse the help text for the tool. Formatted in reStructuredText, but
-        stored as Mako to allow for dynamic image paths.
-        This implementation supports multiple pages.
-        """
-        # TODO: Allow raw HTML or an external link.
-        self.__help = HELP_UNINITIALIZED
-        self.__help_by_page = HELP_UNINITIALIZED
-        self.__help_source = tool_source
 
     def parse_outputs(self, tool_source):
         """
@@ -1694,6 +1658,19 @@ class Tool(Dictifiable):
             )
 
     @property
+    def help(self) -> Template:
+        try:
+            return Template(
+                rst_to_html(self.raw_help),
+                input_encoding="utf-8",
+                default_filters=["decode.utf8"],
+                encoding_errors="replace",
+            )
+        except Exception:
+            log.info("Exception while parsing help for tool with id '%s'", self.id)
+            return Template("", input_encoding="utf-8")
+
+    @property
     def biotools_reference(self) -> Optional[str]:
         """Return a bio.tools ID if external reference to it is found.
 
@@ -1701,88 +1678,23 @@ class Tool(Dictifiable):
         """
         return biotools_reference(self.xrefs)
 
-    @property
-    def help(self):
-        if self.__help is HELP_UNINITIALIZED:
-            self.__ensure_help()
-        return self.__help
-
-    @property
-    def help_by_page(self):
-        if self.__help_by_page is HELP_UNINITIALIZED:
-            self.__ensure_help()
-        return self.__help_by_page
-
-    @property
-    def raw_help(self):
-        # may return rst (or Markdown in the future)
-        tool_source = self.__help_source
-        help_text = tool_source.parse_help()
+    def __get_help_with_images(self, raw_help: Optional[str]):
+        help_text = raw_help or ""
+        try:
+            if help_text.find(".. image:: ") >= 0 and (self.tool_shed_repository or self.repository_id):
+                return set_image_paths(
+                    self.app,
+                    help_text,
+                    encoded_repository_id=self.repository_id,
+                    tool_shed_repository=self.tool_shed_repository,
+                    tool_id=self.old_id,
+                    tool_version=self.version,
+                )
+        except Exception:
+            log.exception(
+                "Exception in parse_help, so images may not be properly displayed for tool with id '%s'", self.id
+            )
         return help_text
-
-    def __ensure_help(self):
-        with HELP_UNINITIALIZED:
-            if self.__help is HELP_UNINITIALIZED:
-                self.__inititalize_help()
-
-    def __inititalize_help(self):
-        tool_source = self.__help_source
-        self.__help = None
-        __help_by_page = []
-        help_footer = ""
-        help_text = tool_source.parse_help()
-        if help_text is not None:
-            try:
-                if help_text.find(".. image:: ") >= 0 and (self.tool_shed_repository or self.repository_id):
-                    help_text = set_image_paths(
-                        self.app,
-                        help_text,
-                        encoded_repository_id=self.repository_id,
-                        tool_shed_repository=self.tool_shed_repository,
-                        tool_id=self.old_id,
-                        tool_version=self.version,
-                    )
-            except Exception:
-                log.exception(
-                    "Exception in parse_help, so images may not be properly displayed for tool with id '%s'", self.id
-                )
-            try:
-                self.__help = Template(
-                    rst_to_html(help_text),
-                    input_encoding="utf-8",
-                    default_filters=["decode.utf8"],
-                    encoding_errors="replace",
-                )
-            except Exception:
-                log.exception("Exception while parsing help for tool with id '%s'", self.id)
-
-            # Handle deprecated multi-page help text in XML case.
-            if hasattr(tool_source, "root"):
-                help_elem = tool_source.root.find("help")
-                help_header = help_text
-                help_pages = help_elem.findall("page")
-                # Multiple help page case
-                if help_pages:
-                    for help_page in help_pages:
-                        __help_by_page.append(help_page.text)
-                        help_footer = help_footer + help_page.tail
-                # Each page has to rendered all-together because of backreferences allowed by rst
-                try:
-                    __help_by_page = [
-                        Template(
-                            rst_to_html(help_header + x + help_footer),
-                            input_encoding="utf-8",
-                            default_filters=["decode.utf8"],
-                            encoding_errors="replace",
-                        )
-                        for x in __help_by_page
-                    ]
-                except Exception:
-                    log.exception("Exception while parsing multi-page help for tool with id '%s'", self.id)
-        # Pad out help pages to match npages ... could this be done better?
-        while len(__help_by_page) < self.npages:
-            __help_by_page.append(self.__help)
-        self.__help_by_page = __help_by_page
 
     def find_output_def(self, name):
         # name is JobToOutputDatasetAssociation name.
@@ -1799,12 +1711,7 @@ class Tool(Dictifiable):
 
     @property
     def is_workflow_compatible(self):
-        is_workflow_compatible = self._is_workflow_compatible
-        if is_workflow_compatible is None:
-            is_workflow_compatible = self.check_workflow_compatible(self.tool_source)
-            if self.finalized:
-                self._is_workflow_compatible = is_workflow_compatible
-        return is_workflow_compatible
+        return self._is_workflow_compatible
 
     def check_workflow_compatible(self, tool_source):
         """
@@ -1813,7 +1720,7 @@ class Tool(Dictifiable):
         """
         # Multiple page tools are not supported -- we're eliminating most
         # of these anyway
-        if self.finalized and self.has_multiple_pages:
+        if self.has_multiple_pages:
             return False
         # This is probably the best bet for detecting external web tools
         # right now
@@ -3121,7 +3028,7 @@ class SetMetadataTool(Tool):
                 self.sa_session.commit()
 
     def job_failed(self, job_wrapper, message, exception=False):
-        job = job_wrapper.sa_session.query(model.Job).get(job_wrapper.job_id)
+        job = job_wrapper.sa_session.get(Job, job_wrapper.job_id)
         if job:
             inp_data = {}
             for dataset_assoc in job.input_datasets:
@@ -3168,7 +3075,7 @@ class InteractiveTool(Tool):
 
     def job_failed(self, job_wrapper, message, exception=False):
         super().job_failed(job_wrapper, message, exception=exception)
-        job = job_wrapper.sa_session.query(model.Job).get(job_wrapper.job_id)
+        job = job_wrapper.sa_session.get(Job, job_wrapper.job_id)
         self.__remove_interactivetool_by_job(job)
 
 
@@ -3190,7 +3097,7 @@ class DataManagerTool(OutputParameterJSONTool):
         super().exec_after_process(app, inp_data, out_data, param_dict, job=job, **kwds)
         # process results of tool
         data_manager_id = job.data_manager_association.data_manager_id
-        data_manager = self.app.data_managers.get_manager(data_manager_id, None)
+        data_manager = self.app.data_managers.get_manager(data_manager_id)
         assert (
             data_manager is not None
         ), f"Invalid data manager ({data_manager_id}) requested. It may have been removed before the job completed."
@@ -3200,7 +3107,17 @@ class DataManagerTool(OutputParameterJSONTool):
         elif data_manager_mode == "dry_run":
             pass
         elif data_manager_mode == "bundle":
-            data_manager.write_bundle(out_data)
+            for bundle_path, dataset in data_manager.write_bundle(out_data).items():
+                hda = cast(model.HistoryDatasetAssociation, dataset)
+                hda.dataset.object_store.update_from_file(
+                    hda.dataset,
+                    extra_dir=hda.dataset.extra_files_path_name,
+                    file_name=bundle_path,
+                    alt_name=os.path.basename(bundle_path),
+                    create=True,
+                    preserve_symlinks=True,
+                )
+
         else:
             raise Exception("Unknown data manager mode encountered type...")
 
@@ -3518,6 +3435,10 @@ class FilterDatasetsTool(DatabaseOperationTool):
             new_elements[element_identifier] = copied_value
         return new_elements
 
+    @staticmethod
+    def element_is_valid(element: model.DatasetCollectionElement):
+        return element.element_object.is_ok
+
     def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
         collection = incoming["input"]
 
@@ -3609,7 +3530,7 @@ class FlattenTool(DatabaseOperationTool):
 
 class SortTool(DatabaseOperationTool):
     tool_type = "sort_collection"
-    require_terminal_states = False
+    require_terminal_states = True
     require_dataset_ok = False
 
     def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
@@ -3724,7 +3645,12 @@ class ApplyRulesTool(DatabaseOperationTool):
         def copy_dataset(dataset, tags):
             copied_dataset = dataset.copy(copy_tags=dataset.tags, flush=False)
             if tags is not None:
-                tag_handler.set_tags_from_list(trans.get_user(), copied_dataset, tags, flush=False)
+                tag_handler.set_tags_from_list(
+                    trans.get_user(),
+                    copied_dataset,
+                    tags,
+                    flush=False,
+                )
             copied_dataset.history_id = history.id
             copied_datasets.append(copied_dataset)
             return copied_dataset
@@ -3772,7 +3698,10 @@ class TagFromFileTool(DatabaseOperationTool):
                             old_tags = old_tags - set(new_tags)
                         new_tags = old_tags
                     tag_handler.add_tags_from_list(
-                        user=history.user, item=copied_value, new_tags_list=new_tags, flush=False
+                        user=history.user,
+                        item=copied_value,
+                        new_tags_list=new_tags,
+                        flush=False,
                     )
             else:
                 # We have a collection, and we copy the elements so that we don't manipulate the original tags
@@ -3860,7 +3789,7 @@ class DuplicateFileToCollectionTool(DatabaseOperationTool):
 
     def produce_outputs(self, trans, out_data, output_collections, incoming, history, **kwds):
         hda = incoming["input"]
-        number = incoming["number"]
+        number = int(incoming["number"])
         element_identifier = incoming["element_identifier"]
         elements = {
             f"{element_identifier} {n}": hda.copy(copy_tags=hda.tags, flush=False) for n in range(1, number + 1)

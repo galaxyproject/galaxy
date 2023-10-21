@@ -15,9 +15,14 @@ from sqlalchemy import (
     and_,
     false,
     func,
+    null,
     or_,
+    true,
 )
-from sqlalchemy.orm import aliased
+from sqlalchemy.orm import (
+    aliased,
+    Session,
+)
 from sqlalchemy.sql import select
 
 from galaxy import model
@@ -38,6 +43,8 @@ from galaxy.managers.lddas import LDDAManager
 from galaxy.model import (
     Job,
     JobParameter,
+    User,
+    YIELD_PER_ROWS,
 )
 from galaxy.model.base import transaction
 from galaxy.model.index_filter_util import (
@@ -420,7 +427,7 @@ class JobSearch:
                     c = aliased(model.HistoryDatasetAssociation)
                     d = aliased(model.JobParameter)
                     e = aliased(model.HistoryDatasetAssociationHistory)
-                    query.add_columns(a.dataset_id)
+                    query = query.add_columns(a.dataset_id)
                     used_ids.append(a.dataset_id)
                     query = query.join(a, a.job_id == model.Job.id)
                     stmt = select(model.HistoryDatasetAssociation.id).where(
@@ -513,7 +520,7 @@ class JobSearch:
                     e = aliased(model.HistoryDatasetAssociation)
                     query = query.add_columns(a.dataset_collection_element_id)
                     query = (
-                        query.join(a)
+                        query.join(a, a.job_id == model.Job.id)
                         .join(b, b.id == a.dataset_collection_element_id)
                         .join(
                             c,
@@ -963,8 +970,6 @@ def summarize_job_parameters(trans, job):
                 # Get parameter label.
                 if input.type == "conditional":
                     label = input.test_param.label
-                elif input.type == "repeat":
-                    label = input.label()
                 else:
                     label = input.label or input.name
                 rval.append(
@@ -1040,3 +1045,21 @@ def summarize_job_outputs(job: model.Job, tool, params, security):
                 }
             )
     return outputs
+
+
+def get_jobs_to_check_at_startup(session: Session, track_jobs_in_database: bool, config):
+    if track_jobs_in_database:
+        in_list = (Job.states.QUEUED, Job.states.RUNNING, Job.states.STOPPED)
+    else:
+        in_list = (Job.states.NEW, Job.states.QUEUED, Job.states.RUNNING)
+
+    stmt = (
+        select(Job)
+        .execution_options(yield_per=YIELD_PER_ROWS)
+        .filter(Job.state.in_(in_list) & (Job.handler == config.server_name))
+    )
+    if config.user_activation_on:
+        # Filter out the jobs of inactive users.
+        stmt = stmt.outerjoin(User).filter(or_((Job.user_id == null()), (User.active == true())))
+
+    return session.scalars(stmt)

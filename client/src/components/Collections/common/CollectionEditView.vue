@@ -25,7 +25,7 @@
                     </div>
                 </DbKeyProvider>
             </b-tab>
-            <SuitableConvertersProvider :id="collection_id" v-slot="{ item }">
+            <SuitableConvertersProvider :id="collectionId" v-slot="{ item }">
                 <b-tab
                     v-if="item && item.length"
                     title-link-class="collection-edit-convert-datatype-nav"
@@ -34,24 +34,22 @@
                     <SuitableConvertersTab :suitable-converters="item" @clicked-convert="clickedConvert" />
                 </b-tab>
             </SuitableConvertersProvider>
-            <ConfigProvider v-slot="{ config }">
-                <b-tab
-                    v-if="config.enable_celery_tasks"
-                    title-link-class="collection-edit-change-datatype-nav"
-                    @click="updateInfoMessage(expectWaitTimeMessage)">
-                    <template v-slot:title> <FontAwesomeIcon icon="database" /> &nbsp; {{ l("Datatypes") }} </template>
-                    <DatatypesProvider v-slot="{ item, loading }">
-                        <div v-if="loading"><LoadingSpan :message="loadingString" /></div>
-                        <div v-else>
-                            <ChangeDatatypeTab
-                                v-if="item && datatypeFromElements"
-                                :datatype-from-elements="datatypeFromElements"
-                                :datatypes="item"
-                                @clicked-save="clickedDatatypeChange" />
-                        </div>
-                    </DatatypesProvider>
-                </b-tab>
-            </ConfigProvider>
+            <b-tab
+                v-if="isConfigLoaded && config.enable_celery_tasks"
+                title-link-class="collection-edit-change-datatype-nav"
+                @click="updateInfoMessage(expectWaitTimeMessage)">
+                <template v-slot:title> <FontAwesomeIcon icon="database" /> &nbsp; {{ l("Datatypes") }} </template>
+                <DatatypesProvider v-slot="{ item, loading }">
+                    <div v-if="loading"><LoadingSpan :message="loadingString" /></div>
+                    <div v-else>
+                        <ChangeDatatypeTab
+                            v-if="item && datatypeFromElements"
+                            :datatype-from-elements="datatypeFromElements"
+                            :datatypes="item"
+                            @clicked-save="clickedDatatypeChange" />
+                    </div>
+                </DatatypesProvider>
+            </b-tab>
         </b-tabs>
     </div>
 </template>
@@ -62,12 +60,13 @@ import { faBars, faCog, faDatabase, faTable, faUser } from "@fortawesome/free-so
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
-import ConfigProvider from "components/providers/ConfigProvider";
 import { mapState } from "pinia";
 import { prependPath } from "utils/redirect";
 import { errorMessageAsString } from "utils/simple-error";
 import Vue from "vue";
 
+import { useConfig } from "@/composables/config";
+import { useCollectionAttributesStore } from "@/stores/collectionAttributesStore";
 import { useHistoryStore } from "@/stores/historyStore";
 
 import { DatatypesProvider, DbKeyProvider, SuitableConvertersProvider } from "../../providers";
@@ -87,20 +86,22 @@ export default {
         FontAwesomeIcon,
         DbKeyProvider,
         SuitableConvertersProvider,
-        ConfigProvider,
         ChangeDatatypeTab,
         DatatypesProvider,
         LoadingSpan,
     },
     props: {
-        collection_id: {
+        collectionId: {
             type: String,
             required: true,
         },
     },
+    setup() {
+        const { config, isConfigLoaded } = useConfig(true);
+        return { config, isConfigLoaded };
+    },
     data: function () {
         return {
-            attributesData: {},
             errorMessage: null,
             jobError: null,
             noQuotaIncrease: true,
@@ -113,6 +114,10 @@ export default {
     },
     computed: {
         ...mapState(useHistoryStore, ["currentHistoryId"]),
+        ...mapState(useCollectionAttributesStore, ["getAttributes"]),
+        attributesData() {
+            return this.getAttributes(this.collectionId);
+        },
         databaseKeyFromElements: function () {
             return this.attributesData.dbkey;
         },
@@ -120,23 +125,12 @@ export default {
             return this.attributesData.extension;
         },
     },
-    created() {
-        this.getCollectionDataAndAttributes();
-    },
     methods: {
         updateInfoMessage: function (strMessage) {
             this.infoMessage = strMessage;
         },
-        getCollectionDataAndAttributes: async function () {
-            let attributesGet = this.$store.getters.getCollectionAttributes(this.collection_id);
-            if (attributesGet == null) {
-                await this.$store.dispatch("fetchCollectionAttributes", this.collection_id);
-                attributesGet = this.$store.getters.getCollectionAttributes(this.collection_id);
-            }
-            this.attributesData = attributesGet;
-        },
         clickedSave: function (attribute, newValue) {
-            const url = prependPath(`/api/dataset_collections/${this.collection_id}/copy`);
+            const url = prependPath(`/api/dataset_collections/${this.collectionId}/copy`);
             const data = {};
             if (attribute == "dbkey") {
                 data["dbkey"] = newValue.id;
@@ -151,7 +145,7 @@ export default {
             const url = prependPath(`/api/tools/${selectedConverter.tool_id}/convert`);
             const data = {
                 src: "hdca",
-                id: this.collection_id,
+                id: this.collectionId,
                 source_type: selectedConverter.original_type,
                 target_type: selectedConverter.target_type,
             };
@@ -164,7 +158,7 @@ export default {
                 items: [
                     {
                         history_content_type: "dataset_collection",
-                        id: this.collection_id,
+                        id: this.collectionId,
                     },
                 ],
                 params: {

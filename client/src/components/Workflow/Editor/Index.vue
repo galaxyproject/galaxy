@@ -1,5 +1,5 @@
 <template>
-    <div v-if="isCanvas" id="columns" class="workflow-client d-flex">
+    <div v-if="isCanvas" id="columns" class="d-flex">
         <StateUpgradeModal :state-messages="stateMessages" />
         <StateUpgradeModal
             :state-messages="insertedStateMessages"
@@ -27,16 +27,17 @@
             </b-form-group>
         </b-modal>
         <FlexPanel side="left">
-            <ProviderAwareToolBoxWorkflow
+            <ToolPanel
+                workflow
                 :module-sections="moduleSections"
                 :data-managers="dataManagers"
-                :workflows="workflows"
+                :editor-workflows="workflows"
                 @onInsertTool="onInsertTool"
                 @onInsertModule="onInsertModule"
                 @onInsertWorkflow="onInsertWorkflow"
                 @onInsertWorkflowSteps="onInsertWorkflowSteps" />
         </FlexPanel>
-        <div id="center" class="workflow-center overflow-auto w-100">
+        <div id="center" class="workflow-center">
             <div class="unified-panel-header" unselectable="on">
                 <div class="unified-panel-header-inner">
                     <span class="sr-only">Workflow Editor</span>
@@ -63,7 +64,7 @@
             </WorkflowGraph>
         </div>
         <FlexPanel side="right">
-            <div class="unified-panel workflow-panel">
+            <div class="unified-panel bg-white">
                 <div class="unified-panel-header" unselectable="on">
                     <div class="unified-panel-header-inner">
                         <WorkflowOptions
@@ -166,11 +167,9 @@ import Vue, { computed, onUnmounted, ref } from "vue";
 import { getUntypedWorkflowParameters } from "@/components/Workflow/Editor/modules/parameters";
 import { ConfirmDialog } from "@/composables/confirmDialog";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
+import { provideScopedWorkflowStores } from "@/composables/workflowStores";
 import { hide_modal } from "@/layout/modal";
 import { getAppRoot } from "@/onload/loadConfig";
-import { useConnectionStore } from "@/stores/workflowConnectionStore";
-import { useWorkflowStateStore } from "@/stores/workflowEditorStateStore";
-import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 import { LastQueue } from "@/utils/promise-queue";
 
 import { defaultPosition } from "./composables/useDefaultStepPosition";
@@ -188,7 +187,7 @@ import StateUpgradeModal from "./StateUpgradeModal.vue";
 import WorkflowGraph from "./WorkflowGraph.vue";
 import MarkdownEditor from "@/components/Markdown/MarkdownEditor.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
-import ProviderAwareToolBoxWorkflow from "@/components/Panels/ProviderAwareToolBoxWorkflow.vue";
+import ToolPanel from "@/components/Panels/ToolPanel.vue";
 import FormDefault from "@/components/Workflow/Editor/Forms/FormDefault.vue";
 import FormTool from "@/components/Workflow/Editor/Forms/FormTool.vue";
 
@@ -197,7 +196,7 @@ export default {
         MarkdownEditor,
         FlexPanel,
         StateUpgradeModal,
-        ProviderAwareToolBoxWorkflow,
+        ToolPanel,
         FormDefault,
         FormTool,
         WorkflowOptions,
@@ -235,10 +234,10 @@ export default {
     },
     setup(props, { emit }) {
         const { datatypes, datatypesMapper, datatypesMapperLoading } = useDatatypesMapper();
-        const connectionsStore = useConnectionStore();
-        const stepStore = useWorkflowStepStore();
+
+        const { connectionStore, stepStore, stateStore } = provideScopedWorkflowStores(props.id);
+
         const { getStepIndex, steps } = storeToRefs(stepStore);
-        const stateStore = useWorkflowStateStore();
         const { activeNodeId } = storeToRefs(stateStore);
         const activeStep = computed(() => {
             if (activeNodeId.value !== null) {
@@ -248,14 +247,14 @@ export default {
         });
 
         const hasChanges = ref(false);
-        const hasInvalidConnections = computed(() => Object.keys(connectionsStore.invalidConnections).length > 0);
+        const hasInvalidConnections = computed(() => Object.keys(connectionStore.invalidConnections).length > 0);
 
         stepStore.$subscribe((mutation, state) => {
             hasChanges.value = true;
         });
 
         function resetStores() {
-            connectionsStore.$reset();
+            connectionStore.$reset();
             stepStore.$reset();
             stateStore.$reset();
         }
@@ -264,7 +263,7 @@ export default {
             emit("update:confirmation", false);
         });
         return {
-            connectionsStore,
+            connectionStore,
             hasChanges,
             hasInvalidConnections,
             stepStore,
@@ -360,7 +359,7 @@ export default {
             this.onUpdateStep(step);
         },
         onConnect(connection) {
-            this.connectionsStore.addConnection(connection);
+            this.connectionStore.addConnection(connection);
         },
         onAttemptRefactor(actions) {
             if (this.hasChanges) {
@@ -406,7 +405,7 @@ export default {
         },
         async onRefactor(response) {
             this.resetStores();
-            await fromSimple(response.workflow);
+            await fromSimple(this.id, response.workflow);
             this._loadEditorData(response.workflow);
         },
         onUpdate(step) {
@@ -427,6 +426,7 @@ export default {
                     inputs: response.inputs,
                     outputs: response.outputs,
                     tool_state: response.tool_state,
+                    tool_version: response.tool_version,
                 });
             });
         },
@@ -471,7 +471,7 @@ export default {
             // Load workflow definition
             this.onWorkflowMessage("Importing workflow", "progress");
             loadWorkflow({ id }).then((data) => {
-                fromSimple(data, true, defaultPosition(this.graphOffset, this.transform));
+                fromSimple(this.id, data, true, defaultPosition(this.graphOffset, this.transform));
                 // Determine if any parameters were 'upgraded' and provide message
                 const insertedStateMessages = getStateUpgradeMessages(data);
                 this.onInsertedStateMessages(insertedStateMessages);
@@ -523,7 +523,7 @@ export default {
         },
         onLayout() {
             return import(/* webpackChunkName: "workflowLayout" */ "./modules/layout.ts").then((layout) => {
-                layout.autoLayout(this.steps).then((newSteps) => {
+                layout.autoLayout(this.id, this.steps).then((newSteps) => {
                     newSteps.map((step) => this.onUpdateStep(step));
                 });
             });
@@ -552,6 +552,7 @@ export default {
                         outputs: data.outputs,
                         config_form: data.config_form,
                         tool_state: data.tool_state,
+                        tool_version: data.tool_version,
                         errors: data.errors,
                     };
                     this.onUpdateStep(step);
@@ -691,7 +692,7 @@ export default {
             this.lastQueue
                 .enqueue(loadWorkflow, { id, version })
                 .then((data) => {
-                    fromSimple(data);
+                    fromSimple(id, data);
                     this._loadEditorData(data);
                 })
                 .catch((response) => {
@@ -732,5 +733,14 @@ export default {
     bottom: 1rem;
     cursor: pointer;
     z-index: 1002;
+}
+
+.workflow-center {
+    z-index: 0;
+    display: flex;
+    flex-direction: column;
+    flex-grow: 1;
+    overflow: auto;
+    width: 100%;
 }
 </style>

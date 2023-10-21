@@ -52,7 +52,6 @@ from abc import (
 )
 from functools import wraps
 from io import StringIO
-from operator import itemgetter
 from typing import (
     Any,
     Callable,
@@ -155,11 +154,11 @@ def skip_without_tool(tool_id: str):
     def method_wrapper(method):
         def get_tool_ids(api_test_case: HasAnonymousGalaxyInteractor):
             interactor = api_test_case.anonymous_galaxy_interactor
-            index = interactor.get("tools", data=dict(in_panel=False))
+            index = interactor.get("tool_panel", data=dict(in_panel=False))
             api_asserts.assert_status_code_is_ok(index, "Failed to fetch toolbox for target Galaxy.")
-            tools = index.json()
-            # In panels by default, so flatten out sections...
-            tool_ids = [itemgetter("id")(_) for _ in tools]
+            tools = index.json().get("tools", {})
+            # `in_panel=False`, so we have a toolsById dict...
+            tool_ids = list(tools.keys())
             return tool_ids
 
         @wraps(method)
@@ -2288,11 +2287,10 @@ class CwlPopulator:
 
         if os.path.exists(tool_id):
             raw_tool_id = os.path.basename(tool_id)
-            index = self.dataset_populator._get("tools", data=dict(in_panel=False))
+            index = self.dataset_populator._get("tool_panel", data=dict(in_panel=False))
             index.raise_for_status()
-            tools = index.json()
-            # In panels by default, so flatten out sections...
-            tool_ids = [itemgetter("id")(_) for _ in tools]
+            tools = index.json().get("tools", {})
+            tool_ids = list(tools.keys())
             if raw_tool_id in tool_ids:
                 galaxy_tool_id = raw_tool_id
             else:

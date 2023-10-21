@@ -1,42 +1,39 @@
-from typing import (
-    Optional,
-    TYPE_CHECKING,
+from sqlalchemy import (
+    false,
+    select,
+    update,
 )
+from typing_extensions import Protocol
 
-from galaxy.model import User
 from galaxy.model.base import transaction
 from galaxy.structured_app import BasicSharedApp
 
-if TYPE_CHECKING:
-    from galaxy.model import APIKeys
+
+class IsUserModel(Protocol):
+    id: int
 
 
 class ApiKeyManager:
     def __init__(self, app: BasicSharedApp):
         self.app = app
+        self.session = self.app.model.context
 
-    def get_api_key(self, user: User) -> Optional["APIKeys"]:
-        sa_session = self.app.model.context
-        api_key = (
-            sa_session.query(self.app.model.APIKeys)
-            .filter_by(user_id=user.id, deleted=False)
-            .order_by(self.app.model.APIKeys.create_time.desc())
-            .first()
-        )
-        return api_key
+    def get_api_key(self, user: IsUserModel):
+        APIKeys = self.app.model.APIKeys
+        stmt = select(APIKeys).filter_by(user_id=user.id, deleted=False).order_by(APIKeys.create_time.desc()).limit(1)
+        return self.session.scalars(stmt).first()
 
-    def create_api_key(self, user: User) -> "APIKeys":
+    def create_api_key(self, user: IsUserModel):
         guid = self.app.security.get_new_guid()
         new_key = self.app.model.APIKeys()
         new_key.user_id = user.id
         new_key.key = guid
-        sa_session = self.app.model.context
-        sa_session.add(new_key)
-        with transaction(sa_session):
-            sa_session.commit()
+        self.session.add(new_key)
+        with transaction(self.session):
+            self.session.commit()
         return new_key
 
-    def get_or_create_api_key(self, user: User) -> str:
+    def get_or_create_api_key(self, user: IsUserModel) -> str:
         # Logic Galaxy has always used - but it would appear to have a race
         # condition. Worth fixing? Would kind of need a message queue to fix
         # in multiple process mode.
@@ -44,14 +41,21 @@ class ApiKeyManager:
         key = api_key.key if api_key else self.create_api_key(user).key
         return key
 
-    def delete_api_key(self, user: User) -> None:
+    def delete_api_key(self, user: IsUserModel) -> None:
         """Marks the current user API key as deleted."""
-        sa_session = self.app.model.context
         # Before it was possible to create multiple API keys for the same user although they were not considered valid
         # So all non-deleted keys are marked as deleted for backward compatibility
-        api_keys = sa_session.query(self.app.model.APIKeys).filter_by(user_id=user.id, deleted=False)
-        for api_key in api_keys:
-            api_key.deleted = True
-            sa_session.add(api_key)
-        with transaction(sa_session):
-            sa_session.commit()
+        self._mark_all_api_keys_as_deleted(user.id)
+        with transaction(self.session):
+            self.session.commit()
+
+    def _mark_all_api_keys_as_deleted(self, user_id: int):
+        APIKeys = self.app.model.APIKeys
+        stmt = (
+            update(APIKeys)
+            .where(APIKeys.user_id == user_id)
+            .where(APIKeys.deleted == false())
+            .values(deleted=True)
+            .execution_options(synchronize_session="evaluate")
+        )
+        return self.session.execute(stmt)

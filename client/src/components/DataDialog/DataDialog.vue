@@ -94,13 +94,22 @@ export default {
             optionsShow: false,
             undoShow: false,
             hasValue: false,
+            urlTracker: null,
         };
+    },
+    watch: {
+        history: async function () {
+            this.urlTracker = new UrlTracker(this.getHistoryUrl());
+            this.load();
+        },
     },
     created: function () {
         this.services = new Services();
-        this.urlTracker = new UrlTracker(this.getHistoryUrl());
         this.model = new Model({ multiple: this.multiple, format: this.format });
-        this.load();
+        if (this.history) {
+            this.urlTracker = new UrlTracker(this.getHistoryUrl());
+            this.load();
+        }
     },
     methods: {
         /** Returns the default url i.e. the url of the current history **/
@@ -142,6 +151,7 @@ export default {
             };
             this.openGlobalUploadModal(propsData);
             this.modalShow = false;
+            this.$emit("onUpload");
         },
         /** Called when selection is complete, values are formatted and parsed to external callback **/
         onOk() {

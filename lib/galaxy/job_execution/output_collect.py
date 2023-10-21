@@ -244,14 +244,14 @@ class JobContext(BaseJobContext):
     @property
     def tag_handler(self):
         if self._tag_handler is None:
-            self._tag_handler = self.app.tag_handler.create_tag_handler_session()
+            self._tag_handler = self.app.tag_handler.create_tag_handler_session(self.job.galaxy_session)
         return self._tag_handler
 
     @property
     def work_context(self):
         from galaxy.work.context import WorkRequestContext
 
-        return WorkRequestContext(self.app, user=self.user)
+        return WorkRequestContext(self.app, user=self.user, galaxy_session=self.job.galaxy_session)
 
     @property
     def sa_session(self) -> ScopedSession:
@@ -724,20 +724,27 @@ def default_exit_code_file(files_dir, id_tag):
 
 
 def collect_extra_files(object_store, dataset, job_working_directory):
+    # TODO: should this use compute_environment to determine the extra files path ?
     file_name = dataset.dataset.extra_files_path_name_from(object_store)
-    temp_file_path = os.path.join(job_working_directory, "working", file_name)
-    extra_dir = None
+    output_location = "outputs"
+    temp_file_path = os.path.join(job_working_directory, output_location, file_name)
+    if not os.path.exists(temp_file_path):
+        # Fall back to working dir, remove in 23.2
+        output_location = "working"
+        temp_file_path = os.path.join(job_working_directory, output_location, file_name)
+    if not os.path.exists(temp_file_path):
+        # no outputs to working directory, but may still need to push form cache to backend
+        temp_file_path = dataset.extra_files_path
     try:
         # This skips creation of directories - object store
         # automatically creates them.  However, empty directories will
         # not be created in the object store at all, which might be a
         # problem.
         for root, _dirs, files in os.walk(temp_file_path):
-            extra_dir = root.replace(os.path.join(job_working_directory, "working"), "", 1).lstrip(os.path.sep)
             for f in files:
                 object_store.update_from_file(
                     dataset.dataset,
-                    extra_dir=extra_dir,
+                    extra_dir=os.path.normpath(os.path.join(file_name, os.path.relpath(root, temp_file_path))),
                     alt_name=f,
                     file_name=os.path.join(root, f),
                     create=True,

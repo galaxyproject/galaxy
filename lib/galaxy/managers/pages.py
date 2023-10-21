@@ -16,11 +16,16 @@ from typing import (
 )
 
 from sqlalchemy import (
+    desc,
     false,
     or_,
+    select,
     true,
 )
-from sqlalchemy.orm import aliased
+from sqlalchemy.orm import (
+    aliased,
+    Session,
+)
 
 from galaxy import (
     exceptions,
@@ -37,6 +42,12 @@ from galaxy.managers.context import (
 from galaxy.managers.markdown_util import (
     ready_galaxy_markdown_for_export,
     ready_galaxy_markdown_for_import,
+)
+from galaxy.model import (
+    Page,
+    PageRevision,
+    PageUserShareAssociation,
+    User,
 )
 from galaxy.model.base import transaction
 from galaxy.model.index_filter_util import (
@@ -621,3 +632,33 @@ def placeholderRenderForSave(trans: ProvidesHistoryContext, item_class, item_id,
         item_id=item_id,
         item_name=item_name,
     )
+
+
+def get_page_revision(session: Session, page_id: int):
+    stmt = select(PageRevision).filter_by(page_id=page_id)
+    return session.scalars(stmt)
+
+
+def get_shared_pages(session: Session, user: User):
+    stmt = (
+        select(PageUserShareAssociation)
+        .where(PageUserShareAssociation.user == user)
+        .join(Page)
+        .where(Page.deleted == false())
+        .order_by(desc(Page.update_time))
+    )
+    return session.scalars(stmt)
+
+
+def get_page(session: Session, user: User, slug: str):
+    stmt = _build_page_query(select(Page), user, slug)
+    return session.scalars(stmt).first()
+
+
+def page_exists(session: Session, user: User, slug: str) -> bool:
+    stmt = _build_page_query(select(Page.id), user, slug)
+    return session.scalars(stmt).first() is not None
+
+
+def _build_page_query(select_clause, user: User, slug: str):
+    return select_clause.where(Page.user == user).where(Page.slug == slug).where(Page.deleted == false()).limit(1)

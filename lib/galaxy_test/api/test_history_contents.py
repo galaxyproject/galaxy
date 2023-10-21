@@ -495,7 +495,7 @@ class TestHistoryContentsApi(ApiTestCase):
 
     def test_dataset_collection_hide_originals(self, history_id):
         payload = self.dataset_collection_populator.create_pair_payload(
-            history_id, type="dataset_collection", direct_upload=False
+            history_id, type="dataset_collection", direct_upload=False, copy_elements=False
         )
 
         payload["hide_source_items"] = True
@@ -503,9 +503,7 @@ class TestHistoryContentsApi(ApiTestCase):
         self.__check_create_collection_response(dataset_collection_response)
 
         contents_response = self._get(f"histories/{history_id}/contents")
-        datasets = [
-            d for d in contents_response.json() if d["history_content_type"] == "dataset" and d["hid"] in [1, 2]
-        ]
+        datasets = [d for d in contents_response.json() if d["history_content_type"] == "dataset"]
         # Assert two datasets in source were hidden.
         assert len(datasets) == 2
         assert not datasets[0]["visible"]
@@ -553,7 +551,7 @@ class TestHistoryContentsApi(ApiTestCase):
         assert len(contents) == 1
         new_forward, _ = self.__get_paired_response_elements(history_id, contents[0])
         self._assert_has_keys(new_forward, "history_id")
-        assert new_forward["history_id"] == history_id
+        assert new_forward["history_id"] == second_history_id
 
     def test_hdca_copy_with_new_dbkey(self, history_id):
         fetch_response = self.dataset_collection_populator.create_pair_in_history(history_id, wait=True).json()

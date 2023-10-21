@@ -718,9 +718,7 @@ class NavigatesGalaxy(HasDriver):
         except SeleniumTimeoutException as e:
             ui_logged_out = self.components.masthead.logged_out_only.is_displayed
             if ui_logged_out:
-                dom_message = (
-                    "Element a.loggedout-only is present in DOM, indicating Login or Register button still in masthead."
-                )
+                dom_message = "Element a.loggedout-only is present in DOM, indicating Log in or Register button still in masthead."
             else:
                 dom_message = "Element a.loggedout-only is *not* present in DOM."
             user_info = self.api_get("users/current")
@@ -779,11 +777,11 @@ class NavigatesGalaxy(HasDriver):
 
         if ext is not None:
             self.wait_for_selector_visible(".upload-extension")
-            self.select2_set_value(".upload-extension", ext)
+            self.select_set_value(".upload-extension", ext)
 
         if genome is not None:
             self.wait_for_selector_visible(".upload-genome")
-            self.select2_set_value(".upload-genome", genome)
+            self.select_set_value(".upload-genome", genome)
 
         if deferred is not None:
             upload = self.components.upload
@@ -806,20 +804,14 @@ class NavigatesGalaxy(HasDriver):
         self.components.upload.tab(tab="composite").wait_for_and_click()
         self.upload_set_footer_extension(ext, tab_id="composite")
 
-        table = self.components.upload.composite.table().wait_for_visible()
-        source_select_buttons = table.find_elements(self.by.CSS_SELECTOR, "div.dropdown button.btn")
-        paste_buttons = table.find_elements(
-            self.by.CSS_SELECTOR, ".upload-source .dropdown-menu .dropdown-item .fa-edit"
-        )
-        textareas = table.find_elements(self.by.CSS_SELECTOR, "div.upload-text-column textarea.upload-text-content")
-
         for i in range(len(paste_content)):
-            source_select_buttons[i].click()
-            paste_buttons[i].click()
-            textareas[i].send_keys(paste_content[i])
+            self.components.upload.source_button(n=i).wait_for_and_click()
+            self.components.upload.paste_option(n=i).wait_for_and_click()
+            textarea = self.components.upload.paste_content(n=i).wait_for_visible()
+            textarea.send_keys(paste_content[i])
 
         self.upload_start(tab_id="composite")
-        self.components.upload.composite.close.wait_for_and_click()
+        self.components.upload.composite_close_button.wait_for_and_click()
 
     def upload_list(self, test_paths, name="test", ext=None, genome=None, hide_source_items=True):
         self._collection_upload_start(test_paths, ext, genome, "List")
@@ -879,19 +871,19 @@ class NavigatesGalaxy(HasDriver):
         if ext is not None:
             selector = f"div#{tab_id} .upload-footer-extension"
             self.wait_for_selector_visible(selector)
-            self.select2_set_value(selector, ext)
+            self.select_set_value(selector, ext)
 
     @retry_during_transitions
     def upload_set_footer_genome(self, genome, tab_id="regular"):
         if genome is not None:
             selector = f"div#{tab_id} .upload-footer-genome"
             self.wait_for_selector_visible(selector)
-            self.select2_set_value(selector, genome)
+            self.select_set_value(selector, genome)
 
     @retry_during_transitions
     def upload_set_collection_type(self, collection_type):
         self.wait_for_selector_visible(".upload-footer-collection-type")
-        self.select2_set_value(".upload-footer-collection-type", collection_type)
+        self.select_set_value(".upload-footer-collection-type", collection_type)
 
     def upload_start(self, tab_id="regular"):
         self.wait_for_and_click_selector(f"div#{tab_id} button#btn-start")
@@ -932,15 +924,14 @@ class NavigatesGalaxy(HasDriver):
     def upload_rule_build(self):
         self.upload_build(tab="rule-based")
 
+    def upload_rule_dataset_dialog(self):
+        upload = self.components.upload
+        upload.rule_dataset_dialog.wait_for_and_click()
+
     def upload_rule_set_data_type(self, type_description):
         upload = self.components.upload
         data_type_element = upload.rule_select_data_type.wait_for_visible()
-        self.select2_set_value(data_type_element, type_description)
-
-    def upload_rule_set_input_type(self, input_description):
-        upload = self.components.upload
-        input_type_element = upload.rule_select_input_type.wait_for_visible()
-        self.select2_set_value(input_type_element, input_description)
+        self.select_set_value(data_type_element, type_description)
 
     def upload_rule_set_dataset(self, row=1):
         upload = self.components.upload
@@ -1389,7 +1380,13 @@ class NavigatesGalaxy(HasDriver):
         return columns[column_index].text
 
     def workflow_index_click_search(self):
-        return self.wait_for_and_click_selector("#workflow-search")
+        return self.wait_for_and_click_selector(
+            '.workflows-list input.search-query[data-description="filter text input"]'
+        )
+
+    def workflow_index_get_current_filter(self):
+        filter_element = self.components.workflows.search_box.wait_for_and_click()
+        return filter_element.get_attribute("value")
 
     def workflow_index_search_for(self, search_term=None):
         return self._inline_search_for(
@@ -1493,12 +1490,13 @@ class NavigatesGalaxy(HasDriver):
         self.workflow_index_open()
         self.workflow_index_search_for(name)
         self.workflow_click_option(".workflow-run")
+        self.sleep_for(self.wait_types.UX_RENDER)
 
     def workflow_run_specify_inputs(self, inputs: Dict[str, Any]):
         workflow_run = self.components.workflow_run
         for label, value in inputs.items():
             input_div_element = workflow_run.input_data_div(label=label).wait_for_visible()
-            self.select2_set_value(input_div_element, "%d: " % value["hid"])
+            self.select_set_value(input_div_element, "%d: " % value["hid"])
 
     def workflow_run_submit(self):
         self.components.workflow_run.run_workflow.wait_for_and_click()
@@ -1596,8 +1594,10 @@ class NavigatesGalaxy(HasDriver):
         div_element = self.tool_parameter_div(expanded_parameter_id)
         assert div_element
         if expected_type in ["select", "data", "data_collection"]:
-            div_selector = f"div.ui-form-element[id$='form-element-{expanded_parameter_id}']"
-            self.select2_set_value(div_selector, value)
+            select_field = self.components.tool_form.parameter_data_select(
+                parameter=expanded_parameter_id
+            ).wait_for_visible()
+            self.select_set_value(select_field, value)
         else:
             input_element = div_element.find_element(By.CSS_SELECTOR, "input")
             # Clear default value
@@ -1917,7 +1917,7 @@ class NavigatesGalaxy(HasDriver):
         try:
             self.components.masthead.logged_out_only.wait_for_visible()
         except SeleniumTimeoutException as e:
-            message = "Clicked logout button but waiting for 'Login or Registration' button failed, perhaps the logout button was clicked before the handler was setup?"
+            message = "Clicked logout button but waiting for 'Log in or Registration' button failed, perhaps the logout button was clicked before the handler was setup?"
             raise self.prepend_timeout_message(e, message)
         assert (
             not self.is_logged_in()
@@ -2034,7 +2034,7 @@ class NavigatesGalaxy(HasDriver):
 
     def assert_message(self, element, contains=None):
         if contains is not None:
-            if type(element) == list:
+            if isinstance(element, list):
                 assert any(
                     contains in el.text for el in element
                 ), f"{contains} was not found in {[el.text for el in element]}"
@@ -2123,11 +2123,27 @@ class NavigatesGalaxy(HasDriver):
         else:
             container_elem = container_selector_or_elem
         container_elem.click()
-        text_input = container_elem.find_element(By.CSS_SELECTOR, "input[class='multiselect__input']")
-        text_input.send_keys(value)
-        self.send_enter(text_input)
-        if multiple:
-            self.send_escape(text_input)
+        try:
+            text_input = container_elem.find_element(By.CSS_SELECTOR, "input[class='multiselect__input']")
+        except Exception:
+            text_input = None
+        if text_input:
+            text_input.send_keys(value)
+            self.send_enter(text_input)
+            if multiple:
+                self.send_escape(text_input)
+        else:
+            self.sleep_for(WAIT_TYPES.UX_RENDER)
+            elems = container_elem.find_elements(By.CSS_SELECTOR, "[role='option'] .multiselect__option span")
+            discovered_options = []
+            found = False
+            for elem in elems:
+                elem_value = elem.text
+                discovered_options.append(elem_value)
+                if elem_value == value:
+                    elem.click()
+                    found = True
+            assert found, f"Failed to find specified select value [{value}] in browser options [{discovered_options}]"
 
     def select2_set_value(self, container_selector_or_elem, value, with_click=True, clear_value=False):
         # There are two hacky was to select things from the select2 widget -

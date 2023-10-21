@@ -13,6 +13,7 @@ from . import (
     BaseFilesSource,
     FilesSourceOptions,
     FilesSourceProperties,
+    PluginKind,
 )
 
 log = logging.getLogger(__name__)
@@ -26,6 +27,7 @@ class DRSFilesSourceProperties(FilesSourceProperties, total=False):
 
 class DRSFilesSource(BaseFilesSource):
     plugin_type = "drs"
+    plugin_kind = PluginKind.drs
 
     def __init__(self, **kwd: Unpack[FilesSourceProperties]):
         kwds: FilesSourceProperties = dict(
@@ -42,10 +44,21 @@ class DRSFilesSource(BaseFilesSource):
         self._force_http = props.pop("force_http", False)
         self._props = props
 
+    @property
+    def _allowlist(self):
+        return self._file_sources_config.fetch_url_allowlist
+
     def _realize_to(self, source_path, native_path, user_context=None, opts: Optional[FilesSourceOptions] = None):
         props = self._serialization_props(user_context)
         headers = props.pop("http_headers", {}) or {}
-        fetch_drs_to_file(source_path, native_path, user_context, headers=headers, force_http=self._force_http)
+        fetch_drs_to_file(
+            source_path,
+            native_path,
+            user_context,
+            fetch_url_allowlist=self._allowlist,
+            headers=headers,
+            force_http=self._force_http,
+        )
 
     def _write_from(self, target_path, native_path, user_context=None, opts: Optional[FilesSourceOptions] = None):
         raise NotImplementedError()

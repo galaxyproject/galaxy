@@ -5,6 +5,7 @@ include = '\.pyi?$'
 extend-exclude = '''
 ^/(
   | packages
+  | lib/tool_shed/test/test_data/repos
 )/
 '''
 
@@ -23,8 +24,13 @@ repository = "https://github.com/galaxyproject/galaxy/"
 documentation = "https://docs.galaxyproject.org/"
 
 [[tool.poetry.source]]
+name = "PyPI"
+priority = "default"
+
+[[tool.poetry.source]]
 name = "galaxyproject"
 url = "https://wheels.galaxyproject.org/simple"
+priority = "primary"
 
 [tool.poetry.dependencies]
 a2wsgi = "*"
@@ -49,12 +55,14 @@ conda-package-streaming = "*"
 dictobj = "*"
 dnspython = "*"
 docutils = "!=0.17, !=0.17.1"
+dparse = "*"
 edam-ontology = "*"
 fastapi = ">=0.71.0, !=0.89.0, <0.99"  # https://github.com/tiangolo/fastapi/issues/4041 https://github.com/tiangolo/fastapi/issues/5861
 fastapi-utils = "*"
 fs = "*"
 future = "*"
 galaxy_sequence_utils = "*"
+graphene-sqlalchemy = "3.0.0b3"  # need a beta release to be compat. with starlette plugin
 gravity = ">=1.0"
 gunicorn = "*"
 gxformat2 = "*"
@@ -62,7 +70,7 @@ h5grove = ">=1.2.1"
 h5py = "*"
 importlib-metadata = "<5"  # Work around https://github.com/celery/kombu/issues/1600
 importlib-resources = "*"
-isa-rwval = "*"
+isa-rwval = ">=0.10.10"
 kombu = "*"
 lagom = "*"
 Mako = "*"
@@ -93,6 +101,7 @@ python-magic = "*"
 python-multipart = "*"  # required to support form parsing in FastAPI/Starlette
 PyYAML = "*"
 refgenconf = ">=0.12.0"
+regex = "*"
 requests = "*"
 rocrate = "*"
 Routes = "*"
@@ -104,6 +113,7 @@ sqlitedict = "*"
 sqlparse = "*"
 starlette = "*"
 starlette-context = "*"
+starlette-graphene3 = "*"
 svgwrite = "*"
 tifffile = "*"
 tuswsgi = "*"
@@ -130,6 +140,7 @@ lxml = "!=4.2.2"
 markdown-it-reporter = "*"
 myst-parser = "*"
 pkce = "*"
+playwright = "*"
 pytest = "*"
 pytest-asyncio = "*"
 pytest-celery = "*"
@@ -139,18 +150,35 @@ pytest-httpserver = "*"
 python-irodsclient = "!=1.1.2"  # https://github.com/irods/python-irodsclient/issues/356
 pytest-json-report = "*"
 pytest-mock = "*"
+pytest-playwright = "*"
 pytest-postgresql = "!=3.0.0"  # https://github.com/ClearcodeHQ/pytest-postgresql/issues/426
 pytest-shard = "*"
 responses = "*"
 selenium = "*"
 seletools = "*"
 Sphinx = ">=4.0"  # support docutils 0.17
-sphinx_rtd_theme = ">=1.0.0"
+sphinx-rtd-theme = ">=1.0.0,<2"  # https://github.com/python-poetry/poetry/issues/8194
 statsd = "*"
 testfixtures = "*"
 tuspy = "*"
 twill = "*"
 watchdog = "*"
+
+[tool.poetry.group.typecheck.dependencies]
+mypy = "*"
+pydantic = "<2"  # for pydantic.mypy plugin
+types-bleach = "*"
+types-boto = "*"
+types-contextvars = "*"
+types-dataclasses = "*"
+types-docutils = "*"
+types-Markdown = "*"
+types-paramiko = "*"
+types-pkg-resources = "*"
+types-python-dateutil = "*"
+types-PyYAML = "*"
+types-requests = "*"
+types-six = "*"
 
 [tool.ruff]
 select = ["E", "F", "B", "UP"]
@@ -178,3 +206,5 @@ relative-imports-order = "closest-to-furthest"
 # Don't check some pyupgrade rules on generated files
 "lib/galaxy/schema/bco/*" = ["UP006", "UP007"]
 "lib/galaxy/schema/drs/*" = ["UP006", "UP007"]
+"lib/tool_shed_client/schema/trs.py" = ["UP006", "UP007"]
+"lib/tool_shed_client/schema/trs_service_info.py" = ["UP006", "UP007"]

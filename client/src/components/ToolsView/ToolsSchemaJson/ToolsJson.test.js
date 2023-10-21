@@ -6,6 +6,7 @@ import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 
 import testToolsListResponse from "../testData/toolsList";
+import testToolsListInPanelResponse from "../testData/toolsListInPanel";
 import ToolsJson from "./ToolsJson";
 
 const localVue = getLocalVue();
@@ -17,13 +18,16 @@ describe("ToolSchemaJson/ToolsView.vue", () => {
 
     beforeEach(async () => {
         axiosMock = new MockAdapter(axios);
-        axiosMock.onGet("/api/tools?tool_help=True").reply(200, testToolsListResponse);
+        axiosMock.onGet("/api/tool_panel?in_panel=False&tool_help=True").reply(200, testToolsListResponse);
+        axiosMock.onGet("/api/tool_panel").reply(200, testToolsListInPanelResponse);
         wrapper = shallowMount(ToolsJson, { localVue });
         await flushPromises();
     });
 
     it("schema.org script element is created", async () => {
-        const tools = wrapper.vm.createToolsJson(testToolsListResponse);
+        const toolsList = testToolsListResponse.tools;
+        const toolsListInPanel = testToolsListInPanelResponse.default;
+        const tools = wrapper.vm.createToolsJson(toolsList, toolsListInPanel);
         const schemaElement = document.getElementById("schema-json");
         const schemaText = JSON.parse(schemaElement.text);
         expect(tools["@graph"].length === 5).toBeTruthy();

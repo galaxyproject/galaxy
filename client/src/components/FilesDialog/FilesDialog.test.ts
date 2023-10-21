@@ -1,10 +1,10 @@
 import { createLocalVue, shallowMount, Wrapper } from "@vue/test-utils";
-import BootstrapVue, { BButton } from "bootstrap-vue";
 import flushPromises from "flush-promises";
 
 import { selectionStates } from "@/components/SelectionDialog/selectionStates";
 import { mockFetcher } from "@/schema/__mocks__";
 
+import { BaseRecordItem } from "./model";
 import {
     directory1RecursiveResponse,
     directory1Response,
@@ -12,8 +12,6 @@ import {
     directoryId,
     ftpId,
     pdbResponse,
-    RemoteDirectory,
-    RemoteFile,
     RemoteFilesList,
     rootId,
     rootResponse,
@@ -30,60 +28,54 @@ import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
 jest.mock("app");
 jest.mock("@/schema");
 
+jest.mock("@/composables/config", () => ({
+    useConfig: jest.fn(() => ({
+        config: { ftp_upload_site: "Test ftp upload site" },
+        isConfigLoaded: true,
+    })),
+}));
+
 interface RemoteFilesParams {
     target: string;
     recursive: boolean;
+    writeable?: boolean;
 }
 
-interface RemoteFilesResponse {
-    data?: RemoteFilesList;
-}
-
-interface RowElement extends Element {
-    id: string;
-    label: string;
-    details: string;
-    isLeaf: boolean;
-    url: string;
-    labelTitle: string;
+interface RowElement extends BaseRecordItem, Element {
     _rowVariant: string;
 }
 
 function paramsToKey(params: RemoteFilesParams) {
+    params.writeable = false;
     return JSON.stringify(params);
 }
 
-const mockedOkApiRoutesMap = new Map<string, RemoteFilesResponse>([
-    [paramsToKey({ target: "gxfiles://pdb-gzip", recursive: false }), { data: pdbResponse }],
-    [paramsToKey({ target: "gxfiles://pdb-gzip/directory1", recursive: false }), { data: directory1Response }],
-    [paramsToKey({ target: "gxfiles://pdb-gzip/directory1", recursive: true }), { data: directory1RecursiveResponse }],
-    [paramsToKey({ target: "gxfiles://pdb-gzip/directory2", recursive: true }), { data: directory2RecursiveResponse }],
-    [
-        paramsToKey({ target: "gxfiles://pdb-gzip/directory1/subdirectory1", recursive: false }),
-        { data: subsubdirectoryResponse },
-    ],
+const mockedOkApiRoutesMap = new Map<string, RemoteFilesList>([
+    [paramsToKey({ target: "gxfiles://pdb-gzip", recursive: false }), pdbResponse],
+    [paramsToKey({ target: "gxfiles://pdb-gzip/directory1", recursive: false }), directory1Response],
+    [paramsToKey({ target: "gxfiles://pdb-gzip/directory1", recursive: true }), directory1RecursiveResponse],
+    [paramsToKey({ target: "gxfiles://pdb-gzip/directory2", recursive: true }), directory2RecursiveResponse],
+    [paramsToKey({ target: "gxfiles://pdb-gzip/directory1/subdirectory1", recursive: false }), subsubdirectoryResponse],
 ]);
 
-const mockedErrorApiRoutesMap = new Map<string, RemoteFilesResponse>([
-    [paramsToKey({ target: "gxfiles://empty-dir", recursive: false }), {}],
+const mockedErrorApiRoutesMap = new Map<string, RemoteFilesList>([
+    [paramsToKey({ target: "gxfiles://empty-dir", recursive: false }), []],
 ]);
 
-function getMockResponse(param: RemoteFilesParams) {
+function getMockedBrowseResponse(param: RemoteFilesParams) {
     const responseKey = paramsToKey(param);
     if (mockedErrorApiRoutesMap.has(responseKey)) {
         throw Error(someErrorText);
     }
-    return mockedOkApiRoutesMap.get(responseKey);
+    const result = mockedOkApiRoutesMap.get(responseKey);
+    return { data: result };
 }
 
 const initComponent = async (props: { multiple: boolean; mode?: string }) => {
     const localVue = createLocalVue();
 
-    localVue.use(BootstrapVue);
-    localVue.component("BBtnStub", BButton);
-
     mockFetcher.path("/api/remote_files/plugins").method("get").mock({ data: rootResponse });
-    mockFetcher.path("/api/remote_files").method("get").mock(getMockResponse);
+    mockFetcher.path("/api/remote_files").method("get").mock(getMockedBrowseResponse);
 
     const wrapper = shallowMount(FilesDialog, {
         localVue,
@@ -120,159 +112,120 @@ describe("FilesDialog, file mode", () => {
         utils = new Utils(wrapper);
     });
 
-    it("should show the same number of items", async () => {
-        await utils.open_root_folder();
-        utils.assertShownItems(pdbResponse.length);
+    it("should show the number of items expected", async () => {
+        await utils.openRootDirectory();
+
+        expect(utils.getRenderedRows().length).toBe(pdbResponse.length);
     });
 
-    it("select files", async () => {
-        const applyForEachFile = (func: { (item: RowElement): void }) => {
-            utils.getRenderedFiles().forEach((item: RowElement) => {
-                func(item);
-            });
-        };
+    it("should allow selecting files and update OK button accordingly", async () => {
+        await utils.openRootDirectory();
+        const filesInResponse = pdbResponse.filter((item) => item.class === "File");
 
-        await utils.open_root_folder();
-        const files = pdbResponse.filter((item) => item.class === "File");
+        utils.expectOkButtonDisabled();
 
-        // assert that OK button is disabled
-        expect(wrapper.vm.hasValue).toBe(false);
+        expect(utils.getRenderedFiles().length).toBe(filesInResponse.length);
 
-        // assert number of rendered files
-        utils.assertShownItems(files.length, true);
+        // select each file
+        await utils.applyToEachFile((item) => utils.clickOn(item));
 
-        // select each rendered file
-        applyForEachFile((item: RowElement) => utils.clickOn(item));
+        utils.expectNumberOfSelectedItemsToBe(filesInResponse.length);
 
-        await flushPromises();
-        // assert the number of selected files
-        expect(wrapper.vm.model.count()).toBe(files.length);
-
-        // assert that re-rendered files are selected
-        applyForEachFile((item) => {
+        await utils.applyToEachFile((item) => {
             expect(item._rowVariant).toBe(selectionStates.selected);
-            wrapper.vm.model.exists(item.id);
         });
-        // assert that OK button is active
-        expect(wrapper.vm.hasValue).toBe(true);
+
+        utils.expectOkButtonEnabled();
 
         // unselect each file
-        applyForEachFile((item: RowElement) => utils.clickOn(item));
+        await utils.applyToEachFile((item) => utils.clickOn(item));
 
-        // assert that OK button is disabled
-        expect(wrapper.vm.hasValue).toBe(false);
+        utils.expectOkButtonDisabled();
     });
 
-    it("select directory", async () => {
-        await utils.open_root_folder();
+    it("should select all files contained in a directory when selecting the directory and update selection status accordingly", async () => {
+        const targetDirectoryId = directoryId;
+        await utils.openRootDirectory();
 
         // select directory
-        await utils.clickOn(utils.getRenderedDirectory(directoryId));
-
-        const response_files: RemoteFile[] = [];
-        const response_directories: RemoteDirectory[] = [];
-        // separate files and directories from response
-        directory1RecursiveResponse.forEach((item) => {
-            item.class === "File"
-                ? response_files.push(item as RemoteFile)
-                : response_directories.push(item as RemoteDirectory);
-        });
-
-        expect(wrapper.vm.model.count()).toBe(response_files.length);
-
-        // +1 because we additionally selected the "directory1" dir
-        expect(wrapper.vm.selectedDirectories.length).toBe(response_directories.length + 1);
+        await utils.clickOn(utils.findRenderedDirectory(targetDirectoryId));
 
         // go inside directory1
-        await utils.openDirectory(directoryId);
+        await utils.openDirectoryById(targetDirectoryId);
 
-        // select icon button should be active
-        expect(wrapper.vm.selectAllIcon).toBe(selectionStates.selected);
+        utils.expectSelectAllIconStatusToBe(selectionStates.selected);
 
         //every item should be selected
-        utils.assertAllRenderedItemsSelected();
+        utils.expectAllRenderedItemsSelected();
 
-        const file = wrapper.vm.items.find((item: RowElement) => item.isLeaf);
-
-        // unlesect random file
-        await utils.clickOn(file);
+        // unselect first file
+        const firstFile = utils.findFirstFile();
+        await utils.clickOn(firstFile);
 
         await utils.navigateBack();
-        // ensure that it has "mixed" icon
-        expect(utils.getRenderedDirectory(directoryId)._rowVariant).toBe(selectionStates.mixed);
+
+        // ensure that it has "mixed" status icon
+        const directory = utils.findRenderedDirectory(targetDirectoryId);
+        expect(directory._rowVariant).toBe(selectionStates.mixed);
     });
 
-    // Unselect subdirectory1
-    it("unselect sub-directory", async () => {
-        await utils.open_root_folder();
+    it("should be able to unselect a sub-directory keeping the rest selected", async () => {
+        await utils.openRootDirectory();
         // select directory1
-        await utils.clickOn(utils.getRenderedDirectory(directoryId));
+        await utils.clickOn(utils.findRenderedDirectory(directoryId));
         //go inside subDirectoryId
-        await utils.openDirectory(directoryId);
-        await utils.openDirectory(subDirectoryId);
+        await utils.openDirectoryById(directoryId);
+        await utils.openDirectoryById(subDirectoryId);
         // unselect subfolder
-        await utils.clickOn(utils.getRenderedDirectory(subSubDirectoryId));
+        await utils.clickOn(utils.findRenderedDirectory(subSubDirectoryId));
         // directory should be unselected
-        expect(utils.getRenderedDirectory(subSubDirectoryId)._rowVariant).toBe(selectionStates.unselected);
+        expect(utils.findRenderedDirectory(subSubDirectoryId)._rowVariant).toBe(selectionStates.unselected);
         // selectAllIcon should be unselected
-        expect(wrapper.vm.selectAllIcon).toBe(selectionStates.unselected);
+        utils.expectSelectAllIconStatusToBe(selectionStates.unselected);
         await utils.navigateBack();
         await utils.navigateBack();
-        await flushPromises();
-        expect(utils.getRenderedDirectory(directoryId)._rowVariant).toBe(selectionStates.mixed);
+        expect(utils.findRenderedDirectory(directoryId)._rowVariant).toBe(selectionStates.mixed);
     });
 
     it("should select all on 'toggleSelectAll' event", async () => {
-        await utils.open_root_folder();
-        // selectAll button was pressed
-        utils.getTable().$emit("toggleSelectAll");
-        await flushPromises();
-        utils.assertAllRenderedItemsSelected();
+        await utils.openRootDirectory();
+        utils.selectAll();
+        utils.expectAllRenderedItemsSelected();
         // open directory1
-        await utils.openDirectory(directoryId);
-        utils.assertAllRenderedItemsSelected();
+        await utils.openDirectoryById(directoryId);
+        utils.expectAllRenderedItemsSelected();
         await utils.navigateBack();
-        utils.assertAllRenderedItemsSelected();
+        utils.expectAllRenderedItemsSelected();
         await utils.navigateBack();
-        const rootNode = utils.getRenderedDirectory(rootId);
+        const rootNode = utils.findRenderedDirectory(rootId);
         expect(rootNode._rowVariant).toBe(selectionStates.selected);
     });
 
     it("should show ftp helper only in ftp directory", async () => {
         // open some other directory than ftp
-        await utils.open_root_folder();
+        await utils.openRootDirectory();
         // check that ftp helper is not visible
-        expect(wrapper.vm.showFTPHelper).toBe(false);
         expect(wrapper.find("#helper").exists()).toBe(false);
+
         // back to root folder
         await utils.navigateBack();
 
         // open ftp directory
-        await utils.openDirectory(ftpId);
+        await utils.openDirectoryById(ftpId);
         // check that ftp helper is visible
-        expect(wrapper.vm.showFTPHelper).toBe(true);
         expect(wrapper.find("#helper").exists()).toBe(true);
     });
 
-    it("should show loading error and can return back", async () => {
-        expect(wrapper.vm.errorMessage).toBeNull();
+    it("should show loading error and can return back when there is an error", async () => {
+        utils.expectNoErrorMessage();
 
         // open directory with error
-        await utils.openDirectory("empty-dir");
-        // assert that error message is set and showed
-        expect(wrapper.vm.errorMessage).toBe(someErrorText);
-        expect(wrapper.html()).toContain(someErrorText);
-
-        // assert that OK button is disabled
-        expect(wrapper.vm.hasValue).toBe(false);
+        await utils.openDirectoryById("empty-dir");
+        utils.expectErrorMessage();
 
         // back to the root folder
-        await wrapper.find("#back-btn").trigger("click");
-        await flushPromises();
-        expect(wrapper.vm.items.length).toBe(rootResponse.length);
-
-        // assert that OK button is disabled
-        expect(wrapper.vm.hasValue).toBe(false);
+        await utils.navigateBack();
+        expect(utils.getRenderedRows().length).toBe(rootResponse.length);
     });
 });
 
@@ -285,62 +238,40 @@ describe("FilesDialog, directory mode", () => {
         utils = new Utils(wrapper);
     });
 
-    it("should render directories", async () => {
-        const assertOnlyDirectoriesRendered = () =>
-            wrapper.vm.items.forEach((item: RowElement) => expect(item.isLeaf).toBe(false));
+    it("should render directories only", async () => {
+        const expectOnlyDirectoriesRendered = () =>
+            utils.getRenderedRows().forEach((item) => expect(item.isLeaf).toBe(false));
 
-        await utils.open_root_folder(false);
+        await utils.openRootDirectory();
         // rendered files should be directories
-        assertOnlyDirectoriesRendered();
+        expectOnlyDirectoriesRendered();
         // check subdirectories
-        await utils.openDirectory(directoryId);
-        assertOnlyDirectoriesRendered();
+        await utils.openDirectoryById(directoryId);
+        expectOnlyDirectoriesRendered();
     });
 
-    it("should select folders", async () => {
-        const btn = wrapper.find("#ok-btn");
+    it("should allow to select folders by navigating to them", async () => {
+        utils.expectOkButtonDisabled();
 
-        expect(btn.attributes().disabled).toBe("disabled");
-        await utils.open_root_folder(false);
-        const folder = utils.getRenderedDirectory(directoryId);
-        await utils.getTable().$emit("open", folder);
-        await flushPromises();
+        await utils.openRootDirectory();
+        utils.openDirectoryById(directoryId);
 
-        const currentDirectory = wrapper.vm.currentDirectory;
-        expect(currentDirectory.id).toBe(folder.id);
-
-        // make sure that disabled attribute is absent
-        expect(btn.attributes().disabled).toBe(undefined);
-        wrapper.vm.selectLeaf(currentDirectory);
-        await flushPromises();
-
-        //should close modal
-        expect(wrapper.vm.modalShow).toBe(false);
+        utils.expectOkButtonEnabled();
     });
 
-    it("should show loading error and can return back", async () => {
-        expect(wrapper.vm.errorMessage).toBeNull();
+    it("should show loading error and can return back when there is an error", async () => {
+        utils.expectNoErrorMessage();
 
         // open directory with error
-        await utils.openDirectory("empty-dir");
-        // assert that error message is set and showed
-        expect(wrapper.vm.errorMessage).toBe(someErrorText);
-        expect(wrapper.html()).toContain(someErrorText);
-
-        // assert that OK button is disabled
-        expect(wrapper.vm.hasValue).toBe(false);
+        await utils.openDirectoryById("empty-dir");
+        utils.expectErrorMessage();
 
         // back to the root folder
-        await wrapper.find("#back-btn").trigger("click");
-        await flushPromises();
-        expect(wrapper.vm.items.length).toBe(rootResponse.length);
-
-        // assert that OK button is disabled
-        expect(wrapper.vm.hasValue).toBe(false);
+        await utils.navigateBack();
+        expect(utils.getRenderedRows().length).toBe(rootResponse.length);
     });
 });
 
-/** Util methods **/
 class Utils {
     wrapper: Wrapper<any>;
 
@@ -348,61 +279,115 @@ class Utils {
         this.wrapper = wrapper;
     }
 
-    async open_root_folder(isFileMode = true) {
+    async openRootDirectory() {
         expect(this.wrapper.findComponent(SelectionDialog).exists()).toBe(true);
-        this.assertShownItems(rootResponse.length);
-        if (isFileMode) {
-            // find desired rootElement
-            const rootElement = this.wrapper.vm.items.find((item: RowElement) => rootId === item.id);
-            // open root folder with rootId (since root folder cannot be selected "click" should open it)
-            await this.clickOn(rootElement);
-        } else {
-            await this.openDirectory(rootId);
-        }
+        expect(this.getRenderedRows().length).toBe(rootResponse.length);
+        await this.openDirectoryById(rootId);
     }
 
     async navigateBack() {
-        this.wrapper.vm.load();
+        const backBtn = this.getBackButton();
+        await backBtn.trigger("click");
         await flushPromises();
     }
 
-    assertAllRenderedItemsSelected() {
-        this.wrapper.vm.items.forEach((item: RowElement) => {
-            // assert style/icon of selected field
-            expect(item._rowVariant).toBe(selectionStates.selected);
-            // selected items are selected
-            expect(
-                item.isLeaf
-                    ? this.wrapper.vm.model.exists(item.id)
-                    : this.wrapper.vm.selectedDirectories.some(({ id }: RowElement) => id === item.id)
-            ).toBe(true);
-        });
+    async openDirectoryById(directoryId: string) {
+        const directory = this.findRenderedDirectory(directoryId);
+        return this.openDirectory(directory);
     }
 
-    async openDirectory(directoryId: string) {
-        this.getTable().$emit("open", this.getRenderedDirectory(directoryId));
+    async openDirectory(directory: RowElement) {
+        this.getTable().vm.$emit("open", directory);
         await flushPromises();
     }
 
     async clickOn(element: Element) {
-        this.getTable().$emit("clicked", element);
+        this.getTable().vm.$emit("clicked", element);
         await flushPromises();
     }
 
-    getRenderedDirectory(directoryId: string): RowElement {
-        return this.wrapper.vm.items.find(({ id }: RowElement) => directoryId === id);
+    async selectAll() {
+        this.getTable().vm.$emit("toggleSelectAll");
+        await flushPromises();
+    }
+
+    findRenderedDirectory(directoryId: string): RowElement {
+        const directory = this.getRenderedRows().find(({ id }: RowElement) => directoryId === id);
+        if (!directory) {
+            throw new Error(`Directory with id ${directoryId} not found`);
+        }
+        return directory;
     }
 
     getRenderedFiles(): RowElement[] {
-        return this.wrapper.vm.items.filter((item: RowElement) => item.isLeaf);
+        return this.getRenderedRows().filter((item: RowElement) => item.isLeaf);
     }
 
-    getTable() {
-        return this.wrapper.findComponent(DataDialogTable).vm;
+    findFirstFile(): RowElement {
+        const file = this.getRenderedFiles()[0];
+        if (!file) {
+            throw new Error("File not found");
+        }
+        return file;
     }
 
-    assertShownItems(length: number, filesOnly = false) {
-        const shownItems = filesOnly ? this.getRenderedFiles() : this.wrapper.vm.items;
-        expect(shownItems.length).toBe(length);
+    async applyToEachFile(func: (item: RowElement) => void) {
+        this.getRenderedFiles().forEach((item) => {
+            func(item);
+        });
+        await flushPromises();
+    }
+
+    getTable(): any {
+        return this.wrapper.findComponent(DataDialogTable);
+    }
+
+    getButtonById(id: string): any {
+        const button = this.wrapper.find(id);
+        expect(button.exists()).toBe(true);
+        return button;
+    }
+
+    getOkButton(): any {
+        return this.getButtonById("#ok-btn");
+    }
+
+    getBackButton(): any {
+        return this.getButtonById("#back-btn");
+    }
+
+    getRenderedRows(): RowElement[] {
+        return this.getTable().props("items") as RowElement[];
+    }
+
+    expectAllRenderedItemsSelected() {
+        this.getRenderedRows().forEach((item) => {
+            expect(item._rowVariant).toBe(selectionStates.selected);
+        });
+    }
+
+    expectNumberOfSelectedItemsToBe(number: number) {
+        const selectedItems = this.getRenderedRows().filter((item) => item._rowVariant === selectionStates.selected);
+        expect(selectedItems.length).toBe(number);
+    }
+
+    expectOkButtonDisabled() {
+        expect(this.getOkButton().attributes("disabled")).toBeTruthy();
+    }
+
+    expectOkButtonEnabled() {
+        expect(this.getOkButton().attributes("disabled")).toBeFalsy();
+    }
+
+    expectSelectAllIconStatusToBe(status: string) {
+        expect(this.getTable().attributes("selectallicon")).toBe(status);
+    }
+
+    expectNoErrorMessage() {
+        expect(this.wrapper.html()).not.toContain(someErrorText);
+    }
+
+    expectErrorMessage() {
+        expect(this.wrapper.html()).toContain(someErrorText);
     }
 }

@@ -4,16 +4,7 @@ import { faListAlt } from "@fortawesome/free-regular-svg-icons";
 import { faArrowDown, faColumns, faSignInAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useInfiniteScroll } from "@vueuse/core";
-import {
-    BBadge,
-    BButton,
-    BButtonGroup,
-    BFormGroup,
-    BFormInput,
-    BListGroup,
-    BListGroupItem,
-    BModal,
-} from "bootstrap-vue";
+import { BBadge, BButton, BButtonGroup, BFormGroup, BListGroup, BListGroupItem, BModal } from "bootstrap-vue";
 import isEqual from "lodash.isequal";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, onUnmounted, type PropType, type Ref, ref, watch } from "vue";
@@ -22,19 +13,29 @@ import { useRouter } from "vue-router/composables";
 import type { components } from "@/schema";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
-import Filtering, { contains, expandNameTag } from "@/utils/filtering";
+import Filtering, { compare, contains, expandNameTag, toDate } from "@/utils/filtering";
 import localize from "@/utils/localization";
 
+import FilterMenu from "@/components/Common/FilterMenu.vue";
 import Heading from "@/components/Common/Heading.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 import UtcDate from "@/components/UtcDate.vue";
 
 const validFilters = {
-    name: contains("name"),
-    tag: contains("tags", "tag", expandNameTag),
-    annotation: contains("annotation"),
+    name: { placeholder: "name", type: String, handler: contains("name"), menuItem: true },
+    tag: { placeholder: "tag", type: String, handler: contains("tags", "tag", expandNameTag), menuItem: true },
+    annotation: { placeholder: "annotation", type: String, handler: contains("annotation"), menuItem: true },
+    update_time: {
+        placeholder: "updated time",
+        type: Date,
+        handler: compare("update_time", "le", toDate),
+        isRangeInput: true,
+        menuItem: true,
+    },
+    update_time_ge: { handler: compare("update_time", "ge", toDate), menuItem: false },
+    update_time_le: { handler: compare("update_time", "le", toDate), menuItem: false },
 };
-const HistoriesFilters = new Filtering(validFilters, false);
+const HistoriesFilters = new Filtering(validFilters);
 
 type AdditionalOptions = "set-current" | "multi" | "center";
 type HistorySummary = components["schemas"]["HistorySummary"];
@@ -60,7 +61,7 @@ const propShowModal = computed({
     get: () => {
         return props.showModal;
     },
-    set: (val) => {
+    set: (val: boolean) => {
         emit("update:show-modal", val);
     },
 });
@@ -68,6 +69,7 @@ const propShowModal = computed({
 const selectedHistories: Ref<{ id: string }[]> = ref([]);
 const filter = ref("");
 const busy = ref(false);
+const showAdvanced = ref(false);
 const modal: Ref<BModal | null> = ref(null);
 const scrollableDiv: Ref<HTMLElement | null> = ref(null);
 
@@ -87,7 +89,7 @@ onMounted(async () => {
 // retain previously selected histories when you reopen the modal in multi view
 watch(
     () => propShowModal.value,
-    (show) => {
+    (show: boolean) => {
         if (props.multiple && show) {
             selectedHistories.value = [...pinnedHistories.value];
         }
@@ -104,7 +106,7 @@ onUnmounted(() => {
 
 watch(
     () => filter.value,
-    async (newVal, oldVal) => {
+    async (newVal: string, oldVal: string) => {
         if (newVal !== "" && validFilter.value && newVal !== oldVal) {
             await loadMore(true);
         }
@@ -117,7 +119,7 @@ watch(
 const historiesProxy: Ref<HistorySummary[]> = ref([]);
 watch(
     () => props.histories as HistoryDetailed[],
-    (h) => {
+    (h: HistoryDetailed[]) => {
         historiesProxy.value = h.filter(
             (h) => !h.user_id || (!currentUser.value?.isAnonymous && h.user_id === currentUser.value?.id)
         );
@@ -133,7 +135,7 @@ const filtered: Ref<HistorySummary[]> = computed(() => {
         filteredHistories = historiesProxy.value;
     } else {
         const filters = HistoriesFilters.getFiltersForText(filter.value);
-        filteredHistories = historiesProxy.value.filter((history) => {
+        filteredHistories = historiesProxy.value.filter((history: HistorySummary) => {
             if (!HistoriesFilters.testFilters(filters, history)) {
                 return false;
             }
@@ -187,6 +189,10 @@ function setCenterPanelHistory(history: HistorySummary) {
     modal.value?.hide();
 }
 
+function setFilterValue(newFilter: string, newValue: string) {
+    filter.value = HistoriesFilters.setFilterValue(filter.value, newFilter, newValue);
+}
+
 function openInMulti(history: HistorySummary) {
     router.push("/histories/view_multiple");
     historyStore.pinHistory(history.id);
@@ -221,13 +227,20 @@ async function loadMore(noScroll = false) {
             </template>
 
             <BFormGroup :description="localize('Filter histories')">
-                <BFormInput v-model="filter" type="search" debounce="400" :placeholder="localize('Search Filter')" />
+                <FilterMenu
+                    ref="filterMenuRef"
+                    name="Histories"
+                    placeholder="search histories"
+                    :filter-class="HistoriesFilters"
+                    :filter-text.sync="filter"
+                    :loading="busy"
+                    :show-advanced.sync="showAdvanced" />
             </BFormGroup>
 
             <BBadge v-if="filter && !validFilter" class="alert-danger w-100">Search string too short!</BBadge>
             <b-alert v-else-if="!busy && hasNoResults" variant="danger" show>No histories found.</b-alert>
 
-            <div ref="scrollableDiv" class="history-selector-modal-list">
+            <div v-show="!showAdvanced" ref="scrollableDiv" class="history-selector-modal-list">
                 <BListGroup>
                     <BListGroupItem
                         v-for="history in filtered"
@@ -260,7 +273,8 @@ async function loadMore(noScroll = false) {
                             class="my-1"
                             :value="history.tags"
                             :disabled="true"
-                            :max-visible-tags="10" />
+                            :max-visible-tags="10"
+                            @tag-click="setFilterValue('tag', $event)" />
 
                         <div
                             v-if="props.additionalOptions.length > 0"

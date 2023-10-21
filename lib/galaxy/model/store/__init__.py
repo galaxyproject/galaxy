@@ -39,6 +39,7 @@ from rocrate.model.computationalworkflow import (
     WorkflowDescription,
 )
 from rocrate.rocrate import ROCrate
+from sqlalchemy import select
 from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.scoping import scoped_session
 from sqlalchemy.sql import expression
@@ -205,10 +206,10 @@ class SessionlessContext:
     def flush(self) -> None:
         pass
 
-    def add(self, obj: Union[model.DatasetInstance, model.RepresentById]) -> None:
+    def add(self, obj: model.RepresentById) -> None:
         self.objects[obj.__class__][obj.id] = obj
 
-    def query(self, model_class: Type) -> Bunch:
+    def query(self, model_class: model.RepresentById) -> Bunch:
         def find(obj_id):
             return self.objects.get(model_class, {}).get(obj_id) or None
 
@@ -217,6 +218,9 @@ class SessionlessContext:
             return Bunch(first=lambda: next(iter(self.objects.get(model_class, {None: None}))))
 
         return Bunch(find=find, get=find, filter_by=filter_by)
+
+    def get(self, model_class: model.RepresentById, primary_key: Any):  # patch for SQLAlchemy 2.0 compatibility
+        return self.query(model_class).get(primary_key)
 
 
 def replace_metadata_file(
@@ -463,9 +467,8 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 self.dataset_state_serialized = False
 
             if "id" in dataset_attrs and self.import_options.allow_edit and not self.sessionless:
-                dataset_instance: model.DatasetInstance = self.sa_session.query(
-                    getattr(model, dataset_attrs["model_class"])
-                ).get(dataset_attrs["id"])
+                model_class = getattr(model, dataset_attrs["model_class"])
+                dataset_instance: model.DatasetInstance = self.sa_session.get(model_class, dataset_attrs["id"])
                 attributes = [
                     "name",
                     "extension",
@@ -772,7 +775,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 and not self.sessionless
                 and self.import_options.allow_edit
             ):
-                library_folder = self.sa_session.query(model.LibraryFolder).get(library_attrs["id"])
+                library_folder = self.sa_session.get(model.LibraryFolder, library_attrs["id"])
                 import_folder(library_attrs, root_folder=library_folder)
             else:
                 assert self.import_options.allow_library_creation
@@ -835,7 +838,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 dc.element_count = len(elements_attrs)
 
             if "id" in collection_attrs and self.import_options.allow_edit and not self.sessionless:
-                dc = self.sa_session.query(model.DatasetCollection).get(collection_attrs["id"])
+                dc = self.sa_session.get(model.DatasetCollection, collection_attrs["id"])
                 attributes = [
                     "collection_type",
                     "populated_state",
@@ -862,7 +865,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
             if "collection" in collection_attrs:
                 dc = import_collection(collection_attrs["collection"])
                 if "id" in collection_attrs and self.import_options.allow_edit and not self.sessionless:
-                    hdca = self.sa_session.query(model.HistoryDatasetCollectionAssociation).get(collection_attrs["id"])
+                    hdca = self.sa_session.get(model.HistoryDatasetCollectionAssociation, collection_attrs["id"])
                     # TODO: edit attributes...
                 else:
                     hdca = model.HistoryDatasetCollectionAssociation(
@@ -891,7 +894,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
 
     def _attach_raw_id_if_editing(
         self,
-        obj: Union[model.DatasetInstance, model.RepresentById],
+        obj: model.RepresentById,
         attrs: Dict[str, Any],
     ) -> None:
         if self.sessionless and "id" in attrs and self.import_options.allow_edit:
@@ -1214,7 +1217,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
             if "id" in job_attrs and not self.sessionless:
                 # only thing we allow editing currently is associations for incoming jobs.
                 assert self.import_options.allow_edit
-                job = self.sa_session.query(model.Job).get(job_attrs["id"])
+                job = self.sa_session.get(model.Job, job_attrs["id"])
                 self._connect_job_io(job, job_attrs, _find_hda, _find_hdca, _find_dce)  # type: ignore[attr-defined]
                 self._set_job_attributes(job, job_attrs, force_terminal=False)  # type: ignore[attr-defined]
                 # Don't edit job
@@ -1269,7 +1272,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
 
             self._session_add(icj)
 
-    def _session_add(self, obj: Union[model.DatasetInstance, model.RepresentById]) -> None:
+    def _session_add(self, obj: model.RepresentById) -> None:
         self.sa_session.add(obj)
 
     def _flush(self) -> None:
@@ -1958,7 +1961,7 @@ class DirectoryModelExportStore(ModelExportStore):
 
     def exported_key(
         self,
-        obj: Union[model.DatasetInstance, model.RepresentById],
+        obj: model.RepresentById,
     ) -> Union[str, int]:
         return self.serialization_options.get_identifier(self.security, obj)
 
@@ -2107,12 +2110,12 @@ class DirectoryModelExportStore(ModelExportStore):
         sa_session = app.model.session
 
         # Write collections' attributes (including datasets list) to file.
-        query = (
-            sa_session.query(model.HistoryDatasetCollectionAssociation)
-            .filter(model.HistoryDatasetCollectionAssociation.history == history)
-            .filter(model.HistoryDatasetCollectionAssociation.deleted == expression.false())
+        stmt = (
+            select(model.HistoryDatasetCollectionAssociation)
+            .where(model.HistoryDatasetCollectionAssociation.history == history)
+            .where(model.HistoryDatasetCollectionAssociation.deleted == expression.false())
         )
-        collections = query.all()
+        collections = sa_session.scalars(stmt)
 
         for collection in collections:
             # filter this ?
@@ -2125,15 +2128,16 @@ class DirectoryModelExportStore(ModelExportStore):
 
         # Write datasets' attributes to file.
         actions_backref = model.Dataset.actions  # type: ignore[attr-defined]
-        query = (
-            sa_session.query(model.HistoryDatasetAssociation)
-            .filter(model.HistoryDatasetAssociation.history == history)
+
+        stmt = (
+            select(model.HistoryDatasetAssociation)
+            .where(model.HistoryDatasetAssociation.history == history)
             .join(model.Dataset)
             .options(joinedload(model.HistoryDatasetAssociation.dataset).joinedload(actions_backref))
             .order_by(model.HistoryDatasetAssociation.hid)
-            .filter(model.Dataset.purged == expression.false())
+            .where(model.Dataset.purged == expression.false())
         )
-        datasets = query.all()
+        datasets = sa_session.scalars(stmt).unique()
         for dataset in datasets:
             dataset.annotation = get_item_annotation_str(sa_session, history.user, dataset)
             should_include_file = (dataset.visible or include_hidden) and (not dataset.deleted or include_deleted)
@@ -2936,7 +2940,7 @@ def source_to_import_store(
     else:
         source_uri: str = str(source)
         delete = False
-        tag_handler = app.tag_handler.create_tag_handler_session()
+        tag_handler = app.tag_handler.create_tag_handler_session(galaxy_session=None)
         if source_uri.startswith("file://"):
             source_uri = source_uri[len("file://") :]
         if "://" in source_uri:

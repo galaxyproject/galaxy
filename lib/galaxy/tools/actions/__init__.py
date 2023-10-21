@@ -18,6 +18,8 @@ from galaxy import model
 from galaxy.exceptions import ItemAccessibilityException
 from galaxy.job_execution.actions.post import ActionBox
 from galaxy.model import (
+    HistoryDatasetAssociation,
+    Job,
     LibraryDatasetDatasetAssociation,
     WorkflowRequestInputParameter,
 )
@@ -40,6 +42,7 @@ from galaxy.util.template import fill_template
 
 if TYPE_CHECKING:
     from galaxy.model import DatasetInstance
+    from galaxy.tool_util.parser.output_objects import ToolOutput
 
 log = logging.getLogger(__name__)
 
@@ -481,7 +484,7 @@ class DefaultToolAction(ToolAction):
             if async_tool and name in incoming:
                 # HACK: output data has already been created as a result of the async controller
                 dataid = incoming[name]
-                data = trans.sa_session.query(app.model.HistoryDatasetAssociation).get(dataid)
+                data = trans.sa_session.get(HistoryDatasetAssociation, dataid)
                 assert data is not None
                 out_data[name] = data
             else:
@@ -745,7 +748,7 @@ class DefaultToolAction(ToolAction):
         input datasets to be those of the job that is being rerun.
         """
         try:
-            old_job = trans.sa_session.query(trans.app.model.Job).get(rerun_remap_job_id)
+            old_job = trans.sa_session.get(Job, rerun_remap_job_id)
             assert old_job is not None, f"({rerun_remap_job_id}/{current_job.id}): Old job id is invalid"
             assert (
                 old_job.tool_id == current_job.tool_id
@@ -754,7 +757,7 @@ class DefaultToolAction(ToolAction):
                 assert (
                     old_job.user_id == trans.user.id
                 ), f"({old_job.id}/{current_job.id}): Old user id ({old_job.user_id}) does not match rerun user id ({trans.user.id})"
-            elif trans.user is None and type(galaxy_session) == trans.model.GalaxySession:
+            elif trans.user is None and isinstance(galaxy_session, trans.model.GalaxySession):
                 assert (
                     old_job.session_id == galaxy_session.id
                 ), f"({old_job.id}/{current_job.id}): Old session id ({old_job.session_id}) does not match rerun session id ({galaxy_session.id})"
@@ -844,7 +847,7 @@ class DefaultToolAction(ToolAction):
         if hasattr(trans, "get_galaxy_session"):
             galaxy_session = trans.get_galaxy_session()
             # If we're submitting from the API, there won't be a session.
-            if type(galaxy_session) == trans.model.GalaxySession:
+            if isinstance(galaxy_session, trans.model.GalaxySession):
                 job.session_id = model.cached_id(galaxy_session)
         if trans.user is not None:
             job.user_id = model.cached_id(trans.user)
@@ -977,7 +980,7 @@ class OutputCollections:
         hdca_tags,
     ):
         self.trans = trans
-        self.tag_handler = trans.app.tag_handler.create_tag_handler_session()
+        self.tag_handler = trans.tag_handler
         self.history = history
         self.tool = tool
         self.tool_action = tool_action
@@ -1131,7 +1134,7 @@ def get_ext_or_implicit_ext(hda):
 
 
 def determine_output_format(
-    output,
+    output: "ToolOutput",
     parameter_context,
     input_datasets,
     input_dataset_collections,
@@ -1144,7 +1147,6 @@ def determine_output_format(
     wrappers, a map of the input datasets (name => HDA), and the last input
     extensions in the tool form.
 
-    TODO: Don't deal with XML here - move this logic into ToolOutput.
     TODO: Make the input extension used deterministic instead of random.
     """
     # the type should match the input
@@ -1206,47 +1208,40 @@ def determine_output_format(
                 log.debug("Exception while trying to determine format_source: %s", e)
 
     # process change_format tags
-    if output.change_format is not None:
-        new_format_set = False
-        for change_elem in output.change_format:
-            for when_elem in change_elem.findall("when"):
-                check = when_elem.get("input", None)
-                if check is not None:
-                    try:
-                        if "$" not in check:
-                            # allow a simple name or more complex specifications
-                            check = "${%s}" % check
-                        if fill_template(
-                            check, context=parameter_context, python_template_version=python_template_version
-                        ) == when_elem.get("value", None):
-                            ext = when_elem.get("format", ext)
-                    except Exception:
-                        # bad tag input value; possibly referencing a param within a different conditional when block or other nonexistent grouping construct
-                        continue
-                else:
-                    check = when_elem.get("input_dataset", None)
-                    if check is not None:
-                        check = input_datasets.get(check, None)
-                        # At this point check is a HistoryDatasetAssociation object.
-                        check_format = when_elem.get("format", ext)
-                        check_value = when_elem.get("value", None)
-                        check_attribute = when_elem.get("attribute", None)
-                        if check is not None and check_value is not None and check_attribute is not None:
-                            # See if the attribute to be checked belongs to the HistoryDatasetAssociation object.
-                            if hasattr(check, check_attribute):
-                                if str(getattr(check, check_attribute)) == str(check_value):
-                                    ext = check_format
-                                    new_format_set = True
-                                    break
-                            # See if the attribute to be checked belongs to the metadata associated with the
-                            # HistoryDatasetAssociation object.
-                            if check.metadata is not None:
-                                metadata_value = check.metadata.get(check_attribute, None)
-                                if metadata_value is not None:
-                                    if str(metadata_value) == str(check_value):
-                                        ext = check_format
-                                        new_format_set = True
-                                        break
-            if new_format_set:
-                break
+    if output.change_format:
+        for change_format_model in output.change_format:
+            input_check = change_format_model.get("input")
+            if input_check is not None:
+                try:
+                    if (
+                        fill_template(
+                            input_check, context=parameter_context, python_template_version=python_template_version
+                        )
+                        == change_format_model["value"]
+                    ):
+                        if change_format_model["format"]:
+                            return change_format_model["format"]
+                except Exception:
+                    # bad tag input value; possibly referencing a param within a different conditional when block or other nonexistent grouping construct
+                    continue
+            else:
+                input_dataset_check = change_format_model.get("input_dataset")
+                if input_dataset_check is not None:
+                    dataset = input_datasets.get(input_dataset_check)
+                    # At this point check is a HistoryDatasetAssociation object.
+                    check_format = change_format_model["format"] or ext
+                    check_value = change_format_model["value"]
+                    check_attribute = change_format_model["check_attribute"]
+                    if dataset is not None and check_value is not None and check_attribute is not None:
+                        # See if the attribute to be checked belongs to the HistoryDatasetAssociation object.
+                        if hasattr(dataset, check_attribute):
+                            if str(getattr(dataset, check_attribute)) == str(check_value):
+                                return check_format
+                        # See if the attribute to be checked belongs to the metadata associated with the
+                        # HistoryDatasetAssociation object.
+                        if dataset.metadata is not None:
+                            metadata_value = dataset.metadata.get(check_attribute)
+                            if metadata_value is not None:
+                                if str(metadata_value) == str(check_value):
+                                    return check_format
     return ext

@@ -1159,6 +1159,9 @@ class MockObjectStore:
     def get_filename(self, *args, **kwds):
         return "mock_dataset_14.dat"
 
+    def construct_path(self, *args, **kwds):
+        return "mock_dataset_14.dat"
+
     def get_store_by(self, *args, **kwds):
         return "id"
 

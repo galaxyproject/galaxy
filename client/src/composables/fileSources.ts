@@ -1,17 +1,23 @@
 import { onMounted, readonly, ref } from "vue";
 
-import { FilesSourcePlugin, getFileSources } from "@/components/FilesDialog/services";
+import {
+    BrowsableFilesSourcePlugin,
+    FilterFileSourcesOptions,
+    getFileSources,
+} from "@/components/FilesDialog/services";
 
 /**
  * Composable for accessing and working with file sources.
+ *
+ * @param options - The options to filter the file sources.
  */
-export function useFileSources() {
+export function useFileSources(options: FilterFileSourcesOptions = {}) {
     const isLoading = ref(true);
     const hasWritable = ref(false);
-    const fileSources = ref<FilesSourcePlugin[]>([]);
+    const fileSources = ref<BrowsableFilesSourcePlugin[]>([]);
 
     onMounted(async () => {
-        fileSources.value = await getFileSources();
+        fileSources.value = await getFileSources(options);
         hasWritable.value = fileSources.value.some((fs) => fs.writable);
         isLoading.value = false;
     });
