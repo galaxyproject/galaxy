@@ -1416,10 +1416,6 @@ class HistoryItemOperator:
         item.visible = True
 
     def _delete(self, item: HistoryItemModel, trans: ProvidesHistoryContext):
-        if getattr(item, "deleted", False):
-            # TODO: remove this `update` when we can properly track the operation results to notify the history
-            item.update()
-            return
         if isinstance(item, HistoryDatasetCollectionAssociation):
             return self.dataset_collection_manager.delete(trans, "history", item.id, recursive=True, purge=False)
         return self.hda_manager.delete(item, flush=self.flush)
