@@ -3,11 +3,16 @@ History
 
 .. to_doc
 
------------
-23.0.6.dev0
------------
+-------------------
+23.0.6 (2023-10-23)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Don't read request body into memory by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16585 <https://github.com/galaxyproject/galaxy/pull/16585>`_
 
 -------------------
 23.0.5 (2023-07-29)
@@ -48,6 +53,7 @@ No recorded changes since last release
 Bug fixes
 =========
 
+* 
 * Various fixes to path prefix handling by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16033 <https://github.com/galaxyproject/galaxy/pull/16033>`_
 
 -------------------

@@ -3,11 +3,17 @@ History
 
 .. to_doc
 
------------
-23.0.6.dev0
------------
+-------------------
+23.0.6 (2023-10-23)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Fix incorrect ASGI request host by `@davelopez <https://github.com/davelopez>`_ in `#16574 <https://github.com/galaxyproject/galaxy/pull/16574>`_
+* Allow the legacy DELETE dataset endpoint to accept any string for the history_id by `@assuntad23 <https://github.com/assuntad23>`_ in `#16593 <https://github.com/galaxyproject/galaxy/pull/16593>`_
 
 -------------------
 23.0.5 (2023-07-29)
@@ -29,6 +35,7 @@ Bug fixes
 Bug fixes
 =========
 
+* 
 * Fix folder access for anonymous user by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16330 <https://github.com/galaxyproject/galaxy/pull/16330>`_
 
 -------------------
@@ -40,6 +47,7 @@ Bug fixes
 Bug fixes
 =========
 
+* 
 * 
 * Fix converting Enum value to str for Python 3.11 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#16284 <https://github.com/galaxyproject/galaxy/pull/16284>`_
 
@@ -64,6 +72,7 @@ No recorded changes since last release
 Bug fixes
 =========
 
+* 
 * 
 * 
 * Display DCE in job parameter component, allow rerunning with DCE input by `@mvdbeek <https://github.com/mvdbeek>`_ in `#15744 <https://github.com/galaxyproject/galaxy/pull/15744>`_
