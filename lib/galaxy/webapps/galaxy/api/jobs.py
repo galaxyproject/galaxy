@@ -313,6 +313,19 @@ class FastAPIJobs:
         )
         return JobErrorSummary(messages=messages)
 
+    @router.get(
+        "/api/jobs/{id}/inputs",
+        name="get_inputs",
+        summary="Returns input datasets created by job.",
+    )
+    def inputs(
+        self,
+        id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> List[JobAssociation]:
+        job = self.service.get_job(trans=trans, job_id=id)
+        return self.service.dictify_associations(trans, job.input_datasets, job.input_library_datasets)
+
     @router.post(
         "/api/jobs/search",
         name="search_jobs",
@@ -383,22 +396,6 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
     job_search = depends(JobSearch)
     service = depends(JobsService)
     hda_manager = depends(hdas.HDAManager)
-
-    @expose_api
-    def inputs(self, trans: ProvidesUserContext, id, **kwd) -> List[dict]:
-        """
-        GET /api/jobs/{id}/inputs
-
-        returns input datasets created by job
-
-        :type   id: string
-        :param  id: Encoded job id
-
-        :rtype:     list of dicts
-        :returns:   list of dictionaries containing input dataset associations
-        """
-        job = self.__get_job(trans, id)
-        return self.__dictify_associations(trans, job.input_datasets, job.input_library_datasets)
 
     @expose_api
     def outputs(self, trans: ProvidesUserContext, id, **kwd) -> List[dict]:
