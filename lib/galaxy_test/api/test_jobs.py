@@ -938,25 +938,33 @@ steps:
         assert rerun_content == run_content
 
     @pytest.mark.require_new_history
-    def test_get_inputs(self, history_id):
+    def test_get_inputs_and_outputs(self, history_id):
         dataset_id = self.__history_with_ok_dataset(history_id)
         inputs = json.dumps({"input1": {"src": "hda", "id": dataset_id}})
         # create a job
         search_payload = self._search_payload(history_id=history_id, tool_id="cat1", inputs=inputs)
         tool_response = self._post("tools", data=search_payload)
         self.dataset_populator.wait_for_tool_run(history_id, run_response=tool_response)
-        # search for the job and get the corresponding id
+        # search for the job and get the corresponding values
         search_response = self._post("jobs/search", data=search_payload, json=True)
         self._assert_status_code_is(search_response, 200)
         job_id = search_response.json()[0]["id"]
+        job_first_output_name, job_first_output_values = list(search_response.json()[0]["outputs"].items())[0]
         # get the inputs of the job
         job_response = self._get(f"jobs/{job_id}/inputs")
         self._assert_status_code_is(job_response, 200)
-        job_inputs = job_response.json()[0]
-        # validate response
-        assert job_inputs["name"] == "input1"
-        assert job_inputs.get("name") == "input1"
-        assert job_inputs.get("dataset") == {"src": "hda", "id": dataset_id}
+        job_first_input = job_response.json()[0]
+        # validate input response
+        assert job_first_input.get("name") == "input1"
+        assert job_first_input.get("dataset") == {"src": "hda", "id": dataset_id}
+        # get the outputs of the job
+        job_response = self._get(f"jobs/{job_id}/outputs")
+        self._assert_status_code_is(job_response, 200)
+        job_first_output = job_response.json()[0]
+        # validate output response
+        assert job_first_output.get("name") == job_first_output_name
+        assert job_first_output.get("dataset").get("id") == job_first_output_values.get("id")
+        assert job_first_output.get("dataset").get("src") == job_first_output_values.get("src")
 
     def _job_search(self, tool_id, history_id, inputs):
         search_payload = self._search_payload(history_id=history_id, tool_id=tool_id, inputs=inputs)
