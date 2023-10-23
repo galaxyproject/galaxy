@@ -749,6 +749,7 @@ class ShedTwillTestCase(ShedApiTestCase):
         username: str = "admin-user",
         redirect: str = "",
         logout_first: bool = True,
+        explicit_logout: bool = False,
     ):
         if self.is_v2:
             # old version had a logout URL, this one needs to check
@@ -757,7 +758,7 @@ class ShedTwillTestCase(ShedApiTestCase):
 
         # Clear cookies.
         if logout_first:
-            self.logout()
+            self.logout(explicit=explicit_logout)
         # test@bx.psu.edu is configured as an admin user
         previously_created, username_taken, invalid_username = self.create(
             email=email, password=password, username=username, redirect=redirect
@@ -786,9 +787,19 @@ class ShedTwillTestCase(ShedApiTestCase):
     def _page(self) -> Page:
         return self._playwright_browser._page
 
-    def logout(self):
+    def logout(self, explicit: bool = False):
+        """logout of the current tool shed session.
+
+        By default this is a logout if logged in action,
+        however if explicit is True - ensure there is a session
+        and be explicit in logging out to provide extract test
+        structure.
+        """
         if self.is_v2:
-            self._playwright_browser.logout_if_logged_in()
+            if explicit:
+                self._playwright_browser.explicit_logout()
+            else:
+                self._playwright_browser.logout_if_logged_in()
         else:
             self.visit_url("/user/logout")
             self.check_page_for_string("You have been logged out")
