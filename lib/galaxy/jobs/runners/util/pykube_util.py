@@ -295,7 +295,7 @@ def galaxy_instance_id(params):
         if re.match(r"(?!-)[a-z\d-]{1,20}(?<!-)$", raw_value):
             return raw_value
         else:
-            log.error("INSTANCE_ID_INVALID_MESSAGE", raw_value)
+            log.error(INSTANCE_ID_INVALID_MESSAGE, raw_value)
     return None
 
 
