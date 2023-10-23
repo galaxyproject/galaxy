@@ -11,7 +11,7 @@
                 @click="copyBibtex">
                 <FontAwesomeIcon icon="copy" />
             </b-button>
-            <Citation
+            <CitationItem
                 v-for="(citation, index) in citations"
                 :key="index"
                 class="formatted-reference"
@@ -75,17 +75,18 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faAngleDoubleDown, faAngleDoubleUp, faCopy, faQuestion } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import Citation from "components/Citation/Citation";
 import { getCitations } from "components/Citation/services";
 import License from "components/License/License";
 import Creators from "components/SchemaOrg/Creators";
 import { copy } from "utils/clipboard";
 
+import CitationItem from "components/Citation/CitationItem.vue";
+
 library.add(faQuestion, faCopy, faAngleDoubleDown, faAngleDoubleUp);
 
 export default {
     components: {
-        Citation,
+        CitationItem,
         License,
         Creators,
         FontAwesomeIcon,

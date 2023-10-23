@@ -117,13 +117,15 @@ module.exports = {
             files: ["**/*.ts", "**/*.tsx"],
             extends: [
                 ...baseExtends,
-                "plugin:@typescript-eslint/eslint-recommended",
                 "plugin:@typescript-eslint/recommended",
+                // "plugin:@typescript-eslint/stylistic"  // TODO: work towards this
             ],
             rules: {
                 ...baseRules,
                 "@typescript-eslint/no-throw-literal": "error",
                 "@typescript-eslint/ban-ts-comment": "warn",
+                "@typescript-eslint/no-explicit-any": "warn", // TODO: re-enable this
+                "@typescript-eslint/no-unused-vars": ["error", { argsIgnorePattern: "_.+", varsIgnorePattern: "_.+" }],
             },
             parser: "@typescript-eslint/parser",
             parserOptions: {
@@ -131,7 +133,7 @@ module.exports = {
                 ecmaVersion: 2020,
                 sourceType: "module",
                 extraFileExtensions: [".vue"],
-                project: "./tsconfig.json",
+                project: true,
             },
             plugins: [...basePlugins, "@typescript-eslint"],
         },

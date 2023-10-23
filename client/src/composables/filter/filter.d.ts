@@ -1,4 +1,4 @@
-import type { MaybeComputedRef } from "@vueuse/core";
+import type { MaybeRefOrGetter } from "@vueuse/core";
 import type { Ref } from "vue";
 
 /**
@@ -9,7 +9,7 @@ import type { Ref } from "vue";
  * @param objectFields string array of fields to filter by on each object
  */
 export declare function useFilterObjectArray<O extends object, K extends keyof O>(
-    array: MaybeComputedRef<Array<O>>,
-    filter: MaybeComputedRef<string>,
-    objectFields: MaybeComputedRef<Array<K>>
+    array: MaybeRefOrGetter<Array<O>>,
+    filter: MaybeRefOrGetter<string>,
+    objectFields: MaybeRefOrGetter<Array<K>>
 ): Ref<O[]>;

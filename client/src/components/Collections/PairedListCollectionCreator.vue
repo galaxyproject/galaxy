@@ -324,8 +324,8 @@
                                 </div>
                             </div>
                         </div>
-                        <Splitpanes horizontal style="height: 400px">
-                            <Pane>
+                        <div class="pairing-split-parent">
+                            <div class="pairing-split-child">
                                 <div v-if="noUnpairedElementsDisplayed">
                                     <b-alert show variant="warning">
                                         {{ l("No datasets were found matching the current filters.") }}
@@ -372,8 +372,8 @@
                                         </ol>
                                     </div>
                                 </div>
-                            </Pane>
-                            <Pane>
+                            </div>
+                            <div class="pairing-split-child">
                                 <div class="column-header">
                                     <div class="column-title paired-column-title">
                                         <span class="title"> {{ numOfPairs }} {{ l(" pairs") }}</span>
@@ -398,8 +398,8 @@
                                         </draggable>
                                     </ol>
                                 </div>
-                            </Pane>
-                        </Splitpanes>
+                            </div>
+                        </div>
                     </template>
                 </collection-creator>
             </div>
@@ -407,11 +407,8 @@
     </div>
 </template>
 <script>
-import "splitpanes/dist/splitpanes.css";
-
 import BootstrapVue from "bootstrap-vue";
 import STATES from "mvc/dataset/states";
-import { Pane, Splitpanes } from "splitpanes";
 import levenshteinDistance from "utils/levenshtein";
 import _l from "utils/localization";
 import naturalSort from "utils/natural-sort";
@@ -427,8 +424,6 @@ export default {
     components: {
         UnpairedDatasetElementView,
         PairedElementView,
-        Splitpanes,
-        Pane,
         draggable,
     },
     mixins: [mixin],
@@ -1192,11 +1187,14 @@ li.dataset.paired {
         text-align: center;
     }
 }
-.splitpanes--horizontal > .splitpanes__splitter {
-    min-height: 6px;
-    background: linear-gradient(0deg, #ccc, #111);
+.pairing-split-parent {
+    display: flex;
+    flex-direction: column;
+    min-height: 400px;
 }
-.splitpanes__pane {
-    overflow: scroll;
+
+.pairing-split-child {
+    flex: 1;
+    overflow-y: auto;
 }
 </style>
