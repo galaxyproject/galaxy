@@ -3,11 +3,23 @@ History
 
 .. to_doc
 
--------
-23.1rc1
--------
+-----------
+23.1.1.dev0
+-----------
 
 
+
+-------------------
+23.0.6 (2023-10-23)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix extra files path handling by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16541 <https://github.com/galaxyproject/galaxy/pull/16541>`_
+* Don't fail invocation message without dependent_workflow_step_id by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16628 <https://github.com/galaxyproject/galaxy/pull/16628>`_
 
 -------------------
 23.0.5 (2023-07-29)
@@ -47,6 +59,7 @@ No recorded changes since last release
 Bug fixes
 =========
 
+* 
 * Display DCE in job parameter component, allow rerunning with DCE input by `@mvdbeek <https://github.com/mvdbeek>`_ in `#15744 <https://github.com/galaxyproject/galaxy/pull/15744>`_
 * Fix folder listing via file browser by `@mvdbeek <https://github.com/mvdbeek>`_ in `#15950 <https://github.com/galaxyproject/galaxy/pull/15950>`_
 * Fix RO-crate invocation export with complex collections by `@davelopez <https://github.com/davelopez>`_ in `#15971 <https://github.com/galaxyproject/galaxy/pull/15971>`_

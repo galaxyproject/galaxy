@@ -3,11 +3,35 @@ History
 
 .. to_doc
 
--------
-23.1rc1
--------
+-----------
+23.1.1.dev0
+-----------
 
 
+
+-------------------
+23.0.6 (2023-10-23)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix upload paramfile handling (for real user setups) by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#16504 <https://github.com/galaxyproject/galaxy/pull/16504>`_
+* Fix extra files path handling by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16541 <https://github.com/galaxyproject/galaxy/pull/16541>`_
+* Make sure job_wrapper uses a consistent metadata strategy by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16569 <https://github.com/galaxyproject/galaxy/pull/16569>`_
+* Fix conditional step evaluation with datasets in repeats by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16584 <https://github.com/galaxyproject/galaxy/pull/16584>`_
+* Don't read request body into memory by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16585 <https://github.com/galaxyproject/galaxy/pull/16585>`_
+* Fixes for extra files handling and cached object stores  by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16595 <https://github.com/galaxyproject/galaxy/pull/16595>`_
+* Lazy load tool data tables in celery worker by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16640 <https://github.com/galaxyproject/galaxy/pull/16640>`_
+* Force `__DUPLICATE_FILE_TO_COLLECTION__` 'size' param to integer by `@simonbray <https://github.com/simonbray>`_ in `#16659 <https://github.com/galaxyproject/galaxy/pull/16659>`_
+
+============
+Enhancements
+============
+
+* Update pulsar client library to 0.15.5 by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16701 <https://github.com/galaxyproject/galaxy/pull/16701>`_
 
 -------------------
 23.0.5 (2023-07-29)
@@ -31,6 +55,7 @@ Bug fixes
 Bug fixes
 =========
 
+* 
 * Fix default when statement evaluation by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16332 <https://github.com/galaxyproject/galaxy/pull/16332>`_
 * Redact private role name and description when purging user by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16349 <https://github.com/galaxyproject/galaxy/pull/16349>`_
 
@@ -43,6 +68,7 @@ Bug fixes
 Bug fixes
 =========
 
+* 
 * 
 * Bump galaxy-release-util version to 0.1.2 by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16241 <https://github.com/galaxyproject/galaxy/pull/16241>`_
 
@@ -69,12 +95,14 @@ Bug fixes
 
 * 
 * 
+* 
 * Fix ``Text File Busy`` errors at the source by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16212 <https://github.com/galaxyproject/galaxy/pull/16212>`_
 
 ============
 Enhancements
 ============
 
+* 
 * 
 * 
 * Point release deps fixes and docs by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16214 <https://github.com/galaxyproject/galaxy/pull/16214>`_
@@ -89,6 +117,7 @@ Enhancements
 Bug fixes
 =========
 
+* 
 * 
 * 
 * 
@@ -115,6 +144,7 @@ Bug fixes
 Other changes
 =============
 
+* 
 * 
 * 
 * Startup fix when tool removed between reboot by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16175 <https://github.com/galaxyproject/galaxy/pull/16175>`_
