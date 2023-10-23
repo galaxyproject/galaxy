@@ -289,9 +289,13 @@ export default {
     }
 
     // improve focus visibility
-    &:deep(.btn:focus),
-    &.being-used {
+    &:deep(.btn:focus) {
         box-shadow: 0 0 0 0.2rem transparentize($brand-primary, 0.75);
+    }
+
+    &.being-used {
+        border-left: 0.25rem solid $brand-primary;
+        margin-left: 0rem !important;
     }
 }
 </style>
