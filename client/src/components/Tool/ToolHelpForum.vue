@@ -26,7 +26,7 @@ const helpAvailable = computed(() => topics.value.length > 0);
 
 const root = ref(null);
 
-const query = computed(() => `tag:${props.toolId} tag:${toolHelpTag}`);
+const query = computed(() => `tags:${props.toolId}+${toolHelpTag} status:solved`);
 
 onMounted(async () => {
     const response = await helpFetcher({ query: query.value });
