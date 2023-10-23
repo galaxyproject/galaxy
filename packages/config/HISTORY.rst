@@ -10,6 +10,12 @@ History
 
 
 -------------------
+23.0.6 (2023-10-23)
+-------------------
+
+No recorded changes since last release
+
+-------------------
 23.0.5 (2023-07-29)
 -------------------
 
@@ -47,6 +53,7 @@ No recorded changes since last release
 Bug fixes
 =========
 
+* 
 * Change default watchdog inotify_buffer log level to info by `@mvdbeek <https://github.com/mvdbeek>`_ in `#15967 <https://github.com/galaxyproject/galaxy/pull/15967>`_
 
 ============
