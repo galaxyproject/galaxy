@@ -63,7 +63,7 @@
                     :state="state"
                     :item-urls="itemUrls"
                     :keyboard-selectable="expandDataset"
-                    @delete="$emit('delete')"
+                    @delete="onDelete"
                     @display="onDisplay"
                     @showCollectionInfo="onShowCollectionInfo"
                     @edit="onEdit"
@@ -233,6 +233,9 @@ export default {
             } else {
                 this.$router.push(this.itemUrls.display, { title: this.name });
             }
+        },
+        onDelete(recursive = false) {
+            this.$emit("delete", this.item, recursive);
         },
         onDragStart(evt) {
             setDrag(evt, this.item);
