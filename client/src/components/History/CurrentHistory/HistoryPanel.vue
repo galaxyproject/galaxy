@@ -206,7 +206,6 @@ export default {
             operationRunning: null,
             operationError: null,
             querySelectionBreak: false,
-            itemsLoaded: [],
         };
     },
     computed: {
@@ -234,6 +233,10 @@ export default {
         /** @returns {Boolean} */
         isProcessing() {
             return this.operationRunning >= this.history.update_time;
+        },
+        /** @returns {Array} */
+        itemsLoaded() {
+            return this.getHistoryItems(this.historyId, this.filterText);
         },
         /** @returns {Date} */
         lastChecked() {
@@ -307,6 +310,15 @@ export default {
         historyUpdateTime() {
             this.loadHistoryItems();
         },
+        itemsLoaded(newItems) {
+            if (this.invisible) {
+                newItems.forEach((item) => {
+                    if (this.invisible[item.hid]) {
+                        Vue.set(this.invisible, item.hid, false);
+                    }
+                });
+            }
+        },
     },
     async mounted() {
         // `filterable` here indicates if this is the current history panel
@@ -353,14 +365,6 @@ export default {
                     console.debug("HistoryPanel - Load items error.", error);
                 }
             } finally {
-                this.itemsLoaded = this.getHistoryItems(this.historyId, this.filterText);
-                if (this.invisible) {
-                    this.itemsLoaded.forEach((item) => {
-                        if (this.invisible[item.hid]) {
-                            Vue.set(this.invisible, item.hid, false);
-                        }
-                    });
-                }
                 this.loading = false;
             }
         },
