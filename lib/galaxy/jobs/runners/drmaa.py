@@ -108,10 +108,10 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         native_spec = url.split("/")[2]
         if native_spec:
             params = dict(nativeSpecification=native_spec)
-            log.debug(f"Converted URL '{url}' to destination runner=drmaa, params={params}")
+            log.debug("Converted URL '%s' to destination runner=drmaa, params=%s", url, params)
             return JobDestination(runner="drmaa", params=params)
         else:
-            log.debug(f"Converted URL '{url}' to destination runner=drmaa")
+            log.debug("Converted URL '%s' to destination runner=drmaa", url)
             return JobDestination(runner="drmaa")
 
     def get_native_spec(self, url):
@@ -197,7 +197,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
                     log.exception("(%s) drmaa.Session.runJob() failed unconditionally", galaxy_id_tag)
                     trynum = 5
             else:
-                log.error(f"({galaxy_id_tag}) All attempts to submit job failed")
+                log.error("(%s) All attempts to submit job failed", galaxy_id_tag)
                 if not fail_msg:
                     fail_msg = DEFAULT_JOB_RUNNER_FAILURE_MESSAGE
                 job_wrapper.fail(fail_msg)
@@ -216,13 +216,13 @@ class DRMAAJobRunner(AsynchronousJobRunner):
                     job_wrapper.fail(fail_msg)
                     return
                 pwent = job_wrapper.galaxy_system_pwent
-            log.debug(f"({galaxy_id_tag}) submitting with credentials: {pwent[0]} [uid: {pwent[2]}]")
+            log.debug("(%s) submitting with credentials: %s [uid: %s]", galaxy_id_tag, pwent[0], pwent[2])
             self.userid = pwent[2]
             external_job_id = self.external_runjob(external_runjob_script, filename, pwent[2])
             if external_job_id is None:
                 job_wrapper.fail(f"({galaxy_id_tag}) could not queue job")
                 return
-        log.info(f"({galaxy_id_tag}) queued as {external_job_id}")
+        log.info("(%s) queued as %s", galaxy_id_tag, external_job_id)
 
         # store runner information for tracking if Galaxy restarts
         job_wrapper.set_external_id(external_job_id)
@@ -327,7 +327,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         except Exception:
             # so we don't kill the monitor thread
             log.exception(f"({galaxy_id_tag}/{external_job_id}) unable to check job status")
-            log.warning(f"({galaxy_id_tag}/{external_job_id}) job will now be errored")
+            log.warning("(%s/%s) job will now be errored", galaxy_id_tag, external_job_id)
             ajs.fail_message = "Cluster could not complete job"
             self.work_queue.put((self.fail_job, ajs))
             return None
@@ -347,7 +347,9 @@ class DRMAAJobRunner(AsynchronousJobRunner):
             if state is None:
                 continue
             if state != old_state:
-                log.debug(f"({galaxy_id_tag}/{external_job_id}) state change: {self.drmaa_job_state_strings[state]}")
+                log.debug(
+                    "(%s/%s) state change: %s", galaxy_id_tag, external_job_id, self.drmaa_job_state_strings[state]
+                )
             if state == drmaa.JobState.RUNNING and not ajs.running:
                 ajs.running = True
                 ajs.job_wrapper.change_state(model.Job.states.RUNNING)
@@ -381,11 +383,11 @@ class DRMAAJobRunner(AsynchronousJobRunner):
                 cmd = shlex.split(kill_script)
                 cmd.extend([str(ext_id), str(self.userid)])
                 commands.execute(cmd)
-            log.info(f"({job.id}/{ext_id}) Removed from DRM queue at user's request")
+            log.info("(%s/%s) Removed from DRM queue at user's request", job.id, ext_id)
         except drmaa.InvalidJobException:
             log.exception(f"({job.id}/{ext_id}) User killed running job, but it was already dead")
         except commands.CommandLineException as e:
-            log.error(f"({job.id}/{ext_id}) User killed running job, but command execution failed: {unicodify(e)}")
+            log.error("(%s/%s) User killed running job, but command execution failed: %s", job.id, ext_id, unicodify(e))
         except Exception:
             log.exception(f"({job.id}/{ext_id}) User killed running job, but error encountered removing from DRM queue")
 
@@ -404,14 +406,19 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         ajs.command_line = job.get_command_line()
         if job.state in (model.Job.states.RUNNING, model.Job.states.STOPPED):
             log.debug(
-                f"({job.id}/{job.get_job_runner_external_id()}) is still in {job.state} state, adding to the DRM queue"
+                "(%s/%s) is still in %s state, adding to the DRM queue",
+                job.id,
+                job.get_job_runner_external_id(),
+                job.state,
             )
             ajs.old_state = drmaa.JobState.RUNNING
             ajs.running = True
             self.monitor_queue.put(ajs)
         elif job.get_state() == model.Job.states.QUEUED:
             log.debug(
-                f"({job.id}/{job.get_job_runner_external_id()}) is still in DRM queued state, adding to the DRM queue"
+                "(%s/%s) is still in DRM queued state, adding to the DRM queue",
+                job.id,
+                job.get_job_runner_external_id(),
             )
             ajs.old_state = drmaa.JobState.QUEUED_ACTIVE
             ajs.running = False
@@ -422,7 +429,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         filename = os.path.join(job_wrapper.working_directory, f"{job_wrapper.get_id_tag()}.jt_json")
         with open(filename, "w") as fp:
             json.dump(jt, fp)
-        log.debug(f"({job_wrapper.job_id}) Job script for external submission is: {filename}")
+        log.debug("(%s) Job script for external submission is: %s", job_wrapper.job_id, filename)
         return filename
 
     def external_runjob(self, external_runjob_script, jobtemplate_filename, username):
@@ -432,7 +439,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         """
         cmd = shlex.split(external_runjob_script)
         cmd.extend([str(username), jobtemplate_filename])
-        log.info(f"Running command: {' '.join(cmd)}")
+        log.info("Running command: %s", " ".join(cmd))
         try:
             stdoutdata = commands.execute(cmd).strip()
         except commands.CommandLineException:

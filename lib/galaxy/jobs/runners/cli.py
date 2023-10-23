@@ -50,7 +50,7 @@ class ShellJobRunner(AsynchronousJobRunner):
         job_params = {f"job_{k}": v for k, v in [kv.split("=", 1) for kv in job_params.split("&")]}
         params.update(shell_params)
         params.update(job_params)
-        log.debug(f"Converted URL '{url}' to destination runner=cli, params={params}")
+        log.debug("Converted URL '%s' to destination runner=cli, params=%s", url, params)
         # Create a dynamic JobDestination
         return JobDestination(runner="cli", params=params)
 
@@ -96,7 +96,7 @@ class ShellJobRunner(AsynchronousJobRunner):
                 job_wrapper.cleanup()
             return
 
-        log.debug(f"({galaxy_id_tag}) submitting file: {ajs.job_file}")
+        log.debug("(%s) submitting file: %s", galaxy_id_tag, ajs.job_file)
 
         returncode, stdout = self.submit(shell, job_interface, ajs.job_file, galaxy_id_tag, retry=MAX_SUBMIT_RETRY)
         if returncode != 0:
@@ -107,11 +107,11 @@ class ShellJobRunner(AsynchronousJobRunner):
         submit_stdout = stdout.strip()
         external_job_id = submit_stdout and submit_stdout.split()[-1]
         if not external_job_id:
-            log.error(f"({galaxy_id_tag}) submission did not return a job identifier, failing job")
+            log.error("(%s) submission did not return a job identifier, failing job", galaxy_id_tag)
             job_wrapper.fail("failure submitting job")
             return
 
-        log.info(f"({galaxy_id_tag}) queued with identifier: {external_job_id}")
+        log.info("(%s) queued with identifier: %s", galaxy_id_tag, external_job_id)
 
         # store runner information for tracking if Galaxy restarts
         job_wrapper.set_external_id(external_job_id)
@@ -137,7 +137,9 @@ class ShellJobRunner(AsynchronousJobRunner):
             stdout = cmd_out.stdout
             if not stdout or not stdout.strip():
                 log.warning(
-                    f"({galaxy_id_tag}) Execute returned a 0 exit code but no external identifier will be recovered from empty stdout - stderr is {cmd_out.stderr}"
+                    "(%s) Execute returned a 0 exit code but no external identifier will be recovered from empty stdout - stderr is %s",
+                    galaxy_id_tag,
+                    cmd_out.stderr,
                 )
             return returncode, stdout
         stdout = f"({galaxy_id_tag}) submission failed (stdout): {cmd_out.stdout}"
@@ -170,18 +172,20 @@ class ShellJobRunner(AsynchronousJobRunner):
                 if ajs.job_wrapper.get_state() == model.Job.states.DELETED:
                     continue
 
-                log.debug(f"({id_tag}/{external_job_id}) job not found in batch state check")
+                log.debug("(%s/%s) job not found in batch state check", id_tag, external_job_id)
                 shell_params, job_params = self.parse_destination_params(ajs.job_destination.params)
                 shell, job_interface = self.get_cli_plugins(shell_params, job_params)
                 cmd_out = shell.execute(job_interface.get_single_status(external_job_id))
                 state = job_interface.parse_single_status(cmd_out.stdout, external_job_id)
                 if not state == model.Job.states.OK:
                     log.warning(
-                        f"({id_tag}/{external_job_id}) job not found in batch state check, but found in individual state check"
+                        "(%s/%s) job not found in batch state check, but found in individual state check",
+                        id_tag,
+                        external_job_id,
                     )
             job_state = ajs.job_wrapper.get_state()
             if state != old_state:
-                log.debug(f"({id_tag}/{external_job_id}) state change: from {old_state} to {state}")
+                log.debug("(%s/%s) state change: from %s to %s", id_tag, external_job_id, old_state, state)
                 if state == model.Job.states.ERROR and job_state != model.Job.states.STOPPED:
                     # Try to find out the reason for exiting - this needs to happen before change_state
                     # otherwise jobs depending on resubmission outputs see that job as failed and pause.
@@ -201,7 +205,7 @@ class ShellJobRunner(AsynchronousJobRunner):
                 )
                 if external_metadata:
                     self.work_queue.put((self.handle_metadata_externally, ajs))
-                log.debug(f"({id_tag}/{external_job_id}) job execution finished, running job wrapper finish method")
+                log.debug("(%s/%s) job execution finished, running job wrapper finish method", id_tag, external_job_id)
                 self.work_queue.put((self.finish_job, ajs))
             else:
                 new_watched.append(ajs)
@@ -253,10 +257,13 @@ class ShellJobRunner(AsynchronousJobRunner):
             shell, job_interface = self.get_cli_plugins(shell_params, job_params)
             cmd_out = shell.execute(job_interface.delete(job.job_runner_external_id))
             assert cmd_out.returncode == 0, cmd_out.stderr
-            log.debug(f"({job.id}/{job.job_runner_external_id}) Terminated at user's request")
+            log.debug("(%s/%s) Terminated at user's request", job.id, job.job_runner_external_id)
         except Exception as e:
             log.debug(
-                f"({job.id}/{job.job_runner_external_id}) User killed running job, but error encountered during termination: {e}"
+                "(%s/%s) User killed running job, but error encountered during termination: %s",
+                job.id,
+                job.job_runner_external_id,
+                e,
             )
 
     def recover(self, job, job_wrapper):
@@ -274,14 +281,19 @@ class ShellJobRunner(AsynchronousJobRunner):
         ajs.command_line = job.command_line
         if job.state in (model.Job.states.RUNNING, model.Job.states.STOPPED):
             log.debug(
-                f"({job.id}/{job.job_runner_external_id}) is still in {job.state} state, adding to the runner monitor queue"
+                "(%s/%s) is still in %s state, adding to the runner monitor queue",
+                job.id,
+                job.job_runner_external_id,
+                job.state,
             )
             ajs.old_state = model.Job.states.RUNNING
             ajs.running = True
             self.monitor_queue.put(ajs)
         elif job.state == model.Job.states.QUEUED:
             log.debug(
-                f"({job.id}/{job.job_runner_external_id}) is still in queued state, adding to the runner monitor queue"
+                "(%s/%s) is still in queued state, adding to the runner monitor queue",
+                job.id,
+                job.job_runner_external_id,
             )
             ajs.old_state = model.Job.states.QUEUED
             ajs.running = False
