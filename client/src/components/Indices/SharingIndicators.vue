@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faGlobe, faLink, faShareAlt } from "@fortawesome/free-solid-svg-icons";
+import { faGlobe, faLink, faShareAlt, faUsers } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, VBTooltip } from "bootstrap-vue";
 
-library.add(faGlobe, faShareAlt, faLink);
+library.add(faGlobe, faShareAlt, faLink, faUsers);
 
 interface SharingIndicatorsProps {
     object: Object;
@@ -43,6 +43,16 @@ const props = defineProps<SharingIndicatorsProps>();
             :title="'Find all items shared with me' | localize"
             @click.prevent="$emit('filter', 'shared_with_me')">
             <FontAwesomeIcon icon="share-alt" />
+        </BButton>
+        <!-- this can later be changed to an active button, currently, no such filter -->
+        <BButton
+            v-if="props.object.users_shared_with && props.object.users_shared_with.length"
+            v-b-tooltip.hover.noninteractive
+            size="sm"
+            variant="link"
+            disabled
+            :title="`Shared with ${props.object.users_shared_with.length} user(s)` | localize">
+            <FontAwesomeIcon icon="users" />
         </BButton>
     </span>
 </template>

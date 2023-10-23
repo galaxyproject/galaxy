@@ -9,9 +9,9 @@ import { registry } from "./configs/registry";
 import { FieldKeyHandler, Operation, RowData } from "./configs/types";
 
 import GridOperations from "./GridElements/GridOperations.vue";
-import GridSharing from "./GridElements/GridSharing.vue";
 import GridText from "./GridElements/GridText.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
+import SharingIndicators from "@/components/Indices/SharingIndicators.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 //@ts-ignore
@@ -63,13 +63,13 @@ const searchTerm = ref("");
 const showAdvanced = ref(false);
 
 /**
- * Manually set filter value, used for tags
+ * Manually set filter value, used for tags and `SharingIndicators`
  */
-function applyFilter(filter: string, value: string, quoted = false) {
+function applyFilter(filter: string, value: string | boolean, quoted = false) {
     const setFilterValue = gridConfig.value?.filtering.setFilterValue;
     const quotedValue = quoted ? `'${value}'` : value;
     if (setFilterValue) {
-        filterText.value = setFilterValue(filterText.value, filter, quotedValue) || "";
+        filterText.value = setFilterValue(filterText.value, filter, quotedValue.toString()) || "";
     }
 }
 
@@ -219,11 +219,10 @@ watch(operationMessage, () => {
                         :operations="fieldEntry.operations"
                         @execute="onOperation($event, rowData)" />
                     <GridText v-else-if="fieldEntry.type == 'text'" :text="rowData[fieldEntry.key]" />
-                    <GridSharing
+                    <SharingIndicators
                         v-else-if="fieldEntry.type == 'sharing'"
-                        :published="rowData.sharing_status.published"
-                        :importable="rowData.sharing_status.importable"
-                        :users_shared_with_length="rowData.sharing_status.users_shared_with.length" />
+                        :object="rowData.sharing_status"
+                        @filter="(filter) => applyFilter(filter, true)" />
                     <UtcDate v-else-if="fieldEntry.type == 'date'" :date="rowData[fieldEntry.key]" mode="elapsed" />
                     <StatelessTags
                         v-else-if="fieldEntry.type == 'tags'"
