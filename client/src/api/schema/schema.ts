@@ -921,6 +921,10 @@ export interface paths {
         /** Submits a bug report via the API. */
         post: operations["report_error_api_jobs__id__error_post"];
     };
+    "/api/jobs/{id}/inputs": {
+        /** Returns input datasets created by job. */
+        get: operations["get_inputs_api_jobs__id__inputs_get"];
+    };
     "/api/jobs/{id}/resume": {
         /** Resumes a paused job. */
         put: operations["resume_paused_job_api_jobs__id__resume_put"];
@@ -14889,6 +14893,33 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["JobErrorSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_inputs_api_jobs__id__inputs_get: {
+        /** Returns input datasets created by job. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The ID of the job */
+            path: {
+                id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["JobAssociation"][];
                 };
             };
             /** @description Validation Error */
