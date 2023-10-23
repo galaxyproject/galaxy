@@ -49,7 +49,7 @@
                 <template v-slot:button-content>
                     <icon icon="trash" />
                 </template>
-                <b-dropdown-item title="Delete collection Only" @click.prevent.stop="onDeleteItem">
+                <b-dropdown-item title="Delete collection only" @click.prevent.stop="onDeleteItem">
                     <icon icon="file" />
                     Collection only
                 </b-dropdown-item>
