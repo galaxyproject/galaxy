@@ -1882,3 +1882,14 @@ def enum_values(enum_class):
     Values are in member definition order.
     """
     return [value.value for value in enum_class.__members__.values()]
+
+
+def munge_lists(listA: Any, listB: Any) -> List:
+    """
+    Combine two lists into a single list.
+
+    Arguments can be None, non-lists, or lists. If an argument is None, it will
+    not be included in the returned list. If both arguments are None, an empty
+    list will be returned.
+    """
+    return listify(listA) + listify(listB)
