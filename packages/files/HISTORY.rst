@@ -3,11 +3,25 @@ History
 
 .. to_doc
 
------------
-23.1.1.dev0
------------
+-------------------
+23.1.1 (2023-10-23)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Fix some drs handling issues by `@nuwang <https://github.com/nuwang>`_ in `#15777 <https://github.com/galaxyproject/galaxy/pull/15777>`_
+* Fix filesource file url support by `@nuwang <https://github.com/nuwang>`_ in `#15794 <https://github.com/galaxyproject/galaxy/pull/15794>`_
+* Fix unittest mocks to support us checking geturl()  by `@dannon <https://github.com/dannon>`_ in `#16726 <https://github.com/galaxyproject/galaxy/pull/16726>`_
+* Fix allowlist deserialization in file sources by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16729 <https://github.com/galaxyproject/galaxy/pull/16729>`_
+
+============
+Enhancements
+============
+
+* Unify url handling with filesources by `@nuwang <https://github.com/nuwang>`_ in `#15497 <https://github.com/galaxyproject/galaxy/pull/15497>`_
 
 -------------------
 23.0.6 (2023-10-23)
