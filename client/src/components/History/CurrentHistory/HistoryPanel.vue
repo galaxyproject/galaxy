@@ -131,7 +131,7 @@
                                     @update:expand-dataset="setExpanded(item, $event)"
                                     @update:selected="setSelected(item, $event)"
                                     @view-collection="$emit('view-collection', item, currentOffset)"
-                                    @delete="onDelete(item)"
+                                    @delete="onDelete"
                                     @undelete="onUndelete(item)"
                                     @unhide="onUnhide(item)" />
                             </template>
@@ -363,9 +363,9 @@ export default {
                 this.loading = false;
             }
         },
-        onDelete(item) {
+        onDelete(item, recursive = false) {
             this.setInvisible(item);
-            deleteContent(item);
+            deleteContent(item, { recursive: recursive });
         },
         onHideSelection(selectedItems) {
             selectedItems.forEach((item) => {

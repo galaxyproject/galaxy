@@ -255,8 +255,8 @@ export default {
             const steps = [];
             this.steps &&
                 Object.values(this.steps).forEach((step) => {
-                    if (step.label || step.content_id) {
-                        steps.push(step.label || step.content_id);
+                    if (step.label) {
+                        steps.push(step.label);
                     }
                 });
             return steps;

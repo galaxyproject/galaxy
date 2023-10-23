@@ -3855,6 +3855,7 @@ class Dataset(Base, StorableObject, Serializable):
     non_ready_states = (states.NEW, states.UPLOAD, states.QUEUED, states.RUNNING, states.SETTING_METADATA)
     ready_states = tuple(set(states.__members__.values()) - set(non_ready_states))
     valid_input_states = tuple(set(states.__members__.values()) - {states.ERROR, states.DISCARDED})
+    no_data_states = (states.PAUSED, states.DEFERRED, states.DISCARDED, *non_ready_states)
     terminal_states = (
         states.OK,
         states.EMPTY,
@@ -5713,7 +5714,7 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, Serializable):
             sa_session.commit()
         return hda
 
-    def copy(self, parent_id=None, target_folder=None):
+    def copy(self, parent_id=None, target_folder=None, flush=True):
         sa_session = object_session(self)
         ldda = LibraryDatasetDatasetAssociation(
             name=self.name,
@@ -6137,9 +6138,9 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
             inner_dc = alias(DatasetCollection)
             inner_dce = alias(DatasetCollectionElement)
             order_by_columns.append(inner_dce.c.element_index)
-            q = q.join(inner_dc, inner_dc.c.id == dce.c.child_collection_id).outerjoin(
-                inner_dce, inner_dce.c.dataset_collection_id == inner_dc.c.id
-            )
+            q = q.join(
+                inner_dc, and_(inner_dc.c.id == dce.c.child_collection_id, dce.c.dataset_collection_id == dc.c.id)
+            ).outerjoin(inner_dce, inner_dce.c.dataset_collection_id == inner_dc.c.id)
             q = q.add_columns(
                 *attribute_columns(inner_dce.c, element_attributes, nesting_level),
                 *attribute_columns(inner_dc.c, collection_attributes, nesting_level),
@@ -7757,6 +7758,7 @@ class WorkflowStep(Base, RepresentById):
         copied_step.order_index = self.order_index
         copied_step.type = self.type
         copied_step.tool_id = self.tool_id
+        copied_step.tool_version = self.tool_version
         copied_step.tool_inputs = self.tool_inputs
         copied_step.tool_errors = self.tool_errors
         copied_step.position = self.position

@@ -1161,6 +1161,14 @@ steps:
             self._assert_status_code_is(other_import_response, 200)
             self._assert_user_has_workflow_with_name("imported: test_import_published")
 
+    def test_import_published_api(self):
+        workflow_id = self.workflow_populator.simple_workflow("test_import_published", publish=True)
+        with self._different_user():
+            other_import_response = self.__import_workflow(workflow_id, deprecated_route=False)
+            self._assert_status_code_is(other_import_response, 200)
+            workflow = self._download_workflow(other_import_response.json()["id"])
+            assert workflow["steps"]["2"]["tool_version"] == "1.0.0"
+
     def test_export(self):
         uploaded_workflow_id = self.workflow_populator.simple_workflow("test_for_export")
         downloaded_workflow = self._download_workflow(uploaded_workflow_id)
@@ -5875,6 +5883,44 @@ input1:
                 details_collection_without_tag["history_content_type"] == "dataset_collection"
             ), details_collection_without_tag
             assert len(details_collection_without_tag["tags"]) == 0, details_collection_without_tag
+
+    @skip_without_tool("collection_creates_pair")
+    @skip_without_tool("cat")
+    def test_run_add_tag_on_database_operation_output(self):
+        with self.dataset_populator.test_history() as history_id:
+            self._run_jobs(
+                """
+class: GalaxyWorkflow
+inputs:
+  input1: data_collection
+steps:
+  extrat:
+    tool_id: __EXTRACT_DATASET__
+    in:
+      input: input1
+    outputs:
+      output:
+        add_tags:
+          - "name:foo"
+""",
+                test_data="""
+input1:
+  collection_type: list
+  name: the_dataset_list
+  elements:
+    - identifier: el1
+      value: 1.fastq
+      type: File
+""",
+                history_id=history_id,
+                round_trip_format_conversion=True,
+            )
+            details_dataset_with_tag = self.dataset_populator.get_history_dataset_details(
+                history_id, hid=3, wait=True, assert_ok=True
+            )
+
+            assert details_dataset_with_tag["history_content_type"] == "dataset", details_dataset_with_tag
+            assert details_dataset_with_tag["tags"][0] == "name:foo", details_dataset_with_tag
 
     @skip_without_tool("cat1")
     def test_run_with_runtime_pja(self):
