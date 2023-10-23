@@ -201,10 +201,7 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
     def create_draft_record(self, title: str, user_context: OptionalUserContext = None) -> RemoteDirectory:
         today = datetime.date.today().isoformat()
         creator = self._get_creator_from_user_context(user_context)
-        public = bool(self.get_user_preference_by_key("public_records", user_context))
-        access = "public" if public else "restricted"
         create_record_request = {
-            "access": {"record": access, "files": access},
             "files": {"enabled": True},
             "metadata": {
                 "title": title,
