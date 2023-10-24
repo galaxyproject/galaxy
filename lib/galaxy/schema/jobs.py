@@ -103,6 +103,14 @@ class SearchJobsPayload(Model):
         extra = Extra.allow  # This is used for items named file_ and __file_
 
 
+class DeleteJobPayload(Model):
+    message: Optional[str] = Field(
+        default=None,
+        title="Job message",
+        description="Stop message",
+    )
+
+
 class EncodedDatasetJobInfo(EncodedDatasetSourceId):
     uuid: UUID4 = UuidField
 
