@@ -1,9 +1,7 @@
 import os
 
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from ..base import common
+from ..base.twilltestcase import ShedTwillTestCase
 
 matplotlib_repository_name = "package_matplotlib_1_2_0170"
 matplotlib_repository_description = (

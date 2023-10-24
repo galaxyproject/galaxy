@@ -1,10 +1,8 @@
 import logging
 
+from ..base import common
 from ..base.api import skip_if_api_v2
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from ..base.twilltestcase import ShedTwillTestCase
 
 repository_name = "filtering_0000"
 repository_description = "Galaxy's filtering tool for test 0000"

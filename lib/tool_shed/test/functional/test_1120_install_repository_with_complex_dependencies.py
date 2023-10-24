@@ -1,9 +1,7 @@
 import os
 
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from ..base import common
+from ..base.twilltestcase import ShedTwillTestCase
 
 bwa_base_repository_name = "bwa_base_repository_0100"
 bwa_base_repository_description = "BWA Base"
