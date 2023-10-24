@@ -34,6 +34,7 @@ from galaxy.managers import (
     taggable,
     users,
 )
+from galaxy.managers.base import combine_lists
 from galaxy.model import (
     User,
     UserShareAssociation,
@@ -45,10 +46,7 @@ from galaxy.schema.schema import (
     SharingOptions,
 )
 from galaxy.structured_app import MinimalManagerApp
-from galaxy.util import (
-    munge_lists,
-    ready_name_for_url,
-)
+from galaxy.util import ready_name_for_url
 from galaxy.util.hash_util import md5_hash_str
 
 if TYPE_CHECKING:
@@ -86,7 +84,7 @@ class SharableModelManager(
         `user`.
         """
         user_filter = self.model_class.table.c.user_id == user.id
-        filters = munge_lists(user_filter, kwargs.get("filters", None))
+        filters = combine_lists(user_filter, kwargs.get("filters", None))
         return self.list(filters=filters, **kwargs)
 
     # .... owned/accessible interfaces
@@ -157,7 +155,7 @@ class SharableModelManager(
         Return a query for all published items.
         """
         published_filter = self.model_class.table.c.published == true()
-        filters = munge_lists(published_filter, filters)
+        filters = combine_lists(published_filter, filters)
         return self.query(filters=filters, **kwargs)
 
     def list_published(self, filters=None, **kwargs):
@@ -165,7 +163,7 @@ class SharableModelManager(
         Return a list of all published items.
         """
         published_filter = self.model_class.table.c.published == true()
-        filters = munge_lists(published_filter, filters)
+        filters = combine_lists(published_filter, filters)
         return self.list(filters=filters, **kwargs)
 
     # .... user sharing

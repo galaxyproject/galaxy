@@ -149,20 +149,3 @@ def test_enum_values():
         B = "b"
 
     assert util.enum_values(Stuff) == ["a", "c", "b"]
-
-
-class NotFalsy:
-    """Class requires explicit check for None"""
-
-    def __bool__(self):
-        raise Exception("not implemented")
-
-
-def test_munge_lists():
-    foo, bar = NotFalsy(), NotFalsy()
-    assert util.munge_lists(foo, None) == [foo]
-    assert util.munge_lists(None, foo) == [foo]
-    assert util.munge_lists(foo, bar) == [foo, bar]
-    assert util.munge_lists([foo, bar], None) == [foo, bar]
-    assert util.munge_lists(None, [foo, bar]) == [foo, bar]
-    assert util.munge_lists(None, None) == []

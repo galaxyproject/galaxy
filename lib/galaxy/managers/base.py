@@ -68,7 +68,6 @@ from galaxy.structured_app import (
     BasicSharedApp,
     MinimalManagerApp,
 )
-from galaxy.util import munge_lists
 from galaxy.web import url_for as gx_url_for
 
 log = logging.getLogger(__name__)
@@ -462,7 +461,7 @@ class ModelManager(Generic[U]):
         if not ids:
             return []
         ids_filter = parsed_filter("orm", self.model_class.__table__.c.id.in_(ids))
-        found = self.list(filters=munge_lists(ids_filter, filters), **kwargs)
+        found = self.list(filters=combine_lists(ids_filter, filters), **kwargs)
         # TODO: this does not order by the original 'ids' array
 
         # ...could use get (supposedly since found are in the session, the db won't be hit twice)
@@ -1364,3 +1363,24 @@ class StorageCleanerManager(Protocol):
     def cleanup_items(self, user: model.User, item_ids: Set[int]) -> StorageItemsCleanupResult:
         """Purges the given list of items by ID. The items must be owned by the user."""
         raise NotImplementedError
+
+
+def combine_lists(listA: Any, listB: Any) -> List:
+    """
+    Combine two lists into a single list.
+
+    Arguments can be None, non-lists, or lists. If an argument is None, it will
+    not be included in the returned list. If both arguments are None, an empty
+    list will be returned.
+    """
+
+    def make_list(item):
+        # Check for None explicitly: __bool__ may be overwritten.
+        if item is None:
+            return []
+        elif isinstance(item, (list, tuple)):
+            return list(item)
+        else:
+            return [item]
+
+    return make_list(listA) + make_list(listB)
