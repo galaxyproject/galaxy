@@ -903,15 +903,8 @@ export interface paths {
         post: operations["search_jobs_api_jobs_search_post"];
     };
     "/api/jobs/{id}": {
-        /**
-         * Show
-         * @description Return dictionary containing description of job data
-         *
-         * Parameters
-         * - id: ID of job to return
-         * - full: Return extra information ?
-         */
-        get: operations["show_api_jobs__id__get"];
+        /** Return dictionary containing description of job data. */
+        get: operations["show_job_api_jobs__id__get"];
         /** Cancels specified job */
         delete: operations["cancel_job_api_jobs__id__delete"];
     };
@@ -934,6 +927,10 @@ export interface paths {
     "/api/jobs/{id}/resume": {
         /** Resumes a paused job. */
         put: operations["resume_paused_job_api_jobs__id__resume_put"];
+    };
+    "/api/jobs/{job_id}/destination_params": {
+        /** Return destination parameters for specified job. */
+        get: operations["destination_params_job_api_jobs__job_id__destination_params_get"];
     };
     "/api/jobs/{job_id}/oidc-tokens": {
         /**
@@ -6296,6 +6293,27 @@ export interface components {
              * @description The name of the associated dataset.
              */
             name: string;
+        };
+        /**
+         * JobDestinationParams
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        JobDestinationParams: {
+            /**
+             * Handler
+             * @description ?
+             */
+            Handler: Record<string, never>;
+            /**
+             * Runner
+             * @description ?
+             */
+            Runner: Record<string, never>;
+            /**
+             * Runner Job ID
+             * @description ?
+             */
+            "Runner Job ID": Record<string, never>;
         };
         /**
          * JobErrorSummary
@@ -14958,16 +14976,10 @@ export interface operations {
             };
         };
     };
-    show_api_jobs__id__get: {
-        /**
-         * Show
-         * @description Return dictionary containing description of job data
-         *
-         * Parameters
-         * - id: ID of job to return
-         * - full: Return extra information ?
-         */
+    show_job_api_jobs__id__get: {
+        /** Return dictionary containing description of job data. */
         parameters: {
+            /** @description Show extra information. */
             query?: {
                 full?: boolean;
             };
@@ -14975,6 +14987,7 @@ export interface operations {
             header?: {
                 "run-as"?: string;
             };
+            /** @description The ID of the job */
             path: {
                 id: string;
             };
@@ -15156,6 +15169,33 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["JobAssociation"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    destination_params_job_api_jobs__job_id__destination_params_get: {
+        /** Return destination parameters for specified job. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The ID of the job */
+            path: {
+                job_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["JobDestinationParams"];
                 };
             };
             /** @description Validation Error */
