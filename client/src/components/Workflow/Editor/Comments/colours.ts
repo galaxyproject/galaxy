@@ -1,4 +1,4 @@
-import { hexToHsluv, hsluvToHex } from "hsluv";
+import { Hsluv } from "hsluv";
 
 export const colours = {
     black: "#000",
@@ -17,24 +17,28 @@ export type HexColour = `#${string}`;
 
 export const brightColours = (() => {
     const brighter: Record<string, string> = {};
+    const converter = new Hsluv();
+
     Object.entries(colours).forEach(([name, colour]) => {
-        const hsluv = hexToHsluv(colour);
-        let l = hsluv[2];
-        l += (100 - l) * 0.5;
-        hsluv[2] = l;
-        brighter[name] = hsluvToHex(hsluv);
+        converter.hex = colour;
+        converter.hexToHsluv();
+        converter.hsluv_l += (100 - converter.hsluv_l) * 0.5;
+        converter.hsluvToHex();
+        brighter[name] = converter.hex;
     });
     return brighter as Record<Colour, HexColour>;
 })();
 
 export const brighterColours = (() => {
     const brighter: Record<string, string> = {};
+    const converter = new Hsluv();
+
     Object.entries(colours).forEach(([name, colour]) => {
-        const hsluv = hexToHsluv(colour);
-        let l = hsluv[2];
-        l += (100 - l) * 0.95;
-        hsluv[2] = l;
-        brighter[name] = hsluvToHex(hsluv);
+        converter.hex = colour;
+        converter.hexToHsluv();
+        converter.hsluv_l += (100 - converter.hsluv_l) * 0.95;
+        converter.hsluvToHex();
+        brighter[name] = converter.hex;
     });
     return brighter as Record<Colour, HexColour>;
 })();
