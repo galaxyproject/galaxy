@@ -150,14 +150,6 @@ class SharableModelManager(
         """
         return self._session_setattr(item, "published", False, flush=flush)
 
-    def _query_published(self, filters=None, **kwargs):
-        """
-        Return a query for all published items.
-        """
-        published_filter = self.model_class.table.c.published == true()
-        filters = combine_lists(published_filter, filters)
-        return self.query(filters=filters, **kwargs)
-
     def list_published(self, filters=None, **kwargs):
         """
         Return a list of all published items.
