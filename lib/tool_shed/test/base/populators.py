@@ -79,7 +79,7 @@ def repo_tars(test_data_path: str) -> List[Path]:
 
 class HostsTestToolShed(Protocol):
     host: str
-    port: int
+    port: Optional[str]
 
 
 class ToolShedPopulator:
@@ -396,7 +396,7 @@ class ToolShedPopulator:
         owner = repository.owner
         name = repository.name
         port = shed_host.port
-        if port in [None, 80, 443]:
+        if port in [None, "80", "443"]:
             host_and_port = shed_host.host
         else:
             host_and_port = f"{shed_host.host}:{shed_host.port}"
