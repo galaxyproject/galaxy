@@ -2,7 +2,7 @@ import { mount } from "@vue/test-utils";
 import { createPinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 
-import { mockFetcher } from "@/schema/__mocks__";
+import { mockFetcher } from "@/api/schema/__mocks__";
 
 import { getResource } from "./getResource";
 import testData from "./testData.json";
@@ -11,7 +11,7 @@ import NewUserWelcome from "./NewUserWelcome.vue";
 
 const localVue = getLocalVue();
 
-jest.mock("@/schema");
+jest.mock("@/api/schema");
 jest.mock("./getResource");
 
 // mock resource connector

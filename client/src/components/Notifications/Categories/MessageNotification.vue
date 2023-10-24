@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BCol, BRow } from "bootstrap-vue";
 import { computed } from "vue";
 
-import { type MessageNotification } from "@/components/Notifications";
+import { type MessageNotification } from "@/api/notifications";
 import { useMarkdown } from "@/composables/markdown";
 
 import Heading from "@/components/Common/Heading.vue";

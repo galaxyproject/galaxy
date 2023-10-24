@@ -3,7 +3,9 @@
  */
 import { errorMessageAsString, rethrowSimple } from "utils/simple-error";
 
-import { getDatatypes, getDbKeys, getRemoteFiles } from "./services";
+import { datatypesFetcher } from "@/api/datatypes";
+import { dbKeysFetcher } from "@/api/dbKeys";
+import { remoteFilesFetcher } from "@/api/remoteFiles";
 
 export const AUTO_EXTENSION = {
     id: "auto",
@@ -49,7 +51,7 @@ async function loadDbKeys() {
     if (_cachedDbKeys) {
         return _cachedDbKeys;
     }
-    const { data: dbKeys } = await getDbKeys();
+    const { data: dbKeys } = await dbKeysFetcher();
     const dbKeyList = [];
     for (var key in dbKeys) {
         dbKeyList.push({
@@ -65,7 +67,7 @@ async function loadUploadDatatypes() {
     if (_cachedDatatypes) {
         return _cachedDatatypes;
     }
-    const { data: datatypes } = await getDatatypes({ extension_only: false });
+    const { data: datatypes } = await datatypesFetcher({ extension_only: false });
     const listExtensions = [];
     for (var key in datatypes) {
         listExtensions.push({
@@ -111,7 +113,7 @@ export async function getUploadDbKeys(defaultDbKey) {
 
 export async function getRemoteEntries(success, error) {
     try {
-        const { data } = await getRemoteFiles();
+        const { data } = await remoteFilesFetcher();
         success(data);
     } catch (e) {
         error(errorMessageAsString(e));
@@ -120,7 +122,7 @@ export async function getRemoteEntries(success, error) {
 
 export async function getRemoteEntriesAt(target) {
     try {
-        const { data: files } = await getRemoteFiles({ target });
+        const { data: files } = await remoteFilesFetcher({ target });
         return files;
     } catch (e) {
         rethrowSimple(e);

@@ -1,25 +1,25 @@
-import { fetcher } from "@/schema";
+import { fetcher } from "@/api/schema";
 import { rethrowSimple } from "@/utils/simple-error";
 
 import { type CleanableItem, CleanableSummary, CleanupResult, PaginationOptions } from "./Cleanup/model";
 
-const _fetchDiscardedDatasetsSummary = fetcher.path("/api/storage/datasets/discarded/summary").method("get").create();
+const discardedDatasetsSummaryFetcher = fetcher.path("/api/storage/datasets/discarded/summary").method("get").create();
 
 export async function fetchDiscardedDatasetsSummary(): Promise<CleanableSummary> {
     try {
-        const { data } = await _fetchDiscardedDatasetsSummary({});
+        const { data } = await discardedDatasetsSummaryFetcher({});
         return new CleanableSummary(data);
     } catch (e) {
         rethrowSimple(e);
     }
 }
 
-const _fetchDiscardedDatasets = fetcher.path("/api/storage/datasets/discarded").method("get").create();
+const discardedDatasetsFetcher = fetcher.path("/api/storage/datasets/discarded").method("get").create();
 
 export async function fetchDiscardedDatasets(options?: PaginationOptions): Promise<CleanableItem[]> {
     try {
         options = options ?? new PaginationOptions();
-        const { data } = await _fetchDiscardedDatasets({
+        const { data } = await discardedDatasetsFetcher({
             offset: options.offset,
             limit: options.limit,
             order: options.order,
@@ -30,12 +30,12 @@ export async function fetchDiscardedDatasets(options?: PaginationOptions): Promi
     }
 }
 
-const _cleanupDiscardedDatasets = fetcher.path("/api/storage/datasets").method("delete").create();
+const datasetsCleaner = fetcher.path("/api/storage/datasets").method("delete").create();
 
-export async function cleanupDiscardedDatasets(items: CleanableItem[]): Promise<CleanupResult> {
+export async function cleanupDatasets(items: CleanableItem[]): Promise<CleanupResult> {
     try {
         const item_ids = items.map((item) => item.id);
-        const { data } = await _cleanupDiscardedDatasets({
+        const { data } = await datasetsCleaner({
             item_ids,
         });
         return new CleanupResult(data, items);
@@ -44,23 +44,26 @@ export async function cleanupDiscardedDatasets(items: CleanableItem[]): Promise<
     }
 }
 
-const _fetchDiscardedHistoriesSummary = fetcher.path("/api/storage/histories/discarded/summary").method("get").create();
+const discardedHistoriesSummaryFetcher = fetcher
+    .path("/api/storage/histories/discarded/summary")
+    .method("get")
+    .create();
 
 export async function fetchDiscardedHistoriesSummary(): Promise<CleanableSummary> {
     try {
-        const { data } = await _fetchDiscardedHistoriesSummary({});
+        const { data } = await discardedHistoriesSummaryFetcher({});
         return new CleanableSummary(data);
     } catch (e) {
         rethrowSimple(e);
     }
 }
 
-const _fetchDiscardedHistories = fetcher.path("/api/storage/histories/discarded").method("get").create();
+const discardedHistoriesFetcher = fetcher.path("/api/storage/histories/discarded").method("get").create();
 
 export async function fetchDiscardedHistories(options?: PaginationOptions): Promise<CleanableItem[]> {
     try {
         options = options ?? new PaginationOptions();
-        const { data } = await _fetchDiscardedHistories({
+        const { data } = await discardedHistoriesFetcher({
             offset: options.offset,
             limit: options.limit,
             order: options.order,
@@ -71,12 +74,11 @@ export async function fetchDiscardedHistories(options?: PaginationOptions): Prom
     }
 }
 
-const _cleanupDiscardedHistories = fetcher.path("/api/storage/histories").method("delete").create();
-// TODO rename, this removes histories in general, not just discarded ones
-export async function cleanupDiscardedHistories(items: CleanableItem[]) {
+const historiesCleaner = fetcher.path("/api/storage/histories").method("delete").create();
+export async function cleanupHistories(items: CleanableItem[]) {
     try {
         const item_ids = items.map((item) => item.id);
-        const { data } = await _cleanupDiscardedHistories({
+        const { data } = await historiesCleaner({
             item_ids,
         });
         return new CleanupResult(data, items);
@@ -85,21 +87,18 @@ export async function cleanupDiscardedHistories(items: CleanableItem[]) {
     }
 }
 
-const fetchArchivedHistoriesSummaryData = fetcher
-    .path("/api/storage/histories/archived/summary")
-    .method("get")
-    .create();
+const archivedHistoriesSummaryFetcher = fetcher.path("/api/storage/histories/archived/summary").method("get").create();
 
 export async function fetchArchivedHistoriesSummary(): Promise<CleanableSummary> {
-    const { data } = await fetchArchivedHistoriesSummaryData({});
+    const { data } = await archivedHistoriesSummaryFetcher({});
     return new CleanableSummary(data);
 }
 
-const fetchArchivedHistoriesData = fetcher.path("/api/storage/histories/archived").method("get").create();
+const archivedHistoriesFetcher = fetcher.path("/api/storage/histories/archived").method("get").create();
 
 export async function fetchArchivedHistories(options?: PaginationOptions): Promise<CleanableItem[]> {
     options = options ?? new PaginationOptions();
-    const { data } = await fetchArchivedHistoriesData({
+    const { data } = await archivedHistoriesFetcher({
         offset: options.offset,
         limit: options.limit,
         order: options.order,

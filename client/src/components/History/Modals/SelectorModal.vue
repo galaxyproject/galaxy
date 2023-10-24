@@ -10,7 +10,7 @@ import { storeToRefs } from "pinia";
 import { computed, onMounted, onUnmounted, type PropType, type Ref, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import type { components } from "@/schema";
+import type { HistoryDetailed, HistorySummary } from "@/api";
 import { useHistoryStore } from "@/stores/historyStore";
 import { useUserStore } from "@/stores/userStore";
 import Filtering, { compare, contains, expandNameTag, toDate } from "@/utils/filtering";
@@ -38,8 +38,6 @@ const validFilters = {
 const HistoriesFilters = new Filtering(validFilters);
 
 type AdditionalOptions = "set-current" | "multi" | "center";
-type HistorySummary = components["schemas"]["HistorySummary"];
-type HistoryDetailed = components["schemas"]["HistoryDetailed"];
 
 const props = defineProps({
     multiple: { type: Boolean, default: false },

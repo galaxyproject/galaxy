@@ -8,7 +8,8 @@ import { computed, ref, watch } from "vue";
 import {
     getNotificationsPreferencesFromServer,
     updateNotificationsPreferencesOnServer,
-} from "@/components/User/Notifications/model/services";
+    UserNotificationPreferences,
+} from "@/api/notifications.preferences";
 import { useConfig } from "@/composables/config";
 import { Toast } from "@/composables/toast";
 import {
@@ -16,7 +17,6 @@ import {
     pushNotificationsEnabled,
     togglePushNotifications,
 } from "@/composables/utils/pushNotifications";
-import type { components } from "@/schema";
 
 import AsyncButton from "@/components/Common/AsyncButton.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -29,8 +29,6 @@ defineProps({
         default: "h-lg",
     },
 });
-
-type UserNotificationPreferences = components["schemas"]["UserNotificationPreferences"];
 
 const { config } = useConfig(true);
 

@@ -1,13 +1,10 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from "vue";
 
-import { fetcher } from "@/schema";
+import { jobLockStatus, jobLockUpdate } from "@/api/jobs";
 
 const jobLock = ref(false);
 const jobLockUpdating = ref(true);
-
-const jobLockStatus = fetcher.path("/api/job_lock").method("get").create();
-const jobLockUpdate = fetcher.path("/api/job_lock").method("put").create();
 
 watch(jobLock, async (newVal) => {
     jobLockUpdating.value = true;

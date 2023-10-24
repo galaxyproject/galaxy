@@ -2,11 +2,11 @@ import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { defineComponent } from "vue";
 
-import { mockFetcher } from "@/schema/__mocks__";
+import { mockFetcher } from "@/api/schema/__mocks__";
 
 import { useFileSources } from "./fileSources";
 
-jest.mock("@/schema");
+jest.mock("@/api/schema");
 
 const REMOTE_FILES_API_ROUTE = "/api/remote_files/plugins";
 

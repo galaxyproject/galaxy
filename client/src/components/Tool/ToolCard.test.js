@@ -7,7 +7,7 @@ import { getLocalVue } from "tests/jest/helpers";
 
 import ToolCard from "./ToolCard";
 
-jest.mock("@/schema");
+jest.mock("@/api/schema");
 
 jest.mock("@/composables/config", () => ({
     useConfig: jest.fn(() => ({

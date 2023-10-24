@@ -1,9 +1,8 @@
 <script setup lang="ts">
 import { onMounted, ref, watch } from "vue";
 
+import { getSelectableObjectStores } from "@/api/objectStores";
 import { errorMessageAsString } from "@/utils/simple-error";
-
-import { getSelectableObjectStores } from "./services";
 
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import DescribeObjectStore from "@/components/ObjectStore/DescribeObjectStore.vue";

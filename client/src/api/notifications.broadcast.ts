@@ -1,16 +1,16 @@
-import { type components, fetcher } from "@/schema";
+import { type components, fetcher } from "@/api/schema";
 
 type BroadcastNotificationResponse = components["schemas"]["BroadcastNotificationResponse"];
 
-const getBroadcast = fetcher.path("/api/notifications/broadcast/{notification_id}").method("get").create();
-export async function loadBroadcast(id: string): Promise<BroadcastNotificationResponse> {
-    const { data } = await getBroadcast({ notification_id: id });
+const broadcastFetcher = fetcher.path("/api/notifications/broadcast/{notification_id}").method("get").create();
+export async function fetchBroadcast(id: string): Promise<BroadcastNotificationResponse> {
+    const { data } = await broadcastFetcher({ notification_id: id });
     return data;
 }
 
-const getBroadcasts = fetcher.path("/api/notifications/broadcast").method("get").create();
-export async function loadBroadcasts(): Promise<BroadcastNotificationResponse[]> {
-    const { data } = await getBroadcasts({});
+const broadcastsFetcher = fetcher.path("/api/notifications/broadcast").method("get").create();
+export async function fetchAllBroadcasts(): Promise<BroadcastNotificationResponse[]> {
+    const { data } = await broadcastsFetcher({});
     return data;
 }
 

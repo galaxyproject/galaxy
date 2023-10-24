@@ -7,11 +7,11 @@ import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 
-import { mockFetcher } from "@/schema/__mocks__";
+import { mockFetcher } from "@/api/schema/__mocks__";
 
 import StsDownloadButton from "./StsDownloadButton";
 
-jest.mock("@/schema");
+jest.mock("@/api/schema");
 
 const localVue = getLocalVue();
 const NO_TASKS_CONFIG = {

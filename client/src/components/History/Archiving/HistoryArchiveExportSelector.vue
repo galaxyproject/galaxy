@@ -3,11 +3,11 @@ import { BAlert, BButton, BFormCheckbox, BModal } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
 import { RouterLink } from "vue-router";
 
+import type { HistorySummary } from "@/api";
+import { exportHistoryToFileSource, fetchHistoryExportRecords } from "@/api/histories.export";
 import type { ExportRecord } from "@/components/Common/models/exportRecordModel";
-import { exportToFileSource, getExportRecords } from "@/components/History/Export/services";
 import { DEFAULT_EXPORT_PARAMS } from "@/composables/shortTermStorage";
 import { useTaskMonitor } from "@/composables/taskMonitor";
-import type { HistorySummary } from "@/stores/historyStore";
 
 import ExportRecordCard from "./ExportRecordCard.vue";
 import ExportToFileSourceForm from "@/components/Common/ExportForm.vue";
@@ -80,7 +80,7 @@ watch(isExportTaskRunning, (newValue, oldValue) => {
 async function updateExports() {
     exportErrorMessage.value = null;
     try {
-        existingExports.value = await getExportRecords(props.history.id);
+        existingExports.value = await fetchHistoryExportRecords(props.history.id);
         if (mostUpToDateExport.value) {
             const shouldWaitForTask =
                 mostUpToDateExport.value?.isPreparing &&
@@ -118,7 +118,7 @@ async function doExportToFileSource(exportDirectory: string, fileName: string) {
     isExportingRecord.value = true;
     isExportDialogOpen.value = false;
     try {
-        await exportToFileSource(props.history.id, exportDirectory, fileName, DEFAULT_EXPORT_PARAMS);
+        await exportHistoryToFileSource(props.history.id, exportDirectory, fileName, DEFAULT_EXPORT_PARAMS);
     } catch (error) {
         exportErrorMessage.value = "The history export request failed. Please try again later.";
     }

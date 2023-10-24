@@ -1,4 +1,6 @@
-import { type components, fetcher } from "@/schema";
+import { type components, fetcher } from "@/api/schema";
+
+export type UserNotificationPreferences = components["schemas"]["UserNotificationPreferences"];
 
 const getNotificationsPreferences = fetcher.path("/api/notifications/preferences").method("get").create();
 export async function getNotificationsPreferencesFromServer() {

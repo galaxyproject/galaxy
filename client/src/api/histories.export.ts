@@ -1,8 +1,8 @@
+import type { components } from "@/api/schema";
+import { fetcher } from "@/api/schema";
 import type { ObjectExportTaskResponse } from "@/components/Common/models/exportRecordModel";
 import { ExportRecordModel } from "@/components/Common/models/exportRecordModel";
 import { DEFAULT_EXPORT_PARAMS } from "@/composables/shortTermStorage";
-import type { components } from "@/schema";
-import { fetcher } from "@/schema";
 
 type ModelStoreFormat = components["schemas"]["ModelStoreFormat"];
 
@@ -24,7 +24,7 @@ export const AVAILABLE_EXPORT_FORMATS: { id: ModelStoreFormat; name: string }[] 
  * @param params query and pagination params
  * @returns a promise with a list of export records associated with the given history.
  */
-export async function getExportRecords(historyId: string) {
+export async function fetchHistoryExportRecords(historyId: string) {
     const response = await _getExportRecords(
         {
             history_id: historyId,
@@ -46,7 +46,7 @@ export async function getExportRecords(historyId: string) {
  * @param exportParams additional parameters to configure the export
  * @returns A promise with the request response
  */
-export async function exportToFileSource(
+export async function exportHistoryToFileSource(
     historyId: string,
     exportDirectory: string,
     fileName: string,

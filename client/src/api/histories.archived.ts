@@ -1,6 +1,6 @@
 import type { FetchArgType } from "openapi-typescript-fetch";
 
-import { type components, fetcher } from "@/schema";
+import { type components, fetcher } from "@/api/schema";
 
 export type ArchivedHistorySummary = components["schemas"]["ArchivedHistorySummary"];
 export type ArchivedHistoryDetailed = components["schemas"]["ArchivedHistoryDetailed"];
@@ -55,7 +55,7 @@ export async function fetchArchivedHistories(
     };
 }
 
-const archiveHistory = fetcher.path("/api/histories/{history_id}/archive").method("post").create();
+const postArchiveHistory = fetcher.path("/api/histories/{history_id}/archive").method("post").create();
 
 /**
  * Archive a history.
@@ -64,12 +64,12 @@ const archiveHistory = fetcher.path("/api/histories/{history_id}/archive").metho
  * @param purgeHistory Whether to purge the history after archiving. Can only be used in combination with an archive export record.
  * @returns The archived history summary.
  */
-export async function archiveHistoryById(
+export async function archiveHistory(
     historyId: string,
     archiveExportId?: string,
     purgeHistory?: boolean
 ): Promise<ArchivedHistorySummary> {
-    const { data } = await archiveHistory({
+    const { data } = await postArchiveHistory({
         history_id: historyId,
         archive_export_id: archiveExportId,
         purge_history: purgeHistory,
@@ -77,7 +77,7 @@ export async function archiveHistoryById(
     return data as ArchivedHistorySummary;
 }
 
-const unarchiveHistory = fetcher
+const putUnarchiveHistory = fetcher
     .path("/api/histories/{history_id}/archive/restore")
     .method("put")
     // @ts-ignore: workaround for optional query parameters in PUT. More info here https://github.com/ajaishankar/openapi-typescript-fetch/pull/55
@@ -89,8 +89,8 @@ const unarchiveHistory = fetcher
  * @param force Whether to force un-archiving for purged histories.
  * @returns The restored history summary.
  */
-export async function unarchiveHistoryById(historyId: string, force?: boolean): Promise<ArchivedHistorySummary> {
-    const { data } = await unarchiveHistory({ history_id: historyId, force });
+export async function unarchiveHistory(historyId: string, force?: boolean): Promise<ArchivedHistorySummary> {
+    const { data } = await putUnarchiveHistory({ history_id: historyId, force });
     return data as ArchivedHistorySummary;
 }
 
@@ -102,7 +102,7 @@ const reimportHistoryFromStore = fetcher.path("/api/histories/from_store_async")
  * @param archivedHistory The archived history to reimport. It must have an associated export record.
  * @returns The async task result summary to track the reimport progress.
  */
-export async function reimportHistoryFromExportRecordAsync(
+export async function reimportArchivedHistoryFromExportRecord(
     archivedHistory: ArchivedHistorySummary
 ): Promise<AsyncTaskResultSummary> {
     if (!archivedHistory.export_record_data) {

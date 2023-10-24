@@ -1,5 +1,5 @@
-import type { components } from "@/schema";
-import { fetcher } from "@/schema/fetcher";
+import type { components } from "@/api/schema";
+import { fetcher } from "@/api/schema/fetcher";
 
 /** The browsing mode:
  * - `file` - allows to select files or directories contained in a source (default)
@@ -43,7 +43,7 @@ export async function getFileSources(options: FilterFileSourcesOptions = {}): Pr
     return data as BrowsableFilesSourcePlugin[];
 }
 
-const getRemoteFiles = fetcher.path("/api/remote_files").method("get").create();
+export const remoteFilesFetcher = fetcher.path("/api/remote_files").method("get").create();
 
 /**
  * Get the list of files and directories from the server for the given file source URI.
@@ -53,7 +53,7 @@ const getRemoteFiles = fetcher.path("/api/remote_files").method("get").create();
  * @returns The list of files and directories from the server for the given URI.
  */
 export async function browseRemoteFiles(uri: string, isRecursive = false, writeable = false): Promise<RemoteEntry[]> {
-    const { data } = await getRemoteFiles({ target: uri, recursive: isRecursive, writeable });
+    const { data } = await remoteFilesFetcher({ target: uri, recursive: isRecursive, writeable });
     return data as RemoteEntry[];
 }
 

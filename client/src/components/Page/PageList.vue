@@ -104,11 +104,11 @@ import Filtering, { contains, equals, expandNameTagWithQuotes, toBool } from "ut
 import _l from "utils/localization";
 import { useRouter } from "vue-router/composables";
 
+import { updateTags } from "@/api/tags";
 import { absPath } from "@/utils/redirect";
 
 import PageDropdown from "./PageDropdown";
 import PageIndexActions from "./PageIndexActions";
-import { updateTags } from "./services";
 
 const helpHtml = `<div>
 <p>This textbox can be used to filter the pages displayed.

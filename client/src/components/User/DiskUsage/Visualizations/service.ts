@@ -1,12 +1,5 @@
-import { fetcher } from "@/schema/fetcher";
-
-const getHistories = fetcher.path("/api/histories").method("get").create();
-const getArchivedHistories = fetcher.path("/api/histories/archived").method("get").create();
-const getDatasets = fetcher.path("/api/datasets").method("get").create();
-const undeleteHistory = fetcher.path("/api/histories/deleted/{history_id}/undelete").method("post").create();
-const purgeHistory = fetcher.path("/api/histories/{history_id}").method("delete").create();
-const updateDataset = fetcher.path("/api/histories/{history_id}/contents/{type}s/{id}").method("put").create();
-const purgeDataset = fetcher.path("/api/histories/{history_id}/contents/{type}s/{id}").method("delete").create();
+import { datasetsFetcher, purgeHistoryDataset, undeleteHistoryDataset } from "@/api/datasets";
+import { archivedHistoriesFetcher, historiesFetcher, purgeHistory, undeleteHistory } from "@/api/histories";
 
 export interface ItemSizeSummary {
     id: string;
@@ -23,12 +16,12 @@ interface PurgeableItemSizeSummary extends ItemSizeSummary {
 const itemSizeSummaryFields = "id,name,size,deleted,archived";
 
 export async function fetchAllHistoriesSizeSummary(): Promise<ItemSizeSummary[]> {
-    const nonPurgedHistoriesResponse = await getHistories({
+    const nonPurgedHistoriesResponse = await historiesFetcher({
         keys: itemSizeSummaryFields,
         q: ["deleted", "purged"],
         qv: ["None", "false"],
     });
-    const nonPurgedArchivedHistories = await getArchivedHistories({
+    const nonPurgedArchivedHistories = await archivedHistoriesFetcher({
         keys: itemSizeSummaryFields,
         q: ["purged"],
         qv: ["false"],
@@ -41,7 +34,7 @@ export async function fetchAllHistoriesSizeSummary(): Promise<ItemSizeSummary[]>
 }
 
 export async function fetchHistoryContentsSizeSummary(historyId: string, limit = 5000) {
-    const response = await getDatasets({
+    const response = await datasetsFetcher({
         history_id: historyId,
         keys: itemSizeSummaryFields,
         limit,
@@ -63,11 +56,11 @@ export async function purgeHistoryById(historyId: string): Promise<PurgeableItem
 }
 
 export async function undeleteDatasetById(historyId: string, datasetId: string): Promise<ItemSizeSummary> {
-    const response = await updateDataset({ history_id: historyId, id: datasetId, type: "dataset", deleted: false });
-    return response.data as unknown as ItemSizeSummary;
+    const data = await undeleteHistoryDataset(historyId, datasetId);
+    return data as unknown as ItemSizeSummary;
 }
 
 export async function purgeDatasetById(historyId: string, datasetId: string): Promise<PurgeableItemSizeSummary> {
-    const response = await purgeDataset({ history_id: historyId, id: datasetId, type: "dataset", purge: true });
-    return response.data as unknown as PurgeableItemSizeSummary;
+    const data = await purgeHistoryDataset(historyId, datasetId);
+    return data as unknown as PurgeableItemSizeSummary;
 }

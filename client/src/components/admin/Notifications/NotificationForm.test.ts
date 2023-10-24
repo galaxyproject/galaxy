@@ -7,7 +7,7 @@ import Vue from "vue";
 
 import NotificationForm from "./NotificationForm.vue";
 
-jest.mock("@/schema");
+jest.mock("@/api/schema");
 
 const SUBMIT_BUTTON_SELECTOR = "#notification-submit";
 
