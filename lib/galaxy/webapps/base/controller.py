@@ -1316,7 +1316,7 @@ class SharableMixin:
         item = self.get_item(trans, id)
         if item:
             # Only update slug if slug is not already in use.
-            if trans.sa_session.query(item.__class__).filter_by(user=item.user, slug=new_slug).count() == 0:
+            if not slug_exists(trans.sa_session, item.__class__, item.user, new_slug):
                 item.slug = new_slug
                 with transaction(trans.sa_session):
                     trans.sa_session.commit()
