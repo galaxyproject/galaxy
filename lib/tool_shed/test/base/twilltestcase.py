@@ -15,6 +15,7 @@ from typing import (
     Iterator,
     List,
     Optional,
+    Tuple,
 )
 from urllib.parse import (
     quote_plus,
@@ -694,7 +695,14 @@ class ShedTwillTestCase(ShedApiTestCase):
     def invalid_tools_labels(self) -> str:
         return "Invalid Tools" if self.is_v2 else "Invalid tools"
 
-    def create(self, cntrller="user", email="test@bx.psu.edu", password="testuser", username="admin-user", redirect=""):
+    def create(
+        self,
+        cntrller: str = "user",
+        email: str = "test@bx.psu.edu",
+        password: str = "testuser",
+        username: str = "admin-user",
+        redirect: Optional[str] = None,
+    ) -> Tuple[bool, bool, bool]:
         # HACK: don't use panels because late_javascripts() messes up the twill browser and it
         # can't find form fields (and hence user can't be logged in).
         params = dict(cntrller=cntrller, use_panels=False)
@@ -747,7 +755,7 @@ class ShedTwillTestCase(ShedApiTestCase):
         email: str = "test@bx.psu.edu",
         password: str = "testuser",
         username: str = "admin-user",
-        redirect: str = "",
+        redirect: Optional[str] = None,
         logout_first: bool = True,
     ):
         if self.is_v2:
