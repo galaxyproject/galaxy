@@ -2207,10 +2207,6 @@ class NavigatesGalaxy(HasDriver):
         self.assert_absent_or_hidden(editor)
 
     def share_ensure_by_user_available(self, sharing_component):
-        collapse = sharing_component.share_with_collapse
-        collapse.wait_for_visible()
-        if collapse.has_class("collapsed"):
-            collapse.wait_for_and_click()
         sharing_component.share_with_multiselect.wait_for_visible()
 
     def share_unshare_with_user(self, sharing_component, email):
