@@ -262,7 +262,7 @@ def set_metadata_portable(
                 if not is_celery_task:
                     error_desc = "Failed to find tool_stdout or tool_stderr for this job, cannot collect metadata"
                     error_extra = f"Working dir contents [{wdc}], output directory contents [{odc}]"
-                    log.warn(f"{error_desc}. {error_extra}")
+                    log.warning(f"{error_desc}. {error_extra}")
                     raise Exception(error_desc)
                 else:
                     tool_stdout = tool_stderr = b""
