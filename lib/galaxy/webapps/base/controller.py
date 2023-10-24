@@ -1238,11 +1238,11 @@ class UsesFormDefinitionsMixin:
         of all the forms from the form_definition table.
         """
         if all_versions:
-            return trans.sa_session.query(trans.app.model.FormDefinition)
+            return get_form_definitions(trans.sa_session)
         if filter:
-            fdc_list = trans.sa_session.query(trans.app.model.FormDefinitionCurrent).filter_by(**filter)
+            fdc_list = get_filtered_form_definitions_current(trans.sa_session, filter)
         else:
-            fdc_list = trans.sa_session.query(trans.app.model.FormDefinitionCurrent)
+            fdc_list = get_form_definitions_current(trans.sa_session)
         if form_type == "All":
             return [fdc.latest_form for fdc in fdc_list]
         else:
