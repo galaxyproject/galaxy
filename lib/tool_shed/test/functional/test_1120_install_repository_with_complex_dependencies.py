@@ -70,7 +70,6 @@ class TestInstallingComplexRepositoryDependencies(ShedTwillTestCase):
                 category=category,
                 strings_displayed=[],
             )
-            self._get_repository_by_name_and_owner(bwa_package_repository_name, common.test_user_1_name)
             self.commit_tar_to_repository(
                 repository,
                 "bwa/complex/bwa_base.tar",
