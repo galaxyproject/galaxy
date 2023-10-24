@@ -303,7 +303,7 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
         repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         self.login(email=common.admin_email, username=common.admin_username)
         self.delete_repository(repository)
-        metadata = self._populator.get_metadata(repository, downloadable_only=False)
+        metadata = self.populator.get_metadata(repository, downloadable_only=False)
         for _, value in metadata.__root__.items():
             assert not value.downloadable
         # Explicitly reload all metadata revisions from the database, to ensure that we have the current status of the downloadable flag.
