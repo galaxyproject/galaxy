@@ -181,12 +181,14 @@ SearchQueryParam: Optional[str] = search_query_param(
     free_text_fields=["user", "tool", "handler", "runner"],
 )
 
+FullShowQueryParam: Optional[bool] = Query(title="Full show", description="Show extra information.")
+
 JobIdPathParam: DecodedDatabaseIdField = Path(title="Job ID", description="The ID of the job")
 
 ReportErrorBody = Body(default=Required, title="Report error", description="The values to report an Error")
 SearchJobBody = Body(default=Required, title="Search job", description="The values to search an Job")
 # TODO The endpoint only stops/cancles a job, but is called delete settle for one name
-DeleteJobBody = Body(default=None, title="Delete/cancel job", description="The values to delete/cancel a job")
+DeleteJobBody = Body(title="Delete/cancel job", description="The values to delete/cancel a job")
 
 
 @router.cbv
@@ -391,20 +393,17 @@ class FastAPIJobs:
                 jobs.append(job)
         return [EncodedJobDetails(**single_job.to_dict("element")) for single_job in jobs]
 
-    @router.get("/api/jobs/{id}")
+    @router.get(
+        "/api/jobs/{id}",
+        name="show_job",
+        summary="Return dictionary containing description of job data.",
+    )
     def show(
         self,
-        id: DecodedDatabaseIdField,
+        id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
+        full: Annotated[Optional[bool], FullShowQueryParam] = False,
         trans: ProvidesUserContext = DependsOnTrans,
-        full: Optional[bool] = False,
     ) -> Dict[str, Any]:
-        """
-        Return dictionary containing description of job data
-
-        Parameters
-        - id: ID of job to return
-        - full: Return extra information ?
-        """
         return self.service.show(trans, id, bool(full))
 
     # TODO find the mapping of the legacy route
@@ -418,7 +417,7 @@ class FastAPIJobs:
         self,
         id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
         trans: ProvidesUserContext = DependsOnTrans,
-        payload: Optional[DeleteJobPayload] = DeleteJobBody,
+        payload: Annotated[Optional[DeleteJobPayload], DeleteJobBody] = None,
     ) -> bool:
         job = self.service.get_job(trans=trans, job_id=id)
         if payload:
