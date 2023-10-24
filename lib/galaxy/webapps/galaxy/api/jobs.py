@@ -49,6 +49,7 @@ from galaxy.schema.jobs import (
     DeleteJobPayload,
     EncodedJobDetails,
     JobAssociation,
+    JobDestinationParams,
     JobErrorSummary,
     JobInputSummary,
     ReportJobErrorPayload,
@@ -59,7 +60,6 @@ from galaxy.schema.types import OffsetNaiveDatetime
 from galaxy.web import (
     expose_api,
     expose_api_anonymous,
-    require_admin,
 )
 from galaxy.webapps.base.controller import UsesVisualizationMixin
 from galaxy.webapps.galaxy.api import (
@@ -345,6 +345,20 @@ class FastAPIJobs:
         job = self.service.get_job(trans=trans, job_id=id)
         return self.service.dictify_associations(trans, job.output_datasets, job.output_library_datasets)
 
+    @router.get(
+        "/api/jobs/{job_id}/destination_params",
+        name="destination_params_job",
+        summary="Return destination parameters for specified job.",
+        require_admin=True,
+    )
+    def destination_params(
+        self,
+        job_id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
+        trans: ProvidesUserContext = DependsOnTrans,
+    ) -> JobDestinationParams:
+        job = self.service.get_job(trans, job_id=job_id)
+        return JobDestinationParams(**summarize_destination_params(trans, job))
+
     @router.post(
         "/api/jobs/search",
         name="search_jobs",
@@ -456,22 +470,6 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
         """
         job = self.__get_job(trans, **kwd)
         return summarize_job_metrics(trans, job)
-
-    @require_admin
-    @expose_api
-    def destination_params(self, trans: ProvidesUserContext, **kwd):
-        """
-        * GET /api/jobs/{job_id}/destination_params
-            Return destination parameters for specified job.
-
-        :type   job_id: string
-        :param  job_id: Encoded job id
-
-        :rtype:     list
-        :returns:   list containing job destination parameters
-        """
-        job = self.__get_job(trans, **kwd)
-        return summarize_destination_params(trans, job)
 
     @expose_api_anonymous
     def parameters_display(self, trans: ProvidesUserContext, **kwd):
