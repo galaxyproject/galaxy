@@ -373,9 +373,10 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
 
     def test_0135_api_get_repositories_in_category(self):
         """Load the api endpoint for repositories in a category."""
-        categories = []
-        categories.append(self.populator.get_category_with_name("Test 0000 Basic Repository Features 1"))
-        categories.append(self.populator.get_category_with_name("Test 0000 Basic Repository Features 2"))
+        categories = [
+            self.populator.get_category_with_name(name)
+            for name in ("Test 0000 Basic Repository Features 1", "Test 0000 Basic Repository Features 2")
+        ]
         self.get_repositories_category_api(categories)
 
     def test_0140_view_invalid_changeset(self):

@@ -1035,8 +1035,9 @@ class ShedTwillTestCase(ShedApiTestCase):
 
     def create_category(self, **kwd) -> Category:
         category_name = kwd["name"]
-        category = self.populator.get_category_with_name(category_name)
-        if category is None:
+        try:
+            category = self.populator.get_category_with_name(category_name)
+        except ValueError:
             # not recreating this functionality in the UI I don't think?
             category = self.populator.new_category(category_name)
             return category
@@ -1591,7 +1592,6 @@ class ShedTwillTestCase(ShedApiTestCase):
     ) -> None:
         self.browse_tool_shed(url=self.url)
         category = self.populator.get_category_with_name(category_name)
-        assert category
         self.browse_category(category)
         self.preview_repository_in_tool_shed(name, owner, strings_displayed=preview_strings_displayed)
         repository = self._get_repository_by_name_and_owner(name, owner)

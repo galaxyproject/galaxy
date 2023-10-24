@@ -271,17 +271,16 @@ class ToolShedPopulator:
         response.raise_for_status()
         return Category(**response.json())
 
-    def get_category_with_name(self, name: str) -> Optional[Category]:
+    def get_category_with_name(self, name: str) -> Category:
         categories = [c for c in self.get_categories() if c.name == name]
-        return categories[0] if categories else None
+        if not categories:
+            raise ValueError(f"No category with name {name} found.")
+        return categories[0]
 
     def repositories_by_category(self, category_id: str) -> RepositoriesByCategory:
         response = self._api_interactor.get(f"categories/{category_id}/repositories")
         response.raise_for_status()
         return RepositoriesByCategory(**response.json())
-
-    def has_category_with_name(self, name: str) -> bool:
-        return self.get_category_with_name(name) is not None
 
     def get_ordered_installable_revisions(self, owner: str, name: str) -> OrderedInstallableRevisions:
         request = GetOrderedInstallableRevisionsRequest(owner=owner, name=name)
