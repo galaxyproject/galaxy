@@ -977,6 +977,16 @@ steps:
     #     self._assert_status_code_is(empty_search_response, 200)
     #     assert len(empty_search_response.json()) == 0
 
+    @pytest.mark.require_new_history
+    def test_destination_params(self, history_id):
+        dataset_id = self.__history_with_ok_dataset(history_id)
+        inputs = json.dumps({"input1": {"src": "hda", "id": dataset_id}})
+        search_response = self._create_and_search_job(history_id, inputs, tool_id="cat1")
+        job_id = search_response.json()[0]["id"]
+        destination_params_response = self._get(f"/api/jobs/{job_id}/destination_params", admin=True)
+        self._assert_status_code_is(destination_params_response, 200)
+        # TODO maybe extend test?
+
     def _create_and_search_job(self, history_id, inputs, tool_id):
         # create a job
         search_payload = self._search_payload(history_id=history_id, tool_id=tool_id, inputs=inputs)
