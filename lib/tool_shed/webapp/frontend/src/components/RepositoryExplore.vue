@@ -22,7 +22,7 @@ const props = withDefaults(defineProps<RepositoryExploreProps>(), {
 })
 
 const changelog = computed(() => `/repos/${props.repository.owner}/${[props.repository.name]}/shortlog`)
-const contents = computed(() => `/repos/${props.repository.owner}/${[props.repository.name]}/tip`)
+const contents = computed(() => `/repos/${props.repository.owner}/${[props.repository.name]}/rev/tip`)
 function navigate(location: string | null | undefined) {
     if (location) {
         window.location.href = location
