@@ -488,6 +488,10 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             history_is_current = history_to_view == trans.history
         else:
             history_to_view = trans.history
+            if not history_to_view:
+                raise exceptions.RequestParameterMissingException(
+                    "No 'id' parameter provided for history, and user does not have a current history."
+                )
             user_is_owner = True
             history_is_current = True
 
