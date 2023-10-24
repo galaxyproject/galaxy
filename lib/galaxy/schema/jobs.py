@@ -151,3 +151,9 @@ class EncodedJobDetails(JobSummary, EncodedJobIDs):
     # TODO add description, check type and add proper default
     copied_from_job_id: Any = Field(default=None, title="Copied from Job-ID", description="?")
     output_collections: Any = Field(default={}, title="Output collections", description="?")
+
+
+class JobDestinationParams(Model):
+    runner: Any = Field(default=Required, title="Runner", description="?", alias="Runner")
+    runner_job_id: Any = Field(default=Required, title="Runner Job ID", description="?", alias="Runner Job ID")
+    handler: Any = Field(default=Required, title="Handler", description="?", alias="Handler")
