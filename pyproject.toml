@@ -191,7 +191,7 @@ target-version = "py37"
 # E402 module level import not at top of file # TODO, we would like to improve this.
 # E501 is line length (delegated to black)
 # G* are TODOs
-ignore = ["B008", "B9", "E402", "E501", "G001", "G002", "G004", "G201"]
+ignore = ["B008", "B9", "E402", "E501", "G001", "G002", "G004"]
 exclude = [
   "lib/tool_shed/test/test_data/repos"
 ]
