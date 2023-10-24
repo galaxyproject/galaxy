@@ -15,6 +15,4 @@ def test_combine_lists():
     assert combine_lists(foo, bar) == [foo, bar]
     assert combine_lists([foo, bar], None) == [foo, bar]
     assert combine_lists(None, [foo, bar]) == [foo, bar]
-    assert combine_lists((foo, bar), None) == [foo, bar]
-    assert combine_lists(None, (foo, bar)) == [foo, bar]
     assert combine_lists(None, None) == []

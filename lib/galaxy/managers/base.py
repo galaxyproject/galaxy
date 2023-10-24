@@ -1378,8 +1378,8 @@ def combine_lists(listA: Any, listB: Any) -> List:
         # Check for None explicitly: __bool__ may be overwritten.
         if item is None:
             return []
-        elif isinstance(item, (list, tuple)):
-            return list(item)
+        elif isinstance(item, list):
+            return item
         else:
             return [item]
 
