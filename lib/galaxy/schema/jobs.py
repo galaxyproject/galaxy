@@ -103,6 +103,10 @@ class SearchJobsPayload(Model):
         extra = Extra.allow  # This is used for items named file_ and __file_
 
 
+class EncodedDatasetJobInfo(EncodedDatasetSourceId):
+    uuid: UUID4 = UuidField
+
+
 class EncodedJobIDs(Model):
     id: EncodedDatabaseIdField = EntityIdField
     history_id: Optional[EncodedDatabaseIdField] = Field(
@@ -112,11 +116,7 @@ class EncodedJobIDs(Model):
     )
 
 
-class EncodedDatasetJobInfo(EncodedDatasetSourceId):
-    uuid: UUID4 = UuidField
-
-
-class EncodedJobDetails(JobSummary, EncodedDatasetSourceId):
+class EncodedJobDetails(JobSummary, EncodedJobIDs):
     command_version: str = Field(
         ...,
         title="Command Version",
