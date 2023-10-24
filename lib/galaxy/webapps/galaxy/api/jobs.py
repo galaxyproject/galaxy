@@ -46,6 +46,7 @@ from galaxy.managers.jobs import (
 )
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.jobs import (
+    DeleteJobPayload,
     EncodedJobDetails,
     JobAssociation,
     JobErrorSummary,
@@ -184,6 +185,8 @@ JobIdPathParam: DecodedDatabaseIdField = Path(title="Job ID", description="The I
 
 ReportErrorBody = Body(default=Required, title="Report error", description="The values to report an Error")
 SearchJobBody = Body(default=Required, title="Search job", description="The values to search an Job")
+# TODO The endpoint only stops/cancles a job, but is called delete settle for one name
+DeleteJobBody = Body(default=None, title="Delete/cancel job", description="The values to delete/cancel a job")
 
 
 @router.cbv
@@ -386,7 +389,6 @@ class FastAPIJobs:
             )
             if job:
                 jobs.append(job)
-        # return [self.service.job_to_encoded_details(job=single_job.to_dict("element")) for single_job in jobs]
         return [EncodedJobDetails(**single_job.to_dict("element")) for single_job in jobs]
 
     @router.get("/api/jobs/{id}")
@@ -405,29 +407,32 @@ class FastAPIJobs:
         """
         return self.service.show(trans, id, bool(full))
 
+    # TODO find the mapping of the legacy route
+    # TODO rename? --> function cancels/stops job (no deletion involved?)
+    @router.delete(
+        "/api/jobs/{id}",
+        name="cancel_job",
+        summary="Cancels specified job",
+    )
+    def delete(
+        self,
+        id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
+        trans: ProvidesUserContext = DependsOnTrans,
+        payload: Optional[DeleteJobPayload] = DeleteJobBody,
+    ) -> bool:
+        job = self.service.get_job(trans=trans, job_id=id)
+        if payload:
+            message = payload.message
+        else:
+            message = None
+        return self.manager.stop(job, message=message)
+
 
 class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
     job_manager = depends(JobManager)
     job_search = depends(JobSearch)
     service = depends(JobsService)
     hda_manager = depends(hdas.HDAManager)
-
-    @expose_api
-    def delete(self, trans: ProvidesUserContext, id, **kwd):
-        """
-        delete( trans, id )
-        * Delete /api/jobs/{id}
-            cancels specified job
-
-        :type   id: string
-        :param  id: Encoded job id
-        :type   message: string
-        :param  message: Stop message.
-        """
-        payload = kwd.get("payload") or {}
-        job = self.__get_job(trans, id)
-        message = payload.get("message", None)
-        return self.job_manager.stop(job, message=message)
 
     @expose_api_anonymous
     def metrics(self, trans: ProvidesUserContext, **kwd):
