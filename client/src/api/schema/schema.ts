@@ -912,6 +912,8 @@ export interface paths {
          * - full: Return extra information ?
          */
         get: operations["show_api_jobs__id__get"];
+        /** Cancels specified job */
+        delete: operations["cancel_job_api_jobs__id__delete"];
     };
     "/api/jobs/{id}/common_problems": {
         /** Check inputs and job for common potential problems to aid in error reporting */
@@ -3955,6 +3957,17 @@ export interface components {
              * @default false
              */
             purge?: boolean;
+        };
+        /**
+         * DeleteJobPayload
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        DeleteJobPayload: {
+            /**
+             * Job message
+             * @description Stop message
+             */
+            message?: string;
         };
         /**
          * DeleteLibraryPayload
@@ -14971,6 +14984,38 @@ export interface operations {
             200: {
                 content: {
                     "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_job_api_jobs__id__delete: {
+        /** Cancels specified job */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The ID of the job */
+            path: {
+                id: string;
+            };
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["DeleteJobPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": boolean;
                 };
             };
             /** @description Validation Error */
