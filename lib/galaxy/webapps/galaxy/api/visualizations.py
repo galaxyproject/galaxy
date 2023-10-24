@@ -6,10 +6,7 @@ may change often.
 """
 import json
 import logging
-
-from typing import (
-    Optional,
-)
+from typing import Optional
 
 from fastapi import (
     Body,
@@ -90,7 +87,9 @@ SharingQueryParam: bool = Query(
 
 ShowPublishedQueryParam: bool = Query(default=True, title="Include published visualizations.", description="")
 
-ShowSharedQueryParam: bool = Query(default=False, title="Include visualizations shared with authenticated user.", description="")
+ShowSharedQueryParam: bool = Query(
+    default=False, title="Include visualizations shared with authenticated user.", description=""
+)
 
 SortByQueryParam: VisualizationSortByEnum = Query(
     default="update_time",

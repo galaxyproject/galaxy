@@ -1,5 +1,4 @@
 import logging
-
 from typing import (
     Any,
     List,
@@ -7,17 +6,13 @@ from typing import (
 )
 
 from galaxy import exceptions
-
 from galaxy.managers.notification import NotificationManager
 from galaxy.managers.visualizations import (
     VisualizationManager,
     VisualizationSerializer,
 )
+from galaxy.schema.visualization import VisualizationIndexQueryPayload
 from galaxy.security.idencoding import IdEncodingHelper
-
-from galaxy.schema.visualization import (
-    VisualizationIndexQueryPayload,
-)
 from galaxy.webapps.galaxy.services.base import ServiceBase
 from galaxy.webapps.galaxy.services.sharable import ShareableService
 
@@ -51,7 +46,6 @@ class VisualizationsService(ServiceBase):
         payload: VisualizationIndexQueryPayload,
         detailed: bool = False,
         include_total_count: bool = False,
-        sharing: bool = False,
     ) -> Tuple[List[Any], int]:
         """Return a list of Visualizations viewable by the user
 

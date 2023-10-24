@@ -5,7 +5,6 @@ Visualizations are saved configurations/variables used to
 reproduce a specific view in a Galaxy visualization.
 """
 import logging
-
 from typing import (
     Dict,
     List,
@@ -17,30 +16,25 @@ from sqlalchemy import (
     or_,
     true,
 )
-from sqlalchemy.orm import (
-    aliased,
-)
+from sqlalchemy.orm import aliased
 
 from galaxy import (
     exceptions,
     model,
 )
-from galaxy.managers import (base, sharable)
+from galaxy.managers import (
+    base,
+    sharable,
+)
 from galaxy.managers.context import ProvidesUserContext
-
 from galaxy.model.index_filter_util import (
     append_user_filter,
     raw_text_column_filter,
     tag_filter,
     text_column_filter,
 )
-
-from galaxy.schema.visualization import (
-    VisualizationIndexQueryPayload,
-)
-
+from galaxy.schema.visualization import VisualizationIndexQueryPayload
 from galaxy.structured_app import MinimalManagerApp
-
 from galaxy.util.search import (
     FilteredTerm,
     parse_filters_structured,
@@ -188,17 +182,24 @@ class VisualizationSerializer(sharable.SharableModelSerializer):
         self.visualization_manager = self.manager
 
         self.default_view = "summary"
-        self.add_view("summary", [
-            "id",
-            "title",
-            "type",
-            "dbkey",
-        ])
-        self.add_view("detailed", [
-            "create_time",
-            "tags",
-            "update_time",
-        ], include_keys_from="summary",)
+        self.add_view(
+            "summary",
+            [
+                "id",
+                "title",
+                "type",
+                "dbkey",
+            ],
+        )
+        self.add_view(
+            "detailed",
+            [
+                "create_time",
+                "tags",
+                "update_time",
+            ],
+            include_keys_from="summary",
+        )
 
     def add_serializers(self):
         super().add_serializers()
