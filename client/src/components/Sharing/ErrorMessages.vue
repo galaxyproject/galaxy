@@ -34,9 +34,9 @@ function splitLoginString(string: string) {
             @dismissed="() => emit('dismissed', index)">
             <span v-if="hasLogin(message)">
                 <span v-for="(part, i) in splitLoginString(message)" :key="i">
-                    <router-link v-if="hasLogin(part)" :to="loginLink" class="require-login-link">
+                    <a v-if="hasLogin(part)" :href="loginLink" class="require-login-link">
                         {{ part }}
-                    </router-link>
+                    </a>
                     <span v-else> {{ part }} </span>
                 </span>
             </span>

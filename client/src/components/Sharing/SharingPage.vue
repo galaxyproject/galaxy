@@ -226,7 +226,9 @@ const embedable = computed(() => item.value.importable && props.modelClass.toLoc
 <template>
     <div class="sharing-page">
         <Heading h1 size="lg" separator>
-            Share or Publish {{ modelClass }} <span v-if="ready">"{{ item.title }}"</span>
+            <span>
+                Share or Publish {{ modelClass }} <span v-if="ready">"{{ item.title }}"</span>
+            </span>
         </Heading>
 
         <ErrorMessages :messages="errors" @dismissed="onErrorDismissed"></ErrorMessages>
