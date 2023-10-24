@@ -4103,6 +4103,29 @@ export interface components {
          */
         ElementsFromType: "archive" | "bagit" | "bagit_archive" | "directory";
         /**
+         * EncodedDatasetJobInfo
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        EncodedDatasetJobInfo: {
+            /**
+             * ID
+             * @description The encoded ID of this entity.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Source
+             * @description The source of this dataset, either `hda` or `ldda` depending of its origin.
+             */
+            src: components["schemas"]["DatasetSourceType"];
+            /**
+             * UUID
+             * Format: uuid4
+             * @description Universal unique identifier for this dataset.
+             */
+            uuid: string;
+        };
+        /**
          * EncodedDatasetSourceId
          * @description Base model definition with common configuration used by all derived models.
          */
@@ -4135,6 +4158,116 @@ export interface components {
              * @example 0123456789ABCDEF
              */
             id: string;
+        };
+        /**
+         * EncodedJobDetails
+         * @description Basic information about a job.
+         */
+        EncodedJobDetails: {
+            /**
+             * Command Line
+             * @description The command line produced by the job. Users can see this value if allowed in the configuration, administrator can always see this value.
+             */
+            command_line?: string;
+            /**
+             * Command Version
+             * @description Tool version indicated during job execution.
+             */
+            command_version: string;
+            /**
+             * Copied from Job-ID
+             * @description ?
+             */
+            copied_from_job_id?: Record<string, never>;
+            /**
+             * Create Time
+             * Format: date-time
+             * @description The time and date this item was created.
+             */
+            create_time: string;
+            /**
+             * Exit Code
+             * @description The exit code returned by the tool. Can be unset if the job is not completed yet.
+             */
+            exit_code?: number;
+            /**
+             * External ID
+             * @description The job id used by the external job runner (Condor, Pulsar, etc.)Only administrator can see this value.
+             */
+            external_id?: string;
+            /**
+             * Galaxy Version
+             * @description The (major) version of Galaxy used to create this job.
+             * @example 21.05
+             */
+            galaxy_version: string;
+            /**
+             * History ID
+             * @description The encoded ID of the history associated with this item.
+             * @example 0123456789ABCDEF
+             */
+            history_id?: string;
+            /**
+             * ID
+             * @description The encoded ID of this entity.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Inputs
+             * @description Dictionary mapping all the tool inputs (by name) with the corresponding dataset information.
+             * @default {}
+             */
+            inputs?: {
+                [key: string]: components["schemas"]["EncodedDatasetJobInfo"] | undefined;
+            };
+            /**
+             * Model class
+             * @description The name of the database model class.
+             * @default Job
+             * @enum {string}
+             */
+            model_class: "Job";
+            /**
+             * Output collections
+             * @description ?
+             * @default {}
+             */
+            output_collections?: Record<string, never>;
+            /**
+             * Outputs
+             * @description Dictionary mapping all the tool outputs (by name) with the corresponding dataset information.
+             * @default {}
+             */
+            outputs?: {
+                [key: string]: components["schemas"]["EncodedDatasetJobInfo"] | undefined;
+            };
+            /**
+             * Parameters
+             * @description Object containing all the parameters of the tool associated with this job. The specific parameters depend on the tool itself.
+             */
+            params: Record<string, never>;
+            /**
+             * State
+             * @description Current state of the job.
+             */
+            state: components["schemas"]["JobState"];
+            /**
+             * Tool ID
+             * @description Identifier of the tool that generated this job.
+             */
+            tool_id: string;
+            /**
+             * Update Time
+             * Format: date-time
+             * @description The last time and date this item was updated.
+             */
+            update_time: string;
+            /**
+             * User Email
+             * @description The email of the user that owns this job. Only the owner of the job and administrators can see this value.
+             */
+            user_email?: string;
         };
         /**
          * ExportHistoryArchivePayload
@@ -14801,7 +14934,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["EncodedJobDetails"][];
                 };
             };
             /** @description Validation Error */
