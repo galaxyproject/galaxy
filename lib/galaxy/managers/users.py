@@ -37,6 +37,7 @@ from galaxy.managers import (
     base,
     deletable,
 )
+from galaxy.managers.base import combine_lists
 from galaxy.model import (
     User,
     UserAddress,
@@ -267,7 +268,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         """
         Find a user by their email.
         """
-        filters = self._munge_filters(self.model_class.email == email, filters)
+        filters = combine_lists(self.model_class.email == email, filters)
         try:
             # TODO: use one_or_none
             return super().one(filters=filters, **kwargs)
@@ -321,7 +322,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         Return a list of admin Users.
         """
         admin_emails = self.app.config.admin_users_list
-        filters = self._munge_filters(self.model_class.email.in_(admin_emails), filters)
+        filters = combine_lists(self.model_class.email.in_(admin_emails), filters)
         return super().list(filters=filters, **kwargs)
 
     def error_unless_admin(self, user, msg="Administrators only", **kwargs):
