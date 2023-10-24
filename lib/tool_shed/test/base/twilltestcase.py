@@ -905,7 +905,11 @@ class ShedTwillTestCase(ShedApiTestCase):
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def check_repository_dependency(
-        self, repository: Repository, depends_on_repository, depends_on_changeset_revision=None, changeset_revision=None
+        self,
+        repository: Repository,
+        depends_on_repository: Repository,
+        depends_on_changeset_revision=None,
+        changeset_revision=None,
     ):
         if not self.is_v2:
             # v2 doesn't display repository repository dependencies, they are deprecated
@@ -1402,7 +1406,7 @@ class ShedTwillTestCase(ShedApiTestCase):
 
     def get_or_create_repository(
         self, category: Category, owner: str, name: str, strings_displayed=None, strings_not_displayed=None, **kwd
-    ) -> Optional[Repository]:
+    ) -> Repository:
         # If not checking for a specific string, it should be safe to assume that
         # we expect repository creation to be successful.
         if strings_displayed is None:
@@ -1417,6 +1421,7 @@ class ShedTwillTestCase(ShedApiTestCase):
             self.submit_form(button="create_repository_button", name=name, category_id=category_id, **kwd)
             self.check_for_strings(strings_displayed, strings_not_displayed)
             repository = self.populator.get_repository_for(owner, name)
+        assert repository
         return repository
 
     def get_repo_path(self, repository: Repository) -> str:
@@ -1495,10 +1500,11 @@ class ShedTwillTestCase(ShedApiTestCase):
             for repository_metadata in self._db_repository(repository).metadata_revisions
         ]
 
-    def _get_repository_by_name_and_owner(self, name: str, owner: str) -> Optional[Repository]:
+    def _get_repository_by_name_and_owner(self, name: str, owner: str) -> Repository:
         repo = self.populator.get_repository_for(owner, name)
         if repo is None:
             repo = self.populator.get_repository_for(owner, name, deleted="true")
+        assert repo
         return repo
 
     def get_repository_tip(self, repository: Repository) -> str:

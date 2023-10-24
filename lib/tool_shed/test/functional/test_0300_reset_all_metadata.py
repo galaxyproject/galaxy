@@ -63,7 +63,6 @@ class TestResetAllRepositoryMetadata(ShedTwillTestCase):
             owner=common.test_user_1_name,
             category=category_0000,
         )
-        assert repository
         if self.repository_is_new(repository):
             running_standalone = True
             self.commit_tar_to_repository(
@@ -91,7 +90,6 @@ class TestResetAllRepositoryMetadata(ShedTwillTestCase):
             strings_displayed=[],
         )
         if running_standalone:
-            assert repository
             self.setup_freebayes_0010_repo(repository)
 
     def test_0015_create_datatypes_0020_repository(self):
@@ -112,7 +110,6 @@ class TestResetAllRepositoryMetadata(ShedTwillTestCase):
                 category=category_0020,
                 strings_displayed=[],
             )
-            assert repository
             self.commit_tar_to_repository(
                 repository,
                 "column_maker/column_maker.tar",
@@ -137,7 +134,6 @@ class TestResetAllRepositoryMetadata(ShedTwillTestCase):
                 category=category_0020,
                 strings_displayed=[],
             )
-            assert repository
             self.commit_tar_to_repository(
                 repository,
                 "emboss/emboss.tar",
@@ -162,7 +158,6 @@ class TestResetAllRepositoryMetadata(ShedTwillTestCase):
                 category=category_0030,
                 strings_displayed=[],
             )
-            assert column_maker_repository
             self.commit_tar_to_repository(
                 column_maker_repository,
                 "column_maker/column_maker.tar",
@@ -187,7 +182,6 @@ class TestResetAllRepositoryMetadata(ShedTwillTestCase):
                 category=category_0030,
                 strings_displayed=[],
             )
-            assert emboss_5_repository
             self.commit_tar_to_repository(
                 emboss_5_repository,
                 "emboss/emboss.tar",
@@ -212,7 +206,6 @@ class TestResetAllRepositoryMetadata(ShedTwillTestCase):
                 category=category_0030,
                 strings_displayed=[],
             )
-            assert emboss_6_repository
             self.commit_tar_to_repository(
                 emboss_6_repository,
                 "emboss/emboss.tar",
@@ -237,7 +230,6 @@ class TestResetAllRepositoryMetadata(ShedTwillTestCase):
                 category=category_0030,
                 strings_displayed=[],
             )
-            assert emboss_repository
             self.commit_tar_to_repository(
                 emboss_repository,
                 "emboss/emboss.tar",
@@ -251,13 +243,9 @@ class TestResetAllRepositoryMetadata(ShedTwillTestCase):
             column_maker_repository = self._get_repository_by_name_and_owner(
                 "column_maker_0030", common.test_user_1_name
             )
-            assert column_maker_repository
             emboss_repository = self._get_repository_by_name_and_owner("emboss_0030", common.test_user_1_name)
-            assert emboss_repository
             emboss_5_repository = self._get_repository_by_name_and_owner("emboss_5_0030", common.test_user_1_name)
-            assert emboss_5_repository
             emboss_6_repository = self._get_repository_by_name_and_owner("emboss_6_0030", common.test_user_1_name)
-            assert emboss_6_repository
             repository_dependencies_path = self.generate_temp_path("test_0330", additional_paths=["emboss"])
             column_maker_tuple = (
                 self.url,
@@ -311,7 +299,6 @@ class TestResetAllRepositoryMetadata(ShedTwillTestCase):
             category=category_0040,
             strings_displayed=[],
         )
-        assert repository
         if running_standalone:
             self.commit_tar_to_repository(
                 repository,
@@ -337,7 +324,6 @@ class TestResetAllRepositoryMetadata(ShedTwillTestCase):
                 category=category_0040,
                 strings_displayed=[],
             )
-            assert repository
             self.commit_tar_to_repository(
                 repository,
                 "filtering/filtering_1.1.0.tar",
@@ -349,9 +335,7 @@ class TestResetAllRepositoryMetadata(ShedTwillTestCase):
         global running_standalone
         if running_standalone:
             freebayes_repository = self._get_repository_by_name_and_owner("freebayes_0040", common.test_user_1_name)
-            assert freebayes_repository
             filtering_repository = self._get_repository_by_name_and_owner("filtering_0040", common.test_user_1_name)
-            assert filtering_repository
             repository_dependencies_path = self.generate_temp_path("test_0340", additional_paths=["dependencies"])
             freebayes_tuple = (
                 self.url,
@@ -391,7 +375,6 @@ class TestResetAllRepositoryMetadata(ShedTwillTestCase):
                 category=category,
                 strings_displayed=[],
             )
-            assert repository
             self.commit_tar_to_repository(
                 repository,
                 "convert_chars/convert_chars.tar",
@@ -413,7 +396,6 @@ class TestResetAllRepositoryMetadata(ShedTwillTestCase):
                 category=category,
                 strings_displayed=[],
             )
-            assert repository
             self.commit_tar_to_repository(
                 repository,
                 "column_maker/column_maker.tar",
@@ -438,7 +420,6 @@ class TestResetAllRepositoryMetadata(ShedTwillTestCase):
                 category=category,
                 strings_displayed=[],
             )
-            assert repository
             self.commit_tar_to_repository(
                 repository,
                 "emboss/emboss.tar",
@@ -460,7 +441,6 @@ class TestResetAllRepositoryMetadata(ShedTwillTestCase):
                 category=category,
                 strings_displayed=[],
             )
-            assert filtering_repository
             self.commit_tar_to_repository(
                 filtering_repository,
                 "filtering/filtering_1.1.0.tar",
@@ -482,7 +462,6 @@ class TestResetAllRepositoryMetadata(ShedTwillTestCase):
                 category=category,
                 strings_displayed=[],
             )
-            assert repository
             self.commit_tar_to_repository(
                 repository,
                 "freebayes/freebayes.tar",
@@ -504,7 +483,6 @@ class TestResetAllRepositoryMetadata(ShedTwillTestCase):
                 category=category,
                 strings_displayed=[],
             )
-            assert repository
             self.user_populator().setup_bismark_repo(repository, end=1)
 
     def test_0100_create_and_upload_dependency_definitions(self):
@@ -513,25 +491,19 @@ class TestResetAllRepositoryMetadata(ShedTwillTestCase):
         if running_standalone:
             self.login(email=common.test_user_1_email, username=common.test_user_1_name)
             column_repository = self._get_repository_by_name_and_owner(column_repository_name, common.test_user_1_name)
-            assert column_repository
             convert_repository = self._get_repository_by_name_and_owner(
                 convert_repository_name, common.test_user_1_name
             )
-            assert convert_repository
             emboss_repository = self._get_repository_by_name_and_owner(emboss_repository_name, common.test_user_1_name)
-            assert emboss_repository
             filtering_repository = self._get_repository_by_name_and_owner(
                 filtering_repository_name, common.test_user_1_name
             )
-            assert filtering_repository
             freebayes_repository = self._get_repository_by_name_and_owner(
                 freebayes_repository_name, common.test_user_1_name
             )
-            assert freebayes_repository
             bismark_repository = self._get_repository_by_name_and_owner(
                 bismark_repository_name, common.test_user_1_name
             )
-            assert bismark_repository
             dependency_xml_path = self.generate_temp_path("test_0050", additional_paths=["freebayes"])
             # convert_chars depends on column_maker
             # column_maker depends on convert_chars

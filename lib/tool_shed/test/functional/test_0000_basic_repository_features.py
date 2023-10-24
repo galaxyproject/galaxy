@@ -1,5 +1,7 @@
 import logging
 
+import pytest
+
 from ..base import common
 from ..base.api import skip_if_api_v2
 from ..base.twilltestcase import ShedTwillTestCase
@@ -157,7 +159,6 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
     def test_0050_display_repository_tip_file(self):
         """Display the contents of filtering.xml in the repository tip revision"""
         repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
-        assert repository
         if self._browser.is_twill:
             self.display_repository_file_contents(
                 repository=repository,
@@ -268,14 +269,15 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
         error_message = (
             "The term 'repos' is a reserved word in the Tool Shed, so it cannot be used as a repository name."
         )
-        self.get_or_create_repository(
-            name="repos",
-            description=repository_description,
-            long_description=repository_long_description,
-            owner=common.test_user_1_name,
-            category=category,
-            strings_displayed=[error_message],
-        )
+        with pytest.raises(AssertionError):
+            self.get_or_create_repository(
+                name="repos",
+                description=repository_description,
+                long_description=repository_long_description,
+                owner=common.test_user_1_name,
+                category=category,
+                strings_displayed=[error_message],
+            )
 
     def test_0100_verify_reserved_username_handling(self):
         """Check that reserved usernames are handled correctly."""

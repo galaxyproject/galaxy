@@ -51,7 +51,6 @@ class TestFreebayesRepository(ShedTwillTestCase):
             category=category,
             strings_displayed=[],
         )
-        assert repository
         strings_displayed = ["Metadata may have been defined", "This file requires an entry", "tool_data_table_conf"]
         self.add_file_to_repository(repository, "freebayes/freebayes.xml", strings_displayed=strings_displayed)
         if self.is_v2:
