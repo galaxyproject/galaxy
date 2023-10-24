@@ -411,18 +411,17 @@ export default {
             if (data) {
                 const dataSource = data.history_content_type === "dataset" ? "hda" : "hdca";
                 if (data.history_id != this.historyId) {
-                    await copyDataset(data.id, this.historyId, data.history_content_type, dataSource)
-                        .then(() => {
-                            if (data.history_content_type === "dataset") {
-                                Toast.info("Dataset copied to history");
-                            } else {
-                                Toast.info("Collection copied to history");
-                            }
-                            this.loadHistoryById(this.historyId);
-                        })
-                        .catch((error) => {
-                            this.onError(error);
-                        });
+                    try {
+                        await copyDataset(data.id, this.historyId, data.history_content_type, dataSource);
+                        if (data.history_content_type === "dataset") {
+                            Toast.info("Dataset copied to history");
+                        } else {
+                            Toast.info("Collection copied to history");
+                        }
+                        this.loadHistoryById(this.historyId);
+                    } catch (error) {
+                        this.onError(error);
+                    }
                 }
             }
         },

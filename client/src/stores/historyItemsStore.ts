@@ -6,7 +6,7 @@
 
 import { reverse } from "lodash";
 import { defineStore } from "pinia";
-import Vue, { computed, Ref, ref } from "vue";
+import Vue, { computed, ref } from "vue";
 
 import { HistoryFilters } from "@/components/History/HistoryFilters";
 import { mergeArray } from "@/store/historyStore/model/utilities";
@@ -21,12 +21,12 @@ const limit = 100;
 const queue = new LastQueue();
 
 export const useHistoryItemsStore = defineStore("historyItemsStore", () => {
-    const items: Ref<Record<string, HistoryItem[]>> = ref({});
+    const items = ref<Record<string, HistoryItem[]>>({});
     const itemKey = ref("hid");
     const totalMatchesCount = ref(undefined);
     const lastCheckedTime = ref(new Date());
     const lastUpdateTime = ref(new Date());
-    const relatedItems: Ref<Record<string, boolean>> = ref({});
+    const relatedItems = ref<Record<string, boolean>>({});
     const isWatching = ref(false);
 
     const getHistoryItems = computed(() => {
