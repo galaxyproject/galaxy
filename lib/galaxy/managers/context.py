@@ -44,6 +44,8 @@ from typing import (
     Optional,
 )
 
+from sqlalchemy import select
+
 from galaxy.exceptions import (
     AuthenticationRequired,
     UserActivationRequiredException,
@@ -307,15 +309,8 @@ class ProvidesHistoryContext(ProvidesUserContext):
             return None
         non_ready_or_ok = set(Dataset.non_ready_states)
         non_ready_or_ok.add(HistoryDatasetAssociation.states.OK)
-        datasets = (
-            self.sa_session.query(HistoryDatasetAssociation)
-            .filter_by(deleted=False, history_id=self.history.id, extension="len")
-            .filter(
-                HistoryDatasetAssociation.table.c._state.in_(non_ready_or_ok),
-            )
-        )
         valid_ds = None
-        for ds in datasets:
+        for ds in get_hdas(self.sa_session, self.history.id, non_ready_or_ok):
             if ds.dbkey == dbkey:
                 if ds.state == HistoryDatasetAssociation.states.OK:
                     return ds
@@ -330,3 +325,12 @@ class ProvidesHistoryContext(ProvidesUserContext):
         """
         # FIXME: This method should be removed
         return self.app.genome_builds.get_genome_build_names(trans=self)
+
+
+def get_hdas(session, history_id, states):
+    stmt = (
+        select(HistoryDatasetAssociation)
+        .filter_by(deleted=False, history_id=history_id, extension="len")
+        .where(HistoryDatasetAssociation._state.in_(states))
+    )
+    return session.scalars(stmt)
