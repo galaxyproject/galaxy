@@ -941,13 +941,7 @@ steps:
     def test_get_inputs_and_outputs(self, history_id):
         dataset_id = self.__history_with_ok_dataset(history_id)
         inputs = json.dumps({"input1": {"src": "hda", "id": dataset_id}})
-        # create a job
-        search_payload = self._search_payload(history_id=history_id, tool_id="cat1", inputs=inputs)
-        tool_response = self._post("tools", data=search_payload)
-        self.dataset_populator.wait_for_tool_run(history_id, run_response=tool_response)
-        # search for the job and get the corresponding values
-        search_response = self._post("jobs/search", data=search_payload, json=True)
-        self._assert_status_code_is(search_response, 200)
+        search_response = self._create_and_search_job(history_id, inputs, tool_id="cat1")
         job_id = search_response.json()[0]["id"]
         job_first_output_name, job_first_output_values = list(search_response.json()[0]["outputs"].items())[0]
         # get the inputs of the job
@@ -965,6 +959,33 @@ steps:
         assert job_first_output.get("name") == job_first_output_name
         assert job_first_output.get("dataset").get("id") == job_first_output_values.get("id")
         assert job_first_output.get("dataset").get("src") == job_first_output_values.get("src")
+
+    # @pytest.mark.require_new_history
+    # def test_delete_job(self, history_id):
+    #     dataset_id = self.__history_with_ok_dataset(history_id)
+    #     inputs = json.dumps({"input1": {"src": "hda", "id": dataset_id}})
+    #     search_response = self._create_and_search_job(history_id, inputs, tool_id="cat1")
+    #     job_id = search_response.json()[0]["id"]
+    #     # delete the job without message
+    #     delete_job_response = self._delete(f"jobs/{job_id}")
+    #     self._assert_status_code_is(delete_job_response, 200)
+    #     # TODO the job is finished as such it is not stopped Think of another way to test it
+    #     assert delete_job_response.json() == True
+    #     # now that we deleted the job we should not find it anymore
+    #     search_payload = self._search_payload(history_id=history_id, tool_id="cat1", inputs=inputs)
+    #     empty_search_response = self._post("jobs/search", data=search_payload, json=True)
+    #     self._assert_status_code_is(empty_search_response, 200)
+    #     assert len(empty_search_response.json()) == 0
+
+    def _create_and_search_job(self, history_id, inputs, tool_id):
+        # create a job
+        search_payload = self._search_payload(history_id=history_id, tool_id=tool_id, inputs=inputs)
+        tool_response = self._post("tools", data=search_payload)
+        self.dataset_populator.wait_for_tool_run(history_id, run_response=tool_response)
+        # search for the job and get the corresponding values
+        search_response = self._post("jobs/search", data=search_payload, json=True)
+        self._assert_status_code_is(search_response, 200)
+        return search_response
 
     def _job_search(self, tool_id, history_id, inputs):
         search_payload = self._search_payload(history_id=history_id, tool_id=tool_id, inputs=inputs)
