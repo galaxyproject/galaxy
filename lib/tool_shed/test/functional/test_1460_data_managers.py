@@ -1,9 +1,7 @@
 import logging
 
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from ..base import common
+from ..base.twilltestcase import ShedTwillTestCase
 
 log = logging.getLogger(__name__)
 
@@ -55,7 +53,6 @@ class TestDataManagers(ShedTwillTestCase):
             category=category,
             strings_displayed=[],
         )
-        assert repository, "No repository created with name {commit_tar_to_repository}"
         # Upload the data manager files to the repository.
         self.commit_tar_to_repository(
             repository,

@@ -1,8 +1,6 @@
+from ..base import common
 from ..base.api import skip_if_api_v2
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from ..base.twilltestcase import ShedTwillTestCase
 
 emboss_repository_name = "emboss_0050"
 emboss_repository_description = "Galaxy's emboss tool"
@@ -69,8 +67,6 @@ class TestRepositoryCircularDependenciesToNLevels(ShedTwillTestCase):
             category=category,
             strings_displayed=[],
         )
-        assert repository
-        assert repository.id
         self.commit_tar_to_repository(
             repository,
             "column_maker/column_maker.tar",

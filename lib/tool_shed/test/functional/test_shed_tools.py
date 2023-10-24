@@ -27,8 +27,8 @@ class TestShedToolsApi(ShedApiTestCase):
             assert tool_search_hit.tool.name == "Compute"
 
         # ensure re-index doesn't modify number of hits (regression of an issue pre-Fall 2022)
-        response = populator.reindex()
-        response = populator.reindex()
+        populator.reindex()
+        populator.reindex()
 
         response = populator.tool_search_query("Compute")
         new_hit_count = len(response.hits)

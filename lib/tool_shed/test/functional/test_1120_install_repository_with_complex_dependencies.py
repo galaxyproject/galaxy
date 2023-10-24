@@ -1,9 +1,7 @@
 import os
 
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from ..base import common
+from ..base.twilltestcase import ShedTwillTestCase
 
 bwa_base_repository_name = "bwa_base_repository_0100"
 bwa_base_repository_description = "BWA Base"
@@ -72,7 +70,6 @@ class TestInstallingComplexRepositoryDependencies(ShedTwillTestCase):
                 category=category,
                 strings_displayed=[],
             )
-            self._get_repository_by_name_and_owner(bwa_package_repository_name, common.test_user_1_name)
             self.commit_tar_to_repository(
                 repository,
                 "bwa/complex/bwa_base.tar",

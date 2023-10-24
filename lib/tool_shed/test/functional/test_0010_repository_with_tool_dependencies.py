@@ -1,10 +1,8 @@
 import os
 
+from ..base import common
 from ..base.api import skip_if_api_v2
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from ..base.twilltestcase import ShedTwillTestCase
 
 repository_name = "freebayes_0010"
 repository_description = "Galaxy's freebayes tool"
@@ -53,7 +51,6 @@ class TestFreebayesRepository(ShedTwillTestCase):
             category=category,
             strings_displayed=[],
         )
-        assert repository
         strings_displayed = ["Metadata may have been defined", "This file requires an entry", "tool_data_table_conf"]
         self.add_file_to_repository(repository, "freebayes/freebayes.xml", strings_displayed=strings_displayed)
         if self.is_v2:

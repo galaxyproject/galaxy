@@ -15,6 +15,7 @@ from typing import (
     Iterator,
     List,
     Optional,
+    Tuple,
 )
 from urllib.parse import (
     quote_plus,
@@ -694,7 +695,14 @@ class ShedTwillTestCase(ShedApiTestCase):
     def invalid_tools_labels(self) -> str:
         return "Invalid Tools" if self.is_v2 else "Invalid tools"
 
-    def create(self, cntrller="user", email="test@bx.psu.edu", password="testuser", username="admin-user", redirect=""):
+    def create(
+        self,
+        cntrller: str = "user",
+        email: str = "test@bx.psu.edu",
+        password: str = "testuser",
+        username: str = "admin-user",
+        redirect: Optional[str] = None,
+    ) -> Tuple[bool, bool, bool]:
         # HACK: don't use panels because late_javascripts() messes up the twill browser and it
         # can't find form fields (and hence user can't be logged in).
         params = dict(cntrller=cntrller, use_panels=False)
@@ -747,7 +755,7 @@ class ShedTwillTestCase(ShedApiTestCase):
         email: str = "test@bx.psu.edu",
         password: str = "testuser",
         username: str = "admin-user",
-        redirect: str = "",
+        redirect: Optional[str] = None,
         logout_first: bool = True,
         explicit_logout: bool = False,
     ):
@@ -916,7 +924,11 @@ class ShedTwillTestCase(ShedApiTestCase):
         self.check_for_strings(strings_displayed, strings_not_displayed)
 
     def check_repository_dependency(
-        self, repository: Repository, depends_on_repository, depends_on_changeset_revision=None, changeset_revision=None
+        self,
+        repository: Repository,
+        depends_on_repository: Repository,
+        depends_on_changeset_revision=None,
+        changeset_revision=None,
     ):
         if not self.is_v2:
             # v2 doesn't display repository repository dependencies, they are deprecated
@@ -1042,8 +1054,9 @@ class ShedTwillTestCase(ShedApiTestCase):
 
     def create_category(self, **kwd) -> Category:
         category_name = kwd["name"]
-        category = self.populator.get_category_with_name(category_name)
-        if category is None:
+        try:
+            category = self.populator.get_category_with_name(category_name)
+        except ValueError:
             # not recreating this functionality in the UI I don't think?
             category = self.populator.new_category(category_name)
             return category
@@ -1413,7 +1426,7 @@ class ShedTwillTestCase(ShedApiTestCase):
 
     def get_or_create_repository(
         self, category: Category, owner: str, name: str, strings_displayed=None, strings_not_displayed=None, **kwd
-    ) -> Optional[Repository]:
+    ) -> Repository:
         # If not checking for a specific string, it should be safe to assume that
         # we expect repository creation to be successful.
         if strings_displayed is None:
@@ -1428,6 +1441,7 @@ class ShedTwillTestCase(ShedApiTestCase):
             self.submit_form(button="create_repository_button", name=name, category_id=category_id, **kwd)
             self.check_for_strings(strings_displayed, strings_not_displayed)
             repository = self.populator.get_repository_for(owner, name)
+        assert repository
         return repository
 
     def get_repo_path(self, repository: Repository) -> str:
@@ -1506,10 +1520,11 @@ class ShedTwillTestCase(ShedApiTestCase):
             for repository_metadata in self._db_repository(repository).metadata_revisions
         ]
 
-    def _get_repository_by_name_and_owner(self, name: str, owner: str) -> Optional[Repository]:
+    def _get_repository_by_name_and_owner(self, name: str, owner: str) -> Repository:
         repo = self.populator.get_repository_for(owner, name)
         if repo is None:
             repo = self.populator.get_repository_for(owner, name, deleted="true")
+        assert repo
         return repo
 
     def get_repository_tip(self, repository: Repository) -> str:
@@ -1596,7 +1611,6 @@ class ShedTwillTestCase(ShedApiTestCase):
     ) -> None:
         self.browse_tool_shed(url=self.url)
         category = self.populator.get_category_with_name(category_name)
-        assert category
         self.browse_category(category)
         self.preview_repository_in_tool_shed(name, owner, strings_displayed=preview_strings_displayed)
         repository = self._get_repository_by_name_and_owner(name, owner)
