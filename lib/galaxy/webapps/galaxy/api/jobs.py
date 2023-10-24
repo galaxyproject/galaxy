@@ -46,6 +46,7 @@ from galaxy.managers.jobs import (
 )
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.jobs import (
+    EncodedJobDetails,
     JobAssociation,
     JobErrorSummary,
     JobInputSummary,
@@ -348,7 +349,7 @@ class FastAPIJobs:
         self,
         payload: Annotated[SearchJobsPayload, SearchJobBody],
         trans: ProvidesHistoryContext = DependsOnTrans,
-    ):
+    ) -> List[EncodedJobDetails]:
         """
         This method is designed to scan the list of previously run jobs and find records of jobs that had
         the exact some input parameters and datasets. This can be used to minimize the amount of repeated work, and simply
@@ -385,7 +386,8 @@ class FastAPIJobs:
             )
             if job:
                 jobs.append(job)
-        return [self.service.encode_all_ids(single_job.to_dict("element"), True) for single_job in jobs]
+        # return [self.service.job_to_encoded_details(job=single_job.to_dict("element")) for single_job in jobs]
+        return [EncodedJobDetails(**single_job.to_dict("element")) for single_job in jobs]
 
     @router.get("/api/jobs/{id}")
     def show(
