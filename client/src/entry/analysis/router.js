@@ -148,6 +148,8 @@ export function getRouter(Galaxy) {
                     showButtons: route.query.buttons ? parseBool(route.query.buttons) : undefined,
                     showAbout: route.query.about ? parseBool(route.query.about) : undefined,
                     showHeading: route.query.heading ? parseBool(route.query.heading) : undefined,
+                    showMinimap: route.query.minimap ? parseBool(route.query.minimap) : undefined,
+                    showZoomControls: route.query.zoom_controls ? parseBool(route.query.zoom_controls) : undefined,
                     initialX: route.query.initialX ? parseInt(route.query.initialX) : undefined,
                     initialY: route.query.initialY ? parseInt(route.query.initialY) : undefined,
                 }),

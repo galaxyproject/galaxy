@@ -48,6 +48,14 @@ const props = defineProps({
         type: Boolean,
         default: true,
     },
+    showMinimap: {
+        type: Boolean,
+        default: true,
+    },
+    showZoomControls: {
+        type: Boolean,
+        default: true,
+    },
     initialX: {
         type: Number,
         default: -20,
@@ -227,6 +235,8 @@ const viewUrl = computed(() => withPrefix(`/published/workflow?id=${props.id}`))
                             :steps="workflow.steps"
                             :datatypes-mapper="datatypesMapper"
                             :initial-position="initialPosition"
+                            :show-minimap="props.showMinimap"
+                            :show-zoom-controls="props.showZoomControls"
                             readonly />
                     </b-card>
                 </div>

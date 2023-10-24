@@ -22,6 +22,8 @@ const settings = reactive({
     buttons: true,
     about: false,
     heading: false,
+    minimap: true,
+    zoomControls: true,
     initialX: -20,
     initialY: -20,
     zoom: 1,
@@ -46,6 +48,8 @@ const embedUrl = computed(() => {
     url += `&buttons=${settings.buttons}`;
     url += `&about=${settings.about}`;
     url += `&heading=${settings.heading}`;
+    url += `&minimap=${settings.minimap}`;
+    url += `&zoom_controls=${settings.zoomControls}`;
     url += `&initialX=${settings.initialX}&initialY=${settings.initialY}`;
     url += `&zoom=${settings.zoom}`;
     return url;
@@ -56,7 +60,7 @@ const embed = computed(() => `<iframe title="Galaxy Workflow Embed" src="${embed
 // These Embed settings are not reactive, to we have to key them
 const embedKey = computed(() => `zoom: ${settings.zoom}, x: ${settings.initialX}, y: ${settings.initialY}`);
 
-const debouncedEmbedKey = useDebounce(embedKey, 200);
+const debouncedEmbedKey = useDebounce(embedKey, 500);
 
 const showEmbed = ref(false);
 const showEmbedDebounced = useDebounce(showEmbed, 100);
@@ -81,6 +85,8 @@ const clipboardTitle = computed(() => (copied.value ? "Copied!" : "Copy URL"));
             <BFormCheckbox v-model="settings.heading"> Show heading </BFormCheckbox>
             <BFormCheckbox v-model="settings.about"> Show about </BFormCheckbox>
             <BFormCheckbox v-model="settings.buttons"> Show buttons </BFormCheckbox>
+            <BFormCheckbox v-model="settings.minimap"> Show minimap </BFormCheckbox>
+            <BFormCheckbox v-model="settings.zoomControls"> Show zoom controls </BFormCheckbox>
 
             <label for="embed-position-control" class="control-label">
                 Initial position
@@ -141,6 +147,8 @@ const clipboardTitle = computed(() => (copied.value ? "Copied!" : "Copy URL"));
                 :show-about="settings.about"
                 :show-buttons="settings.buttons"
                 :show-heading="settings.heading"
+                :show-minimap="settings.minimap"
+                :show-zoom-controls="settings.zoomControls"
                 :initial-x="settings.initialX"
                 :initial-y="settings.initialY" />
         </div>

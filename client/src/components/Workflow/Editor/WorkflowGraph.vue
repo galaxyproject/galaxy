@@ -1,6 +1,11 @@
 <template>
     <div id="workflow-canvas" class="unified-panel-body workflow-canvas">
-        <ZoomControl :zoom-level="scale" :pan="transform" @onZoom="onZoom" @update:pan="panBy" />
+        <ZoomControl
+            v-if="props.showZoomControls"
+            :zoom-level="scale"
+            :pan="transform"
+            @onZoom="onZoom"
+            @update:pan="panBy" />
         <ToolBar v-if="!readonly" />
         <div id="canvas-container" ref="canvas" class="canvas-content" @drop.prevent @dragover.prevent>
             <AdaptiveGrid
@@ -44,7 +49,7 @@
             </div>
         </div>
         <WorkflowMinimap
-            v-if="elementBounding"
+            v-if="elementBounding && props.showMinimap"
             :steps="steps"
             :comments="comments"
             :viewport-bounds="elementBounding"
@@ -86,6 +91,8 @@ const props = defineProps({
     scrollToId: { type: Number as PropType<number | null>, default: null },
     readonly: { type: Boolean, default: false },
     initialPosition: { type: Object as PropType<{ x: number; y: number }>, default: () => ({ x: 50, y: 20 }) },
+    showMinimap: { type: Boolean, default: true },
+    showZoomControls: { type: Boolean, default: true },
 });
 
 const { stateStore, stepStore } = useWorkflowStores();
@@ -102,6 +109,12 @@ const { transform, panBy, setZoom, moveTo } = useD3Zoom(
     scroll,
     props.initialPosition
 );
+
+defineExpose({
+    setZoom,
+    moveTo,
+});
+
 const { viewportBoundingBox } = useViewportBoundingBox(elementBounding, scale, transform);
 
 const isDragging = ref(false);
