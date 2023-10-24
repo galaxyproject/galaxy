@@ -32,7 +32,15 @@ from galaxy.managers import (
     users,
     workflows,
 )
-from galaxy.managers.sharable import SlugBuilder
+from galaxy.managers.forms import (
+    get_filtered_form_definitions_current,
+    get_form_definitions,
+    get_form_definitions_current,
+)
+from galaxy.managers.sharable import (
+    slug_exists,
+    SlugBuilder,
+)
 from galaxy.model import (
     ExtendedMetadata,
     ExtendedMetadataIndex,
@@ -1066,10 +1074,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
             title_err = "visualization name is required"
         elif slug and not managers_base.is_valid_slug(slug):
             slug_err = "visualization identifier must consist of only lowercase letters, numbers, and the '-' character"
-        elif (
-            slug
-            and trans.sa_session.query(trans.model.Visualization).filter_by(user=user, slug=slug, deleted=False).first()
-        ):
+        elif slug and slug_exists(trans.sa_session, trans.model.Visualization, user, slug, ignore_deleted=True):
             slug_err = "visualization identifier must be unique"
 
         if title_err or slug_err:

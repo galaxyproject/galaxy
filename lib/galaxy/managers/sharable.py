@@ -21,7 +21,9 @@ from typing import (
 )
 
 from sqlalchemy import (
-    func,
+    exists,
+    false,
+    select,
     true,
 )
 
@@ -295,13 +297,14 @@ class SharableModelManager(
         if item.slug == new_slug:
             return item
 
+        session = self.session()
+
         # error if slug is already in use
-        if self._slug_exists(user, new_slug):
+        if slug_exists(session, item.__class__, user, new_slug):
             raise exceptions.Conflict("Slug already exists", slug=new_slug)
 
         item.slug = new_slug
         if flush:
-            session = self.session()
             with transaction(session):
                 session.commit()
         return item
@@ -312,10 +315,6 @@ class SharableModelManager(
         """
         VALID_SLUG_RE = re.compile(r"^[a-z0-9\-]+$")
         return VALID_SLUG_RE.match(slug)
-
-    def _slug_exists(self, user, slug):
-        query = self.session().query(self.model_class).filter_by(user_id=user.id, slug=slug).with_entities(func.count())
-        return query.scalar() != 0
 
     def _slugify(self, start_with):
         # Replace whitespace with '-'
@@ -587,6 +586,13 @@ class SlugBuilder:
         # Set slug and return.
         item.slug = new_slug
         return item.slug == cur_slug
+
+
+def slug_exists(session, model_class, user, slug, ignore_deleted=False):
+    stmt = select(exists().where(model_class.user == user).where(model_class.slug == slug))
+    if ignore_deleted:  # Only check items that are NOT marked as deleted
+        stmt = stmt.where(model_class.deleted == false())
+    return session.scalar(stmt)
 
 
 __all__ = (
