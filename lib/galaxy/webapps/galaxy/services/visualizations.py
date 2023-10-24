@@ -68,9 +68,7 @@ class VisualizationsService(ServiceBase):
         results = []
         for content in entries:
             view = "detailed" if detailed else "summary"
-            serialized_content = self.serializer.serialize_to_view(
-                content, user=trans.user, trans=trans, view=view
-            )
+            serialized_content = self.serializer.serialize_to_view(content, user=trans.user, trans=trans, view=view)
             if detailed and content.deleted is False:
                 sharing_dict = self.shareable_service.sharing(trans, content.id)
                 serialized_content["sharing_status"] = sharing_dict
