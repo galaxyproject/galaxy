@@ -349,9 +349,7 @@ class SharableModelManager(
         # add integer to end.
         new_slug = slug_base
         count = 1
-        while (
-            self.session().query(item.__class__).filter_by(user=item.user, slug=new_slug, importable=True).count() != 0
-        ):
+        while importable_item_slug_exists(self.session(), item.__class__, item.user, new_slug):
             # Slug taken; choose a new slug based on count. This approach can
             # handle numerous items with the same name gracefully.
             new_slug = "%s-%i" % (slug_base, count)
@@ -592,6 +590,13 @@ def slug_exists(session, model_class, user, slug, ignore_deleted=False):
     stmt = select(exists().where(model_class.user == user).where(model_class.slug == slug))
     if ignore_deleted:  # Only check items that are NOT marked as deleted
         stmt = stmt.where(model_class.deleted == false())
+    return session.scalar(stmt)
+
+
+def importable_item_slug_exists(session, model_class, user, slug):
+    stmt = select(
+        exists().where(model_class.user == user).where(model_class.slug == slug).where(model_class.importable == true())
+    )
     return session.scalar(stmt)
 
 
