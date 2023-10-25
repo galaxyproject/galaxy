@@ -570,12 +570,7 @@ class SlugBuilder:
         count = 1
         # Ensure unique across model class and user and don't include this item
         # in the check in case it has previously been assigned a valid slug.
-        while (
-            sa_session.query(item.__class__)
-            .filter(item.__class__.user == item.user, item.__class__.slug == new_slug, item.__class__.id != item.id)
-            .count()
-            != 0
-        ):
+        while another_slug_exists(sa_session, item.__class__, item.user, new_slug, item.id):
             # Slug taken; choose a new slug based on count. This approach can
             # handle numerous items with the same name gracefully.
             new_slug = f"{slug_base}-{count}"
@@ -597,6 +592,11 @@ def importable_item_slug_exists(session, model_class, user, slug):
     stmt = select(
         exists().where(model_class.user == user).where(model_class.slug == slug).where(model_class.importable == true())
     )
+    return session.scalar(stmt)
+
+
+def another_slug_exists(session, model_class, user, slug, id):
+    stmt = select(exists().where(model_class.user == user).where(model_class.slug == slug).where(model_class.id != id))
     return session.scalar(stmt)
 
 
