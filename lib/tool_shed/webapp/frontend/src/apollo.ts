@@ -1,6 +1,15 @@
 import { createApolloProvider } from "@vue/apollo-option"
 import { ApolloClient, InMemoryCache, DefaultOptions } from "@apollo/client/core"
 
+import { loadErrorMessages, loadDevMessages } from "@apollo/client/dev"
+
+const dev = false
+if (dev) {
+    // Adds messages only in a dev environment
+    loadDevMessages()
+    loadErrorMessages()
+}
+
 const defaultOptions: DefaultOptions = {
     watchQuery: {
         fetchPolicy: "no-cache",
@@ -12,9 +21,10 @@ const defaultOptions: DefaultOptions = {
     },
 }
 
+export const cache = new InMemoryCache()
 export const apolloClient = new ApolloClient({
     uri: "/api/graphql/",
-    cache: new InMemoryCache(),
+    cache: cache,
     defaultOptions: defaultOptions,
 })
 
