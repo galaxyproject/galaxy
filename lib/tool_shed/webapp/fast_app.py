@@ -64,9 +64,26 @@ api_tags_metadata = [
 # Start tool shed with:
 #   TOOL_SHED_VITE_PORT=4040 TOOL_SHED_API_VERSION=v2 ./run_tool_shed.sh
 TOOL_SHED_VITE_PORT: Optional[str] = os.environ.get("TOOL_SHED_VITE_PORT", None)
+TOOL_SHED_FRONTEND_TARGET: str = os.environ.get("TOOL_SHED_FRONTEND_TARGET") or "auto"  # auto, src, or node
 TOOL_SHED_USE_HMR: bool = TOOL_SHED_VITE_PORT is not None
-FRONTEND = Path(__file__).parent.resolve() / "frontend"
+WEBAPP_DIR = Path(__file__).parent.resolve()
+FRONTEND = WEBAPP_DIR / "frontend"
 FRONTEND_DIST = FRONTEND / "dist"
+INSTALLED_FRONTEND = WEBAPP_DIR / "node_modules" / "@galaxyproject" / "tool-shed-frontend" / "dist"
+INDEX_FILENAME = "index.html"
+
+
+def find_frontend_target() -> Path:
+    src_target = FRONTEND_DIST
+    node_target = INSTALLED_FRONTEND
+    if TOOL_SHED_FRONTEND_TARGET == "src":
+        return src_target
+    elif TOOL_SHED_FRONTEND_TARGET == "node":
+        return node_target
+    elif src_target.exists():
+        return src_target
+    else:
+        return node_target
 
 
 def frontend_controller(app):
@@ -75,14 +92,16 @@ def frontend_controller(app):
 
     def index(trans=Depends(get_trans)):
         if TOOL_SHED_USE_HMR:
-            index = FRONTEND / "index.html"
+            if TOOL_SHED_FRONTEND_TARGET != "auto":
+                raise Exception("Cannot configure HMR and with this frontend target.")
+            index = FRONTEND / INDEX_FILENAME
             index_html = index.read_text()
             index_html = index_html.replace(
                 f"""<script type="module" src="/src/{shed_entry_point}"></script>""",
                 f"""<script type="module" src="http://localhost:{TOOL_SHED_VITE_PORT}/{vite_runtime}"></script><script type="module" src="http://localhost:{TOOL_SHED_VITE_PORT}/src/{shed_entry_point}"></script>""",
             )
         else:
-            index = FRONTEND_DIST / "index.html"
+            index = find_frontend_target() / INDEX_FILENAME
             index_html = index.read_text()
         ensure_valid_session(trans)
         cookie = trans.session_csrf_token
@@ -168,7 +187,7 @@ def initialize_fast_app(gx_webapp, tool_shed_app):
         if TOOL_SHED_USE_HMR:
             mount_static(FRONTEND / "node_modules")
         else:
-            mount_static(FRONTEND_DIST / "assets")
+            mount_static(find_frontend_target() / "assets")
 
     routes_package = "tool_shed.webapp.api" if SHED_API_VERSION == "v1" else "tool_shed.webapp.api2"
     include_all_package_routers(app, routes_package)
