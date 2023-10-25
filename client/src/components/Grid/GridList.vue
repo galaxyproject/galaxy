@@ -27,7 +27,7 @@ interface Props {
 }
 
 const props = withDefaults(defineProps<Props>(), {
-    perPage: 5,
+    perPage: 25,
 });
 
 // contains the current grid data provided by the corresponding api endpoint
