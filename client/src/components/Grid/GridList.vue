@@ -66,10 +66,10 @@ const showAdvanced = ref(false);
  * Manually set filter value, used for tags and `SharingIndicators`
  */
 function applyFilter(filter: string, value: string | boolean, quoted = false) {
-    const setFilterValue = gridConfig.value?.filtering.setFilterValue;
+    const filtering = gridConfig.value?.filtering;
     const quotedValue = quoted ? `'${value}'` : value;
-    if (setFilterValue) {
-        filterText.value = setFilterValue(filterText.value, filter, quotedValue.toString()) || "";
+    if (filtering) {
+        filterText.value = filtering.setFilterValue(filterText.value, filter, quotedValue.toString()) || "";
     }
 }
 
