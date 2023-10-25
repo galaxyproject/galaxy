@@ -173,6 +173,7 @@ from galaxy.util.hash_util import (
 )
 from galaxy.util.json import safe_loads
 from galaxy.util.sanitize_html import sanitize_html
+from lib.galaxy.schema.workflow.comments import WorkflowCommentModel
 
 if TYPE_CHECKING:
     from galaxy.schema.invocation import InvocationMessageUnion
@@ -8031,9 +8032,13 @@ class WorkflowComment(Base, RepresentById):
         if self.child_comments:
             comment_dict["child_comments"] = [comment.order_index for comment in self.child_comments]
 
+        WorkflowCommentModel(__root__=comment_dict)
+
         return comment_dict
 
     def from_dict(dict):
+        WorkflowCommentModel(__root__=dict)
+
         comment = WorkflowComment()
         comment.order_index = dict.get("id", 0)
         comment.type = dict.get("type", "text")
