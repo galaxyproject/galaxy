@@ -151,6 +151,16 @@ class ToolInputsNotReadyException(MessageException):
     error_code = error_codes_by_name["TOOL_INPUTS_NOT_READY"]
 
 
+class ToolInputsNotOKException(MessageException):
+    def __init__(self, err_msg=None, type="info", *, src: str, id: int, **extra_error_info):
+        super().__init__(err_msg, type, **extra_error_info)
+        self.src = src
+        self.id = id
+
+    status_code = 400
+    error_code = error_codes_by_name["TOOL_INPUTS_NOT_OK"]
+
+
 class RealUserRequiredException(MessageException):
     status_code = 400
     error_code = error_codes_by_name["REAL_USER_REQUIRED"]
