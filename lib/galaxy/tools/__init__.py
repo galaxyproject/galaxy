@@ -34,7 +34,10 @@ from galaxy import (
     exceptions,
     model,
 )
-from galaxy.exceptions import ToolInputsNotReadyException
+from galaxy.exceptions import (
+    ToolInputsNotOKException,
+    ToolInputsNotReadyException,
+)
 from galaxy.job_execution import output_collect
 from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.model.base import transaction
@@ -3200,8 +3203,10 @@ class DatabaseOperationTool(Tool):
 
             if self.require_dataset_ok:
                 if state != model.Dataset.states.OK:
-                    raise ValueError(
-                        f"Tool requires inputs to be in valid state, but dataset {input_dataset} is in state '{input_dataset.state}'"
+                    raise ToolInputsNotOKException(
+                        f"Tool requires inputs to be in valid state, but dataset {input_dataset} is in state '{input_dataset.state}'",
+                        src="hda",
+                        id=input_dataset.id,
                     )
 
         for input_dataset in input_datasets.values():

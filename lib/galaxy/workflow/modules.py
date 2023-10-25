@@ -2314,6 +2314,16 @@ class ToolModule(WorkflowModule):
         if execution_tracker.execution_errors:
             # TODO: formalize into InvocationFailure ?
             message = f"Failed to create {len(execution_tracker.execution_errors)} job(s) for workflow step {step.order_index + 1}: {str(execution_tracker.execution_errors[0])}"
+            for error in execution_tracker.execution_errors:
+                # try first to raise a structured invocation error message
+                if isinstance(error, exceptions.ToolInputsNotOKException) and error.src == "hda":
+                    raise FailWorkflowEvaluation(
+                        why=InvocationFailureDatasetFailed(
+                            reason=FailureReason.dataset_failed,
+                            hda_id=error.id,
+                            workflow_step_id=step.id,
+                        )
+                    )
             raise exceptions.MessageException(message)
 
         return complete
