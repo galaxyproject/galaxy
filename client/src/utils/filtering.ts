@@ -108,25 +108,13 @@ export function toLowerNoQuotes<T>(value: T): string {
  * */
 export function expandNameTag<T>(value: T): string {
     if (value && typeof value === "string") {
-        value = value.replace(/^#/, "name:") as T;
-    }
-    return toLower(value);
-}
-
-/** Converts name tags starting with "#" to "'name:...'"; forces quotation marks
- * and **is also case-sensitive**
- * @param value
- * @returns Lowercase value with 'name:' replaced with '#'
- */
-export function expandNameTagWithQuotes<T>(value: T): string {
-    if (value && typeof value === "string") {
-        if (value.startsWith("'#") && value.endsWith("'")) {
-            value = value.replace(/^'#/g, "'name:") as T;
-        } else if (value.startsWith("#")) {
-            value = `'name:${value.slice(1)}'` as T;
+        if ((value.startsWith("'#") || value.startsWith('"#')) && (value.endsWith('"') || value.endsWith("'"))) {
+            value = value.replace(/^['"]#/g, "'name:") as T;
+        } else {
+            value = value.replace(/^#/, "name:") as T;
         }
     }
-    return value as string;
+    return toLower(value);
 }
 
 /** Converts string alias to string operator, e.g.: 'gt' to '>'
@@ -565,12 +553,13 @@ export default class Filtering<T> {
         ) {
             const { converter } = this.validFilters[filterName]?.handler as HandlerReturn<T>;
             if (converter) {
-                if (converter == toBool && filterValue == "any") {
+                if (
+                    (converter == toBool && filterValue == "any") ||
+                    (!backendFormatted && /^(['"]).*\1$/.test(filterValue as string))
+                ) {
                     return filterValue;
                 } else if (!backendFormatted && ([expandNameTag, toDate] as Converter<T>[]).includes(converter)) {
                     return toLower(filterValue) as T;
-                } else if (!backendFormatted && converter == expandNameTagWithQuotes) {
-                    return (filterValue as string).startsWith("#") ? (`'${filterValue}'` as T) : filterValue;
                 }
                 return converter(filterValue);
             } else {

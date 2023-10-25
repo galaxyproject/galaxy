@@ -100,7 +100,7 @@ import StatelessTags from "components/TagsMultiselect/StatelessTags";
 import UtcDate from "components/UtcDate";
 import paginationMixin from "components/Workflow/paginationMixin";
 import { getAppRoot } from "onload/loadConfig";
-import Filtering, { contains, equals, expandNameTagWithQuotes, toBool } from "utils/filtering";
+import Filtering, { contains, equals, expandNameTag, toBool } from "utils/filtering";
 import _l from "utils/localization";
 import { useRouter } from "vue-router/composables";
 
@@ -155,7 +155,7 @@ const validFilters = {
     tag: {
         placeholder: "tag(s)",
         type: "MultiTags",
-        handler: contains("tag", "tag", expandNameTagWithQuotes),
+        handler: contains("tag", "tag", expandNameTag),
         menuItem: true,
     },
     published: {
