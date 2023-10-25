@@ -141,6 +141,7 @@ from galaxy.schema.schema import (
     DatasetValidatedState,
     JobState,
 )
+from galaxy.schema.workflow.comments import WorkflowCommentModel
 from galaxy.security import get_permitted_actions
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.security.validate_user_input import validate_password_str
@@ -173,7 +174,6 @@ from galaxy.util.hash_util import (
 )
 from galaxy.util.json import safe_loads
 from galaxy.util.sanitize_html import sanitize_html
-from lib.galaxy.schema.workflow.comments import WorkflowCommentModel
 
 if TYPE_CHECKING:
     from galaxy.schema.invocation import InvocationMessageUnion
