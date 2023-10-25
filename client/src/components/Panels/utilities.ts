@@ -291,7 +291,7 @@ export function searchToolsByKeys(
                         ? keys.startsWith
                         : order;
 
-                const wordMatches = actualValueWords.filter((word) => queryWords.includes(word));
+                const wordMatches = Array.from(new Set(actualValueWords.filter((word) => queryWords.includes(word))));
                 if (!usesDL) {
                     if (actualValue.match(queryValue)) {
                         // if string.match() returns true, matching tool found

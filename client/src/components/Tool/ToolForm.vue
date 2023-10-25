@@ -107,7 +107,7 @@ import FormElement from "components/Form/FormElement";
 import LoadingSpan from "components/LoadingSpan";
 import ToolEntryPoints from "components/ToolEntryPoints/ToolEntryPoints";
 import { mapActions, mapState } from "pinia";
-import { useHistoryItemsStore } from "stores/history/historyItemsStore";
+import { useHistoryItemsStore } from "stores/historyItemsStore";
 import { useJobStore } from "stores/jobStore";
 import { refreshContentsWrapper } from "utils/data";
 
@@ -187,7 +187,7 @@ export default {
     computed: {
         ...mapState(useUserStore, ["currentUser"]),
         ...mapState(useHistoryStore, ["currentHistoryId"]),
-        ...mapState(useHistoryItemsStore, ["getLastUpdateTime"]),
+        ...mapState(useHistoryItemsStore, ["lastUpdateTime"]),
         toolName() {
             return this.formConfig.name;
         },
@@ -225,7 +225,7 @@ export default {
         currentHistoryId() {
             this.onHistoryChange();
         },
-        getLastUpdateTime() {
+        lastUpdateTime() {
             this.onHistoryChange();
         },
     },
