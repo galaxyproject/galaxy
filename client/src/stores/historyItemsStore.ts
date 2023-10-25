@@ -8,12 +8,11 @@ import { reverse } from "lodash";
 import { defineStore } from "pinia";
 import Vue, { computed, ref } from "vue";
 
+import type { DatasetSummary, HDCASummary } from "@/api";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
 import { mergeArray } from "@/store/historyStore/model/utilities";
 import { LastQueue } from "@/utils/promise-queue";
 import { urlData } from "@/utils/url";
-
-import { type DatasetSummary, type HDCASummary } from "./services";
 
 type HistoryItem = DatasetSummary | HDCASummary;
 
