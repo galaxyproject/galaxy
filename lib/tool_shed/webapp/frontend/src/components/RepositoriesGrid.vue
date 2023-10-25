@@ -57,7 +57,7 @@ const columns = computed(() => {
 
 const tableLoading = ref(false)
 
-async function onScroll(details: ScrollDetails) {
+async function onVirtualScroll(details: ScrollDetails) {
     console.log(details)
     const { to, direction } = details
     if (direction == "decrease") {
@@ -95,7 +95,7 @@ const adaptedRows = computed(() =>
             :pagination="pagination"
             :rows-per-page-options="[0]"
             :no-data-label="noDataLabel"
-            @virtual-scroll="onScroll"
+            @virtual-scroll="onVirtualScroll"
             hide-header
             hide-bottom
         >
@@ -122,27 +122,6 @@ const adaptedRows = computed(() =>
                 </q-tr>
             </template>
         </q-table>
-        <!--
-        <q-table
-            v-if="loading || rows.length > 0"
-            style="height: 90vh"
-            :title="title"
-            :rows="rows"
-            :columns="columns"
-            :loading="tableLoading"
-            row-key="index"
-            virtual-scroll
-            :virtual-scroll-item-size="48"
-            :virtual-scroll-sticky-size-start="48"
-            :pagination="pagination"
-            :rows-per-page-options="[0]"
-            :no-data-label="noDataLabel"
-            @virtual-scroll="onScroll"
-            hide-header
-            hide-bottom
-        >
-        </q-table>
-        -->
         <q-banner rounded class="bg-warning text-white" v-else>
             <!-- the no-data-label doesn't seem to be working,
                  probably because we're overriding the whole body

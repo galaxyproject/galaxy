@@ -5,7 +5,8 @@ import { nodeToRow } from "@/components/RepositoriesGridInterface"
 import ErrorBanner from "@/components/ErrorBanner.vue"
 import LoadingDiv from "@/components/LoadingDiv.vue"
 import { graphql } from "@/gql"
-import { useQuery } from "@vue/apollo-composable"
+import type { Query, RelayRepositoryConnection } from "@/gql/graphql"
+import { useRelayInfiniteScrollQuery } from "@/relayClient"
 
 interface RepositoriesByOwnerProps {
     username: string
@@ -30,34 +31,18 @@ const query = graphql(/* GraphQL */ `
     }
 `)
 
-async function onScroll(): Promise<void> {
-    const cursor = result.value?.relayRepositoriesForOwner?.pageInfo.endCursor || null
-    fetchMore({
-        variables: {
-            username: props.username,
-            cursor: cursor,
-        },
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore
-        updateQuery: (previousResult, { fetchMoreResult }) => {
-            const newRepos = fetchMoreResult?.relayRepositoriesForOwner?.edges || []
-            const edges = [...(previousResult?.relayRepositoriesForOwner?.edges || []), ...newRepos]
-            const pageInfo = { ...fetchMoreResult?.relayRepositoriesForOwner?.pageInfo }
-            return {
-                relayRepositoriesForOwner: {
-                    __typename: fetchMoreResult?.relayRepositoriesForOwner?.__typename,
-                    // Merging the tag list
-                    edges: edges,
-                    pageInfo: pageInfo,
-                },
-            }
-        },
-    })
+function toResult(queryResult: Query): RelayRepositoryConnection {
+    const result = queryResult.relayRepositoriesForOwner
+    if (!result) {
+        throw Error("problem")
+    }
+    return result as RelayRepositoryConnection
 }
-const { result, loading, error, fetchMore } = useQuery(query, { username: props.username })
+
+const { records, error, loading, onScroll } = useRelayInfiniteScrollQuery(query, { username: props.username }, toResult)
+
 const rows = computed(() => {
-    const nodes = result.value?.relayRepositoriesForOwner?.edges.map((v) => v?.node)
-    return nodes?.map(nodeToRow) || []
+    return records.value.map(nodeToRow)
 })
 </script>
 <template>
