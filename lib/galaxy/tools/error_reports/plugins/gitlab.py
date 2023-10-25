@@ -47,16 +47,16 @@ class GitLabPlugin(BaseGitPlugin):
             self.gitlab.auth()
 
         except gitlab.GitlabAuthenticationError:
-            log.error("GitLab error reporting - Could not authenticate with GitLab.", exc_info=True)
+            log.exception("GitLab error reporting - Could not authenticate with GitLab.")
             self.gitlab = None
         except gitlab.GitlabParsingError:
-            log.error("GitLab error reporting - Could not parse GitLab message.", exc_info=True)
+            log.exception("GitLab error reporting - Could not parse GitLab message.")
             self.gitlab = None
         except (gitlab.GitlabConnectionError, gitlab.GitlabHttpError):
-            log.error("GitLab error reporting - Could not connect to GitLab.", exc_info=True)
+            log.exception("GitLab error reporting - Could not connect to GitLab.")
             self.gitlab = None
         except gitlab.GitlabError:
-            log.error("GitLab error reporting - General error communicating with GitLab.", exc_info=True)
+            log.exception("GitLab error reporting - General error communicating with GitLab.")
             self.gitlab = None
 
     def gitlab_connect(self):
@@ -195,34 +195,29 @@ class GitLabPlugin(BaseGitPlugin):
                 )
 
             except gitlab.GitlabCreateError:
-                log.error("GitLab error reporting - Could not create the issue on GitLab.", exc_info=True)
+                log.exception("GitLab error reporting - Could not create the issue on GitLab.")
                 return ("Internal Error.", "danger")
             except gitlab.GitlabOwnershipError:
-                log.error(
-                    "GitLab error reporting - Could not create the issue on GitLab due to ownership issues.",
-                    exc_info=True,
-                )
+                log.exception("GitLab error reporting - Could not create the issue on GitLab due to ownership issues.")
                 return ("Internal Error.", "danger")
             except gitlab.GitlabSearchError:
-                log.error("GitLab error reporting - Could not find repository on GitLab.", exc_info=True)
+                log.exception("GitLab error reporting - Could not find repository on GitLab.")
                 return ("Internal Error.", "danger")
             except gitlab.GitlabAuthenticationError:
-                log.error("GitLab error reporting - Could not authenticate with GitLab.", exc_info=True)
+                log.exception("GitLab error reporting - Could not authenticate with GitLab.")
                 return ("Internal Error.", "danger")
             except gitlab.GitlabParsingError:
-                log.error("GitLab error reporting - Could not parse GitLab message.", exc_info=True)
+                log.exception("GitLab error reporting - Could not parse GitLab message.")
                 return ("Internal Error.", "danger")
             except (gitlab.GitlabConnectionError, gitlab.GitlabHttpError):
-                log.error("GitLab error reporting - Could not connect to GitLab.", exc_info=True)
+                log.exception("GitLab error reporting - Could not connect to GitLab.")
                 return ("Internal Error.", "danger")
             except gitlab.GitlabError:
-                log.error("GitLab error reporting - General error communicating with GitLab.", exc_info=True)
+                log.exception("GitLab error reporting - General error communicating with GitLab.")
                 return ("Internal Error.", "danger")
             except Exception:
-                log.error(
-                    "GitLab error reporting - Error reporting to GitLab had an exception that could not be "
-                    "determined.",
-                    exc_info=True,
+                log.exception(
+                    "GitLab error reporting - Error reporting to GitLab had an exception that could not be determined.",
                 )
                 return ("Internal Error.", "danger")
         else:
