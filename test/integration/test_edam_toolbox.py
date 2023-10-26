@@ -23,7 +23,7 @@ class TestEdamToolboxIntegration(integration_util.IntegrationTestCase):
 
         tool_panels = self.galaxy_interactor.get("tool_panels")
         tool_panels.raise_for_status()
-        panel_views = tool_panels.json()
+        panel_views = tool_panels.json()["views"]
         assert len(panel_views) > 1
         assert isinstance(panel_views, dict)
         edam_panel_view = panel_views["ontology:edam_merged"]
@@ -54,7 +54,10 @@ class TestEdamToolboxDefaultIntegration(integration_util.IntegrationTestCase):
         tool_panels = self.galaxy_interactor.get("tool_panels")
         tool_panels.raise_for_status()
         panel_views = tool_panels.json()
-        assert len(panel_views) > 1
-        assert isinstance(panel_views, dict)
-        edam_panel_view = panel_views["ontology:edam_topics"]
+        default = panel_views["default_panel_view"]
+        assert default == "ontology:edam_topics"
+        views = panel_views["views"]
+        assert len(views) > 1
+        assert isinstance(views, dict)
+        edam_panel_view = views["ontology:edam_topics"]
         assert edam_panel_view["view_type"] == "ontology"

@@ -181,10 +181,13 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
     def panel_views(self, trans: GalaxyWebTransaction, **kwds):
         """
         GET /api/tool_panels
-        returns a dictionary of available tool panel views
+        returns a dictionary of available tool panel views and default view
         """
 
-        return self.app.toolbox.panel_view_dicts()
+        rval = {}
+        rval["default_panel_view"] = self.app.toolbox._default_panel_view
+        rval["views"] = self.app.toolbox.panel_view_dicts()
+        return rval
 
     @expose_api_anonymous_and_sessionless
     def panel_view(self, trans: GalaxyWebTransaction, view, **kwds):
