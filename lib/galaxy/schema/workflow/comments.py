@@ -1,12 +1,12 @@
 from typing import (
     List,
-    Literal,
     Optional,
     Tuple,
     Union,
 )
 
 from pydantic import BaseModel
+from typing_extensions import Literal
 
 
 class BaseComment(BaseModel):
