@@ -1,11 +1,12 @@
-import axios from "axios";
+import { fetcher } from "@/schema"
 
-import { prependPath } from "@/utils/redirect";
-import { rethrowSimple } from "@/utils/simple-error";
+const getUser = fetcher.path("/api/users/{user_id}").method("get").create();
+const setTheme = fetcher.path("/api/users/{user_id}/theme/{theme}").method("put").create();
+const addFavoriteTool = fetcher.path("/api/users/{user_id}/favorites/{object_type}").method("put").create();
+const removeFavoriteTool = fetcher.path("/api/users/{user_id}/favorites/{object_type}/{object_id}").method("delete").create();
 
 export async function getCurrentUser() {
-    const url = prependPath("/api/users/current");
-    const response = await axios.get(url);
+    const response = await getUser({ user_id: "current" })
     if (response.status != 200) {
         throw new Error("Failed to get current user");
     }
@@ -13,31 +14,25 @@ export async function getCurrentUser() {
 }
 
 export async function addFavoriteToolQuery(userId: string, toolId: string) {
-    const url = prependPath(`/api/users/${userId}/favorites/tools`);
-    try {
-        const { data } = await axios.put(url, { object_id: toolId });
-        return data["tools"];
-    } catch (e) {
-        rethrowSimple(e);
+    const response = await addFavoriteTool({ user_id: userId, object_type: "tools", object_id: toolId })
+    if (response.status != 200) {
+        throw new Error("Failed to add tool to favorites");
     }
+    return response.data["tools"];
 }
 
 export async function removeFavoriteToolQuery(userId: string, toolId: string) {
-    const url = prependPath(`/api/users/${userId}/favorites/tools/${encodeURIComponent(toolId)}`);
-    try {
-        const { data } = await axios.delete(url);
-        return data["tools"];
-    } catch (e) {
-        rethrowSimple(e);
+    const response = await removeFavoriteTool({ user_id: userId, object_type: "tools", object_id: toolId })
+    if (response.status != 200) {
+        throw new Error("Failed to remove tool from favorites");
     }
+    return response.data["tools"];
 }
 
 export async function setCurrentThemeQuery(userId: string, theme: string) {
-    const url = prependPath(`/api/users/${userId}/theme/${theme}`);
-    try {
-        const { data } = await axios.put(url, { theme: theme });
-        return data;
-    } catch (e) {
-        rethrowSimple(e);
+    const response = await setTheme({ user_id: userId, theme: theme })
+    if (response.status != 200) {
+        throw new Error("Failed to set theme");
     }
+    return response.data;
 }

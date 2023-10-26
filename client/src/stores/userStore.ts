@@ -10,20 +10,19 @@ import {
     removeFavoriteToolQuery,
     setCurrentThemeQuery,
 } from "@/stores/users/queries";
+import { expand } from "rxjs";
 
-type QuotaUsageResponse = components["schemas"]["UserQuotaUsage"];
 
-interface User extends QuotaUsageResponse {
-    id: string;
-    email: string;
-    tags_used: string[];
+type DetailedAnonymousUser = components["schemas"]["AnonUserModel"]
+type DetailedUserModelUser = components["schemas"]["DetailedUserModel"]
+
+interface AnonymousUser extends DetailedAnonymousUser {
+    isAnonymous: true
+}
+
+interface User extends DetailedUserModelUser {
     isAnonymous: false;
 }
-
-interface AnonymousUser {
-    isAnonymous: true;
-}
-
 interface Preferences {
     theme: string;
     favorites: { tools: string[] };
@@ -61,10 +60,16 @@ export const useUserStore = defineStore("userStore", () => {
         if (!loadPromise) {
             loadPromise = getCurrentUser()
                 .then(async (user) => {
-                    currentUser.value = { ...user, isAnonymous: !user.email };
-                    currentPreferences.value = user?.preferences ?? null;
+                    if ('email' in user) {
+                        currentUser.value = { ...user, isAnonymous: false };
+                        currentPreferences.value = user.preferences as unknown as Preferences;
+                    }
+                    else {
+                        currentUser.value = { ...user, isAnonymous: true };
+                        currentPreferences.value = null;
+                    }
                     // TODO: This is a hack to get around the fact that the API returns a string
-                    if (currentPreferences.value?.favorites) {
+                    if (currentPreferences.value?.favorites && isRegisteredUser(user)) {
                         currentPreferences.value.favorites = JSON.parse(user?.preferences?.favorites ?? { tools: [] });
                     }
                     if (includeHistories) {
@@ -82,7 +87,11 @@ export const useUserStore = defineStore("userStore", () => {
                 });
         }
     }
-
+    function isRegisteredUser(user?: any): user is User {
+        return (
+            user !== undefined && "email" in user
+        );
+    }
     async function setCurrentTheme(theme: string) {
         if (!currentUser.value || currentUser.value.isAnonymous) {
             return;
