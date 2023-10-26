@@ -18,15 +18,18 @@ describe("ToolSchemaJson/ToolsView.vue", () => {
 
     beforeEach(async () => {
         axiosMock = new MockAdapter(axios);
-        axiosMock.onGet("/api/tool_panel?in_panel=False&tool_help=True").reply(200, testToolsListResponse);
-        axiosMock.onGet("/api/tool_panel").reply(200, testToolsListInPanelResponse);
+        axiosMock.onGet("/api/tools?in_panel=False&tool_help=True").reply(200, testToolsListResponse);
+        axiosMock.onGet("/api/tool_panels/default").reply(200, testToolsListInPanelResponse);
         wrapper = shallowMount(ToolsJson, { localVue });
         await flushPromises();
     });
 
     it("schema.org script element is created", async () => {
-        const toolsList = testToolsListResponse.tools;
-        const toolsListInPanel = testToolsListInPanelResponse.default;
+        const toolsList = testToolsListResponse.reduce((acc, item) => {
+            acc[item.id] = item;
+            return acc;
+        }, {});
+        const toolsListInPanel = testToolsListInPanelResponse;
         const tools = wrapper.vm.createToolsJson(toolsList, toolsListInPanel);
         const schemaElement = document.getElementById("schema-json");
         const schemaText = JSON.parse(schemaElement.text);

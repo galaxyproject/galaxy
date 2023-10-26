@@ -15,8 +15,11 @@ useConfig.mockReturnValue({
 });
 
 describe("ToolBox", () => {
-    const toolsMock = toolsList.tools;
-    const toolPanelMock = toolsListInPanel.default;
+    const toolsMock = toolsList.reduce((acc, item) => {
+        acc[item.id] = item;
+        return acc;
+    }, {});
+    const toolPanelMock = toolsListInPanel;
     const resultsMock = ["liftOver1", "__FILTER_EMPTY_DATASETS__", "__UNZIP_COLLECTION__"];
     let axiosMock;
 
@@ -26,9 +29,9 @@ describe("ToolBox", () => {
 
     it("test filter functions correctly matching: (1) Tools store array-of-objects with (2) Results array", async () => {
         axiosMock
-            .onGet(`/api/tool_panel`)
+            .onGet(`/api/tool_panels/default`)
             .replyOnce(200, toolsListInPanel)
-            .onGet(`/api/tool_panel?in_panel=False`)
+            .onGet(`/api/tools?in_panel=False`)
             .replyOnce(200, toolsMock)
             .onGet(/api\/tools?.*/)
             .replyOnce(200, resultsMock);
