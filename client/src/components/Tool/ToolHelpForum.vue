@@ -3,10 +3,10 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BCard } from "bootstrap-vue";
 import { computed, onMounted, ref } from "vue";
 
-import { fetcher } from "@/schema";
+import { fetcher } from "@/api/schema";
 import { useConfigStore } from "@/stores/configurationStore";
 
-import { createTopicUrl, type HelpForumPost, type HelpForumTopic, useHelpURLs } from "./helpForumServices";
+import { createTopicUrl, type HelpForumPost, type HelpForumTopic, useHelpURLs } from "./helpForumUrls";
 
 import Heading from "@/components/Common/Heading.vue";
 import ExternalLink from "@/components/ExternalLink.vue";

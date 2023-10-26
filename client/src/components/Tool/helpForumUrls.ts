@@ -1,6 +1,6 @@
 import { computed, Ref } from "vue";
 
-import { components } from "@/schema";
+import { components } from "@/api/schema";
 import { useConfigStore } from "@/stores/configurationStore";
 
 export type HelpForumTopic = components["schemas"]["HelpForumTopic"];
