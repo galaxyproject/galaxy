@@ -1337,7 +1337,12 @@ class WorkflowContentsManager(UsesAnnotations):
         tag_str = ""
         if stored is not None:
             if stored.id:
-                annotation_str = self.get_item_annotation_str(trans.sa_session, trans.user, stored) or ""
+                # if the active user doesn't have an annotation on the workflow, default to the owner's annotation.
+                annotation_str = (
+                    self.get_item_annotation_str(trans.sa_session, trans.user, stored)
+                    or self.get_item_annotation_str(trans.sa_session, stored.user, stored)
+                    or ""
+                )
                 tag_str = stored.make_tag_string_list()
             else:
                 # dry run with flushed workflow objects, just use the annotation
