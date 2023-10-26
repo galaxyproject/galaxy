@@ -1335,12 +1335,14 @@ class WorkflowContentsManager(UsesAnnotations):
         """
         annotation_str = ""
         tag_str = ""
+        annotation_owner = None
         if stored is not None:
             if stored.id:
                 # if the active user doesn't have an annotation on the workflow, default to the owner's annotation.
+                annotation_owner = stored.user
                 annotation_str = (
                     self.get_item_annotation_str(trans.sa_session, trans.user, stored)
-                    or self.get_item_annotation_str(trans.sa_session, stored.user, stored)
+                    or self.get_item_annotation_str(trans.sa_session, annotation_owner, stored)
                     or ""
                 )
                 tag_str = stored.make_tag_string_list()
@@ -1375,8 +1377,10 @@ class WorkflowContentsManager(UsesAnnotations):
             module = module_factory.from_workflow_step(trans, step)
             if not module:
                 raise exceptions.MessageException(f"Unrecognized step type: {step.type}")
-            # Get user annotation.
+            # Get user annotation if it exists, otherwise get owner annotation.
             annotation_str = self.get_item_annotation_str(trans.sa_session, trans.user, step) or ""
+            if not annotation_str and annotation_owner:
+                annotation_str = self.get_item_annotation_str(trans.sa_session, annotation_owner, step) or ""
             content_id = module.get_content_id() if allow_upgrade else step.content_id
             # Export differences for backward compatibility
             tool_state = module.get_export_state()
