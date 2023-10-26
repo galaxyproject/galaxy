@@ -156,7 +156,7 @@ onMounted(() => {
                 @input="onTextChange"></textarea>
 
             <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions vuejs-accessibility/click-events-have-key-events -->
-            <div v-if="!focused" class="rendered-markdown" @click="onClick" v-html="content"></div>
+            <div class="rendered-markdown" @click="onClick" v-html="content"></div>
         </div>
 
         <BButtonGroup v-if="!props.readonly" class="style-buttons">
@@ -211,6 +211,10 @@ $min-height: 1.5em;
 
         .colour-selector {
             visibility: visible;
+        }
+
+        .rendered-markdown {
+            visibility: hidden;
         }
 
         .markdown-textarea {
