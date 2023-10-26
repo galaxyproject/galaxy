@@ -39,7 +39,10 @@ from galaxy import (
     exceptions,
     model,
 )
-from galaxy.exceptions import ToolInputsNotReadyException
+from galaxy.exceptions import (
+    ToolInputsNotOKException,
+    ToolInputsNotReadyException,
+)
 from galaxy.job_execution import output_collect
 from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.model import (
@@ -2875,7 +2878,7 @@ class ExpressionTool(Tool):
                         copy_object = input_dataset
                         break
                 if copy_object is None:
-                    raise Exception("Failed to find dataset output.")
+                    raise exceptions.MessageException("Failed to find dataset output.")
                 out_data[key].copy_from(copy_object)
 
     def parse_environment_variables(self, tool_source):
@@ -3217,8 +3220,10 @@ class DatabaseOperationTool(Tool):
 
             if self.require_dataset_ok:
                 if state != model.Dataset.states.OK:
-                    raise ValueError(
-                        f"Tool requires inputs to be in valid state, but dataset {input_dataset} is in state '{input_dataset.state}'"
+                    raise ToolInputsNotOKException(
+                        f"Tool requires inputs to be in valid state, but dataset {input_dataset} is in state '{input_dataset.state}'",
+                        src="hda",
+                        id=input_dataset.id,
                     )
 
         for input_dataset in input_datasets.values():
@@ -3347,7 +3352,7 @@ class ExtractDatasetCollectionTool(DatabaseOperationTool):
         elif how == "by_index":
             extracted_element = collection[int(incoming["which"]["index"])]
         else:
-            raise Exception("Invalid tool parameters.")
+            raise exceptions.MessageException("Invalid tool parameters.")
         extracted = extracted_element.element_object
         extracted_o = extracted.copy(
             copy_tags=extracted.tags, new_name=extracted_element.element_identifier, flush=False
@@ -3387,7 +3392,9 @@ class MergeCollectionTool(DatabaseOperationTool):
                 if element_identifier not in identifiers_map:
                     identifiers_map[element_identifier] = []
                 elif dupl_actions == "fail":
-                    raise Exception(f"Duplicate collection element identifiers found for [{element_identifier}]")
+                    raise exceptions.MessageException(
+                        f"Duplicate collection element identifiers found for [{element_identifier}]"
+                    )
                 identifiers_map[element_identifier].append(input_num)
 
         for copy, input_list in enumerate(input_lists):
@@ -3579,12 +3586,12 @@ class SortTool(DatabaseOperationTool):
                 except KeyError:
                     hdca_history_name = f"{hdca.hid}: {hdca.name}"
                     message = f"List of element identifiers does not match element identifiers in collection '{hdca_history_name}'"
-                    raise Exception(message)
+                    raise exceptions.MessageException(message)
             else:
                 message = f"Number of lines must match number of list elements ({len(elements)}), but file has {data_lines} lines"
-                raise Exception(message)
+                raise exceptions.MessageException(message)
         else:
-            raise Exception(f"Unknown sort_type '{sorttype}'")
+            raise exceptions.MessageException(f"Unknown sort_type '{sorttype}'")
 
         if presort_elements is not None:
             sorted_elements = [x[1] for x in sorted(presort_elements, key=lambda x: x[0])]
@@ -3616,7 +3623,7 @@ class RelabelFromFileTool(DatabaseOperationTool):
         def add_copied_value_to_new_elements(new_label, dce_object):
             new_label = new_label.strip()
             if new_label in new_elements:
-                raise Exception(
+                raise exceptions.MessageException(
                     f"New identifier [{new_label}] appears twice in resulting collection, these values must be unique."
                 )
             if getattr(dce_object, "history_content_type", None) == "dataset":
@@ -3629,7 +3636,7 @@ class RelabelFromFileTool(DatabaseOperationTool):
         with open(new_labels_path) as fh:
             new_labels = fh.readlines(1024 * 1000000)
         if strict and len(hdca.collection.elements) != len(new_labels):
-            raise Exception("Relabel mapping file contains incorrect number of identifiers")
+            raise exceptions.MessageException("Relabel mapping file contains incorrect number of identifiers")
         if how_type == "tabular":
             # We have a tabular file, where the first column is an existing element identifier,
             # and the second column is the new element identifier.
@@ -3641,7 +3648,7 @@ class RelabelFromFileTool(DatabaseOperationTool):
                 default = None if strict else element_identifier
                 new_label = new_labels_dict.get(element_identifier, default)
                 if not new_label:
-                    raise Exception(f"Failed to find new label for identifier [{element_identifier}]")
+                    raise exceptions.MessageException(f"Failed to find new label for identifier [{element_identifier}]")
                 add_copied_value_to_new_elements(new_label, dce_object)
         else:
             # If new_labels_dataset_assoc is not a two-column tabular dataset we label with the current line of the dataset
@@ -3650,7 +3657,7 @@ class RelabelFromFileTool(DatabaseOperationTool):
                 add_copied_value_to_new_elements(new_labels[i], dce_object)
         for key in new_elements.keys():
             if not re.match(r"^[\w\- \.,]+$", key):
-                raise Exception(f"Invalid new collection identifier [{key}]")
+                raise exceptions.MessageException(f"Invalid new collection identifier [{key}]")
         self._add_datasets_to_history(history, new_elements.values())
         output_collections.create_collection(
             next(iter(self.outputs.values())), "output", elements=new_elements, propagate_hda_tags=False

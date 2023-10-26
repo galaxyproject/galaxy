@@ -51,7 +51,10 @@ class StepOrderIndexGetter(GetterDict):
         # Fetch the order_index when serializing for the API,
         # which makes much more sense when pointing to steps.
         if key == "workflow_step_id":
-            return self._obj.workflow_step.order_index
+            if self._obj.workflow_step:
+                return self._obj.workflow_step.order_index
+            else:
+                return default
         elif key == "dependent_workflow_step_id":
             if self._obj.dependent_workflow_step_id:
                 return self._obj.dependent_workflow_step.order_index
@@ -132,6 +135,7 @@ class GenericInvocationFailureWhenNotBoolean(InvocationFailureMessageBase[Databa
 class GenericInvocationUnexpectedFailure(InvocationMessageBase, Generic[DatabaseIdT]):
     reason: Literal[FailureReason.unexpected_failure]
     details: Optional[str] = Field(None, description="May contains details to help troubleshoot this problem.")
+    workflow_step_id: Optional[int] = Field(None, description="Workflow step id of step that failed.")
 
 
 class GenericInvocationWarning(InvocationMessageBase, Generic[DatabaseIdT]):

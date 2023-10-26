@@ -240,12 +240,20 @@ class WorkflowInvoker:
             except modules.DelayedWorkflowEvaluation as de:
                 step_delayed = delayed_steps = True
                 self.progress.mark_step_outputs_delayed(step, why=de.why)
-            except Exception:
+            except Exception as e:
                 log.exception(
                     "Failed to schedule %s, problem occurred on %s.",
                     self.workflow_invocation.workflow.log_str(),
                     step.log_str(),
                 )
+                if isinstance(e, MessageException):
+                    # This is the highest level at which we can inject the step id
+                    # to provide some more context to the exception.
+                    raise modules.FailWorkflowEvaluation(
+                        why=InvocationUnexpectedFailure(
+                            reason=FailureReason.unexpected_failure, details=str(e), workflow_step_id=step.id
+                        )
+                    )
                 raise
 
             if not step_delayed:
