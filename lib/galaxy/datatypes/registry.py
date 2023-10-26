@@ -590,13 +590,14 @@ class Registry:
         return self.datatypes_by_extension.get(ext, None)
 
     def change_datatype(self, data, ext):
-        data.extension = ext
-        # call init_meta and copy metadata from itself.  The datatype
-        # being converted *to* will handle any metadata copying and
-        # initialization.
-        if data.has_data():
-            data.set_size()
-            data.init_meta(copy_from=data)
+        if data.extension != ext:
+            data.extension = ext
+            # call init_meta and copy metadata from itself.  The datatype
+            # being converted *to* will handle any metadata copying and
+            # initialization.
+            if data.has_data():
+                data.set_size()
+                data.init_meta(copy_from=data)
         return data
 
     def load_datatype_converters(self, toolbox, use_cached=False):
