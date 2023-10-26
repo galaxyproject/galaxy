@@ -5,22 +5,27 @@ from typing import (
     Union,
 )
 
-from pydantic import BaseModel
+from pydantic import (
+    BaseModel,
+    Field,
+)
 from typing_extensions import Literal
 
 
 class BaseComment(BaseModel):
-    id: int
-    colour: Literal["none", "black", "blue", "turquoise", "green", "lime", "orange", "yellow", "red", "pink"]
-    position: Tuple[float, float]
-    size: Tuple[float, float]
+    id: int = Field(..., description="Unique identifier for this comment. Determined by the comments order")
+    colour: Literal["none", "black", "blue", "turquoise", "green", "lime", "orange", "yellow", "red", "pink"] = Field(
+        ..., description="Colour this comment is displayed as. The exact colour hex is determined by the client"
+    )
+    position: Tuple[float, float] = Field(..., description="[x, y] position of this comment in the Workflow")
+    size: Tuple[float, float] = Field(..., description="[width, height] size of this comment")
 
 
 class TextCommentData(BaseModel):
-    bold: Optional[bool]
-    italic: Optional[bool]
-    size: int
-    text: str
+    bold: Optional[bool] = Field(description="If the Comments text is bold. Absent is interpreted as false")
+    italic: Optional[bool] = Field(description="If the Comments text is italic. Absent is interpreted as false")
+    size: int = Field(..., description="Relative size (1 -> 100%) of the text compared to the default text sitz")
+    text: str = Field(..., description="The plaintext text of this comment")
 
 
 class TextComment(BaseComment):
@@ -29,7 +34,7 @@ class TextComment(BaseComment):
 
 
 class MarkdownCommentData(BaseModel):
-    text: str
+    text: str = Field(..., description="The unrendered source Markdown for this Comment")
 
 
 class MarkdownComment(BaseComment):
@@ -38,19 +43,26 @@ class MarkdownComment(BaseComment):
 
 
 class FrameCommentData(BaseModel):
-    title: str
+    title: str = Field(..., description="The Frames title")
 
 
 class FrameComment(BaseComment):
     type: Literal["frame"]
     data: FrameCommentData
-    child_comments: Optional[List[int]]
-    child_steps: Optional[List[int]]
+    child_comments: Optional[List[int]] = Field(
+        description="A list of ids (see `id`) of all Comments which are encompassed by this Frame"
+    )
+    child_steps: Optional[List[int]] = Field(
+        description="A list of ids of all Steps (see WorkflowStep.id) which are encompassed by this Frame"
+    )
 
 
 class FreehandCommentData(BaseModel):
-    thickness: int
-    line: List[Tuple[float, float]]
+    thickness: int = Field(..., description="Width of the Line in pixels")
+    line: List[Tuple[float, float]] = Field(
+        ...,
+        description="List of [x, y] coordinates determining the unsmoothed line. Smoothing is done client-side using Catmull-Rom",
+    )
 
 
 class FreehandComment(BaseComment):
