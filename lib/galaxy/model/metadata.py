@@ -605,7 +605,9 @@ class FileParameter(MetadataParameter):
         if isinstance(value, int):
             return session.get(galaxy.model.MetadataFile, value)
         else:
-            wrapped_value = session.query(galaxy.model.MetadataFile).filter_by(uuid=value).one_or_none()
+            wrapped_value = session.execute(
+                select(galaxy.model.MetadataFile).filter_by(uuid=value)
+            ).scalar_one_or_none()
             if wrapped_value:
                 return wrapped_value
             else:
