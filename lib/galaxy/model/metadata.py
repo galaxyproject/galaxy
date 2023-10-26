@@ -604,7 +604,16 @@ class FileParameter(MetadataParameter):
         if isinstance(value, int):
             return session.query(galaxy.model.MetadataFile).get(value)
         else:
-            return session.query(galaxy.model.MetadataFile).filter_by(uuid=value).one()
+            wrapped_value = session.query(galaxy.model.MetadataFile).filter_by(uuid=value).one_or_none()
+            if wrapped_value:
+                return wrapped_value
+            else:
+                # If we've simultaneously copied the  dataset and we've changed the datatype on the
+                # copy we may not have committed the MetadataFile yet, so we need to commit the session.
+                # TODO: It would be great if we can avoid the commit in the future.
+                with transaction(session):
+                    session.commit()
+            return session.query(galaxy.model.MetadataFile).filter_by(uuid=value).one_or_none()
 
     def make_copy(self, value, target_context: MetadataCollection, source_context):
         session = target_context._object_session(target_context.parent)
