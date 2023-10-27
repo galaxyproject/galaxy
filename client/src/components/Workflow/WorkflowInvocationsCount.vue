@@ -1,15 +1,16 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faEye, faSitemap } from "@fortawesome/free-solid-svg-icons";
+import { faClock, faSitemap } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BBadge } from "bootstrap-vue";
+import { formatDistanceToNow, parseISO } from "date-fns";
 import { useRouter } from "vue-router/composables";
 
 import localize from "@/utils/localization";
 
 import UtcDate from "@/components/UtcDate.vue";
 
-library.add(faEye, faSitemap);
+library.add(faClock, faSitemap);
 
 interface Props {
     workflow: any;
@@ -30,8 +31,7 @@ function onInvocations() {
             v-b-tooltip.hover
             pill
             :title="localize('View workflow invocations')"
-            href="#"
-            variant="secondary"
+            class="outline-badge cursor-pointer"
             @click="onInvocations">
             <FontAwesomeIcon :icon="faSitemap" />
             <span v-if="workflow.run_count > 0">
@@ -43,11 +43,17 @@ function onInvocations() {
             </span>
         </BBadge>
 
-        <BBadge v-if="workflow.last_run_time" v-b-tooltip.hover pill :title="localize('Last run')" variant="primary">
-            <small>
-                last run
-                <UtcDate :date="workflow.last_run_time" mode="elapsed" />
-            </small>
+        <BBadge
+            v-if="workflow.last_run_time"
+            v-b-tooltip.hover
+            pill
+            :title="`Last run: ${formatDistanceToNow(parseISO(`${workflow.last_run_time}Z`), {
+                addSuffix: true,
+            })}. Click to view details.`"
+            class="outline-badge cursor-pointer">
+            <FontAwesomeIcon :icon="faClock" />
+            <span class="compact-view">last run:</span>
+            <UtcDate :date="workflow.last_run_time" mode="elapsed" />
         </BBadge>
     </div>
 </template>
