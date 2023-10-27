@@ -18,9 +18,4 @@ galaxy_terms:
     dbkeyHelpString: Some text about dbkey.
     jobStatesHelpString: Some text about job states.
 
-tool_form_base: |
-    ## [HelpMode] How to use a tool form
-
-    1. Select data **inputs**
-    2. Set tool **parameters**
-    3. Click **Run Tool**
+tool_form_base: tools/tool_form_base.md

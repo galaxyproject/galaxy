@@ -11,7 +11,10 @@ export const useHelpModeTextStore = defineStore("helpModeText", {
 
     actions: {
         addHelpModeText(text) {
-            this.helpmodetext = config[text];
+            const file_path = config[text];
+            fetch("https://raw.githubusercontent.com/assuntad23/galaxy-help-markdown/main/"+file_path).then((response) => response.text()).then((text) => {
+                this.helpmodetext = text;
+            });
         },
     },
 });
