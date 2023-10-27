@@ -2977,6 +2977,47 @@ steps:
             assert workflow
 
     @skip_without_tool("__MERGE_COLLECTION__")
+    def test_merge_collection_scheduling(self, history_id):
+        summary = self._run_workflow(
+            """
+class: GalaxyWorkflow
+inputs:
+  collection:
+    type: collection
+    collection_type: list
+outputs:
+  merge_out:
+    outputSource: merge/output
+steps:
+  sleep:
+    tool_id: cat_data_and_sleep
+    in:
+      input1: collection
+    state:
+      sleep_time: 5
+  merge:
+    tool_id: __MERGE_COLLECTION__
+    in:
+      inputs_1|input: sleep/out_file1
+      inputs_0|input: sleep/out_file1
+test_data:
+  collection:
+    collection_type: list
+    elements:
+      - identifier: 1
+        content: A
+""",
+            history_id=history_id,
+            wait=True,
+            assert_ok=True,
+        )
+        invocation = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+        merge_out_id = invocation["output_collections"]["merge_out"]["id"]
+        merge_out = self.dataset_populator.get_history_collection_details(history_id, content_id=merge_out_id)
+        assert merge_out["element_count"] == 1
+        assert merge_out["elements"][0]["object"]["state"] == "ok"
+
+    @skip_without_tool("__MERGE_COLLECTION__")
     @skip_without_tool("cat_collection")
     @skip_without_tool("head")
     def test_export_invocation_ro_crate_adv(self):
