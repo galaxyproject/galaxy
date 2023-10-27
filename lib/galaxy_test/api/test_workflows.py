@@ -4060,6 +4060,78 @@ outputs:
         assert "workflow_step_id" in message
         assert message["output_name"] == "does_not_exist"
 
+    @skip_without_tool("__APPLY_RULES__")
+    @skip_without_tool("job_properties")
+    def test_workflow_failed_input_not_ok(self, history_id):
+        summary = self._run_workflow(
+            """
+class: GalaxyWorkflow
+steps:
+  job_props:
+    tool_id: job_properties
+    state:
+      thebool: true
+      failbool: true
+  apply:
+    tool_id: __APPLY_RULES__
+    in:
+      input: job_props/list_output
+    state:
+      rules:
+        rules:
+          - type: add_column_metadata
+            value: identifier0
+        mapping:
+          - type: list_identifiers
+            columns: [0]
+        """,
+            history_id=history_id,
+            assert_ok=False,
+            wait=True,
+        )
+        invocation_details = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+        assert invocation_details["state"] == "failed"
+        assert len(invocation_details["messages"]) == 1
+        message = invocation_details["messages"][0]
+        assert message["reason"] == "dataset_failed"
+        assert message["workflow_step_id"] == 1
+
+    @skip_without_tool("__RELABEL_FROM_FILE__")
+    def test_workflow_failed_with_message_exception(self, history_id):
+        summary = self._run_workflow(
+            """
+class: GalaxyWorkflow
+inputs:
+  input_collection:
+    collection_type: list
+    type: collection
+  relabel_file:
+    type: data
+steps:
+  relabel:
+    tool_id: __RELABEL_FROM_FILE__
+    in:
+      input: input_collection
+      how|labels: relabel_file
+test_data:
+  input_collection:
+    collection_type: "list:list"
+  relabel_file:
+    value: 1.bed
+    type: File
+        """,
+            history_id=history_id,
+            assert_ok=False,
+            wait=True,
+        )
+        invocation_details = self.workflow_populator.get_invocation(summary.invocation_id, step_details=True)
+        assert invocation_details["state"] == "failed"
+        assert len(invocation_details["messages"]) == 1
+        message = invocation_details["messages"][0]
+        assert message["reason"] == "unexpected_failure"
+        assert message["workflow_step_id"] == 2
+        assert "Invalid new collection identifier" in message["details"]
+
     @skip_without_tool("identifier_multiple")
     def test_invocation_map_over(self, history_id):
         summary = self._run_workflow(

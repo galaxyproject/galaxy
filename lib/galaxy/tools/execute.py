@@ -19,6 +19,7 @@ from typing import (
 from boltons.iterutils import remap
 
 from galaxy import model
+from galaxy.exceptions import ToolInputsNotOKException
 from galaxy.model.base import transaction
 from galaxy.model.dataset_collections.matching import MatchingCollections
 from galaxy.model.dataset_collections.structure import (
@@ -143,14 +144,17 @@ def execute(
     if check_inputs_ready:
         for params in execution_tracker.param_combinations:
             # This will throw an exception if the tool is not ready.
-            check_inputs_ready(
-                tool,
-                trans,
-                params,
-                history,
-                execution_cache=execution_cache,
-                collection_info=collection_info,
-            )
+            try:
+                check_inputs_ready(
+                    tool,
+                    trans,
+                    params,
+                    history,
+                    execution_cache=execution_cache,
+                    collection_info=collection_info,
+                )
+            except ToolInputsNotOKException as e:
+                execution_tracker.record_error(e)
 
     execution_tracker.ensure_implicit_collections_populated(history, mapping_params.param_template)
     job_count = len(execution_tracker.param_combinations)
