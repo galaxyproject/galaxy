@@ -3383,40 +3383,27 @@ class MergeCollectionTool(DatabaseOperationTool):
         for copy, input_list in enumerate(input_lists):
             for dce in input_list.collection.elements:
                 element = dce.element_object
-                valid = False
+                element_identifier = dce.element_identifier
+                identifier_seen = element_identifier in new_element_structure
+                appearances = identifiers_map[element_identifier]
+                add_suffix = False
+                if dupl_actions == "suffix_every":
+                    add_suffix = True
+                elif dupl_actions == "suffix_conflict" and len(appearances) > 1:
+                    add_suffix = True
+                elif dupl_actions == "suffix_conflict_rest" and len(appearances) > 1 and appearances[0] != copy:
+                    add_suffix = True
 
-                # dealing with a single element
-                if hasattr(element, "is_ok"):
-                    if element.is_ok:
-                        valid = True
-                elif hasattr(element, "dataset_instances"):
-                    # we are probably a list:paired dataset, both need to be in non error state
-                    forward_o, reverse_o = element.dataset_instances
-                    if forward_o.is_ok and reverse_o.is_ok:
-                        valid = True
+                if dupl_actions == "keep_first" and identifier_seen:
+                    continue
 
-                if valid:
-                    element_identifier = dce.element_identifier
-                    identifier_seen = element_identifier in new_element_structure
-                    appearances = identifiers_map[element_identifier]
-                    add_suffix = False
-                    if dupl_actions == "suffix_every":
-                        add_suffix = True
-                    elif dupl_actions == "suffix_conflict" and len(appearances) > 1:
-                        add_suffix = True
-                    elif dupl_actions == "suffix_conflict_rest" and len(appearances) > 1 and appearances[0] != copy:
-                        add_suffix = True
+                if add_suffix and suffix_pattern:
+                    suffix = suffix_pattern.replace("#", str(copy + 1))
+                    effective_identifer = f"{element_identifier}{suffix}"
+                else:
+                    effective_identifer = element_identifier
 
-                    if dupl_actions == "keep_first" and identifier_seen:
-                        continue
-
-                    if add_suffix and suffix_pattern:
-                        suffix = suffix_pattern.replace("#", str(copy + 1))
-                        effective_identifer = f"{element_identifier}{suffix}"
-                    else:
-                        effective_identifer = element_identifier
-
-                    new_element_structure[effective_identifer] = element
+                new_element_structure[effective_identifer] = element
 
         # Don't copy until we know everything is fine and we have the structure of the list ready to go.
         new_elements = {}
