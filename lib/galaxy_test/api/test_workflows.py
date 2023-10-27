@@ -5354,6 +5354,39 @@ input1:
             # Also check that we don't overwrite the original HDA's datatype
             assert details2["elements"][0]["object"]["file_ext"] == "fasta"
 
+    @skip_without_tool("__EXTRACT_DATASET__")
+    def test_run_build_list_change_datatype_new_metadata_file_parameter(self):
+        # Regression test for changing datatype to a datatype with a MetadataFileParameter
+        with self.dataset_populator.test_history() as history_id:
+            self._run_workflow(
+                """
+class: GalaxyWorkflow
+inputs:
+  input1: data
+steps:
+  build_list:
+    tool_id: __BUILD_LIST__
+    in:
+      datasets_0|input: input1
+  extract_dataset:
+    tool_id: __EXTRACT_DATASET__
+    in:
+      input: build_list/output
+    outputs:
+      output:
+        change_datatype: vcf_bgzip
+""",
+                test_data="""
+input1:
+  value: test.vcf.gz
+  type: File
+  file_type: vcf_bgzip
+""",
+                history_id=history_id,
+                assert_ok=True,
+                wait=True,
+            )
+
     @skip_without_tool("__BUILD_LIST__")
     def test_run_build_list_rename_collection_output(self):
         with self.dataset_populator.test_history() as history_id:
