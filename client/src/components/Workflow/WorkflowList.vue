@@ -160,7 +160,7 @@ const EXECUTE_FIELD = { key: "execute", label: "Run", thStyle: { width: "10%" } 
 const OWNER_FIELD = { key: "owner", label: _l("Owner"), sortable: false, thStyle: { width: "15%" } };
 
 const PERSONAL_FIELDS = [NAME_FIELD, TAGS_FIELD, UPDATED_FIELD, SHARING_FIELD, BOOKMARKED_FIELD, EXECUTE_FIELD];
-const PUBLISHED_FIELDS = [NAME_FIELD, TAGS_FIELD, UPDATED_FIELD, OWNER_FIELD];
+const PUBLISHED_FIELDS = [NAME_FIELD, TAGS_FIELD, UPDATED_FIELD, OWNER_FIELD, EXECUTE_FIELD];
 
 export default {
     components: {
