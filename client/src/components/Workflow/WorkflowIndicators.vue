@@ -88,7 +88,7 @@ function onViewUserPublished() {
         <BBadge
             v-if="shared && !publishedView"
             v-b-tooltip
-            class="cursor-pointer mx-1"
+            class="outline-badge cursor-pointer mx-1"
             :title="`'${workflow.owner}' shared this workflow with you. Click to view all workflows shared with you by '${workflow.owner}'`"
             @click="onViewMySharedByUser">
             <FontAwesomeIcon :icon="faUsers" size="sm" />
@@ -98,37 +98,39 @@ function onViewUserPublished() {
         <BBadge
             v-if="publishedView"
             v-b-tooltip
-            class="cursor-pointer mx-1"
+            class="outline-badge cursor-pointer mx-1"
             :title="publishedTitle"
             @click="onViewUserPublished">
             <FontAwesomeIcon :icon="faUser" size="sm" />
             <span class="font-weight-bold"> {{ workflow.owner }} </span>
         </BBadge>
 
-        <span
+        <BButton
             v-if="sourceType.includes('trs')"
             id="source-indicator-trs"
-            v-b-tooltip.hover
-            class="info-icon"
+            v-b-tooltip
+            size="sm"
+            class="inline-icon-button"
             :title="sourceTitle">
-            <FontAwesomeIcon :icon="faShieldAlt" @click="onCopyLink" />
-        </span>
+            <FontAwesomeIcon :icon="faShieldAlt" fixed-width @click="onCopyLink" />
+        </BButton>
 
-        <span
+        <BButton
             v-if="sourceType == 'url'"
             id="source-indicator-url"
-            v-b-tooltip.hover
-            class="info-icon"
+            v-b-tooltip
+            size="sm"
+            class="inline-icon-button"
             :title="sourceTitle">
-            <FontAwesomeIcon :icon="faLink" @click="onCopyLink" />
-        </span>
+            <FontAwesomeIcon :icon="faLink" fixed-width @click="onCopyLink" />
+        </BButton>
 
         <BButton
             v-if="workflow.published && !publishedView"
             id="sharing-indicator-published"
             v-b-tooltip
             size="sm"
-            variant="link"
+            class="inline-icon-button"
             to="/workflows/list_published"
             title="Published workflow. Click to view all published workflows">
             <FontAwesomeIcon :icon="faGlobe" />
@@ -138,9 +140,15 @@ function onViewUserPublished() {
 
 <style scoped lang="scss">
 @import "theme/blue.scss";
-.info-icon {
-    color: $brand_primary;
-    font-size: 0.8rem;
-    margin-right: 0.5rem;
+
+.workflow-badge {
+    background: white;
+    color: $brand-primary;
+    border: 1px solid $brand-primary;
+
+    &:hover {
+        color: white;
+        background: $brand-primary;
+    }
 }
 </style>
