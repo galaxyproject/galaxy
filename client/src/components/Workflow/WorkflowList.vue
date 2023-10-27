@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faStar, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BNav, BNavItem, BOverlay } from "bootstrap-vue";
+import { filter } from "underscore";
 import { computed, onMounted, type Ref, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -11,36 +12,16 @@ import { useAnimationFrameResizeObserver } from "@/composables/sensors/animation
 import { useAnimationFrameScroll } from "@/composables/sensors/animationFrameScroll";
 import { Toast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
-import { contains, equals, expandNameTag, toBool } from "@/utils/filtering";
+import Filtering, { contains, equals, expandNameTag, toBool } from "@/utils/filtering";
 
-import AdvancedFiltering from "@/components/Common/AdvancedFiltering.vue";
+import FilterMenu from "@/components/Common/FilterMenu.vue";
 import Heading from "@/components/Common/Heading.vue";
 import ListHeader from "@/components/Common/ListHeader.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import WorkflowCard from "@/components/Workflow/WorkflowCard.vue";
 import WorkflowListActions from "@/components/Workflow/WorkflowListActions.vue";
 
-library.add(faTrash);
-
-const filterOptions = [
-    {
-        filter: "name",
-        description: "Shows workflows with the given sequence of characters in their names.",
-    },
-    {
-        filter: "tag",
-        description:
-            "Shows workflows with the given workflow tag. You may also click on a tag to filter on that tag directly.",
-    },
-    {
-        filter: "is:importable",
-        description: "Shows importable workflows (this also means they have URL generated).",
-    },
-    {
-        filter: "is:deleted",
-        description: "Shows deleted workflows.",
-    },
-];
+library.add(faStar, faTrash);
 
 type ListView = "grid" | "list";
 type WorkflowsList = Record<string, never>[];
@@ -56,14 +37,18 @@ const props = withDefaults(defineProps<Props>(), {
 const router = useRouter();
 const userStore = useUserStore();
 
-const validFilters = {
-    name: contains("name"),
-    tag: contains("tags", "tag", expandNameTag),
-    deleted: contains("deleted", "true", toBool),
-    published: equals("published", "true", toBool),
-    importable: contains("importable", "true", toBool),
-    shared_with_me: contains("shared_with_me", "true", toBool),
-};
+const validFilters = computed(() => {
+    return {
+        name: { placeholder: "name", type: String, handler: contains("name"), menuItem: true },
+        tag: { placeholder: "tag", type: String, handler: contains("tags", "tag", expandNameTag), menuItem: true },
+        deleted: {
+            placeholder: "Filter on deleted workflows",
+            type: Boolean,
+            handler: equals("deleted", "deleted", toBool),
+            menuItem: false,
+        },
+    };
+});
 
 const limit = ref(50);
 const offset = ref(0);
@@ -94,7 +79,10 @@ const searchPlaceHolder = computed(() => {
     return placeHolder;
 });
 
-const filters = computed(() => advancedFiltering.value.filters);
+const filterText = ref("");
+const showAdvanced = ref(false);
+const showBookmarked = ref(false);
+const WorkflowFilters = new Filtering(validFilters.value);
 const published = computed(() => props.activeList === "published");
 const scrolledTop = computed(() => !isScrollable.value || arrived.top);
 const sharedWithMe = computed(() => props.activeList === "shared_with_me");
@@ -102,7 +90,6 @@ const showDeleted = computed(() => filterText.value.includes("is:deleted"));
 const view = computed(() => (userStore.preferredListViewMode as ListView) || "grid");
 const sortDesc = computed(() => (listHeader.value && listHeader.value.sortDesc) ?? true);
 const sortBy = computed(() => (listHeader.value && listHeader.value.sortBy) || "update_time");
-const filterText = computed(() => advancedFiltering.value && advancedFiltering.value.filterText);
 const noItems = computed(() => !loading.value && !overlay.value && workflows.value.length === 0 && !filterText.value);
 const noResults = computed(() => !loading.value && !overlay.value && workflows.value.length === 0 && filterText.value);
 
@@ -111,13 +98,13 @@ function updateFilter(newVal: string) {
 }
 
 function onTagClick(tag: { text: string }) {
-    updateFilter(filters.value.setFilterValue(filterText.value, "tag", tag.text));
+    filterText.value = WorkflowFilters.setFilterValue(filterText.value, "tag", tag.text);
 }
 
-async function load(overlayLoading = false) {
+async function load(overlayLoading = false, silentLoading = false) {
     if (overlayLoading) {
         overlay.value = true;
-    } else {
+    } else if (!silentLoading) {
         loading.value = true;
     }
 
@@ -132,7 +119,7 @@ async function load(overlayLoading = false) {
     }
 
     try {
-        workflows.value = await loadWorkflows({
+        const tmp = await loadWorkflows({
             sortBy: sortBy.value,
             sortDesc: sortDesc.value,
             limit: limit.value,
@@ -141,6 +128,16 @@ async function load(overlayLoading = false) {
             showPublished: published.value,
             skipStepCounts: true,
         });
+
+        let filteredWorkflows = showBookmarked.value
+            ? filter(tmp, (workflow: any) => workflow.show_in_tool_panel)
+            : tmp;
+
+        if (props.activeList === "my") {
+            filteredWorkflows = filter(filteredWorkflows, (w: any) => w.owner === userStore.currentUser?.username);
+        }
+
+        workflows.value = filteredWorkflows;
     } catch (e) {
         Toast.error(`Failed to load workflows: ${e}`);
     } finally {
@@ -151,19 +148,23 @@ async function load(overlayLoading = false) {
 
 function onToggleDeleted() {
     if (!showDeleted.value) {
-        updateFilter(`${filterText.value} is:deleted`);
+        filterText.value = `${filterText.value} is:deleted`;
     } else {
-        updateFilter(filterText.value.replace("is:deleted", "").trim());
+        filterText.value = filterText.value.replace("is:deleted", "").trim();
     }
 }
 
-watch([filterText, sortBy, sortDesc], () => {
+function onToggleBookmarked() {
+    showBookmarked.value = !showBookmarked.value;
+}
+
+watch([filterText, sortBy, sortDesc, showBookmarked], () => {
     load(true);
 });
 
 onMounted(() => {
     if (router.currentRoute.query.owner) {
-        advancedFiltering.value.updateFilter(`${filterText.value} user:${router.currentRoute.query.owner}`.trim());
+        filterText.value = `${filterText.value} user:${router.currentRoute.query.owner}`.trim();
     }
 
     load();
@@ -179,21 +180,23 @@ onMounted(() => {
                 <WorkflowListActions />
             </div>
 
-            <BNav tabs fill>
-                <BNavItem :active="activeList === 'my'" to="/workflows/list">My workflows</BNavItem>
+            <BNav pills justified class="mb-2">
+                <BNavItem :active="activeList === 'my'" to="/workflows/list"> My workflows </BNavItem>
                 <BNavItem :active="sharedWithMe" to="/workflows/list_shared_with_me">
                     Workflows shared with me
                 </BNavItem>
                 <BNavItem :active="published" to="/workflows/list_published"> Public workflows </BNavItem>
             </BNav>
 
-            <AdvancedFiltering
-                ref="advancedFiltering"
-                advanced-mode
-                help-title="Workflows"
-                :filter-options="filterOptions"
-                :valid-filters="validFilters"
-                :search-place-holder="searchPlaceHolder" />
+            <FilterMenu
+                class="mb-2"
+                :filter-class="WorkflowFilters"
+                :filter-text.sync="filterText"
+                :loading="loading"
+                has-help
+                :placeholder="searchPlaceHolder"
+                :show-advanced.sync="showAdvanced"
+                @updateFilter="updateFilter" />
 
             <ListHeader ref="listHeader" show-view-toggle>
                 <template v-slot:extra-filter>
@@ -209,6 +212,18 @@ onMounted(() => {
                             @click="onToggleDeleted">
                             <FontAwesomeIcon :icon="faTrash" />
                             Show deleted
+                        </BButton>
+
+                        <BButton
+                            id="show-bookmarked"
+                            v-b-tooltip.hover
+                            size="sm"
+                            :title="!showBookmarked ? 'Show bookmarked workflows' : 'Hide bookmarked workflows'"
+                            :pressed="showBookmarked"
+                            variant="outline-primary"
+                            @click="onToggleBookmarked">
+                            <FontAwesomeIcon :icon="faStar" />
+                            Show bookmarked
                         </BButton>
                     </div>
                 </template>
@@ -248,7 +263,7 @@ onMounted(() => {
 
 <style scoped lang="scss">
 .workflows-list {
-    container-type: inline-size;
+    container: workflow-list / inline-size;
     overflow: auto;
 
     .workflows-list-header {
