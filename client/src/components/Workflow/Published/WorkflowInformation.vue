@@ -31,7 +31,7 @@ const gravatarSource = computed(
     () => `https://secure.gravatar.com/avatar/${props.workflowInfo?.email_hash}?d=identicon`
 );
 
-const publishedByUser = computed(() => `/workflows/list_published?f-username=${props.workflowInfo?.owner}`);
+const publishedByUser = computed(() => `/workflows/list_published?owner=${props.workflowInfo?.owner}`);
 </script>
 
 <template>
