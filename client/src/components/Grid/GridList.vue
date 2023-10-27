@@ -169,7 +169,7 @@ watch(operationMessage, () => {
                 <FilterMenu
                     class="py-2"
                     :name="gridConfig.plural"
-                    placeholder="search visualizations"
+                    :placeholder="`search ${gridConfig.item}`"
                     :filter-class="gridConfig.filtering"
                     :filter-text.sync="filterText"
                     :loading="loading"
@@ -184,9 +184,10 @@ watch(operationMessage, () => {
                     class="m-1"
                     size="sm"
                     variant="primary"
+                    :data-description="`grid action ${action.title.toLowerCase()}`"
                     @click="action.handler(router)">
-                    <icon :icon="action.icon" class="mr-1" />
-                    <span v-localize>Create</span>
+                    <Icon :icon="action.icon" class="mr-1" />
+                    <span v-localize>{{ action.title }}</span>
                 </BButton>
             </div>
         </div>
@@ -199,8 +200,8 @@ watch(operationMessage, () => {
                         <BLink @click="onSort(fieldEntry.key)">
                             <span>{{ fieldEntry.title || fieldEntry.key }}</span>
                             <span v-if="sortBy === fieldEntry.key">
-                                <icon v-if="sortDesc" icon="caret-up" />
-                                <icon v-else icon="caret-down" />
+                                <Icon v-if="sortDesc" icon="caret-up" />
+                                <Icon v-else icon="caret-down" />
                             </span>
                         </BLink>
                     </span>
