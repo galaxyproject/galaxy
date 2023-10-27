@@ -38,7 +38,7 @@ async function onClick() {
         :disabled="loading || disabled"
         @click="onClick">
         <span v-if="loading" class="loading-icon fa fa-spinner fa-spin" :title="loadingTitle" />
-        <FontAwesomeIcon v-else :icon="props.icon" @click="onClick" />
+        <FontAwesomeIcon v-else :icon="props.icon" />
         <slot></slot>
     </BButton>
 </template>
