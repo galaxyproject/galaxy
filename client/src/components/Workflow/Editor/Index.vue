@@ -41,7 +41,8 @@
             <div class="unified-panel-header" unselectable="on">
                 <div class="unified-panel-header-inner">
                     <span class="sr-only">Workflow Editor</span>
-                    {{ name }}
+                    <span v-if="!isNewTempWorkflow || name">{{ name }}</span>
+                    <i v-else>Create New Workflow</i>
                 </div>
             </div>
             <WorkflowGraph
@@ -68,9 +69,11 @@
                 <div class="unified-panel-header" unselectable="on">
                     <div class="unified-panel-header-inner">
                         <WorkflowOptions
+                            :is-new-temp-workflow="isNewTempWorkflow"
                             :has-changes="hasChanges"
                             :has-invalid-connections="hasInvalidConnections"
                             @onSave="onSave"
+                            @onCreate="onCreate"
                             @onSaveAs="onSaveAs"
                             @onRun="onRun"
                             @onDownload="onDownload"
@@ -118,6 +121,7 @@
                             :license="license"
                             :creator="creator"
                             @onVersion="onVersion"
+                            @onTags="onTags"
                             @onLicense="onLicense"
                             @onCreator="onCreator" />
                         <WorkflowLint
@@ -171,6 +175,7 @@ import { provideScopedWorkflowStores } from "@/composables/workflowStores";
 import { hide_modal } from "@/layout/modal";
 import { getAppRoot } from "@/onload/loadConfig";
 import { LastQueue } from "@/utils/promise-queue";
+import { withPrefix } from "@/utils/redirect";
 
 import { defaultPosition } from "./composables/useDefaultStepPosition";
 import { fromSimple, toSimple } from "./modules/model";
@@ -191,6 +196,8 @@ import ToolPanel from "@/components/Panels/ToolPanel.vue";
 import FormDefault from "@/components/Workflow/Editor/Forms/FormDefault.vue";
 import FormTool from "@/components/Workflow/Editor/Forms/FormTool.vue";
 
+const NEW_TEMP_ID = "new_temp_workflow";
+
 export default {
     components: {
         MarkdownEditor,
@@ -207,17 +214,17 @@ export default {
         WorkflowGraph,
     },
     props: {
-        id: {
+        workflowId: {
             type: String,
-            required: true,
+            default: NEW_TEMP_ID,
         },
         initialVersion: {
             type: Number,
-            required: true,
+            default: 0,
         },
-        tags: {
+        workflowTags: {
             type: Array,
-            required: true,
+            default: () => [],
         },
         moduleSections: {
             type: Array,
@@ -289,6 +296,7 @@ export default {
     },
     data() {
         return {
+            id: this.workflowId,
             isCanvas: true,
             markdownConfig: null,
             markdownText: null,
@@ -300,6 +308,7 @@ export default {
             creator: null,
             annotation: null,
             name: null,
+            tags: this.workflowTags,
             stateMessages: [],
             insertedStateMessages: [],
             refactorActions: [],
@@ -333,10 +342,13 @@ export default {
         hasActiveNodeTool() {
             return this.activeStep?.type == "tool";
         },
+        isNewTempWorkflow() {
+            return this.id === NEW_TEMP_ID;
+        },
     },
     watch: {
         id(newId, oldId) {
-            if (oldId) {
+            if (oldId && oldId !== NEW_TEMP_ID) {
                 this._loadCurrent(newId);
             }
         },
@@ -356,7 +368,9 @@ export default {
     },
     created() {
         this.lastQueue = new LastQueue();
-        this._loadCurrent(this.id, this.version);
+        if (!this.isNewTempWorkflow) {
+            this._loadCurrent(this.id, this.version);
+        }
         hide_modal();
     },
     methods: {
@@ -550,6 +564,40 @@ export default {
             const step = { ...this.steps[nodeId], annotation: newAnnotation };
             this.onUpdateStep(step);
         },
+        async onCreate() {
+            if (!this.name || !this.annotation) {
+                const response = "Please provide a name for your workflow.";
+                this.onWorkflowError("Creating workflow failed", response, {
+                    Ok: () => {
+                        this.hideModal();
+                    },
+                });
+                this.onAttributes();
+                return;
+            }
+            const payload = {
+                workflow_name: this.name,
+                workflow_annotation: this.annotation,
+                workflow_tags: this.tags,
+            };
+
+            try {
+                const { data } = await axios.put(withPrefix("/workflow/create"), payload);
+                const { id, message } = data;
+                this.id = id;
+                this.onWorkflowMessage("Success", message);
+                const editUrl = `/workflows/edit?id=${id}`;
+                this.onNavigate(editUrl);
+            } catch (e) {
+                this.onWorkflowError("Creating workflow failed"),
+                    e,
+                    {
+                        Ok: () => {
+                            this.hideModal();
+                        },
+                    };
+            }
+        },
         onSetData(stepId, newData) {
             this.lastQueue
                 .enqueue(() => getModule(newData, stepId, this.stateStore.setLoadingState))
@@ -707,6 +755,11 @@ export default {
                 .catch((response) => {
                     this.onWorkflowError("Loading workflow failed...", response);
                 });
+        },
+        onTags(tags) {
+            if (this.tags != tags) {
+                this.tags = tags;
+            }
         },
         onLicense(license) {
             if (this.license != license) {

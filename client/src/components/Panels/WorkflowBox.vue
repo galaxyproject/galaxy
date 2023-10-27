@@ -47,7 +47,7 @@ function userTitle(title: string) {
                             variant="link"
                             :title="userTitle('Create new workflow')"
                             :disabled="isAnonymous"
-                            @click="$router.push('/workflows/create')">
+                            @click="$router.push('/workflows/edit')">
                             <Icon fixed-width icon="plus" />
                         </b-button>
                         <b-button

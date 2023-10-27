@@ -6,7 +6,11 @@
         <div id="workflow-name-area">
             <b>Name</b>
             <meta itemprop="name" :content="name" />
-            <b-input id="workflow-name" v-model="nameCurrent" @keyup="$emit('update:nameCurrent', nameCurrent)" />
+            <b-input
+                id="workflow-name"
+                v-model="nameCurrent"
+                :state="!nameCurrent ? false : null"
+                @keyup="$emit('update:nameCurrent', nameCurrent)" />
         </div>
         <div id="workflow-version-area" class="mt-2">
             <b>Version</b>
@@ -30,6 +34,7 @@
             <b-textarea
                 id="workflow-annotation"
                 v-model="annotationCurrent"
+                :state="!annotationCurrent ? false : null"
                 @keyup="$emit('update:annotationCurrent', annotationCurrent)" />
             <div class="form-text text-muted">These notes will be visible when this workflow is viewed.</div>
         </div>
@@ -184,7 +189,7 @@ export default {
         onTags(tags) {
             this.tagsCurrent = tags;
             this.onAttributes({ tags });
-            this.$emit("input", this.tagsCurrent);
+            this.$emit("onTags", this.tagsCurrent);
         },
         onVersion() {
             this.$emit("onVersion", this.versionCurrent);
@@ -200,9 +205,11 @@ export default {
             this.messageVariant = "danger";
         },
         onAttributes(data) {
-            this.services.updateWorkflow(this.id, data).catch((error) => {
-                this.onError(error);
-            });
+            if (this.id !== "new_temp_workflow") {
+                this.services.updateWorkflow(this.id, data).catch((error) => {
+                    this.onError(error);
+                });
+            }
         },
     },
 };

@@ -451,12 +451,16 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         an iframe (necessary for scrolling to work properly), which is
         rendered by `editor_canvas`.
         """
+
+        new_workflow = False
         if not id:
             if workflow_id:
                 stored_workflow = self.app.workflow_manager.get_stored_workflow(trans, workflow_id, by_stored_id=False)
                 self.security_check(trans, stored_workflow, True, False)
                 id = trans.security.encode_id(stored_workflow.id)
-        stored = self.get_stored_workflow(trans, id)
+            else:
+                new_workflow = True
+
         # The following query loads all user-owned workflows,
         # So that they can be copied or inserted in the workflow editor.
         workflows = (
@@ -466,10 +470,6 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             .options(joinedload(model.StoredWorkflow.latest_workflow).joinedload(model.Workflow.steps))
             .all()
         )
-        if version is None:
-            version = len(stored.workflows) - 1
-        else:
-            version = int(version)
 
         # create workflow module models
         module_sections = []
@@ -501,6 +501,18 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
                         }
                     )
 
+        stored = None
+        if new_workflow is False:
+            stored = self.get_stored_workflow(trans, id)
+
+            if version is None:
+                version = len(stored.workflows) - 1
+            else:
+                version = int(version)
+
+            # identify item tags
+            item_tags = stored.make_tag_string_list()
+
         # create workflow models
         workflows = [
             {
@@ -510,23 +522,27 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
                 "name": workflow.name,
             }
             for workflow in workflows
-            if workflow.id != stored.id
+            if new_workflow or workflow.id != stored.id
         ]
-
-        # identify item tags
-        item_tags = stored.make_tag_string_list()
 
         # build workflow editor model
         editor_config = {
-            "id": trans.security.encode_id(stored.id),
-            "name": stored.name,
-            "tags": item_tags,
-            "initialVersion": version,
-            "annotation": self.get_item_annotation_str(trans.sa_session, trans.user, stored),
             "moduleSections": module_sections,
             "dataManagers": data_managers,
             "workflows": workflows,
         }
+
+        # for existing workflow add its data to the model
+        if new_workflow is False:
+            editor_config.update(
+                {
+                    "id": trans.security.encode_id(stored.id),
+                    "name": stored.name,
+                    "tags": item_tags,
+                    "initialVersion": version,
+                    "annotation": self.get_item_annotation_str(trans.sa_session, trans.user, stored),
+                }
+            )
 
         # parse to mako
         return editor_config
