@@ -37,7 +37,12 @@ async function onRename(newName: string) {
 </script>
 
 <template>
-    <BModal :visible="show" @ok="onRename(nameModel)" @hide="$emit('close')">
+    <BModal
+        :visible="show"
+        :ok-disabled="!nameModel"
+        :ok-title="localize('Rename')"
+        @ok="onRename(nameModel)"
+        @hide="$emit('close')">
         <template v-slot:modal-title>
             <Heading h2 inline size="sm"> Rename workflow: {{ localize(name) }}</Heading>
         </template>
