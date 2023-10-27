@@ -89,7 +89,7 @@ async function onTagsUpdate(tags: string[]) {
     <div class="workflow-card">
         <div class="workflow-card-container">
             <div>
-                <div class="d-flex justify-content-between align-items-center">
+                <div class="d-flex justify-content-between align-items-center mb-1">
                     <div>
                         <WorkflowIndicators :workflow="workflow" :published-view="publishedView" />
 
@@ -299,7 +299,6 @@ async function onTagsUpdate(tags: string[]) {
         }
 
         .workflow-count-actions {
-            width: 100%;
             align-items: baseline;
             justify-content: end;
         }
