@@ -12,9 +12,9 @@ const props = defineProps({
 const text = computed(() => (props.isPrivate ? "private" : "unrestricted"));
 const title = computed(() => {
     if (props.isPrivate) {
-        return "This dataset is stored on storage restricted to a single user. It can not be shared, published, or added to Galaxy data libraries.";
+        return "This dataset is stored in a restricted storage location. It can not be shared or published.";
     } else {
-        return "This dataset is stored on unrestricted storage. With sufficient Galaxy permissions, this dataset can be published, shared, or added to Galaxy data libraries.";
+        return "This dataset is stored in an unrestricted storage location. With sufficient Galaxy permissions, this dataset can be published or shared.";
     }
 });
 </script>
