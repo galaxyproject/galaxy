@@ -7,7 +7,7 @@ import sys
 
 
 def check_python():
-    if sys.version_info[:2] >= (3, 7):
+    if sys.version_info[:2] >= (3, 7):  # noqa: UP036
         # supported
         return
     else:
