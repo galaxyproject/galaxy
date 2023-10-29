@@ -6,7 +6,10 @@ from typing import (
 from uuid import uuid4
 
 from galaxy_test.base.decorators import requires_new_history
-from galaxy_test.base.populators import DatasetPopulator
+from galaxy_test.base.populators import (
+    DatasetPopulator,
+    skip_without_tool,
+)
 from galaxy_test.driver import integration_util
 
 
@@ -38,6 +41,43 @@ class TestStorageCleaner(integration_util.IntegrationTestCase):
         self._assert_monitoring_and_cleanup_for_discarded_resource(
             "datasets", test_datasets, dataset_ids, delete_resource_uri=f"histories/{history_id}/contents"
         )
+
+    @requires_new_history
+    @skip_without_tool("cat_data_and_sleep")
+    def test_discarded_datasets_with_null_size_are_sorted_correctly(self):
+        history_id = self.dataset_populator.new_history(f"History for discarded datasets {uuid4()}")
+        test_datasets = [
+            StoredItemDataForTests(name=f"TestDataset01_{uuid4()}", size=10),
+            StoredItemDataForTests(name=f"TestDataset02_{uuid4()}", size=50),
+        ]
+        dataset_ids = self._create_datasets_in_history_with(history_id, test_datasets)
+
+        # Run a tool on the first dataset and delete the output before completing the job
+        # so it has a null size in the database
+        inputs = {
+            "input1": {"src": "hda", "id": dataset_ids[0]},
+            "sleep_time": 10,
+        }
+        run_response = self.dataset_populator.run_tool_raw(
+            "cat_data_and_sleep",
+            inputs,
+            history_id,
+        )
+        null_size_dataset = run_response.json()["outputs"][0]
+        self.dataset_populator.delete_dataset(history_id, null_size_dataset["id"], stop_job=True)
+        # delete the other datasets too
+        for dataset_id in dataset_ids:
+            self.dataset_populator.delete_dataset(history_id, dataset_id)
+
+        # Check the dataset size sorting is correct [0, 10, 50]
+        item_names_forward_order = [null_size_dataset["name"], test_datasets[0].name, test_datasets[1].name]
+        item_names_reverse_order = list(reversed(item_names_forward_order))
+        expected_order_by_map = {
+            "size-asc": item_names_forward_order,
+            "size-dsc": item_names_reverse_order,
+        }
+        for order_by, expected_ordered_names in expected_order_by_map.items():
+            self._assert_order_is_expected("storage/datasets/discarded", order_by, expected_ordered_names)
 
     @requires_new_history
     def test_archived_histories_monitoring_and_cleanup(self):
