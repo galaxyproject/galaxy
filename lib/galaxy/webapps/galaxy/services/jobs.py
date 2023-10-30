@@ -118,7 +118,7 @@ class JobsService(ServiceBase):
             else:
                 dataset_instance = self.hda_manager.ldda_manager.get(trans, id=dataset_id)
         # TODO Raise error if no ID passed? Never happens when called from Job API endpoints
-        return dataset_instance
+        return dataset_instance.creating_job
 
     def dictify_associations(self, trans, *association_lists) -> List[JobAssociation]:
         rval: List[JobAssociation] = []
