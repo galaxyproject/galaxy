@@ -222,6 +222,8 @@ def handle_outputs(job_directory=None):
             handle_known_output_json(None, output_name)
 
     job_metadata = os.path.join(job_directory, cwl_metadata_params["job_metadata"])
+    # We may have moved away the tool working directory
+    os.makedirs(tool_working_directory, exist_ok=True)
     with open(job_metadata, "w") as f:
         json.dump(provided_metadata, f)
 
