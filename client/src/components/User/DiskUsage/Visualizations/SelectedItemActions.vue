@@ -81,7 +81,6 @@ function onPermanentlyDeleteItem() {
                 <FontAwesomeIcon icon="undo" />
             </BButton>
             <BButton
-                v-if="isRecoverable"
                 variant="outline-danger"
                 size="sm"
                 class="mx-2"
