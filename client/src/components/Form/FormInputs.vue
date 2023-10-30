@@ -3,7 +3,7 @@
         <div v-for="(input, index) in inputs" :key="index">
             <div v-if="input.type == 'conditional'" class="ui-portlet-section mt-3">
                 <div class="portlet-header">
-                    <b>{{ input.test_param.label }}</b>
+                    <b>{{ input.test_param.label || input.test_param.name }}</b>
                 </div>
                 <div class="portlet-content">
                     <FormElement
