@@ -27,11 +27,7 @@ from fastapi import (
 from pydantic import Required
 from typing_extensions import Annotated
 
-from galaxy import (
-    exceptions,
-    model,
-)
-from galaxy.managers import hdas
+from galaxy import exceptions
 from galaxy.managers.context import (
     ProvidesHistoryContext,
     ProvidesUserContext,
@@ -58,6 +54,7 @@ from galaxy.schema.jobs import (
 from galaxy.schema.schema import (
     DatasetSourceType,
     JobIndexSortByEnum,
+    JobMetric,
 )
 from galaxy.schema.types import OffsetNaiveDatetime
 from galaxy.web import (
@@ -422,13 +419,13 @@ class FastAPIJobs:
         id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
         hda_ldda: Annotated[DatasetSourceType, HdaLddaQueryParam] = DatasetSourceType.hda,
         trans: ProvidesUserContext = DependsOnTrans,
-    ):
+    ) -> List[Optional[JobMetric]]:
         """
         :rtype:     list
         :returns:   list containing job metrics
         """
         job = self.service.get_job(trans, job_id=id, hda_ldda=hda_ldda)
-        return summarize_job_metrics(trans, job)
+        return [JobMetric(**metric) for metric in summarize_job_metrics(trans, job)]
 
     # TODO add pydantic model for return value
     @router.get(
@@ -441,13 +438,13 @@ class FastAPIJobs:
         id: Annotated[DecodedDatabaseIdField, DatasetIdPathParam],
         hda_ldda: Annotated[DatasetSourceType, HdaLddaQueryParam] = DatasetSourceType.hda,
         trans: ProvidesUserContext = DependsOnTrans,
-    ):
+    ) -> List[Optional[JobMetric]]:
         """
         :rtype:     list
         :returns:   list containing job metrics
         """
         job = self.service.get_job(trans, dataset_id=id, hda_ldda=hda_ldda)
-        return summarize_job_metrics(trans, job)
+        return [JobMetric(**metric) for metric in summarize_job_metrics(trans, job)]
 
     @router.get(
         "/api/jobs/{job_id}/destination_params",
