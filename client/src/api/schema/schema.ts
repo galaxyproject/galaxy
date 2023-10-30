@@ -932,6 +932,24 @@ export interface paths {
         /** Returns output datasets created by a job. */
         get: operations["get_outputs_api_jobs__id__outputs_get"];
     };
+    "/api/jobs/{id}/parameters_display": {
+        /**
+         * Resolve parameters as a list for nested display.
+         * @description # TODO is this still true?
+         *     Resolve parameters as a list for nested display. More client logic
+         *     here than is ideal but it is hard to reason about tool parameter
+         *     types on the client relative to the server. Job accessibility checks
+         *     are slightly different than dataset checks, so both methods are
+         *     available.
+         *
+         *     This API endpoint is unstable and tied heavily to Galaxy's JS client code,
+         *     this endpoint will change frequently.
+         *
+         * :rtype:     list
+         * :returns:   job parameters for for display
+         */
+        get: operations["resolve_parameters_display_api_jobs__id__parameters_display_get"];
+    };
     "/api/jobs/{id}/resume": {
         /** Resumes a paused job. */
         put: operations["resume_paused_job_api_jobs__id__resume_put"];
@@ -15185,6 +15203,51 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["JobAssociation"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resolve_parameters_display_api_jobs__id__parameters_display_get: {
+        /**
+         * Resolve parameters as a list for nested display.
+         * @description # TODO is this still true?
+         *     Resolve parameters as a list for nested display. More client logic
+         *     here than is ideal but it is hard to reason about tool parameter
+         *     types on the client relative to the server. Job accessibility checks
+         *     are slightly different than dataset checks, so both methods are
+         *     available.
+         *
+         *     This API endpoint is unstable and tied heavily to Galaxy's JS client code,
+         *     this endpoint will change frequently.
+         *
+         * :rtype:     list
+         * :returns:   job parameters for for display
+         */
+        parameters: {
+            /** @description Whether this dataset belongs to a history (HDA) or a library (LDDA). */
+            query: {
+                hda_ldda: components["schemas"]["DatasetSourceType"];
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The ID of the job */
+            path: {
+                id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": Record<string, never>;
                 };
             };
             /** @description Validation Error */
