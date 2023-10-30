@@ -55,7 +55,10 @@ from galaxy.schema.jobs import (
     ReportJobErrorPayload,
     SearchJobsPayload,
 )
-from galaxy.schema.schema import JobIndexSortByEnum
+from galaxy.schema.schema import (
+    DatasetSourceType,
+    JobIndexSortByEnum,
+)
 from galaxy.schema.types import OffsetNaiveDatetime
 from galaxy.web import (
     expose_api,
@@ -182,12 +185,17 @@ SearchQueryParam: Optional[str] = search_query_param(
 )
 
 FullShowQueryParam: Optional[bool] = Query(title="Full show", description="Show extra information.")
+HdaLddaQueryParam: DatasetSourceType = Query(
+    title="HDA or LDDA", description="Whether this dataset belongs to a history (HDA) or a library (LDDA)."
+)
+
 
 JobIdPathParam: DecodedDatabaseIdField = Path(title="Job ID", description="The ID of the job")
+DatasetIdPathParam: DecodedDatabaseIdField = Path(title="Dataset ID", description="The ID of the dataset")
 
 ReportErrorBody = Body(default=Required, title="Report error", description="The values to report an Error")
 SearchJobBody = Body(default=Required, title="Search job", description="The values to search an Job")
-# TODO The endpoint only stops/cancles a job, but is called delete settle for one name
+# TODO The endpoint only stops/cancels a job, but is called delete settle for one name
 DeleteJobBody = Body(title="Delete/cancel job", description="The values to delete/cancel a job")
 
 
@@ -345,6 +353,45 @@ class FastAPIJobs:
         job = self.service.get_job(trans=trans, job_id=id)
         return self.service.dictify_associations(trans, job.output_datasets, job.output_library_datasets)
 
+    # TODO add pydantic model for output
+    @router.get(
+        "/api/jobs/{id}/metrics",
+        name="get_metrics",
+        summary="Return job metrics for specified job.",
+    )
+    def metrics_by_job(
+        self,
+        id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
+        hda_ldda: Annotated[DatasetSourceType, HdaLddaQueryParam],
+        trans: ProvidesUserContext = DependsOnTrans,
+    ):
+        """
+        :rtype:     list
+        :returns:   list containing job metrics
+        """
+        job = self.service.get_job(trans, job_id=id, hda_ldda=hda_ldda)
+        return summarize_job_metrics(trans, job)
+
+    # TODO get this running
+    # @router.get(
+    #     "/api/datasets/{id}/metrics",
+    #     name="get_metrics",
+    #     summary="Return job metrics for specified job.",
+    # )
+    # def metrics_by_dataset(
+    #     self,
+    #     id: Annotated[DecodedDatabaseIdField, DatasetIdPathParam],
+    #     hda_ldda: Annotated[DatasetSourceType, HdaLddaQueryParam] = "hda",
+    #     trans: ProvidesUserContext = DependsOnTrans,
+    # ):
+    #     """
+    #     # TODO add pydantic model for return value
+    #     :rtype:     list
+    #     :returns:   list containing job metrics
+    #     """
+    #     job = self.service.get_job(trans, dataset_id=id, hda_ldda=hda_ldda)
+    #     return summarize_job_metrics(trans, job)
+
     @router.get(
         "/api/jobs/{job_id}/destination_params",
         name="destination_params_job",
@@ -450,10 +497,9 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
     @expose_api_anonymous
     def metrics(self, trans: ProvidesUserContext, **kwd):
         """
-        * GET /api/jobs/{job_id}/metrics
         * GET /api/datasets/{dataset_id}/metrics
             Return job metrics for specified job. Job accessibility checks are slightly
-            different than dataset checks, so both methods are available.
+            different than dataset checks, so both methods are available. Job metrics is already migrated to FastAPI
 
         :type   job_id: string
         :param  job_id: Encoded job id
