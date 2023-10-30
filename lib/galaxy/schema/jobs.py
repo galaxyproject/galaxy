@@ -154,6 +154,7 @@ class EncodedJobDetails(JobSummary, EncodedJobIDs):
 
 
 class JobDestinationParams(Model):
+    # TODO add description, check type and add proper default
     runner: Any = Field(default=Required, title="Runner", description="?", alias="Runner")
     runner_job_id: Any = Field(default=Required, title="Runner Job ID", description="?", alias="Runner Job ID")
     handler: Any = Field(default=Required, title="Handler", description="?", alias="Handler")
