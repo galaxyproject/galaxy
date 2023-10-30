@@ -625,7 +625,11 @@ def output_to_cwl_json(
                     "basename": basename,
                     "listing": listing,
                 }
-                _handle_pseudo_location(properties, pseudo_location=pseudo_location, download_url=output_metadata["download_url"] + "?to_ext=directory")
+                _handle_pseudo_location(
+                    properties,
+                    pseudo_location=pseudo_location,
+                    download_url=output_metadata["download_url"] + "?to_ext=directory",
+                )
 
                 extra_files = get_extra_files(output_metadata)
                 for extra_file in extra_files:

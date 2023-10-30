@@ -268,6 +268,14 @@ def conformance_tests_gen(directory, filename="conformance_tests.yaml"):
             yield conformance_test
 
 
+def to_local_location(listing, location):
+    for item in listing:
+        if "basename" in item:
+            item["location"] = f"file://{os.path.join(location[len('file://'):], item['basename'])}"
+            if "listing" in item:
+                to_local_location(item["listing"], location=item["location"])
+
+
 def output_to_disk(output, download_folder):
     if isinstance(output, dict):
         if "secondaryFiles" in output:
@@ -276,9 +284,17 @@ def output_to_disk(output, download_folder):
             ]
         if "basename" in output:
             download_path = os.path.join(download_folder, output["basename"])
-            download_to_file(output["location"], download_path)
+            if output["class"] == "Directory":
+                zip_path = f"{download_path}.zip"
+                download_to_file(output["location"], zip_path)
+                CompressedFile(zip_path).extract(download_folder)
+                os.remove(zip_path)
+            else:
+                download_to_file(output["location"], download_path)
             output["path"] = download_path
             output["location"] = f"file://{download_path}"
+            if "listing" in output:
+                to_local_location(output["listing"], output["location"])
             return output
         else:
             new_output = {}
