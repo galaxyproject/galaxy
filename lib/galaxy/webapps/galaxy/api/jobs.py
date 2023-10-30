@@ -174,7 +174,7 @@ OffsetQueryParam: int = Query(
 query_tags = [
     IndexQueryTag("user", "The user email of the user that executed the Job.", "u"),
     IndexQueryTag("tool_id", "The tool ID corresponding to the job.", "t"),
-    IndexQueryTag("runner", "The job runner name used to execte the job.", "r", admin_only=True),
+    IndexQueryTag("runner", "The job runner name used to execute the job.", "r", admin_only=True),
     IndexQueryTag("handler", "The job handler name used to execute the job.", "h", admin_only=True),
 ]
 
@@ -353,7 +353,7 @@ class FastAPIJobs:
         job = self.service.get_job(trans=trans, job_id=id)
         return self.service.dictify_associations(trans, job.output_datasets, job.output_library_datasets)
 
-    # TODO add pydantic model for output
+    # TODO add pydantic model for return value
     @router.get(
         "/api/jobs/{id}/parameters_display",
         name="resolve_parameters_display",
@@ -362,7 +362,7 @@ class FastAPIJobs:
     def parameters_display_by_job(
         self,
         id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
-        hda_ldda: Annotated[DatasetSourceType, HdaLddaQueryParam],
+        hda_ldda: Annotated[DatasetSourceType, HdaLddaQueryParam] = DatasetSourceType.hda,
         trans: ProvidesUserContext = DependsOnTrans,
     ):
         """
@@ -391,7 +391,7 @@ class FastAPIJobs:
     # def parameters_display_by_dataset(
     #     self,
     #     id: Annotated[DecodedDatabaseIdField, DatasetIdPathParam],
-    #     hda_ldda: Annotated[DatasetSourceType, HdaLddaQueryParam],
+    #     hda_ldda: Annotated[DatasetSourceType, HdaLddaQueryParam]  = DatasetSourceType.hda,
     #     trans: ProvidesUserContext = DependsOnTrans,
     # ):
     #     """
@@ -420,7 +420,7 @@ class FastAPIJobs:
     def metrics_by_job(
         self,
         id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
-        hda_ldda: Annotated[DatasetSourceType, HdaLddaQueryParam],
+        hda_ldda: Annotated[DatasetSourceType, HdaLddaQueryParam] = DatasetSourceType.hda,
         trans: ProvidesUserContext = DependsOnTrans,
     ):
         """
@@ -430,25 +430,24 @@ class FastAPIJobs:
         job = self.service.get_job(trans, job_id=id, hda_ldda=hda_ldda)
         return summarize_job_metrics(trans, job)
 
-    # TODO get this running
-    # @router.get(
-    #     "/api/datasets/{id}/metrics",
-    #     name="get_metrics",
-    #     summary="Return job metrics for specified job.",
-    # )
-    # def metrics_by_dataset(
-    #     self,
-    #     id: Annotated[DecodedDatabaseIdField, DatasetIdPathParam],
-    #     hda_ldda: Annotated[DatasetSourceType, HdaLddaQueryParam] = "hda",
-    #     trans: ProvidesUserContext = DependsOnTrans,
-    # ):
-    #     """
-    #     # TODO add pydantic model for return value
-    #     :rtype:     list
-    #     :returns:   list containing job metrics
-    #     """
-    #     job = self.service.get_job(trans, dataset_id=id, hda_ldda=hda_ldda)
-    #     return summarize_job_metrics(trans, job)
+    # TODO add pydantic model for return value
+    @router.get(
+        "/api/datasets/{id}/metrics",
+        name="get_metrics",
+        summary="Return job metrics for specified job.",
+    )
+    def metrics_by_dataset(
+        self,
+        id: Annotated[DecodedDatabaseIdField, DatasetIdPathParam],
+        hda_ldda: Annotated[DatasetSourceType, HdaLddaQueryParam] = DatasetSourceType.hda,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ):
+        """
+        :rtype:     list
+        :returns:   list containing job metrics
+        """
+        job = self.service.get_job(trans, dataset_id=id, hda_ldda=hda_ldda)
+        return summarize_job_metrics(trans, job)
 
     @router.get(
         "/api/jobs/{job_id}/destination_params",
@@ -551,29 +550,6 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
     job_search = depends(JobSearch)
     service = depends(JobsService)
     hda_manager = depends(hdas.HDAManager)
-
-    @expose_api_anonymous
-    def metrics(self, trans: ProvidesUserContext, **kwd):
-        """
-        * GET /api/datasets/{dataset_id}/metrics
-            Return job metrics for specified job. Job accessibility checks are slightly
-            different than dataset checks, so both methods are available. Job metrics is already migrated to FastAPI
-
-        :type   job_id: string
-        :param  job_id: Encoded job id
-
-        :type   dataset_id: string
-        :param  dataset_id: Encoded HDA or LDDA id
-
-        :type   hda_ldda: string
-        :param  hda_ldda: hda if dataset_id is an HDA id (default), ldda if
-                          it is an ldda id.
-
-        :rtype:     list
-        :returns:   list containing job metrics
-        """
-        job = self.__get_job(trans, **kwd)
-        return summarize_job_metrics(trans, job)
 
     @expose_api_anonymous
     def parameters_display(self, trans: ProvidesUserContext, **kwd):
