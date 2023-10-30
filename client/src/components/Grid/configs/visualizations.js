@@ -1,17 +1,22 @@
-import axios from "axios";
-
 import { fetcher } from "@/api/schema";
 import Filtering, { contains, equals, expandNameTagWithQuotes, toBool } from "@/utils/filtering";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
 
-export const visualizationsDetailedFetcher = fetcher.path("/api/visualizations/detailed").method("get").create();
+/**
+ * Api endpoint fetchers
+ */
+const createVisualization = fetcher.path("/api/visualizations").method("post").create();
+const getVisualization = fetcher.path("/api/visualizations/{visualization_id}").method("get").create();
+const getDetailedVisualizations = fetcher.path("/api/visualizations/detailed").method("get").create();
+const updateVisualization = fetcher.path("/api/visualizations/{visualization_id}").method("put").create();
+const updateTags = fetcher.path("/api/tags").method("put").create();
 
 /**
  * Request and return data from server
  */
 async function getData(offset, limit, search, sort_by, sort_desc) {
-    const { data, headers } = await visualizationsDetailedFetcher({
+    const { data, headers } = await getDetailedVisualizations({
         limit,
         offset,
         search,
@@ -64,14 +69,14 @@ const fields = [
                 icon: "copy",
                 handler: async (data) => {
                     try {
-                        const copyResponse = await axios.get(withPrefix(`/api/visualizations/${data.id}`));
+                        const copyResponse = await getVisualization({ visualization_id: data.id });
                         const copyViz = copyResponse.data;
                         const newViz = {
                             title: `Copy of '${copyViz.title}'`,
                             type: copyViz.type,
                             config: copyViz.config,
                         };
-                        await axios.post(withPrefix("/api/visualizations"), newViz);
+                        await createVisualization(newViz);
                         return {
                             status: "success",
                             message: `'${data.title}' has been copied.`,
@@ -96,7 +101,7 @@ const fields = [
                 icon: "trash",
                 handler: async (data) => {
                     try {
-                        await axios.put(withPrefix(`/api/visualizations/${data.id}`), { deleted: true });
+                        await updateVisualization({ visualization_id: data.id, deleted: true });
                         return {
                             status: "success",
                             message: `'${data.title}' has been deleted.`,
@@ -127,7 +132,7 @@ const fields = [
                 item_tags: data.tags,
             };
             try {
-                await axios.put(withPrefix(`/api/tags`), tagPayload);
+                await updateTags(tagPayload);
             } catch (e) {
                 rethrowSimple(e);
             }
