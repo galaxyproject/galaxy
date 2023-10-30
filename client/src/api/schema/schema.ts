@@ -6545,6 +6545,44 @@ export interface components {
             active: boolean;
         };
         /**
+         * JobMetric
+         * @description Base model definition with common configuration used by all derived models.
+         * @example {
+         *   "name": "start_epoch",
+         *   "plugin": "core",
+         *   "raw_value": "1614261340.0000000",
+         *   "title": "Job Start Time",
+         *   "value": "2021-02-25 14:55:40"
+         * }
+         */
+        JobMetric: {
+            /**
+             * Name
+             * @description The name of the metric variable.
+             */
+            name: string;
+            /**
+             * Plugin
+             * @description The instrumenter plugin that generated this metric.
+             */
+            plugin: string;
+            /**
+             * Raw Value
+             * @description The raw value of the metric as a string.
+             */
+            raw_value: string;
+            /**
+             * Title
+             * @description A descriptive title for this metric.
+             */
+            title: string;
+            /**
+             * Value
+             * @description The textual representation of the metric value.
+             */
+            value: string;
+        };
+        /**
          * JobSourceType
          * @description Available types of job sources (model classes) that produce dataset collections.
          * @enum {string}
@@ -11103,7 +11141,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["JobMetric"][];
                 };
             };
             /** @description Validation Error */
@@ -15281,7 +15319,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["JobMetric"][];
                 };
             };
             /** @description Validation Error */
