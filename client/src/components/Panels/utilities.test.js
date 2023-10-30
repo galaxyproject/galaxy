@@ -80,8 +80,8 @@ describe("test helpers in tool searching utilities", () => {
                     "__ZIP_COLLECTION__",
                 ],
                 keys: { description: 1, name: 0 },
-                tools: Object.values(toolsList.tools),
-                panel: toolsListInPanel.default,
+                tools: toolsList,
+                panel: toolsListInPanel,
             },
             {
                 // name prioritized
@@ -93,16 +93,16 @@ describe("test helpers in tool searching utilities", () => {
                     "__FILTER_EMPTY_DATASETS__",
                 ],
                 keys: { description: 0, name: 1 },
-                tools: Object.values(toolsList.tools),
-                panel: toolsListInPanel.default,
+                tools: toolsList,
+                panel: toolsListInPanel,
             },
             {
                 // whitespace precedes to ensure query.trim() works
                 q: " filter empty datasets",
                 expectedResults: ["__FILTER_EMPTY_DATASETS__"],
                 keys: { description: 1, name: 2, combined: 0 },
-                tools: Object.values(toolsList.tools),
-                panel: toolsListInPanel.default,
+                tools: toolsList,
+                panel: toolsListInPanel,
             },
             {
                 // hyphenated tool-name is searchable
@@ -125,16 +125,16 @@ describe("test helpers in tool searching utilities", () => {
                 q: "__ZIP_COLLECTION__",
                 expectedResults: [],
                 keys: { description: 1, name: 2 },
-                tools: Object.values(toolsList.tools),
-                panel: toolsListInPanel.default,
+                tools: toolsList,
+                panel: toolsListInPanel,
             },
             {
                 // id is searchable if provided "id:"
                 q: "id:__ZIP_COLLECTION__",
                 expectedResults: ["__ZIP_COLLECTION__"],
                 keys: { description: 1, name: 2 },
-                tools: Object.values(toolsList.tools),
-                panel: toolsListInPanel.default,
+                tools: toolsList,
+                panel: toolsListInPanel,
             },
             {
                 // id is searchable if provided "tool_id:"
@@ -152,8 +152,8 @@ describe("test helpers in tool searching utilities", () => {
                 q: "filter datasets",
                 expectedResults: ["__FILTER_FAILED_DATASETS__", "__FILTER_EMPTY_DATASETS__"],
                 keys: { combined: 1, wordMatch: 0 },
-                tools: Object.values(toolsList.tools),
-                panel: toolsListInPanel.default,
+                tools: toolsList,
+                panel: toolsListInPanel,
             },
         ];
         searches.forEach((search) => {
@@ -168,38 +168,20 @@ describe("test helpers in tool searching utilities", () => {
         // Testing if just names work with DL search
         const filterQueries = ["Fillter", "FILYER", " Fitler", " filtr"];
         filterQueries.forEach((q) => {
-            const { results, closestTerm } = searchToolsByKeys(
-                Object.values(toolsList.tools),
-                keys,
-                q,
-                "default",
-                toolsListInPanel.default
-            );
+            const { results, closestTerm } = searchToolsByKeys(toolsList, keys, q, "default", toolsListInPanel);
             expect(results).toEqual(expectedResults);
             expect(closestTerm).toEqual("filter");
         });
         // Testing if names and description function with DL search
         let queries = ["datases from a collection", "from a colleection", "from a colleection"];
         queries.forEach((q) => {
-            const { results } = searchToolsByKeys(
-                Object.values(toolsList.tools),
-                keys,
-                q,
-                "default",
-                toolsListInPanel.default
-            );
+            const { results } = searchToolsByKeys(toolsList, keys, q, "default", toolsListInPanel);
             expect(results).toEqual(expectedResults);
         });
         // Testing if different length queries correctly trigger changes in max DL distance
         queries = ["datae", "ppasetsfrom", "datass from a cppollection"];
         queries.forEach((q) => {
-            const { results } = searchToolsByKeys(
-                Object.values(toolsList.tools),
-                keys,
-                q,
-                "default",
-                toolsListInPanel.default
-            );
+            const { results } = searchToolsByKeys(toolsList, keys, q, "default", toolsListInPanel);
             expect(results).toEqual(expectedResults);
         });
     });
@@ -207,16 +189,20 @@ describe("test helpers in tool searching utilities", () => {
     it("test tool filtering helpers on toolsList given list of ids", async () => {
         const ids = ["__FILTER_FAILED_DATASETS__", "liftOver1"];
         // check length of first section from imported const toolsList
-        expect(toolsListInPanel.default["collection_operations"].tools).toHaveLength(4);
+        expect(toolsListInPanel["collection_operations"].tools).toHaveLength(4);
         // check length of same section from filtered toolsList
         const matchedTools = ids.map((id) => {
             return { id: id, sections: [], order: 0 };
         });
-        const toolResultsPanel = createSortedResultObject(matchedTools, toolsListInPanel.default);
+        const toolResultsPanel = createSortedResultObject(matchedTools, toolsListInPanel);
         const toolResultsSection = toolResultsPanel.resultPanel["collection_operations"];
         expect(toolResultsSection.tools).toHaveLength(1);
         // check length of filtered tools (regardless of sections)
-        const filteredToolIds = Object.keys(filterTools(toolsList.tools, ids));
+        const toolsById = toolsList.reduce((acc, item) => {
+            acc[item.id] = item;
+            return acc;
+        }, {});
+        const filteredToolIds = Object.keys(filterTools(toolsById, ids));
         expect(filteredToolIds).toHaveLength(2);
     });
 });

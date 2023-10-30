@@ -11,20 +11,23 @@ export default {
         return { schemaTagObj: {} };
     },
     async created() {
-        let tools = {};
+        let tools = [];
         await axios
-            .get(`${getAppRoot()}api/tool_panel?in_panel=False&tool_help=True`)
+            .get(`${getAppRoot()}api/tools?in_panel=False&tool_help=True`)
             .then(({ data }) => {
-                tools = data.tools;
+                tools = data.reduce((acc, item) => {
+                    acc[item.id] = item;
+                    return acc;
+                }, {});
             })
             .catch((error) => {
-                console.error("All tools by id not loaded", error);
+                console.error("List of all tools not loaded", error);
             });
         if (Object.keys(tools).length > 0) {
             await axios
-                .get(`${getAppRoot()}api/tool_panel`)
+                .get(`${getAppRoot()}api/tool_panels/default`)
                 .then(({ data }) => {
-                    this.schemaTagObj = this.createToolsJson(tools, data.default);
+                    this.schemaTagObj = this.createToolsJson(tools, data);
                     const el = document.createElement("script");
                     el.id = "schema-json";
                     el.type = "application/ld+json";
@@ -32,7 +35,7 @@ export default {
                     document.head.appendChild(el);
                 })
                 .catch((error) => {
-                    console.error("Tool sections not loaded", error);
+                    console.error("Tool sections by id not loaded", error);
                 });
         }
     },

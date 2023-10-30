@@ -34,7 +34,7 @@ Services.mockImplementation(() => {
 describe("RepositoryDetails", () => {
     it("test repository details index", async () => {
         const axiosMock = new MockAdapter(axios);
-        axiosMock.onGet("api/tool_panel?in_panel=true&view=default").reply(200, {});
+        axiosMock.onGet("api/tool_panels/default").reply(200, {});
         mockFetcher.path("/api/configuration").method("get").mock({ data: {} });
         const localVue = getLocalVue();
         const pinia = createPinia();
