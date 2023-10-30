@@ -576,22 +576,6 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
             raise exceptions.ConfigDoesNotAllowException(f"Tool '{job.tool_id}' cannot be rerun.")
         return tool.to_json(trans, {}, job=job)
 
-    def __dictify_associations(self, trans, *association_lists) -> List[dict]:
-        rval: List[dict] = []
-        for association_list in association_lists:
-            rval.extend(self.__dictify_association(trans, a) for a in association_list)
-        return rval
-
-    def __dictify_association(self, trans, job_dataset_association) -> dict:
-        dataset_dict = None
-        dataset = job_dataset_association.dataset
-        if dataset:
-            if isinstance(dataset, model.HistoryDatasetAssociation):
-                dataset_dict = dict(src="hda", id=trans.security.encode_id(dataset.id))
-            else:
-                dataset_dict = dict(src="ldda", id=trans.security.encode_id(dataset.id))
-        return dict(name=job_dataset_association.name, dataset=dataset_dict)
-
     def __get_job(self, trans, job_id=None, dataset_id=None, **kwd):
         if job_id is not None:
             decoded_job_id = self.decode_id(job_id)
