@@ -940,13 +940,6 @@ def populate_api_routes(webapp, app):
         conditions=dict(method=["GET"]),
     )
     webapp.mapper.connect(
-        "parameters_display",
-        "/api/jobs/{job_id}/parameters_display",
-        controller="jobs",
-        action="parameters_display",
-        conditions=dict(method=["GET"]),
-    )
-    webapp.mapper.connect(
         "dataset_parameters_display",
         "/api/datasets/{dataset_id}/parameters_display",
         controller="jobs",
