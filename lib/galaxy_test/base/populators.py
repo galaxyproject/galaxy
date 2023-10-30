@@ -101,6 +101,7 @@ from galaxy.util import (
     galaxy_root_path,
     UNKNOWN,
 )
+from galaxy.util.compression_utils import CompressedFile
 from galaxy.util.resources import resource_string
 from galaxy.util.unittest_utils import skip_if_site_down
 from galaxy_test.base.decorators import (
