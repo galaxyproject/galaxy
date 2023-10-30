@@ -2,6 +2,7 @@ import { fetcher } from "@/api/schema";
 import Filtering, { contains, equals, expandNameTagWithQuotes, toBool } from "@/utils/filtering";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
+import type { Router } from "vue-router";
 
 /**
  * Api endpoint fetchers
@@ -13,9 +14,14 @@ const updateVisualization = fetcher.path("/api/visualizations/{visualization_id}
 const updateTags = fetcher.path("/api/tags").method("put").create();
 
 /**
+ * Local types
+ */
+type SortKeyLiteral =  "create_time" | "title" | "update_time" |;
+
+/**
  * Request and return data from server
  */
-async function getData(offset, limit, search, sort_by, sort_desc) {
+async function getData(offset: number, limit: number, search: string, sort_by: SortKeyLiteral, sort_desc: boolean) {
     const { data, headers } = await getDetailedVisualizations({
         limit,
         offset,
@@ -34,7 +40,7 @@ const actions = [
     {
         title: "Create",
         icon: "plus",
-        handler: (router) => {
+        handler: (router: Router) => {
             router.push(`/visualizations`);
         },
     },
@@ -53,21 +59,21 @@ const fields = [
             {
                 title: "Open",
                 icon: "eye",
-                handler: (data) => {
-                    window.location = withPrefix(`/plugins/visualizations/${data.type}/saved?id=${data.id}`);
+                handler: (data: Record<string, unknown>) => {
+                    window.location.href = withPrefix(`/plugins/visualizations/${data.type}/saved?id=${data.id}`);
                 },
             },
             {
                 title: "Edit Attributes",
                 icon: "edit",
-                handler: (data, router) => {
+                handler: (data: Record<string, unknown>, router: Router) => {
                     router.push(`/visualizations/edit?id=${data.id}`);
                 },
             },
             {
                 title: "Copy",
                 icon: "copy",
-                handler: async (data) => {
+                handler: async (data: Record<string, unknown>) => {
                     try {
                         const copyResponse = await getVisualization({ visualization_id: data.id });
                         const copyViz = copyResponse.data;
@@ -92,14 +98,14 @@ const fields = [
             {
                 title: "Share and Publish",
                 icon: "share-alt",
-                handler: (data, router) => {
+                handler: (data: Record<string, unknown>, router: Router) => {
                     router.push(`/visualizations/sharing?id=${data.id}`);
                 },
             },
             {
                 title: "Delete",
                 icon: "trash",
-                handler: async (data) => {
+                handler: async (data: Record<string, unknown>) => {
                     try {
                         await updateVisualization({ visualization_id: data.id, deleted: true });
                         return {
@@ -125,7 +131,7 @@ const fields = [
         key: "tags",
         title: "Tags",
         type: "tags",
-        handler: async (data) => {
+        handler: async (data: Record<string, unknown>) => {
             const tagPayload = {
                 item_id: data.id,
                 item_class: "Visualization",
