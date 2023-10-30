@@ -408,7 +408,6 @@ class FastAPIJobs:
         job = self.service.get_job(trans, dataset_id=id, hda_ldda=hda_ldda)
         return summarize_job_parameters(trans, job)
 
-    # TODO add pydantic model for output
     @router.get(
         "/api/jobs/{id}/metrics",
         name="get_metrics",
@@ -427,7 +426,6 @@ class FastAPIJobs:
         job = self.service.get_job(trans, job_id=id, hda_ldda=hda_ldda)
         return [JobMetric(**metric) for metric in summarize_job_metrics(trans, job)]
 
-    # TODO add pydantic model for return value
     @router.get(
         "/api/datasets/{id}/metrics",
         name="get_metrics",
