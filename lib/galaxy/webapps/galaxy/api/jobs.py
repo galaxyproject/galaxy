@@ -382,34 +382,34 @@ class FastAPIJobs:
         job = self.service.get_job(trans, job_id=id, hda_ldda=hda_ldda)
         return summarize_job_parameters(trans, job)
 
-    # TODO add pydantic model for output and get this running
-    # @router.get(
-    #     "/api/datasets/{id}/parameters_display",
-    #     name="resolve_parameters_display",
-    #     summary="Resolve parameters as a list for nested display.",
-    # )
-    # def parameters_display_by_dataset(
-    #     self,
-    #     id: Annotated[DecodedDatabaseIdField, DatasetIdPathParam],
-    #     hda_ldda: Annotated[DatasetSourceType, HdaLddaQueryParam]  = DatasetSourceType.hda,
-    #     trans: ProvidesUserContext = DependsOnTrans,
-    # ):
-    #     """
-    #         # TODO is this still true?
-    #         Resolve parameters as a list for nested display. More client logic
-    #         here than is ideal but it is hard to reason about tool parameter
-    #         types on the client relative to the server. Job accessibility checks
-    #         are slightly different than dataset checks, so both methods are
-    #         available.
+    # TODO add pydantic model for return
+    @router.get(
+        "/api/datasets/{id}/parameters_display",
+        name="resolve_parameters_display",
+        summary="Resolve parameters as a list for nested display.",
+    )
+    def parameters_display_by_dataset(
+        self,
+        id: Annotated[DecodedDatabaseIdField, DatasetIdPathParam],
+        hda_ldda: Annotated[DatasetSourceType, HdaLddaQueryParam] = DatasetSourceType.hda,
+        trans: ProvidesUserContext = DependsOnTrans,
+    ):
+        """
+            # TODO is this still true?
+            Resolve parameters as a list for nested display. More client logic
+            here than is ideal but it is hard to reason about tool parameter
+            types on the client relative to the server. Job accessibility checks
+            are slightly different than dataset checks, so both methods are
+            available.
 
-    #         This API endpoint is unstable and tied heavily to Galaxy's JS client code,
-    #         this endpoint will change frequently.
+            This API endpoint is unstable and tied heavily to Galaxy's JS client code,
+            this endpoint will change frequently.
 
-    #     :rtype:     list
-    #     :returns:   job parameters for for display
-    #     """
-    #     job = self.service.get_job(trans, dataset_id=id, hda_ldda=hda_ldda)
-    #     return summarize_job_parameters(trans, job)
+        :rtype:     list
+        :returns:   job parameters for for display
+        """
+        job = self.service.get_job(trans, dataset_id=id, hda_ldda=hda_ldda)
+        return summarize_job_parameters(trans, job)
 
     # TODO add pydantic model for output
     @router.get(
@@ -550,36 +550,6 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
     job_search = depends(JobSearch)
     service = depends(JobsService)
     hda_manager = depends(hdas.HDAManager)
-
-    @expose_api_anonymous
-    def parameters_display(self, trans: ProvidesUserContext, **kwd):
-        """
-        * GET /api/jobs/{job_id}/parameters_display
-
-            Resolve parameters as a list for nested display. More client logic
-            here than is ideal but it is hard to reason about tool parameter
-            types on the client relative to the server. Job accessibility checks
-            are slightly different than dataset checks, so both methods are
-            available.
-
-            This API endpoint is unstable and tied heavily to Galaxy's JS client code,
-            this endpoint will change frequently.
-
-        :type   job_id: string
-        :param  job_id: Encoded job id
-
-        :type   dataset_id: string
-        :param  dataset_id: Encoded HDA or LDDA id
-
-        :type   hda_ldda: string
-        :param  hda_ldda: hda if dataset_id is an HDA id (default), ldda if
-                          it is an ldda id.
-
-        :rtype:     list
-        :returns:   job parameters for for display
-        """
-        job = self.__get_job(trans, **kwd)
-        return summarize_job_parameters(trans, job)
 
     @expose_api_anonymous
     def build_for_rerun(self, trans: ProvidesHistoryContext, id, **kwd):
