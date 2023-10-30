@@ -355,6 +355,64 @@ class FastAPIJobs:
 
     # TODO add pydantic model for output
     @router.get(
+        "/api/jobs/{id}/parameters_display",
+        name="resolve_parameters_display",
+        summary="Resolve parameters as a list for nested display.",
+    )
+    def parameters_display_by_job(
+        self,
+        id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
+        hda_ldda: Annotated[DatasetSourceType, HdaLddaQueryParam],
+        trans: ProvidesUserContext = DependsOnTrans,
+    ):
+        """
+            # TODO is this still true?
+            Resolve parameters as a list for nested display. More client logic
+            here than is ideal but it is hard to reason about tool parameter
+            types on the client relative to the server. Job accessibility checks
+            are slightly different than dataset checks, so both methods are
+            available.
+
+            This API endpoint is unstable and tied heavily to Galaxy's JS client code,
+            this endpoint will change frequently.
+
+        :rtype:     list
+        :returns:   job parameters for for display
+        """
+        job = self.service.get_job(trans, job_id=id, hda_ldda=hda_ldda)
+        return summarize_job_parameters(trans, job)
+
+    # TODO add pydantic model for output and get this running
+    # @router.get(
+    #     "/api/datasets/{id}/parameters_display",
+    #     name="resolve_parameters_display",
+    #     summary="Resolve parameters as a list for nested display.",
+    # )
+    # def parameters_display_by_dataset(
+    #     self,
+    #     id: Annotated[DecodedDatabaseIdField, DatasetIdPathParam],
+    #     hda_ldda: Annotated[DatasetSourceType, HdaLddaQueryParam],
+    #     trans: ProvidesUserContext = DependsOnTrans,
+    # ):
+    #     """
+    #         # TODO is this still true?
+    #         Resolve parameters as a list for nested display. More client logic
+    #         here than is ideal but it is hard to reason about tool parameter
+    #         types on the client relative to the server. Job accessibility checks
+    #         are slightly different than dataset checks, so both methods are
+    #         available.
+
+    #         This API endpoint is unstable and tied heavily to Galaxy's JS client code,
+    #         this endpoint will change frequently.
+
+    #     :rtype:     list
+    #     :returns:   job parameters for for display
+    #     """
+    #     job = self.service.get_job(trans, dataset_id=id, hda_ldda=hda_ldda)
+    #     return summarize_job_parameters(trans, job)
+
+    # TODO add pydantic model for output
+    @router.get(
         "/api/jobs/{id}/metrics",
         name="get_metrics",
         summary="Return job metrics for specified job.",
@@ -521,7 +579,6 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
     def parameters_display(self, trans: ProvidesUserContext, **kwd):
         """
         * GET /api/jobs/{job_id}/parameters_display
-        * GET /api/datasets/{dataset_id}/parameters_display
 
             Resolve parameters as a list for nested display. More client logic
             here than is ideal but it is hard to reason about tool parameter
