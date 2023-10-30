@@ -196,6 +196,14 @@ export interface paths {
         /** Check if metadata file can be downloaded. */
         head: operations["get_metadata_file_datasets_api_datasets__history_content_id__metadata_file_head"];
     };
+    "/api/datasets/{id}/metrics": {
+        /**
+         * Return job metrics for specified job.
+         * @description :rtype:     list
+         * :returns:   list containing job metrics
+         */
+        get: operations["get_metrics_api_datasets__id__metrics_get"];
+    };
     "/api/datatypes": {
         /**
          * Lists all available data types
@@ -11053,6 +11061,41 @@ export interface operations {
             };
         };
     };
+    get_metrics_api_datasets__id__metrics_get: {
+        /**
+         * Return job metrics for specified job.
+         * @description :rtype:     list
+         * :returns:   list containing job metrics
+         */
+        parameters: {
+            /** @description Whether this dataset belongs to a history (HDA) or a library (LDDA). */
+            query?: {
+                hda_ldda?: components["schemas"]["DatasetSourceType"];
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The ID of the dataset */
+            path: {
+                id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     index_api_datatypes_get: {
         /**
          * Lists all available data types
@@ -14917,7 +14960,7 @@ export interface operations {
              * : The tool ID corresponding to the job. (The tag `t` can be used a short hand alias for this tag to filter on this attribute.)
              *
              * `runner`
-             * : The job runner name used to execte the job. (The tag `r` can be used a short hand alias for this tag to filter on this attribute.) This tag is only available for requests using admin keys and/or sessions.
+             * : The job runner name used to execute the job. (The tag `r` can be used a short hand alias for this tag to filter on this attribute.) This tag is only available for requests using admin keys and/or sessions.
              *
              * `handler`
              * : The job handler name used to execute the job. (The tag `h` can be used a short hand alias for this tag to filter on this attribute.) This tag is only available for requests using admin keys and/or sessions.
@@ -15159,8 +15202,8 @@ export interface operations {
          */
         parameters: {
             /** @description Whether this dataset belongs to a history (HDA) or a library (LDDA). */
-            query: {
-                hda_ldda: components["schemas"]["DatasetSourceType"];
+            query?: {
+                hda_ldda?: components["schemas"]["DatasetSourceType"];
             };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
@@ -15231,8 +15274,8 @@ export interface operations {
          */
         parameters: {
             /** @description Whether this dataset belongs to a history (HDA) or a library (LDDA). */
-            query: {
-                hda_ldda: components["schemas"]["DatasetSourceType"];
+            query?: {
+                hda_ldda?: components["schemas"]["DatasetSourceType"];
             };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
