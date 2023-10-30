@@ -1,8 +1,9 @@
 import { fetcher } from "@/api/schema";
-import Filtering, { contains, equals, expandNameTagWithQuotes, toBool } from "@/utils/filtering";
+import Filtering, { contains, equals, toBool } from "@/utils/filtering";
+import expandNameTagWithQuotes from "@/utils/filtering";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
-import type { Router } from "vue-router";
+import type Router from "vue-router";
 
 /**
  * Api endpoint fetchers
@@ -16,7 +17,7 @@ const updateTags = fetcher.path("/api/tags").method("put").create();
 /**
  * Local types
  */
-type SortKeyLiteral =  "create_time" | "title" | "update_time" |;
+type SortKeyLiteral =  "create_time" | "title" | "update_time" | undefined;
 
 /**
  * Request and return data from server
@@ -75,7 +76,7 @@ const fields = [
                 icon: "copy",
                 handler: async (data: Record<string, unknown>) => {
                     try {
-                        const copyResponse = await getVisualization({ visualization_id: data.id });
+                        const copyResponse = await fetchAllBroadcasts({ visualization_id: data.id });
                         const copyViz = copyResponse.data;
                         const newViz = {
                             title: `Copy of '${copyViz.title}'`,
@@ -131,14 +132,13 @@ const fields = [
         key: "tags",
         title: "Tags",
         type: "tags",
-        handler: async (data: Record<string, unknown>) => {
-            const tagPayload = {
-                item_id: data.id,
-                item_class: "Visualization",
-                item_tags: data.tags,
-            };
+        handler: async (data: Record<string, unknown >) => {
             try {
-                await updateTags(tagPayload);
+                await updateTags({
+                    item_id: data.id as string,
+                    item_class: "Visualization",
+                    item_tags: data.tags as Array<string>,
+                });
             } catch (e) {
                 rethrowSimple(e);
             }
