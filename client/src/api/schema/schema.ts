@@ -204,6 +204,24 @@ export interface paths {
          */
         get: operations["get_metrics_api_datasets__id__metrics_get"];
     };
+    "/api/datasets/{id}/parameters_display": {
+        /**
+         * Resolve parameters as a list for nested display.
+         * @description # TODO is this still true?
+         *     Resolve parameters as a list for nested display. More client logic
+         *     here than is ideal but it is hard to reason about tool parameter
+         *     types on the client relative to the server. Job accessibility checks
+         *     are slightly different than dataset checks, so both methods are
+         *     available.
+         *
+         *     This API endpoint is unstable and tied heavily to Galaxy's JS client code,
+         *     this endpoint will change frequently.
+         *
+         * :rtype:     list
+         * :returns:   job parameters for for display
+         */
+        get: operations["resolve_parameters_display_api_datasets__id__parameters_display_get"];
+    };
     "/api/datatypes": {
         /**
          * Lists all available data types
@@ -11066,6 +11084,51 @@ export interface operations {
          * Return job metrics for specified job.
          * @description :rtype:     list
          * :returns:   list containing job metrics
+         */
+        parameters: {
+            /** @description Whether this dataset belongs to a history (HDA) or a library (LDDA). */
+            query?: {
+                hda_ldda?: components["schemas"]["DatasetSourceType"];
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The ID of the dataset */
+            path: {
+                id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resolve_parameters_display_api_datasets__id__parameters_display_get: {
+        /**
+         * Resolve parameters as a list for nested display.
+         * @description # TODO is this still true?
+         *     Resolve parameters as a list for nested display. More client logic
+         *     here than is ideal but it is hard to reason about tool parameter
+         *     types on the client relative to the server. Job accessibility checks
+         *     are slightly different than dataset checks, so both methods are
+         *     available.
+         *
+         *     This API endpoint is unstable and tied heavily to Galaxy's JS client code,
+         *     this endpoint will change frequently.
+         *
+         * :rtype:     list
+         * :returns:   job parameters for for display
          */
         parameters: {
             /** @description Whether this dataset belongs to a history (HDA) or a library (LDDA). */
