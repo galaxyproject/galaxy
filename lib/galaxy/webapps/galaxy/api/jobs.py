@@ -547,9 +547,6 @@ class FastAPIJobs:
 
 class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
     job_manager = depends(JobManager)
-    job_search = depends(JobSearch)
-    service = depends(JobsService)
-    hda_manager = depends(hdas.HDAManager)
 
     @expose_api_anonymous
     def build_for_rerun(self, trans: ProvidesHistoryContext, id, **kwd):
