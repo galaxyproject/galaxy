@@ -1,21 +1,25 @@
 import axios from "axios";
 
+import { fetcher } from "@/api/schema";
 import Filtering, { contains, equals, expandNameTagWithQuotes, toBool } from "@/utils/filtering";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
 
+export const visualizationsDetailedFetcher = fetcher.path("/api/visualizations/detailed").method("get").create();
+
 /**
  * Request and return data from server
  */
-async function getData(currentPage, perPage, sortBy, sortDesc, searchTerm) {
-    const offset = perPage * (currentPage - 1);
-    let q = `/api/visualizations/detailed?limit=${perPage}&offset=${offset}&sort_by=${sortBy}&sort_desc=${sortDesc}`;
-    if (searchTerm) {
-        q += `&search=${searchTerm}`;
-    }
-    const response = await axios.get(withPrefix(q));
-    const responseTotal = parseInt(response.headers.total_matches);
-    return [response.data, responseTotal];
+async function getData(offset, limit, search, sort_by, sort_desc) {
+    const { data, headers } = await visualizationsDetailedFetcher({
+        limit,
+        offset,
+        search,
+        sort_by,
+        sort_desc,
+    });
+    const totalMatches = parseInt(headers.get("total_matches") ?? 0);
+    return [data, totalMatches];
 }
 
 /**

@@ -31,7 +31,7 @@ export interface Config {
     actions: Array<Action>;
     fields: Array<Field>;
     filtering: Filtering<string>;
-    getData: (currentPage: number, perPage: number, sortBy: string, sortDesc: boolean, search: string) => Promise<any>;
+    getData: (offset: number, limit: number, search: string, sort_by: string, sort_desc: boolean) => Promise<any>;
     item: string;
     plural: string;
     sortBy: string;

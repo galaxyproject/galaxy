@@ -23,11 +23,11 @@ interface Props {
     // specifies the grid config identifier as specified in the registry
     id: string;
     // rows per page to be shown
-    perPage?: number;
+    limit?: number;
 }
 
 const props = withDefaults(defineProps<Props>(), {
-    perPage: 25,
+    limit: 25,
 });
 
 // contains the current grid data provided by the corresponding api endpoint
@@ -79,12 +79,13 @@ function applyFilter(filter: string, value: string | boolean, quoted = false) {
 async function getGridData() {
     if (gridConfig.value) {
         try {
+            const offset = props.limit * (currentPage.value - 1);
             const [responseData, responseTotal] = await gridConfig.value.getData(
-                currentPage.value,
-                props.perPage,
+                offset,
+                props.limit,
+                searchTerm.value,
                 sortBy.value,
-                sortDesc.value,
-                searchTerm.value
+                sortDesc.value
             );
             gridData.value = responseData;
             totalRows.value = responseTotal;
@@ -240,7 +241,7 @@ watch(operationMessage, () => {
             <BPagination
                 v-model="currentPage"
                 :total-rows="totalRows"
-                :per-page="perPage"
+                :per-page="limit"
                 class="m-0"
                 size="sm"
                 aria-controls="grid-table" />
