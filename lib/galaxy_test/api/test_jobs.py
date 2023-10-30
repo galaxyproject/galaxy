@@ -995,7 +995,6 @@ steps:
         job_id = search_response.json()[0]["id"]
         metrics_by_job_response = self._get(f"/api/jobs/{job_id}/metrics", data={"hda_ldda": "hda"})
         self._assert_status_code_is(metrics_by_job_response, 200)
-        # TODO enable this once metrics_by_dataset works
         metrics_by_dataset_response = self._get(f"/api/datasets/{dataset_id}/metrics", data={"hda_ldda": "hda"})
         self._assert_status_code_is(metrics_by_dataset_response, 200)
         # TODO maybe extend test?
@@ -1010,7 +1009,6 @@ steps:
             f"/api/jobs/{job_id}/parameters_display", data={"hda_ldda": "hda"}
         )
         self._assert_status_code_is(display_parameters_by_job_response, 200)
-        # TODO enable this once parameters_display_by_dataset works
         display_parameters_by_dataset_response = self._get(
             f"/api/datasets/{dataset_id}/parameters_display", data={"hda_ldda": "hda"}
         )
