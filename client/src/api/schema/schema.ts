@@ -920,6 +920,14 @@ export interface paths {
         /** Returns input datasets created by a job. */
         get: operations["get_inputs_api_jobs__id__inputs_get"];
     };
+    "/api/jobs/{id}/metrics": {
+        /**
+         * Return job metrics for specified job.
+         * @description :rtype:     list
+         * :returns:   list containing job metrics
+         */
+        get: operations["get_metrics_api_jobs__id__metrics_get"];
+    };
     "/api/jobs/{id}/outputs": {
         /** Returns output datasets created by a job. */
         get: operations["get_outputs_api_jobs__id__outputs_get"];
@@ -15115,6 +15123,41 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["JobAssociation"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_metrics_api_jobs__id__metrics_get: {
+        /**
+         * Return job metrics for specified job.
+         * @description :rtype:     list
+         * :returns:   list containing job metrics
+         */
+        parameters: {
+            /** @description Whether this dataset belongs to a history (HDA) or a library (LDDA). */
+            query: {
+                hda_ldda: components["schemas"]["DatasetSourceType"];
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The ID of the job */
+            path: {
+                id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": Record<string, never>;
                 };
             };
             /** @description Validation Error */
