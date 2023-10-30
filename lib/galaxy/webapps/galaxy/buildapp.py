@@ -931,13 +931,6 @@ def populate_api_routes(webapp, app):
         action="build_for_rerun",
         conditions=dict(method=["GET"]),
     )
-    webapp.mapper.connect(
-        "dataset_parameters_display",
-        "/api/datasets/{dataset_id}/parameters_display",
-        controller="jobs",
-        action="parameters_display",
-        conditions=dict(method=["GET"]),
-    )
 
     # Job files controllers. Only for consumption by remote job runners.
     webapp.mapper.resource(
