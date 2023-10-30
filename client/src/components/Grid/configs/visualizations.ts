@@ -29,7 +29,7 @@ async function getData(offset: number, limit: number, search: string, sort_by: S
         sort_by,
         sort_desc,
     });
-    const totalMatches = parseInt(headers.get("total_matches") ?? 0);
+    const totalMatches = parseInt(headers.get("total_matches") ?? "0");
     return [data, totalMatches];
 }
 
