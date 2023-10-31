@@ -123,7 +123,7 @@ class MockContext:
     def __init__(self, model_objects=None):
         self.expunged_all = False
         self.flushed = False
-        self.model_objects = model_objects or defaultdict(lambda: {})
+        self.model_objects = model_objects or defaultdict(dict)
         self.created_objects = []
         self.current = self
 

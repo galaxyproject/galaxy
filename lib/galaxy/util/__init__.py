@@ -13,7 +13,6 @@ import json
 import os
 import random
 import re
-import shlex
 import shutil
 import smtplib
 import stat
@@ -95,14 +94,6 @@ from .path import (  # noqa: F401
     StrPath,
 )
 from .rst_to_html import rst_to_html  # noqa: F401
-
-try:
-    shlex_join = shlex.join  # type: ignore[attr-defined]
-except AttributeError:
-    # Python < 3.8
-    def shlex_join(split_command):
-        return " ".join(map(shlex.quote, split_command))
-
 
 inflector = Inflector()
 

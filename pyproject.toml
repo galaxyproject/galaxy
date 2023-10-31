@@ -1,6 +1,6 @@
 [tool.black]
 line-length = 120
-target-version = ['py37']
+target-version = ['py38']
 include = '\.pyi?$'
 extend-exclude = '''
 ^/(
@@ -50,7 +50,7 @@ Cheetah3 = "!=3.2.6.post2"  # yanked release, https://github.com/python-poetry/p
 cloudauthz = "==0.6.0"
 cloudbridge = "*"
 circus = "*"
-cwltool = "==3.1.20221109155812"
+cwltool = ">=3.1.20221109155812"  # TODO: pin to a newer working version
 conda-package-streaming = "*"
 dictobj = "*"
 dnspython = "*"
@@ -93,9 +93,9 @@ pydantic = {version = "<2", extras = ["email"]}
 PyJWT = "*"
 pykwalify = "*"
 pylibmagic = "*"
-pyparsing = "<3.1"  # Needed by matplotlib on Python >=3.8 https://github.com/matplotlib/matplotlib/issues/26152
+pyparsing = "*"
 pysam = ">=0.21"  # for Python 3.11 support on macOS
-python = ">=3.7,<3.12"  # Keep maximum version strict to appease numpy and scipy
+python = ">=3.8,<3.12"  # Keep maximum version strict to appease numpy and scipy
 python-dateutil = "*"
 python-magic = "*"
 python-multipart = "*"  # required to support form parsing in FastAPI/Starlette
@@ -155,6 +155,7 @@ pytest-postgresql = "!=3.0.0"  # https://github.com/ClearcodeHQ/pytest-postgresq
 pytest-shard = "*"
 responses = "*"
 selenium = "*"
+urllib3 = "<2"  # Necessary for poetry for resolve deps for Python 3.8+
 seletools = "*"
 Sphinx = ">=4.0"  # support docutils 0.17
 sphinx-rtd-theme = ">=1.0.0,<2"  # https://github.com/python-poetry/poetry/issues/8194
@@ -184,7 +185,7 @@ types-six = "*"
 # Enable: pycodestyle errors (E), Pyflakes (F), flake8-bugbear (B),
 # flake8-logging-format (G) and pyupgrade (UP)
 select = ["E", "F", "B", "G", "UP"]
-target-version = "py37"
+target-version = "py38"
 # Exceptions:
 # B008 Do not perform function calls in argument defaults (for FastAPI Depends and Body)
 # B9 flake8-bugbear opinionated warnings

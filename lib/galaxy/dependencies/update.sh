@@ -6,7 +6,7 @@
 
 set -e
 
-SUPPORTED_PYTHON_VERSIONS="3.7 3.8 3.9 3.10 3.11"
+SUPPORTED_PYTHON_VERSIONS="3.8 3.9 3.10 3.11"
 NOT_SUPPORTED_NEXT_PYTHON_VERSION="3.12"
 
 this_directory="$(cd "$(dirname "$0")" > /dev/null && pwd)"

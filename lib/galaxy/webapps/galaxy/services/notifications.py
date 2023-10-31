@@ -134,7 +134,7 @@ class NotificationService(ServiceBase):
     ):
         """Updates a single notification received by the user with the requested values."""
         self.notification_manager.ensure_notifications_enabled()
-        updated_response = self.update_user_notifications(user_context, set([notification_id]), request)
+        updated_response = self.update_user_notifications(user_context, {notification_id}, request)
         if not updated_response.updated_count:
             self._raise_notification_not_found(notification_id)
 

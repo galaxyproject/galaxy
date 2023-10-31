@@ -12,6 +12,7 @@ Build a mulled image with:
 import json
 import logging
 import os
+import shlex
 import shutil
 import stat
 import string
@@ -38,7 +39,6 @@ from galaxy.util import (
     commands,
     download_to_file,
     safe_makedirs,
-    shlex_join,
     unicodify,
 )
 from ._cli import arg_parser
@@ -335,7 +335,7 @@ def mull_targets(
             involucro_args.insert(6, "-set")
             involucro_args.insert(7, f"TEST_BINDS={','.join(test_bind)}")
     cmd = involucro_context.build_command(involucro_args)
-    print(f"Executing: {shlex_join(cmd)}")
+    print(f"Executing: {shlex.join(cmd)}")
     if dry_run:
         return 0
     ensure_installed(involucro_context, True)
