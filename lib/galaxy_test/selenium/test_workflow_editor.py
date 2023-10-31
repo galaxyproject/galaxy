@@ -1098,7 +1098,7 @@ steps:
         editor.tool_bar.tool(tool="text_comment").wait_for_and_click()
         editor.tool_bar.toggle_bold.wait_for_and_click()
         editor.tool_bar.toggle_italic.wait_for_and_click()
-        editor.tool_bar.colour(colour="pink").wait_for_and_click()
+        editor.tool_bar.color(color="pink").wait_for_and_click()
         editor.tool_bar.font_size.wait_for_and_click()
         self.action_chains().send_keys(Keys.LEFT * 5).send_keys(Keys.RIGHT).perform()
 
@@ -1125,7 +1125,7 @@ steps:
 
         # place and test markdown comment
         editor.tool_bar.tool(tool="markdown_comment").wait_for_and_click()
-        editor.tool_bar.colour(colour="lime").wait_for_and_click()
+        editor.tool_bar.color(color="lime").wait_for_and_click()
         self.mouse_drag(from_element=tool_bar, from_offset=(100, 100), to_offset=(200, 220))
         self.action_chains().send_keys("# Hello World").perform()
 
@@ -1146,7 +1146,7 @@ steps:
 
         # place and test frame comment
         editor.tool_bar.tool(tool="frame_comment").wait_for_and_click()
-        editor.tool_bar.colour(colour="blue").wait_for_and_click()
+        editor.tool_bar.color(color="blue").wait_for_and_click()
         self.mouse_drag(from_element=tool_bar, from_offset=(10, 10), to_offset=(400, 300))
         self.action_chains().send_keys("My Frame").perform()
 
@@ -1164,7 +1164,7 @@ steps:
 
         # test freehand and eraser
         editor.tool_bar.tool(tool="freehand_pen").wait_for_and_click()
-        editor.tool_bar.colour(colour="green").wait_for_and_click()
+        editor.tool_bar.color(color="green").wait_for_and_click()
         editor.tool_bar.line_thickness.wait_for_and_click()
         self.action_chains().send_keys(Keys.RIGHT * 20).perform()
 
@@ -1175,7 +1175,7 @@ steps:
 
         editor.comment.freehand_comment.wait_for_visible()
 
-        editor.tool_bar.colour(colour="black").wait_for_and_click()
+        editor.tool_bar.color(color="black").wait_for_and_click()
         editor.tool_bar.line_thickness.wait_for_and_click()
         self.action_chains().send_keys(Keys.LEFT * 20).perform()
         self.mouse_drag(from_element=tool_bar, from_offset=(300, 300), via_offsets=[(100, 200)], to_offset=(-200, 30))
@@ -1187,7 +1187,7 @@ steps:
         # place another freehand comment and test eraser
         editor.tool_bar.line_thickness.wait_for_and_click()
         self.action_chains().send_keys(Keys.RIGHT * 20).perform()
-        editor.tool_bar.colour(colour="orange").wait_for_and_click()
+        editor.tool_bar.color(color="orange").wait_for_and_click()
 
         self.mouse_drag(from_element=tool_bar, from_offset=(100, 100), to_offset=(200, 200))
 
@@ -1201,7 +1201,7 @@ steps:
 
         # delete by dragging
         editor.tool_bar.tool(tool="freehand_pen").wait_for_and_click()
-        editor.tool_bar.colour(colour="yellow").wait_for_and_click()
+        editor.tool_bar.color(color="yellow").wait_for_and_click()
 
         self.mouse_drag(from_element=tool_bar, from_offset=(100, 100), to_offset=(200, 200))
 

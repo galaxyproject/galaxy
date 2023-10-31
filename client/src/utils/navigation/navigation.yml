@@ -690,7 +690,7 @@ workflow_editor:
       snapping_distance: "[data-option='snapping-distance']"
       toggle_bold: "[data-option='toggle-bold']"
       toggle_italic: "[data-option='toggle-italic']"
-      colour: ".colour-selector [data-colour='${colour}']"
+      color: ".color-selector [data-color='${color}']"
       font_size: "[data-option='font-size']"
       line_thickness: "[data-option='line-thickness']"
       smoothing: "[data-option='smoothing']"

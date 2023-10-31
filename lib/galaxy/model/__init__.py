@@ -7987,7 +7987,7 @@ class WorkflowComment(Base, RepresentById):
     position = Column(MutableJSONType)
     size = Column(JSONType)
     type = Column(String(16))
-    colour = Column(String(16))
+    color = Column(String(16))
     data = Column(JSONType)
     parent_comment_id = Column(Integer, ForeignKey("workflow_comment.id"), nullable=True)
 
@@ -8022,7 +8022,7 @@ class WorkflowComment(Base, RepresentById):
             "position": self.position,
             "size": self.size,
             "type": self.type,
-            "colour": self.colour,
+            "color": self.color,
             "data": self.data,
         }
 
@@ -8044,7 +8044,7 @@ class WorkflowComment(Base, RepresentById):
         comment.type = dict.get("type", "text")
         comment.position = dict.get("position", None)
         comment.size = dict.get("size", None)
-        comment.colour = dict.get("colour", "none")
+        comment.color = dict.get("color", "none")
         comment.data = dict.get("data", None)
         return comment
 

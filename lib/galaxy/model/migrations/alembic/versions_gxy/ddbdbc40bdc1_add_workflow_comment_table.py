@@ -39,7 +39,7 @@ def upgrade():
             sa.Column("position", MutableJSONType),
             sa.Column("size", JSONType),
             sa.Column("type", sa.String(16)),
-            sa.Column("colour", sa.String(16)),
+            sa.Column("color", sa.String(16)),
             sa.Column("data", JSONType),
             sa.Column(PARENT_COMMENT_COLUMN_NAME, sa.Integer, sa.ForeignKey("workflow_comment.id"), nullable=True),
         )

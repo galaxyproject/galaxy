@@ -3,7 +3,7 @@ import type { UseElementBoundingReturn } from "@vueuse/core";
 import { computed } from "vue";
 
 import { useWorkflowStores } from "@/composables/workflowStores";
-import type { WorkflowComment, WorkflowCommentColour } from "@/stores/workflowEditorCommentStore";
+import type { WorkflowComment, WorkflowCommentColor } from "@/stores/workflowEditorCommentStore";
 
 import FrameComment from "./FrameComment.vue";
 import FreehandComment from "./FreehandComment.vue";
@@ -50,8 +50,8 @@ function onRemove() {
     commentStore.deleteComment(props.comment.id);
 }
 
-function onSetColour(colour: WorkflowCommentColour) {
-    commentStore.changeColour(props.comment.id, colour);
+function onSetColor(color: WorkflowCommentColor) {
+    commentStore.changeColor(props.comment.id, color);
 }
 </script>
 
@@ -68,7 +68,7 @@ function onSetColour(colour: WorkflowCommentColour) {
             @move="onMove"
             @pan-by="onPan"
             @remove="onRemove"
-            @set-colour="onSetColour" />
+            @set-color="onSetColor" />
         <MarkdownComment
             v-else-if="props.comment.type === 'markdown'"
             :comment="props.comment"
@@ -80,7 +80,7 @@ function onSetColour(colour: WorkflowCommentColour) {
             @move="onMove"
             @pan-by="onPan"
             @remove="onRemove"
-            @set-colour="onSetColour" />
+            @set-color="onSetColor" />
         <FrameComment
             v-else-if="props.comment.type === 'frame'"
             :comment="props.comment"
@@ -92,7 +92,7 @@ function onSetColour(colour: WorkflowCommentColour) {
             @move="onMove"
             @pan-by="onPan"
             @remove="onRemove"
-            @set-colour="onSetColour" />
+            @set-color="onSetColor" />
         <FreehandComment v-else-if="props.comment.type === 'freehand'" :comment="props.comment" @remove="onRemove" />
     </div>
 </template>

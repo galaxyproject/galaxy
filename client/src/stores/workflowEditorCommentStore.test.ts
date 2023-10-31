@@ -10,7 +10,7 @@ import {
 
 const freehandComment: FreehandWorkflowComment = {
     type: "freehand",
-    colour: "none",
+    color: "none",
     data: {
         thickness: 10,
         line: [[100, 100]],
@@ -22,7 +22,7 @@ const freehandComment: FreehandWorkflowComment = {
 
 const textComment: TextWorkflowComment = {
     type: "text",
-    colour: "none",
+    color: "none",
     data: {
         size: 1,
         text: "Hello World",
@@ -34,7 +34,7 @@ const textComment: TextWorkflowComment = {
 
 const markdownComment: MarkdownWorkflowComment = {
     type: "markdown",
-    colour: "none",
+    color: "none",
     data: {
         text: "# Hello World",
     },
@@ -45,7 +45,7 @@ const markdownComment: MarkdownWorkflowComment = {
 
 const frameComment: FrameWorkflowComment = {
     type: "frame",
-    colour: "none",
+    color: "none",
     data: {
         title: "My Frame",
     },
@@ -56,7 +56,7 @@ const frameComment: FrameWorkflowComment = {
 
 const frameCommentTwo: FrameWorkflowComment = {
     type: "frame",
-    colour: "none",
+    color: "none",
     data: {
         title: "My Frame",
     },
@@ -143,13 +143,13 @@ describe("workflowEditorCommentStore", () => {
 
     it("does not mutate input data", () => {
         const commentStore = useWorkflowCommentStore("mock-id");
-        const comment: TextWorkflowComment = { ...textComment, id: 0, colour: "pink" };
+        const comment: TextWorkflowComment = { ...textComment, id: 0, color: "pink" };
 
         commentStore.addComments([comment]);
-        commentStore.changeColour(0, "blue");
+        commentStore.changeColor(0, "blue");
 
-        expect(commentStore.comments[0]?.colour).toBe("blue");
-        expect(comment.colour).toBe("pink");
+        expect(commentStore.comments[0]?.color).toBe("blue");
+        expect(comment.color).toBe("pink");
     });
 
     it("implements reset", () => {

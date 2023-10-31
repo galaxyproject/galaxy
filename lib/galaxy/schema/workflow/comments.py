@@ -14,8 +14,8 @@ from typing_extensions import Literal
 
 class BaseComment(BaseModel):
     id: int = Field(..., description="Unique identifier for this comment. Determined by the comments order")
-    colour: Literal["none", "black", "blue", "turquoise", "green", "lime", "orange", "yellow", "red", "pink"] = Field(
-        ..., description="Colour this comment is displayed as. The exact colour hex is determined by the client"
+    color: Literal["none", "black", "blue", "turquoise", "green", "lime", "orange", "yellow", "red", "pink"] = Field(
+        ..., description="Color this comment is displayed as. The exact color hex is determined by the client"
     )
     position: Tuple[float, float] = Field(..., description="[x, y] position of this comment in the Workflow")
     size: Tuple[float, float] = Field(..., description="[width, height] size of this comment")

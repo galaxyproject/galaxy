@@ -9,13 +9,13 @@ import { sanitize } from "dompurify";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 
 import { useWorkflowStores } from "@/composables/workflowStores";
-import type { TextWorkflowComment, WorkflowCommentColour } from "@/stores/workflowEditorCommentStore";
+import type { TextWorkflowComment, WorkflowCommentColor } from "@/stores/workflowEditorCommentStore";
 
-import { colours } from "./colours";
+import { colors } from "./colors";
 import { useResizable } from "./useResizable";
 import { selectAllText } from "./utilities";
 
-import ColourSelector from "./ColourSelector.vue";
+import ColorSelector from "./ColorSelector.vue";
 import DraggablePan from "@/components/Workflow/Editor/DraggablePan.vue";
 
 library.add(faTrashAlt, faPalette);
@@ -33,7 +33,7 @@ const emit = defineEmits<{
     (e: "move", position: [number, number]): void;
     (e: "pan-by", position: { x: number; y: number }): void;
     (e: "remove"): void;
-    (e: "set-colour", colour: WorkflowCommentColour): void;
+    (e: "set-color", color: WorkflowCommentColor): void;
 }>();
 
 const resizeContainer = ref<HTMLDivElement>();
@@ -118,7 +118,7 @@ function onMove(position: { x: number; y: number }) {
     emit("move", [position.x, position.y]);
 }
 
-const showColourSelector = ref(false);
+const showColorSelector = ref(false);
 const rootElement = ref<HTMLDivElement>();
 
 const { focused } = useFocusWithin(rootElement);
@@ -127,7 +127,7 @@ watch(
     () => focused.value,
     () => {
         if (!focused.value) {
-            showColourSelector.value = false;
+            showColorSelector.value = false;
 
             if (getInnerText() === "") {
                 emit("remove");
@@ -138,8 +138,8 @@ watch(
     }
 );
 
-function onSetColour(colour: WorkflowCommentColour) {
-    emit("set-colour", colour);
+function onSetColor(color: WorkflowCommentColor) {
+    emit("set-color", color);
 }
 
 const cssVariables = computed(() => {
@@ -147,8 +147,8 @@ const cssVariables = computed(() => {
         "--font-size": `${fontSize.value}rem`,
     };
 
-    if (props.comment.colour !== "none") {
-        vars["--font-colour"] = colours[props.comment.colour];
+    if (props.comment.color !== "none") {
+        vars["--font-color"] = colors[props.comment.color];
     }
 
     return vars;
@@ -222,9 +222,9 @@ onMounted(() => {
             <BButton
                 class="button prevent-zoom"
                 variant="outline-primary"
-                title="Colour"
-                :pressed="showColourSelector"
-                @click="() => (showColourSelector = !showColourSelector)">
+                title="Color"
+                :pressed="showColorSelector"
+                @click="() => (showColorSelector = !showColorSelector)">
                 <FontAwesomeIcon icon="fa-palette" class="prevent-zoom" />
             </BButton>
             <BButton
@@ -246,11 +246,11 @@ onMounted(() => {
             </BButton>
         </BButtonGroup>
 
-        <ColourSelector
-            v-if="showColourSelector"
-            class="colour-selector"
-            :colour="props.comment.colour"
-            @set-colour="onSetColour" />
+        <ColorSelector
+            v-if="showColorSelector"
+            class="color-selector"
+            :color="props.comment.color"
+            @set-color="onSetColor" />
     </div>
 </template>
 
@@ -272,7 +272,7 @@ onMounted(() => {
             visibility: visible;
         }
 
-        .colour-selector {
+        .color-selector {
             visibility: visible;
         }
 
@@ -290,9 +290,9 @@ onMounted(() => {
 
 .resize-container {
     --font-size: 1rem;
-    --font-colour: #{$brand-primary};
+    --font-color: #{$brand-primary};
 
-    color: var(--font-colour);
+    color: var(--font-color);
     font-size: var(--font-size);
 
     width: 100%;
@@ -345,7 +345,7 @@ onMounted(() => {
     }
 }
 
-.colour-selector {
+.color-selector {
     visibility: hidden;
     right: 0.75rem;
     top: -4.5rem;

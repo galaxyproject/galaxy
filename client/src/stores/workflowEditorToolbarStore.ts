@@ -4,7 +4,7 @@ import { computed, onScopeDispose, reactive, ref, watch } from "vue";
 
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 
-import { WorkflowCommentColour } from "./workflowEditorCommentStore";
+import { WorkflowCommentColor } from "./workflowEditorCommentStore";
 
 export type CommentTool = "textComment" | "markdownComment" | "frameComment" | "freehandComment" | "freehandEraser";
 export type EditorTool = "pointer" | CommentTool;
@@ -38,7 +38,7 @@ export const useWorkflowEditorToolbarStore = (workflowId: string) => {
         const commentOptions = reactive({
             bold: false,
             italic: false,
-            colour: "none" as WorkflowCommentColour,
+            color: "none" as WorkflowCommentColor,
             textSize: 2,
             lineThickness: 5,
             smoothing: 2,

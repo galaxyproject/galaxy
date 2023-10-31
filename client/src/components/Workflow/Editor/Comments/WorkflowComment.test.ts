@@ -8,7 +8,7 @@ import WorkflowComment from "./WorkflowComment.vue";
 const changeData = jest.fn();
 const changeSize = jest.fn();
 const changePosition = jest.fn();
-const changeColour = jest.fn();
+const changeColor = jest.fn();
 const deleteComment = jest.fn();
 
 jest.mock("@/composables/workflowStores", () => ({
@@ -17,7 +17,7 @@ jest.mock("@/composables/workflowStores", () => ({
             changeData,
             changeSize,
             changePosition,
-            changeColour,
+            changeColor,
             deleteComment,
             isJustCreated: () => false,
         },
@@ -37,7 +37,7 @@ describe("WorkflowComment", () => {
     const comment = {
         id: 0,
         type: "text",
-        colour: "none",
+        color: "none",
         position: [0, 0],
         size: [100, 100],
         data: {},
@@ -125,8 +125,8 @@ describe("WorkflowComment", () => {
         textComment.vm.$emit("move", [20, 20]);
         expect(changePosition).toBeCalledWith(123, [20, 20]);
 
-        textComment.vm.$emit("set-colour", "pink");
-        expect(changeColour).toBeCalledWith(123, "pink");
+        textComment.vm.$emit("set-color", "pink");
+        expect(changeColor).toBeCalledWith(123, "pink");
 
         textComment.vm.$emit("remove");
         expect(deleteComment).toBeCalledWith(123);

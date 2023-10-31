@@ -10,13 +10,13 @@ import { computed, onMounted, reactive, ref, watch } from "vue";
 import { useMarkdown } from "@/composables/markdown";
 import { useUid } from "@/composables/utils/uid";
 import { useWorkflowStores } from "@/composables/workflowStores";
-import type { MarkdownWorkflowComment, WorkflowCommentColour } from "@/stores/workflowEditorCommentStore";
+import type { MarkdownWorkflowComment, WorkflowCommentColor } from "@/stores/workflowEditorCommentStore";
 
-import { darkenedColours } from "./colours";
+import { darkenedColors } from "./colors";
 import { useResizable } from "./useResizable";
 import { selectAllText } from "./utilities";
 
-import ColourSelector from "./ColourSelector.vue";
+import ColorSelector from "./ColorSelector.vue";
 import DraggablePan from "@/components/Workflow/Editor/DraggablePan.vue";
 
 library.add(faTrashAlt, faPalette);
@@ -34,7 +34,7 @@ const emit = defineEmits<{
     (e: "move", position: [number, number]): void;
     (e: "pan-by", position: { x: number; y: number }): void;
     (e: "remove"): void;
-    (e: "set-colour", colour: WorkflowCommentColour): void;
+    (e: "set-color", color: WorkflowCommentColor): void;
 }>();
 
 const resizeContainer = ref<HTMLDivElement>();
@@ -86,7 +86,7 @@ function onMouseup() {
     }
 }
 
-const showColourSelector = ref(false);
+const showColorSelector = ref(false);
 const rootElement = ref<HTMLDivElement>();
 
 const { focused } = useFocusWithin(rootElement);
@@ -95,13 +95,13 @@ watch(
     () => focused.value,
     () => {
         if (!focused.value) {
-            showColourSelector.value = false;
+            showColorSelector.value = false;
         }
     }
 );
 
-function onSetColour(colour: WorkflowCommentColour) {
-    emit("set-colour", colour);
+function onSetColor(color: WorkflowCommentColor) {
+    emit("set-color", color);
 }
 
 function onTextChange() {
@@ -115,8 +115,8 @@ function onTextChange() {
 const cssVariables = computed(() => {
     const vars: Record<string, string> = {};
 
-    if (props.comment.colour !== "none") {
-        vars["--primary-colour"] = darkenedColours[props.comment.colour];
+    if (props.comment.color !== "none") {
+        vars["--primary-color"] = darkenedColors[props.comment.color];
     }
 
     return vars;
@@ -163,9 +163,9 @@ onMounted(() => {
             <BButton
                 class="button prevent-zoom"
                 variant="outline-primary"
-                title="Colour"
-                :pressed="showColourSelector"
-                @click="() => (showColourSelector = !showColourSelector)">
+                title="Color"
+                :pressed="showColorSelector"
+                @click="() => (showColorSelector = !showColorSelector)">
                 <FontAwesomeIcon icon="fa-palette" class="prevent-zoom" />
             </BButton>
             <BButton class="button prevent-zoom" variant="dark" title="Delete comment" @click="() => emit('remove')">
@@ -173,11 +173,11 @@ onMounted(() => {
             </BButton>
         </BButtonGroup>
 
-        <ColourSelector
-            v-if="showColourSelector"
-            class="colour-selector"
-            :colour="props.comment.colour"
-            @set-colour="onSetColour" />
+        <ColorSelector
+            v-if="showColorSelector"
+            class="color-selector"
+            :color="props.comment.color"
+            @set-color="onSetColor" />
     </div>
 </template>
 
@@ -209,7 +209,7 @@ $min-height: 1.5em;
             visibility: visible;
         }
 
-        .colour-selector {
+        .color-selector {
             visibility: visible;
         }
 
@@ -313,7 +313,7 @@ $min-height: 1.5em;
 
     &:deep(blockquote) {
         padding-left: 0.5rem;
-        border-left: 2px solid var(--primary-colour);
+        border-left: 2px solid var(--primary-color);
         margin-bottom: 0.5rem;
 
         p {
@@ -327,13 +327,13 @@ $min-height: 1.5em;
 }
 
 .resize-container {
-    --primary-colour: #{$brand-primary};
+    --primary-color: #{$brand-primary};
 
-    color: var(--primary-colour);
+    color: var(--primary-color);
     background-color: $white;
 
     .markdown-textarea {
-        color: var(--primary-colour);
+        color: var(--primary-color);
     }
 
     width: 100%;
@@ -344,7 +344,7 @@ $min-height: 1.5em;
     overflow: hidden;
 
     border-radius: 0.25rem;
-    border-color: var(--primary-colour);
+    border-color: var(--primary-color);
     border-style: solid;
     border-width: 2px;
 
@@ -357,7 +357,7 @@ $min-height: 1.5em;
     }
 }
 
-.colour-selector {
+.color-selector {
     visibility: hidden;
     right: 0;
     top: -4.5rem;
