@@ -59,7 +59,9 @@ def validate_and_normalize_targets(trans, payload):
     payload["check_content"] = trans.app.config.check_upload_content
 
     def check_src(item):
-        validate_datatype_extension(datatypes_registry=trans.app.datatypes_registry, ext=item.get("ext"))
+        item_ext = validate_datatype_extension(datatypes_registry=trans.app.datatypes_registry, ext=item.get("ext"))
+        if item_ext:
+            item["ext"] = item_ext
 
         # Normalize file:// URLs into paths.
         if item["src"] == "url":
