@@ -30,7 +30,7 @@ type OperationHandlerReturn = OperationHandlerMessage | void;
 export interface Config {
     actions: Array<Action>;
     fields: Array<Field>;
-    filtering: Filtering<string>;
+    filtering: Filtering<any>;
     getData: (offset: number, limit: number, search: string, sort_by: string, sort_desc: boolean) => Promise<any>;
     item: string;
     plural: string;

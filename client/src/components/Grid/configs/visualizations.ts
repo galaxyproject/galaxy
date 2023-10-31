@@ -1,9 +1,7 @@
 import { fetcher } from "@/api/schema";
-import Filtering, { contains, equals, toBool } from "@/utils/filtering";
-import expandNameTagWithQuotes from "@/utils/filtering";
+import Filtering, { contains, equals, expandNameTag, toBool, type ValidFilter } from "@/utils/filtering";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
-import type Router from "vue-router";
 
 /**
  * Api endpoint fetchers
@@ -17,7 +15,7 @@ const updateTags = fetcher.path("/api/tags").method("put").create();
 /**
  * Local types
  */
-type SortKeyLiteral =  "create_time" | "title" | "update_time" | undefined;
+type SortKeyLiteral = "create_time" | "title" | "update_time" | undefined;
 
 /**
  * Request and return data from server
@@ -132,7 +130,7 @@ const fields = [
         key: "tags",
         title: "Tags",
         type: "tags",
-        handler: async (data: Record<string, unknown >) => {
+        handler: async (data: Record<string, unknown>) => {
             try {
                 await updateTags({
                     item_id: data.id as string,
@@ -164,13 +162,13 @@ const fields = [
 /**
  * Declare filter options
  */
-const validFilters = {
+const validFilters: Record<string, ValidFilter<string | boolean | undefined>> = {
     title: { placeholder: "title", type: String, handler: contains("title"), menuItem: true },
     slug: { handler: contains("slug"), menuItem: false },
     tag: {
         placeholder: "tag(s)",
         type: "MultiTags",
-        handler: contains("tag", "tag", expandNameTagWithQuotes),
+        handler: contains("tag", "tag", expandNameTag),
         menuItem: true,
     },
     user: { placeholder: "user name", type: String, handler: contains("user"), menuItem: true },
