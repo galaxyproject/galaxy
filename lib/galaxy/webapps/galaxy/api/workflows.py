@@ -530,7 +530,7 @@ class WorkflowsAPIController(
                 with transaction(trans.sa_session):
                     trans.sa_session.commit()
 
-            if "steps" in workflow_dict:
+            if "steps" in workflow_dict or "comments" in workflow_dict:
                 try:
                     workflow_update_options = WorkflowUpdateOptions(**payload)
                     workflow, errors = self.workflow_contents_manager.update_workflow_from_raw_description(

@@ -4,7 +4,9 @@ from typing import Optional
 import pytest
 import yaml
 from selenium.webdriver.common.action_chains import ActionChains
+from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
+from selenium.webdriver.remote.webelement import WebElement
 from seletools.actions import drag_and_drop
 
 from galaxy_test.base.workflow_fixtures import (
@@ -1083,6 +1085,194 @@ steps:
         self.assert_node_output_is("filter#output_filtered", "list", "list:list:list")
         self.workflow_editor_destroy_connection("filter#how|filter_source")
         self.assert_node_output_is("filter#output_filtered", "list")
+
+    @selenium_test
+    def test_editor_place_comments(self):
+        editor = self.components.workflow_editor
+        self.workflow_create_new(annotation="simple workflow")
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+        tool_bar = editor.tool_bar._.wait_for_visible()
+
+        # select text comment tool use all options and set font size to 2
+        editor.tool_bar.tool(tool="text_comment").wait_for_and_click()
+        editor.tool_bar.toggle_bold.wait_for_and_click()
+        editor.tool_bar.toggle_italic.wait_for_and_click()
+        editor.tool_bar.colour(colour="pink").wait_for_and_click()
+        editor.tool_bar.font_size.wait_for_and_click()
+        self.action_chains().send_keys(Keys.LEFT * 5).send_keys(Keys.RIGHT).perform()
+
+        # place text comment
+        self.mouse_drag(from_element=tool_bar, to_offset=(400, 110))
+
+        self.action_chains().send_keys("Hello World").perform()
+
+        # check if all options were applied
+        comment_content: WebElement = editor.comment.text_inner.wait_for_visible()
+        assert comment_content.text == "Hello World"
+        assert "bold" in comment_content.get_attribute("class")
+        assert "italic" in comment_content.get_attribute("class")
+
+        # check for correct size
+        width, height = self.get_element_size(editor.comment._.wait_for_visible())
+
+        assert width == 400
+        assert height == 110
+
+        editor.comment.text_comment.wait_for_and_click()
+        editor.comment.delete.wait_for_and_click()
+        editor.comment.text_comment.wait_for_absent()
+
+        # place and test markdown comment
+        editor.tool_bar.tool(tool="markdown_comment").wait_for_and_click()
+        editor.tool_bar.colour(colour="lime").wait_for_and_click()
+        self.mouse_drag(from_element=tool_bar, from_offset=(100, 100), to_offset=(200, 220))
+        self.action_chains().send_keys("# Hello World").perform()
+
+        editor.tool_bar.tool(tool="pointer").wait_for_and_click()
+
+        markdown_comment_content: WebElement = editor.comment.markdown_rendered.wait_for_visible()
+        assert markdown_comment_content.text == "Hello World"
+        assert markdown_comment_content.find_element(By.TAG_NAME, "h2") is not None
+
+        width, height = self.get_element_size(editor.comment._.wait_for_visible())
+
+        assert width == 200
+        assert height == 220
+
+        editor.comment.markdown_rendered.wait_for_and_click()
+        editor.comment.delete.wait_for_and_click()
+        editor.comment.markdown_comment.wait_for_absent()
+
+        # place and test frame comment
+        editor.tool_bar.tool(tool="frame_comment").wait_for_and_click()
+        editor.tool_bar.colour(colour="blue").wait_for_and_click()
+        self.mouse_drag(from_element=tool_bar, from_offset=(10, 10), to_offset=(400, 300))
+        self.action_chains().send_keys("My Frame").perform()
+
+        title: WebElement = editor.comment.frame_title.wait_for_visible()
+        assert title.text == "My Frame"
+
+        width, height = self.get_element_size(editor.comment._.wait_for_visible())
+
+        assert width == 400
+        assert height == 300
+
+        editor.comment.frame_comment.wait_for_and_click()
+        editor.comment.delete.wait_for_and_click()
+        editor.comment.frame_comment.wait_for_absent()
+
+        # test freehand and eraser
+        editor.tool_bar.tool(tool="freehand_pen").wait_for_and_click()
+        editor.tool_bar.colour(colour="green").wait_for_and_click()
+        editor.tool_bar.line_thickness.wait_for_and_click()
+        self.action_chains().send_keys(Keys.RIGHT * 20).perform()
+
+        editor.tool_bar.smoothing.wait_for_and_click()
+        self.action_chains().send_keys(Keys.RIGHT * 10).perform()
+
+        self.mouse_drag(from_element=tool_bar, from_offset=(100, 100), to_offset=(200, 200))
+
+        editor.comment.freehand_comment.wait_for_visible()
+
+        editor.tool_bar.colour(colour="black").wait_for_and_click()
+        editor.tool_bar.line_thickness.wait_for_and_click()
+        self.action_chains().send_keys(Keys.LEFT * 20).perform()
+        self.mouse_drag(from_element=tool_bar, from_offset=(300, 300), via_offsets=[(100, 200)], to_offset=(-200, 30))
+
+        # test bulk remove freehand
+        editor.tool_bar.remove_freehand.wait_for_and_click()
+        editor.comment.freehand_comment.wait_for_absent()
+
+        # place another freehand comment and test eraser
+        editor.tool_bar.line_thickness.wait_for_and_click()
+        self.action_chains().send_keys(Keys.RIGHT * 20).perform()
+        editor.tool_bar.colour(colour="orange").wait_for_and_click()
+
+        self.mouse_drag(from_element=tool_bar, from_offset=(100, 100), to_offset=(200, 200))
+
+        freehand_comment_a: WebElement = editor.comment.freehand_comment.wait_for_visible()
+
+        # delete by clicking
+        editor.tool_bar.tool(tool="freehand_eraser").wait_for_and_click()
+        self.action_chains().move_to_element(freehand_comment_a).click().perform()
+
+        editor.comment.freehand_comment.wait_for_absent()
+
+        # delete by dragging
+        editor.tool_bar.tool(tool="freehand_pen").wait_for_and_click()
+        editor.tool_bar.colour(colour="yellow").wait_for_and_click()
+
+        self.mouse_drag(from_element=tool_bar, from_offset=(100, 100), to_offset=(200, 200))
+
+        freehand_comment_b: WebElement = editor.comment.freehand_comment.wait_for_visible()
+
+        editor.tool_bar.tool(tool="freehand_eraser").wait_for_and_click()
+        self.mouse_drag(
+            from_element=freehand_comment_b, from_offset=(100, -100), via_offsets=[(-100, 100)], to_offset=(-100, 100)
+        )
+
+        editor.comment.freehand_comment.wait_for_absent()
+
+    @selenium_test
+    def test_editor_snapping(self):
+        editor = self.components.workflow_editor
+        self.workflow_create_new(annotation="simple workflow")
+        self.sleep_for(self.wait_types.UX_RENDER)
+
+        editor.tool_menu.wait_for_visible()
+
+        self.tool_open("cat")
+        self.sleep_for(self.wait_types.UX_RENDER)
+        editor.label_input.wait_for_and_send_keys("tool_node")
+
+        # activate snapping and set it to max (200)
+        editor.tool_bar.tool(tool="toggle_snap").wait_for_and_click()
+        editor.tool_bar.snapping_distance.wait_for_and_click()
+        self.action_chains().send_keys(Keys.RIGHT * 10).perform()
+
+        # move the node a bit
+        tool_node = editor.node._(label="tool_node").wait_for_present()
+        self.action_chains().move_to_element(tool_node).click_and_hold().move_by_offset(12, 3).release().perform()
+
+        # check if editor position is snapped
+        top, left = self.get_node_position("tool_node")
+
+        assert top % 200 == 0
+        assert left % 200 == 0
+
+        # move the node a bit more
+        tool_node = editor.node._(label="tool_node").wait_for_present()
+        self.action_chains().move_to_element(tool_node).click_and_hold().move_by_offset(207, -181).release().perform()
+
+        # check if editor position is snapped
+        top, left = self.get_node_position("tool_node")
+
+        assert top % 200 == 0
+        assert left % 200 == 0
+
+    def get_node_position(self, label: str):
+        node = self.components.workflow_editor.node._(label=label).wait_for_present()
+
+        return self.get_element_position(node)
+
+    def get_element_position(self, element: WebElement):
+        left = element.value_of_css_property("left")
+        top = element.value_of_css_property("top")
+
+        left_stripped = "".join(char for char in left if char.isdigit())
+        top_stripped = "".join(char for char in top if char.isdigit())
+
+        return (int(left_stripped), int(top_stripped))
+
+    def get_element_size(self, element: WebElement):
+        width = element.value_of_css_property("width")
+        height = element.value_of_css_property("height")
+
+        width_stripped = "".join(char for char in width if char.isdigit())
+        height_stripped = "".join(char for char in height if char.isdigit())
+
+        return (int(width_stripped), int(height_stripped))
 
     def assert_node_output_is(self, label: str, output_type: str, subcollection_type: Optional[str] = None):
         editor = self.components.workflow_editor

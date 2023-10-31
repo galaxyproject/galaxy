@@ -235,8 +235,9 @@ export default {
     setup(props, { emit }) {
         const { datatypes, datatypesMapper, datatypesMapperLoading } = useDatatypesMapper();
 
-        const { connectionStore, stepStore, stateStore } = provideScopedWorkflowStores(props.id);
+        const { connectionStore, stepStore, stateStore, commentStore } = provideScopedWorkflowStores(props.id);
 
+        const { comments } = storeToRefs(commentStore);
         const { getStepIndex, steps } = storeToRefs(stepStore);
         const { activeNodeId } = storeToRefs(stateStore);
         const activeStep = computed(() => {
@@ -249,7 +250,11 @@ export default {
         const hasChanges = ref(false);
         const hasInvalidConnections = computed(() => Object.keys(connectionStore.invalidConnections).length > 0);
 
-        stepStore.$subscribe((mutation, state) => {
+        stepStore.$subscribe((_mutation, _state) => {
+            hasChanges.value = true;
+        });
+
+        commentStore.$subscribe((_mutation, _state) => {
             hasChanges.value = true;
         });
 
@@ -257,17 +262,21 @@ export default {
             connectionStore.$reset();
             stepStore.$reset();
             stateStore.$reset();
+            commentStore.$reset();
         }
+
         onUnmounted(() => {
             resetStores();
             emit("update:confirmation", false);
         });
+
         return {
             connectionStore,
             hasChanges,
             hasInvalidConnections,
             stepStore,
             steps,
+            comments,
             nodeIndex: getStepIndex,
             datatypes,
             activeStep,
@@ -505,7 +514,7 @@ export default {
             formData.append("workflow_name", rename_name);
             formData.append("workflow_annotation", rename_annotation);
             formData.append("from_tool_form", true);
-            formData.append("workflow_data", JSON.stringify(toSimple(this)));
+            formData.append("workflow_data", JSON.stringify(toSimple(this.id, this)));
 
             axios
                 .post(`${getAppRoot()}workflow/save_workflow_as`, formData)
@@ -732,7 +741,7 @@ export default {
     left: 1rem;
     bottom: 1rem;
     cursor: pointer;
-    z-index: 1002;
+    z-index: 2000;
 }
 
 .workflow-center {

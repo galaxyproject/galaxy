@@ -1,12 +1,14 @@
 <template>
     <div id="workflow-canvas" class="unified-panel-body workflow-canvas">
         <ZoomControl :zoom-level="scale" :pan="transform" @onZoom="onZoom" @update:pan="panBy" />
+        <ToolBar v-if="!readonly" />
         <div id="canvas-container" ref="canvas" class="canvas-content" @drop.prevent @dragover.prevent>
             <AdaptiveGrid
                 :viewport-bounds="elementBounding"
                 :viewport-bounding-box="viewportBoundingBox"
                 :transform="transform" />
             <div class="node-area" :style="canvasStyle">
+                <InputCatcher :transform="transform" />
                 <WorkflowEdges
                     :transform="transform"
                     :dragging-terminal="draggingTerminal"
@@ -30,11 +32,21 @@
                     @onActivate="onActivate"
                     @onDeactivate="onDeactivate"
                     v-on="$listeners" />
+                <WorkflowComment
+                    v-for="comment in comments"
+                    :id="`workflow-comment-${comment.id}`"
+                    :key="`workflow-comment-${comment.id}`"
+                    :comment="comment"
+                    :scale="scale"
+                    :readonly="readonly"
+                    :root-offset="elementBounding"
+                    @pan-by="panBy" />
             </div>
         </div>
         <WorkflowMinimap
             v-if="elementBounding"
             :steps="steps"
+            :comments="comments"
             :viewport-bounds="elementBounding"
             :viewport-bounding-box="viewportBoundingBox"
             @panBy="panBy"
@@ -58,6 +70,9 @@ import type { OutputTerminals } from "./modules/terminals";
 import { maxZoom, minZoom } from "./modules/zoomLevels";
 
 import AdaptiveGrid from "./AdaptiveGrid.vue";
+import WorkflowComment from "./Comments/WorkflowComment.vue";
+import InputCatcher from "./Tools/InputCatcher.vue";
+import ToolBar from "./Tools/ToolBar.vue";
 import WorkflowNode from "@/components/Workflow/Editor/Node.vue";
 import WorkflowEdges from "@/components/Workflow/Editor/WorkflowEdges.vue";
 import WorkflowMinimap from "@/components/Workflow/Editor/WorkflowMinimap.vue";
@@ -79,7 +94,7 @@ const canvas: Ref<HTMLElement | null> = ref(null);
 const elementBounding = useElementBounding(canvas, { windowResize: false, windowScroll: false });
 const scroll = useScroll(canvas);
 const { transform, panBy, setZoom, moveTo } = useD3Zoom(scale.value, minZoom, maxZoom, canvas, scroll, {
-    x: 20,
+    x: 50,
     y: 20,
 });
 const { viewportBoundingBox } = useViewportBoundingBox(elementBounding, scale, transform);
@@ -154,6 +169,9 @@ watchEffect(() => {
 const canvasStyle = computed(() => {
     return { transform: `translate(${transform.value.x}px, ${transform.value.y}px) scale(${transform.value.k})` };
 });
+
+const { commentStore } = useWorkflowStores();
+const { comments } = storeToRefs(commentStore);
 </script>
 
 <style scoped land="scss">

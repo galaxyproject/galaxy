@@ -796,6 +796,30 @@ class WorkflowContentsManager(UsesAnnotations):
 
         workflow.has_cycles = True
         workflow.steps = steps
+
+        comments: List[model.WorkflowComment] = []
+        comments_by_external_id: Dict[str, model.WorkflowComment] = {}
+        for comment_dict in data.get("comments", []):
+            comment = model.WorkflowComment.from_dict(comment_dict)
+            comments.append(comment)
+            external_id = comment_dict.get("id")
+            if external_id:
+                comments_by_external_id[external_id] = comment
+
+        workflow.comments = comments
+
+        # populate parent_comment
+        for comment, comment_dict in zip(comments, data.get("comments", [])):
+            for step_external_id in comment_dict.get("child_steps", []):
+                child_step = steps_by_external_id.get(step_external_id)
+                if child_step:
+                    child_step.parent_comment = comment
+
+            for comment_external_id in comment_dict.get("child_comments", []):
+                child_comment = comments_by_external_id.get(comment_external_id)
+                if child_comment:
+                    child_comment.parent_comment = comment
+
         # we can't reorder subworkflows, as step connections would become invalid
         if not is_subworkflow:
             # Order the steps if possible
@@ -1119,6 +1143,7 @@ class WorkflowContentsManager(UsesAnnotations):
         data["creator"] = workflow.creator_metadata
         data["source_metadata"] = workflow.source_metadata
         data["annotation"] = self.get_item_annotation_str(trans.sa_session, trans.user, stored) or ""
+        data["comments"] = [comment.to_dict() for comment in workflow.comments]
 
         output_label_index = set()
         input_step_types = set(workflow.input_step_types)
@@ -1363,6 +1388,7 @@ class WorkflowContentsManager(UsesAnnotations):
             data["uuid"] = str(workflow.uuid)
         steps: Dict[int, Dict[str, Any]] = {}
         data["steps"] = steps
+        data["comments"] = [comment.to_dict() for comment in workflow.comments]
         if workflow.reports_config:
             data["report"] = workflow.reports_config
         if workflow.creator_metadata:

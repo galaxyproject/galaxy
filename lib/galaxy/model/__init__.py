@@ -141,6 +141,7 @@ from galaxy.schema.schema import (
     DatasetValidatedState,
     JobState,
 )
+from galaxy.schema.workflow.comments import WorkflowCommentModel
 from galaxy.security import get_permitted_actions
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.security.validate_user_input import validate_password_str
@@ -7383,6 +7384,13 @@ class Workflow(Base, Dictifiable, RepresentById):
         cascade="all, delete-orphan",
         lazy=False,
     )
+    comments: List["WorkflowComment"] = relationship(
+        "WorkflowComment",
+        back_populates="workflow",
+        primaryjoin=(lambda: Workflow.id == WorkflowComment.workflow_id),  # type: ignore[has-type]
+        cascade="all, delete-orphan",
+        lazy=False,
+    )
     parent_workflow_steps = relationship(
         "WorkflowStep",
         primaryjoin=(lambda: Workflow.id == WorkflowStep.subworkflow_id),  # type: ignore[has-type]
@@ -7549,6 +7557,13 @@ class WorkflowStep(Base, RepresentById):
     uuid = Column(UUIDType)
     label = Column(Unicode(255))
     temp_input_connections: Optional[InputConnDictType]
+    parent_comment_id = Column(Integer, ForeignKey("workflow_comment.id"), nullable=True)
+
+    parent_comment = relationship(
+        "WorkflowComment",
+        primaryjoin=(lambda: WorkflowComment.id == WorkflowStep.parent_comment_id),
+        back_populates="child_steps",
+    )
 
     subworkflow: Optional[Workflow] = relationship(
         "Workflow",
@@ -7956,6 +7971,82 @@ class WorkflowOutput(Base, Serializable):
             label=self.label,
             uuid=str(self.uuid),
         )
+
+
+class WorkflowComment(Base, RepresentById):
+    """
+    WorkflowComment represents an in-editor comment which is no associated to any WorkflowStep.
+    It is purely decorative, and should not influence how a workflow is ran.
+    """
+
+    __tablename__ = "workflow_comment"
+
+    id = Column(Integer, primary_key=True)
+    order_index: int = Column(Integer)
+    workflow_id = Column(Integer, ForeignKey("workflow.id"), index=True, nullable=False)
+    position = Column(MutableJSONType)
+    size = Column(JSONType)
+    type = Column(String(16))
+    colour = Column(String(16))
+    data = Column(JSONType)
+    parent_comment_id = Column(Integer, ForeignKey("workflow_comment.id"), nullable=True)
+
+    workflow = relationship(
+        "Workflow",
+        primaryjoin=(lambda: Workflow.id == WorkflowComment.workflow_id),
+        back_populates="comments",
+    )
+
+    child_steps: List["WorkflowStep"] = relationship(
+        "WorkflowStep",
+        primaryjoin=(lambda: WorkflowStep.parent_comment_id == WorkflowComment.id),
+        back_populates="parent_comment",
+    )
+
+    parent_comment: "WorkflowComment" = relationship(
+        "WorkflowComment",
+        primaryjoin=(lambda: WorkflowComment.id == WorkflowComment.parent_comment_id),
+        back_populates="child_comments",
+        remote_side=[id],
+    )
+
+    child_comments: List["WorkflowComment"] = relationship(
+        "WorkflowComment",
+        primaryjoin=(lambda: WorkflowComment.parent_comment_id == WorkflowComment.id),
+        back_populates="parent_comment",
+    )
+
+    def to_dict(self):
+        comment_dict = {
+            "id": self.order_index,
+            "position": self.position,
+            "size": self.size,
+            "type": self.type,
+            "colour": self.colour,
+            "data": self.data,
+        }
+
+        if self.child_steps:
+            comment_dict["child_steps"] = [step.order_index for step in self.child_steps]
+
+        if self.child_comments:
+            comment_dict["child_comments"] = [comment.order_index for comment in self.child_comments]
+
+        WorkflowCommentModel(__root__=comment_dict)
+
+        return comment_dict
+
+    def from_dict(dict):
+        WorkflowCommentModel(__root__=dict)
+
+        comment = WorkflowComment()
+        comment.order_index = dict.get("id", 0)
+        comment.type = dict.get("type", "text")
+        comment.position = dict.get("position", None)
+        comment.size = dict.get("size", None)
+        comment.colour = dict.get("colour", "none")
+        comment.data = dict.get("data", None)
+        return comment
 
 
 class StoredWorkflowUserShareAssociation(Base, UserShareAssociation):
