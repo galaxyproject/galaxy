@@ -565,7 +565,7 @@ export default {
             this.onUpdateStep(step);
         },
         async onCreate() {
-            if (!this.name || !this.annotation) {
+            if (!this.name) {
                 const response = "Please provide a name for your workflow.";
                 this.onWorkflowError("Creating workflow failed", response, {
                     Ok: () => {

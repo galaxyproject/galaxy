@@ -34,7 +34,6 @@
             <b-textarea
                 id="workflow-annotation"
                 v-model="annotationCurrent"
-                :state="!annotationCurrent ? false : null"
                 @keyup="$emit('update:annotationCurrent', annotationCurrent)" />
             <div class="form-text text-muted">These notes will be visible when this workflow is viewed.</div>
         </div>
