@@ -194,6 +194,7 @@ async function onPermanentlyDeleteHistory(historyId: string) {
                 </template>
                 <template v-slot:tooltip="{ data }">
                     <RecoverableItemSizeTooltip
+                        v-if="data"
                         :data="data"
                         :is-recoverable="isRecoverableDataPoint(data)"
                         :is-archived="isArchivedDataPoint(data)" />
@@ -222,7 +223,10 @@ async function onPermanentlyDeleteHistory(historyId: string) {
                 :label-formatter="bytesLabelFormatter"
                 :value-formatter="bytesValueFormatter">
                 <template v-slot:tooltip="{ data }">
-                    <RecoverableItemSizeTooltip :data="data" :is-recoverable="isRecoverableDataPoint(data)" />
+                    <RecoverableItemSizeTooltip
+                        v-if="data"
+                        :data="data"
+                        :is-recoverable="isRecoverableDataPoint(data)" />
                 </template>
             </BarChart>
         </div>
