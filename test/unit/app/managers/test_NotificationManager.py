@@ -276,7 +276,7 @@ class TestUserNotifications(NotificationManagerBaseTestCase):
         assert user_notification.seen_time is None
         assert user_notification.deleted is False
         request = UserNotificationUpdateRequest(seen=True)
-        self.notification_manager.update_user_notifications(user, set([notification.id]), request)
+        self.notification_manager.update_user_notifications(user, {notification.id}, request)
         user_notification = self.notification_manager.get_user_notification(user, notification.id)
         assert user_notification.seen_time is not None
         assert user_notification.deleted is False

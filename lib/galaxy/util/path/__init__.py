@@ -388,7 +388,7 @@ def external_chown(path, pwent, external_chown_script, description="file"):
 
         cmd = shlex.split(external_chown_script)
         cmd.extend([path, pwent[0], str(pwent[3])])
-        log.debug(f"Changing ownership of {path} with: '{galaxy.util.shlex_join(cmd)}'")
+        log.debug(f"Changing ownership of {path} with: '{shlex.join(cmd)}'")
         galaxy.util.commands.execute(cmd)
         return True
     except galaxy.util.commands.CommandLineException as e:

@@ -68,12 +68,12 @@ from galaxy.web.short_term_storage import ShortTermStorageMonitor
 log = get_logger(__name__)
 
 
-@lru_cache()
+@lru_cache
 def setup_data_table_manager(app):
     app._configure_tool_data_tables(from_shed_config=False)
 
 
-@lru_cache()
+@lru_cache
 def cached_create_tool_from_representation(app, raw_tool_source):
     return create_tool_from_representation(
         app=app, raw_tool_source=raw_tool_source, tool_dir="", tool_source_class="XmlToolSource"
