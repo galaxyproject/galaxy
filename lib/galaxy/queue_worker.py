@@ -183,6 +183,9 @@ def _get_new_toolbox(app, save_integrated_tool_panel=True):
     app.datatypes_registry.load_datatype_converters(new_toolbox, use_cached=True)
     app.datatypes_registry.load_external_metadata_tool(new_toolbox)
     load_lib_tools(new_toolbox)
+    # Load built-in converters
+    if app.config.display_builtin_converters:
+        new_toolbox.load_builtin_converters()
     [new_toolbox.register_tool(tool) for tool in new_toolbox.data_manager_tools.values()]
     app.toolbox = new_toolbox
     app.toolbox.persist_cache()
