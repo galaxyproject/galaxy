@@ -166,11 +166,12 @@
 <script>
 import axios from "axios";
 import { storeToRefs } from "pinia";
-import Vue, { computed, onUnmounted, ref } from "vue";
+import Vue, { computed, onUnmounted, ref, unref } from "vue";
 
 import { getUntypedWorkflowParameters } from "@/components/Workflow/Editor/modules/parameters";
 import { ConfirmDialog } from "@/composables/confirmDialog";
 import { useDatatypesMapper } from "@/composables/datatypesMapper";
+import { useUid } from "@/composables/utils/uid";
 import { provideScopedWorkflowStores } from "@/composables/workflowStores";
 import { hide_modal } from "@/layout/modal";
 import { getAppRoot } from "@/onload/loadConfig";
@@ -196,8 +197,6 @@ import ToolPanel from "@/components/Panels/ToolPanel.vue";
 import FormDefault from "@/components/Workflow/Editor/Forms/FormDefault.vue";
 import FormTool from "@/components/Workflow/Editor/Forms/FormTool.vue";
 
-const NEW_TEMP_ID = "new_temp_workflow";
-
 export default {
     components: {
         MarkdownEditor,
@@ -216,7 +215,7 @@ export default {
     props: {
         workflowId: {
             type: String,
-            default: NEW_TEMP_ID,
+            default: undefined,
         },
         initialVersion: {
             type: Number,
@@ -242,7 +241,10 @@ export default {
     setup(props, { emit }) {
         const { datatypes, datatypesMapper, datatypesMapperLoading } = useDatatypesMapper();
 
-        const { connectionStore, stepStore, stateStore, commentStore } = provideScopedWorkflowStores(props.id);
+        const uid = unref(useUid("workflow-editor-"));
+        const id = ref(props.workflowId || uid);
+
+        const { connectionStore, stepStore, stateStore, commentStore } = provideScopedWorkflowStores(id.value);
 
         const { comments } = storeToRefs(commentStore);
         const { getStepIndex, steps } = storeToRefs(stepStore);
@@ -278,6 +280,7 @@ export default {
         });
 
         return {
+            id,
             connectionStore,
             hasChanges,
             hasInvalidConnections,
@@ -296,7 +299,6 @@ export default {
     },
     data() {
         return {
-            id: this.workflowId,
             isCanvas: true,
             markdownConfig: null,
             markdownText: null,
@@ -343,12 +345,12 @@ export default {
             return this.activeStep?.type == "tool";
         },
         isNewTempWorkflow() {
-            return this.id === NEW_TEMP_ID;
+            return !this.workflowId;
         },
     },
     watch: {
         id(newId, oldId) {
-            if (oldId && oldId !== NEW_TEMP_ID) {
+            if (oldId && !this.isNewTempWorkflow) {
                 this._loadCurrent(newId);
             }
         },
@@ -577,8 +579,7 @@ export default {
             }
             const payload = {
                 workflow_name: this.name,
-                workflow_annotation: this.annotation,
-                workflow_tags: this.tags,
+                workflow_annotation: this.annotation || "",
             };
 
             try {

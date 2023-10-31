@@ -693,7 +693,7 @@ class WorkflowContentsManager(UsesAnnotations):
                 sanitized_name = sanitize_html(update_dict["name"])
                 workflow.name = sanitized_name
                 stored_workflow.name = sanitized_name
-            if "annotation" in update_dict:
+            if update_dict.get("annotation") is not None:
                 newAnnotation = sanitize_html(update_dict["annotation"])
                 sa_session = None if dry_run else trans.sa_session
                 self.add_item_annotation(sa_session, stored_workflow.user, stored_workflow, newAnnotation)

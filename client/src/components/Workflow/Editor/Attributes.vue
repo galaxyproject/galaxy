@@ -204,7 +204,7 @@ export default {
             this.messageVariant = "danger";
         },
         onAttributes(data) {
-            if (this.id !== "new_temp_workflow") {
+            if (!this.id.includes("workflow-editor")) {
                 this.services.updateWorkflow(this.id, data).catch((error) => {
                     this.onError(error);
                 });
