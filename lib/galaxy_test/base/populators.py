@@ -276,7 +276,21 @@ def to_local_location(listing, location):
                 to_local_location(item["listing"], location=item["location"])
 
 
+def fix_conflicts(path):
+    # find first key that does not clash with an existing entry in targets
+    # start with entry.target + '_' + 2 and then keep incrementing
+    # the number till there is no clash
+    i = 2
+    tgt = f"{path}_{i}"
+    while os.path.exists(tgt):
+        i += 1
+        tgt = f"{path}_{i}"
+    return tgt
+
+
 def output_to_disk(output, download_folder):
+    if isinstance(output, list):
+        return [output_to_disk(item, download_folder=download_folder) for item in output]
     if isinstance(output, dict):
         if "secondaryFiles" in output:
             output["secondaryFiles"] = [
@@ -284,6 +298,8 @@ def output_to_disk(output, download_folder):
             ]
         if "basename" in output:
             download_path = os.path.join(download_folder, output["basename"])
+            if os.path.exists(download_path):
+                download_path = fix_conflicts(download_path)
             if output["class"] == "Directory":
                 zip_path = f"{download_path}.zip"
                 download_to_file(output["location"], zip_path)
@@ -295,6 +311,17 @@ def output_to_disk(output, download_folder):
             output["location"] = f"file://{download_path}"
             if "listing" in output:
                 to_local_location(output["listing"], output["location"])
+
+            return output
+        elif output.get("class") == "Directory":
+            # Directory in secondary files
+            download_folder = os.path.join(download_folder, output["location"])
+            os.makedirs(download_folder, exist_ok=True)
+            output["location"] = download_folder
+            new_listing = [
+                output_to_disk(secondary, download_folder=download_folder) for secondary in output["listing"]
+            ]
+            output["listing"] = new_listing
             return output
         else:
             new_output = {}
