@@ -229,6 +229,10 @@ class ToolEvaluator:
 
         self.__populate_wrappers(param_dict, input_datasets, job_working_directory)
         self.__populate_input_dataset_wrappers(param_dict, input_datasets)
+        if self.tool.tool_type == "cwl":
+            # don't need the outputs or the sanitization:
+            param_dict["__local_working_directory__"] = self.local_working_directory
+            return param_dict
         self.__populate_output_dataset_wrappers(param_dict, output_datasets, job_working_directory)
         self.__populate_output_collection_wrappers(param_dict, output_collections, job_working_directory)
         self.__populate_unstructured_path_rewrites(param_dict)
