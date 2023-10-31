@@ -4,6 +4,8 @@ input description and the CWL description for a job json. """
 import json
 import logging
 import os
+import tarfile
+import uuid
 from enum import Enum
 from typing import (
     Any,
@@ -218,7 +220,39 @@ def dataset_wrapper_to_directory_json(inputs_dir, dataset_wrapper):
         "archive_nameext": nameext,
         "archive_nameroot": nameroot,
     }
+
+    def tar_to_directory(directory_item):
+        # TODO: Should we just make sure that archive exists in extra_files_path ??
+        tar_file_location = directory_item["archive_location"]
+        directory_name = directory_item["name"]
+
+        assert os.path.exists(tar_file_location), tar_file_location
+
+        tmp_dir = os.path.join(inputs_dir, "direx", str(uuid.uuid4()))  # direx for "DIR EXtract"
+        directory_location = os.path.join(tmp_dir, directory_name)
+
+        os.makedirs(tmp_dir)
+
+        assert os.path.exists(tmp_dir), tmp_dir
+
+        # TODO: safe version of this!
+        bkp_cwd = os.getcwd()
+        os.chdir(tmp_dir)
+        tar = tarfile.open(tar_file_location)
+        tar.extractall(directory_location)
+        tar.close()
+        os.chdir(bkp_cwd)
+
+        assert os.path.exists(directory_location), directory_location
+
+        directory_item["location"] = directory_location
+        directory_item["nameext"] = "None"
+        directory_item["nameroot"] = directory_name
+        directory_item["basename"] = directory_name
+
+    tar_to_directory(directory_json)
     extra_params.update(directory_json)
+
     entry_to_location(extra_params, extra_params["location"])
     return extra_params
 
@@ -227,6 +261,7 @@ def entry_to_location(entry: Dict[str, Any], parent_location: str):
     # TODO unit test
     if entry["class"] == "File" and "path" in entry and "location" not in entry:
         entry["location"] = os.path.join(parent_location, entry.pop("path"))
+        entry["size"] = os.path.getsize(entry["location"])
     elif entry["class"] == "Directory" and "listing" in entry:
         if "location" not in entry and "path" in entry:
             entry["location"] = os.path.join(parent_location, entry.pop("path"))

@@ -10,7 +10,6 @@ import os
 import re
 import tarfile
 import tempfile
-import uuid
 from collections.abc import MutableMapping
 from pathlib import Path
 from typing import (
@@ -3177,39 +3176,6 @@ class CwlCommandBindingTool(Tool):
         # prevent empty string
         # this really seems wrong -John
         input_json = {k: v for k, v in input_json.items() if v != ""}
-
-        # handle 'Directory' type (uncompress tar file)
-        for v in input_json.values():
-            if isinstance(v, dict) and "class" in v and v["class"] == "Directory":
-                if "archive_nameext" in v and v["archive_nameext"] == ".tar":
-                    tar_file_location = v["archive_location"]
-                    directory_name = v["name"]
-
-                    assert os.path.exists(tar_file_location), tar_file_location
-
-                    tmp_dir = os.path.join(
-                        local_working_directory, "direx", str(uuid.uuid4())
-                    )  # direx for "DIR EXtract"
-                    directory_location = os.path.join(tmp_dir, directory_name)
-
-                    os.makedirs(tmp_dir)
-
-                    assert os.path.exists(tmp_dir), tmp_dir
-
-                    # TODO: safe version of this!
-                    bkp_cwd = os.getcwd()
-                    os.chdir(tmp_dir)
-                    tar = tarfile.open(tar_file_location)
-                    tar.extractall(directory_location)
-                    tar.close()
-                    os.chdir(bkp_cwd)
-
-                    assert os.path.exists(directory_location), directory_location
-
-                    v["location"] = directory_location
-                    v["nameext"] = "None"
-                    v["nameroot"] = directory_name
-                    v["basename"] = directory_name
 
         cwl_job_proxy = self._cwl_tool_proxy.job_proxy(
             input_json,
