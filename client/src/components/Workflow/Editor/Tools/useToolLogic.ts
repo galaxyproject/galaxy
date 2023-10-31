@@ -37,7 +37,7 @@ export function useToolLogic(toolbarStore: WorkflowEditorToolbarStore, commentSt
                 id: commentStore.highestCommentId + 1,
                 position: start,
                 size: [0, 0] as [number, number],
-                colour: commentOptions.colour,
+                color: commentOptions.color,
             };
 
             comment = match(toolbarStore.currentTool, {

@@ -10,14 +10,14 @@ import { computed, onMounted, reactive, ref, watch } from "vue";
 
 import { AxisAlignedBoundingBox, type Rectangle } from "@/components/Workflow/Editor/modules/geometry";
 import { useWorkflowStores } from "@/composables/workflowStores";
-import type { FrameWorkflowComment, WorkflowComment, WorkflowCommentColour } from "@/stores/workflowEditorCommentStore";
+import type { FrameWorkflowComment, WorkflowComment, WorkflowCommentColor } from "@/stores/workflowEditorCommentStore";
 import type { Step } from "@/stores/workflowStepStore";
 
-import { brighterColours, darkenedColours } from "./colours";
+import { brighterColors, darkenedColors } from "./colors";
 import { useResizable } from "./useResizable";
 import { selectAllText } from "./utilities";
 
-import ColourSelector from "./ColourSelector.vue";
+import ColorSelector from "./ColorSelector.vue";
 import DraggablePan from "@/components/Workflow/Editor/DraggablePan.vue";
 
 library.add(faObjectGroup, faTrashAlt, faPalette, faCompressAlt);
@@ -35,7 +35,7 @@ const emit = defineEmits<{
     (e: "move", position: [number, number]): void;
     (e: "pan-by", position: { x: number; y: number }): void;
     (e: "remove"): void;
-    (e: "set-colour", colour: WorkflowCommentColour): void;
+    (e: "set-color", color: WorkflowCommentColor): void;
 }>();
 
 const resizeContainer = ref<HTMLDivElement>();
@@ -69,7 +69,7 @@ function saveText() {
     emit("change", { ...props.comment.data, title: getInnerText() });
 }
 
-const showColourSelector = ref(false);
+const showColorSelector = ref(false);
 const rootElement = ref<HTMLDivElement>();
 
 const { focused } = useFocusWithin(rootElement);
@@ -78,7 +78,7 @@ watch(
     () => focused.value,
     () => {
         if (!focused.value) {
-            showColourSelector.value = false;
+            showColorSelector.value = false;
         }
     }
 );
@@ -87,8 +87,8 @@ function onClick() {
     editableElement.value?.focus();
 }
 
-function onSetColour(colour: WorkflowCommentColour) {
-    emit("set-colour", colour);
+function onSetColor(color: WorkflowCommentColor) {
+    emit("set-color", color);
 }
 
 const { stateStore, stepStore, commentStore } = useWorkflowStores();
@@ -242,9 +242,9 @@ function onFitToContent() {
 const cssVariables = computed(() => {
     const vars: Record<string, string> = {};
 
-    if (props.comment.colour !== "none") {
-        vars["--primary-colour"] = darkenedColours[props.comment.colour];
-        vars["--secondary-colour"] = brighterColours[props.comment.colour];
+    if (props.comment.color !== "none") {
+        vars["--primary-color"] = darkenedColors[props.comment.color];
+        vars["--secondary-color"] = brighterColors[props.comment.color];
     }
 
     return vars;
@@ -303,9 +303,9 @@ onMounted(() => {
             <BButton
                 class="button prevent-zoom"
                 variant="outline-primary"
-                title="Colour"
-                :pressed="showColourSelector"
-                @click="() => (showColourSelector = !showColourSelector)">
+                title="Color"
+                :pressed="showColorSelector"
+                @click="() => (showColorSelector = !showColorSelector)">
                 <FontAwesomeIcon icon="fa-palette" class="prevent-zoom" />
             </BButton>
             <BButton class="button prevent-zoom" variant="dark" title="Delete comment" @click="() => emit('remove')">
@@ -313,11 +313,11 @@ onMounted(() => {
             </BButton>
         </BButtonGroup>
 
-        <ColourSelector
-            v-if="showColourSelector"
-            class="colour-selector"
-            :colour="props.comment.colour"
-            @set-colour="onSetColour" />
+        <ColorSelector
+            v-if="showColorSelector"
+            class="color-selector"
+            :color="props.comment.color"
+            @set-color="onSetColor" />
     </div>
 </template>
 
@@ -338,7 +338,7 @@ onMounted(() => {
             resize: both;
         }
 
-        .colour-selector {
+        .color-selector {
             visibility: visible;
         }
 
@@ -354,10 +354,10 @@ onMounted(() => {
 }
 
 .resize-container {
-    --primary-colour: #{$brand-primary};
-    --secondary-colour: #{$white};
+    --primary-color: #{$brand-primary};
+    --secondary-color: #{$white};
 
-    color: var(--primary-colour);
+    color: var(--primary-color);
     width: 100%;
     height: 100%;
     min-height: 100px;
@@ -366,12 +366,12 @@ onMounted(() => {
     overflow: hidden;
 
     border-radius: 0.25rem;
-    border-color: var(--primary-colour);
+    border-color: var(--primary-color);
     border-style: solid;
     border-width: 2px;
 
     .frame-comment-header {
-        background-color: var(--primary-colour);
+        background-color: var(--primary-color);
         color: $white;
         font-size: 1rem;
         padding: 0.1rem 0.5rem;
@@ -403,18 +403,18 @@ onMounted(() => {
     // coloring the "background" via ::after avoids zooming artifacts on the header
     display: flex;
     flex-direction: column;
-    background-color: var(--primary-colour);
+    background-color: var(--primary-color);
 
     &::after {
         content: "";
         display: block;
-        background-color: var(--secondary-colour);
+        background-color: var(--secondary-color);
         flex: 1;
         position: relative;
     }
 }
 
-.colour-selector {
+.color-selector {
     visibility: hidden;
     right: 0;
     top: -4.5rem;

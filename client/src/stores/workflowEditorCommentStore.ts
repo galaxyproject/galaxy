@@ -1,7 +1,7 @@
 import { defineStore } from "pinia";
 import { computed, del, ref, set } from "vue";
 
-import type { Colour } from "@/components/Workflow/Editor/Comments/colours";
+import type { Color } from "@/components/Workflow/Editor/Comments/colors";
 import {
     AxisAlignedBoundingBox,
     type Rectangle,
@@ -18,12 +18,12 @@ import { hasKeys, match } from "@/utils/utils";
 import { useWorkflowStateStore } from "./workflowEditorStateStore";
 import { Step, useWorkflowStepStore } from "./workflowStepStore";
 
-export type WorkflowCommentColour = Colour | "none";
+export type WorkflowCommentColor = Color | "none";
 
 export interface BaseWorkflowComment {
     id: number;
     type: string;
-    colour: WorkflowCommentColour;
+    color: WorkflowCommentColor;
     position: [number, number];
     size: [number, number];
     data: unknown;
@@ -139,9 +139,9 @@ export const useWorkflowCommentStore = (workflowId: string) => {
             set(comment, "data", data);
         }
 
-        function changeColour(id: number, colour: WorkflowCommentColour) {
+        function changeColor(id: number, color: WorkflowCommentColor) {
             const comment = getComment.value(id);
-            set(comment, "colour", colour);
+            set(comment, "color", color);
         }
 
         function addPoint(id: number, point: [number, number]) {
@@ -294,7 +294,7 @@ export const useWorkflowCommentStore = (workflowId: string) => {
             changePosition,
             changeSize,
             changeData,
-            changeColour,
+            changeColor,
             addPoint,
             deleteComment,
             createComment,

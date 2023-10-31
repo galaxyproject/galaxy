@@ -14,7 +14,7 @@ import { match } from "@/utils/utils";
 
 import { useToolLogic } from "./useToolLogic";
 
-import ColourSelector from "@/components/Workflow/Editor/Comments/ColourSelector.vue";
+import ColorSelector from "@/components/Workflow/Editor/Comments/ColorSelector.vue";
 
 library.add(faMagnet, faMousePointer, faObjectGroup, faMarkdown, faPen, faEraser);
 
@@ -226,10 +226,10 @@ whenever(ctrl_7!, () => (toolbarStore.currentTool = "freehandEraser"));
             </div>
 
             <div v-if="!['pointer', 'freehandEraser'].includes(toolbarStore.currentTool)" class="option buttons">
-                <ColourSelector
-                    :colour="commentOptions.colour"
-                    class="colour-selector"
-                    @set-colour="(colour) => (commentOptions.colour = colour)" />
+                <ColorSelector
+                    :color="commentOptions.color"
+                    class="color-selector"
+                    @set-color="(color) => (commentOptions.color = color)" />
             </div>
 
             <div v-if="toolbarStore.currentTool === 'textComment'" class="option small">
@@ -390,7 +390,7 @@ whenever(ctrl_7!, () => (toolbarStore.currentTool = "freehandEraser"));
     justify-content: space-between;
 }
 
-.colour-selector {
+.color-selector {
     position: relative;
 }
 

@@ -6,7 +6,7 @@ import { useWorkflowStores } from "@/composables/workflowStores";
 import type { FreehandWorkflowComment } from "@/stores/workflowEditorCommentStore";
 
 import { vecSubtract } from "../modules/geometry";
-import { colours } from "./colours";
+import { colors } from "./colors";
 
 const props = defineProps<{
     comment: FreehandWorkflowComment;
@@ -34,8 +34,8 @@ const style = computed(() => {
         "--thickness": `${props.comment.data.thickness}px`,
     } as Record<string, string>;
 
-    if (props.comment.colour !== "none") {
-        style["--colour"] = colours[props.comment.colour];
+    if (props.comment.color !== "none") {
+        style["--color"] = colors[props.comment.color];
     }
 
     if (toolbarStore.inputCatcherEnabled) {
@@ -72,7 +72,7 @@ function onClick() {
 @import "theme/blue.scss";
 
 .freehand-workflow-comment {
-    --colour: #{$brand-primary};
+    --color: #{$brand-primary};
     --thickness: 5px;
 
     position: absolute;
@@ -88,7 +88,7 @@ function onClick() {
 
     path {
         stroke-width: var(--thickness);
-        stroke: var(--colour);
+        stroke: var(--color);
     }
 
     pointer-events: none;

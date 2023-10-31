@@ -1,6 +1,6 @@
 import { curveCatmullRom, line } from "d3";
 
-import * as commentColours from "@/components/Workflow/Editor/Comments/colours";
+import * as commentColors from "@/components/Workflow/Editor/Comments/colors";
 import type {
     FrameWorkflowComment,
     FreehandWorkflowComment,
@@ -14,21 +14,21 @@ export function drawBoxComments(
     ctx: CanvasRenderingContext2D,
     comments: FrameWorkflowComment[] | TextWorkflowComment[] | MarkdownWorkflowComment[],
     lineWidth: number,
-    defaultColour: string,
-    colourFill = false
+    defaultColor: string,
+    colorFill = false
 ) {
     ctx.lineWidth = lineWidth;
 
-    if (colourFill) {
+    if (colorFill) {
         comments.forEach((comment) => {
             ctx.beginPath();
 
-            if (comment.colour !== "none") {
-                ctx.fillStyle = commentColours.brighterColours[comment.colour];
-                ctx.strokeStyle = commentColours.colours[comment.colour];
+            if (comment.color !== "none") {
+                ctx.fillStyle = commentColors.brighterColors[comment.color];
+                ctx.strokeStyle = commentColors.colors[comment.color];
             } else {
                 ctx.fillStyle = "rgba(0, 0, 0, 0)";
-                ctx.strokeStyle = defaultColour;
+                ctx.strokeStyle = defaultColor;
             }
 
             ctx.rect(comment.position[0], comment.position[1], comment.size[0], comment.size[1]);
@@ -39,10 +39,10 @@ export function drawBoxComments(
         comments.forEach((comment) => {
             ctx.beginPath();
 
-            if (comment.colour !== "none") {
-                ctx.strokeStyle = commentColours.colours[comment.colour];
+            if (comment.color !== "none") {
+                ctx.strokeStyle = commentColors.colors[comment.color];
             } else {
-                ctx.strokeStyle = defaultColour;
+                ctx.strokeStyle = defaultColor;
             }
 
             ctx.rect(comment.position[0], comment.position[1], comment.size[0], comment.size[1]);
@@ -55,11 +55,11 @@ export function drawBoxComments(
 export function drawSteps(
     ctx: CanvasRenderingContext2D,
     steps: Step[],
-    colour: string,
+    color: string,
     stateStore: ReturnType<typeof useWorkflowStateStore>
 ) {
     ctx.beginPath();
-    ctx.fillStyle = colour;
+    ctx.fillStyle = color;
     steps.forEach((step) => {
         const rect = stateStore.stepPosition[step.id];
 
@@ -73,15 +73,15 @@ export function drawSteps(
 export function drawFreehandComments(
     ctx: CanvasRenderingContext2D,
     comments: FreehandWorkflowComment[],
-    defaultColour: string
+    defaultColor: string
 ) {
     const catmullRom = line().curve(curveCatmullRom).context(ctx);
 
     comments.forEach((comment) => {
-        if (comment.colour === "none") {
-            ctx.strokeStyle = defaultColour;
+        if (comment.color === "none") {
+            ctx.strokeStyle = defaultColor;
         } else {
-            ctx.strokeStyle = commentColours.colours[comment.colour];
+            ctx.strokeStyle = commentColors.colors[comment.color];
         }
 
         ctx.lineWidth = comment.data.thickness;
