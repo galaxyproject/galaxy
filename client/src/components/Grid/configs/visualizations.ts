@@ -1,10 +1,12 @@
+import type Router from "vue-router";
+
 import { fetcher } from "@/api/schema";
 import Filtering, { contains, equals, expandNameTag, toBool, type ValidFilter } from "@/utils/filtering";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
 
 /**
- * Api endpoint fetchers
+ * Api endpoint handlers
  */
 const createVisualization = fetcher.path("/api/visualizations").method("post").create();
 const getVisualization = fetcher.path("/api/visualizations/{visualization_id}").method("get").create();
@@ -15,17 +17,17 @@ const updateTags = fetcher.path("/api/tags").method("put").create();
 /**
  * Local types
  */
-type SortKeyLiteral = "create_time" | "title" | "update_time" | undefined;
+type SortKeyLiteral = "create_time" | "title" | "update_time" | "username" | undefined;
 
 /**
  * Request and return data from server
  */
-async function getData(offset: number, limit: number, search: string, sort_by: SortKeyLiteral, sort_desc: boolean) {
+async function getData(offset: number, limit: number, search: string, sort_by: string, sort_desc: boolean) {
     const { data, headers } = await getDetailedVisualizations({
         limit,
         offset,
         search,
-        sort_by,
+        sort_by: sort_by as SortKeyLiteral,
         sort_desc,
     });
     const totalMatches = parseInt(headers.get("total_matches") ?? "0");
@@ -74,7 +76,7 @@ const fields = [
                 icon: "copy",
                 handler: async (data: Record<string, unknown>) => {
                     try {
-                        const copyResponse = await fetchAllBroadcasts({ visualization_id: data.id });
+                        const copyResponse = await getVisualization({ visualization_id: data.id });
                         const copyViz = copyResponse.data;
                         const newViz = {
                             title: `Copy of '${copyViz.title}'`,
