@@ -425,6 +425,9 @@ class InputSource(metaclass=ABCMeta):
     def parse_when_input_sources(self):
         raise NotImplementedError(NOT_IMPLEMENTED_MESSAGE)
 
+    def parse_default(self) -> Optional[Dict[str, Any]]:
+        return None
+
 
 class PageSource(metaclass=ABCMeta):
     def parse_display(self):

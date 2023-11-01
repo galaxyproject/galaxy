@@ -75,6 +75,7 @@ from galaxy.tools.parameters.basic import (
     IntegerToolParameter,
     is_runtime_value,
     parameter_types,
+    raw_to_galaxy,
     runtime_to_json,
     SelectToolParameter,
     TextToolParameter,
@@ -395,7 +396,7 @@ class WorkflowModule:
     def get_runtime_state(self) -> DefaultToolState:
         raise TypeError("Abstract method")
 
-    def get_runtime_inputs(self, **kwds):
+    def get_runtime_inputs(self, step, connections: Optional[Iterable[WorkflowStepConnection]] = None):
         """Used internally by modules and when displaying inputs in workflow
         editor and run workflow templates.
         """
@@ -432,7 +433,7 @@ class WorkflowModule:
                 return NO_REPLACEMENT
 
             visit_input_values(
-                self.get_runtime_inputs(connections=step.output_connections),
+                self.get_runtime_inputs(step, connections=step.output_connections),
                 state.inputs,
                 update_value,
                 no_replacement_value=NO_REPLACEMENT,
@@ -449,19 +450,19 @@ class WorkflowModule:
                 return NO_REPLACEMENT
 
             visit_input_values(
-                self.get_runtime_inputs(), state.inputs, update_value, no_replacement_value=NO_REPLACEMENT
+                self.get_runtime_inputs(step), state.inputs, update_value, no_replacement_value=NO_REPLACEMENT
             )
 
         return state, step_errors
 
-    def encode_runtime_state(self, runtime_state):
+    def encode_runtime_state(self, step, runtime_state):
         """Takes the computed runtime state and serializes it during run request creation."""
-        return runtime_state.encode(Bunch(inputs=self.get_runtime_inputs()), self.trans.app)
+        return runtime_state.encode(Bunch(inputs=self.get_runtime_inputs(step)), self.trans.app)
 
-    def decode_runtime_state(self, runtime_state):
+    def decode_runtime_state(self, step, runtime_state):
         """Takes the serialized runtime state and decodes it when running the workflow."""
         state = DefaultToolState()
-        state.decode(runtime_state, Bunch(inputs=self.get_runtime_inputs()), self.trans.app)
+        state.decode(runtime_state, Bunch(inputs=self.get_runtime_inputs(step)), self.trans.app)
         return state
 
     def execute(self, trans, progress, invocation_step, use_cached_job=False):
@@ -533,7 +534,7 @@ class WorkflowModule:
 
         for input_dict in all_inputs:
             name = input_dict["name"]
-            data = progress.replacement_for_input(step, input_dict)
+            data = progress.replacement_for_input(self.trans, step, input_dict)
             can_map_over = hasattr(data, "collection")  # and data.collection.allow_implicit_mapping
 
             if not can_map_over:
@@ -825,7 +826,7 @@ class SubWorkflowModule(WorkflowModule):
         state.inputs = dict()
         return state
 
-    def get_runtime_inputs(self, connections=None):
+    def get_runtime_inputs(self, step, connections: Optional[Iterable[WorkflowStepConnection]] = None):
         inputs = {}
         for step in self.subworkflow.steps:
             if step.type == "tool":
@@ -932,7 +933,13 @@ class InputModule(WorkflowModule):
     def execute(self, trans, progress, invocation_step, use_cached_job=False):
         invocation = invocation_step.workflow_invocation
         step = invocation_step.workflow_step
-        step_outputs = dict(output=step.state.inputs["input"])
+        input_value = step.state.inputs["input"]
+        if input_value is None:
+            default_value = step.get_input_default_value(NO_REPLACEMENT)
+            if default_value is not NO_REPLACEMENT:
+                input_value = raw_to_galaxy(trans, default_value)
+
+        step_outputs = dict(output=input_value)
 
         # Web controller may set copy_inputs_to_history, API controller always sets
         # inputs.
@@ -1025,7 +1032,7 @@ class InputDataModule(InputModule):
             filter_set = ["data"]
         return ", ".join(filter_set)
 
-    def get_runtime_inputs(self, connections=None):
+    def get_runtime_inputs(self, step, connections: Optional[Iterable[WorkflowStepConnection]] = None):
         parameter_def = self._parse_state_into_dict()
         optional = parameter_def["optional"]
         tag = parameter_def["tag"]
@@ -1037,6 +1044,10 @@ class InputDataModule(InputModule):
         data_src = dict(
             name="input", label=self.label, multiple=False, type="data", format=formats, tag=tag, optional=optional
         )
+        default_unset = object()
+        default = step.get_input_default_value(default_unset)
+        if default is not default_unset:
+            data_src["default"] = default
         input_param = DataToolParameter(None, data_src, self.trans)
         return dict(input=input_param)
 
@@ -1096,7 +1107,7 @@ class InputDataCollectionModule(InputModule):
         inputs["tag"] = input_tag
         return inputs
 
-    def get_runtime_inputs(self, **kwds):
+    def get_runtime_inputs(self, step, connections: Optional[Iterable[WorkflowStepConnection]] = None):
         parameter_def = self._parse_state_into_dict()
         collection_type = parameter_def["collection_type"]
         optional = parameter_def["optional"]
@@ -1366,7 +1377,7 @@ class InputParameterModule(WorkflowModule):
         parameter_type_cond.cases = cases
         return {"parameter_definition": parameter_type_cond}
 
-    def restrict_options(self, connections: Iterable[WorkflowStepConnection], default_value):
+    def restrict_options(self, step, connections: Iterable[WorkflowStepConnection], default_value):
         try:
             static_options = []
             # Retrieve possible runtime options for 'select' type inputs
@@ -1389,7 +1400,7 @@ class InputParameterModule(WorkflowModule):
                     for step in module.subworkflow.input_steps:
                         if step.input_type == "parameter" and step.label == subworkflow_input_name:
                             static_options.append(
-                                step.module.get_runtime_inputs(connections=step.output_connections)[
+                                step.module.get_runtime_inputs(step, connections=step.output_connections)[
                                     "input"
                                 ].static_options
                             )
@@ -1421,7 +1432,7 @@ class InputParameterModule(WorkflowModule):
         except Exception:
             log.debug("Failed to generate options for text parameter, falling back to free text.", exc_info=True)
 
-    def get_runtime_inputs(self, connections: Optional[Iterable[WorkflowStepConnection]] = None, **kwds):
+    def get_runtime_inputs(self, step, connections: Optional[Iterable[WorkflowStepConnection]] = None):
         parameter_def = self._parse_state_into_dict()
         parameter_type = parameter_def["parameter_type"]
         optional = parameter_def["optional"]
@@ -1440,7 +1451,7 @@ class InputParameterModule(WorkflowModule):
         attemptRestrictOnConnections = is_text and parameter_def.get("restrictOnConnections") and connections
         if attemptRestrictOnConnections:
             connections = cast(Iterable[WorkflowStepConnection], connections)
-            restricted_options = self.restrict_options(connections=connections, default_value=default_value)
+            restricted_options = self.restrict_options(step, connections=connections, default_value=default_value)
             if restricted_options is not None:
                 restricted_inputs = True
                 parameter_kwds["options"] = restricted_options
@@ -1518,7 +1529,7 @@ class InputParameterModule(WorkflowModule):
         step = invocation_step.workflow_step
         input_value = step.state.inputs["input"]
         if input_value is None:
-            default_value = safe_loads(step.tool_inputs.get("default", "{}"))
+            default_value = step.get_input_default_value(NO_REPLACEMENT)
             # TODO: look at parameter type and infer if value should be a dictionary
             # instead. Guessing only field parameter types in CWL branch would have
             # default as dictionary like this.
@@ -1985,7 +1996,7 @@ class ToolModule(WorkflowModule):
                             output_step for output_step in steps if connection.output_step_id == output_step.id
                         )
                         if output_step.type.startswith("data"):
-                            output_inputs = output_step.module.get_runtime_inputs(connections=connections)
+                            output_inputs = output_step.module.get_runtime_inputs(output_step, connections=connections)
                             output_value = output_inputs["input"].get_initial_value(self.trans, context)
                             if input_type == "data" and isinstance(
                                 output_value, self.trans.app.model.HistoryDatasetCollectionAssociation
@@ -2087,7 +2098,7 @@ class ToolModule(WorkflowModule):
         state.inputs = self.state.inputs
         return state
 
-    def get_runtime_inputs(self, **kwds):
+    def get_runtime_inputs(self, step, connections: Optional[Iterable[WorkflowStepConnection]] = None):
         return self.get_inputs()
 
     def compute_runtime_state(self, trans, step=None, step_updates=None):
@@ -2108,12 +2119,12 @@ class ToolModule(WorkflowModule):
                 f"Tool {self.tool_id} missing. Cannot compute runtime state.", tool_id=self.tool_id
             )
 
-    def decode_runtime_state(self, runtime_state):
+    def decode_runtime_state(self, step, runtime_state):
         """Take runtime state from persisted invocation and convert it
         into a DefaultToolState object for use during workflow invocation.
         """
         if self.tool:
-            state = super().decode_runtime_state(runtime_state)
+            state = super().decode_runtime_state(step, runtime_state)
             if RUNTIME_STEP_META_STATE_KEY in runtime_state:
                 self.__restore_step_meta_runtime_state(json.loads(runtime_state[RUNTIME_STEP_META_STATE_KEY]))
             return state
@@ -2169,7 +2180,7 @@ class ToolModule(WorkflowModule):
                 if iteration_elements and prefixed_name in iteration_elements:  # noqa: B023
                     replacement = iteration_elements[prefixed_name]  # noqa: B023
                 else:
-                    replacement = progress.replacement_for_input(step, input_dict)
+                    replacement = progress.replacement_for_input(trans, step, input_dict)
 
                 if replacement is not NO_REPLACEMENT:
                     if not isinstance(input, BaseDataToolParameter):

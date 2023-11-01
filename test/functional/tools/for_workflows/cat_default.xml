@@ -1,0 +1,21 @@
+<tool id="cat_default" name="cat_default" version="1.0.0">
+    <description></description>
+    <command><![CDATA[
+cat '$input1' > '$out_file1'
+    ]]></command>
+    <inputs>
+        <param name="input1" type="data" label="Concatenate Dataset">
+            <default location="https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed" />
+        </param>
+    </inputs>
+    <outputs>
+        <data name="out_file1" format="input" metadata_source="input1"/>
+    </outputs>
+    <tests>
+        <test>
+            <output name="out_file1" file="1.bed" />
+        </test>
+    </tests>
+    <help>
+    </help>
+</tool>
