@@ -315,11 +315,11 @@ def _fetch_target(upload_config: "UploadConfig", target):
             elif not link_data_only:
                 path = upload_config.ensure_in_working_directory(path, purge_source, in_place)
 
+            extra_files_path = f"{path}_extra"
             extra_files = item.get("extra_files")
             if extra_files:
                 # TODO: optimize to just copy the whole directory to extra files instead.
                 assert not upload_config.link_data_only, "linking composite dataset files not yet implemented"
-                extra_files_path = f"{path}_extra"
                 staged_extra_files = extra_files_path
                 os.mkdir(extra_files_path)
 
@@ -358,6 +358,10 @@ def _fetch_target(upload_config: "UploadConfig", target):
                 )
                 assert path
                 datatype.groom_dataset_content(path)
+
+            if datatype.file_ext == "directory":
+                CompressedFile.extract(path, extra_files_path)
+                staged_extra_files = extra_files_path
 
             if len(transform) > 0:
                 source_dict["transform"] = transform
