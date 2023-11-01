@@ -68,6 +68,7 @@ from galaxy.model.tags import GalaxyTagHandler
 from galaxy.objectstore import (
     BaseObjectStore,
     ObjectStore,
+    persist_extra_files,
 )
 from galaxy.schema.bco import (
     BioComputeObjectCore,
@@ -101,10 +102,7 @@ from galaxy.util import (
 )
 from galaxy.util.bunch import Bunch
 from galaxy.util.compression_utils import CompressedFile
-from galaxy.util.path import (
-    safe_walk,
-    StrPath,
-)
+from galaxy.util.path import StrPath
 from ._bco_convert_utils import (
     bco_workflow_version,
     SoftwarePrerequisiteTracker,
@@ -639,24 +637,8 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                         dataset_extra_files_path = dataset_attrs.get("extra_files_path", None)
                         if dataset_extra_files_path:
                             assert file_source_root
-                            dir_name = dataset_instance.dataset.extra_files_path_name
                             dataset_extra_files_path = os.path.join(file_source_root, dataset_extra_files_path)
-                            for root, _dirs, files in safe_walk(dataset_extra_files_path):
-                                extra_dir = os.path.join(
-                                    dir_name, root.replace(dataset_extra_files_path, "", 1).lstrip(os.path.sep)
-                                )
-                                extra_dir = os.path.normpath(extra_dir)
-                                for extra_file in files:
-                                    source = os.path.join(root, extra_file)
-                                    if not in_directory(source, file_source_root):
-                                        raise MalformedContents(f"Invalid dataset path: {source}")
-                                    self.object_store.update_from_file(
-                                        dataset_instance.dataset,
-                                        extra_dir=extra_dir,
-                                        alt_name=extra_file,
-                                        file_name=source,
-                                        create=True,
-                                    )
+                            persist_extra_files(self.object_store, dataset_extra_files_path, dataset_instance)
                         # Don't trust serialized file size
                         dataset_instance.dataset.file_size = None
                         dataset_instance.dataset.set_total_size()  # update the filesize record in the database
