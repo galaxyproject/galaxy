@@ -202,13 +202,12 @@ class OIDC(JSAppLauncher):
     @web.expose
     @web.json
     def get_cilogon_idps(self, trans, **kwargs):
-        allowed_idps = trans.app.authnz_manager.get_allowed_idps()
         try:
             cilogon_idps = json.loads(url_get("https://cilogon.org/idplist/", params=dict(kwargs)))
         except Exception as e:
             raise Exception(f"Invalid server response. {str(e)}.")
 
-        if allowed_idps:
+        if allowed_idps := trans.app.authnz_manager.get_allowed_idps():
             validated_idps = list(filter(lambda idp: idp["EntityID"] in allowed_idps, cilogon_idps))
 
             if not (len(validated_idps) == len(allowed_idps)):

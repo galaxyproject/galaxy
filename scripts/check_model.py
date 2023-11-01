@@ -53,8 +53,7 @@ def find_missing_indexes():
 
     all_indexes = set(mapping_indexes.keys()) | set(tsi_mapping_indexes.keys())
 
-    missing_indexes = all_indexes - set(indexes_in_db.keys())
-    if missing_indexes:
+    if missing_indexes := all_indexes - set(indexes_in_db.keys()):
         return [(mapping_indexes[index], index.table, index.column_names) for index in missing_indexes]
 
 

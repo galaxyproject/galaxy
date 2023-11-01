@@ -567,8 +567,7 @@ class UnivaJobRunner(DRMAAJobRunner):
 
 def _parse_time(tstring):
     tme = None
-    m = re.search("([0-9:.]+)", tstring)
-    if m is not None:
+    if (m := re.search("([0-9:.]+)", tstring)) is not None:
         timespl = m.group(1).split(":")
         tme = float(timespl[-1])  # sec
         if len(timespl) > 1:  # min

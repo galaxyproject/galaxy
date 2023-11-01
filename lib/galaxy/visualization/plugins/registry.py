@@ -247,8 +247,7 @@ class VisualizationsRegistry:
         `visualization_name` if it's applicable to `target_object` or
         `None` if it's not.
         """
-        visualization = self.plugins.get(visualization_name, None)
-        if visualization is not None:
+        if (visualization := self.plugins.get(visualization_name, None)) is not None:
             data_sources = visualization.config["data_sources"]
             for data_source in data_sources:
                 model_class = data_source["model_class"]

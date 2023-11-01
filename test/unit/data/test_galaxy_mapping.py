@@ -1095,8 +1095,7 @@ class TestMappings(BaseModelTestCase):
 
     def _set_permissions(self, security_agent, dataset, permissions):
         # TODO: refactor set_all_dataset_permissions to actually throw an exception :|
-        error = security_agent.set_all_dataset_permissions(dataset, permissions)
-        if error:
+        if error := security_agent.set_all_dataset_permissions(dataset, permissions):
             raise Exception(error)
 
     def new_hda(self, history, **kwds):

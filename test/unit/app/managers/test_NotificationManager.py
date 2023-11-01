@@ -95,14 +95,12 @@ class NotificationManagerBaseTestCase(NotificationsBaseTestCase):
         assert actual_notification.variant == expected_notification["variant"]
         assert actual_notification.category == expected_notification["category"]
 
-        expected_publication_time = expected_notification.get("publication_time")
-        if expected_publication_time:
+        if expected_publication_time := expected_notification.get("publication_time"):
             assert actual_notification.publication_time == expected_publication_time
         else:
             assert actual_notification.publication_time is not None
 
-        expected_expiration_time = expected_notification.get("expiration_time")
-        if expected_expiration_time:
+        if expected_expiration_time := expected_notification.get("expiration_time"):
             assert actual_notification.expiration_time == expected_expiration_time
         else:
             assert actual_notification.expiration_time is not None

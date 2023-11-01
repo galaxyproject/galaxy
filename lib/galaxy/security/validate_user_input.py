@@ -129,8 +129,7 @@ def validate_publicname(trans, publicname, user=None):
     """
     if user and user.username == publicname:
         return ""
-    message = validate_publicname_str(publicname)
-    if message:
+    if message := validate_publicname_str(publicname):
         return message
 
     stmt = select(trans.app.model.User).filter_by(username=publicname).limit(1)

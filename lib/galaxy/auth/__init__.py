@@ -123,8 +123,7 @@ class AuthManager:
 
 def _get_allow_register(d):
     s = d.get("allow-register", True)
-    lower_s = str(s).lower()
-    if lower_s == "challenge":
+    if (lower_s := str(s).lower()) == "challenge":
         return lower_s
     else:
         return string_as_bool(s)

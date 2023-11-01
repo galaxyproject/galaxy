@@ -118,8 +118,7 @@ class DisplayApplicationDataParameter(DisplayApplicationParameter):
         return data
 
     def get_value(self, other_values, dataset_hash, user_hash, trans):
-        data = self._get_dataset_like_object(other_values)
-        if data:
+        if data := self._get_dataset_like_object(other_values):
             return DisplayDataValueWrapper(data, self, other_values, dataset_hash, user_hash, trans)
         return None
 
@@ -165,8 +164,7 @@ class DisplayApplicationDataParameter(DisplayApplicationParameter):
         return False
 
     def ready(self, other_values):
-        value = self._get_dataset_like_object(other_values)
-        if value:
+        if value := self._get_dataset_like_object(other_values):
             if value.state == value.states.OK:
                 return True
             elif value.state == value.states.ERROR:

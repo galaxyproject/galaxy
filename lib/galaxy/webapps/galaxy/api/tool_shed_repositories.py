@@ -318,8 +318,7 @@ class ToolShedRepositoriesController(BaseGalaxyAPIController):
     @require_admin
     @expose_api
     def reset_metadata_on_selected_installed_repositories(self, trans, **kwd):
-        repository_ids = util.listify(kwd.get("repository_ids"))
-        if repository_ids:
+        if repository_ids := util.listify(kwd.get("repository_ids")):
             irmm = InstalledRepositoryMetadataManager(self.app)
             failed = []
             successful = []

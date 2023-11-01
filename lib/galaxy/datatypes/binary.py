@@ -1491,11 +1491,9 @@ class Anndata(H5):
                         return tmp["_index"]
                     return None
                 else:
-                    index_var = tmp.attrs.get("index")
-                    if index_var is not None:
+                    if (index_var := tmp.attrs.get("index")) is not None:
                         return tmp[index_var]
-                    index_var = tmp.attrs.get("_index")
-                    if index_var is not None:
+                    if (index_var := tmp.attrs.get("_index")) is not None:
                         return tmp[index_var]
                     return None
 

@@ -55,8 +55,7 @@ class CacheableStaticURLParser(StaticURLParser):
             return self.__class__(full)(environ, start_response)
         if environ.get("PATH_INFO") and environ.get("PATH_INFO") != "/":
             return self.error_extra_path(environ, start_response)
-        if_none_match = environ.get("HTTP_IF_NONE_MATCH")
-        if if_none_match:
+        if if_none_match := environ.get("HTTP_IF_NONE_MATCH"):
             mytime = os.stat(full).st_mtime
             if str(mytime) == if_none_match:
                 headers: List[Tuple[str, str]] = []

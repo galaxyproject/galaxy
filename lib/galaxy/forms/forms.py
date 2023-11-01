@@ -54,16 +54,14 @@ class FormDefinitionFactory:
         form_type = elem.get("type", None)
         # load layout
         layout = []
-        layouts_elem = elem.find("layout")
-        if layouts_elem:
+        if layouts_elem := elem.find("layout"):
             for layout_elem in layouts_elem.findall("grid"):
                 layout_name = layout_elem.get("name", None)
                 assert layout_name and layout_name not in layout, "Layout grid element requires a unique name."
                 layout.append(layout_name)
         # load fields
         fields = []
-        fields_elem = elem.find("fields")
-        if fields_elem is not None:
+        if (fields_elem := elem.find("fields")) is not None:
             for field_elem in fields_elem.findall("field"):
                 field_type = field_elem.get("type")
                 assert field_type in self.field_type_factories, f"Invalid form field type ( {field_type} )."

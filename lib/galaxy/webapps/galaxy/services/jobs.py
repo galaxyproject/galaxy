@@ -130,8 +130,7 @@ class JobsService(ServiceBase):
 
     def __dictify_association(self, trans, job_dataset_association) -> JobAssociation:
         dataset_dict = None
-        dataset = job_dataset_association.dataset
-        if dataset:
+        if dataset := job_dataset_association.dataset:
             if isinstance(dataset, model.HistoryDatasetAssociation):
                 dataset_dict = EncodedDatasetSourceId(src="hda", id=dataset.id)
             else:

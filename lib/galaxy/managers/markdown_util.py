@@ -88,9 +88,8 @@ def ready_galaxy_markdown_for_import(trans, external_galaxy_markdown):
     _validate(external_galaxy_markdown, internal=False)
 
     def _remap(container, line):
-        id_match = re.search(ENCODED_ID_PATTERN, line)
         object_id = None
-        if id_match:
+        if id_match := re.search(ENCODED_ID_PATTERN, line):
             object_id = id_match.group(2)
             decoded_id = trans.security.decode_id(object_id)
             line = line.replace(id_match.group(), "%s=%d" % (id_match.group(1), decoded_id))
@@ -228,10 +227,9 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
         return export_markdown
 
     def _encode_line(self, trans, line):
-        id_match = re.search(UNENCODED_ID_PATTERN, line)
         object_id = None
         encoded_id = None
-        if id_match:
+        if id_match := re.search(UNENCODED_ID_PATTERN, line):
             object_id = int(id_match.group(2))
             encoded_id = trans.security.encode_id(object_id)
             line = line.replace(id_match.group(), f"{id_match.group(1)}={encoded_id}")
@@ -520,9 +518,8 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
     def handle_dataset_as_image(self, line, hda):
         dataset = hda.dataset
         name = hda.name or ""
-        path_match = re.search(PATH_LABEL_PATTERN, line)
 
-        if path_match:
+        if path_match := re.search(PATH_LABEL_PATTERN, line):
             filepath = path_match.group(2)
             file = os.path.join(hda.extra_files_path, filepath)
         else:
@@ -576,9 +573,8 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
     def handle_workflow_license(self, line, stored_workflow):
         # workflow_manager = self.trans.app.workflow_manager
         license_manager = LicensesManager()
-        license_id = stored_workflow.latest_workflow.license
         markdown = "*No license specified.*"
-        if license_id:
+        if license_id := stored_workflow.latest_workflow.license:
             try:
                 license_metadata = license_manager.get_license_by_id(license_id)
                 markdown = f"[{license_metadata.name}]({license_metadata.url})"

@@ -885,8 +885,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
     ):
         # anon user: ensure that history ids match up and the history is the current,
         #   check for uploading, and use only the subset of attribute keys manipulatable by anon users
-        hda = self.__datasets_for_update(trans, history, [id], payload)[0]
-        if hda:
+        if hda := self.__datasets_for_update(trans, history, [id], payload)[0]:
             self.__deserialize_dataset(trans, hda, payload)
             serialization_params.default_view = "detailed"
             return self.hda_serializer.serialize_to_view(
@@ -933,13 +932,11 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
         """Legacy implementation of the `index` action."""
         history = self._get_history(trans, history_id)
         legacy_params_dict = legacy_params.dict(exclude_defaults=True)
-        ids = legacy_params_dict.get("ids")
-        if ids:
+        if ids := legacy_params_dict.get("ids"):
             legacy_params_dict["ids"] = self.decode_ids(ids)
 
         object_store_ids = None
-        shareable = legacy_params.shareable
-        if shareable is not None:
+        if (shareable := legacy_params.shareable) is not None:
             object_store_ids = self.object_store.object_store_ids(private=not shareable)
             if object_store_ids:
                 legacy_params_dict["object_store_ids"] = object_store_ids

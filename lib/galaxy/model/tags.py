@@ -147,9 +147,8 @@ class TagHandler:
         """Remove a tag from an item."""
         self._ensure_user_owns_item(user, item)
         # Get item tag association.
-        item_tag_assoc = self._get_item_tag_assoc(user, item, tag_name)
         # Remove association.
-        if item_tag_assoc:
+        if item_tag_assoc := self._get_item_tag_assoc(user, item, tag_name):
             # Delete association.
             self.sa_session.delete(item_tag_assoc)
             item.tags.remove(item_tag_assoc)

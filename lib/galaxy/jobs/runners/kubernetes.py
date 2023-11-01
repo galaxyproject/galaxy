@@ -527,8 +527,7 @@ class KubernetesJobRunner(AsynchronousJobRunner):
             "volumeMounts": deduplicate_entries(mounts),
         }
 
-        resources = self.__get_resources(ajs.job_wrapper)
-        if resources:
+        if resources := self.__get_resources(ajs.job_wrapper):
             envs = []
             cpu_val = None
             if "requests" in resources:
@@ -585,23 +584,17 @@ class KubernetesJobRunner(AsynchronousJobRunner):
         return [k8s_container]
 
     def __get_resources(self, job_wrapper):
-        mem_request = self.__get_memory_request(job_wrapper)
-        cpu_request = self.__get_cpu_request(job_wrapper)
-
-        mem_limit = self.__get_memory_limit(job_wrapper)
-        cpu_limit = self.__get_cpu_limit(job_wrapper)
-
         requests = {}
         limits = {}
 
-        if mem_request:
+        if mem_request := self.__get_memory_request(job_wrapper):
             requests["memory"] = mem_request
-        if cpu_request:
+        if cpu_request := self.__get_cpu_request(job_wrapper):
             requests["cpu"] = cpu_request
 
-        if mem_limit:
+        if mem_limit := self.__get_memory_limit(job_wrapper):
             limits["memory"] = mem_limit
-        if cpu_limit:
+        if cpu_limit := self.__get_cpu_limit(job_wrapper):
             limits["cpu"] = cpu_limit
 
         resources = {}

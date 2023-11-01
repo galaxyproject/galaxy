@@ -236,8 +236,7 @@ def __extract_payload_from_request(trans, func, kwargs):
         # should ideally be in reverse, with the if clause being a check for application/json and the else clause assuming a standard encoding
         # such as multipart/form-data. Leaving it as is for backward compatibility, just in case.
         payload = loads(unicodify(trans.request.body))
-    run_as = trans.request.headers.get("run-as")
-    if run_as:
+    if run_as := trans.request.headers.get("run-as"):
         payload["run_as"] = run_as
     return payload
 
@@ -396,8 +395,7 @@ def validation_error_to_message_exception(e: ValidationError) -> MessageExceptio
 
 
 def api_error_message(trans, **kwds):
-    exception = kwds.get("exception", None)
-    if exception:
+    if exception := kwds.get("exception", None):
         # If we are passed a MessageException use err_msg.
         default_error_code = getattr(exception, "err_code", error_codes.UNKNOWN)
         default_error_message = getattr(exception, "err_msg", default_error_code.default_error_message)

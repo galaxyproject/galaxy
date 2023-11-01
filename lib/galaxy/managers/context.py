@@ -234,8 +234,7 @@ class ProvidesUserContext(ProvidesAppContext):
         return self.user is None
 
     def get_current_user_roles(self) -> List[Role]:
-        user = self.user
-        if user:
+        if user := self.user:
             roles = user.all_roles()
         else:
             roles = []

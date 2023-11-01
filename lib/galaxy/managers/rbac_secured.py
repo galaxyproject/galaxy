@@ -215,8 +215,7 @@ class ManageDatasetRBACPermission(DatasetRBACPermission):
         return self.user_manager.private_role(user)
 
     def _grant_role(self, dataset, role, flush=True):
-        existing = self.by_role(dataset, role)
-        if existing:
+        if existing := self.by_role(dataset, role):
             return existing
         return self._create(dataset, role, flush=flush)
 

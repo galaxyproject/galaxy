@@ -25,8 +25,7 @@ class JobPortsView:
 
     # Copy/paste from JobFilesView - TODO: de-duplicate.
     def __authorize_job_access(self, encoded_job_id, **kwargs):
-        key = "job_key"
-        if key not in kwargs:
+        if (key := "job_key") not in kwargs:
             error_message = f"Job files action requires a valid '{key}'."
             raise ObjectAttributeMissingException(error_message)
 

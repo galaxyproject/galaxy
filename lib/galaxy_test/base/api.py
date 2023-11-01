@@ -109,8 +109,7 @@ class UsesApiTestCaseMixin:
             params["key"] = self.galaxy_interactor.api_key
         if use_admin_key:
             params["key"] = self.galaxy_interactor.master_api_key
-        query = urlencode(params)
-        if query:
+        if query := urlencode(params):
             url = f"{url}?{query}"
         return url
 

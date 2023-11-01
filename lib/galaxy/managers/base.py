@@ -1139,8 +1139,7 @@ class ModelFilterParser(HasAModelManager):
         if not filter_fn:
             return None
         # parse the val from string using the 'val' parser if present (otherwise, leave as string)
-        val_parser = attr_map.get("val", None)
-        if val_parser:
+        if val_parser := attr_map.get("val", None):
             val = val_parser(val)
 
         # curry/partial and fold the val in there now
@@ -1262,8 +1261,7 @@ class ModelFilterParser(HasAModelManager):
         except ValueError:
             pass
 
-        match = self.date_string_re.match(date_string)
-        if match:
+        if match := self.date_string_re.match(date_string):
             date_string = " ".join(group for group in match.groups() if group)
             return date_string
         raise ValueError("datetime strings must be in the ISO 8601 format and in the UTC")

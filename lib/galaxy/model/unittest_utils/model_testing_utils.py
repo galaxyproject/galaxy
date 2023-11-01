@@ -97,8 +97,7 @@ def url_factory(tmp_directory: str) -> Callable[[], DbUrl]:
 
     def url() -> DbUrl:
         database = _generate_unique_database_name()
-        connection_url = _get_connection_url()
-        if connection_url:
+        if connection_url := _get_connection_url():
             return _make_postgres_db_url(DbUrl(connection_url), database)
         else:
             return _make_sqlite_db_url(tmp_directory, database)
@@ -115,8 +114,7 @@ def url(tmp_directory: str) -> str:
     """
     # TODO this duplication should be removed (see url_factory).
     database = _generate_unique_database_name()
-    connection_url = _get_connection_url()
-    if connection_url:
+    if connection_url := _get_connection_url():
         return _make_postgres_db_url(DbUrl(connection_url), database)
     else:
         return _make_sqlite_db_url(tmp_directory, database)

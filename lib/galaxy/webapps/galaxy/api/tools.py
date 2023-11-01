@@ -238,9 +238,8 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         """
         kwd = _kwd_or_payload(kwd)
         tool_version = kwd.get("tool_version")
-        history_id = kwd.pop("history_id", None)
         history = None
-        if history_id:
+        if history_id := kwd.pop("history_id", None):
             history = self.history_manager.get_owned(
                 self.decode_id(history_id), trans.user, current_history=trans.history
             )
@@ -275,8 +274,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         filename = kwd.get("filename")
         if filename is None:
             raise exceptions.ObjectNotFound("Test data filename not specified.")
-        path = tool.test_data_path(filename)
-        if path:
+        if path := tool.test_data_path(filename):
             if os.path.isfile(path):
                 trans.response.headers["Content-Disposition"] = f'attachment; filename="{filename}"'
                 return open(path, mode="rb")
@@ -463,9 +461,8 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
             lineage_dict = tool.lineage.to_dict()
         else:
             lineage_dict = None
-        tool_shed_dependencies = tool.installed_tool_dependencies
         tool_shed_dependencies_dict: Optional[list] = None
-        if tool_shed_dependencies:
+        if tool_shed_dependencies := tool.installed_tool_dependencies:
             tool_shed_dependencies_dict = list(map(to_dict, tool_shed_dependencies))
         return {
             "tool_id": tool.id,
@@ -516,8 +513,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
             ],
             "batch": input_src == "hdca",
         }
-        history_id = payload.get("history_id")
-        if history_id:
+        if history_id := payload.get("history_id"):
             decoded_id = self.decode_id(history_id)
             target_history = self.history_manager.get_owned(decoded_id, trans.user, current_history=trans.history)
         else:

@@ -110,8 +110,7 @@ def is_runtime_context(trans, other_values):
 
 
 def parse_dynamic_options(param, input_source):
-    options_elem = input_source.parse_dynamic_options_elem()
-    if options_elem is not None:
+    if (options_elem := input_source.parse_dynamic_options_elem()) is not None:
         return dynamic_options.DynamicOptions(options_elem, param)
     return None
 
@@ -180,8 +179,7 @@ class ToolParameter(Dictifiable):
         self.is_dynamic = False
         self.label = input_source.parse_label()
         self.help = input_source.parse_help()
-        sanitizer_elem = input_source.parse_sanitizer_elem()
-        if sanitizer_elem is not None:
+        if (sanitizer_elem := input_source.parse_sanitizer_elem()) is not None:
             self.sanitizer = ToolParameterSanitizer.from_element(sanitizer_elem)
         else:
             self.sanitizer = None
@@ -1618,8 +1616,7 @@ class DrillDownSelectToolParameter(SelectToolParameter):
         self.display = elem.get("display", None)
         self.hierarchy = elem.get("hierarchy", "exact")  # exact or recurse
         self.separator = elem.get("separator", ",")
-        from_file = elem.get("from_file", None)
-        if from_file:
+        if from_file := elem.get("from_file", None):
             if not os.path.isabs(from_file):
                 from_file = os.path.join(tool.app.config.tool_data_path, from_file)
             elem = XML(f"<root>{open(from_file).read()}</root>")
@@ -1906,8 +1903,7 @@ class BaseDataToolParameter(ToolParameter):
             return RuntimeValue()
         if self.optional:
             return None
-        history = trans.history
-        if history is not None:
+        if (history := trans.history) is not None:
             dataset_matcher_factory = get_dataset_matcher_factory(trans)
             dataset_matcher = dataset_matcher_factory.dataset_matcher(self, other_values)
             if isinstance(self, DataToolParameter):
@@ -2651,8 +2647,7 @@ class RulesListToolParameter(BaseJsonToolParameter):
     def to_dict(self, trans, other_values=None):
         other_values = other_values or {}
         d = ToolParameter.to_dict(self, trans)
-        target_name = self.data_ref
-        if target_name in other_values:
+        if (target_name := self.data_ref) in other_values:
             target = other_values[target_name]
             if not is_runtime_value(target):
                 d["target"] = {

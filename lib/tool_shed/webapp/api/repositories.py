@@ -214,8 +214,7 @@ class RepositoriesController(BaseShedAPIController):
         Returns a list of lists of changesets, in the format [ [ 0, fbb391dc803c ], [ 1, 9d9ec4d9c03e ], [ 2, 9b5b20673b89 ], [ 3, e8c99ce51292 ] ].
         """
         # Example URL: http://localhost:9009/api/repositories/get_installable_revisions?tsr_id=9d37e53072ff9fa4
-        tsr_id = kwd.get("tsr_id", None)
-        if tsr_id is not None:
+        if (tsr_id := kwd.get("tsr_id", None)) is not None:
             repository = repository_util.get_repository_in_tool_shed(
                 self.app, tsr_id, eagerload_columns=[model.Repository.downloadable_revisions]
             )
@@ -271,8 +270,7 @@ class RepositoriesController(BaseShedAPIController):
         """
         repository_dicts = []
         deleted = util.asbool(deleted)
-        q = kwd.get("q", "")
-        if q:
+        if q := kwd.get("q", ""):
             page = kwd.get("page", 1)
             page_size = kwd.get("page_size", 10)
             try:
@@ -288,8 +286,7 @@ class RepositoriesController(BaseShedAPIController):
             else:
                 response = json.dumps(search_results)
             return response
-        tool_ids = kwd.get("tool_ids", None)
-        if tool_ids is not None:
+        if (tool_ids := kwd.get("tool_ids", None)) is not None:
             tool_ids = util.listify(tool_ids)
             response = index_tool_ids(self.app, tool_ids)
             return json.dumps(response)

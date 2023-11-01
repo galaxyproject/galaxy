@@ -265,8 +265,7 @@ class ModelStoreManager:
         import_options = ImportOptions(
             allow_library_creation=request.for_library,
         )
-        history_id = request.history_id
-        if history_id:
+        if history_id := request.history_id:
             history = self._sa_session.get(model.History, history_id)
         else:
             history = None

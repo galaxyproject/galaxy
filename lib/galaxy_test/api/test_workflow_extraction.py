@@ -495,9 +495,7 @@ test_data:
         return collect_step_idx
 
     def _extract_and_download_workflow(self, history_id: str, **extract_payload):
-        reimport_as = extract_payload.get("reimport_as")
-
-        if reimport_as:
+        if reimport_as := extract_payload.get("reimport_as"):
             history_name = reimport_as
             self.dataset_populator.wait_for_history(history_id)
             self.dataset_populator.rename_history(history_id, history_name)
