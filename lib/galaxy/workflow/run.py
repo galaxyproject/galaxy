@@ -328,6 +328,8 @@ STEP_OUTPUT_DELAYED = object()
 
 
 class ModuleInjector(Protocol):
+    trans: "WorkRequestContext"
+
     def inject(self, step, step_args=None, steps=None, **kwargs):
         pass
 
@@ -698,6 +700,9 @@ class WorkflowProgress:
             subworkflow_collection_info=subworkflow_collection_info,
             when_values=when_values,
         )
+
+    def raw_to_galaxy(self, value: dict):
+        return raw_to_galaxy(self.module_injector.trans, value)
 
     def _recover_mapping(self, step_invocation: WorkflowInvocationStep) -> None:
         try:

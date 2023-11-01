@@ -4123,7 +4123,8 @@ dataset for the contained input of the type specified using the ``type`` tag.
 </xs:documentation>
     </xs:annotation>
     <xs:sequence>
-      <xs:group ref="ParamDefaultCollectionElement" minOccurs="0" maxOccurs="unbounded"/>
+      <!-- can have zero or one collection elements -->
+      <xs:element name="element" type="ParamDefaultElement" minOccurs="0" maxOccurs="unbounded" />
     </xs:sequence>
     <xs:attribute name="collection_type" type="CollectionType" use="optional">
       <xs:annotation>
@@ -4135,21 +4136,52 @@ collection types (the most common types are ``list``, ``paired``,
         ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
-    <xs:attribute name="location" type="xs:string" use="optional">
+
+    <xs:attribute name="location" type="xs:anyURI" gxdocs:added="23.2" use="optional">
       <xs:annotation>
         <xs:documentation xml:lang="en"><![CDATA[
-Galaxy-aware URI for the default file.
+Galaxy-aware URI for the default file. This should only be used with parameters of type "data".
         ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
 
   </xs:complexType>
 
-  <xs:group name="ParamDefaultCollectionElement">
-    <xs:choice>
-      <xs:element name="element" type="OutputData" />
-    </xs:choice>
-  </xs:group>
+  <xs:complexType name="ParamDefaultCollection">
+    <xs:sequence>
+      <xs:element name="element" type="ParamDefaultElement" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+
+    <xs:attribute name="collection_type" type="CollectionType" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"><![CDATA[
+Collection type for default collection (if param type is data_collection). Simple collection types are
+either ``list`` or ``paired``, nested collections are specified as colon separated list of simple
+collection types (the most common types are ``list``, ``paired``,
+``list:paired``, or ``list:list``).
+        ]]></xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+
+  </xs:complexType>
+
+  <xs:complexType name="ParamDefaultElement">
+    <xs:sequence>
+      <xs:element name="collection" type="ParamDefaultCollection" minOccurs="0" maxOccurs="1" />
+    </xs:sequence>
+    <xs:attribute name="name" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Name (and element identifier) for this element</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="location" type="xs:anyURI" gxdocs:added="23.2" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"><![CDATA[
+Galaxy-aware URI for the default file for collection element.
+        ]]></xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
 
   <xs:complexType name="ParamOptions">
     <xs:annotation>

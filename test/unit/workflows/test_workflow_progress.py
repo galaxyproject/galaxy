@@ -1,9 +1,15 @@
+from typing import cast
+
 from galaxy import model
 from galaxy.model.base import transaction
 from galaxy.util.unittest import TestCase
-from galaxy.workflow.run import WorkflowProgress
+from galaxy.workflow.run import (
+    ModuleInjector,
+    WorkflowProgress,
+)
 from .workflow_support import (
     MockApp,
+    MockTrans,
     yaml_to_model,
 )
 
@@ -76,7 +82,8 @@ class TestWorkflowProgress(TestCase):
         self.invocation.workflow = workflow
 
     def _new_workflow_progress(self):
-        return WorkflowProgress(self.invocation, self.inputs_by_step_id, MockModuleInjector(self.progress), {})
+        mock_injector: ModuleInjector = cast(ModuleInjector, MockModuleInjector(self.progress))
+        return WorkflowProgress(self.invocation, self.inputs_by_step_id, mock_injector, {})
 
     def _set_previous_progress(self, outputs):
         for i, (step_id, step_value) in enumerate(outputs):
@@ -242,6 +249,7 @@ class MockModuleInjector:
 class MockModule:
     def __init__(self, progress):
         self.progress = progress
+        self.trans = MockTrans()
 
     def decode_runtime_state(self, step, runtime_state):
         return True

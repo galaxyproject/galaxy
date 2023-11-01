@@ -99,6 +99,8 @@ from galaxy.util.tool_shed.common_util import get_tool_shed_url_from_tool_shed_r
 
 if TYPE_CHECKING:
     from galaxy.schema.invocation import InvocationMessageUnion
+    from galaxy.workflow.run import WorkflowProgress
+
 
 log = logging.getLogger(__name__)
 
@@ -176,7 +178,7 @@ def to_cwl(value, hda_references, step):
         return value
 
 
-def from_cwl(value, hda_references, progress):
+def from_cwl(value, hda_references, progress: "WorkflowProgress"):
     # TODO: turn actual files into HDAs here ... somehow I suppose. Things with
     # file:// locations for instance.
     if isinstance(value, dict) and "class" in value and "location" in value:
