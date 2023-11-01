@@ -16,6 +16,7 @@ from typing import (
 from sqlalchemy.orm.scoping import ScopedSession
 
 from galaxy.model import (
+    DatasetInstance,
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
     Job,
@@ -40,7 +41,10 @@ from galaxy.model.store.discover import (
     SessionlessModelPersistenceContext,
     UNSET,
 )
-from galaxy.objectstore import ObjectStore
+from galaxy.objectstore import (
+    ObjectStore,
+    persist_extra_files,
+)
 from galaxy.tool_util.parser.output_collection_def import (
     DEFAULT_DATASET_COLLECTOR_DESCRIPTION,
     INPUT_DBKEY_TOKEN,
@@ -723,9 +727,11 @@ def default_exit_code_file(files_dir, id_tag):
     return os.path.join(files_dir, f"galaxy_{id_tag}.ec")
 
 
-def collect_extra_files(object_store, dataset, job_working_directory):
+def collect_extra_files(object_store: ObjectStore, dataset: "DatasetInstance", job_working_directory: str):
     # TODO: should this use compute_environment to determine the extra files path ?
+    assert dataset.dataset
     file_name = dataset.dataset.extra_files_path_name_from(object_store)
+    assert file_name
     output_location = "outputs"
     temp_file_path = os.path.join(job_working_directory, output_location, file_name)
     if not os.path.exists(temp_file_path):
@@ -740,16 +746,7 @@ def collect_extra_files(object_store, dataset, job_working_directory):
         # automatically creates them.  However, empty directories will
         # not be created in the object store at all, which might be a
         # problem.
-        for root, _dirs, files in os.walk(temp_file_path):
-            for f in files:
-                object_store.update_from_file(
-                    dataset.dataset,
-                    extra_dir=os.path.normpath(os.path.join(file_name, os.path.relpath(root, temp_file_path))),
-                    alt_name=f,
-                    file_name=os.path.join(root, f),
-                    create=True,
-                    preserve_symlinks=True,
-                )
+        persist_extra_files(object_store=object_store, src_extra_files_path=temp_file_path, primary_data=dataset)
     except Exception as e:
         log.debug("Error in collect_associated_files: %s", unicodify(e))
 

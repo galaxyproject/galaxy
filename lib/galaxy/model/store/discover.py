@@ -26,7 +26,10 @@ from galaxy import util
 from galaxy.exceptions import RequestParameterInvalidException
 from galaxy.model.dataset_collections import builder
 from galaxy.model.tags import GalaxySessionlessTagHandler
-from galaxy.objectstore import ObjectStore
+from galaxy.objectstore import (
+    ObjectStore,
+    persist_extra_files,
+)
 from galaxy.util import (
     chunk_iterable,
     ExecutionTimer,
@@ -665,26 +668,6 @@ class SessionlessModelPersistenceContext(ModelPersistenceContext):
 
     def get_implicit_collection_jobs_association_id(self):
         """No-op, no job context."""
-
-
-def persist_extra_files(object_store, src_extra_files_path, primary_data):
-    if src_extra_files_path and os.path.exists(src_extra_files_path):
-        primary_data.dataset.create_extra_files_path()
-        target_extra_files_path = primary_data.extra_files_path
-        for root, _dirs, files in os.walk(src_extra_files_path):
-            extra_dir = os.path.join(
-                target_extra_files_path, root.replace(src_extra_files_path, "", 1).lstrip(os.path.sep)
-            )
-            extra_dir = os.path.normpath(extra_dir)
-            for f in files:
-                object_store.update_from_file(
-                    primary_data.dataset,
-                    extra_dir=extra_dir,
-                    alt_name=f,
-                    file_name=os.path.join(root, f),
-                    create=True,
-                    preserve_symlinks=True,
-                )
 
 
 def persist_target_to_export_store(target_dict, export_store, object_store, work_directory):

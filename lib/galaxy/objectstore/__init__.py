@@ -20,12 +20,14 @@ from typing import (
     Optional,
     Tuple,
     Type,
+    TYPE_CHECKING,
 )
 
 import yaml
 from pydantic import BaseModel
 
 from galaxy.exceptions import (
+    MalformedContents,
     ObjectInvalid,
     ObjectNotFound,
 )
@@ -33,6 +35,7 @@ from galaxy.util import (
     asbool,
     directory_hash_id,
     force_symlink,
+    in_directory,
     parse_xml,
     umask_fix_perms,
 )
@@ -40,6 +43,7 @@ from galaxy.util.bunch import Bunch
 from galaxy.util.path import (
     safe_makedirs,
     safe_relpath,
+    safe_walk,
 )
 from galaxy.util.sleeper import Sleeper
 from .badges import (
@@ -49,6 +53,9 @@ from .badges import (
     StoredBadgeDict,
 )
 from .caching import CacheTarget
+
+if TYPE_CHECKING:
+    from galaxy.model import DatasetInstance
 
 NO_SESSION_ERROR_MESSAGE = (
     "Attempted to 'create' object store entity in configuration with no database session present."
@@ -217,6 +224,7 @@ class ObjectStore(metaclass=abc.ABCMeta):
         obj_dir=False,
         file_name=None,
         create=False,
+        preserve_symlinks=False,
     ):
         """
         Inform the store that the file associated with `obj.id` has been updated.
@@ -1577,3 +1585,27 @@ class ObjectStorePopulator:
         except ObjectInvalid:
             raise Exception("Unable to create output dataset: object store is full")
         self.object_store_id = dataset.object_store_id  # these will be the same thing after the first output
+
+
+def persist_extra_files(object_store: ObjectStore, src_extra_files_path: str, primary_data: "DatasetInstance"):
+    if os.path.exists(src_extra_files_path):
+        assert primary_data.dataset
+        primary_data.dataset.create_extra_files_path()
+        target_extra_files_path = primary_data.extra_files_path
+        for root, _dirs, files in safe_walk(src_extra_files_path):
+            extra_dir = os.path.join(
+                target_extra_files_path, root.replace(src_extra_files_path, "", 1).lstrip(os.path.sep)
+            )
+            extra_dir = os.path.normpath(extra_dir)
+            for f in files:
+                if not in_directory(f, src_extra_files_path):
+                    # Unclear if this can ever happen if we use safe_walk ... probably not ?
+                    raise MalformedContents(f"Invalid dataset path: {f}")
+                object_store.update_from_file(
+                    primary_data.dataset,
+                    extra_dir=extra_dir,
+                    alt_name=f,
+                    file_name=os.path.join(root, f),
+                    create=True,
+                    preserve_symlinks=True,
+                )
