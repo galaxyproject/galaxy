@@ -7275,7 +7275,6 @@ A tool can refer multiple reference IDs.
    <xrefs>
        <xref type="bio.tools">dada2</xref>
        <xref type="bioconductor">dada2</xref>
-       <xref type="biii">dada2</xref>
    </xrefs>
    <!-- https://bio.tools/dada2 -->
 ```
