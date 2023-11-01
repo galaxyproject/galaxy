@@ -1587,7 +1587,7 @@ class ObjectStorePopulator:
         self.object_store_id = dataset.object_store_id  # these will be the same thing after the first output
 
 
-def persist_extra_files(object_store: ObjectStore, src_extra_files_path: str, primary_data: "DatasetInstance"):
+def persist_extra_files(object_store: ObjectStore, src_extra_files_path: str, primary_data: "DatasetInstance") -> None:
     if os.path.exists(src_extra_files_path):
         assert primary_data.dataset
         extra_files_path_name = primary_data.dataset.extra_files_path_name_from(object_store)

@@ -727,7 +727,7 @@ def default_exit_code_file(files_dir, id_tag):
     return os.path.join(files_dir, f"galaxy_{id_tag}.ec")
 
 
-def collect_extra_files(object_store: ObjectStore, dataset: "DatasetInstance", job_working_directory: str):
+def collect_extra_files(object_store: ObjectStore, dataset: "DatasetInstance", job_working_directory: str) -> None:
     # TODO: should this use compute_environment to determine the extra files path ?
     assert dataset.dataset
     file_name = dataset.dataset.extra_files_path_name_from(object_store)
