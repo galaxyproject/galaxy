@@ -7275,6 +7275,7 @@ A tool can refer multiple reference IDs.
    <xrefs>
        <xref type="bio.tools">dada2</xref>
        <xref type="bioconductor">dada2</xref>
+       <xref type="biii">dada2</xref>
    </xrefs>
    <!-- https://bio.tools/dada2 -->
 ```
@@ -7295,7 +7296,7 @@ information according to a catalog.</xs:documentation>
       <xs:extension base="xs:string">
         <xs:attribute name="type" type="xrefType" use="required">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Type of reference - currently ``bio.tools`` and ``bioconductor`` are
+            <xs:documentation xml:lang="en">Type of reference - currently ``bio.tools``, ``bioconductor``, and ``biii`` are
 the only supported options.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
@@ -7309,6 +7310,7 @@ the only supported options.</xs:documentation>
     <xs:restriction base="xs:string">
       <xs:enumeration value="bio.tools"/>
       <xs:enumeration value="bioconductor"/>
+      <xs:enumeration value="biii"/>
       <!--xs:enumeration value="whatelse"/-->
     </xs:restriction>
   </xs:simpleType>
