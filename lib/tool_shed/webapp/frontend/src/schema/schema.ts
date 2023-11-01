@@ -290,7 +290,7 @@ export interface components {
              * Type
              * @description The digest method used to create the checksum.
              * The value (e.g. `sha-256`) SHOULD be listed as `Hash Name String` in the https://github.com/ga4gh-discovery/ga4gh-checksum/blob/master/hash-alg.csv[GA4GH Checksum Hash Algorithm Registry].
-             * Other values MAY be used, as long as implementors are aware of the issues discussed in https://tools.ietf.org/html/rfc6920#section-9.4[RFC6920].
+             * Other values MAY be used, as long as implementers are aware of the issues discussed in https://tools.ietf.org/html/rfc6920#section-9.4[RFC6920].
              * GA4GH may provide more explicit guidance for use of non-IANA-registered algorithms in the future.
              */
             type: string
