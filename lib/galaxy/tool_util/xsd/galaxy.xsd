@@ -7295,7 +7295,7 @@ information according to a catalog.</xs:documentation>
       <xs:extension base="xs:string">
         <xs:attribute name="type" type="xrefType" use="required">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Type of reference - currently ``bio.tools`` and ``bioconductor`` are
+            <xs:documentation xml:lang="en">Type of reference - currently ``bio.tools``, ``bioconductor``, and ``biii`` are
 the only supported options.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
@@ -7309,6 +7309,7 @@ the only supported options.</xs:documentation>
     <xs:restriction base="xs:string">
       <xs:enumeration value="bio.tools"/>
       <xs:enumeration value="bioconductor"/>
+      <xs:enumeration value="biii"/>
       <!--xs:enumeration value="whatelse"/-->
     </xs:restriction>
   </xs:simpleType>
