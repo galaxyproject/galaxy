@@ -189,19 +189,21 @@ class CustosAuthnz(IdentityProvider):
         if custos_authnz_token is None:
             user = trans.user
             existing_user = trans.sa_session.query(User).filter_by(email=email).first()
+            # If there is only a single external authentication
+            # provider in use, trust the user provided and
+            # automatically associate.
+            # Equivalent to `fixed_delegated_auth` from `ConfigSerializer`
+            # TODO: Future work will expand on this and provide an
+            # interface for when there are multiple auth providers
+            # allowing explicit authenticated association.
+            fixed_delegated_auth = (
+                trans.app.config.enable_oidc
+                and len(trans.app.config.oidc) == 1
+                and len(trans.app.auth_manager.authenticators) == 0
+            )
             if not user:
                 if existing_user:
-                    # If there is only a single external authentication
-                    # provider in use, trust the user provided and
-                    # automatically associate.
-                    # TODO: Future work will expand on this and provide an
-                    # interface for when there are multiple auth providers
-                    # allowing explicit authenticated association.
-                    if (
-                        trans.app.config.enable_oidc
-                        and len(trans.app.config.oidc) == 1
-                        and len(trans.app.auth_manager.authenticators) == 0
-                    ):
+                    if fixed_delegated_auth:
                         user = existing_user
                     else:
                         message = f"There already exists a user with email {email}.  To associate this external login, you must first be logged in as that existing account."
@@ -233,7 +235,9 @@ class CustosAuthnz(IdentityProvider):
                 refresh_expiration_time=refresh_expiration_time,
             )
             label = self.config["label"]
-            if existing_user and existing_user != user:
+            if fixed_delegated_auth:
+                redirect_url = login_redirect_url
+            elif existing_user and existing_user != user:
                 redirect_url = (
                     f"{login_redirect_url}user/external_ids"
                     f"?email_exists={email}"
