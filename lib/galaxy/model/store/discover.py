@@ -412,7 +412,7 @@ class ModelPersistenceContext(metaclass=abc.ABCMeta):
 
             self.object_store.update_from_file(dataset.dataset, file_name=path, create=True)
             if extra_file:
-                persist_extra_files(self.object_store, extra_files, dataset)
+                persist_extra_files(self.object_store, extra_file, dataset)
                 dataset.set_size()
             else:
                 dataset.set_size(no_extra_files=True)
