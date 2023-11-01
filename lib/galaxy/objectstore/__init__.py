@@ -1590,12 +1590,10 @@ class ObjectStorePopulator:
 def persist_extra_files(object_store: ObjectStore, src_extra_files_path: str, primary_data: "DatasetInstance"):
     if os.path.exists(src_extra_files_path):
         assert primary_data.dataset
-        primary_data.dataset.create_extra_files_path()
-        target_extra_files_path = primary_data.extra_files_path
+        extra_files_path_name = primary_data.dataset.extra_files_path_name_from(object_store)
+        assert extra_files_path_name
         for root, _dirs, files in safe_walk(src_extra_files_path):
-            extra_dir = os.path.join(
-                target_extra_files_path, root.replace(src_extra_files_path, "", 1).lstrip(os.path.sep)
-            )
+            extra_dir = os.path.join(extra_files_path_name, os.path.relpath(root, src_extra_files_path))
             extra_dir = os.path.normpath(extra_dir)
             for f in files:
                 if not in_directory(f, src_extra_files_path):
