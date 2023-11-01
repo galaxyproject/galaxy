@@ -134,8 +134,7 @@ class ToolsService(ServiceBase):
         # Set running history from payload parameters.
         # History not set correctly as part of this API call for
         # dataset upload.
-        history_id = payload.get("history_id")
-        if history_id:
+        if history_id := payload.get("history_id"):
             history_id = trans.security.decode_id(history_id) if isinstance(history_id, str) else history_id
             target_history = self.history_manager.get_mutable(history_id, trans.user, current_history=trans.history)
         else:
@@ -201,8 +200,7 @@ class ToolsService(ServiceBase):
         output_datasets = vars.get("out_data", [])
         rval: Dict[str, Any] = {"outputs": [], "output_collections": [], "jobs": [], "implicit_collections": []}
         rval["produces_entry_points"] = tool.produces_entry_points
-        job_errors = vars.get("job_errors", [])
-        if job_errors:
+        if job_errors := vars.get("job_errors", []):
             # If we are here - some jobs were successfully executed but some failed.
             rval["errors"] = job_errors
 

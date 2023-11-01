@@ -105,8 +105,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
         """Convert a legacy URL to a job destination"""
         if not url:
             return
-        native_spec = url.split("/")[2]
-        if native_spec:
+        if native_spec := url.split("/")[2]:
             params = dict(nativeSpecification=native_spec)
             log.debug(f"Converted URL '{url}' to destination runner=drmaa, params={params}")
             return JobDestination(runner="drmaa", params=params)

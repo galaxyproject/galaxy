@@ -217,8 +217,7 @@ class BaseJobRunner:
         for _ in range(len(self.work_threads)):
             self.work_queue.put((STOP_SIGNAL, None))
 
-        join_timeout = self.app.config.monitor_thread_join_timeout
-        if join_timeout > 0:
+        if (join_timeout := self.app.config.monitor_thread_join_timeout) > 0:
             log.info("Waiting up to %d seconds for job worker threads to shutdown...", join_timeout)
             start = time.time()
             # NOTE: threads that have already joined by now are not going to be logged

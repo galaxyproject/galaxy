@@ -56,9 +56,8 @@ def service_info(app: ToolShedApp, request_url: URL):
         artifact="trs",
         version="2.1.0",
     )
-    environment = config.ga4gh_service_environment
     extra_kwds = {}
-    if environment:
+    if environment := config.ga4gh_service_environment:
         extra_kwds["environment"] = environment
     return Service(
         id=organization_id + ".trs",

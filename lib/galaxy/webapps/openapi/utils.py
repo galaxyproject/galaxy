@@ -150,9 +150,8 @@ def get_openapi_operation_request_body(
     body_schema, _, _ = field_schema(body_field, model_name_map=model_name_map, ref_prefix=REF_PREFIX)
     field_info = cast(Body, body_field.field_info)
     request_media_type = field_info.media_type
-    required = body_field.required
     request_body_oai: Dict[str, Any] = {}
-    if required:
+    if required := body_field.required:
         request_body_oai["required"] = required
     request_media_content: Dict[str, Any] = {"schema": body_schema}
     if field_info.examples:

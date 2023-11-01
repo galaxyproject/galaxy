@@ -52,8 +52,7 @@ class DataManagerHandler:
         Persist the current in-memory list of config_elems to a file named by the value
         of config_filename.
         """
-        data_managers_path = self.data_managers_path
-        if data_managers_path:
+        if data_managers_path := self.data_managers_path:
             root_str = f'<?xml version="1.0"?><data_managers tool_path="{data_managers_path}"></data_managers>'
         else:
             root_str = '<?xml version="1.0"?><data_managers></data_managers>'

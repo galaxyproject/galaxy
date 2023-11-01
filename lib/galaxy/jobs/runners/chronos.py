@@ -201,9 +201,8 @@ class ChronosJobRunner(AsynchronousJobRunner):
     @handle_exception_call
     def check_watched_item(self, job_state):
         job_name = job_state.job_id
-        job = self._retrieve_job(job_name)
         # TODO: how can stopped GxIT jobs be handled here?
-        if job:
+        if job := self._retrieve_job(job_name):
             succeeded = job["successCount"]
             errors = job["errorCount"]
             if succeeded > 0:

@@ -43,8 +43,7 @@ def using_requirement(tag: KnownRequirementT):
     """
     requirement = f"requires_{tag}"
     skip_environment_variable = f"GALAXY_TEST_SKIP_IF_{requirement.upper()}"
-    env_value = os.environ.get(skip_environment_variable, "0")
-    if env_value != "0":
+    if (env_value := os.environ.get(skip_environment_variable, "0")) != "0":
         raise unittest.SkipTest(f"[{env_value}] Skipping due to {skip_environment_variable} being set to {env_value}")
 
 

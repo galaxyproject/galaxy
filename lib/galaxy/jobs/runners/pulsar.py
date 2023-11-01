@@ -599,8 +599,7 @@ class PulsarJobRunner(AsynchronousJobRunner):
         if hasattr(job_wrapper, "task_id"):
             job_id = f"{job_id}_{job_wrapper.task_id}"
         params = job_wrapper.job_destination.params.copy()
-        user = job_wrapper.get_job().user
-        if user:
+        if user := job_wrapper.get_job().user:
             for key, value in params.items():
                 if value and isinstance(value, str):
                     params[key] = model.User.expand_user_properties(user, value)

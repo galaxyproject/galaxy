@@ -318,8 +318,7 @@ def is_path_within_dependency_dir(app: "ToolShedApp", path: str) -> bool:
     """
     allowed = False
     resolved_path = os.path.realpath(path)
-    tool_dependency_dir = app.config.get("tool_dependency_dir", None)
-    if tool_dependency_dir:
+    if tool_dependency_dir := app.config.get("tool_dependency_dir", None):
         dependency_path = os.path.abspath(tool_dependency_dir)
         allowed = os.path.commonprefix([dependency_path, resolved_path]) == dependency_path
     return allowed

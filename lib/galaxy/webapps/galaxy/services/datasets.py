@@ -850,15 +850,13 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             return dataset.conversion_messages.NO_DATA
 
         # Dataset check.
-        msg = self.hda_manager.data_conversion_status(dataset)
-        if msg:
+        if msg := self.hda_manager.data_conversion_status(dataset):
             return msg
 
         # Get datasources and check for messages.
         data_sources = dataset.get_datasources(trans)
         messages_list = [data_source_dict["message"] for data_source_dict in data_sources.values()]
-        return_message = self._get_highest_priority_msg(messages_list)
-        if return_message:
+        if return_message := self._get_highest_priority_msg(messages_list):
             return return_message
 
         extra_info = None
@@ -953,8 +951,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         be slow because indexes need to be created.
         """
         # Dataset check.
-        msg = self.hda_manager.data_conversion_status(dataset)
-        if msg:
+        if msg := self.hda_manager.data_conversion_status(dataset):
             return msg
 
         registry = self.data_provider_registry

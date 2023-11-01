@@ -784,9 +784,8 @@ class WorkflowContentsManager(UsesAnnotations):
         steps_by_external_id: Dict[str, model.WorkflowStep] = {}
 
         # Preload dependent workflows with locally defined content_ids.
-        subworkflows = data.get("subworkflows")
         subworkflow_id_map = None
-        if subworkflows:
+        if subworkflows := data.get("subworkflows"):
             subworkflow_id_map = {}
             for key, subworkflow_dict in subworkflows.items():
                 subworkflow = self.__build_embedded_subworkflow(
@@ -1749,8 +1748,7 @@ class WorkflowContentsManager(UsesAnnotations):
         self.__set_default_label(step, module, step_dict.get("tool_state"))
         module.save_to_step(step, detached=dry_run)
 
-        annotation = step_dict.get("annotation")
-        if annotation:
+        if annotation := step_dict.get("annotation"):
             annotation = sanitize_html(annotation)
             sa_session = None if dry_run else trans.sa_session
             self.add_item_annotation(sa_session, trans.get_user(), step, annotation)

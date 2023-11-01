@@ -1308,8 +1308,7 @@ class BaseDatasetPopulator(BasePopulator):
 
     def import_history(self, import_data):
         files = {}
-        archive_file = import_data.pop("archive_file", None)
-        if archive_file:
+        if archive_file := import_data.pop("archive_file", None):
             files["archive_file"] = archive_file
         import_response = self._post("histories", data=import_data, files=files)
         api_asserts.assert_status_code_is(import_response, 200)

@@ -28,7 +28,6 @@ class TestPagesIndex(SeleniumTestCase):
 
     @retry_assertion_during_transitions
     def _assert_showing_n_pages(self, n):
-        actual_count = len(self.pages_index_table_elements())
-        if actual_count != n:
+        if (actual_count := len(self.pages_index_table_elements())) != n:
             message = f"Expected {n} pages to be displayed, based on DOM found {actual_count} page index rows."
             raise AssertionError(message)

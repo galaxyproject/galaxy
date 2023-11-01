@@ -1306,7 +1306,6 @@ def get_monitor_id(trans, monitor_email):
     A convenience method to obtain the monitor job id.
     """
     monitor_user_id = None
-    monitor_row = get_user_by_email(trans.sa_session, monitor_email)
-    if monitor_row is not None:
+    if (monitor_row := get_user_by_email(trans.sa_session, monitor_email)) is not None:
         monitor_user_id = monitor_row[0]
     return monitor_user_id

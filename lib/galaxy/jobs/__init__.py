@@ -165,8 +165,7 @@ def job_config_xml_to_dict(config, root):
     config_dict["runners"] = runners
 
     # Parser plugins section populate 'runners' and 'dynamic' in config_dict.
-    plugins = root.find("plugins")
-    if plugins is not None:
+    if (plugins := root.find("plugins")) is not None:
         for plugin in ConfiguresHandlers._findall_with_required(plugins, "plugin", ("id", "type", "load")):
             if plugin.get("type") == "runner":
                 workers = plugin.get("workers", plugins.get("workers", JobConfiguration.DEFAULT_NWORKERS))
@@ -243,8 +242,7 @@ def job_config_xml_to_dict(config, root):
     resource_groups = {}
 
     # Parse resources...
-    resources = root.find("resources")
-    if resources is not None:
+    if (resources := root.find("resources")) is not None:
         default_resource_group = resources.get("default", None)
         if default_resource_group:
             resources_config_dict["default"] = default_resource_group
@@ -259,9 +257,8 @@ def job_config_xml_to_dict(config, root):
     config_dict["resources"] = resources_config_dict
 
     # Parse tool mappings
-    tools = root.find("tools")
     config_dict["tools"] = []
-    if tools is not None:
+    if (tools := root.find("tools")) is not None:
         for tool in tools.findall("tool"):
             # There can be multiple definitions with identical ids, but different params
             tool_mapping_conf = {}
@@ -275,8 +272,7 @@ def job_config_xml_to_dict(config, root):
             config_dict["tools"].append(tool_mapping_conf)
 
     limits_config = []
-    limits = root.find("limits")
-    if limits is not None:
+    if (limits := root.find("limits")) is not None:
         for limit in JobConfiguration._findall_with_required(limits, "limit", ("type",)):
             limit_dict = {}
             for key in ["type", "tag", "id", "window"]:
@@ -1237,8 +1233,7 @@ class MinimalJobWrapper(HasResourceParameters):
 
         def get_special():
             stmt = select(model.JobExportHistoryArchive).filter_by(job=job).limit(1)
-            jeha = self.sa_session.scalars(stmt).first()
-            if jeha:
+            if jeha := self.sa_session.scalars(stmt).first():
                 return jeha.fda
             stmt = select(model.GenomeIndexToolData).filter_by(job=job).limit(1)
             return self.sa_session.scalars(stmt).first()
@@ -1510,8 +1505,7 @@ class MinimalJobWrapper(HasResourceParameters):
         if job is None:
             job = self.get_job()
 
-        destination_params = job.destination_params
-        if "__resubmit_delay_seconds" in destination_params:
+        if "__resubmit_delay_seconds" in (destination_params := job.destination_params):
             delay = float(destination_params["__resubmit_delay_seconds"])
             if job.seconds_since_updated < delay:
                 return False
@@ -2410,8 +2404,7 @@ class MinimalJobWrapper(HasResourceParameters):
     @property
     def user(self):
         job = self.get_job()
-        user_email = job.get_user_email()
-        if user_email:
+        if user_email := job.get_user_email():
             return user_email
         elif job.galaxy_session is not None:
             return f"anonymous@{job.galaxy_session.remote_addr.split()[-1]}"

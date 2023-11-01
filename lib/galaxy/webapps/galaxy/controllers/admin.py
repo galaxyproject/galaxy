@@ -516,8 +516,7 @@ class ToolVersionListGrid(grids.Grid):
         def get_value(self, trans, grid, tool_version):
             tool_ids_str = ""
             toolbox = trans.app.toolbox
-            tool = toolbox._tools_by_id.get(tool_version.tool_id)
-            if tool:
+            if tool := toolbox._tools_by_id.get(tool_version.tool_id):
                 for tool_id in tool.lineage.tool_ids:
                     if toolbox.has_tool(tool_id, exact=True):
                         link = url_for(controller="tool_runner", tool_id=tool_id)
@@ -910,8 +909,7 @@ class AdminGalaxy(controller.JSAppLauncher):
         if not trans.app.config.allow_user_impersonation:
             return trans.show_error_message("User impersonation is not enabled in this instance of Galaxy.")
         user = None
-        user_id = kwd.get("id", None)
-        if user_id is not None:
+        if (user_id := kwd.get("id", None)) is not None:
             try:
                 user = trans.sa_session.query(trans.app.model.User).get(trans.security.decode_id(user_id))
                 if user:

@@ -115,8 +115,7 @@ def set_meta_with_tool_provided(
     # This is intentional due to interplay of overwrite kwd, the fact that some metadata
     # parameters may rely on the values of others, and that we are accepting the
     # values provided by the tool as Truth.
-    extension = dataset_instance.extension
-    if extension == "_sniff_":
+    if (extension := dataset_instance.extension) == "_sniff_":
         try:
             extension = sniff.handle_uploaded_dataset_file(dataset_instance.dataset.get_file_name(), datatypes_registry)
             # We need to both set the extension so it is available to set_meta

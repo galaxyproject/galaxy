@@ -255,8 +255,7 @@ class Component:
 
         def arguments() -> Tuple[str, Optional[Dict[str, str]], Optional[str]]:
             assert path
-            match = CALL_ARGUMENTS_RE.match(path)
-            if match:
+            if match := CALL_ARGUMENTS_RE.match(path):
                 component_name = match.group("SUBCOMPONENT")
                 expression = match.group("ARGS")
                 rest = match.group("REST")

@@ -613,8 +613,7 @@ class ToolEvaluator:
         self.command_line = command_line
 
     def _build_version_command(self):
-        version_string_cmd_raw = self.tool.version_string_cmd
-        if version_string_cmd_raw:
+        if version_string_cmd_raw := self.tool.version_string_cmd:
             version_command_template = string.Template(version_string_cmd_raw)
             version_command = version_command_template.safe_substitute(
                 {"__tool_directory__": self.compute_environment.tool_directory()}
@@ -694,12 +693,10 @@ class ToolEvaluator:
             environment_variable["job_directory_path"] = config_filename
             environment_variables.append(environment_variable)
 
-        home_dir = self.compute_environment.home_directory()
-        tmp_dir = self.compute_environment.tmp_directory()
-        if home_dir:
+        if home_dir := self.compute_environment.home_directory():
             environment_variable = dict(name="HOME", value=f'"{home_dir}"', raw=True)
             environment_variables.append(environment_variable)
-        if tmp_dir:
+        if tmp_dir := self.compute_environment.tmp_directory():
             for tmp_directory_var in self.tool.tmp_directory_vars:
                 environment_variable = dict(name=tmp_directory_var, value=f'"{tmp_dir}"', raw=True)
                 environment_variables.append(environment_variable)
@@ -806,8 +803,7 @@ class ToolEvaluator:
 
     @property
     def _user(self):
-        history = self._history
-        if history:
+        if history := self._history:
             return history.user
         else:
             return self.job.user

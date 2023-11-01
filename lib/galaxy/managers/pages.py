@@ -263,8 +263,7 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
         page = trans.app.model.Page()
         page.title = payload.title
         page.slug = payload.slug
-        page_annotation = payload.annotation
-        if page_annotation is not None:
+        if (page_annotation := payload.annotation) is not None:
             page_annotation = sanitize_html(page_annotation)
             self.add_item_annotation(trans.sa_session, trans.get_user(), page, page_annotation)
 

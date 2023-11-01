@@ -313,8 +313,7 @@ class WorkflowModule:
         """Return a serializable representation of the persistable state of
         the step.
         """
-        inputs = self.get_inputs()
-        if inputs:
+        if inputs := self.get_inputs():
             return self.state.encode(Bunch(inputs=inputs), self.trans.app, nested=nested)
         else:
             return self.state.inputs
@@ -347,8 +346,7 @@ class WorkflowModule:
             state = self.step_state_to_tool_state(state or {})
 
         self.state = DefaultToolState()
-        inputs = self.get_inputs()
-        if inputs:
+        if inputs := self.get_inputs():
             self.state.decode(state, Bunch(inputs=inputs), self.trans.app)
         else:
             self.state.inputs = safe_loads(state) or {}
@@ -1114,7 +1112,6 @@ class InputDataCollectionModule(InputModule):
         collection_type = parameter_def["collection_type"]
         optional = parameter_def["optional"]
         tag = parameter_def["tag"]
-        formats = parameter_def.get("format")
         collection_param_source = dict(
             name="input",
             label=self.label,
@@ -1123,7 +1120,7 @@ class InputDataCollectionModule(InputModule):
             tag=tag,
             optional=optional,
         )
-        if formats:
+        if formats := parameter_def.get("format"):
             collection_param_source["format"] = ",".join(listify(formats))
         input_param = DataCollectionToolParameter(None, collection_param_source, self.trans)
         return dict(input=input_param)
@@ -1148,8 +1145,7 @@ class InputDataCollectionModule(InputModule):
 
     def _parse_state_into_dict(self):
         state_as_dict = super()._parse_state_into_dict()
-        inputs = self.state.inputs
-        if "collection_type" in inputs:
+        if "collection_type" in (inputs := self.state.inputs):
             collection_type = inputs["collection_type"]
         else:
             collection_type = self.default_collection_type
@@ -1824,8 +1820,7 @@ class ToolModule(WorkflowModule):
             step.tool_version = self.get_version()
         else:
             step.tool_version = self.tool_version
-        tool_uuid = getattr(self, "tool_uuid", None)
-        if tool_uuid:
+        if tool_uuid := getattr(self, "tool_uuid", None):
             step.dynamic_tool = self.trans.app.dynamic_tool_manager.get_tool_by_uuid(tool_uuid)
         if not detached:
             for k, v in self.post_job_actions.items():

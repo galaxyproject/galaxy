@@ -309,8 +309,7 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         super().__init__(environ)
         config = self.app.config
         self.debug = asbool(config.get("debug", False))
-        x_frame_options = getattr(config, "x_frame_options", None)
-        if x_frame_options:
+        if x_frame_options := getattr(config, "x_frame_options", None):
             self.response.headers["X-Frame-Options"] = x_frame_options
         # Flag indicating whether we are in workflow building mode (means
         # that the current history should not be used for parameter values

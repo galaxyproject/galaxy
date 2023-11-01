@@ -196,8 +196,7 @@ def __new_library_upload(trans, cntrller, uploaded_dataset, library_bunch, tag_h
         tag_from_filename = os.path.splitext(os.path.basename(uploaded_dataset.name))[0]
         tag_handler.apply_item_tag(item=ldda, user=trans.user, name="name", value=tag_from_filename, flush=False)
 
-    tags_list = uploaded_dataset.get("tags", False)
-    if tags_list:
+    if tags_list := uploaded_dataset.get("tags", False):
         for tag in tags_list:
             tag_handler.apply_item_tag(item=ldda, user=trans.user, name="name", value=tag, flush=False)
 

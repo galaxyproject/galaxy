@@ -918,10 +918,9 @@ class RepositoryMetadataManager(ToolShedMetadataGenerator):
         Inspect the repository changelog to reset metadata for all appropriate changeset revisions.
         This method is called from both Galaxy and the Tool Shed.
         """
-        repository_ids = util.listify(kwd.get("repository_ids", None))
         message = ""
         status = "done"
-        if repository_ids:
+        if repository_ids := util.listify(kwd.get("repository_ids", None)):
             successful_count = 0
             unsuccessful_count = 0
             for repository_id in repository_ids:
