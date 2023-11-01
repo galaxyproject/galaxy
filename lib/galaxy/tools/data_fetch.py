@@ -347,11 +347,11 @@ def _fetch_target(upload_config: "UploadConfig", target: dict[str, Any]):
             elif not link_data_only:
                 path = upload_config.ensure_in_working_directory(path, purge_source, in_place)
 
+            extra_files_path = f"{path}_extra"
             extra_files = item.get("extra_files")
             if extra_files:
                 # TODO: optimize to just copy the whole directory to extra files instead.
                 assert not upload_config.link_data_only, "linking composite dataset files not yet implemented"
-                extra_files_path = f"{path}_extra"
                 staged_extra_files = extra_files_path
                 os.mkdir(extra_files_path)
 
@@ -390,6 +390,10 @@ def _fetch_target(upload_config: "UploadConfig", target: dict[str, Any]):
                 )
                 assert path
                 datatype.groom_dataset_content(path)
+
+            if ext == "directory" and not deferred and path:
+                CompressedFile(path).extract(extra_files_path)
+                staged_extra_files = extra_files_path
 
             # if length is 0, we should probably persist the empty list? -John
             if len(transform) > 0:

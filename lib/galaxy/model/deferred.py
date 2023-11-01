@@ -34,7 +34,9 @@ from galaxy.model import (
 from galaxy.objectstore import (
     ObjectStore,
     ObjectStorePopulator,
+    persist_extra_files,
 )
+from galaxy.util.compression_utils import CompressedFile
 from galaxy.util.hash_util import verify_hash
 from .dereference import get_replacement_dataset
 
@@ -181,6 +183,13 @@ class DatasetInstanceMaterializer:
             if not replacement_dataset:
                 try:
                     path = self._stream_source(target_source, dataset_instance.datatype, materialized_dataset)
+                    if dataset_instance.ext == "directory":
+                        CompressedFile(path).extract(materialized_dataset.extra_files_path)
+                        persist_extra_files(
+                            object_store=object_store,
+                            src_extra_files_path=materialized_dataset.extra_files_path,
+                            primary_data=dataset_instance,
+                        )
                     object_store.update_from_file(materialized_dataset, file_name=path)
                     materialized_dataset.set_size()
                 except Exception as e:
