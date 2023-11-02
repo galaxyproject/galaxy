@@ -27,9 +27,9 @@
                     <h1 class="text-break align-middle">
                         Title: {{ markdownConfig.title || markdownConfig.model_class }}
                     </h1>
-                    <h3 v-if="workflowVersions" class="text-break align-middle">
+                    <h2 v-if="workflowVersions" class="text-break align-middle">
                         Workflow Checkpoint: {{ workflowVersions.version }}
-                    </h3>
+                    </h2>
                 </span>
             </div>
             <b-badge variant="info" class="w-100 rounded mb-3 white-space-normal">
@@ -172,7 +172,7 @@ export default {
     },
     created() {
         this.initConfig();
-        this.getWFversion();
+        this.fetchWorkflowForInstanceId(this.workflowID);
     },
     methods: {
         ...mapActions(useWorkflowStore, ["getStoredWorkflowByInstanceId", "fetchWorkflowForInstanceId"]),
@@ -191,9 +191,6 @@ export default {
                 this.loading = false;
                 this.workflowID = Object.keys(this.markdownConfig.workflows)[0];
             }
-        },
-        getWFversion() {
-            this.fetchWorkflowForInstanceId(this.workflowID);
         },
         splitMarkdown(markdown) {
             const sections = [];
