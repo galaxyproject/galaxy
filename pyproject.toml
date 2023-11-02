@@ -50,7 +50,7 @@ Cheetah3 = "!=3.2.6.post2"  # yanked release, https://github.com/python-poetry/p
 cloudauthz = "==0.6.0"
 cloudbridge = "*"
 circus = "*"
-cwltool = ">=3.1.20221109155812"  # TODO: pin to a newer working version
+cwltool = ">=3.1.20230624081518"  # save time, minimum needed by cwl-1.0 branch
 conda-package-streaming = "*"
 dictobj = "*"
 dnspython = "*"
