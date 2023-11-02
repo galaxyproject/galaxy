@@ -184,7 +184,7 @@ class ToolParameter(Dictifiable):
             self.validators.append(validation.Validator.from_element(self, elem))
 
     @property
-    def visible(self):
+    def visible(self) -> bool:
         """Return true if the parameter should be rendered on the form"""
         return True
 
@@ -219,7 +219,7 @@ class ToolParameter(Dictifiable):
         """
         return []
 
-    def to_json(self, value, app, use_security):
+    def to_json(self, value, app, use_security) -> str:
         """Convert a value to a string representation suitable for persisting"""
         return unicodify(value)
 
@@ -249,12 +249,12 @@ class ToolParameter(Dictifiable):
         else:
             return self.to_python(value, app)
 
-    def value_to_display_text(self, value):
+    def value_to_display_text(self, value) -> str:
         if is_runtime_value(value):
             return "Not available."
         return self.to_text(value)
 
-    def to_text(self, value):
+    def to_text(self, value) -> str:
         """
         Convert a value to a text representation suitable for displaying to
         the user
@@ -292,7 +292,7 @@ class ToolParameter(Dictifiable):
                 value = sanitize_param(value)
         return value
 
-    def validate(self, value, trans=None):
+    def validate(self, value, trans=None) -> None:
         if value in ["", None] and self.optional:
             return
         for validator in self.validators:
