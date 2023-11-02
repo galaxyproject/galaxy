@@ -435,8 +435,6 @@ class IntegerToolParameter(TextToolParameter):
                 int(self.value)
             except ValueError:
                 raise ParameterValueError("the attribute 'value' must be an integer", self.name)
-        elif self.value is None and not self.optional:
-            raise ParameterValueError("the attribute 'value' must be set for non optional parameters", self.name, None)
         self.min = input_source.get("min")
         self.max = input_source.get("max")
         if self.min:
@@ -511,8 +509,6 @@ class FloatToolParameter(TextToolParameter):
                 float(self.value)
             except ValueError:
                 raise ParameterValueError("the attribute 'value' must be a real number", self.name, self.value)
-        elif self.value is None and not self.optional:
-            raise ParameterValueError("the attribute 'value' must be set for non optional parameters", self.name, None)
         if self.min:
             try:
                 self.min = float(self.min)
