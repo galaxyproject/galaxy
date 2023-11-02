@@ -37,9 +37,11 @@ cat-bro, cathjb@gmail.com, https://github.com/galaxyproject/galaxy/pull/11923
 claudiofr, claudiofr@yahoo.com, https://github.com/galaxyproject/galaxy/pull/16576
 hujambo-dunia, michelle.savage.1@gmail.com, https://github.com/galaxyproject/galaxy/pull/13912
 gallardoalba, gallardoalbac@gmail.com, https://github.com/galaxyproject/galaxy/pull/13708
-TanguyGen, <72631088+TanguyGen@users.noreply.github.com>, https://github.com/galaxyproject/galaxy/pull/16478
-tcollins2011, <tyler@nhlp.com>, https://github.com/galaxyproject/galaxy/pull/15855
-TheoMathurin, <49269671+TheoMathurin@users.noreply.github.com>, https://github.com/galaxyproject/galaxy/pull/16105
+TanguyGen, 72631088+TanguyGen@users.noreply.github.com, https://github.com/galaxyproject/galaxy/pull/16478
+tcollins2011, tyler@nhlp.com, https://github.com/galaxyproject/galaxy/pull/15855
+TheoMathurin, 49269671+TheoMathurin@users.noreply.github.com, https://github.com/galaxyproject/galaxy/pull/16105
+quacksawbones, quack.sawbones@gmail.com, https://github.com/galaxyproject/galaxy/pull/13067
+davebx, dave@bx.psu.edu, https://github.com/galaxyproject/galaxy/pull/13310
 
 # not yet agreed, needs research
 Daniel Bouchard <danieljosephbouchard@gmail.com> # GH user: Airistotal
@@ -89,6 +91,15 @@ Cyril Monjeaud <cyril.monjeaud@gmail.com>  # GH user: cmonjeau
 Christopher Mundus <crashGoBoom@users.noreply.github.com>  # GH user: crashGoBoom
 tensionhead <tensionheadx@gmail.com>  # GH user: tensionhead
 Terrell Russell <terrellrussell@gmail.com>  # GH user: trel
+Damian Glaetzer <d.glaetzer@mailbox.org>  # GH user: dglaetzer
+Dan Fornika <dfornika@gmail.com>  # GH user: dfornika
+Dave Clements <clements@galaxyproject.org>  # GH user: tnabtaf
+David C. King <dcking@bx.psu.edu>  # GH user: ??
+David Johnson <djcomlab@gmail.com>  # GH user: djcomlab
+dcnorris <dcnorris@uncc.edu>  # GH user: ??
+Delphine Lariviere <lariviere.delphine@gmail.com>  # GH user: Delphine-L
+Devon Ryan <dpryan79@gmail.com>  # GH user: dpryan79
+dorine francheteau <dorine@bx.psu.edu>  # GH user: ??
 
 # not agreed, but contributions no longer present
 Adam Brenner <aebrenne@uci.edu> # GH user: abrenner, only commits to tools moved to tool shed (no longer in galaxy)
@@ -98,3 +109,4 @@ Benjamin Carr <BenjaminHCCarr@users.noreply.github.com>  # GH user: BenjaminHCCa
 Carlos Borroto <carlos.borroto@gmail.com>  # GH user: CarlosBorroto, single line change, no longer present in the code
 Christopher Bare <christopherbare@gmail.com>  # GH user: cbare, contribution reverted or otherwise unused
 Clare Sloggett <sloc@unimelb.edu.au>  # GH user: claresloggett, code heavily refactored since 2012 contribution
+Dan Blanchard <dan.blanchard@gmail.com>  # GH user: dan-blanchard, one liner changing the drmaa version

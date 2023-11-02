@@ -1,6 +1,7 @@
 # Docs: https://git-scm.com/docs/gitmailmap
 # git log --pretty="%aN <%aE>" | sort -u | less
 # 631 as of 2023-09-18
+# 498 as of 2023-11-02
 Ahmed Hamid Awan <aawan@mindgrub.com> # GH user: ahmedhamidawan
 Ahmed Hamid Awan <aawan@mindgrub.com> Ahmed Awan <newadmin@galaxyc.local>
 Ahmed Hamid Awan <aawan@mindgrub.com> Ahmed Awan <newadmin@galaxyc.win.ad.jhu.edu>
@@ -9,10 +10,6 @@ Ahmed Hamid Awan <aawan@mindgrub.com> <78516064+ahmedhamidawan@users.noreply.git
 Ahmed Hamid Awan <aawan@mindgrub.com> <qe66653@umbc.edu>
 Abdulrahman Azab <eng.azab@gmail.com> # GH user: abdulrahmanazab, one-line contribution, rewritten by John Chilton
 Adam Brenner <aebrenne@uci.edu> # GH user: abrenner, only commits to tools moved to tool shed (no longer in galaxy)
-Daniel Bouchard <danieljosephbouchard@gmail.com> # GH user: Airistotal
-Daniel Bouchard <danieljosephbouchard@gmail.com> <daniel.bouchard@phac-aspc.gc.ca>
-Daniel Bouchard <danieljosephbouchard@gmail.com> <danieltos.bouchard@gmail.com>
-<danieljosephbouchard@gmail.com> <dbouchard@corefacility.ca>
 A. Soroka <ajs6f@apache.org> # GH user: ajs6f
 Alan Amossé <alan.amosse@gmail.com> # GH user: Alanamosse
 Alan Amossé <alan.amosse@gmail.com> <alanamosse@60-E3-27-12-8C-3F.home>
@@ -118,9 +115,32 @@ Cristóbal Gallardo <gallardoalbac@gmail.com>  # GH user: gallardoalba
 Cristóbal Gallardo <gallardoalbac@gmail.com> <gallardo@informatik.uni-freiburg.de>
 Cyril Monjeaud <cyril.monjeaud@gmail.com>  # GH user: cmonjeau
 
+Damian Glaetzer <d.glaetzer@mailbox.org>  # GH user: dglaetzer
+Damian Glaetzer <d.glaetzer@mailbox.org> <dg@localhost.localdomain>
+Damian Glaetzer <d.glaetzer@mailbox.org> <35349535+dglaetzer@users.noreply.github.com>
+Dan Blanchard <dan.blanchard@gmail.com>  # GH user: dan-blanchard
+Dan Fornika <dfornika@gmail.com>  # GH user: dfornika
+Daniel Blankenberg <dan.blankenberg@gmail.com>  #GH user: blankenberg
+Daniel Blankenberg <dan.blankenberg@gmail.com> <blankenberg@users.noreply.github.com>
+Daniel Blankenberg <dan.blankenberg@gmail.com> <dan@bx.psu.edu>
+Daniel Bouchard <danieljosephbouchard@gmail.com> # GH user: Airistotal
+Daniel Bouchard <danieljosephbouchard@gmail.com> <daniel.bouchard@phac-aspc.gc.ca>
+Daniel Bouchard <danieljosephbouchard@gmail.com> <danieltos.bouchard@gmail.com>
+Daniel Bouchard <danieljosephbouchard@gmail.com> <dbouchard@corefacility.ca>
+Dannon Baker <dannon.baker@gmail.com>  # GH user: dannon
+Darren Cullerne <quack.sawbones@gmail.com>  # GH user: quacksawbones
+Dave Bouvier <dave@bx.psu.edu>  # GH user: davebx
+Dave Clements <clements@galaxyproject.org>  # GH user: tnabtaf
 Dave Trudgian <dave@trudgian.net>  # GH user: dtrudg
 Dave Trudgian <dave@trudgian.net> <david.trudgian@utsouthwestern.edu>
 Dave Trudgian <dave@trudgian.net> <biohpc-help@utsouthwestern.edu>
+David C. King <dcking@bx.psu.edu>  # GH user: ??
+David Johnson <djcomlab@gmail.com>  # GH user: djcomlab
+David López <46503462+davelopez@users.noreply.github.com>  # GH user: davelopez
+dcnorris <dcnorris@uncc.edu>  # GH user: ??
+Delphine Lariviere <lariviere.delphine@gmail.com>  # GH user: Delphine-L
+Devon Ryan <dpryan79@gmail.com>  # GH user: dpryan79
+dorine francheteau <dorine@bx.psu.edu>  # GH user: ??
 
 Henk van den Toorn <vdtoorn@hotmail.com>  # GH user: vdtoorn
 
