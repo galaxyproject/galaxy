@@ -264,12 +264,19 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
         if self._is_api_url(download_file_content_url):
             # pass the token as a header only when using the API
             headers = self._get_request_headers(user_context)
-        req = urllib.request.Request(download_file_content_url, headers=headers)
-        with urllib.request.urlopen(req, timeout=DEFAULT_SOCKET_TIMEOUT) as page:
-            f = open(file_path, "wb")
-            return stream_to_open_named_file(
-                page, f.fileno(), file_path, source_encoding=get_charset_from_http_headers(page.headers)
-            )
+        try:
+            req = urllib.request.Request(download_file_content_url, headers=headers)
+            with urllib.request.urlopen(req, timeout=DEFAULT_SOCKET_TIMEOUT) as page:
+                f = open(file_path, "wb")
+                return stream_to_open_named_file(
+                    page, f.fileno(), file_path, source_encoding=get_charset_from_http_headers(page.headers)
+                )
+        except urllib.error.HTTPError as e:
+            # TODO: We can only download files from published records for now
+            if e.code in [401, 403, 404]:
+                raise Exception(
+                    f"Cannot download file '{filename}' from record '{record_id}'. Please make sure the record exists and it is public."
+                )
 
     def _get_download_file_url(self, record_id: str, filename: str, user_context: OptionalUserContext = None):
         """Get the URL to download a file from a record.
