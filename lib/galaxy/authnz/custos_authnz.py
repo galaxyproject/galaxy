@@ -493,6 +493,28 @@ class OIDCAuthnzBase(IdentityProvider):
         else:
             return username
 
+    def match_access_token_to_user(self, sa_session, access_token):
+        signing_key = self.jwks_client.get_signing_key_from_jwt(access_token)
+        decoded_jwt = jwt.decode(
+            access_token,
+            signing_key.key,
+            algorithms=["RS256"],
+            issuer=self.config.issuer,
+            audience=self.config.accepted_audiences,
+            options={
+                "verify_signature": True,
+                "verify_exp": True,
+                "verify_nbf": True,
+                "verify_iat": True,
+                "verify_aud": bool(self.config.accepted_audiences),
+                "verify_iss": True,
+            },
+        )
+        # jwt verified, we can now fetch the user
+        user_id = decoded_jwt["sub"]
+        custos_authnz_token = self._get_custos_authnz_token(sa_session, user_id, self.config.provider)
+        return custos_authnz_token.user if custos_authnz_token else None
+
 
 class OIDCAuthnzBaseKeycloak(OIDCAuthnzBase):
     def __init__(self, provider, oidc_config, oidc_backend_config, idphint=None):
@@ -599,25 +621,3 @@ class OIDCAuthnzBaseCustos(OIDCAuthnzBase):
         params = {"client_id": self.config.client_id}
 
         self._load_config(headers, params)
-
-    def match_access_token_to_user(self, sa_session, access_token):
-        signing_key = self.jwks_client.get_signing_key_from_jwt(access_token)
-        decoded_jwt = jwt.decode(
-            access_token,
-            signing_key.key,
-            algorithms=["RS256"],
-            issuer=self.config["issuer"],
-            audience=self.config["accepted_audiences"],
-            options={
-                "verify_signature": True,
-                "verify_exp": True,
-                "verify_nbf": True,
-                "verify_iat": True,
-                "verify_aud": self.config["accepted_audiences"] is not None,
-                "verify_iss": True,
-            },
-        )
-        # jwt verified, we can now fetch the user
-        user_id = decoded_jwt["sub"]
-        custos_authnz_token = self._get_custos_authnz_token(sa_session, user_id, self.config["provider"])
-        return custos_authnz_token.user if custos_authnz_token else None
