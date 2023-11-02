@@ -113,7 +113,6 @@ class ConfigSerializer(base.ModelSerializer):
             return True if item.get(key) else False
 
         object_store = self.app.object_store
-        auth_manager = self.app.auth_manager
         self.serializers: Dict[str, base.Serializer] = {
             # TODO: this is available from user data, remove
             "is_admin_user": lambda *a, **c: False,
@@ -209,11 +208,7 @@ class ConfigSerializer(base.ModelSerializer):
             "tool_training_recommendations_link": _use_config,
             "tool_training_recommendations_api_url": _use_config,
             "enable_notification_system": _use_config,
-            "fixed_delegated_auth": lambda item, key, **context: (
-                bool(item.get("enable_oidc"))
-                and len(list(_use_config(item, "oidc", **context))) == 1
-                and len(list(auth_manager.authenticators)) == 0
-            ),
+            "fixed_delegated_auth": _defaults_to(False),
         }
 
 

@@ -709,6 +709,13 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
                 self, self.config.oidc_config_file, self.config.oidc_backends_config_file
             )
 
+            # If there is only a single external authentication provider in use
+            # TODO: Future work will expand on this and provide an interface for
+            # multiple auth providers allowing explicit authenticated association.
+            self.config.fixed_delegated_auth = (
+                len(list(self.config.oidc)) == 1 and len(list(self.auth_manager.authenticators)) == 0
+            )
+
         if not self.config.enable_celery_tasks and self.config.history_audit_table_prune_interval > 0:
             self.prune_history_audit_task = IntervalTask(
                 func=lambda: galaxy.model.HistoryAudit.prune(self.model.session),
