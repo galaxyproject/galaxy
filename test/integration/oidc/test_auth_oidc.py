@@ -6,6 +6,7 @@ import subprocess
 from string import Template
 from typing import ClassVar
 import tempfile
+import time
 from urllib import parse
 
 import requests
@@ -155,6 +156,7 @@ class TestGalaxyOIDCLoginIntegration(AbstractTestCases.BaseKeycloakIntegrationTe
         username,
         password,
         expected_codes=[200, 404],
+        save_cookies=False,
     ):
         session = requests.Session()
         response = session.get(f"{self.url}authnz/keycloak/login")
@@ -167,7 +169,8 @@ class TestGalaxyOIDCLoginIntegration(AbstractTestCases.BaseKeycloakIntegrationTe
         )
         if expected_codes:
             assert response.status_code in expected_codes, response
-        self.galaxy_interactor.cookies = session.cookies
+        if save_cookies:
+            self.galaxy_interactor.cookies = session.cookies
         return session, response
 
     def _get_keycloak_access_token(self, username=KEYCLOAK_TEST_USERNAME, password=KEYCLOAK_TEST_PASSWORD):
@@ -182,7 +185,7 @@ class TestGalaxyOIDCLoginIntegration(AbstractTestCases.BaseKeycloakIntegrationTe
         return response.json()["access_token"]
 
     def test_oidc_login(self):
-        _, response = self._login_via_keycloak(KEYCLOAK_TEST_USERNAME, KEYCLOAK_TEST_PASSWORD)
+        _, response = self._login_via_keycloak(KEYCLOAK_TEST_USERNAME, KEYCLOAK_TEST_PASSWORD, save_cookies=True)
         # Should have redirected back if auth succeeded
         parsed_url = parse.urlparse(response.url)
         notification = parse.parse_qs(parsed_url.query)['notification'][0]
@@ -193,7 +196,7 @@ class TestGalaxyOIDCLoginIntegration(AbstractTestCases.BaseKeycloakIntegrationTe
 
     def test_oidc_logout(self):
         # login
-        session, response = self._login_via_keycloak(KEYCLOAK_TEST_USERNAME, KEYCLOAK_TEST_PASSWORD)
+        session, response = self._login_via_keycloak(KEYCLOAK_TEST_USERNAME, KEYCLOAK_TEST_PASSWORD, save_cookies=True)
         # get the user
         response = session.get(self._api_url("users/current"))
         self._assert_status_code_is(response, 200)
@@ -215,5 +218,19 @@ class TestGalaxyOIDCLoginIntegration(AbstractTestCases.BaseKeycloakIntegrationTe
     def test_auth_by_access_token_never_logged_in(self):
         # If the user has not previously logged in via OIDC at least once, OIDC API calls are not allowed
         access_token = self._get_keycloak_access_token(username="gxyuser_never_logged_in")
+        response = self._get("users/current", headers={"Authorization": f"Bearer {access_token}"})
+        self._assert_status_code_is(response, 400)
+
+    def test_auth_with_expired_token(self):
+        _, response = self._login_via_keycloak(KEYCLOAK_TEST_USERNAME, KEYCLOAK_TEST_PASSWORD)
+        access_token = self._get_keycloak_access_token()
+        response = self._get("users/current", headers={"Authorization": f"Bearer {access_token}"})
+        self._assert_status_code_is(response, 200)
+        # token shouldn't expire in 4 seconds, so the call should succeed
+        time.sleep(4)
+        response = self._get("users/current", headers={"Authorization": f"Bearer {access_token}"})
+        self._assert_status_code_is(response, 200)
+        # token should have expired in 10 seconds, so the call should fail
+        time.sleep(7)
         response = self._get("users/current", headers={"Authorization": f"Bearer {access_token}"})
         self._assert_status_code_is(response, 400)
