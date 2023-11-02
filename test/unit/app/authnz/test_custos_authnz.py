@@ -97,6 +97,7 @@ class TestCustosAuthnz(TestCase):
         self.trans.app.config.enable_oidc = True
         self.trans.app.config.oidc = []
         self.trans.app.auth_manager.authenticators = []
+        self.trans.app.config.fixed_delegated_auth = False
 
     @property
     def test_id_token(self):
