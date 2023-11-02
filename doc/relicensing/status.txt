@@ -42,17 +42,25 @@ tcollins2011, tyler@nhlp.com, https://github.com/galaxyproject/galaxy/pull/15855
 TheoMathurin, 49269671+TheoMathurin@users.noreply.github.com, https://github.com/galaxyproject/galaxy/pull/16105
 quacksawbones, quack.sawbones@gmail.com, https://github.com/galaxyproject/galaxy/pull/13067
 davebx, dave@bx.psu.edu, https://github.com/galaxyproject/galaxy/pull/13310
+elichad, eli.chadwick.256@gmail.com, https://github.com/galaxyproject/galaxy/pull/12375
+afgane, afgane@gmail.com, https://github.com/galaxyproject/galaxy/pull/16844
+eancelet, estelle.ancelet@inra.fr, https://github.com/galaxyproject/galaxy/pull/12234/
+ebolyen, ebolyen@gmail.com, https://github.com/galaxyproject/galaxy/pull/14216
+alexlenail, lenail@mit.edu, https://github.com/galaxyproject/galaxy/pull/16970#issuecomment-1791587514
+dfornika, dfornika@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1711306604
+dglaetzer, d.glaetzer@mailbox.org, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1711309084
+djcomlab, djcomlab@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1711311572
+bwlang, brad@langhorst.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1711314974
+andrewjrobinson, Andrew.Robinson@latrobe.edu.au, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1711338222
 
 # not yet agreed, needs research
 Daniel Bouchard <danieljosephbouchard@gmail.com> # GH user: Airistotal
 Alan Amossé <alan.amosse@gmail.com> # GH user: Alanamosse
-Alexander Lenail <lenail@mit.edu> <alexander.lenail@tufts.edu> # GH user: alexlenail
 Ott Oopkaup <ott.oopkaup@gmail.com> # GH user: ooobik
 Anastasia Tyryshkina <atyryshkina@gmail.com> # GH user: atyryshkina
 Evgeny Anatskiy <evgeny.anatskiy@gmail.com> # GH user: anatskiy
 Andrea Bagnacani <andrea.bagnacani@uni-rostock.de> # GH user: bagnacan
 Andreas Skorczyk <me@andreas-sk.de> # GH user: AndreasSko
-Andrew Robinson <Andrew.Robinson@latrobe.edu.au # GH user: andrewjrobinson , single commit: https://github.com/galaxyproject/galaxy/commit/357a23b290df6e22f756a54b767fca4e0e4ab4c1
 Andrew Warren <anwarren@vbi.vt.edu> # GH user: aswarren , single commit: https://github.com/galaxyproject/galaxy/commit/3bfc738bf569f3c94989af4170fee14024a320c6
 Andrey Tovchigrechko <tovchigrechkoa@medimmune.com> # GH user: andreyto single commit, one line change: https://github.com/galaxyproject/galaxy/commit/d06b221905cc4eb935939c6a29685c0dff125bf8
 Anil Thanki <thanki.anil@gmail.com> # GH user: anilthanki
@@ -71,7 +79,6 @@ Dave Trudgian <dave@trudgian.net> # GH user: dtrudg
 Bioinformatics Platform (Belgian Institute of Public Health) <bioit@sciensano.be> # GH user: BioinformaticsPlatformWIV-ISP
 Brad Chapman <chapmanb@50mail.com>  # GH user: chapmanb
 Brad Holmes <holmesbr@ncbi.nlm.nih.gov>  # GH user: BradHolmes
-Brad Langhorst <brad@langhorst.com> <langhorst@neb.com>  # GH user: bwlang
 Caleb Easterly <caleb.easterly@gmail.com>  # GH user: caleb-easterly
 Carl Eberhard <carlfeberhard@gmail.com>  # GH user: carlfeberhard
 Carlos Garcia <carlos.andrew.garcia@gmail.com>  # GH user: cginmn
@@ -91,15 +98,15 @@ Cyril Monjeaud <cyril.monjeaud@gmail.com>  # GH user: cmonjeau
 Christopher Mundus <crashGoBoom@users.noreply.github.com>  # GH user: crashGoBoom
 tensionhead <tensionheadx@gmail.com>  # GH user: tensionhead
 Terrell Russell <terrellrussell@gmail.com>  # GH user: trel
-Damian Glaetzer <d.glaetzer@mailbox.org>  # GH user: dglaetzer
-Dan Fornika <dfornika@gmail.com>  # GH user: dfornika
 Dave Clements <clements@galaxyproject.org>  # GH user: tnabtaf
 David C. King <dcking@bx.psu.edu>  # GH user: ??
-David Johnson <djcomlab@gmail.com>  # GH user: djcomlab
 dcnorris <dcnorris@uncc.edu>  # GH user: ??
 Delphine Lariviere <lariviere.delphine@gmail.com>  # GH user: Delphine-L
 Devon Ryan <dpryan79@gmail.com>  # GH user: dpryan79
 dorine francheteau <dorine@bx.psu.edu>  # GH user: ??
+Eric Enns <eric.enns@gmail.com>  # GH user: ericenns
+Eric Paniagua <paniagua.cshl@gmail.com>  # GH user: ??
+Eteri Sokhoyan <esokhoyan@gmail.com>  # GH user: eteriSokhoyan
 
 # not agreed, but contributions no longer present
 Adam Brenner <aebrenne@uci.edu> # GH user: abrenner, only commits to tools moved to tool shed (no longer in galaxy)
