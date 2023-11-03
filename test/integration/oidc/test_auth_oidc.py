@@ -242,6 +242,13 @@ class TestGalaxyOIDCLoginIntegration(AbstractTestCases.BaseKeycloakIntegrationTe
         access_token = self._get_keycloak_access_token(client_id="bpaclient", scopes=["gx:*"])
         response = self._get("users/current", headers={"Authorization": f"Bearer {access_token}"})
         self._assert_status_code_is(response, 200)
+        assert response.json()["email"] == "gxyuser@galaxy.org"
+
+    def test_auth_with_authorized_client_but_unauthorized_audience(self):
+        _, response = self._login_via_keycloak("bpaonlyuser", KEYCLOAK_TEST_PASSWORD)
+        access_token = self._get_keycloak_access_token(client_id="bpaclient", username="bpaonlyuser")
+        response = self._get("users/current", headers={"Authorization": f"Bearer {access_token}"})
+        self._assert_status_code_is(response, 400)
 
     def test_auth_with_unauthorized_client(self):
         _, response = self._login_via_keycloak(KEYCLOAK_TEST_USERNAME, KEYCLOAK_TEST_PASSWORD)

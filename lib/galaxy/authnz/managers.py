@@ -421,14 +421,11 @@ class AuthnzManager:
                 return user
             return None
         except Exception as e:
-            msg = f"An error occurred when finding user by token: {e}"
+            msg = f"An error occurred with provider: {provider} when finding user by token: {e}"
             log.error(msg)
             return None
 
     def find_user_by_access_token(self, sa_session, access_token):
-        # decoded_token = jwt.decode(access_token, options={"verify_signature": False})
-        # issuer = decoded_token["iss"]
-        # audience = decoded_token["aud"]
         for provider in self.oidc_backends_config:
             user = self.find_user_by_access_token_in_provider(sa_session, provider, access_token)
             if user:
