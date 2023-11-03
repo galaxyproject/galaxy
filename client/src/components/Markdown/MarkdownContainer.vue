@@ -14,6 +14,8 @@ import JobParameters from "./Elements/JobParameters.vue";
 import ToolStd from "./Elements/ToolStd.vue";
 import Visualization from "./Elements/Visualization.vue";
 import WorkflowDisplay from "./Elements/Workflow/WorkflowDisplay.vue";
+import WorkflowImage from "./Elements/Workflow/WorkflowImage.vue";
+import WorkflowLicense from "./Elements/Workflow/WorkflowLicense.vue";
 
 const toggle = ref(false);
 const props = defineProps({
@@ -74,6 +76,12 @@ const isVisible = computed(() => !isCollapsible.value || toggle.value);
             </div>
             <div v-else-if="name == 'generate_time'" class="galaxy-time">
                 <pre><code>{{ time }}</code></pre>
+            </div>
+            <div v-else-if="name == 'workflow_image'" class="workflow-image" style="text-align: center">
+                <WorkflowImage :workflow-id="args.workflow_id" :size="args.size || 'lg'" />
+            </div>
+            <div v-else-if="name == 'workflow_license'" class="workflow-license">
+                <WorkflowLicense :license-id="workflows[args.workflow_id]['license']" />
             </div>
             <HistoryLink v-else-if="name == 'history_link'" :args="args" :histories="histories" />
             <HistoryDatasetAsImage v-else-if="name == 'history_dataset_as_image'" :args="args" />

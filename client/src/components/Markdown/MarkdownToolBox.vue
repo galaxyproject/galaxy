@@ -190,6 +190,16 @@ export default {
                         name: "Workflow Display",
                         emitter: "onWorkflowId",
                     },
+                    {
+                        id: "workflow_license",
+                        name: "Workflow License",
+                        emitter: "onWorkflowId",
+                    },
+                    {
+                        id: "workflow_image",
+                        name: "Workflow Image",
+                        emitter: "onWorkflowId",
+                    },
                 ],
             },
             workflowInEditorSection: {
@@ -213,6 +223,14 @@ export default {
                         id: "workflow_display",
                         name: "Current Workflow",
                         description: "containing all steps",
+                    },
+                    {
+                        id: "workflow_image",
+                        name: "Current Workflow Image",
+                    },
+                    {
+                        id: "workflow_license",
+                        name: "Current Workflow License",
                     },
                 ],
             },
