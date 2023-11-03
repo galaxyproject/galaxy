@@ -36,7 +36,7 @@ from fastapi.security import (
     APIKeyCookie,
     APIKeyHeader,
     APIKeyQuery,
-    HTTPBearer
+    HTTPBearer,
 )
 from fastapi_utils.cbv import cbv
 from fastapi_utils.inferring_router import InferringRouter

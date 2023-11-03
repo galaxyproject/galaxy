@@ -533,7 +533,9 @@ class GalaxyWebTransaction(base.DefaultWebTransaction, context.ProvidesHistoryCo
         Authenticate for the API via key or session (if available).
         """
         oidc_access_token = self.request.headers.get("Authorization", None)
-        oidc_token_supplied = self.environ.get("is_api_request", False) and oidc_access_token and "Bearer " in oidc_access_token
+        oidc_token_supplied = (
+            self.environ.get("is_api_request", False) and oidc_access_token and "Bearer " in oidc_access_token
+        )
         api_key = self.request.params.get("key", None) or self.request.headers.get("x-api-key", None)
         secure_id = self.get_cookie(name=session_cookie)
         api_key_supplied = self.environ.get("is_api_request", False) and api_key
