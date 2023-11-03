@@ -5,6 +5,7 @@ from datetime import (
     date,
     datetime,
 )
+from pathlib import Path
 
 from boltons.iterutils import remap
 from pydantic import (
@@ -71,6 +72,9 @@ from galaxy.util.search import (
 
 log = logging.getLogger(__name__)
 
+
+STDOUT_LOCATION = "outputs/tool_stdout"
+STDERR_LOCATION = "outputs/tool_stderr"
 
 class JobLock(BaseModel):
     active: bool = Field(title="Job lock status", description="If active, jobs will not dispatch")
