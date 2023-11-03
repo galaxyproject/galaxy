@@ -66,6 +66,7 @@ gregvonkuster, ghv2@psu.edu, https://github.com/galaxyproject/galaxy/pull/14813
 jarrah42, g.watson@computer.org, https://github.com/galaxyproject/galaxy/pull/15394
 gulsumgudukbay, gudukbay@gmail.com, https://github.com/galaxyproject/galaxy/pull/12775
 anilthanki, thanki.anil@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1712190856
+HadleyKing, king@gwu.edu, https://github.com/galaxyproject/galaxy/pull/14374
 
 # not yet agreed, needs research
 Daniel Bouchard <danieljosephbouchard@gmail.com> # GH user: Airistotal
@@ -106,7 +107,6 @@ Christopher Mundus <crashGoBoom@users.noreply.github.com>  # GH user: crashGoBoo
 tensionhead <tensionheadx@gmail.com>  # GH user: tensionhead
 Dave Clements <clements@galaxyproject.org>  # GH user: tnabtaf
 David C. King <dcking@bx.psu.edu>  # GH user: ??
-dcnorris <dcnorris@uncc.edu>  # GH user: ??
 Delphine Lariviere <lariviere.delphine@gmail.com>  # GH user: Delphine-L
 Devon Ryan <dpryan79@gmail.com>  # GH user: dpryan79
 dorine francheteau <dorine@bx.psu.edu>  # GH user: ??
@@ -127,6 +127,13 @@ Scott Szakonyi <sszakony@nd.edu>  # GH user: sszakony
 Gert Hulselmans <gert.hulselmans@med.kuleuven.be>  # GH user: ghuls
 Gildas Le Corguillé <lecorguille@users.noreply.github.com>  # GH user: lecorguille
 Guruprasad Anada <gua110@bx.psu.edu>  # GH user: ??
+Hanfei Sun <ad9075@gmail.com>  # GH user: hanfeisun
+Hans-Rudolf Hotz <hrhotz@users.noreply.github.com>  # GH user: hrhotz
+Henk van den Toorn <vdtoorn@hotmail.com>  # GH user: vdtoorn
+Hervé Ménager <herve.menager@gmail.com>  # GH user: hmenager
+David Norris <Hillrunner2008@gmail.com>  # GH user: Hillrunner2008
+Hiral Vora <hvora1@uncc.edu>  # GH user: ??
+Hunter Moseley <hunter.moseley@louisville.edu>  # GH user: ??
 
 # not agreed, but contributions no longer present
 Adam Brenner <aebrenne@uci.edu> # GH user: abrenner, only commits to tools moved to tool shed (no longer in galaxy)
