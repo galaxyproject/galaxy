@@ -27,9 +27,10 @@ OIDC_BACKEND_CONFIG_TEMPLATE = f"""<?xml version="1.0"?>
     <provider name="keycloak">
         <url>{KEYCLOAK_URL}</url>
         <client_id>gxyclient</client_id>
-        <client_secret>gxytestclientsecret</client_secret>
+        <client_secret>dummyclientsecret</client_secret>
         <redirect_uri>$galaxy_url/authnz/keycloak/callback</redirect_uri>
         <enable_idp_logout>true</enable_idp_logout>
+        <accepted_audiences>gxyclient</accepted_audiences>
     </provider>
 </OIDC>
 """
@@ -173,13 +174,14 @@ class TestGalaxyOIDCLoginIntegration(AbstractTestCases.BaseKeycloakIntegrationTe
             self.galaxy_interactor.cookies = session.cookies
         return session, response
 
-    def _get_keycloak_access_token(self, username=KEYCLOAK_TEST_USERNAME, password=KEYCLOAK_TEST_PASSWORD):
+    def _get_keycloak_access_token(self, client_id="gxyclient", username=KEYCLOAK_TEST_USERNAME, password=KEYCLOAK_TEST_PASSWORD, scopes=[]):
         data = {
-            "client_id": "gxyclient",
-            "client_secret": "gxytestclientsecret",
+            "client_id": client_id,
+            "client_secret": "dummyclientsecret",
             "grant_type": "password",
             "username": username,
-            "password": password
+            "password": password,
+            "scope": scopes,
         }
         response = requests.post(f"{KEYCLOAK_URL}/protocol/openid-connect/token", data=data, verify=False)
         return response.json()["access_token"]
@@ -234,3 +236,9 @@ class TestGalaxyOIDCLoginIntegration(AbstractTestCases.BaseKeycloakIntegrationTe
         time.sleep(7)
         response = self._get("users/current", headers={"Authorization": f"Bearer {access_token}"})
         self._assert_status_code_is(response, 400)
+
+    def test_auth_with_another_authorized_client(self):
+        _, response = self._login_via_keycloak(KEYCLOAK_TEST_USERNAME, KEYCLOAK_TEST_PASSWORD)
+        access_token = self._get_keycloak_access_token(client_id="bpaclient", scopes=["gx:*"])
+        response = self._get("users/current", headers={"Authorization": f"Bearer {access_token}"})
+        self._assert_status_code_is(response, 200)

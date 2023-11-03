@@ -87,7 +87,7 @@ class OIDCAuthnzBase(IdentityProvider):
             redirect_uri=oidc_backend_config["redirect_uri"],
             ca_bundle=oidc_backend_config.get("ca_bundle", None),
             pkce_support=oidc_backend_config.get("pkce_support", False),
-            accepted_audiences=oidc_backend_config.get("accepted_audiences", []),
+            accepted_audiences=list(filter(None, map(str.strip, oidc_backend_config.get("accepted_audiences", oidc_backend_config["client_id"]).split(",")))),
             extra_params={},
             authorization_endpoint=None,
             token_endpoint=None,
