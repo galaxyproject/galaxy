@@ -45,6 +45,22 @@
   "failureFactor" : 30,
   "roles" : {
     "realm" : [ {
+      "id" : "37ff3bbd-ece4-4002-aa00-41e672de7592",
+      "name" : "bpa-access-role",
+      "description" : "",
+      "composite" : false,
+      "clientRole" : false,
+      "containerId" : "34fcece2-bf4c-4746-a3f0-3e96a2919e7b",
+      "attributes" : { }
+    }, {
+      "id" : "45d9bc06-649e-4a8d-9a86-f4fd397a95f1",
+      "name" : "galaxy-access-role",
+      "description" : "",
+      "composite" : false,
+      "clientRole" : false,
+      "containerId" : "34fcece2-bf4c-4746-a3f0-3e96a2919e7b",
+      "attributes" : { }
+    }, {
       "id" : "657c4f1e-74b7-4c1f-911b-da083f4dff45",
       "name" : "offline_access",
       "description" : "${role_offline-access}",
@@ -245,7 +261,9 @@
       "admin-cli" : [ ],
       "gxyclient" : [ ],
       "account-console" : [ ],
+      "bpaclient" : [ ],
       "broker" : [ ],
+      "unauthorizedclient" : [ ],
       "account" : [ {
         "id" : "16dd6df5-3072-417f-8a1f-6d6a482b9ec8",
         "name" : "view-groups",
@@ -288,7 +306,7 @@
   "otpPolicyLookAheadWindow" : 1,
   "otpPolicyPeriod" : 30,
   "otpPolicyCodeReusable" : false,
-  "otpSupportedApplications" : [ "totpAppMicrosoftAuthenticatorName", "totpAppFreeOTPName", "totpAppGoogleName" ],
+  "otpSupportedApplications" : [ "totpAppFreeOTPName", "totpAppGoogleName", "totpAppMicrosoftAuthenticatorName" ],
   "webAuthnPolicyRpEntityName" : "keycloak",
   "webAuthnPolicySignatureAlgorithms" : [ "ES256" ],
   "webAuthnPolicyRpId" : "",
@@ -310,6 +328,29 @@
   "webAuthnPolicyPasswordlessAvoidSameAuthenticatorRegister" : false,
   "webAuthnPolicyPasswordlessAcceptableAaguids" : [ ],
   "users" : [ {
+    "id" : "8986c875-75b3-4015-91a1-8dace78d9c3b",
+    "createdTimestamp" : 1698952979247,
+    "username" : "bpaonlyuser",
+    "enabled" : true,
+    "totp" : false,
+    "emailVerified" : true,
+    "firstName" : "",
+    "lastName" : "",
+    "email" : "bpauser@bpa.org",
+    "credentials" : [ {
+      "id" : "00d87268-7e21-4d08-9f92-cfc06eca514b",
+      "type" : "password",
+      "userLabel" : "My password",
+      "createdDate" : 1694376754826,
+      "secretData" : "{\"value\":\"uNBI+UnpCLpXWHhm/tPSnnhuINiNw2MNt1XeDmImJaQ=\",\"salt\":\"fHS/FpnORylnSIco16UHwA==\",\"additionalParameters\":{}}",
+      "credentialData" : "{\"hashIterations\":27500,\"algorithm\":\"pbkdf2-sha256\",\"additionalParameters\":{}}"
+    } ],
+    "disableableCredentialTypes" : [ ],
+    "requiredActions" : [ ],
+    "realmRoles" : [ "bpa-access-role", "default-roles-gxyrealm" ],
+    "notBefore" : 0,
+    "groups" : [ ]
+  }, {
     "id" : "24ffa3ff-d351-4d5e-b10b-8d615082ec9c",
     "createdTimestamp" : 1694376671733,
     "username" : "gxyuser",
@@ -329,11 +370,10 @@
     } ],
     "disableableCredentialTypes" : [ ],
     "requiredActions" : [ ],
-    "realmRoles" : [ "default-roles-gxyrealm" ],
+    "realmRoles" : [ "bpa-access-role", "galaxy-access-role", "default-roles-gxyrealm" ],
     "notBefore" : 0,
     "groups" : [ ]
-  },
-  {
+  }, {
     "id" : "24ffa3ff-d351-4d5e-b10b-8d615082ec9d",
     "createdTimestamp" : 1694376671733,
     "username" : "gxyuser_logged_in_once",
@@ -353,11 +393,10 @@
     } ],
     "disableableCredentialTypes" : [ ],
     "requiredActions" : [ ],
-    "realmRoles" : [ "default-roles-gxyrealm" ],
+    "realmRoles" : [ "galaxy-access-role", "default-roles-gxyrealm" ],
     "notBefore" : 0,
     "groups" : [ ]
-  },
-  {
+  }, {
     "id" : "24ffa3ff-d351-4d5e-b10b-8d615082ec9e",
     "createdTimestamp" : 1694376671733,
     "username" : "gxyuser_never_logged_in",
@@ -377,13 +416,16 @@
     } ],
     "disableableCredentialTypes" : [ ],
     "requiredActions" : [ ],
-    "realmRoles" : [ "default-roles-gxyrealm" ],
+    "realmRoles" : [ "galaxy-access-role", "default-roles-gxyrealm" ],
     "notBefore" : 0,
     "groups" : [ ]
   } ],
   "scopeMappings" : [ {
     "clientScope" : "offline_access",
     "roles" : [ "offline_access" ]
+  }, {
+    "clientScope" : "gx:*",
+    "roles" : [ "galaxy-access-role" ]
   } ],
   "clientScopeMappings" : {
     "account" : [ {
@@ -489,6 +531,44 @@
     "defaultClientScopes" : [ "web-origins", "acr", "profile", "roles", "email" ],
     "optionalClientScopes" : [ "address", "phone", "offline_access", "microprofile-jwt" ]
   }, {
+    "id" : "553f931d-fa16-4946-a655-fdbb38c2b4b1",
+    "clientId" : "bpaclient",
+    "name" : "",
+    "description" : "",
+    "rootUrl" : "http://localhost",
+    "adminUrl" : "http://localhost",
+    "baseUrl" : "",
+    "surrogateAuthRequired" : false,
+    "enabled" : true,
+    "alwaysDisplayInConsole" : false,
+    "clientAuthenticatorType" : "client-secret",
+    "secret" : "dummyclientsecret",
+    "redirectUris" : [ "http://*" ],
+    "webOrigins" : [ "http://*" ],
+    "notBefore" : 0,
+    "bearerOnly" : false,
+    "consentRequired" : false,
+    "standardFlowEnabled" : true,
+    "implicitFlowEnabled" : false,
+    "directAccessGrantsEnabled" : true,
+    "serviceAccountsEnabled" : false,
+    "publicClient" : false,
+    "frontchannelLogout" : true,
+    "protocol" : "openid-connect",
+    "attributes" : {
+      "oidc.ciba.grant.enabled" : "false",
+      "client.secret.creation.time" : "1698952215",
+      "backchannel.logout.session.required" : "true",
+      "post.logout.redirect.uris" : "+",
+      "oauth2.device.authorization.grant.enabled" : "false",
+      "backchannel.logout.revoke.offline.tokens" : "false"
+    },
+    "authenticationFlowBindingOverrides" : { },
+    "fullScopeAllowed" : true,
+    "nodeReRegistrationTimeout" : -1,
+    "defaultClientScopes" : [ "web-origins", "acr", "bpa.*", "profile", "roles", "email" ],
+    "optionalClientScopes" : [ "gx:*", "address", "phone", "offline_access", "microprofile-jwt" ]
+  }, {
     "id" : "4a0e0a29-e407-4154-94f3-a82d85ceff04",
     "clientId" : "broker",
     "name" : "${client_broker}",
@@ -528,7 +608,7 @@
     "enabled" : true,
     "alwaysDisplayInConsole" : false,
     "clientAuthenticatorType" : "client-secret",
-    "secret" : "gxytestclientsecret",
+    "secret" : "dummyclientsecret",
     "redirectUris" : [ "http://*" ],
     "webOrigins" : [ ],
     "notBefore" : 0,
@@ -626,6 +706,44 @@
         "jsonType.label" : "String"
       }
     } ],
+    "defaultClientScopes" : [ "web-origins", "acr", "profile", "roles", "email" ],
+    "optionalClientScopes" : [ "address", "phone", "offline_access", "microprofile-jwt" ]
+  }, {
+    "id" : "8f00dac4-c117-4703-8fb3-6a1c29f5ce9a",
+    "clientId" : "unauthorizedclient",
+    "name" : "",
+    "description" : "",
+    "rootUrl" : "http://localhost",
+    "adminUrl" : "http://localhost",
+    "baseUrl" : "",
+    "surrogateAuthRequired" : false,
+    "enabled" : true,
+    "alwaysDisplayInConsole" : false,
+    "clientAuthenticatorType" : "client-secret",
+    "secret" : "dummyclientsecret",
+    "redirectUris" : [ "http://*" ],
+    "webOrigins" : [ "http://*" ],
+    "notBefore" : 0,
+    "bearerOnly" : false,
+    "consentRequired" : false,
+    "standardFlowEnabled" : true,
+    "implicitFlowEnabled" : false,
+    "directAccessGrantsEnabled" : true,
+    "serviceAccountsEnabled" : false,
+    "publicClient" : false,
+    "frontchannelLogout" : true,
+    "protocol" : "openid-connect",
+    "attributes" : {
+      "oidc.ciba.grant.enabled" : "false",
+      "client.secret.creation.time" : "1698952892",
+      "backchannel.logout.session.required" : "true",
+      "post.logout.redirect.uris" : "+",
+      "oauth2.device.authorization.grant.enabled" : "false",
+      "backchannel.logout.revoke.offline.tokens" : "false"
+    },
+    "authenticationFlowBindingOverrides" : { },
+    "fullScopeAllowed" : true,
+    "nodeReRegistrationTimeout" : -1,
     "defaultClientScopes" : [ "web-origins", "acr", "profile", "roles", "email" ],
     "optionalClientScopes" : [ "address", "phone", "offline_access", "microprofile-jwt" ]
   } ],
@@ -928,6 +1046,30 @@
       }
     } ]
   }, {
+    "id" : "aabfb2e4-8718-4f21-a290-873729b9a64a",
+    "name" : "gx:*",
+    "description" : "",
+    "protocol" : "openid-connect",
+    "attributes" : {
+      "include.in.token.scope" : "true",
+      "display.on.consent.screen" : "true",
+      "gui.order" : "",
+      "consent.screen.text" : ""
+    },
+    "protocolMappers" : [ {
+      "id" : "f85b7dae-6727-4952-94fc-393a2eb8f1a3",
+      "name" : "map-audience",
+      "protocol" : "openid-connect",
+      "protocolMapper" : "oidc-audience-mapper",
+      "consentRequired" : false,
+      "config" : {
+        "included.client.audience" : "gxyclient",
+        "id.token.claim" : "false",
+        "access.token.claim" : "true",
+        "userinfo.token.claim" : "false"
+      }
+    } ]
+  }, {
     "id" : "371b8bc3-9994-4139-b190-6ac66346d071",
     "name" : "phone",
     "description" : "OpenID Connect built-in scope: phone",
@@ -1006,6 +1148,30 @@
         "id.token.claim" : "true",
         "access.token.claim" : "true",
         "userinfo.token.claim" : "true"
+      }
+    } ]
+  }, {
+    "id" : "dadedfec-7757-4e1e-8c8c-9c08b59fffdd",
+    "name" : "bpa.*",
+    "description" : "",
+    "protocol" : "openid-connect",
+    "attributes" : {
+      "include.in.token.scope" : "true",
+      "display.on.consent.screen" : "true",
+      "gui.order" : "",
+      "consent.screen.text" : ""
+    },
+    "protocolMappers" : [ {
+      "id" : "6e1fa544-7209-443d-b5ab-8e8a08b6e65a",
+      "name" : "bpa-audience-mapper",
+      "protocol" : "openid-connect",
+      "protocolMapper" : "oidc-audience-mapper",
+      "consentRequired" : false,
+      "config" : {
+        "included.client.audience" : "bpaclient",
+        "id.token.claim" : "false",
+        "access.token.claim" : "true",
+        "userinfo.token.claim" : "false"
       }
     } ]
   }, {
@@ -1093,7 +1259,7 @@
     } ]
   } ],
   "defaultDefaultClientScopes" : [ "role_list", "profile", "email", "roles", "web-origins", "acr" ],
-  "defaultOptionalClientScopes" : [ "offline_access", "address", "phone", "microprofile-jwt" ],
+  "defaultOptionalClientScopes" : [ "offline_access", "address", "phone", "microprofile-jwt", "gx:*" ],
   "browserSecurityHeaders" : {
     "contentSecurityPolicyReportOnly" : "",
     "xContentTypeOptions" : "nosniff",
@@ -1171,7 +1337,7 @@
       "subType" : "authenticated",
       "subComponents" : { },
       "config" : {
-        "allowed-protocol-mapper-types" : [ "oidc-address-mapper", "oidc-sha256-pairwise-sub-mapper", "oidc-usermodel-attribute-mapper", "oidc-full-name-mapper", "oidc-usermodel-property-mapper", "saml-user-property-mapper", "saml-role-list-mapper", "saml-user-attribute-mapper" ]
+        "allowed-protocol-mapper-types" : [ "oidc-usermodel-property-mapper", "saml-user-attribute-mapper", "oidc-sha256-pairwise-sub-mapper", "oidc-full-name-mapper", "oidc-address-mapper", "saml-user-property-mapper", "saml-role-list-mapper", "oidc-usermodel-attribute-mapper" ]
       }
     }, {
       "id" : "741b8acc-ab84-49fe-8dce-f587b2a22502",
@@ -1180,7 +1346,7 @@
       "subType" : "anonymous",
       "subComponents" : { },
       "config" : {
-        "allowed-protocol-mapper-types" : [ "saml-user-property-mapper", "oidc-sha256-pairwise-sub-mapper", "oidc-usermodel-attribute-mapper", "oidc-usermodel-property-mapper", "oidc-full-name-mapper", "saml-role-list-mapper", "saml-user-attribute-mapper", "oidc-address-mapper" ]
+        "allowed-protocol-mapper-types" : [ "oidc-sha256-pairwise-sub-mapper", "oidc-address-mapper", "oidc-full-name-mapper", "oidc-usermodel-attribute-mapper", "oidc-usermodel-property-mapper", "saml-user-attribute-mapper", "saml-role-list-mapper", "saml-user-property-mapper" ]
       }
     } ],
     "org.keycloak.keys.KeyProvider" : [ {
