@@ -1,6 +1,6 @@
 <template>
     <div>
-        <JobDetailsProvider auto-refresh :job-id="job_id" @update:result="updateJob" />
+        <JobDetailsProvider auto-refresh :job-id="job_id" :stdout_position=stdout_position :stdout_length=stdout_length :stderr_position=stderr_position :stderr_length=stderr_length @update:result="updateJob" />
         <h2 class="h-md">Job Information</h2>
         <table id="job-information" class="tabletip info_data_table">
             <tbody>
@@ -41,8 +41,8 @@
                     </td>
                 </tr>
                 <CodeRow v-if="job" id="command-line" :code-label="'Command Line'" :code-item="job.command_line" />
-                <CodeRow v-if="job" id="stdout" :code-label="'Tool Standard Output'" :code-item="job.tool_stdout" />
-                <CodeRow v-if="job" id="stderr" :code-label="'Tool Standard Error'" :code-item="job.tool_stderr" />
+                <CodeRow v-if="job" id="stdout" :code-label="'Tool Standard Output'" :code-item="stdout_text" />
+                <CodeRow v-if="job" id="stderr" :code-label="'Tool Standard Error'" :code-item="stderr_text" />
                 <CodeRow
                     v-if="job && job.traceback"
                     id="traceback"
@@ -108,6 +108,12 @@ export default {
     data() {
         return {
             job: null,
+            stdout_position: 0,
+            stdout_length: 50000,
+            stdout_text: "",
+            stderr_position: 0,
+            stderr_length: 50000,
+            stderr_text: "",
         };
     },
     computed: {
@@ -126,6 +132,15 @@ export default {
         },
         updateJob(job) {
             this.job = job;
+            // Keep stdout in memory and only fetch new text via JobProvider
+            if (job.tool_stdout != null) {
+                this.stdout_text += job.tool_stdout;
+                this.stdout_position += job.tool_stdout.length;
+            }
+            if (job.tool_stderr != null) {
+                this.stderr_text += job.tool_stderr;
+                this.stderr_position += job.tool_stderr.length;
+            }
         },
     },
 };
