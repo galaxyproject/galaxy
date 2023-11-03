@@ -69,7 +69,7 @@ anilthanki, thanki.anil@gmail.com, https://github.com/galaxyproject/galaxy/pull/
 HadleyKing, king@gwu.edu, https://github.com/galaxyproject/galaxy/pull/14374
 jj-umn, jj@umn.edu, https://github.com/galaxyproject/galaxy/pull/13087
 jancrichter, 40425803+jancrichter@users.noreply.github.com, https://github.com/galaxyproject/galaxy/pull/14475
-scholtalbers, https://github.com/galaxyproject/galaxy/pull/11882
+scholtalbers, j.scholtalbers@gmail.com, https://github.com/galaxyproject/galaxy/pull/12752
 jennaj, jen@bx.psu.edu, https://github.com/galaxyproject/galaxy/pull/13148
 jhl667, jhl667@yahoo.com, https://github.com/galaxyproject/galaxy/pull/15280
 johanneskoester, johannes.koester@uni-due.de, https://github.com/galaxyproject/galaxy/pull/14770
@@ -80,17 +80,23 @@ SandyRogers, https://github.com/galaxyproject/galaxy/pull/16179
 selten, https://github.com/galaxyproject/galaxy/pull/12333
 simonbray, https://github.com/galaxyproject/galaxy/pull/11844
 sveinugu, https://github.com/galaxyproject/galaxy/pull/14694
+tensionhead, tensionheadx@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1712368424
+ooobik, ott.oopkaup@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1712493853
+alanamoose, alan.amosse@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1712585650
+aswarren, anwarren@vbi.vt.edu, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1712585650
+chapmanb, chapmanb@50mail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1712608110
+ericenns, eric.enns@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1712695728
+caleb-easterly¸ caleb.easterly@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1712869635
+ccedmendoza, cedricmendoza@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1712905299
+andreyto, tovchigrechkoa@medimmune.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1713541725
+benfulton, benmarkfulton@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1713561941
+atyryshkin, atyryshkina@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1713563069
+Airistotal, danieljosephbouchard@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1713564514
+AndreasSko, me@andreas-sk.de, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1713735509
 
 # not yet agreed, needs research
-Daniel Bouchard <danieljosephbouchard@gmail.com> # GH user: Airistotal
-Alan Amossé <alan.amosse@gmail.com> # GH user: Alanamosse
-Ott Oopkaup <ott.oopkaup@gmail.com> # GH user: ooobik
-Anastasia Tyryshkina <atyryshkina@gmail.com> # GH user: atyryshkina
 Evgeny Anatskiy <evgeny.anatskiy@gmail.com> # GH user: anatskiy
 Andrea Bagnacani <andrea.bagnacani@uni-rostock.de> # GH user: bagnacan
-Andreas Skorczyk <me@andreas-sk.de> # GH user: AndreasSko
-Andrew Warren <anwarren@vbi.vt.edu> # GH user: aswarren , single commit: https://github.com/galaxyproject/galaxy/commit/3bfc738bf569f3c94989af4170fee14024a320c6
-Andrey Tovchigrechko <tovchigrechkoa@medimmune.com> # GH user: andreyto single commit, one line change: https://github.com/galaxyproject/galaxy/commit/d06b221905cc4eb935939c6a29685c0dff125bf8
 Ann Loraine <aloraine@uncc.edu> # GH user: aloraine , only one commit, to change a URL: https://github.com/galaxyproject/galaxy/commit/ea22750604bb2b14a437eddc6ab34dd9d4d9fba7
 Anton Nekrutenko <anton@nekrut.org>  # GH user: nekrut
 Arjun Nath <arjun@bx.psu.edu> # no GH user, last contribution in 2007
@@ -99,16 +105,12 @@ Athos Ribeiro <athoscr@fedoraproject.org>  # GH user: athos-ribeiro single commi
 Aurélien Bernard <aurelien.bernard.bioinfo63@gmail.com>  # GH user: arbernard
 BalthazarPavot <balthazar.pavot@hotmail.fr>  # GH user: BalthazarPavot (GitHub account deleted)
 balto <balto_59@hotmail.fr>  # ¿ same as BalthazarPavot (only commits from both are in the same PR) ? GH user appears to be "the-nidhogg"
-Ben Fulton <benmarkfulton@gmail.com>  # GH user: benfulton
 bensellak <bensellak@ensat.ac.ma>  # GH user: bensellak
 Dave Trudgian <dave@trudgian.net> # GH user: dtrudg
 Bioinformatics Platform (Belgian Institute of Public Health) <bioit@sciensano.be> # GH user: BioinformaticsPlatformWIV-ISP
-Brad Chapman <chapmanb@50mail.com>  # GH user: chapmanb
-Brad Holmes <holmesbr@ncbi.nlm.nih.gov>  # GH user: BradHolmes
-Caleb Easterly <caleb.easterly@gmail.com>  # GH user: caleb-easterly
+Brad Holmes <holmesbr@ncbi.nlm.nih.gov>  # GH user: BradHolmes "as a federal employee, anything I contribute to is a "Government Work", and cannot have a domestic copyright. We have approval for release under CC0. "
 Carl Eberhard <carlfeberhard@gmail.com>  # GH user: carlfeberhard
 Carlos Garcia <carlos.andrew.garcia@gmail.com>  # GH user: cginmn
-Cedric Mendoza <cedricmendoza@gmail.com>  # GH user: ccedmendoza
 Cristian <cche@users.noreply.github.com>  # GH user: cche
 Charles Strittmatter <cstrittmatter@gmail.com>  # GH user: charesredhat
 Chinmay Rao <chinmay@bx.psu.edu>
@@ -117,13 +119,11 @@ Chris Barnett <chris.barnett@uct.ac.za>  # GH user: chrisbarnettster
 Clemens Blank <blankclemens@gmail.com>  # GH user: blankclemens
 Cyril Monjeaud <cyril.monjeaud@gmail.com>  # GH user: cmonjeau
 Christopher Mundus <crashGoBoom@users.noreply.github.com>  # GH user: crashGoBoom
-tensionhead <tensionheadx@gmail.com>  # GH user: tensionhead
 Dave Clements <clements@galaxyproject.org>  # GH user: tnabtaf
 David C. King <dcking@bx.psu.edu>  # GH user: ??
 Delphine Lariviere <lariviere.delphine@gmail.com>  # GH user: Delphine-L
 Devon Ryan <dpryan79@gmail.com>  # GH user: dpryan79
 dorine francheteau <dorine@bx.psu.edu>  # GH user: ??
-Eric Enns <eric.enns@gmail.com>  # GH user: ericenns
 Eric Paniagua <paniagua.cshl@gmail.com>  # GH user: ??
 Eteri Sokhoyan <esokhoyan@gmail.com>  # GH user: eteriSokhoyan
 Fabien Mareuil <fmareuil@pasteur.fr>  # GH user: fmareuil
