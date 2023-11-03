@@ -238,11 +238,11 @@ class TestGalaxyOIDCLoginIntegration(AbstractTestCases.BaseKeycloakIntegrationTe
         access_token = self._get_keycloak_access_token()
         response = self._get("users/current", headers={"Authorization": f"Bearer {access_token}"})
         self._assert_status_code_is(response, 200)
-        # token shouldn't expire in 4 seconds, so the call should succeed
-        time.sleep(4)
+        # token shouldn't expire in 3 seconds, so the call should succeed
+        time.sleep(3)
         response = self._get("users/current", headers={"Authorization": f"Bearer {access_token}"})
         self._assert_status_code_is(response, 200)
-        # token should have expired in 10 seconds, so the call should fail
+        # token should have expired in 7 seconds, so the call should fail
         time.sleep(7)
         response = self._get("users/current", headers={"Authorization": f"Bearer {access_token}"})
         self._assert_status_code_is(response, 400)
