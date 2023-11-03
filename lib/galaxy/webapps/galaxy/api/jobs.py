@@ -16,7 +16,7 @@ from typing import (
     Optional,
     Union,
 )
-
+from pathlib import Path
 from fastapi import (
     Depends,
     Query,
@@ -189,6 +189,10 @@ class FastAPIJobs:
         Parameters
         - id: ID of job to return
         - full: Return extra information ?
+        - stdout_position: The index of the character to begin reading stdout from
+        - stdout_length: How many characters of stdout to read
+        - stderr_position: The index of the character to begin reading stderr from
+        - stderr_length: How many characters of stderr to read
         """
         return self.service.show( 
             trans,

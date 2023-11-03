@@ -249,7 +249,7 @@ class JobManager:
                     raise ItemAccessibilityException("You are not allowed to rerun this job.")
         trans.sa_session.refresh(job)
 
-        # If stdout_length and stdout_position are legitimate values, then return stdout with status.
+        # If stdout and stderr parameters are legitimate values, then return with status.
         if job.state == job.states.RUNNING:
             working_directory = trans.app.object_store.get_filename(
                 job, base_dir="job_work", dir_only=True, obj_dir=True
