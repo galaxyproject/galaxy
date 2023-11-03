@@ -52,6 +52,15 @@ dglaetzer, d.glaetzer@mailbox.org, https://github.com/galaxyproject/galaxy/pull/
 djcomlab, djcomlab@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1711311572
 bwlang, brad@langhorst.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1711314974
 andrewjrobinson, Andrew.Robinson@latrobe.edu.au, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1711338222
+ClaytonTurner, clayclay911@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1711353602
+trel, terrellrussell@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1711382523
+chambm, matt.chambers42@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1711447510
+cganote, cganote@iu.edu, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1711451101
+charz, charles0126@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1711884707
+Christian-B, christian.brenninkmeijer@manchester.ac.uk, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1711915780
+bedroesb, bedro@psb.ugent.be, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1712001736
+fbacall, finn.bacall@manchester.ac.uk, https://github.com/galaxyproject/galaxy/pull/14927
+francoismg, francois.moriergenoud@gmail.com, https://github.com/galaxyproject/galaxy/pull/16187
 
 # not yet agreed, needs research
 Daniel Bouchard <danieljosephbouchard@gmail.com> # GH user: Airistotal
@@ -72,7 +81,6 @@ Athos Ribeiro <athoscr@fedoraproject.org>  # GH user: athos-ribeiro single commi
 Aurélien Bernard <aurelien.bernard.bioinfo63@gmail.com>  # GH user: arbernard
 BalthazarPavot <balthazar.pavot@hotmail.fr>  # GH user: BalthazarPavot (GitHub account deleted)
 balto <balto_59@hotmail.fr>  # ¿ same as BalthazarPavot (only commits from both are in the same PR) ? GH user appears to be "the-nidhogg"
-Bert Droesbeke <bedro@psb.ugent.be>  # GH user: bedroesb
 Ben Fulton <benmarkfulton@gmail.com>  # GH user: benfulton
 bensellak <bensellak@ensat.ac.ma>  # GH user: bensellak
 Dave Trudgian <dave@trudgian.net> # GH user: dtrudg
@@ -82,22 +90,16 @@ Brad Holmes <holmesbr@ncbi.nlm.nih.gov>  # GH user: BradHolmes
 Caleb Easterly <caleb.easterly@gmail.com>  # GH user: caleb-easterly
 Carl Eberhard <carlfeberhard@gmail.com>  # GH user: carlfeberhard
 Carlos Garcia <carlos.andrew.garcia@gmail.com>  # GH user: cginmn
-Carrie Ganote <cganote@iu.edu>  # GH user: cganote
-Matt Chambers <matt.chambers42@gmail.com>  # GH user: chambm
 Cedric Mendoza <cedricmendoza@gmail.com>  # GH user: ccedmendoza
 Cristian <cche@users.noreply.github.com>  # GH user: cche
 Charles Strittmatter <cstrittmatter@gmail.com>  # GH user: charesredhat
-Charles Hsu <charles0126@gmail.com>  # GH user: charz
 Chinmay Rao <chinmay@bx.psu.edu>
 Chris Armstrong <carmstrong1gw@github.com>  # GH user: carmstrong1gw
 Chris Barnett <chris.barnett@uct.ac.za>  # GH user: chrisbarnettster
-Christian Y. Brenninkmeijer <christian.brenninkmeijer@manchester.ac.uk>  # GH user: Christian-B
-Clayton Turner <clayclay911@gmail.com>  # GH user: ClaytonTurner
 Clemens Blank <blankclemens@gmail.com>  # GH user: blankclemens
 Cyril Monjeaud <cyril.monjeaud@gmail.com>  # GH user: cmonjeau
 Christopher Mundus <crashGoBoom@users.noreply.github.com>  # GH user: crashGoBoom
 tensionhead <tensionheadx@gmail.com>  # GH user: tensionhead
-Terrell Russell <terrellrussell@gmail.com>  # GH user: trel
 Dave Clements <clements@galaxyproject.org>  # GH user: tnabtaf
 David C. King <dcking@bx.psu.edu>  # GH user: ??
 dcnorris <dcnorris@uncc.edu>  # GH user: ??
@@ -107,6 +109,15 @@ dorine francheteau <dorine@bx.psu.edu>  # GH user: ??
 Eric Enns <eric.enns@gmail.com>  # GH user: ericenns
 Eric Paniagua <paniagua.cshl@gmail.com>  # GH user: ??
 Eteri Sokhoyan <esokhoyan@gmail.com>  # GH user: eteriSokhoyan
+Fabien Mareuil <fmareuil@pasteur.fr>  # GH user: fmareuil
+Fabio Cumbo <fabio.cumbo@gmail.com>  # GH user: cumbof
+fescudie <fescudie@toulouse.inra.fr>  # GH user: fescudie
+Florent Angly <florent.angly@gmail.com>  # GH user: fangly
+Frederic Sapet <frederic.sapet@limagrain.com>  # GH user: FredericBGA
+Frederik Coppens <frederik.coppens@psb.vib-ugent.be>  # GH user: frederikcoppens
+Frederik Delaere <frederik.delaere@gmail.com  # GH user: ??
+Freek de Bruijn <freek.de.bruijn@nbic.nl>  # GH user: FreekDB
+Ross <ross.lazarus@gmail.com>  # GH user: fubar2
 
 # not agreed, but contributions no longer present
 Adam Brenner <aebrenne@uci.edu> # GH user: abrenner, only commits to tools moved to tool shed (no longer in galaxy)
