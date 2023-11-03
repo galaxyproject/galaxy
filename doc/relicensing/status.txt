@@ -61,6 +61,11 @@ Christian-B, christian.brenninkmeijer@manchester.ac.uk, https://github.com/galax
 bedroesb, bedro@psb.ugent.be, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1712001736
 fbacall, finn.bacall@manchester.ac.uk, https://github.com/galaxyproject/galaxy/pull/14927
 francoismg, francois.moriergenoud@gmail.com, https://github.com/galaxyproject/galaxy/pull/16187
+gmauro, gmauro@gmail.com, https://github.com/galaxyproject/galaxy/pull/13811
+gregvonkuster, ghv2@psu.edu, https://github.com/galaxyproject/galaxy/pull/14813
+jarrah42, g.watson@computer.org, https://github.com/galaxyproject/galaxy/pull/15394
+gulsumgudukbay, gudukbay@gmail.com, https://github.com/galaxyproject/galaxy/pull/12775
+anilthanki, thanki.anil@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1712190856
 
 # not yet agreed, needs research
 Daniel Bouchard <danieljosephbouchard@gmail.com> # GH user: Airistotal
@@ -72,7 +77,6 @@ Andrea Bagnacani <andrea.bagnacani@uni-rostock.de> # GH user: bagnacan
 Andreas Skorczyk <me@andreas-sk.de> # GH user: AndreasSko
 Andrew Warren <anwarren@vbi.vt.edu> # GH user: aswarren , single commit: https://github.com/galaxyproject/galaxy/commit/3bfc738bf569f3c94989af4170fee14024a320c6
 Andrey Tovchigrechko <tovchigrechkoa@medimmune.com> # GH user: andreyto single commit, one line change: https://github.com/galaxyproject/galaxy/commit/d06b221905cc4eb935939c6a29685c0dff125bf8
-Anil Thanki <thanki.anil@gmail.com> # GH user: anilthanki
 Ann Loraine <aloraine@uncc.edu> # GH user: aloraine , only one commit, to change a URL: https://github.com/galaxyproject/galaxy/commit/ea22750604bb2b14a437eddc6ab34dd9d4d9fba7
 Anton Nekrutenko <anton@nekrut.org>  # GH user: nekrut
 Arjun Nath <arjun@bx.psu.edu> # no GH user, last contribution in 2007
@@ -118,6 +122,11 @@ Frederik Coppens <frederik.coppens@psb.vib-ugent.be>  # GH user: frederikcoppens
 Frederik Delaere <frederik.delaere@gmail.com  # GH user: ??
 Freek de Bruijn <freek.de.bruijn@nbic.nl>  # GH user: FreekDB
 Ross <ross.lazarus@gmail.com>  # GH user: fubar2
+Galaxy <galaxy-dev@plantandfood.co.nz>  # GH user: ???
+Scott Szakonyi <sszakony@nd.edu>  # GH user: sszakony
+Gert Hulselmans <gert.hulselmans@med.kuleuven.be>  # GH user: ghuls
+Gildas Le Corguillé <lecorguille@users.noreply.github.com>  # GH user: lecorguille
+Guruprasad Anada <gua110@bx.psu.edu>  # GH user: ??
 
 # not agreed, but contributions no longer present
 Adam Brenner <aebrenne@uci.edu> # GH user: abrenner, only commits to tools moved to tool shed (no longer in galaxy)
