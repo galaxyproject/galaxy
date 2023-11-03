@@ -134,6 +134,14 @@ Hervé Ménager <herve.menager@gmail.com>  # GH user: hmenager
 David Norris <Hillrunner2008@gmail.com>  # GH user: Hillrunner2008
 Hiral Vora <hvora1@uncc.edu>  # GH user: ??
 Hunter Moseley <hunter.moseley@louisville.edu>  # GH user: ??
+Ian Schenck <ian@bx.psu.edu>  # GH user: ??
+ichorny <none@none> # GH user: ??
+Ignacio Eguinoa <ignacio.eguinoa@gmail.com>  # GH user: ieguinoa
+Ilya Sytchev <hackdna@gmail.com>  # GH user: hackdna
+Ira Cooke <iracooke@gmail.com>  # GH user: iracooke
+Islam Heggy <islam.heggy@gmail.com>  # GH user: IslamHeggy
+Ivan Kuzmin <inkuzm@gmail.com>  # GH user: inkuzmin
+Iyad Kandalaft <ik@iyadk.com>  # GH user: IyadKandalaft
 
 # not agreed, but contributions no longer present
 Adam Brenner <aebrenne@uci.edu> # GH user: abrenner, only commits to tools moved to tool shed (no longer in galaxy)
