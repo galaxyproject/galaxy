@@ -184,7 +184,7 @@ class ToolParameter(Dictifiable):
             self.validators.append(validation.Validator.from_element(self, elem))
 
     @property
-    def visible(self):
+    def visible(self) -> bool:
         """Return true if the parameter should be rendered on the form"""
         return True
 
@@ -219,7 +219,7 @@ class ToolParameter(Dictifiable):
         """
         return []
 
-    def to_json(self, value, app, use_security):
+    def to_json(self, value, app, use_security) -> str:
         """Convert a value to a string representation suitable for persisting"""
         return unicodify(value)
 
@@ -249,12 +249,12 @@ class ToolParameter(Dictifiable):
         else:
             return self.to_python(value, app)
 
-    def value_to_display_text(self, value):
+    def value_to_display_text(self, value) -> str:
         if is_runtime_value(value):
             return "Not available."
         return self.to_text(value)
 
-    def to_text(self, value):
+    def to_text(self, value) -> str:
         """
         Convert a value to a text representation suitable for displaying to
         the user
@@ -292,7 +292,7 @@ class ToolParameter(Dictifiable):
                 value = sanitize_param(value)
         return value
 
-    def validate(self, value, trans=None):
+    def validate(self, value, trans=None) -> None:
         if value in ["", None] and self.optional:
             return
         for validator in self.validators:
@@ -435,8 +435,6 @@ class IntegerToolParameter(TextToolParameter):
                 int(self.value)
             except ValueError:
                 raise ParameterValueError("the attribute 'value' must be an integer", self.name)
-        elif self.value is None and not self.optional:
-            raise ParameterValueError("the attribute 'value' must be set for non optional parameters", self.name, None)
         self.min = input_source.get("min")
         self.max = input_source.get("max")
         if self.min:
@@ -511,8 +509,6 @@ class FloatToolParameter(TextToolParameter):
                 float(self.value)
             except ValueError:
                 raise ParameterValueError("the attribute 'value' must be a real number", self.name, self.value)
-        elif self.value is None and not self.optional:
-            raise ParameterValueError("the attribute 'value' must be set for non optional parameters", self.name, None)
         if self.min:
             try:
                 self.min = float(self.min)
@@ -1317,7 +1313,7 @@ class SelectTagParameter(SelectToolParameter):
     def get_initial_value(self, trans, other_values):
         if self.default_value is not None:
             return self.default_value
-        return SelectToolParameter.get_initial_value(self, trans, other_values)
+        return super().get_initial_value(trans, other_values)
 
     def get_legal_values(self, trans, other_values, value):
         if self.data_ref not in other_values and not trans.workflow_building_mode:
@@ -2606,7 +2602,7 @@ class DirectoryUriToolParameter(SimpleTextToolParameter):
 
     def __init__(self, tool, input_source, context=None):
         input_source = ensure_input_source(input_source)
-        SimpleTextToolParameter.__init__(self, tool, input_source)
+        super().__init__(tool, input_source)
 
     def validate(self, value, trans=None):
         super().validate(value, trans=trans)
@@ -2629,7 +2625,7 @@ class RulesListToolParameter(BaseJsonToolParameter):
 
     def __init__(self, tool, input_source, context=None):
         input_source = ensure_input_source(input_source)
-        BaseJsonToolParameter.__init__(self, tool, input_source)
+        super().__init__(tool, input_source)
         self.data_ref = input_source.get("data_ref", None)
 
     def to_dict(self, trans, other_values=None):
