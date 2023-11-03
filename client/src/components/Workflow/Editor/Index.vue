@@ -176,7 +176,6 @@ import { provideScopedWorkflowStores } from "@/composables/workflowStores";
 import { hide_modal } from "@/layout/modal";
 import { getAppRoot } from "@/onload/loadConfig";
 import { LastQueue } from "@/utils/promise-queue";
-import { withPrefix } from "@/utils/redirect";
 
 import { defaultPosition } from "./composables/useDefaultStepPosition";
 import { fromSimple, toSimple } from "./modules/model";
@@ -219,7 +218,7 @@ export default {
         },
         initialVersion: {
             type: Number,
-            default: 0,
+            default: undefined,
         },
         workflowTags: {
             type: Array,
@@ -350,7 +349,7 @@ export default {
     },
     watch: {
         id(newId, oldId) {
-            if (oldId && !this.isNewTempWorkflow) {
+            if (oldId) {
                 this._loadCurrent(newId);
             }
         },
@@ -370,9 +369,7 @@ export default {
     },
     created() {
         this.lastQueue = new LastQueue();
-        if (!this.isNewTempWorkflow) {
-            this._loadCurrent(this.id, this.version);
-        }
+        this._loadCurrent(this.id, this.version);
         hide_modal();
     },
     methods: {
@@ -521,9 +518,9 @@ export default {
         onDownload() {
             window.location = `${getAppRoot()}api/workflows/${this.id}/download?format=json-download`;
         },
-        doSaveAs() {
-            const rename_name = this.saveAsName ?? `SavedAs_${this.name}`;
-            const rename_annotation = this.saveAsAnnotation ?? "";
+        doSaveAs(create = false) {
+            const rename_name = this.saveAsName ?? create ? this.name : `SavedAs_${this.name}`;
+            const rename_annotation = this.saveAsAnnotation ?? create ? this.annotation : "";
 
             // This is an old web controller endpoint that wants form data posted...
             const formData = new FormData();
@@ -537,7 +534,11 @@ export default {
                 .then((response) => {
                     this.onWorkflowMessage("Workflow saved as", "success");
                     this.hideModal();
-                    this.onNavigate(`${getAppRoot()}workflows/edit?id=${response.data}`, true);
+                    if (create) {
+                        window.location = `${getAppRoot()}workflows/edit?id=${response.data}`;
+                    } else {
+                        this.onNavigate(`${getAppRoot()}workflows/edit?id=${response.data}`);
+                    }
                 })
                 .catch((response) => {
                     this.onWorkflowError("Saving workflow failed, please contact an administrator.");
@@ -566,7 +567,7 @@ export default {
             const step = { ...this.steps[nodeId], annotation: newAnnotation };
             this.onUpdateStep(step);
         },
-        async onCreate() {
+        onCreate() {
             if (!this.name) {
                 const response = "Please provide a name for your workflow.";
                 this.onWorkflowError("Creating workflow failed", response, {
@@ -577,27 +578,8 @@ export default {
                 this.onAttributes();
                 return;
             }
-            const payload = {
-                workflow_name: this.name,
-                workflow_annotation: this.annotation || "",
-            };
-
-            try {
-                const { data } = await axios.put(withPrefix("/workflow/create"), payload);
-                const { id, message } = data;
-                this.id = id;
-                this.onWorkflowMessage("Success", message);
-                const editUrl = `/workflows/edit?id=${id}`;
-                this.onNavigate(editUrl);
-            } catch (e) {
-                this.onWorkflowError("Creating workflow failed"),
-                    e,
-                    {
-                        Ok: () => {
-                            this.hideModal();
-                        },
-                    };
-            }
+            this.hasChanges = false;
+            this.doSaveAs(true);
         },
         onSetData(stepId, newData) {
             this.lastQueue
@@ -745,17 +727,19 @@ export default {
             this.hasChanges = has_changes;
         },
         _loadCurrent(id, version) {
-            this.resetStores();
-            this.onWorkflowMessage("Loading workflow...", "progress");
-            this.lastQueue
-                .enqueue(loadWorkflow, { id, version })
-                .then((data) => {
-                    fromSimple(id, data);
-                    this._loadEditorData(data);
-                })
-                .catch((response) => {
-                    this.onWorkflowError("Loading workflow failed...", response);
-                });
+            if (!this.isNewTempWorkflow) {
+                this.resetStores();
+                this.onWorkflowMessage("Loading workflow...", "progress");
+                this.lastQueue
+                    .enqueue(loadWorkflow, { id, version })
+                    .then((data) => {
+                        fromSimple(id, data);
+                        this._loadEditorData(data);
+                    })
+                    .catch((response) => {
+                        this.onWorkflowError("Loading workflow failed...", response);
+                    });
+            }
         },
         onTags(tags) {
             if (this.tags != tags) {

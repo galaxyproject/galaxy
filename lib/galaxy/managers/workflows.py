@@ -687,6 +687,16 @@ class WorkflowContentsManager(UsesAnnotations):
             stored_workflow.latest_workflow = workflow
             workflow.stored_workflow = stored_workflow
 
+        data = raw_workflow_description.as_dict
+        if isinstance(data, str):
+            data = json.loads(data)
+        if "tags" in data:
+            trans.tag_handler.set_tags_from_list(
+                trans.user,
+                stored_workflow,
+                data.get("tags", []),
+            )
+
         if workflow_update_options.update_stored_workflow_attributes:
             update_dict = raw_workflow_description.as_dict
             if "name" in update_dict:
