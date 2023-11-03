@@ -2227,7 +2227,7 @@ class ToolModule(WorkflowModule):
                             if iteration_elements and step_input_name in iteration_elements:  # noqa: B023
                                 value = iteration_elements[step_input_name]  # noqa: B023
                             else:
-                                value = progress.replacement_for_input(step, all_inputs_by_name[step_input_name])
+                                value = progress.replacement_for_input(trans, step, all_inputs_by_name[step_input_name])
                             # TODO: only do this for values... is everything with a default
                             # this way a field parameter? I guess not?
                             extra_step_state[step_input_name] = value
