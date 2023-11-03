@@ -8,6 +8,7 @@ import logging
 import os
 import os.path
 import re
+import urllib.parse
 from typing import (
     Any,
     Dict,
@@ -2691,16 +2692,17 @@ def raw_to_galaxy(trans, as_dict_value):
 
     object_class = as_dict_value["class"]
     if object_class == "File":
-        relative_to = "/"  # TODO
-        from galaxy.tool_util.cwl.util import abs_path
-
-        path = abs_path(as_dict_value.get("location"), relative_to)
-
-        name = os.path.basename(path)
+        # TODO: relative_to = "/"
+        location = as_dict_value.get("location")
+        name = (
+            as_dict_value.get("identifier")
+            or as_dict_value.get("basename")
+            or os.path.basename(urllib.parse.urlparse(location).path)
+        )
         extension = as_dict_value.get("format") or "data"
         dataset = Dataset()
         source = DatasetSource()
-        source.source_uri = path
+        source.source_uri = location
         # TODO: validate this...
         source.transform = as_dict_value.get("transform")
         dataset.sources.append(source)
