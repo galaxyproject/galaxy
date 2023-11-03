@@ -1178,6 +1178,20 @@ steps:
           location: https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed
 """
 
+WORKFLOW_WITH_STEP_DEFAULT_FILE_DATASET_INPUT_OVERRIDES_TOOL_DEFAULT = """
+class: GalaxyWorkflow
+steps:
+  cat1:
+    tool_id: cat_default
+    in:
+      input1:
+        default:
+          class: File
+          basename: a file
+          format: txt
+          location: https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.fasta
+"""
+
 WORKFLOW_FLAT_CROSS_PRODUCT = """
 class: GalaxyWorkflow
 inputs:
