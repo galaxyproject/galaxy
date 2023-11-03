@@ -3,12 +3,12 @@ import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 
-import { mockFetcher } from "@/schema/__mocks__";
+import { mockFetcher } from "@/api/schema/__mocks__";
 import { useUserStore } from "@/stores/userStore";
 
 import QuotaMeter from "./QuotaMeter.vue";
 
-jest.mock("@/schema");
+jest.mock("@/api/schema");
 
 const localVue = getLocalVue();
 

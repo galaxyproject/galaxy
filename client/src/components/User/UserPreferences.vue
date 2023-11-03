@@ -106,7 +106,23 @@
             icon="fa-sign-out"
             title="Sign Out"
             description="Click here to sign out of all sessions."
-            @click="signOut" />
+            @click="showLogoutModal = true" />
+        <b-modal v-model="showDataPrivateModal" title="Datasets are now private" title-class="font-weight-bold" ok-only>
+            <span v-localize>
+                All of your histories and datasets have been made private. If you'd like to make all *future* histories
+                private please use the
+            </span>
+            <a :href="userPermissionsUrl">User Permissions</a>
+            <span v-localize>interface</span>.
+        </b-modal>
+        <b-modal
+            v-model="showLogoutModal"
+            title="Sign out"
+            title-class="font-weight-bold"
+            ok-title="Sign out"
+            @ok="signOut">
+            <span v-localize> Do you want to continue and sign out of all active sessions? </span>
+        </b-modal>
     </b-container>
 </template>
 
@@ -165,6 +181,8 @@ export default {
             diskQuota: "",
             messageVariant: null,
             message: null,
+            showLogoutModal: false,
+            showDataPrivateModal: false,
             toggleActivityBar: false,
             toggleTheme: false,
         };
@@ -186,6 +204,9 @@ export default {
             const themes = Object.keys(this.config.themes);
             return themes?.length > 1 ?? false;
         },
+        userPermissionsUrl() {
+            return withPrefix("/user/permissions");
+        },
     },
     created() {
         const message = QueryStringParsing.get("message");
@@ -202,7 +223,6 @@ export default {
     },
     methods: {
         makeDataPrivate() {
-            const Galaxy = getGalaxyInstance();
             if (
                 confirm(
                     _l(
@@ -216,33 +236,13 @@ export default {
                     )
                 )
             ) {
-                axios.post(withPrefix(`/history/make_private?all_histories=true`)).then((response) => {
-                    Galaxy.modal.show({
-                        title: _l("Datasets are now private"),
-                        body: `All of your histories and datasets have been made private.  If you'd like to make all *future* histories private please use the <a href="${withPrefix(
-                            "/user/permissions"
-                        )}">User Permissions</a> interface.`,
-                        buttons: {
-                            Close: () => {
-                                Galaxy.modal.hide();
-                            },
-                        },
-                    });
+                axios.post(withPrefix(`/history/make_private?all_histories=true`)).then(() => {
+                    this.showDataPrivateModal = true;
                 });
             }
         },
         signOut() {
-            const Galaxy = getGalaxyInstance();
-            Galaxy.modal.show({
-                title: _l("Sign out"),
-                body: "Do you want to continue and sign out of all active sessions?",
-                buttons: {
-                    Cancel: function () {
-                        Galaxy.modal.hide();
-                    },
-                    "Sign out": userLogoutAll,
-                },
-            });
+            userLogoutAll();
         },
     },
 };

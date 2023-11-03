@@ -27,7 +27,16 @@ class PlaywrightShedBrowser(ShedBrowser):
         self._page = page
 
     def visit_url(self, url: str, allowed_codes: List[int]) -> str:
-        response = self._page.goto(url)
+        try:
+            response = self._page.goto(url)
+        except Exception as e:
+            if "Navigation interrupted by another one" in str(e):
+                # I believe redirect on the target page interfering with
+                # this thread's test.
+                time.sleep(0.25)
+                response = self._page.goto(url)
+            else:
+                raise
         assert response is not None
         return_code = response.status
         assert return_code in allowed_codes, "Invalid HTTP return code {}, allowed codes: {}".format(
@@ -166,6 +175,13 @@ class PlaywrightShedBrowser(ShedBrowser):
             logout_locator.click()
         if assert_logged_out:
             self.expect_not_logged_in()
+
+    def explicit_logout(self):
+        self._page.wait_for_selector(Locators.toolbar_logout)
+        logout_locator = self._page.locator(Locators.toolbar_logout)
+        logout_locator.click()
+        self._page.wait_for_load_state("networkidle")
+        expect(self._page.locator(Locators.toolbar_logout)).not_to_be_visible()
 
     def expect_not_logged_in(self):
         expect(self._page.locator(Locators.toolbar_logout)).not_to_be_visible()

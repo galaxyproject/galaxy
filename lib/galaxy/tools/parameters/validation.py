@@ -16,13 +16,6 @@ from galaxy import (
 log = logging.getLogger(__name__)
 
 
-def get_test_fname(fname):
-    """Returns test data filename"""
-    path, name = os.path.split(__file__)
-    full_path = os.path.join(path, "test", fname)
-    return full_path
-
-
 class Validator(abc.ABC):
     """
     A validator checks that a value meets some conditions OR raises ValueError
@@ -88,45 +81,6 @@ class Validator(abc.ABC):
 class RegexValidator(Validator):
     """
     Validator that evaluates a regular expression
-
-    >>> from galaxy.util import XML
-    >>> from galaxy.tools.parameters.basic import ToolParameter
-    >>> p = ToolParameter.build(None, XML('''
-    ... <param name="blah" type="text" value="10">
-    ...     <validator type="regex">[Ff]oo</validator>
-    ... </param>
-    ... '''))
-    >>> t = p.validate("Foo")
-    >>> t = p.validate("foo")
-    >>> t = p.validate("Fop")
-    Traceback (most recent call last):
-        ...
-    ValueError: Value 'Fop' does not match regular expression '[Ff]oo'
-    >>> t = p.validate(["Foo", "foo"])
-    >>> t = p.validate(["Foo", "Fop"])
-    Traceback (most recent call last):
-        ...
-    ValueError: Value 'Fop' does not match regular expression '[Ff]oo'
-    >>>
-    >>> p = ToolParameter.build(None, XML('''
-    ... <param name="blah" type="text" value="10">
-    ...     <validator type="regex" negate="true">[Ff]oo</validator>
-    ... </param>
-    ... '''))
-    >>> t = p.validate("Foo")
-    Traceback (most recent call last):
-        ...
-    ValueError: Value 'Foo' does match regular expression '[Ff]oo'
-    >>> t = p.validate("foo")
-    Traceback (most recent call last):
-        ...
-    ValueError: Value 'foo' does match regular expression '[Ff]oo'
-    >>> t = p.validate("Fop")
-    >>> t = p.validate(["Fop", "foo"])
-    Traceback (most recent call last):
-        ...
-    ValueError: Value 'foo' does match regular expression '[Ff]oo'
-    >>> t = p.validate(["Fop", "Fop"])
     """
 
     @classmethod
@@ -177,40 +131,6 @@ class ExpressionValidator(Validator):
 class InRangeValidator(ExpressionValidator):
     """
     Validator that ensures a number is in a specified range
-
-    >>> from galaxy.util import XML
-    >>> from galaxy.tools.parameters.basic import ToolParameter
-    >>> p = ToolParameter.build(None, XML('''
-    ... <param name="blah" type="integer" value="10">
-    ...     <validator type="in_range" message="Doh!! %s not in range" min="10" exclude_min="true" max="20"/>
-    ... </param>
-    ... '''))
-    >>> t = p.validate(10)
-    Traceback (most recent call last):
-        ...
-    ValueError: Doh!! 10 not in range
-    >>> t = p.validate(15)
-    >>> t = p.validate(20)
-    >>> t = p.validate(21)
-    Traceback (most recent call last):
-        ...
-    ValueError: Doh!! 21 not in range
-    >>>
-    >>> p = ToolParameter.build(None, XML('''
-    ... <param name="blah" type="integer" value="10">
-    ...     <validator type="in_range" min="10" exclude_min="true" max="20" negate="true"/>
-    ... </param>
-    ... '''))
-    >>> t = p.validate(10)
-    >>> t = p.validate(15)
-    Traceback (most recent call last):
-        ...
-    ValueError: Value ('15') must not fulfill float('10') < value <= float('20')
-    >>> t = p.validate(20)
-    Traceback (most recent call last):
-        ...
-    ValueError: Value ('20') must not fulfill float('10') < value <= float('20')
-    >>> t = p.validate(21)
     """
 
     @classmethod
@@ -253,40 +173,6 @@ class InRangeValidator(ExpressionValidator):
 class LengthValidator(InRangeValidator):
     """
     Validator that ensures the length of the provided string (value) is in a specific range
-
-    >>> from galaxy.util import XML
-    >>> from galaxy.tools.parameters.basic import ToolParameter
-    >>> p = ToolParameter.build(None, XML('''
-    ... <param name="blah" type="text" value="foobar">
-    ...     <validator type="length" min="2" max="8"/>
-    ... </param>
-    ... '''))
-    >>> t = p.validate("foo")
-    >>> t = p.validate("bar")
-    >>> t = p.validate("f")
-    Traceback (most recent call last):
-        ...
-    ValueError: Must have length of at least 2 and at most 8
-    >>> t = p.validate("foobarbaz")
-    Traceback (most recent call last):
-        ...
-    ValueError: Must have length of at least 2 and at most 8
-    >>>
-    >>> p = ToolParameter.build(None, XML('''
-    ... <param name="blah" type="text" value="foobar">
-    ...     <validator type="length" min="2" max="8" negate="true"/>
-    ... </param>
-    ... '''))
-    >>> t = p.validate("foo")
-    Traceback (most recent call last):
-        ...
-    ValueError: Must not have length of at least 2 and at most 8
-    >>> t = p.validate("bar")
-    Traceback (most recent call last):
-        ...
-    ValueError: Must not have length of at least 2 and at most 8
-    >>> t = p.validate("f")
-    >>> t = p.validate("foobarbaz")
     """
 
     @classmethod
@@ -305,44 +191,6 @@ class LengthValidator(InRangeValidator):
 class DatasetOkValidator(Validator):
     """
     Validator that checks if a dataset is in an 'ok' state
-
-    >>> from galaxy.datatypes.registry import example_datatype_registry_for_sample
-    >>> from galaxy.model import History, HistoryDatasetAssociation, set_datatypes_registry
-    >>> from galaxy.model.mapping import init
-    >>> from galaxy.util import XML
-    >>> from galaxy.tools.parameters.basic import ToolParameter
-    >>>
-    >>> sa_session = init("/tmp", "sqlite:///:memory:", create_tables=True).session
-    >>> hist = History()
-    >>> with sa_session.begin():
-    ...     sa_session.add(hist)
-    >>> set_datatypes_registry(example_datatype_registry_for_sample())
-    >>> ok_hda = hist.add_dataset(HistoryDatasetAssociation(id=1, extension='interval', create_dataset=True, sa_session=sa_session))
-    >>> ok_hda.set_dataset_state(model.Dataset.states.OK)
-    >>> notok_hda = hist.add_dataset(HistoryDatasetAssociation(id=2, extension='interval', create_dataset=True, sa_session=sa_session))
-    >>> notok_hda.set_dataset_state(model.Dataset.states.EMPTY)
-    >>>
-    >>> p = ToolParameter.build(None, XML('''
-    ... <param name="blah" type="data" no_validation="true">
-    ...     <validator type="dataset_ok_validator"/>
-    ... </param>
-    ... '''))
-    >>> t = p.validate(ok_hda)
-    >>> t = p.validate(notok_hda)
-    Traceback (most recent call last):
-        ...
-    ValueError: The selected dataset is still being generated, select another dataset or wait until it is completed
-    >>>
-    >>> p = ToolParameter.build(None, XML('''
-    ... <param name="blah" type="data" no_validation="true">
-    ...     <validator type="dataset_ok_validator" negate="true"/>
-    ... </param>
-    ... '''))
-    >>> t = p.validate(ok_hda)
-    Traceback (most recent call last):
-        ...
-    ValueError: The selected dataset must not be in state OK
-    >>> t = p.validate(notok_hda)
     """
 
     @classmethod
@@ -364,44 +212,6 @@ class DatasetOkValidator(Validator):
 class DatasetEmptyValidator(Validator):
     """
     Validator that checks if a dataset has a positive file size.
-
-    >>> from galaxy.datatypes.registry import example_datatype_registry_for_sample
-    >>> from galaxy.model import Dataset, History, HistoryDatasetAssociation, set_datatypes_registry
-    >>> from galaxy.model.mapping import init
-    >>> from galaxy.util import XML
-    >>> from galaxy.tools.parameters.basic import ToolParameter
-    >>>
-    >>> sa_session = init("/tmp", "sqlite:///:memory:", create_tables=True).session
-    >>> hist = History()
-    >>> with sa_session.begin():
-    ...     sa_session.add(hist)
-    >>> set_datatypes_registry(example_datatype_registry_for_sample())
-    >>> empty_dataset = Dataset(external_filename=get_test_fname("empty.txt"))
-    >>> empty_hda = hist.add_dataset(HistoryDatasetAssociation(id=1, extension='interval', dataset=empty_dataset, sa_session=sa_session))
-    >>> full_dataset = Dataset(external_filename=get_test_fname("1.tabular"))
-    >>> full_hda = hist.add_dataset(HistoryDatasetAssociation(id=2, extension='interval', dataset=full_dataset, sa_session=sa_session))
-    >>>
-    >>> p = ToolParameter.build(None, XML('''
-    ... <param name="blah" type="data">
-    ...     <validator type="empty_dataset"/>
-    ... </param>
-    ... '''))
-    >>> t = p.validate(full_hda)
-    >>> t = p.validate(empty_hda)
-    Traceback (most recent call last):
-        ...
-    ValueError: The selected dataset is empty, this tool expects non-empty files.
-    >>>
-    >>> p = ToolParameter.build(None, XML('''
-    ... <param name="blah" type="data">
-    ...     <validator type="empty_dataset" negate="true"/>
-    ... </param>
-    ... '''))
-    >>> t = p.validate(full_hda)
-    Traceback (most recent call last):
-        ...
-    ValueError: The selected dataset is non-empty, this tool expects empty files.
-    >>> t = p.validate(empty_hda)
     """
 
     @classmethod
@@ -409,10 +219,12 @@ class DatasetEmptyValidator(Validator):
         message = elem.get("message")
         negate = elem.get("negate", "false")
         if not message:
-            message = f"The selected dataset is {'non-' if negate == 'true' else ''}empty, this tool expects {'non-' if negate=='false' else ''}empty files."
+            message = f"The selected dataset is {'non-' if negate == 'true' else ''}empty, this tool expects {'non-' if negate == 'false' else ''}empty files."
         return cls(message, negate)
 
     def validate(self, value, trans=None):
+        print(f"value {value}")
+        print(f"value {value.get_size()}")
         if value:
             super().validate(value.get_size() != 0)
 
@@ -420,46 +232,6 @@ class DatasetEmptyValidator(Validator):
 class DatasetExtraFilesPathEmptyValidator(Validator):
     """
     Validator that checks if a dataset's extra_files_path exists and is not empty.
-
-    >>> from galaxy.datatypes.registry import example_datatype_registry_for_sample
-    >>> from galaxy.model import History, HistoryDatasetAssociation, set_datatypes_registry
-    >>> from galaxy.model.mapping import init
-    >>> from galaxy.util import XML
-    >>> from galaxy.tools.parameters.basic import ToolParameter
-    >>>
-    >>> sa_session = init("/tmp", "sqlite:///:memory:", create_tables=True).session
-    >>> hist = History()
-    >>> with sa_session.begin():
-    ...     sa_session.add(hist)
-    >>> set_datatypes_registry(example_datatype_registry_for_sample())
-    >>> has_extra_hda = hist.add_dataset(HistoryDatasetAssociation(id=1, extension='interval', create_dataset=True, sa_session=sa_session))
-    >>> has_extra_hda.dataset.file_size = 10
-    >>> has_extra_hda.dataset.total_size = 15
-    >>> has_no_extra_hda = hist.add_dataset(HistoryDatasetAssociation(id=2, extension='interval', create_dataset=True, sa_session=sa_session))
-    >>> has_no_extra_hda.dataset.file_size = 10
-    >>> has_no_extra_hda.dataset.total_size = 10
-    >>>
-    >>> p = ToolParameter.build(None, XML('''
-    ... <param name="blah" type="data">
-    ...     <validator type="empty_extra_files_path"/>
-    ... </param>
-    ... '''))
-    >>> t = p.validate(has_extra_hda)
-    >>> t = p.validate(has_no_extra_hda)
-    Traceback (most recent call last):
-        ...
-    ValueError: The selected dataset's extra_files_path directory is empty or does not exist, this tool expects non-empty extra_files_path directories associated with the selected input.
-    >>>
-    >>> p = ToolParameter.build(None, XML('''
-    ... <param name="blah" type="data">
-    ...     <validator type="empty_extra_files_path" negate="true"/>
-    ... </param>
-    ... '''))
-    >>> t = p.validate(has_extra_hda)
-    Traceback (most recent call last):
-        ...
-    ValueError: The selected dataset's extra_files_path directory is non-empty or does exist, this tool expects empty extra_files_path directories associated with the selected input.
-    >>> t = p.validate(has_no_extra_hda)
     """
 
     @classmethod
@@ -478,58 +250,6 @@ class DatasetExtraFilesPathEmptyValidator(Validator):
 class MetadataValidator(Validator):
     """
     Validator that checks for missing metadata
-
-    >>> from galaxy.datatypes.registry import example_datatype_registry_for_sample
-    >>> from galaxy.model import Dataset, History, HistoryDatasetAssociation, set_datatypes_registry
-    >>> from galaxy.model.mapping import init
-    >>> from galaxy.util import XML
-    >>> from galaxy.tools.parameters.basic import ToolParameter
-    >>>
-    >>> sa_session = init("/tmp", "sqlite:///:memory:", create_tables=True).session
-    >>> hist = History()
-    >>> with sa_session.begin():
-    ...     sa_session.add(hist)
-    >>> set_datatypes_registry(example_datatype_registry_for_sample())
-    >>> fname = get_test_fname('1.bed')
-    >>> bedds = Dataset(external_filename=fname)
-    >>> hda = hist.add_dataset(HistoryDatasetAssociation(id=1, extension='bed', create_dataset=True, sa_session=sa_session, dataset=bedds))
-    >>> hda.set_dataset_state(model.Dataset.states.OK)
-    >>> hda.set_meta()
-    >>> hda.metadata.strandCol = hda.metadata.spec["strandCol"].no_value
-    >>> param_xml = '''<param name="blah" type="data">
-    ...     <validator type="metadata" check="{check}" skip="{skip}"/>
-    ... </param>'''
-    >>> p = ToolParameter.build(None, XML(param_xml.format(check="nameCol", skip="")))
-    >>> t = p.validate(hda)
-    >>> p = ToolParameter.build(None, XML(param_xml.format(check="strandCol", skip="")))
-    >>> t = p.validate(hda)
-    Traceback (most recent call last):
-        ...
-    ValueError: Metadata 'strandCol' missing, click the pencil icon in the history item to edit / save the metadata attributes
-    >>> p = ToolParameter.build(None, XML(param_xml.format(check="", skip="dbkey,comment_lines,column_names,strandCol")))
-    >>> t = p.validate(hda)
-    >>> p = ToolParameter.build(None, XML(param_xml.format(check="", skip="dbkey,comment_lines,column_names,nameCol")))
-    >>> t = p.validate(hda)
-    Traceback (most recent call last):
-        ...
-    ValueError: Metadata 'strandCol' missing, click the pencil icon in the history item to edit / save the metadata attributes
-    >>> param_xml_negate = '''<param name="blah" type="data">
-    ...     <validator type="metadata" check="{check}" skip="{skip}" negate="true"/>
-    ... </param>'''
-    >>> p = ToolParameter.build(None, XML(param_xml_negate.format(check="strandCol", skip="")))
-    >>> t = p.validate(hda)
-    >>> p = ToolParameter.build(None, XML(param_xml_negate.format(check="nameCol", skip="")))
-    >>> t = p.validate(hda)
-    Traceback (most recent call last):
-        ...
-    ValueError: At least one of the checked metadata 'nameCol' is set, click the pencil icon in the history item to edit / save the metadata attributes
-    >>> p = ToolParameter.build(None, XML(param_xml_negate.format(check="", skip="dbkey,comment_lines,column_names,nameCol")))
-    >>> t = p.validate(hda)
-    >>> p = ToolParameter.build(None, XML(param_xml_negate.format(check="", skip="dbkey,comment_lines,column_names,strandCol")))
-    >>> t = p.validate(hda)
-    Traceback (most recent call last):
-        ...
-    ValueError: At least one of the non skipped metadata 'dbkey,comment_lines,column_names,strandCol' is set, click the pencil icon in the history item to edit / save the metadata attributes
     """
 
     requires_dataset_metadata = True
@@ -600,45 +320,6 @@ class MetadataEqualValidator(Validator):
 class UnspecifiedBuildValidator(Validator):
     """
     Validator that checks for dbkey not equal to '?'
-
-    >>> from galaxy.datatypes.registry import example_datatype_registry_for_sample
-    >>> from galaxy.model import History, HistoryDatasetAssociation, set_datatypes_registry
-    >>> from galaxy.model.mapping import init
-    >>> from galaxy.util import XML
-    >>> from galaxy.tools.parameters.basic import ToolParameter
-    >>>
-    >>> sa_session = init("/tmp", "sqlite:///:memory:", create_tables=True).session
-    >>> hist = History()
-    >>> with sa_session.begin():
-    ...     sa_session.add(hist)
-    >>> set_datatypes_registry(example_datatype_registry_for_sample())
-    >>> has_dbkey_hda = hist.add_dataset(HistoryDatasetAssociation(id=1, extension='interval', create_dataset=True, sa_session=sa_session))
-    >>> has_dbkey_hda.set_dataset_state(model.Dataset.states.OK)
-    >>> has_dbkey_hda.metadata.dbkey = 'hg19'
-    >>> has_no_dbkey_hda = hist.add_dataset(HistoryDatasetAssociation(id=2, extension='interval', create_dataset=True, sa_session=sa_session))
-    >>> has_no_dbkey_hda.set_dataset_state(model.Dataset.states.OK)
-    >>>
-    >>> p = ToolParameter.build(None, XML('''
-    ... <param name="blah" type="data" no_validation="true">
-    ...     <validator type="unspecified_build"/>
-    ... </param>
-    ... '''))
-    >>> t = p.validate(has_dbkey_hda)
-    >>> t = p.validate(has_no_dbkey_hda)
-    Traceback (most recent call last):
-        ...
-    ValueError: Unspecified genome build, click the pencil icon in the history item to set the genome build
-    >>>
-    >>> p = ToolParameter.build(None, XML('''
-    ... <param name="blah" type="data" no_validation="true">
-    ...     <validator type="unspecified_build" negate="true"/>
-    ... </param>
-    ... '''))
-    >>> t = p.validate(has_dbkey_hda)
-    Traceback (most recent call last):
-        ...
-    ValueError: Specified genome build, click the pencil icon in the history item to remove the genome build
-    >>> t = p.validate(has_no_dbkey_hda)
     """
 
     requires_dataset_metadata = True
@@ -664,31 +345,6 @@ class UnspecifiedBuildValidator(Validator):
 class NoOptionsValidator(Validator):
     """
     Validator that checks for empty select list
-
-    >>> from galaxy.util import XML
-    >>> from galaxy.tools.parameters.basic import ToolParameter
-    >>> p = ToolParameter.build(None, XML('''
-    ... <param name="index" type="select" label="Select reference genome">
-    ...     <validator type="no_options" message="No options available for selection"/>
-    ... </param>
-    ... '''))
-    >>> t = p.validate('foo')
-    >>> t = p.validate(None)
-    Traceback (most recent call last):
-        ...
-    ValueError: No options available for selection
-    >>>
-    >>> p = ToolParameter.build(None, XML('''
-    ... <param name="index" type="select" label="Select reference genome">
-    ...     <options from_data_table="bowtie2_indexes"/>
-    ...     <validator type="no_options" negate="true"/>
-    ... </param>
-    ... '''))
-    >>> t = p.validate('foo')
-    Traceback (most recent call last):
-        ...
-    ValueError: Options available for selection
-    >>> t = p.validate(None)
     """
 
     @classmethod
@@ -706,28 +362,6 @@ class NoOptionsValidator(Validator):
 class EmptyTextfieldValidator(Validator):
     """
     Validator that checks for empty text field
-
-    >>> from galaxy.util import XML
-    >>> from galaxy.tools.parameters.basic import ToolParameter
-    >>> p = ToolParameter.build(None, XML('''
-    ... <param name="blah" type="text" value="">
-    ...     <validator type="empty_field"/>
-    ... </param>
-    ... '''))
-    >>> t = p.validate("")
-    Traceback (most recent call last):
-        ...
-    ValueError: Field requires a value
-    >>> p = ToolParameter.build(None, XML('''
-    ... <param name="blah" type="text" value="">
-    ...     <validator type="empty_field" negate="true"/>
-    ... </param>
-    ... '''))
-    >>> t = p.validate("foo")
-    Traceback (most recent call last):
-        ...
-    ValueError: Field must not set a value
-    >>> t = p.validate("")
     """
 
     @classmethod

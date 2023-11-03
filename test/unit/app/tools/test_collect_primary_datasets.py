@@ -447,6 +447,9 @@ class MockObjectStore:
     def __init__(self):
         self.created_datasets = {}
 
+    def get_store_by(self, obj, **kwargs):
+        return "uuid"
+
     def update_from_file(self, dataset, file_name, create):
         if create:
             self.created_datasets[dataset] = file_name
@@ -458,7 +461,7 @@ class MockObjectStore:
     def exists(self, *args, **kwargs):
         return True
 
-    def get_filename(self, dataset):
+    def get_filename(self, dataset, **kwargs):
         return self.created_datasets[dataset]
 
 

@@ -6,8 +6,9 @@
  */
 
 import { getGalaxyInstance } from "app";
+import { storeToRefs } from "pinia";
 import defaultStore from "store/index";
-import { useHistoryItemsStore } from "stores/history/historyItemsStore";
+import { useHistoryItemsStore } from "stores/historyItemsStore";
 import { useHistoryStore } from "stores/historyStore";
 import { getCurrentHistoryFromServer } from "stores/services/history.services";
 import { loadSet } from "utils/setCache";
@@ -51,7 +52,8 @@ export async function watchHistoryOnce(store) {
     // get current history
     const checkForUpdate = new Date();
     const history = await getCurrentHistoryFromServer(lastUpdateTime);
-    historyItemsStore.setLastCheckedTime(checkForUpdate);
+    const { lastCheckedTime } = storeToRefs(historyItemsStore);
+    lastCheckedTime.value = checkForUpdate;
     if (!history || !history.id) {
         return;
     }
@@ -96,11 +98,11 @@ export async function watchHistoryOnce(store) {
 }
 
 export async function watchHistory(store = defaultStore) {
-    const historyItemsStore = useHistoryItemsStore();
+    const { isWatching } = storeToRefs(useHistoryItemsStore());
     // Only set up visibility listeners once, whenever a watch is first started
     if (watchingVisibility === false) {
         watchingVisibility = true;
-        historyItemsStore.setWatchingVisibility(watchingVisibility);
+        isWatching.value = watchingVisibility;
         document.addEventListener("visibilitychange", setVisibilityThrottle);
     }
     try {
@@ -109,7 +111,7 @@ export async function watchHistory(store = defaultStore) {
         // error alerting the user that watch history failed
         console.warn(error);
         watchingVisibility = false;
-        historyItemsStore.setWatchingVisibility(watchingVisibility);
+        isWatching.value = watchingVisibility;
     } finally {
         watchTimeout = setTimeout(() => {
             watchHistory(store);

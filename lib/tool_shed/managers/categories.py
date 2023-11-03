@@ -26,6 +26,9 @@ class CategoryManager:
     def __init__(self, app: ToolShedApp):
         self.app = app
 
+    def get(self, encoded_category_id: str) -> Category:
+        return suc.get_category(self.app, encoded_category_id)
+
     def create(self, trans: ProvidesUserContext, category_request: CreateCategoryRequest) -> Category:
         name = category_request.name
         description = category_request.description or name
@@ -71,6 +74,7 @@ class CategoryManager:
             name=as_dict["name"],
             description=as_dict["description"],
             repositories=as_dict["repositories"],
+            deleted=as_dict["deleted"],
         )
 
 

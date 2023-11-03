@@ -1,7 +1,7 @@
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from typing import Dict
+
+from ..base import common
+from ..base.twilltestcase import ShedTwillTestCase
 
 column_maker_repository_name = "column_maker_0020"
 column_maker_repository_description = "A flexible aligner."
@@ -562,8 +562,8 @@ class TestResetAllRepositoryMetadata(ShedTwillTestCase):
     def test_0110_reset_metadata_on_all_repositories(self):
         """Reset metadata on all repositories, then verify that it has not changed."""
         self.login(email=common.admin_email, username=common.admin_username)
-        old_metadata = dict()
-        new_metadata = dict()
+        old_metadata: Dict[str, Dict] = dict()
+        new_metadata: Dict[str, Dict] = dict()
         repositories = self.test_db_util.get_all_repositories()
         for repository in repositories:
             old_metadata[self.security.encode_id(repository.id)] = dict()

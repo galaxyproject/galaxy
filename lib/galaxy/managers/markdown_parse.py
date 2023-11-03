@@ -38,6 +38,8 @@ VALID_ARGUMENTS: Dict[str, Union[List[str], DynamicArguments]] = {
     "history_dataset_type": ["input", "output", "history_dataset_id"],
     "history_dataset_collection_display": ["input", "output", "history_dataset_collection_id"],
     "workflow_display": ["workflow_id"],
+    "workflow_license": ["workflow_id"],
+    "workflow_image": ["workflow_id", "size"],
     "job_metrics": ["step", "job_id"],
     "job_parameters": ["step", "job_id"],
     "tool_stderr": ["step", "job_id"],

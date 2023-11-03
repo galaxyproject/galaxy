@@ -18,7 +18,6 @@ import FormHidden from "./Elements/FormHidden.vue";
 import FormInput from "./Elements/FormInput.vue";
 import FormNumber from "./Elements/FormNumber.vue";
 import FormOptionalText from "./Elements/FormOptionalText.vue";
-import FormParameter from "./Elements/FormParameter.vue";
 import FormRulesEdit from "./Elements/FormRulesEdit.vue";
 import FormSelection from "./Elements/FormSelection.vue";
 import FormTags from "./Elements/FormTags.vue";
@@ -300,13 +299,6 @@ const isOptional = computed(() => !isRequired.value && attrs.value["optional"] !
             <FormDirectory v-else-if="props.type === 'directory_uri'" v-model="currentValue" />
             <FormUpload v-else-if="props.type === 'upload'" v-model="currentValue" />
             <FormRulesEdit v-else-if="props.type == 'rules'" v-model="currentValue" :target="attrs.target" />
-            <FormParameter
-                v-else-if="['data_dialog', 'ftpfile', 'library_data'].includes(props.type)"
-                :id="props.id"
-                v-model="currentValue"
-                :data-label="props.title"
-                :type="props.type"
-                :attributes="attrs" />
             <FormTags
                 v-else-if="props.type === 'tags'"
                 v-model="currentValue"

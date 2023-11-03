@@ -47,7 +47,7 @@
 <script>
 import LoadingSpan from "components/LoadingSpan";
 import { mapState } from "pinia";
-import { useHistoryItemsStore } from "stores/history/historyItemsStore";
+import { useHistoryItemsStore } from "stores/historyItemsStore";
 import { errorMessageAsString } from "utils/simple-error";
 
 import { useHistoryStore } from "@/stores/historyStore";
@@ -98,9 +98,9 @@ export default {
     },
     computed: {
         ...mapState(useHistoryStore, ["currentHistoryId", "getHistoryById"]),
-        ...mapState(useHistoryItemsStore, ["getLastUpdateTime"]),
+        ...mapState(useHistoryItemsStore, ["lastUpdateTime"]),
         historyStatusKey() {
-            return `${this.currentHistoryId}_${this.getLastUpdateTime}`;
+            return `${this.currentHistoryId}_${this.lastUpdateTime}`;
         },
     },
     watch: {

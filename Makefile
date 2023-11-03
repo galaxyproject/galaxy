@@ -189,7 +189,7 @@ remove-api-schema:
 	rm _shed_schema.yaml
 
 update-client-api-schema: client-node-deps build-api-schema
-	$(IN_VENV) cd client && node openapi_to_schema.mjs ../_schema.yaml > src/schema/schema.ts && npx prettier --write src/schema/schema.ts
+	$(IN_VENV) cd client && node openapi_to_schema.mjs ../_schema.yaml > src/api/schema/schema.ts && npx prettier --write src/api/schema/schema.ts
 	$(IN_VENV) cd client && node openapi_to_schema.mjs ../_shed_schema.yaml > ../lib/tool_shed/webapp/frontend/src/schema/schema.ts && npx prettier --write ../lib/tool_shed/webapp/frontend/src/schema/schema.ts
 	$(MAKE) remove-api-schema
 

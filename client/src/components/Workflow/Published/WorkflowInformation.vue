@@ -102,15 +102,15 @@ const publishedByUser = computed(() => `/workflows/list_published?f-username=${p
     display: flex;
     flex-direction: column;
     gap: 0.5rem;
-    align-items: start;
-    justify-content: start;
+    align-items: flex-start;
+    justify-content: flex-start;
     align-self: flex-start;
     overflow-y: scroll;
 
     .workflow-info-box {
         display: flex;
         flex-direction: column;
-        align-items: start;
+        align-items: flex-start;
     }
 }
 </style>

@@ -3474,7 +3474,7 @@ Describes the parameter type - each different type as different semantics and
 the tool form widget is different. Currently valid parameter types are:
 ``text``,  ``integer``,  ``float``,  ``boolean``,  ``genomebuild``,  ``select``,
 ``color``,  ``data_column``,  ``hidden``,  ``hidden_data``,  ``baseurl``,
-``file``,  ``ftpfile``,  ``data``,  ``data_collection``,  ``library_data``,
+``file``,  ``ftpfile``,  ``data``,  ``data_collection``,
 ``drill_down``. The definition of supported parameter types as defined in the
 ``parameter_types`` dictionary in
 [/lib/galaxy/tools/parameters/basic.py](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/tools/parameters/basic.py).
@@ -3750,7 +3750,6 @@ allow access to Python code to generate options for a select list. See
       <xs:enumeration value="color"/>
       <xs:enumeration value="boolean"/>
       <xs:enumeration value="genomebuild"/>
-      <xs:enumeration value="library_data"/>
       <xs:enumeration value="select"/>
       <xs:enumeration value="data_column"/>
       <xs:enumeration value="hidden"/>

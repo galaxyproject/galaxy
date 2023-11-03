@@ -122,8 +122,8 @@ change_user_address:
 
 sign_out:
   selectors:
-    cancel_button: '.modal-footer .buttons #button-0'
-    sign_out_button: '.modal-footer .buttons #button-1'
+    cancel_button: '.modal-footer .btn-secondary'
+    sign_out_button: '.modal-footer .btn-primary'
 
 dataset_details:
   selectors:
@@ -648,7 +648,7 @@ trs_import:
 
 workflow_run:
   selectors:
-    warning: ".ui-form-composite .alert-warning"
+    warning: ".ui-form-composite-messages .alert-warning"
     input_div: "[step-label='${label}']"
     input_data_div: "[step-label='${label}'] .multiselect"
     # TODO: put step labels in the DOM ideally
@@ -682,6 +682,31 @@ workflow_editor:
       connector_destroy_callout: "${_} [input-name='${name}'] + .delete-terminal-button"
       workflow_output_toggle: "${_} [data-output-name='${name}'] .callout-terminal "
       workflow_output_toggle_active: "${_} [data-output-name='${name}'] .mark-terminal-active"
+  tool_bar:
+    selectors:
+      _: ".workflow-editor-toolbar"
+      tool: "[data-tool='${tool}']"
+      tool_active: ".active[data-tool='${tool}']"
+      snapping_distance: "[data-option='snapping-distance']"
+      toggle_bold: "[data-option='toggle-bold']"
+      toggle_italic: "[data-option='toggle-italic']"
+      color: ".color-selector [data-color='${color}']"
+      font_size: "[data-option='font-size']"
+      line_thickness: "[data-option='line-thickness']"
+      smoothing: "[data-option='smoothing']"
+      remove_freehand: "[data-option='remove-freehand']"
+  comment:
+    selectors:
+      _: ".workflow-editor-comment"
+      text_comment: ".text-workflow-comment"
+      text_inner: ".text-workflow-comment span"
+      markdown_comment: ".markdown-workflow-comment"
+      markdown_rendered: ".markdown-workflow-comment .rendered-markdown"
+      frame_comment: ".frame-workflow-comment"
+      frame_title: ".frame-workflow-comment .frame-comment-header"
+      freehand_comment: ".freehand-workflow-comment"
+      freehand_path: ".freehand-workflow-comment path"
+      delete: "button[title='Delete comment']"
   selectors:
     canvas_body: '#workflow-canvas'
     edit_annotation: '#workflow-annotation'

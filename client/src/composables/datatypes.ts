@@ -1,11 +1,7 @@
 import type { Ref } from "vue";
 import { ref } from "vue";
 
-import { fetcher } from "@/schema";
-
-const datatypesFetcher = fetcher.path("/api/datatypes").method("get").create();
-const edamFormatsFetcher = fetcher.path("/api/datatypes/edam_formats/detailed").method("get").create();
-const edamDataFetcher = fetcher.path("/api/datatypes/edam_data/detailed").method("get").create();
+import { datatypesFetcher, edamDataFetcher, edamFormatsFetcher } from "@/api/datatypes";
 
 export interface DetailedDatatypes {
     extension: string;

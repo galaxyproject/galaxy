@@ -2,9 +2,9 @@
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref, watch } from "vue";
 
+import { fetchQuotaUsages, recalculateDiskUsage } from "@/api/users";
 import { useConfig } from "@/composables/config";
 import { useTaskMonitor } from "@/composables/taskMonitor";
-import { fetcher } from "@/schema";
 import { useUserStore } from "@/stores/userStore";
 import { errorMessageAsString } from "@/utils/simple-error";
 import { bytesToString } from "@/utils/utils";
@@ -56,8 +56,6 @@ async function displayRecalculationForSeconds(seconds: number) {
     });
 }
 
-const recalculateDiskUsage = fetcher.path("/api/users/current/recalculate_disk_usage").method("put").create();
-
 async function onRefresh() {
     try {
         const response = await recalculateDiskUsage({});
@@ -73,8 +71,6 @@ async function onRefresh() {
         errorMessage.value = errorMessageAsString(e);
     }
 }
-
-const fetchQuotaUsages = fetcher.path("/api/users/{user_id}/usage").method("get").create();
 
 async function loadQuotaUsages() {
     try {

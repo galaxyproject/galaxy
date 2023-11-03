@@ -13,7 +13,7 @@ class TestShedGalaxyInstallApi(ShedApiTestCase):
         response = self.galaxy_interactor._get("tools?in_panel=False")
         response.raise_for_status()
         expected_tool = populator.tool_guid(self, repository, "Add_a_column1", "1.1.0")
-        tool_ids = list((response.json().get("tools", {})).keys())
+        tool_ids = [t["id"] for t in response.json()]
         assert expected_tool in tool_ids, f"Didn't find {expected_tool} in {tool_ids}"
 
     def test_install_simple_after_repository_metadata_reset(self):
@@ -29,5 +29,5 @@ class TestShedGalaxyInstallApi(ShedApiTestCase):
         response = self.galaxy_interactor._get("tools?in_panel=False")
         response.raise_for_status()
         expected_tool = f"{self.host}:{self.port}/repos/{owner}/{name}/Add_a_column1/1.1.0"
-        tool_ids = list((response.json().get("tools", {})).keys())
+        tool_ids = [t["id"] for t in response.json()]
         assert expected_tool in tool_ids, f"Didn't find {expected_tool} in {tool_ids}"

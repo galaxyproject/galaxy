@@ -1,8 +1,6 @@
+from ..base import common
 from ..base.api import skip_if_api_v2
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from ..base.twilltestcase import ShedTwillTestCase
 
 column_maker_repository_name = "column_maker_0030"
 column_maker_repository_description = "Add column"
@@ -21,7 +19,7 @@ class TestRepositoryDependencyRevisions(ShedTwillTestCase):
     def test_0000_initiate_users(self):
         """Create necessary user accounts."""
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
-        self.login(email=common.admin_email, username=common.admin_username)
+        self.login(email=common.admin_email, username=common.admin_username, explicit_logout=True)
 
     def test_0005_create_category(self):
         """Create a category for this test suite"""

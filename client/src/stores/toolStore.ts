@@ -158,7 +158,7 @@ export const useToolStore = defineStore("toolStore", () => {
             await axios
                 .get(`${getAppRoot()}api/tools?in_panel=False`)
                 .then(({ data }) => {
-                    saveAllTools(data.tools);
+                    saveAllTools(data as Tool[]);
                     loading.value = false;
                 })
                 .catch((error) => {
@@ -177,10 +177,10 @@ export const useToolStore = defineStore("toolStore", () => {
                 currentPanelView.value = panelView;
             }
             await axios
-                .get(`${getAppRoot()}api/tools?in_panel=true&view=${panelView}`)
+                .get(`${getAppRoot()}api/tool_panels/${panelView}`)
                 .then(({ data }) => {
                     loading.value = false;
-                    savePanelView(panelView, data[panelView]);
+                    savePanelView(panelView, data);
                 })
                 .catch(async (error) => {
                     loading.value = false;
@@ -199,15 +199,15 @@ export const useToolStore = defineStore("toolStore", () => {
                 return;
             }
             loading.value = true;
-            const { data } = await axios.get(`${getAppRoot()}api/tools?in_panel=true&view=${panelView}`);
-            savePanelView(panelView, data[panelView]);
+            const { data } = await axios.get(`${getAppRoot()}api/tool_panels/${panelView}`);
+            savePanelView(panelView, data);
             loading.value = false;
         }
     }
 
     async function fetchPanel(panelView: string) {
-        const { data } = await axios.get(`${getAppRoot()}api/tools?in_panel=true&view=${panelView}`);
-        savePanelView(panelView, data[panelView]);
+        const { data } = await axios.get(`${getAppRoot()}api/tool_panels/${panelView}`);
+        savePanelView(panelView, data);
     }
 
     function saveToolForId(toolId: string, toolData: Tool) {
@@ -218,8 +218,11 @@ export const useToolStore = defineStore("toolStore", () => {
         Vue.set(toolResults.value, whooshQuery, toolsData);
     }
 
-    function saveAllTools(toolsData: Record<string, Tool>) {
-        toolsById.value = toolsData;
+    function saveAllTools(toolsData: Tool[]) {
+        toolsById.value = toolsData.reduce((acc, item) => {
+            acc[item.id] = item;
+            return acc;
+        }, {} as Record<string, Tool>);
     }
 
     function savePanelView(panelView: string, newPanel: { [id: string]: ToolSection | Tool }) {

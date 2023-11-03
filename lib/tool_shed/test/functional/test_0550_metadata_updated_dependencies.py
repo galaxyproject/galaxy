@@ -1,9 +1,7 @@
 import logging
 
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from ..base import common
+from ..base.twilltestcase import ShedTwillTestCase
 
 log = logging.getLogger(__name__)
 
@@ -58,7 +56,7 @@ class TestGetUpdatedMetadata(ShedTwillTestCase):
         category = self.create_category(name=category_name, description=category_description)
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         # Create a repository named package_freebayes_0550 owned by user1.
-        freebayes = self.get_or_create_repository(
+        freebayes_repository = self.get_or_create_repository(
             name=repositories["freebayes"]["name"],
             description=repositories["freebayes"]["description"],
             long_description=repositories["freebayes"]["long_description"],
@@ -66,21 +64,20 @@ class TestGetUpdatedMetadata(ShedTwillTestCase):
             category=category,
             strings_displayed=[],
         )
-        assert freebayes is not None, f"Error creating freebayes {repositories['freebayes']['name']}"
         self.commit_tar_to_repository(
-            freebayes,
+            freebayes_repository,
             "0550_files/package_freebayes_1_0550.tgz",
         )
         if not self.is_v2:
             # Visit the manage repository page for package_freebayes_0_5_9_0100.
             self.display_manage_repository_page(
-                freebayes, strings_displayed=["Tool dependencies", "will not be", "to this repository"]
+                freebayes_repository, strings_displayed=["Tool dependencies", "will not be", "to this repository"]
             )
 
     def test_0010_create_samtools_repository(self):
         """Create and populate the package_samtools_0550 repository."""
         category = self.create_category(name=category_name, description=category_description)
-        samtools = self.get_or_create_repository(
+        samtools_repository = self.get_or_create_repository(
             name=repositories["samtools"]["name"],
             description=repositories["samtools"]["description"],
             long_description=repositories["samtools"]["long_description"],
@@ -88,9 +85,8 @@ class TestGetUpdatedMetadata(ShedTwillTestCase):
             category=category,
             strings_displayed=[],
         )
-        assert samtools is not None, f"Error creating samtools {repositories['samtools']['name']}"
         self.commit_tar_to_repository(
-            samtools,
+            samtools_repository,
             "0550_files/package_samtools_1_0550.tgz",
             commit_message="Uploaded samtools 1.0.",
         )
@@ -106,7 +102,6 @@ class TestGetUpdatedMetadata(ShedTwillTestCase):
             category=category,
             strings_displayed=[],
         )
-        assert repository is not None, f"Error creating repository {repositories['filtering']['name']}"
         self.commit_tar_to_repository(
             repository,
             "0550_files/filtering_1.0.tgz",

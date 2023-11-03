@@ -6,14 +6,14 @@ import { BAlert, BBadge, BButton, BButtonGroup, BListGroup, BListGroupItem, BPag
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
+import {
+    ArchivedHistorySummary,
+    fetchArchivedHistories,
+    reimportArchivedHistoryFromExportRecord,
+} from "@/api/histories.archived";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useToast } from "@/composables/toast";
 import { useHistoryStore } from "@/stores/historyStore";
-import * as ArchiveServices from "@/stores/services/historyArchive.services";
-import {
-    type ArchivedHistorySummary,
-    reimportHistoryFromExportRecordAsync,
-} from "@/stores/services/historyArchive.services";
 import localize from "@/utils/localization";
 
 import DelayedInput from "@/components/Common/DelayedInput.vue";
@@ -57,7 +57,7 @@ async function updateSearchQuery(query: string) {
 
 async function loadArchivedHistories() {
     isLoading.value = true;
-    const result = await ArchiveServices.fetchArchivedHistories({
+    const result = await fetchArchivedHistories({
         query: searchText.value,
         currentPage: currentPage.value,
         pageSize: perPage.value,
@@ -118,7 +118,7 @@ async function onImportCopy(history: ArchivedHistorySummary) {
     }
 
     try {
-        await reimportHistoryFromExportRecordAsync(history);
+        await reimportArchivedHistoryFromExportRecord(history);
         toast.success(
             localize(
                 `The History '${history.name}' it's being imported. This process may take a while. Check your histories list after a few minutes.`

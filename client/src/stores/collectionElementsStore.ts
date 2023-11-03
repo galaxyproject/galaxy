@@ -1,8 +1,9 @@
 import { defineStore } from "pinia";
 import { computed, del, ref, set } from "vue";
 
-import { CollectionEntry, DCESummary, HDCASummary, HistoryContentItemBase, isHDCA } from "./services";
-import { fetchCollectionDetails, fetchElementsFromCollection } from "./services/datasetCollection.service";
+import type { CollectionEntry, DCESummary, HDCASummary, HistoryContentItemBase } from "@/api";
+import { isHDCA } from "@/api";
+import { fetchCollectionDetails, fetchElementsFromCollection } from "@/api/datasetCollections";
 
 /**
  * Represents an element in a collection that has not been fetched yet.
@@ -122,7 +123,7 @@ export const useCollectionElementsStore = defineStore("collectionElementsStore",
     async function fetchCollection(params: { id: string }) {
         set(loadingCollectionElements.value, params.id, true);
         try {
-            const collection = await fetchCollectionDetails({ hdcaId: params.id });
+            const collection = await fetchCollectionDetails({ id: params.id });
             set(storedCollections.value, collection.id, collection);
             return collection;
         } finally {

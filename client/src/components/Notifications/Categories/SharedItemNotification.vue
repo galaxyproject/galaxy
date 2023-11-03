@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BCol, BLink, BRow } from "bootstrap-vue";
 import { computed } from "vue";
 
-import type { SharedItemNotification } from "@/components/Notifications";
+import type { SharedItemNotification } from "@/api/notifications";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 import { absPath } from "@/utils/redirect";
 

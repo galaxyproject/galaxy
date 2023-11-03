@@ -2,13 +2,12 @@
 import { computed, type ComputedRef, onMounted, watch } from "vue";
 import Multiselect from "vue-multiselect";
 
-import { type DataOption } from "@/components/Form/Elements/FormData/types";
 import { useMultiselect } from "@/composables/useMultiselect";
 import { uid } from "@/utils/utils";
 
 const { ariaExpanded, onOpen, onClose } = useMultiselect();
 
-type SelectValue = DataOption | string | number | null;
+type SelectValue = Record<string, unknown> | string | number | null;
 
 interface SelectOption {
     label: string;
@@ -23,7 +22,7 @@ const props = withDefaults(
         optional?: boolean;
         options: Array<SelectOption>;
         placeholder?: string;
-        value?: Array<SelectValue> | string | number;
+        value?: Array<SelectValue> | Record<string, unknown> | string | number;
     }>(),
     {
         id: `form-select-${uid()}`,

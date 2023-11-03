@@ -1198,12 +1198,16 @@ class DefaultJobDispatcher:
         except KeyError:
             log.error(f"({job_wrapper.job_id}) Invalid job runner: {runner_name}")
             job_wrapper.fail(DEFAULT_JOB_RUNNER_FAILURE_MESSAGE)
+            return None
         if get_task_runner and job_wrapper.can_split() and runner.runner_name != "PulsarJobRunner":
             return self.job_runners["tasks"]
         return runner
 
     def put(self, job_wrapper):
         runner = self.get_job_runner(job_wrapper, get_task_runner=True)
+        if runner is None:
+            # Something went wrong, we've already failed the job wrapper
+            return
         if isinstance(job_wrapper, TaskWrapper):
             # DBTODO Refactor
             log.debug(f"({job_wrapper.job_id}) Dispatching task {job_wrapper.task_id} to task runner")

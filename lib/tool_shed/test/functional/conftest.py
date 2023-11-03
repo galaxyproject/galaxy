@@ -10,13 +10,12 @@ from playwright.sync_api import (
     Browser,
     BrowserContext,
 )
-from typing_extensions import Literal
 
 from ..base.browser import ShedBrowser
 from ..base.playwrightbrowser import PlaywrightShedBrowser
 from ..base.twillbrowser import TwillShedBrowser
 
-DEFAULT_BROWSER: Literal["twill", "playwright"] = "playwright"
+DEFAULT_BROWSER = "playwright"
 
 
 def twill_browser() -> Generator[ShedBrowser, None, None]:
@@ -28,10 +27,13 @@ def playwright_browser(class_context: BrowserContext) -> Generator[ShedBrowser, 
     yield PlaywrightShedBrowser(page)
 
 
-if os.environ.get("TOOL_SHED_TEST_BROWSER", DEFAULT_BROWSER) == "twill":
+test_browser = os.environ.get("TOOL_SHED_TEST_BROWSER", DEFAULT_BROWSER)
+if test_browser == "twill":
     shed_browser = pytest.fixture(scope="class")(twill_browser)
-else:
+elif test_browser == "playwright":
     shed_browser = pytest.fixture(scope="class")(playwright_browser)
+else:
+    raise ValueError(f"Unrecognized value for TOOL_SHED_TEST_BROWSER: {test_browser}")
 
 
 @pytest.fixture(scope="class")

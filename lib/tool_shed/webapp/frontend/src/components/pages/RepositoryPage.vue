@@ -242,7 +242,7 @@ const toolsYaml = computed(
                         <revision-actions
                             :repository-id="repositoryId"
                             :current-metadata="currentMetadata"
-                            v-if="currentMetadata && can_manage"
+                            v-if="currentMetadata && canManage"
                             @update="onUpdate"
                         />
                     </revision-select>

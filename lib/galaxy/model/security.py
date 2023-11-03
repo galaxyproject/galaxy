@@ -605,21 +605,21 @@ class GalaxyRBACAgent(RBACAgent):
         return False
 
     def can_access_library_item(self, roles, item, user):
-        if type(item) == self.model.Library:
+        if isinstance(item, self.model.Library):
             return self.can_access_library(roles, item)
-        elif type(item) == self.model.LibraryFolder:
+        elif isinstance(item, self.model.LibraryFolder):
             return (
                 self.can_access_library(roles, item.parent_library) and self.check_folder_contents(user, roles, item)[0]
             )
-        elif type(item) == self.model.LibraryDataset:
+        elif isinstance(item, self.model.LibraryDataset):
             return self.can_access_library(roles, item.folder.parent_library) and self.can_access_dataset(
                 roles, item.library_dataset_dataset_association.dataset
             )
-        elif type(item) == self.model.LibraryDatasetDatasetAssociation:
+        elif isinstance(item, self.model.LibraryDatasetDatasetAssociation):
             return self.can_access_library(
                 roles, item.library_dataset.folder.parent_library
             ) and self.can_access_dataset(roles, item.dataset)
-        elif type(item) == self.model.LibraryDatasetCollectionAssociation:
+        elif isinstance(item, self.model.LibraryDatasetCollectionAssociation):
             return self.can_access_library(roles, item.folder.parent_library)
         else:
             log.warning(f"Unknown library item type: {type(item)}")
@@ -987,12 +987,12 @@ class GalaxyRBACAgent(RBACAgent):
                 permissions[action] = [item_permission.role]
         return permissions
 
-    def copy_dataset_permissions(self, src, dst):
+    def copy_dataset_permissions(self, src, dst, flush=True):
         if not isinstance(src, self.model.Dataset):
             src = src.dataset
         if not isinstance(dst, self.model.Dataset):
             dst = dst.dataset
-        self.set_all_dataset_permissions(dst, self.get_permissions(src))
+        self.set_all_dataset_permissions(dst, self.get_permissions(src), flush=flush)
 
     def privately_share_dataset(self, dataset, users=None):
         dataset.ensure_shareable()

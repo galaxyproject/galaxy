@@ -21,6 +21,8 @@ from sqlalchemy import (
     desc,
     false,
     func,
+    nulls_first,
+    nulls_last,
     select,
     true,
 )
@@ -348,8 +350,8 @@ class HDAStorageCleanerManager(base.StorageCleanerManager):
         self.sort_map = {
             StoredItemOrderBy.NAME_ASC: asc(model.HistoryDatasetAssociation.name),
             StoredItemOrderBy.NAME_DSC: desc(model.HistoryDatasetAssociation.name),
-            StoredItemOrderBy.SIZE_ASC: asc(model.Dataset.total_size),
-            StoredItemOrderBy.SIZE_DSC: desc(model.Dataset.total_size),
+            StoredItemOrderBy.SIZE_ASC: nulls_first(asc(model.Dataset.total_size)),
+            StoredItemOrderBy.SIZE_DSC: nulls_last(desc(model.Dataset.total_size)),
             StoredItemOrderBy.UPDATE_TIME_ASC: asc(model.HistoryDatasetAssociation.update_time),
             StoredItemOrderBy.UPDATE_TIME_DSC: desc(model.HistoryDatasetAssociation.update_time),
         }

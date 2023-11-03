@@ -1,8 +1,9 @@
 <script setup lang="ts">
+import axios from "axios";
 import { storeToRefs } from "pinia";
-import { ref, watch } from "vue";
+import { onMounted, ref, watch } from "vue";
 
-import { useConfig } from "@/composables/config";
+import { getAppRoot } from "@/onload";
 import { useToolStore } from "@/stores/toolStore";
 import localize from "@/utils/localization";
 
@@ -26,13 +27,31 @@ const emit = defineEmits<{
     (e: "onInsertWorkflowSteps", workflowId: string, workflowStepCount: number | undefined): void;
 }>();
 
-const { isConfigLoaded, config } = useConfig();
+const arePanelsFetched = ref(false);
+const defaultPanelView = ref("");
 const toolStore = useToolStore();
 const { currentPanelView, isPanelPopulated } = storeToRefs(toolStore);
 
 const query = ref("");
 const panelViews = ref(null);
 const showAdvanced = ref(false);
+
+onMounted(async () => {
+    await axios
+        .get(`${getAppRoot()}api/tool_panels`)
+        .then(async ({ data }) => {
+            const { default_panel_view, views } = data;
+            defaultPanelView.value = default_panel_view;
+            panelViews.value = views;
+            await initializeTools();
+        })
+        .catch((error) => {
+            console.error(error);
+        })
+        .finally(() => {
+            arePanelsFetched.value = true;
+        });
+});
 
 watch(
     () => currentPanelView.value,
@@ -41,34 +60,22 @@ watch(
     }
 );
 
-// as soon as config is loaded, load tools
-watch(
-    () => isConfigLoaded.value,
-    async (newVal) => {
-        if (newVal) {
-            await loadTools();
-        }
-    },
-    { immediate: true }
-);
-
 // if currentPanelView ever becomes null || "", load tools
 watch(
     () => currentPanelView.value,
     async (newVal) => {
-        if (!newVal && isConfigLoaded.value) {
-            await loadTools();
+        if (!newVal && arePanelsFetched.value) {
+            await initializeTools();
         }
     }
 );
 
-async function loadTools() {
-    panelViews.value = panelViews.value === null ? config.value.panel_views : panelViews.value;
+async function initializeTools() {
     try {
         await toolStore.fetchTools();
-        await toolStore.initCurrentPanelView(config.value.default_panel_view);
+        await toolStore.initCurrentPanelView(defaultPanelView.value);
     } catch (error: any) {
-        console.error("ToolPanel - Load tools error:", error);
+        console.error("ToolPanel - Intialize error:", error);
     }
 }
 
@@ -94,7 +101,7 @@ function onInsertWorkflowSteps(workflowId: string, workflowStepCount: number | u
 </script>
 
 <template>
-    <div v-if="isConfigLoaded" class="unified-panel" aria-labelledby="toolbox-heading">
+    <div v-if="arePanelsFetched" class="unified-panel" aria-labelledby="toolbox-heading">
         <div unselectable="on">
             <div class="unified-panel-header-inner">
                 <nav class="d-flex justify-content-between mx-3 my-2">

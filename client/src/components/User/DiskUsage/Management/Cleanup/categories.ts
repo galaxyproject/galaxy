@@ -3,8 +3,8 @@ import { ref } from "vue";
 import localize from "@/utils/localization";
 
 import {
-    cleanupDiscardedDatasets,
-    cleanupDiscardedHistories,
+    cleanupDatasets,
+    cleanupHistories,
     fetchArchivedHistories,
     fetchArchivedHistoriesSummary,
     fetchDiscardedDatasets,
@@ -30,7 +30,7 @@ export function useCleanupCategories() {
                     ),
                     fetchSummary: fetchDiscardedDatasetsSummary,
                     fetchItems: fetchDiscardedDatasets,
-                    cleanupItems: cleanupDiscardedDatasets,
+                    cleanupItems: cleanupDatasets,
                 },
                 {
                     id: "deleted_histories",
@@ -42,7 +42,7 @@ export function useCleanupCategories() {
                     ),
                     fetchSummary: fetchDiscardedHistoriesSummary,
                     fetchItems: fetchDiscardedHistories,
-                    cleanupItems: cleanupDiscardedHistories,
+                    cleanupItems: cleanupHistories,
                 },
             ],
         },
@@ -60,7 +60,7 @@ export function useCleanupCategories() {
                     ),
                     fetchSummary: fetchArchivedHistoriesSummary,
                     fetchItems: fetchArchivedHistories,
-                    cleanupItems: cleanupDiscardedHistories,
+                    cleanupItems: cleanupHistories,
                 },
             ],
         },

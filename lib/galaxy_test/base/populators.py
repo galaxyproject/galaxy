@@ -52,6 +52,7 @@ from abc import (
 )
 from functools import wraps
 from io import StringIO
+from operator import itemgetter
 from typing import (
     Any,
     Callable,
@@ -156,9 +157,9 @@ def skip_without_tool(tool_id: str):
             interactor = api_test_case.anonymous_galaxy_interactor
             index = interactor.get("tools", data=dict(in_panel=False))
             api_asserts.assert_status_code_is_ok(index, "Failed to fetch toolbox for target Galaxy.")
-            tools = index.json().get("tools", {})
-            # `in_panel=False`, so we have a toolsById dict...
-            tool_ids = list(tools.keys())
+            tools = index.json()
+            # In panels by default, so flatten out sections...
+            tool_ids = [itemgetter("id")(_) for _ in tools]
             return tool_ids
 
         @wraps(method)
@@ -1020,6 +1021,28 @@ class BaseDatasetPopulator(BasePopulator):
         }
         self.wait_for_history(history_id, assert_ok=True)
         return self.run_tool("collection_creates_list", inputs, history_id)
+
+    def new_error_dataset(self, history_id: str) -> str:
+        payload = self.run_tool_payload(
+            tool_id="test_data_source",
+            inputs={
+                "URL": f"file://{os.path.join(os.getcwd(), 'README.rst')}",
+                "URL_method": "get",
+                "data_type": "bed",
+            },
+            history_id=history_id,
+        )
+        create_response = self._post("tools", data=payload)
+        api_asserts.assert_status_code_is(create_response, 200)
+        create_object = create_response.json()
+        api_asserts.assert_has_keys(create_object, "outputs")
+        assert len(create_object["outputs"]) == 1
+        output = create_object["outputs"][0]
+        self.wait_for_history(history_id, assert_ok=False)
+        # wait=False to allow errors
+        output_details = self.get_history_dataset_details(history_id, dataset=output, wait=False)
+        assert output_details["state"] == "error", output_details
+        return output_details["id"]
 
     def run_exit_code_from_file(self, history_id: str, hdca_id: str) -> dict:
         exit_code_inputs = {
@@ -2289,8 +2312,9 @@ class CwlPopulator:
             raw_tool_id = os.path.basename(tool_id)
             index = self.dataset_populator._get("tools", data=dict(in_panel=False))
             index.raise_for_status()
-            tools = index.json().get("tools", {})
-            tool_ids = list(tools.keys())
+            tools = index.json()
+            # In panels by default, so flatten out sections...
+            tool_ids = [itemgetter("id")(_) for _ in tools]
             if raw_tool_id in tool_ids:
                 galaxy_tool_id = raw_tool_id
             else:

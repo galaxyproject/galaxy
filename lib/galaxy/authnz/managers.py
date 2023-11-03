@@ -23,7 +23,7 @@ from galaxy.util import (
     unicodify,
 )
 from .custos_authnz import (
-    CustosAuthnz,
+    CustosAuthFactory,
     KEYCLOAK_BACKENDS,
 )
 from .psa_authnz import (
@@ -67,7 +67,7 @@ class AuthnzManager:
             if root.tag != "OIDC":
                 raise etree.ParseError(
                     "The root element in OIDC_Config xml file is expected to be `OIDC`, "
-                    "found `{}` instead -- unable to continue.".format(root.tag)
+                    f"found `{root.tag}` instead -- unable to continue."
                 )
             for child in root:
                 if child.tag != "Setter":
@@ -79,7 +79,7 @@ class AuthnzManager:
                 if "Property" not in child.attrib or "Value" not in child.attrib or "Type" not in child.attrib:
                     log.error(
                         "Could not find the node attributes `Property` and/or `Value` and/or `Type`;"
-                        " found these attributes: `{}`; skipping this node.".format(child.attrib)
+                        f" found these attributes: `{child.attrib}`; skipping this node."
                     )
                     continue
                 try:
@@ -110,7 +110,7 @@ class AuthnzManager:
             if root.tag != "OIDC":
                 raise etree.ParseError(
                     "The root element in OIDC config xml file is expected to be `OIDC`, "
-                    "found `{}` instead -- unable to continue.".format(root.tag)
+                    f"found `{root.tag}` instead -- unable to continue."
                 )
             for child in root:
                 if child.tag != "provider":
@@ -210,7 +210,7 @@ class AuthnzManager:
         unified_provider_name = self._unify_provider_name(provider)
         if unified_provider_name in self.oidc_backends_config:
             provider = unified_provider_name
-            identity_provider_class = self._get_identity_provider_class(self.oidc_backends_implementation[provider])
+            identity_provider_class = self._get_identity_provider_factory(self.oidc_backends_implementation[provider])
             try:
                 if provider in KEYCLOAK_BACKENDS:
                     return (
@@ -240,11 +240,11 @@ class AuthnzManager:
             return False, msg, None
 
     @staticmethod
-    def _get_identity_provider_class(implementation):
+    def _get_identity_provider_factory(implementation):
         if implementation == "psa":
             return PSAAuthnz
         elif implementation == "custos":
-            return CustosAuthnz
+            return CustosAuthFactory.GetCustosBasedAuthProvider
         else:
             return None
 

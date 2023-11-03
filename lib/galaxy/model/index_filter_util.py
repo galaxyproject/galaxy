@@ -52,7 +52,13 @@ def tag_filter(assocation_model_class, term_text, quoted: bool = False):
             )
     else:
         if not quoted:
-            return assocation_model_class.user_tname.ilike(f"%{term_text}%")
+            return or_(
+                assocation_model_class.user_tname.ilike(f"%{term_text}%"),
+                and_(
+                    assocation_model_class.user_tname.ilike("name"),
+                    assocation_model_class.user_value.ilike(f"%{term_text}%"),
+                ),
+            )
         else:
             return assocation_model_class.user_tname == term_text
 

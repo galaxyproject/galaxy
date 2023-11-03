@@ -1386,7 +1386,7 @@ class HistoryItemOperator:
         self._operation_map: Dict[HistoryContentItemOperation, ItemOperation] = {
             HistoryContentItemOperation.hide: lambda item, params, trans: self._hide(item),
             HistoryContentItemOperation.unhide: lambda item, params, trans: self._unhide(item),
-            HistoryContentItemOperation.delete: lambda item, params, trans: self._delete(item),
+            HistoryContentItemOperation.delete: lambda item, params, trans: self._delete(item, trans),
             HistoryContentItemOperation.undelete: lambda item, params, trans: self._undelete(item),
             HistoryContentItemOperation.purge: lambda item, params, trans: self._purge(item, trans),
             HistoryContentItemOperation.change_datatype: lambda item, params, trans: self._change_datatype(
@@ -1417,9 +1417,10 @@ class HistoryItemOperator:
     def _unhide(self, item: HistoryItemModel):
         item.visible = True
 
-    def _delete(self, item: HistoryItemModel):
-        manager = self._get_item_manager(item)
-        manager.delete(item, flush=self.flush)
+    def _delete(self, item: HistoryItemModel, trans: ProvidesHistoryContext):
+        if isinstance(item, HistoryDatasetCollectionAssociation):
+            return self.dataset_collection_manager.delete(trans, "history", item.id, recursive=True, purge=False)
+        return self.hda_manager.delete(item, flush=self.flush)
 
     def _undelete(self, item: HistoryItemModel):
         if getattr(item, "purged", False):

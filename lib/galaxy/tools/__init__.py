@@ -39,7 +39,10 @@ from galaxy import (
     exceptions,
     model,
 )
-from galaxy.exceptions import ToolInputsNotReadyException
+from galaxy.exceptions import (
+    ToolInputsNotOKException,
+    ToolInputsNotReadyException,
+)
 from galaxy.job_execution import output_collect
 from galaxy.metadata import get_metadata_compute_strategy
 from galaxy.model import (
@@ -314,6 +317,21 @@ WORKFLOW_SAFE_TOOL_VERSION_UPDATES = {
     "CONVERTER_bam_to_coodinate_sorted_bam": safe_update(parse_version("1.0.0"), parse_version("1.0.1")),
     "CONVERTER_bam_to_qname_sorted_bam": safe_update(parse_version("1.0.0"), parse_version("1.0.1")),
 }
+
+
+def get_safe_version(tool: "Tool", requested_tool_version: str) -> Optional[str]:
+    if tool.id:
+        safe_version = WORKFLOW_SAFE_TOOL_VERSION_UPDATES.get(tool.id)
+        if (
+            safe_version
+            and tool.lineage
+            and safe_version.current_version >= parse_version(requested_tool_version) >= safe_version.min_version
+        ):
+            # tool versions are sorted from old to new, so check newest version first
+            for lineage_version in reversed(tool.lineage.tool_versions):
+                if safe_version.current_version >= parse_version(lineage_version) >= safe_version.min_version:
+                    return lineage_version
+    return None
 
 
 class ToolNotFoundException(Exception):
@@ -2860,7 +2878,7 @@ class ExpressionTool(Tool):
                         copy_object = input_dataset
                         break
                 if copy_object is None:
-                    raise Exception("Failed to find dataset output.")
+                    raise exceptions.MessageException("Failed to find dataset output.")
                 out_data[key].copy_from(copy_object)
 
     def parse_environment_variables(self, tool_source):
@@ -3202,8 +3220,10 @@ class DatabaseOperationTool(Tool):
 
             if self.require_dataset_ok:
                 if state != model.Dataset.states.OK:
-                    raise ValueError(
-                        f"Tool requires inputs to be in valid state, but dataset {input_dataset} is in state '{input_dataset.state}'"
+                    raise ToolInputsNotOKException(
+                        f"Tool requires inputs to be in valid state, but dataset {input_dataset} is in state '{input_dataset.state}'",
+                        src="hda",
+                        id=input_dataset.id,
                     )
 
         for input_dataset in input_datasets.values():
@@ -3247,7 +3267,9 @@ class UnzipCollectionTool(DatabaseOperationTool):
 
         assert collection.collection_type == "paired"
         forward_o, reverse_o = collection.dataset_instances
-        forward, reverse = forward_o.copy(copy_tags=forward_o.tags), reverse_o.copy(copy_tags=reverse_o.tags)
+        forward, reverse = forward_o.copy(copy_tags=forward_o.tags, flush=False), reverse_o.copy(
+            copy_tags=reverse_o.tags, flush=False
+        )
         self._add_datasets_to_history(history, [forward, reverse])
 
         out_data["forward"] = forward
@@ -3263,7 +3285,9 @@ class ZipCollectionTool(DatabaseOperationTool):
         forward_o = incoming["input_forward"]
         reverse_o = incoming["input_reverse"]
 
-        forward, reverse = forward_o.copy(copy_tags=forward_o.tags), reverse_o.copy(copy_tags=reverse_o.tags)
+        forward, reverse = forward_o.copy(copy_tags=forward_o.tags, flush=False), reverse_o.copy(
+            copy_tags=reverse_o.tags, flush=False
+        )
         new_elements = {}
         new_elements["forward"] = forward
         new_elements["reverse"] = reverse
@@ -3294,7 +3318,9 @@ class BuildListCollectionTool(DatabaseOperationTool):
                     identifier = getattr(incoming_repeat["input"], "element_identifier", incoming_repeat["input"].name)
                 elif id_select == "manual":
                     identifier = incoming_repeat["id_cond"]["identifier"]
-                new_elements[identifier] = incoming_repeat["input"].copy(copy_tags=incoming_repeat["input"].tags)
+                new_elements[identifier] = incoming_repeat["input"].copy(
+                    copy_tags=incoming_repeat["input"].tags, flush=False
+                )
 
         self._add_datasets_to_history(history, new_elements.values())
         output_collections.create_collection(
@@ -3326,9 +3352,11 @@ class ExtractDatasetCollectionTool(DatabaseOperationTool):
         elif how == "by_index":
             extracted_element = collection[int(incoming["which"]["index"])]
         else:
-            raise Exception("Invalid tool parameters.")
+            raise exceptions.MessageException("Invalid tool parameters.")
         extracted = extracted_element.element_object
-        extracted_o = extracted.copy(copy_tags=extracted.tags, new_name=extracted_element.element_identifier)
+        extracted_o = extracted.copy(
+            copy_tags=extracted.tags, new_name=extracted_element.element_identifier, flush=False
+        )
         self._add_datasets_to_history(history, [extracted_o], datasets_visible=True)
 
         out_data["output"] = extracted_o
@@ -3364,46 +3392,35 @@ class MergeCollectionTool(DatabaseOperationTool):
                 if element_identifier not in identifiers_map:
                     identifiers_map[element_identifier] = []
                 elif dupl_actions == "fail":
-                    raise Exception(f"Duplicate collection element identifiers found for [{element_identifier}]")
+                    raise exceptions.MessageException(
+                        f"Duplicate collection element identifiers found for [{element_identifier}]"
+                    )
                 identifiers_map[element_identifier].append(input_num)
 
         for copy, input_list in enumerate(input_lists):
             for dce in input_list.collection.elements:
                 element = dce.element_object
-                valid = False
+                element_identifier = dce.element_identifier
+                identifier_seen = element_identifier in new_element_structure
+                appearances = identifiers_map[element_identifier]
+                add_suffix = False
+                if dupl_actions == "suffix_every":
+                    add_suffix = True
+                elif dupl_actions == "suffix_conflict" and len(appearances) > 1:
+                    add_suffix = True
+                elif dupl_actions == "suffix_conflict_rest" and len(appearances) > 1 and appearances[0] != copy:
+                    add_suffix = True
 
-                # dealing with a single element
-                if hasattr(element, "is_ok"):
-                    if element.is_ok:
-                        valid = True
-                elif hasattr(element, "dataset_instances"):
-                    # we are probably a list:paired dataset, both need to be in non error state
-                    forward_o, reverse_o = element.dataset_instances
-                    if forward_o.is_ok and reverse_o.is_ok:
-                        valid = True
+                if dupl_actions == "keep_first" and identifier_seen:
+                    continue
 
-                if valid:
-                    element_identifier = dce.element_identifier
-                    identifier_seen = element_identifier in new_element_structure
-                    appearances = identifiers_map[element_identifier]
-                    add_suffix = False
-                    if dupl_actions == "suffix_every":
-                        add_suffix = True
-                    elif dupl_actions == "suffix_conflict" and len(appearances) > 1:
-                        add_suffix = True
-                    elif dupl_actions == "suffix_conflict_rest" and len(appearances) > 1 and appearances[0] != copy:
-                        add_suffix = True
+                if add_suffix and suffix_pattern:
+                    suffix = suffix_pattern.replace("#", str(copy + 1))
+                    effective_identifer = f"{element_identifier}{suffix}"
+                else:
+                    effective_identifer = element_identifier
 
-                    if dupl_actions == "keep_first" and identifier_seen:
-                        continue
-
-                    if add_suffix and suffix_pattern:
-                        suffix = suffix_pattern.replace("#", str(copy + 1))
-                        effective_identifer = f"{element_identifier}{suffix}"
-                    else:
-                        effective_identifer = element_identifier
-
-                    new_element_structure[effective_identifer] = element
+                new_element_structure[effective_identifer] = element
 
         # Don't copy until we know everything is fine and we have the structure of the list ready to go.
         new_elements = {}
@@ -3411,7 +3428,7 @@ class MergeCollectionTool(DatabaseOperationTool):
             if getattr(value, "history_content_type", None) == "dataset":
                 copied_value = value.copy(copy_tags=value.tags, flush=False)
             else:
-                copied_value = value.copy()
+                copied_value = value.copy(flush=False)
             new_elements[key] = copied_value
 
         self._add_datasets_to_history(history, new_elements.values())
@@ -3431,7 +3448,7 @@ class FilterDatasetsTool(DatabaseOperationTool):
             if getattr(dce.element_object, "history_content_type", None) == "dataset":
                 copied_value = dce.element_object.copy(copy_tags=dce.element_object.tags, flush=False)
             else:
-                copied_value = dce.element_object.copy()
+                copied_value = dce.element_object.copy(flush=False)
             new_elements[element_identifier] = copied_value
         return new_elements
 
@@ -3556,12 +3573,12 @@ class SortTool(DatabaseOperationTool):
                 except KeyError:
                     hdca_history_name = f"{hdca.hid}: {hdca.name}"
                     message = f"List of element identifiers does not match element identifiers in collection '{hdca_history_name}'"
-                    raise Exception(message)
+                    raise exceptions.MessageException(message)
             else:
                 message = f"Number of lines must match number of list elements ({len(elements)}), but file has {data_lines} lines"
-                raise Exception(message)
+                raise exceptions.MessageException(message)
         else:
-            raise Exception(f"Unknown sort_type '{sorttype}'")
+            raise exceptions.MessageException(f"Unknown sort_type '{sorttype}'")
 
         if presort_elements is not None:
             sorted_elements = [x[1] for x in sorted(presort_elements, key=lambda x: x[0])]
@@ -3593,20 +3610,20 @@ class RelabelFromFileTool(DatabaseOperationTool):
         def add_copied_value_to_new_elements(new_label, dce_object):
             new_label = new_label.strip()
             if new_label in new_elements:
-                raise Exception(
+                raise exceptions.MessageException(
                     f"New identifier [{new_label}] appears twice in resulting collection, these values must be unique."
                 )
             if getattr(dce_object, "history_content_type", None) == "dataset":
                 copied_value = dce_object.copy(copy_tags=dce_object.tags, flush=False)
             else:
-                copied_value = dce_object.copy()
+                copied_value = dce_object.copy(flush=False)
             new_elements[new_label] = copied_value
 
         new_labels_path = new_labels_dataset_assoc.file_name
         with open(new_labels_path) as fh:
             new_labels = fh.readlines(1024 * 1000000)
         if strict and len(hdca.collection.elements) != len(new_labels):
-            raise Exception("Relabel mapping file contains incorrect number of identifiers")
+            raise exceptions.MessageException("Relabel mapping file contains incorrect number of identifiers")
         if how_type == "tabular":
             # We have a tabular file, where the first column is an existing element identifier,
             # and the second column is the new element identifier.
@@ -3618,7 +3635,7 @@ class RelabelFromFileTool(DatabaseOperationTool):
                 default = None if strict else element_identifier
                 new_label = new_labels_dict.get(element_identifier, default)
                 if not new_label:
-                    raise Exception(f"Failed to find new label for identifier [{element_identifier}]")
+                    raise exceptions.MessageException(f"Failed to find new label for identifier [{element_identifier}]")
                 add_copied_value_to_new_elements(new_label, dce_object)
         else:
             # If new_labels_dataset_assoc is not a two-column tabular dataset we label with the current line of the dataset
@@ -3627,7 +3644,7 @@ class RelabelFromFileTool(DatabaseOperationTool):
                 add_copied_value_to_new_elements(new_labels[i], dce_object)
         for key in new_elements.keys():
             if not re.match(r"^[\w\- \.,]+$", key):
-                raise Exception(f"Invalid new collection identifier [{key}]")
+                raise exceptions.MessageException(f"Invalid new collection identifier [{key}]")
         self._add_datasets_to_history(history, new_elements.values())
         output_collections.create_collection(
             next(iter(self.outputs.values())), "output", elements=new_elements, propagate_hda_tags=False
@@ -3705,7 +3722,7 @@ class TagFromFileTool(DatabaseOperationTool):
                     )
             else:
                 # We have a collection, and we copy the elements so that we don't manipulate the original tags
-                copied_value = dce.element_object.copy(element_destination=history)
+                copied_value = dce.element_object.copy(element_destination=history, flush=False)
                 for new_element, old_element in zip(copied_value.dataset_elements, dce.element_object.dataset_elements):
                     # TODO: This should be eliminated, but collections created by the collection builder
                     # don't set `visible` to `False` if you don't hide the original elements.
@@ -3765,7 +3782,7 @@ class FilterFromFileTool(DatabaseOperationTool):
             if getattr(dce_object, "history_content_type", None) == "dataset":
                 copied_value = dce_object.copy(copy_tags=dce_object.tags, flush=False)
             else:
-                copied_value = dce_object.copy()
+                copied_value = dce_object.copy(flush=False)
 
             if passes_filter:
                 filtered_elements[element_identifier] = copied_value

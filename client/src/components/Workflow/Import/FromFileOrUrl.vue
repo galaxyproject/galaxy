@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import axios, { type AxiosError } from "axios";
+import axios from "axios";
 import { computed, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
@@ -66,7 +66,10 @@ async function submit(ev: SubmitEvent) {
 
         router.push(path);
     } catch (error) {
-        const message = (error as AxiosError).response?.data && (error as AxiosError).response?.data.err_msg;
+        let message = null;
+        if (axios.isAxiosError(error)) {
+            message = error.response?.data?.err_msg;
+        }
         errorMessage.value = message || "Import failed for an unknown reason.";
     } finally {
         loading.value = false;

@@ -10,6 +10,37 @@ History
 
 
 -------------------
+23.1.1 (2023-10-23)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Backport tool mem fixes by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16601 <https://github.com/galaxyproject/galaxy/pull/16601>`_
+* Reload toolbox after forking when using `--preload` by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16620 <https://github.com/galaxyproject/galaxy/pull/16620>`_
+
+============
+Enhancements
+============
+
+* Towards SQLAlchemy 2.0: drop session autocommit setting by `@jdavcs <https://github.com/jdavcs>`_ in `#15421 <https://github.com/galaxyproject/galaxy/pull/15421>`_
+* Update supports_skip_locked, supports_returning for SA 2.0 compatibility by `@jdavcs <https://github.com/jdavcs>`_ in `#15633 <https://github.com/galaxyproject/galaxy/pull/15633>`_
+
+=============
+Other changes
+=============
+
+* Make serving address more visible in console by `@davelopez <https://github.com/davelopez>`_ in `#15468 <https://github.com/galaxyproject/galaxy/pull/15468>`_
+
+-------------------
+23.0.6 (2023-10-23)
+-------------------
+
+No recorded changes since last release
+
+-------------------
 23.0.5 (2023-07-29)
 -------------------
 

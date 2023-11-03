@@ -22,6 +22,7 @@ from typing import (
     Optional,
     Tuple,
     TYPE_CHECKING,
+    Union,
 )
 
 import h5py
@@ -1482,6 +1483,22 @@ class Anndata(H5):
             dataset.metadata.layers_count = len(anndata_file)
             dataset.metadata.layers_names = list(anndata_file.keys())
 
+            def get_index_value(tmp: Union[h5py.Dataset, h5py.Datatype, h5py.Group]):
+                if isinstance(tmp, (h5py.Dataset, h5py.Datatype)):
+                    if "index" in tmp.dtype.names:
+                        return tmp["index"]
+                    if "_index" in tmp.dtype.names:
+                        return tmp["_index"]
+                    return None
+                else:
+                    index_var = tmp.attrs.get("index")
+                    if index_var is not None:
+                        return tmp[index_var]
+                    index_var = tmp.attrs.get("_index")
+                    if index_var is not None:
+                        return tmp[index_var]
+                    return None
+
             def _layercountsize(tmp, lennames=0):
                 "From TMP and LENNAMES, return layers, their number, and the length of one of the layers (all equal)."
                 if hasattr(tmp, "dtype"):
@@ -1489,30 +1506,17 @@ class Anndata(H5):
                     count = len(tmp.dtype)
                     size = int(tmp.size)
                 else:
-                    layers = list(tmp.keys())
+                    layers = list(tmp.attrs)
                     count = len(layers)
                     size = lennames
                 return (layers, count, size)
 
             if "obs" in dataset.metadata.layers_names:
                 tmp = anndata_file["obs"]
-                obs_index = None
-                if "index" in tmp:
-                    obs_index = "index"
-                elif "_index" in tmp:
-                    obs_index = "_index"
+                obs = get_index_value(tmp)
                 # Determine cell labels
-                if obs_index:
-                    dataset.metadata.obs_names = list(tmp[obs_index])
-                elif hasattr(tmp, "dtype"):
-                    if "index" in tmp.dtype.names:
-                        # Yes, we call tmp["index"], and not tmp.dtype["index"]
-                        # here, despite the above tests.
-                        dataset.metadata.obs_names = list(tmp["index"])
-                    elif "_index" in tmp.dtype.names:
-                        dataset.metadata.obs_names = list(tmp["_index"])
-                    else:
-                        log.warning("Could not determine cell labels for %s", self)
+                if obs is not None:
+                    dataset.metadata.obs_names = [n.decode() for n in obs]
                 else:
                     log.warning("Could not determine observation index for %s", self)
 
@@ -1536,15 +1540,11 @@ class Anndata(H5):
 
             if "var" in dataset.metadata.layers_names:
                 tmp = anndata_file["var"]
-                var_index = None
-                if "index" in tmp:
-                    var_index = "index"
-                elif "_index" in tmp:
-                    var_index = "_index"
+                index = get_index_value(tmp)
                 # We never use var_names
                 # dataset.metadata.var_names = tmp[var_index]
-                if var_index:
-                    x, y, z = _layercountsize(tmp, len(tmp[var_index]))
+                if index is not None:
+                    x, y, z = _layercountsize(tmp, len(index))
                 else:
                     # failing to detect a var_index is not an indicator
                     # that the dataset is empty

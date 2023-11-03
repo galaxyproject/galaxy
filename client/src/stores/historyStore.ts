@@ -1,9 +1,10 @@
 import { defineStore } from "pinia";
 import Vue, { computed, ref } from "vue";
 
+import type { HistorySummary } from "@/api";
+import { archiveHistory, unarchiveHistory } from "@/api/histories.archived";
 import { HistoryFilters } from "@/components/History/HistoryFilters";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
-import type { components } from "@/schema";
 import {
     cloneHistory,
     createAndSelectNewHistory,
@@ -16,10 +17,7 @@ import {
     setCurrentHistoryOnServer,
     updateHistoryFields,
 } from "@/stores/services/history.services";
-import * as ArchiveServices from "@/stores/services/historyArchive.services";
 import { sortByObjectProp } from "@/utils/sorting";
-
-export type HistorySummary = components["schemas"]["HistorySummary"];
 
 const PAGINATION_LIMIT = 10;
 const isLoadingHistory = new Set();
@@ -257,7 +255,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
     }
 
     async function archiveHistoryById(historyId: string, archiveExportId?: string, purgeHistory = false) {
-        const history = await ArchiveServices.archiveHistoryById(historyId, archiveExportId, purgeHistory);
+        const history = await archiveHistory(historyId, archiveExportId, purgeHistory);
         setHistory(history as HistorySummary);
         if (!history.archived) {
             return;
@@ -273,7 +271,7 @@ export const useHistoryStore = defineStore("historyStore", () => {
     }
 
     async function unarchiveHistoryById(historyId: string, force?: boolean) {
-        const history = await ArchiveServices.unarchiveHistoryById(historyId, force);
+        const history = await unarchiveHistory(historyId, force);
         setHistory(history as HistorySummary);
         return history;
     }

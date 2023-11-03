@@ -73,4 +73,4 @@ class TestFrontendLogin(PlaywrightTestCase):
             password=TEST_PASSWORD,
             username=user,
         )
-        self.login(email, TEST_PASSWORD, username=user, redirect=None)
+        self.login(email, TEST_PASSWORD, username=user)

@@ -7,8 +7,8 @@ import { storeToRefs } from "pinia";
 import { computed } from "vue";
 import { useRouter } from "vue-router/composables";
 
+import { type components } from "@/api/schema";
 import { useMarkdown } from "@/composables/markdown";
-import { type components } from "@/schema";
 import { type BroadcastNotification, useBroadcastsStore } from "@/stores/broadcastsStore";
 
 import Heading from "@/components/Common/Heading.vue";

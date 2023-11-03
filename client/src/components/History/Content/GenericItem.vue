@@ -12,7 +12,7 @@
                 :is-dataset="item.history_content_type == 'dataset' || item.element_type == 'hda'"
                 @update:expand-dataset="expandDataset = $event"
                 @view-collection="viewCollection = !viewCollection"
-                @delete="onDelete(item)"
+                @delete="onDelete"
                 @toggleHighlights="onHighlight(item)"
                 @undelete="onUndelete(item)"
                 @unhide="onUnhide(item)" />
@@ -76,8 +76,8 @@ export default {
     },
     methods: {
         ...mapActions(useHistoryStore, ["applyFilters"]),
-        onDelete(item) {
-            deleteContent(item);
+        onDelete(item, recursive = false) {
+            deleteContent(item, { recursive: recursive });
         },
         onUndelete(item) {
             updateContentFields(item, { deleted: false });

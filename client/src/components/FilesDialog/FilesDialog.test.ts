@@ -1,8 +1,8 @@
 import { createLocalVue, shallowMount, Wrapper } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 
+import { mockFetcher } from "@/api/schema/__mocks__";
 import { selectionStates } from "@/components/SelectionDialog/selectionStates";
-import { mockFetcher } from "@/schema/__mocks__";
 
 import { BaseRecordItem } from "./model";
 import {
@@ -26,7 +26,7 @@ import DataDialogTable from "@/components/SelectionDialog/DataDialogTable.vue";
 import SelectionDialog from "@/components/SelectionDialog/SelectionDialog.vue";
 
 jest.mock("app");
-jest.mock("@/schema");
+jest.mock("@/api/schema");
 
 jest.mock("@/composables/config", () => ({
     useConfig: jest.fn(() => ({

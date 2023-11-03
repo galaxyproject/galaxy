@@ -1,6 +1,6 @@
 import { computed, readonly, ref } from "vue";
 
-import { fetcher } from "@/schema";
+import { fetcher } from "@/api/schema";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 const SUCCESS_STATE = "SUCCESS";

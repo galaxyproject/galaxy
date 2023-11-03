@@ -11,6 +11,9 @@ export class LastQueue {
         this.pendingPromise = false;
     }
 
+    /**
+     * @param {String | Number} key
+     */
     async enqueue(action, args, key = 0) {
         return new Promise((resolve, reject) => {
             this.nextPromise[key] = { action, args, resolve, reject };

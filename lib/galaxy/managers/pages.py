@@ -652,12 +652,12 @@ def get_shared_pages(session: Session, user: User):
 
 def get_page(session: Session, user: User, slug: str):
     stmt = _build_page_query(select(Page), user, slug)
-    return session.scalar(stmt).first()
+    return session.scalars(stmt).first()
 
 
 def page_exists(session: Session, user: User, slug: str) -> bool:
     stmt = _build_page_query(select(Page.id), user, slug)
-    return session.scalar(stmt).first() is not None
+    return session.scalars(stmt).first() is not None
 
 
 def _build_page_query(select_clause, user: User, slug: str):

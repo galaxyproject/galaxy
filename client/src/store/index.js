@@ -14,7 +14,6 @@ import { datasetPathDestinationStore } from "./datasetPathDestinationStore";
 import { gridSearchStore } from "./gridSearchStore";
 import { invocationStore } from "./invocationStore";
 import { jobDestinationParametersStore } from "./jobDestinationParametersStore";
-import { panelStore } from "./panelStore";
 import { syncVuextoGalaxy } from "./syncVuextoGalaxy";
 import { tagStore } from "./tagStore";
 
@@ -48,7 +47,6 @@ export function createStore() {
             datasetPathDestination: datasetPathDestinationStore,
             invocations: invocationStore,
             gridSearch: gridSearchStore,
-            panels: panelStore,
             tags: tagStore,
         },
     };

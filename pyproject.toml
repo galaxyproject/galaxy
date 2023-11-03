@@ -140,6 +140,7 @@ lxml = "!=4.2.2"
 markdown-it-reporter = "*"
 myst-parser = "*"
 pkce = "*"
+playwright = "*"
 pytest = "*"
 pytest-asyncio = "*"
 pytest-celery = "*"
@@ -180,14 +181,17 @@ types-requests = "*"
 types-six = "*"
 
 [tool.ruff]
-select = ["E", "F", "B", "UP"]
+# Enable: pycodestyle errors (E), Pyflakes (F), flake8-bugbear (B),
+# flake8-logging-format (G) and pyupgrade (UP)
+select = ["E", "F", "B", "G", "UP"]
 target-version = "py37"
 # Exceptions:
 # B008 Do not perform function calls in argument defaults (for FastAPI Depends and Body)
 # B9 flake8-bugbear opinionated warnings
 # E402 module level import not at top of file # TODO, we would like to improve this.
 # E501 is line length (delegated to black)
-ignore = ["B008", "B9", "E402", "E501"]
+# G* are TODOs
+ignore = ["B008", "B9", "E402", "E501", "G001", "G002", "G004"]
 exclude = [
   "lib/tool_shed/test/test_data/repos"
 ]

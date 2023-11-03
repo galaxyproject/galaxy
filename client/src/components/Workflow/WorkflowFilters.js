@@ -1,4 +1,4 @@
-import Filtering, { contains, equals, expandNameTagWithQuotes, toBool } from "utils/filtering";
+import Filtering, { contains, equals, expandNameTag, toBool } from "utils/filtering";
 
 export const helpHtml = `<div>
 <p>This input can be used to filter the workflows displayed.</p>
@@ -56,7 +56,7 @@ const validFilters = {
     tag: {
         placeholder: "tag(s)",
         type: "MultiTags",
-        handler: contains("tag", "tag", expandNameTagWithQuotes),
+        handler: contains("tag", "tag", expandNameTag),
         menuItem: true,
     },
     published: {

@@ -1,10 +1,10 @@
 import logging
 
+import pytest
+
+from ..base import common
 from ..base.api import skip_if_api_v2
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from ..base.twilltestcase import ShedTwillTestCase
 
 repository_name = "filtering_0000"
 repository_description = "Galaxy's filtering tool for test 0000"
@@ -159,7 +159,6 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
     def test_0050_display_repository_tip_file(self):
         """Display the contents of filtering.xml in the repository tip revision"""
         repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
-        assert repository
         if self._browser.is_twill:
             self.display_repository_file_contents(
                 repository=repository,
@@ -270,14 +269,15 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
         error_message = (
             "The term 'repos' is a reserved word in the Tool Shed, so it cannot be used as a repository name."
         )
-        self.get_or_create_repository(
-            name="repos",
-            description=repository_description,
-            long_description=repository_long_description,
-            owner=common.test_user_1_name,
-            category=category,
-            strings_displayed=[error_message],
-        )
+        with pytest.raises(AssertionError):
+            self.get_or_create_repository(
+                name="repos",
+                description=repository_description,
+                long_description=repository_long_description,
+                owner=common.test_user_1_name,
+                category=category,
+                strings_displayed=[error_message],
+            )
 
     def test_0100_verify_reserved_username_handling(self):
         """Check that reserved usernames are handled correctly."""
@@ -303,7 +303,7 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
         repository = self._get_repository_by_name_and_owner(repository_name, common.test_user_1_name)
         self.login(email=common.admin_email, username=common.admin_username)
         self.delete_repository(repository)
-        metadata = self._populator.get_metadata(repository, downloadable_only=False)
+        metadata = self.populator.get_metadata(repository, downloadable_only=False)
         for _, value in metadata.__root__.items():
             assert not value.downloadable
         # Explicitly reload all metadata revisions from the database, to ensure that we have the current status of the downloadable flag.
@@ -373,9 +373,10 @@ class TestBasicRepositoryFeatures(ShedTwillTestCase):
 
     def test_0135_api_get_repositories_in_category(self):
         """Load the api endpoint for repositories in a category."""
-        categories = []
-        categories.append(self.populator.get_category_with_name("Test 0000 Basic Repository Features 1"))
-        categories.append(self.populator.get_category_with_name("Test 0000 Basic Repository Features 2"))
+        categories = [
+            self.populator.get_category_with_name(name)
+            for name in ("Test 0000 Basic Repository Features 1", "Test 0000 Basic Repository Features 2")
+        ]
         self.get_repositories_category_api(categories)
 
     def test_0140_view_invalid_changeset(self):

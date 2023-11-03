@@ -6,14 +6,12 @@ import { BAlert, BCard, BCol, BFormGroup, BRow } from "bootstrap-vue";
 import { computed, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import {
-    getGroups,
-    getRoles,
-    getUsers,
-    sendNotification,
-} from "@/components/admin/Notifications/notifications.services";
+import { getAllGroups } from "@/api/groups";
+import { sendNotification } from "@/api/notifications";
+import { getAllRoles } from "@/api/roles";
+import { type components } from "@/api/schema";
+import { getAllUsers } from "@/api/users";
 import { Toast } from "@/composables/toast";
-import { type components } from "@/schema";
 import { errorMessageAsString } from "@/utils/simple-error";
 
 import AsyncButton from "@/components/Common/AsyncButton.vue";
@@ -105,15 +103,15 @@ async function loadData<T>(
     }
 }
 
-loadData(getUsers, users, (user) => {
+loadData(getAllUsers, users, (user) => {
     return [`${user.username} | ${user.email}`, user.id];
 });
 
-loadData(getRoles, roles, (role) => {
+loadData(getAllRoles, roles, (role) => {
     return [`${role.name} | ${role.description}`, role.id];
 });
 
-loadData(getGroups, groups, (group) => {
+loadData(getAllGroups, groups, (group) => {
     return [`${group.name}`, group.id];
 });
 

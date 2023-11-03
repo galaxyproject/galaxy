@@ -5,7 +5,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BCol, BInputGroup, BRow } from "bootstrap-vue";
 import { formatDistanceToNow, parseISO } from "date-fns";
 
-import type { UserNotification } from "@/components/Notifications";
+import type { UserNotification } from "@/api/notifications";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 
 import AsyncButton from "@/components/Common/AsyncButton.vue";

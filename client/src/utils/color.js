@@ -1,4 +1,4 @@
-import { hsluvToHex, hsluvToRgb } from "hsluv";
+import { Hsluv } from "hsluv";
 import { hashFnv32a } from "utils/utils";
 
 /**
@@ -16,10 +16,19 @@ export function keyedColorScheme(strKey) {
         lightness += (100 - lightness) * 0.75;
     }
 
-    const [r, g, b] = hsluvToRgb([hue, 100, lightness]);
-    const primary = `rgb(${r * 255},${g * 255},${b * 255})`;
-    const darker = hsluvToHex([hue, 100, lightness * 0.9]);
-    const dimmed = hsluvToHex([hue, 100, lightness * 0.95]);
-
+    const converter = new Hsluv();
+    converter.hsluv_h = hue;
+    converter.hsluv_s = 100;
+    converter.hsluv_l = lightness;
+    converter.hsluvToHex();
+    const primary = `rgb(${parseInt(converter.rgb_r * 255)},${parseInt(converter.rgb_g * 255)},${parseInt(
+        converter.rgb_b * 255
+    )})`;
+    converter.hsluv_l = lightness * 0.9;
+    converter.hsluvToHex();
+    const darker = converter.hex;
+    converter.hsluv_l = lightness * 0.95;
+    converter.hsluvToHex();
+    const dimmed = converter.hex;
     return { primary, darker, dimmed };
 }

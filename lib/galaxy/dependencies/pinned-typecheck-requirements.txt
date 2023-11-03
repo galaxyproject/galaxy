@@ -1,5 +1,5 @@
 cffi==1.15.1 ; python_version >= "3.7" and python_version < "3.12"
-cryptography==41.0.4 ; python_version >= "3.7" and python_version < "3.12"
+cryptography==41.0.5 ; python_version >= "3.7" and python_version < "3.12"
 mypy-extensions==1.0.0 ; python_version >= "3.7" and python_version < "3.12"
 mypy==1.4.1 ; python_version >= "3.7" and python_version < "3.12"
 pycparser==2.21 ; python_version >= "3.7" and python_version < "3.12"

@@ -17,17 +17,3 @@ export async function getPublishedHistories({ limit, offset, sortBy, sortDesc, f
         rethrowSimple(e);
     }
 }
-
-export async function updateTags(itemId, itemClass, itemTags) {
-    const url = "/api/tags";
-    try {
-        const { data } = await axios.put(withPrefix(url), {
-            item_id: itemId,
-            item_class: itemClass,
-            item_tags: itemTags,
-        });
-        return data;
-    } catch (e) {
-        rethrowSimple(e);
-    }
-}

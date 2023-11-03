@@ -1,7 +1,10 @@
 {
-  "name": "galaxy-tool-shed",
+  "name": "@galaxyproject/tool-shed-frontend",
   "license": "MIT",
-  "version": "0.2.0",
+  "version": "0.2.1",
+  "files": [
+    "dist"
+  ],
   "scripts": {
     "dev": "vite --port 4040 --strict-port",
     "build": "vue-tsc --noEmit && vite build",

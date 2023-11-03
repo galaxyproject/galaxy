@@ -1,11 +1,9 @@
 import logging
 import os
 
+from ..base import common
 from ..base.api import skip_if_api_v2
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from ..base.twilltestcase import ShedTwillTestCase
 
 log = logging.getLogger(__name__)
 
@@ -29,7 +27,7 @@ class TestComplexRepositoryDependencies(ShedTwillTestCase):
     def test_0000_initiate_users(self):
         """Create necessary user accounts."""
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
-        self.login(email=common.admin_email, username=common.admin_username)
+        self.login(email=common.admin_email, username=common.admin_username, explicit_logout=True)
 
     def test_0005_create_bwa_package_repository(self):
         """Create and populate package_bwa_0_5_9_0100."""

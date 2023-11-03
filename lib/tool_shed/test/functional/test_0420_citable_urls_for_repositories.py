@@ -1,9 +1,7 @@
 import logging
 
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from ..base import common
+from ..base.twilltestcase import ShedTwillTestCase
 
 log = logging.getLogger(__name__)
 
@@ -37,7 +35,7 @@ class TestRepositoryCitableURLs(ShedTwillTestCase):
         Previously created accounts will not be re-created.
         """
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
-        self.login(email=common.admin_email, username=common.admin_username)
+        self.login(email=common.admin_email, username=common.admin_username, explicit_logout=True)
 
     def test_0005_create_repository(self):
         """Create and populate the filtering_0420 repository
@@ -169,7 +167,6 @@ class TestRepositoryCitableURLs(ShedTwillTestCase):
         if not self.is_v2:
             strings_displayed_in_iframe.append("Link to this repository revision:")
             strings_displayed_in_iframe.append(f"{self.url}/view/user1/filtering_0420/{first_changeset_hash}")
-        strings_not_displayed_in_iframe = []
         self.load_citable_url(
             username="user1",
             repository_name="filtering_0420",
@@ -178,7 +175,6 @@ class TestRepositoryCitableURLs(ShedTwillTestCase):
             encoded_repository_id=encoded_repository_id,
             strings_displayed=strings_displayed,
             strings_displayed_in_iframe=strings_displayed_in_iframe,
-            strings_not_displayed_in_iframe=strings_not_displayed_in_iframe,
         )
 
     def test_0030_load_sharable_url_with_invalid_changeset_revision(self):

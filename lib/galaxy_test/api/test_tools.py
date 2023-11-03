@@ -165,10 +165,10 @@ class TestToolsApi(ApiTestCase, TestsTools):
 
     def test_no_panel_index(self):
         index = self._get("tools", data=dict(in_panel=False))
-        tools_index = index.json().get("tools", {})
-        # No need to flatten out sections, with in_panel=False, only tools by
-        # ids are returned.
-        tool_ids = list(tools_index.keys())
+        tools_index = index.json()
+        # No need to flatten out sections, with in_panel=False, only tools are
+        # returned.
+        tool_ids = [_["id"] for _ in tools_index]
         assert "upload1" in tool_ids
 
     @skip_without_tool("test_sam_to_bam_conversions")
@@ -2640,8 +2640,8 @@ class TestToolsApi(ApiTestCase, TestsTools):
         return self._run("cat1", history_id, inputs, assert_ok=assert_ok, **kwargs)
 
     def __tool_ids(self):
-        index = self._get("tools")
-        tools_index = index.json().get("default", {})
+        index = self._get("tool_panels/default")
+        tools_index = index.json()
         # In panels by default, so flatten out sections...
         tool_ids = []
         for id, tool_or_section in tools_index.items():

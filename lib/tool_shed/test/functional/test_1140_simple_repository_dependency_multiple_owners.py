@@ -1,7 +1,5 @@
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from ..base import common
+from ..base.twilltestcase import ShedTwillTestCase
 
 datatypes_repository_name = "blast_datatypes_0120"
 datatypes_repository_description = "Galaxy applicable datatypes for BLAST"
@@ -110,13 +108,7 @@ class TestInstallRepositoryMultipleOwners(ShedTwillTestCase):
             self.commit_tar_to_repository(
                 repository,
                 "blast/blastxml_to_top_descr.tar",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=True,
                 commit_message="Uploaded blastxml_to_top_descr tarball.",
-                strings_displayed=[],
-                strings_not_displayed=[],
             )
 
     def test_0020_verify_tool_repository(self):

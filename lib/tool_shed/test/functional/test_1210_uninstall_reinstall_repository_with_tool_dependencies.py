@@ -1,9 +1,7 @@
 import os
 
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from ..base import common
+from ..base.twilltestcase import ShedTwillTestCase
 
 
 class TestUninstallingAndReinstallingRepositories(ShedTwillTestCase):

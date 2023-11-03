@@ -1,11 +1,11 @@
 import flushPromises from "flush-promises";
 import { createPinia, setActivePinia } from "pinia";
 
-import { mockFetcher } from "@/schema/__mocks__";
+import type { DCESummary, HDCASummary } from "@/api";
+import { mockFetcher } from "@/api/schema/__mocks__";
 import { DCEEntry, useCollectionElementsStore } from "@/stores/collectionElementsStore";
-import { DCESummary, HDCASummary } from "@/stores/services";
 
-jest.mock("@/schema");
+jest.mock("@/api/schema");
 
 describe("useCollectionElementsStore", () => {
     beforeEach(() => {

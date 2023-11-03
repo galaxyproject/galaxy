@@ -79,7 +79,7 @@ def repo_tars(test_data_path: str) -> List[Path]:
 
 class HostsTestToolShed(Protocol):
     host: str
-    port: int
+    port: Optional[str]
 
 
 class ToolShedPopulator:
@@ -266,19 +266,21 @@ class ToolShedPopulator:
         response.raise_for_status()
         return [Category(**c) for c in response.json()]
 
-    def get_category_with_name(self, name: str) -> Optional[Category]:
-        response = self._api_interactor.get("categories")
+    def get_category_with_id(self, category_id: str) -> Category:
+        response = self._api_interactor.get(f"categories/{category_id}")
         response.raise_for_status()
+        return Category(**response.json())
+
+    def get_category_with_name(self, name: str) -> Category:
         categories = [c for c in self.get_categories() if c.name == name]
-        return categories[0] if categories else None
+        if not categories:
+            raise ValueError(f"No category with name {name} found.")
+        return categories[0]
 
     def repositories_by_category(self, category_id: str) -> RepositoriesByCategory:
         response = self._api_interactor.get(f"categories/{category_id}/repositories")
         response.raise_for_status()
         return RepositoriesByCategory(**response.json())
-
-    def has_category_with_name(self, name: str) -> bool:
-        return self.get_category_with_name(name) is not None
 
     def get_ordered_installable_revisions(self, owner: str, name: str) -> OrderedInstallableRevisions:
         request = GetOrderedInstallableRevisionsRequest(owner=owner, name=name)
@@ -394,7 +396,7 @@ class ToolShedPopulator:
         owner = repository.owner
         name = repository.name
         port = shed_host.port
-        if port in [None, 80, 443]:
+        if port in [None, "80", "443"]:
             host_and_port = shed_host.host
         else:
             host_and_port = f"{shed_host.host}:{shed_host.port}"

@@ -98,24 +98,6 @@ class HistoryContentsManager(base.SortableManager):
         self.subcontainer_manager = app[self.subcontainer_class_manager_class]
 
     # ---- interface
-    def contained(self, container, filters=None, limit=None, offset=None, order_by=None, **kwargs):
-        """
-        Returns non-subcontainer objects within `container`.
-        """
-        filter_to_inside_container = self._get_filter_for_contained(container, self.contained_class)
-        filters = base.munge_lists(filter_to_inside_container, filters)
-        return self.contained_manager.list(filters=filters, limit=limit, offset=offset, order_by=order_by, **kwargs)
-
-    def subcontainers(self, container, filters=None, limit=None, offset=None, order_by=None, **kwargs):
-        """
-        Returns only the containers within `container`.
-        """
-        filter_to_inside_container = self._get_filter_for_contained(container, self.subcontainer_class)
-        filters = base.munge_lists(filter_to_inside_container, filters)
-        # TODO: collections.DatasetCollectionManager doesn't have the list
-        # return self.subcontainer_manager.list( filters=filters, limit=limit, offset=offset, order_by=order_by, **kwargs )
-        return self._session().query(self.subcontainer_class).filter(filters).all()
-
     def contents(self, container, filters=None, limit=None, offset=None, order_by=None, **kwargs):
         """
         Returns a list of both/all types of contents, filtered and in some order.
@@ -241,15 +223,6 @@ class HistoryContentsManager(base.SortableManager):
     # ---- private
     def _session(self):
         return self.app.model.context
-
-    def _filter_to_contents_query(self, container, content_class, **kwargs):
-        # TODO: use list (or by_history etc.)
-        container_filter = self._get_filter_for_contained(container, content_class)
-        query = self._session().query(content_class).filter(container_filter)
-        return query
-
-    def _get_filter_for_contained(self, container, content_class):
-        return content_class.history == container
 
     def _union_of_contents(self, container, expand_models=True, **kwargs):
         """

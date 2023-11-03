@@ -393,7 +393,7 @@ def create_job(trans, params, tool, json_file_path, outputs, folder=None, histor
     trans.sa_session.add(job)
     job.galaxy_version = trans.app.config.version_major
     galaxy_session = trans.get_galaxy_session()
-    if type(galaxy_session) == trans.model.GalaxySession:
+    if isinstance(galaxy_session, trans.model.GalaxySession):
         job.session_id = galaxy_session.id
     if trans.user is not None:
         job.user_id = trans.user.id

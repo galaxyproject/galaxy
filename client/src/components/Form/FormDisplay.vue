@@ -111,7 +111,7 @@ export default {
             visitInputs(this.formInputs, (input, name) => {
                 const newValue = newAttributes[name];
                 if (newValue != undefined) {
-                    input.attributes = newValue;
+                    Vue.set(input, "attributes", newValue);
                 }
             });
             this.onChangeForm();
