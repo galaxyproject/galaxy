@@ -197,11 +197,7 @@ export interface paths {
         head: operations["get_metadata_file_datasets_api_datasets__history_content_id__metadata_file_head"];
     };
     "/api/datasets/{id}/metrics": {
-        /**
-         * Return job metrics for specified job.
-         * @description :rtype:     list
-         * :returns:   list containing job metrics
-         */
+        /** Return job metrics for specified job. */
         get: operations["get_metrics_api_datasets__id__metrics_get"];
     };
     "/api/datasets/{id}/parameters_display": {
@@ -947,11 +943,7 @@ export interface paths {
         get: operations["get_inputs_api_jobs__id__inputs_get"];
     };
     "/api/jobs/{id}/metrics": {
-        /**
-         * Return job metrics for specified job.
-         * @description :rtype:     list
-         * :returns:   list containing job metrics
-         */
+        /** Return job metrics for specified job. */
         get: operations["get_metrics_api_jobs__id__metrics_get"];
     };
     "/api/jobs/{id}/outputs": {
@@ -962,17 +954,14 @@ export interface paths {
         /**
          * Resolve parameters as a list for nested display.
          * @description # TODO is this still true?
-         *     Resolve parameters as a list for nested display. More client logic
-         *     here than is ideal but it is hard to reason about tool parameter
-         *     types on the client relative to the server. Job accessibility checks
-         *     are slightly different than dataset checks, so both methods are
-         *     available.
+         * Resolve parameters as a list for nested display. More client logic
+         * here than is ideal but it is hard to reason about tool parameter
+         * types on the client relative to the server. Job accessibility checks
+         * are slightly different than dataset checks, so both methods are
+         * available.
          *
-         *     This API endpoint is unstable and tied heavily to Galaxy's JS client code,
-         *     this endpoint will change frequently.
-         *
-         * :rtype:     list
-         * :returns:   job parameters for for display
+         * This API endpoint is unstable and tied heavily to Galaxy's JS client code,
+         * this endpoint will change frequently.
          */
         get: operations["resolve_parameters_display_api_jobs__id__parameters_display_get"];
     };
@@ -4239,8 +4228,9 @@ export interface components {
             /**
              * Copied from Job-ID
              * @description ?
+             * @example 0123456789ABCDEF
              */
-            copied_from_job_id?: Record<string, never>;
+            copied_from_job_id?: string;
             /**
              * Create Time
              * Format: date-time
@@ -6355,17 +6345,37 @@ export interface components {
              * Handler
              * @description ?
              */
-            Handler: Record<string, never>;
+            Handler: string;
             /**
              * Runner
              * @description ?
              */
-            Runner: Record<string, never>;
+            Runner: string;
             /**
              * Runner Job ID
              * @description ?
              */
-            "Runner Job ID": Record<string, never>;
+            "Runner Job ID": string;
+        };
+        /**
+         * JobDisplayParametersSummary
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        JobDisplayParametersSummary: {
+            /**
+             * Has parameter errors
+             * @description The job has parameter errors
+             */
+            has_parameter_errors: boolean;
+            /**
+             * Outputs
+             * @description Dictionary mapping all the tool outputs (by name) with the corresponding dataset information in a nested format.
+             */
+            outputs: {
+                [key: string]: components["schemas"]["JobOutput"][] | undefined;
+            };
+            /** Parameters */
+            parameters: components["schemas"]["JobParameter"][];
         };
         /**
          * JobErrorSummary
@@ -6581,6 +6591,67 @@ export interface components {
              * @description The textual representation of the metric value.
              */
             value: string;
+        };
+        /**
+         * JobOutput
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        JobOutput: {
+            /**
+             * Output label
+             * @description The output label
+             */
+            label: string;
+            /**
+             * dataset
+             * @description The associated dataset.
+             */
+            value: components["schemas"]["EncodedDatasetSourceId"];
+        };
+        /**
+         * JobParameter
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        JobParameter: {
+            /**
+             * Depth
+             * @description The depth of the job parameter.
+             */
+            depth: number;
+            /**
+             * Text
+             * @description Text associated with the job parameter.
+             */
+            text: string;
+            /** Value */
+            value: components["schemas"]["JobParameterValues"][];
+        };
+        /**
+         * JobParameterValues
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        JobParameterValues: {
+            /**
+             * HID
+             * @description The index position of this item in the History.
+             */
+            hid: number;
+            /**
+             * ID
+             * @description The encoded ID of this entity.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Name
+             * @description The name of the item.
+             */
+            name: string;
+            /**
+             * Source
+             * @description The source of this dataset, either `hda` or `ldda` depending of its origin.
+             */
+            src: components["schemas"]["DatasetSourceType"];
         };
         /**
          * JobSourceType
@@ -11118,11 +11189,7 @@ export interface operations {
         };
     };
     get_metrics_api_datasets__id__metrics_get: {
-        /**
-         * Return job metrics for specified job.
-         * @description :rtype:     list
-         * :returns:   list containing job metrics
-         */
+        /** Return job metrics for specified job. */
         parameters: {
             /** @description Whether this dataset belongs to a history (HDA) or a library (LDDA). */
             query?: {
@@ -15296,11 +15363,7 @@ export interface operations {
         };
     };
     get_metrics_api_jobs__id__metrics_get: {
-        /**
-         * Return job metrics for specified job.
-         * @description :rtype:     list
-         * :returns:   list containing job metrics
-         */
+        /** Return job metrics for specified job. */
         parameters: {
             /** @description Whether this dataset belongs to a history (HDA) or a library (LDDA). */
             query?: {
@@ -15361,17 +15424,14 @@ export interface operations {
         /**
          * Resolve parameters as a list for nested display.
          * @description # TODO is this still true?
-         *     Resolve parameters as a list for nested display. More client logic
-         *     here than is ideal but it is hard to reason about tool parameter
-         *     types on the client relative to the server. Job accessibility checks
-         *     are slightly different than dataset checks, so both methods are
-         *     available.
+         * Resolve parameters as a list for nested display. More client logic
+         * here than is ideal but it is hard to reason about tool parameter
+         * types on the client relative to the server. Job accessibility checks
+         * are slightly different than dataset checks, so both methods are
+         * available.
          *
-         *     This API endpoint is unstable and tied heavily to Galaxy's JS client code,
-         *     this endpoint will change frequently.
-         *
-         * :rtype:     list
-         * :returns:   job parameters for for display
+         * This API endpoint is unstable and tied heavily to Galaxy's JS client code,
+         * this endpoint will change frequently.
          */
         parameters: {
             /** @description Whether this dataset belongs to a history (HDA) or a library (LDDA). */
@@ -15391,7 +15451,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["JobDisplayParametersSummary"];
                 };
             };
             /** @description Validation Error */
