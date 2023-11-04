@@ -78,7 +78,6 @@ def start_keycloak_docker(container_name, port=8443, image="keycloak/keycloak:22
         "--https-certificate-file=/opt/keycloak/data/import/keycloak-server.crt.pem",
         "--https-certificate-key-file=/opt/keycloak/data/import/keycloak-server.key.pem",
     ]
-    print(" ".join(START_SLURM_DOCKER))
     subprocess.check_call(START_SLURM_DOCKER)
     wait_till_keycloak_ready(port)
 
@@ -91,6 +90,8 @@ class AbstractTestCases:
     @integration_util.skip_unless_docker()
     class BaseKeycloakIntegrationTestCase(integration_util.IntegrationTestCase):
         container_name: ClassVar[str]
+        backend_config_file: ClassVar[str]
+        saved_oauthlib_insecure_transport: ClassVar[bool]
 
         @classmethod
         def setUpClass(cls):
@@ -136,7 +137,7 @@ class AbstractTestCases:
         @classmethod
         def disableOauthlibHttps(cls):
             if "OAUTHLIB_INSECURE_TRANSPORT" in os.environ:
-                cls.saved_oauthlib_insecure_transport = os.environ["OAUTHLIB_INSECURE_TRANSPORT"]
+                cls.saved_oauthlib_insecure_transport = bool(os.environ["OAUTHLIB_INSECURE_TRANSPORT"])
             os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = "true"
             os.environ["REQUESTS_CA_BUNDLE"] = os.path.dirname(__file__) + "/keycloak-server.crt.pem"
             os.environ["SSL_CERT_FILE"] = os.path.dirname(__file__) + "/keycloak-server.crt.pem"
@@ -144,7 +145,7 @@ class AbstractTestCases:
         @classmethod
         def restoreOauthlibHttps(cls):
             if getattr(cls, "saved_oauthlib_insecure_transport", None):
-                os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = cls.saved_oauthlib_insecure_transport
+                os.environ["OAUTHLIB_INSECURE_TRANSPORT"] = str(cls.saved_oauthlib_insecure_transport)
             else:
                 del os.environ["OAUTHLIB_INSECURE_TRANSPORT"]
 
@@ -175,7 +176,8 @@ class TestGalaxyOIDCLoginIntegration(AbstractTestCases.BaseKeycloakIntegrationTe
         provider_url = response.json()["redirect_uri"]
         response = session.get(provider_url, verify=False)
         matches = self.REGEX_KEYCLOAK_LOGIN_ACTION.search(response.text)
-        auth_url = html.unescape(matches.groups(1)[0])
+        assert matches
+        auth_url = html.unescape(str(matches.groups(1)[0]))
         response = session.post(auth_url, data={"username": username, "password": password}, verify=False)
         assert response.status_code in expected_codes, response
         if save_cookies:
@@ -208,7 +210,7 @@ class TestGalaxyOIDCLoginIntegration(AbstractTestCases.BaseKeycloakIntegrationTe
 
     def test_oidc_logout(self):
         # login
-        session, response = self._login_via_keycloak(KEYCLOAK_TEST_USERNAME, KEYCLOAK_TEST_PASSWORD, save_cookies=True)
+        session, _ = self._login_via_keycloak(KEYCLOAK_TEST_USERNAME, KEYCLOAK_TEST_PASSWORD, save_cookies=True)
         # get the user
         response = session.get(self._api_url("users/current"))
         self._assert_status_code_is(response, 200)

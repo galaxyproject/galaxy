@@ -76,6 +76,7 @@ class CustosAuthnzConfiguration:
 class OIDCAuthnzBase(IdentityProvider):
     def __init__(self, provider, oidc_config, oidc_backend_config, idphint=None):
         provider = provider.lower()
+        self.jwks_client: Optional[jwt.PyJWKClient]
         self.config = CustosAuthnzConfiguration(
             provider=provider,
             verify_ssl=oidc_config["VERIFY_SSL"],
@@ -502,6 +503,8 @@ class OIDCAuthnzBase(IdentityProvider):
             return username
 
     def find_user_by_access_token(self, sa_session, access_token):
+        if not self.jwks_client:
+            return None
         signing_key = self.jwks_client.get_signing_key_from_jwt(access_token)
         decoded_jwt = jwt.decode(
             access_token,

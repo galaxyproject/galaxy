@@ -36,6 +36,7 @@ from fastapi.security import (
     APIKeyCookie,
     APIKeyHeader,
     APIKeyQuery,
+    HTTPAuthorizationCredentials,
     HTTPBearer,
 )
 from fastapi_utils.cbv import cbv
@@ -141,7 +142,7 @@ def get_api_user(
     user_manager: UserManager = depends(UserManager),
     key: str = Security(api_key_query),
     x_api_key: str = Security(api_key_header),
-    bearer_token: str = Security(api_bearer_token),
+    bearer_token: HTTPAuthorizationCredentials = Security(api_bearer_token),
     run_as: Optional[DecodedDatabaseIdField] = Header(
         default=None,
         title="Run as User",
