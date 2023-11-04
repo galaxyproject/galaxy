@@ -371,7 +371,6 @@ class FastAPIJobs:
         job = self.service.get_job(trans, job_id=id, hda_ldda=hda_ldda)
         return summarize_job_parameters(trans, job)
 
-    # TODO add pydantic model for return
     @router.get(
         "/api/datasets/{id}/parameters_display",
         name="resolve_parameters_display",
@@ -382,20 +381,17 @@ class FastAPIJobs:
         id: Annotated[DecodedDatabaseIdField, DatasetIdPathParam],
         hda_ldda: Annotated[DatasetSourceType, HdaLddaQueryParam] = DatasetSourceType.hda,
         trans: ProvidesUserContext = DependsOnTrans,
-    ):
+    ) -> JobDisplayParametersSummary:
         """
-            # TODO is this still true?
-            Resolve parameters as a list for nested display. More client logic
-            here than is ideal but it is hard to reason about tool parameter
-            types on the client relative to the server. Job accessibility checks
-            are slightly different than dataset checks, so both methods are
-            available.
+        # TODO is this still true?
+        Resolve parameters as a list for nested display. More client logic
+        here than is ideal but it is hard to reason about tool parameter
+        types on the client relative to the server. Job accessibility checks
+        are slightly different than dataset checks, so both methods are
+        available.
 
-            This API endpoint is unstable and tied heavily to Galaxy's JS client code,
-            this endpoint will change frequently.
-
-        :rtype:     list
-        :returns:   job parameters for for display
+        This API endpoint is unstable and tied heavily to Galaxy's JS client code,
+        this endpoint will change frequently.
         """
         job = self.service.get_job(trans, dataset_id=id, hda_ldda=hda_ldda)
         return summarize_job_parameters(trans, job)
