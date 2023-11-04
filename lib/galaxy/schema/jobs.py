@@ -17,6 +17,7 @@ from galaxy.schema.fields import (
     EncodedDatabaseIdField,
 )
 from galaxy.schema.schema import (
+    DatasetSourceType,
     EncodedDatasetSourceId,
     EntityIdField,
     JobSummary,
@@ -149,12 +150,90 @@ class EncodedJobDetails(JobSummary, EncodedJobIDs):
         description="Dictionary mapping all the tool outputs (by name) with the corresponding dataset information.",
     )
     # TODO add description, check type and add proper default
-    copied_from_job_id: Any = Field(default=None, title="Copied from Job-ID", description="?")
+    copied_from_job_id: Optional[EncodedDatabaseIdField] = Field(
+        default=None, title="Copied from Job-ID", description="?"
+    )
     output_collections: Any = Field(default={}, title="Output collections", description="?")
 
 
 class JobDestinationParams(Model):
     # TODO add description, check type and add proper default
-    runner: Any = Field(default=Required, title="Runner", description="?", alias="Runner")
-    runner_job_id: Any = Field(default=Required, title="Runner Job ID", description="?", alias="Runner Job ID")
-    handler: Any = Field(default=Required, title="Handler", description="?", alias="Handler")
+    runner: str = Field(default=Required, title="Runner", description="?", alias="Runner")
+    runner_job_id: str = Field(default=Required, title="Runner Job ID", description="?", alias="Runner Job ID")
+    handler: str = Field(default=Required, title="Handler", description="?", alias="Handler")
+
+
+class JobOutput(Model):
+    label: str = Field(default=Required, title="Output label", description="The output label")
+    value: EncodedDatasetSourceId = Field(default=Required, title="dataset", description="The associated dataset.")
+
+
+class JobParameterValues(Model):
+    src: DatasetSourceType = Field(
+        default=Required,
+        title="Source",
+        description="The source of this dataset, either `hda` or `ldda` depending of its origin.",
+    )
+    id: EncodedDatabaseIdField = EntityIdField
+    name: str = Field(
+        default=Required,
+        title="Name",
+        description="The name of the item.",
+    )
+    hid: int = Field(
+        default=Required,
+        title="HID",
+        description="The index position of this item in the History.",
+    )
+
+
+class JobParameter(Model):
+    text: str = Field(
+        default=Required,
+        title="Text",
+        description="Text associated with the job parameter.",
+    )
+    depth: int = Field(
+        default=Required,
+        title="Depth",
+        description="The depth of the job parameter.",
+    )
+    value: List[JobParameterValues]
+
+
+class JobDisplayParametersSummary(Model):
+    parameters: List[JobParameter]
+    has_parameter_errors: bool = Field(
+        default=Required, title="Has parameter errors", description="The job has parameter errors"
+    )
+    outputs: Dict[str, List[JobOutput]] = Field(
+        default=Required,
+        title="Outputs",
+        description="Dictionary mapping all the tool outputs (by name) with the corresponding dataset information in a nested format.",
+    )
+
+
+# class ParameterValueModel(Model):
+#     src: str
+#     id: str
+#     hid: int
+#     name: str
+
+
+# class ParametersModel(Model):
+#     text: str
+#     depth: int
+#     value: List[Optional[ParameterValueModel]]
+
+
+# class OutputsModel(Model):
+#     label: Optional[str]
+#     value: EncodedDatasetSourceId
+
+
+# class MyPydanticModel(Model):
+#     parameters: List[ParametersModel]
+#     has_parameter_errors: bool
+#     outputs: dict[str, List[OutputsModel]]
+
+# = Field(default="",title="",description="")
