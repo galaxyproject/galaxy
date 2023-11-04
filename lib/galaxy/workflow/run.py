@@ -555,6 +555,12 @@ class WorkflowProgress:
                 else:
                     replacement = temp
             else:
+                if is_data:
+                    for step_input in step.inputs:
+                        if step_input.name == prefixed_name and step_input.value_from:
+                            log.debug("THIS?")
+                            log.debug("GOT DEFAULT VALUE %s, value_from %s", step_input.default_value, step_input.value_from)
+                            return raw_to_galaxy(trans.app, trans.history, step_input.value_from)
                 replacement = self.replacement_for_input_connections(
                     step,
                     input_dict,
@@ -566,9 +572,11 @@ class WorkflowProgress:
             replacement = state_input
         else:
             for step_input in step.inputs:
-                if step_input.name == prefixed_name and step_input.default_value_set:
+                if step_input.name == prefixed_name:
+                    log.debug("GOT DEFAULT VALUE %s, value_from %s", step_input.default_value, step_input.value_from)
+                if step_input.name == prefixed_name and (step_input.default_value or step_input.value_from):
                     if is_data:
-                        replacement = raw_to_galaxy(trans.app, trans.history, step_input.default_value)
+                        replacement = raw_to_galaxy(trans.app, trans.history, step_input.value_from or step_input.default_value)
         return replacement
 
     def replacement_for_connection(self, connection: "WorkflowStepConnection", is_data: bool = True):
