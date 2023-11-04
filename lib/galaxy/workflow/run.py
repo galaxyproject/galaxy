@@ -552,6 +552,11 @@ class WorkflowProgress:
                 else:
                     replacement = temp
             else:
+                if is_data and (step_input := step.inputs_by_name.get(prefixed_name)) and step_input.value_from:
+                    # This might not be correct since value_from might be an expression to evaluate,
+                    # and default values need to be applied before expressions.
+                    # TODO: check if any tests fail because of this ?
+                    return raw_to_galaxy(trans.app, trans.history, step_input.value_from)
                 replacement = self.replacement_for_input_connections(
                     step,
                     input_dict,
@@ -565,10 +570,15 @@ class WorkflowProgress:
             # workflow submitted with step parameters populates state directly
             # via populate_module_and_state
             replacement = state_input
-        elif (step_input := step.inputs_by_name.get(prefixed_name)) and step_input.default_value_set:
-            replacement = step_input.default_value
+        elif (step_input := step.inputs_by_name.get(prefixed_name)) and (
+            step_input.default_value or step_input.value_from
+        ):
+            replacement = step_input.default_value or step_input.value_from
             if is_data:
-                replacement = raw_to_galaxy(trans.app, trans.history, step_input.default_value)
+                # as above, this might not be correct since the default value needs to be applied
+                # before the value_from evaluation occurs.
+                # TODO: check if any tests fail because of this ?
+                replacement = raw_to_galaxy(trans.app, trans.history, step_input.value_from or step_input.default_value)
         return replacement
 
     def replacement_for_connection(self, connection: "WorkflowStepConnection", is_data: bool = True):
