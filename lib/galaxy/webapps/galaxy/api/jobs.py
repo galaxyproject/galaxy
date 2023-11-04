@@ -32,10 +32,8 @@ from galaxy.managers.context import (
     ProvidesHistoryContext,
     ProvidesUserContext,
 )
-from galaxy.managers.hdas import HDAManager
 from galaxy.managers.jobs import (
     JobManager,
-    JobSearch,
     summarize_destination_params,
     summarize_job_metrics,
     summarize_job_parameters,
@@ -46,6 +44,7 @@ from galaxy.schema.jobs import (
     EncodedJobDetails,
     JobAssociation,
     JobDestinationParams,
+    JobDisplayParametersSummary,
     JobErrorSummary,
     JobInputSummary,
     ReportJobErrorPayload,
@@ -199,9 +198,6 @@ DeleteJobBody = Body(title="Delete/cancel job", description="The values to delet
 @router.cbv
 class FastAPIJobs:
     service: JobsService = depends(JobsService)
-    manager: JobManager = depends(JobManager)
-    hda_manager: HDAManager = depends(HDAManager)
-    job_search: JobSearch = depends(JobSearch)
 
     @router.get("/api/jobs")
     def index(
@@ -304,7 +300,7 @@ class FastAPIJobs:
     ) -> JobErrorSummary:
         # Get dataset on which this error was triggered
         dataset_id = payload.dataset_id
-        dataset = self.hda_manager.get_accessible(id=dataset_id, user=trans.user)
+        dataset = self.service.hda_manager.get_accessible(id=dataset_id, user=trans.user)
         # Get job
         job = self.service.get_job(trans, id)
         if dataset.creating_job.id != job.id:
@@ -350,7 +346,6 @@ class FastAPIJobs:
         job = self.service.get_job(trans=trans, job_id=id)
         return self.service.dictify_associations(trans, job.output_datasets, job.output_library_datasets)
 
-    # TODO add pydantic model for return value
     @router.get(
         "/api/jobs/{id}/parameters_display",
         name="resolve_parameters_display",
@@ -361,20 +356,17 @@ class FastAPIJobs:
         id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
         hda_ldda: Annotated[DatasetSourceType, HdaLddaQueryParam] = DatasetSourceType.hda,
         trans: ProvidesUserContext = DependsOnTrans,
-    ):
+    ) -> JobDisplayParametersSummary:
         """
-            # TODO is this still true?
-            Resolve parameters as a list for nested display. More client logic
-            here than is ideal but it is hard to reason about tool parameter
-            types on the client relative to the server. Job accessibility checks
-            are slightly different than dataset checks, so both methods are
-            available.
+        # TODO is this still true?
+        Resolve parameters as a list for nested display. More client logic
+        here than is ideal but it is hard to reason about tool parameter
+        types on the client relative to the server. Job accessibility checks
+        are slightly different than dataset checks, so both methods are
+        available.
 
-            This API endpoint is unstable and tied heavily to Galaxy's JS client code,
-            this endpoint will change frequently.
-
-        :rtype:     list
-        :returns:   job parameters for for display
+        This API endpoint is unstable and tied heavily to Galaxy's JS client code,
+        this endpoint will change frequently.
         """
         job = self.service.get_job(trans, job_id=id, hda_ldda=hda_ldda)
         return summarize_job_parameters(trans, job)
@@ -419,10 +411,6 @@ class FastAPIJobs:
         hda_ldda: Annotated[DatasetSourceType, HdaLddaQueryParam] = DatasetSourceType.hda,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> List[Optional[JobMetric]]:
-        """
-        :rtype:     list
-        :returns:   list containing job metrics
-        """
         job = self.service.get_job(trans, job_id=id, hda_ldda=hda_ldda)
         return [JobMetric(**metric) for metric in summarize_job_metrics(trans, job)]
 
@@ -437,10 +425,6 @@ class FastAPIJobs:
         hda_ldda: Annotated[DatasetSourceType, HdaLddaQueryParam] = DatasetSourceType.hda,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> List[Optional[JobMetric]]:
-        """
-        :rtype:     list
-        :returns:   list containing job metrics
-        """
         job = self.service.get_job(trans, dataset_id=id, hda_ldda=hda_ldda)
         return [JobMetric(**metric) for metric in summarize_job_metrics(trans, job)]
 
@@ -494,7 +478,7 @@ class FastAPIJobs:
         params_dump = [tool.params_to_strings(param, trans.app, nested=True) for param in all_params]
         jobs = []
         for param_dump, param in zip(params_dump, all_params):
-            job = self.job_search.by_tool_input(
+            job = self.service.job_search.by_tool_input(
                 trans=trans,
                 tool_id=tool_id,
                 tool_version=tool.version,
@@ -537,7 +521,7 @@ class FastAPIJobs:
             message = payload.message
         else:
             message = None
-        return self.manager.stop(job, message=message)
+        return self.service.job_manager.stop(job, message=message)
 
 
 class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
