@@ -6374,7 +6374,10 @@ export interface components {
             outputs: {
                 [key: string]: components["schemas"]["JobOutput"][] | undefined;
             };
-            /** Parameters */
+            /**
+             * Parameters
+             * @description The parameters of the job in a nested format.
+             */
             parameters: components["schemas"]["JobParameter"][];
         };
         /**
@@ -6601,7 +6604,7 @@ export interface components {
              * Output label
              * @description The output label
              */
-            label: string;
+            label: Record<string, never>;
             /**
              * dataset
              * @description The associated dataset.
@@ -6619,18 +6622,45 @@ export interface components {
              */
             depth: number;
             /**
+             * notes
+             * @description Notes associated with the job parameter.
+             */
+            notes?: string;
+            /**
              * Text
              * @description Text associated with the job parameter.
              */
             text: string;
-            /** Value */
-            value: components["schemas"]["JobParameterValues"][];
+            /**
+             * Value
+             * @description The values of the job parameter
+             */
+            value:
+                | components["schemas"]["JobParameterValuesSimple"][]
+                | components["schemas"]["JobParameterValuesExtensive"]
+                | string;
         };
         /**
-         * JobParameterValues
+         * JobParameterValuesExtensive
          * @description Base model definition with common configuration used by all derived models.
          */
-        JobParameterValues: {
+        JobParameterValuesExtensive: {
+            /**
+             * Check Content
+             * @description Flag to check content
+             */
+            check_content: boolean;
+            /**
+             * Targets
+             * @description List of job value targets
+             */
+            targets: components["schemas"]["JobTarget"][];
+        };
+        /**
+         * JobParameterValuesSimple
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        JobParameterValuesSimple: {
             /**
              * HID
              * @description The index position of this item in the History.
@@ -6711,6 +6741,90 @@ export interface components {
             states?: {
                 [key: string]: number | undefined;
             };
+        };
+        /**
+         * JobTarget
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        JobTarget: {
+            /**
+             * Destination
+             * @description Destination details
+             */
+            destination: components["schemas"]["JobTargetDestination"];
+            /**
+             * Elements
+             * @description List of job target elements
+             */
+            elements: components["schemas"]["JobTargetElement"][];
+        };
+        /**
+         * JobTargetDestination
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        JobTargetDestination: {
+            /**
+             * Type
+             * @description Type of destination, either `hda` or `ldda` depending on the destination
+             */
+            type: string;
+        };
+        /**
+         * JobTargetElement
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        JobTargetElement: {
+            /**
+             * Auto Decompress
+             * @description Flag indicating if to auto decompress
+             */
+            auto_decompress: boolean;
+            /**
+             * Database Key
+             * @description Database key
+             */
+            dbkey: string;
+            /**
+             * Extension
+             * @description Extension
+             */
+            ext: string;
+            /**
+             * Hashes
+             * @description List of hashes
+             */
+            hashes: string[];
+            /**
+             * Name
+             * @description Name of the element
+             */
+            name: string;
+            /**
+             * Object ID
+             * @description Object ID
+             * @example 0123456789ABCDEF
+             */
+            object_id: string;
+            /**
+             * Paste Content
+             * @description Content to paste
+             */
+            paste_content: string;
+            /**
+             * Purge Source
+             * @description Flag indicating if to purge the source
+             */
+            purge_source: boolean;
+            /**
+             * Source
+             * @description Source
+             */
+            src: string;
+            /**
+             * To POSIX Lines
+             * @description Flag indicating if to convert to POSIX lines
+             */
+            to_posix_lines: boolean;
         };
         /**
          * LabelValuePair
@@ -11253,7 +11367,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["JobDisplayParametersSummary"];
                 };
             };
             /** @description Validation Error */
