@@ -87,3 +87,16 @@ class IdentityProvider:
         :param post_user_logout_href: Optional URL to redirect to after logging out of IDP.
         """
         raise NotImplementedError()
+
+    def find_user_by_access_token(self, sa_session, access_token):
+        """
+        Locates a user by access_token. The access token must be verified prior
+        to returning the relevant user.
+
+        :type  sa_session:      sqlalchemy.orm.scoping.scoped_session
+        :param sa_session:      SQLAlchemy database handle.
+
+        :type  access_token: string
+        :param access_token: An OIDC access token
+        """
+        raise NotImplementedError()

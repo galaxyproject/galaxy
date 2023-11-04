@@ -408,26 +408,28 @@ class AuthnzManager:
             log.exception(msg)
             return False, msg, (None, None)
 
-    def find_user_by_access_token_in_provider(self, sa_session, provider, access_token):
+    def _find_user_by_access_token_in_provider(self, sa_session, provider, access_token):
         try:
             success, message, backend = self._get_authnz_backend(provider)
             if success is False:
                 msg = f"An error occurred when obtaining user by token with provider `{provider}`: {message}"
                 log.error(msg)
                 return None
-            user = backend.match_access_token_to_user(sa_session, access_token)
+            user = backend.find_user_by_access_token(sa_session, access_token)
             if user:
                 log.debug(f"Found user: {user} via `{provider}` identity provider")
                 return user
+            return None
+        except NotImplementedError:
             return None
         except Exception as e:
             msg = f"An error occurred with provider: {provider} when finding user by token: {e}"
             log.error(msg)
             return None
 
-    def find_user_by_access_token(self, sa_session, access_token):
+    def match_access_token_to_user(self, sa_session, access_token):
         for provider in self.oidc_backends_config:
-            user = self.find_user_by_access_token_in_provider(sa_session, provider, access_token)
+            user = self._find_user_by_access_token_in_provider(sa_session, provider, access_token)
             if user:
                 return user
         return None

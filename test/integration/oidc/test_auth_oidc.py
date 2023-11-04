@@ -119,12 +119,11 @@ class AbstractTestCases:
 
         @classmethod
         def configure_oidc_and_restart(cls):
-            with tempfile.NamedTemporaryFile("w+t", delete=False) as tmp_file:
-                server_wrapper = cls._test_driver.server_wrappers[0]
-                cls.backend_config_file = cls.generate_oidc_config_file(server_wrapper)
-                # Explicitly assign the previously used port, as it's random otherwise
-                del os.environ["GALAXY_TEST_PORT_RANDOM"]
-                os.environ["GALAXY_TEST_PORT"] = os.environ["GALAXY_WEB_PORT"]
+            server_wrapper = cls._test_driver.server_wrappers[0]
+            cls.backend_config_file = cls.generate_oidc_config_file(server_wrapper)
+            # Explicitly assign the previously used port, as it's random otherwise
+            del os.environ["GALAXY_TEST_PORT_RANDOM"]
+            os.environ["GALAXY_TEST_PORT"] = os.environ["GALAXY_WEB_PORT"]
             cls._test_driver.restart(config_object=cls, handle_config=cls.handle_galaxy_oidc_config_kwds)
 
         @classmethod
@@ -166,9 +165,11 @@ class TestGalaxyOIDCLoginIntegration(AbstractTestCases.BaseKeycloakIntegrationTe
         self,
         username,
         password,
-        expected_codes=[200, 404],
+        expected_codes=None,
         save_cookies=False,
     ):
+        if expected_codes is None:
+            expected_codes = [200, 404]
         session = requests.Session()
         response = session.get(f"{self.url}authnz/keycloak/login")
         provider_url = response.json()["redirect_uri"]
@@ -176,14 +177,13 @@ class TestGalaxyOIDCLoginIntegration(AbstractTestCases.BaseKeycloakIntegrationTe
         matches = self.REGEX_KEYCLOAK_LOGIN_ACTION.search(response.text)
         auth_url = html.unescape(matches.groups(1)[0])
         response = session.post(auth_url, data={"username": username, "password": password}, verify=False)
-        if expected_codes:
-            assert response.status_code in expected_codes, response
+        assert response.status_code in expected_codes, response
         if save_cookies:
             self.galaxy_interactor.cookies = session.cookies
         return session, response
 
     def _get_keycloak_access_token(
-        self, client_id="gxyclient", username=KEYCLOAK_TEST_USERNAME, password=KEYCLOAK_TEST_PASSWORD, scopes=[]
+        self, client_id="gxyclient", username=KEYCLOAK_TEST_USERNAME, password=KEYCLOAK_TEST_PASSWORD, scopes=None
     ):
         data = {
             "client_id": client_id,
@@ -191,7 +191,7 @@ class TestGalaxyOIDCLoginIntegration(AbstractTestCases.BaseKeycloakIntegrationTe
             "grant_type": "password",
             "username": username,
             "password": password,
-            "scope": scopes,
+            "scope": scopes or [],
         }
         response = requests.post(f"{KEYCLOAK_URL}/protocol/openid-connect/token", data=data, verify=False)
         return response.json()["access_token"]

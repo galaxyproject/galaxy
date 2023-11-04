@@ -501,7 +501,7 @@ class OIDCAuthnzBase(IdentityProvider):
         else:
             return username
 
-    def match_access_token_to_user(self, sa_session, access_token):
+    def find_user_by_access_token(self, sa_session, access_token):
         signing_key = self.jwks_client.get_signing_key_from_jwt(access_token)
         decoded_jwt = jwt.decode(
             access_token,

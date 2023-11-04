@@ -297,7 +297,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
 
     def by_oidc_access_token(self, access_token: str):
         if hasattr(self.app, "authnz_manager") and self.app.authnz_manager:
-            user = self.app.authnz_manager.find_user_by_access_token(self.app.model.session, access_token)  # type: ignore[attr-defined]
+            user = self.app.authnz_manager.match_access_token_to_user(self.app.model.session, access_token)  # type: ignore[attr-defined]
             return user
         else:
             return None
