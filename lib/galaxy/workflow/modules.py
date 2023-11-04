@@ -125,7 +125,7 @@ class ConditionalStepWhen(BooleanToolParameter):
     pass
 
 
-def to_cwl(value, hda_references, step):
+def to_cwl(value, hda_references, step, require_ok=True):
     element_identifier = None
     if isinstance(value, model.HistoryDatasetCollectionAssociation):
         value = value.collection
@@ -138,7 +138,8 @@ def to_cwl(value, hda_references, step):
         if not value.dataset.in_ready_state():
             why = "dataset [%s] is needed for valueFrom expression and is non-ready" % value.id
             raise DelayedWorkflowEvaluation(why=why)
-        if not value.is_ok:
+        if require_ok and not value.is_ok:
+            # materialize and delay ?
             raise FailWorkflowEvaluation(
                 why=InvocationFailureDatasetFailed(
                     reason=FailureReason.dataset_failed, hda_id=value.id, workflow_step_id=step.id
@@ -2218,14 +2219,17 @@ class ToolModule(WorkflowModule):
                 f"Tool {self.tool_id} missing. Cannot recover runtime state.", tool_id=self.tool_id
             )
 
-    def evaluate_value_from_expressions(self, progress, step, execution_state, extra_step_state):
+    def evaluate_value_from_expressions(self, progress, step, execution_state, extra_step_state, use_default=False):
         value_from_expressions = {}
         replacements: Dict = {}
 
         for key in execution_state.inputs.keys():
             step_input = step.inputs_by_name.get(key)
-            if step_input and step_input.value_from is not None:
-                value_from_expressions[key] = step_input.value_from
+            if step_input:
+                if step_input.value_from is not None and not use_default:
+                    value_from_expressions[key] = step_input.value_from
+                else:
+                    value_from_expressions[key] = step_input.default_value
 
         if not value_from_expressions:
             return replacements
@@ -2235,7 +2239,8 @@ class ToolModule(WorkflowModule):
         for key, value in extra_step_state.items():
             step_state[key] = to_cwl(value, hda_references=hda_references, step=step)
         for key, value in execution_state.inputs.items():
-            step_state[key] = to_cwl(value, hda_references=hda_references, step=step)
+            # require_ok = False for deferred datasets ... might instead need to materialize ??
+            step_state[key] = to_cwl(value, hda_references=hda_references, step=step, require_ok=False)
 
         for key, value_from in value_from_expressions.items():
             as_cwl_value = do_eval(
@@ -2380,11 +2385,14 @@ class ToolModule(WorkflowModule):
                 execution_state.inputs["__when_value__"] = when_value
 
             unmatched_input_connections = expected_replacement_keys - found_replacement_keys
+            use_default = False
             if unmatched_input_connections:
                 log.warning(f"Failed to use input connections for inputs [{unmatched_input_connections}]")
+                # Hack
+                use_default=True
 
             expression_replacements = self.evaluate_value_from_expressions(
-                progress, step, execution_state, extra_step_state
+                progress, step, execution_state, extra_step_state, use_default=True
             )
 
             def expression_callback(input, prefixed_name, **kwargs):
