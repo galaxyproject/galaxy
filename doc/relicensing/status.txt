@@ -93,10 +93,28 @@ benfulton, benmarkfulton@gmail.com, https://github.com/galaxyproject/galaxy/pull
 atyryshkin, atyryshkina@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1713563069
 Airistotal, danieljosephbouchard@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1713564514
 AndreasSko, me@andreas-sk.de, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1713735509
+kxk302, kxk302@psu.edu, https://github.com/galaxyproject/galaxy/pull/14714
+ksuderman, suderman@jhu.edu, https://github.com/galaxyproject/galaxy/pull/16233
+jlhg, huang@jianlong.org, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1713740627
+hmenager, herve.menager@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1713742259
+cumbof, fabio.cumbo@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1713748840
+shiltemann, zazkia@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1713749762
+jjkoehorst, jasperkoehorst@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1713750442
+eteriSokhoyan, esokhoyan@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1713753043
+johnbradley, johnbradley2008@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1713788099
+saketkc, saketkc@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1713788190
+glormph, jorrit.boekel@scilifelab.se, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1713790717
+CarlosBorroto, carlos.borroto@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1713792053
+bagnacan, <andrea.bagnacani@uni-rostock.de, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1713808274
+abrenner, <aebrenne@uci.edu, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1713815484
+jaidevjoshi83, jaidev53ster@gmail.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1713822591
+KeizoUehara, keizou.bos@gmail.com, https://github.com/galaxyproject/galaxy/pull/13074
+khaled196, khalled.jooma@yahoo.com, https://github.com/galaxyproject/galaxy/pull/16503
+kjetilkl, kjetil.klepper@ntnu.no, https://github.com/galaxyproject/galaxy/pull/12269
+knutwa-ext, knutwa@usit.uio.no, https://github.com/galaxyproject/galaxy/pull/12099
 
 # not yet agreed, needs research
 Evgeny Anatskiy <evgeny.anatskiy@gmail.com> # GH user: anatskiy
-Andrea Bagnacani <andrea.bagnacani@uni-rostock.de> # GH user: bagnacan
 Ann Loraine <aloraine@uncc.edu> # GH user: aloraine , only one commit, to change a URL: https://github.com/galaxyproject/galaxy/commit/ea22750604bb2b14a437eddc6ab34dd9d4d9fba7
 Anton Nekrutenko <anton@nekrut.org>  # GH user: nekrut
 Arjun Nath <arjun@bx.psu.edu> # no GH user, last contribution in 2007
@@ -125,9 +143,7 @@ Delphine Lariviere <lariviere.delphine@gmail.com>  # GH user: Delphine-L
 Devon Ryan <dpryan79@gmail.com>  # GH user: dpryan79
 dorine francheteau <dorine@bx.psu.edu>  # GH user: ??
 Eric Paniagua <paniagua.cshl@gmail.com>  # GH user: ??
-Eteri Sokhoyan <esokhoyan@gmail.com>  # GH user: eteriSokhoyan
 Fabien Mareuil <fmareuil@pasteur.fr>  # GH user: fmareuil
-Fabio Cumbo <fabio.cumbo@gmail.com>  # GH user: cumbof
 fescudie <fescudie@toulouse.inra.fr>  # GH user: fescudie
 Florent Angly <florent.angly@gmail.com>  # GH user: fangly
 Frederic Sapet <frederic.sapet@limagrain.com>  # GH user: FredericBGA
@@ -143,7 +159,6 @@ Guruprasad Anada <gua110@bx.psu.edu>  # GH user: ??
 Hanfei Sun <ad9075@gmail.com>  # GH user: hanfeisun
 Hans-Rudolf Hotz <hrhotz@users.noreply.github.com>  # GH user: hrhotz
 Henk van den Toorn <vdtoorn@hotmail.com>  # GH user: vdtoorn
-Hervé Ménager <herve.menager@gmail.com>  # GH user: hmenager
 David Norris <Hillrunner2008@gmail.com>  # GH user: Hillrunner2008
 Hiral Vora <hvora1@uncc.edu>  # GH user: ??
 Hunter Moseley <hunter.moseley@louisville.edu>  # GH user: ??
@@ -155,12 +170,10 @@ Ira Cooke <iracooke@gmail.com>  # GH user: iracooke
 Islam Heggy <islam.heggy@gmail.com>  # GH user: IslamHeggy
 Ivan Kuzmin <inkuzm@gmail.com>  # GH user: inkuzmin
 Iyad Kandalaft <ik@iyadk.com>  # GH user: IyadKandalaft
-Jayadev Joshi  <jaidev53ster@gmail.com>  # GH user: jaidevjoshi83
 James Boocock <sfk2001@gmail.com>  # GH user: theboocock
 James Taylor <james@jamestaylor.org  # GH user: jxtx (deceased, RIP buddy)
 janani <guru.jan@gmail.com>  # GH user: janani-prasad
 Jan Kanis <jan.code@jankanis.nl>  # GH user: JanKanis
-Jasper Koehorst <jasperkoehorst@gmail.com>  # GH user: jjkoehorst
 Jean-Frédéric <jean-frederic.berthelot@lifl.fr>  # GH user: JeanFred
 Jeffrey Thiessen <jeffreylthiessen@gmail.com>  # GH user: JeffreyThiessen
 Jennifer Cabral <jencabral@gmail.com>  # GH user: JenCabral
@@ -168,12 +181,9 @@ Jens Preußner <jenzopr@users.noreply.github.com>  # GH user: jenzopr
 Jeremy Goecks <jgoecks@users.noreply.github.com>  # GH user: jgoecks
 Jesse c j van Dam <jesse.vandam@wur.nl>  # GH user: jessevdam
 Jianbin He <jbhe@bx.psu.edu>  # GH user: ??
-Jian-Long Huang <huang@jianlong.org>  # GH user: jlhg
 Joachim Jacob <joachim.jacob@gmail.com>  # GH user: joachimjacob
 Joachim Wolff <wolffj@informatik.uni-freiburg.de>  # GH user: joachimwolff
-John Bradley <johnbradley2008@gmail.com>  # GH user: johnbradle
 John Duddy <jduddy@illumina.com>  # GH user: ??
-Jorrit Boekel <jorrit.boekel@scilifelab.se>  # GH user: glormph
 jra001k <jra001k@gmail.com>  # GH user: ???
 (JR) Ray Sajulga <jraysajulga@gmail.com>  # GH user: jraysajulga
 Juan David Mendez Solano <juan.mendez@imtek.uni-freiburg.de>  # GH user: Realjuan
@@ -181,18 +191,24 @@ Juleen Graham <juleengrah@gmail.com>  # GH user: juleengraham
 Julien Seiler <seilerj@igbmc.fr>  # GH user: julozi
 Junzhou Wang <junzhouwang@gmail.com>  # GH user: junzwang
 Jeremy Volkening <jdv@base2bio.com>  # GH user: jvolkening
-Saket Choudhary <saketkc@gmail.com>  # GH user: saketkc, last contribution in 2014
-Saskia Hiltemann <zazkia@gmail.com>  # GH user: shiltemann, last contribution in 2018
 Scott McManus <scottmcmanus@gatech.edu>  # No GH user, last contribution in 2012
 Sebastian Kapust <sebastian@kapust.org>  # GH user: scrathat, last contribution in 2020
 Steven Weaver <sweaver@temple.edu>  # GH user: stevenweaver, last contribution 2018
+Kai Kruse <krusekai@gmail.com>  # GH user: kaukrise
+kaktus42 <vowinkel.alexander@gmail.com>  # GH user: kaktus42
+Kanwei Li <kanwei@gmail.com>  # GH user: kanwei
+Katarzyna Kamieniecka <k.murat1@bradford.ac.uk>  # GH user: kpbioteam
+Katrin Leinweber <kalei@posteo.de>  # GH user: katrinleinweber
+Kelly Vincent <kpvincent@bx.psu.edu>  # GH user: ??
+Kenzo-Hugo Hillion <hillion.kenzo@gmail.com>  # GH user: khillion
+Kidane M. Tekle <kidane.tekle@gmail.com>  # GH user: kidanem
+Kiran Telukunta saraswathi <kiran.telukunta@indiayouth.info>  # GH user: telukir
+Kyle Ellrott <kellrott@gmail.com>  # GH user: kellrott
 
 # not agreed, but contributions no longer present
-Adam Brenner <aebrenne@uci.edu> # GH user: abrenner, only commits to tools moved to tool shed (no longer in galaxy)
 Abdulrahman Azab <eng.azab@gmail.com> # GH user: abdulrahmanazab, one-line contribution, rewritten by John Chilton
 Andrea Sbardellati <andrea.sbardellati@crs4.it>  # only one commit to bowtie2 wrapper, since moved to the tool shed
 Benjamin Carr <BenjaminHCCarr@users.noreply.github.com>  # GH user: BenjaminHCCarr, single line change, no longer present
-Carlos Borroto <carlos.borroto@gmail.com>  # GH user: CarlosBorroto, single line change, no longer present in the code
 Christopher Bare <christopherbare@gmail.com>  # GH user: cbare, contribution reverted or otherwise unused
 Clare Sloggett <sloc@unimelb.edu.au>  # GH user: claresloggett, code heavily refactored since 2012 contribution
 Dan Blanchard <dan.blanchard@gmail.com>  # GH user: dan-blanchard, one liner changing the drmaa version

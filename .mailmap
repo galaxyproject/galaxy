@@ -2,6 +2,7 @@
 # git log --pretty="%aN <%aE>" | sort -u | less
 # 631 as of 2023-09-18
 # 498 as of 2023-11-02
+# 428 as of 2023-11-04
 Ahmed Hamid Awan <aawan@mindgrub.com> # GH user: ahmedhamidawan
 Ahmed Hamid Awan <aawan@mindgrub.com> Ahmed Awan <newadmin@galaxyc.local>
 Ahmed Hamid Awan <aawan@mindgrub.com> Ahmed Awan <newadmin@galaxyc.win.ad.jhu.edu>
@@ -258,10 +259,29 @@ Julien Van Braekel <juvanbraekel@bioit-galaxy-test.sciensano.be> <29703119+jvanb
 Junzhou Wang <junzhouwang@gmail.com>  # GH user: junzwang
 Jeremy Volkening <jdv@base2bio.com>  # GH user: jvolkening
 
+Kai Kruse <krusekai@gmail.com>  # GH user: kaukrise
+Kaivan Kamali <kxk302@psu.edu>  # GH user: kxk302
+Kaivan Kamali <kxk302@psu.edu> <kxk302@gmail.com>
+kaktus42 <vowinkel.alexander@gmail.com>  # GH user: kaktus42
+Kanwei Li <kanwei@gmail.com>  # GH user: kanwei
 Katarzyna Kamieniecka <k.murat1@bradford.ac.uk>  # GH user: kpbioteam
 Katarzyna Kamieniecka <k.murat1@bradford.ac.uk> <ubuntu@ip-172-31-23-81.ec2.internal>
+Katrin Leinweber <kalei@posteo.de>  # GH user: katrinleinweber
+Katrin Leinweber <kalei@posteo.de> <9948149+katrinleinweber@users.noreply.github.com>
+Keith Suderman <suderman@jhu.edu>
 Keizo Uehara <keizou.bos@gmail.com>  # GH user: KeizoUehara
 Keizo Uehara <keizou.bos@gmail.com> <Uehara.Keizo@mss.co.jp>
+Kelly Vincent <kpvincent@bx.psu.edu>  # GH user: ??
+Kenzo-Hugo Hillion <hillion.kenzo@gmail.com>  # GH user: khillion
+Kenzo-Hugo Hillion <hillion.kenzo@gmail.com> <kenzo-hugo.hillion1@pasteur.fr>
+khaled196 <khalled.jooma@yahoo.com>  # GH user: khaled196
+Kidane M. Tekle <kidane.tekle@gmail.com>  # GH user: kidanem
+Kiran Telukunta saraswathi <kiran.telukunta@indiayouth.info>  # GH user: telukir
+Kjetil Klepper <kjetil.klepper@ntnu.no>  # GH user: kjetilkl
+Knut Waagan <knutwa@usit.uio.no>  # GH user: knutwa-ext
+Knut Waagan <knutwa@usit.uio.no> <74406250+knutwa-ext@users.noreply.github.com>
+Kyle Ellrott <kellrott@gmail.com>  # GH user: kellrott
+Kyle Ellrott <kellrott@gmail.com> <kellrott@soe.ucsc.edu>
 
 Matthias Bernt <bernt@informatik.uni-leipzig.de>  # GH user: bernt-matthias
 Matt Chambers <matt.chambers42@gmail.com>  # GH user: chambm
