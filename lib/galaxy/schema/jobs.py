@@ -3,6 +3,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Union,
 )
 
 from pydantic import (
@@ -164,11 +165,11 @@ class JobDestinationParams(Model):
 
 
 class JobOutput(Model):
-    label: str = Field(default=Required, title="Output label", description="The output label")
+    label: Any = Field(default=Required, title="Output label", description="The output label")  # check if this is true
     value: EncodedDatasetSourceId = Field(default=Required, title="dataset", description="The associated dataset.")
 
 
-class JobParameterValues(Model):
+class JobParameterValuesSimple(Model):
     src: DatasetSourceType = Field(
         default=Required,
         title="Source",
@@ -187,6 +188,55 @@ class JobParameterValues(Model):
     )
 
 
+class JobTargetElement(Model):  # TODO rename?
+    name: str = Field(default=Required, title="Name", description="Name of the element")  # TODO check correctness
+    dbkey: str = Field(default=Required, title="Database Key", description="Database key")  # TODO check correctness
+    ext: str = Field(default=Required, title="Extension", description="Extension")  # TODO check correctness
+    to_posix_lines: bool = Field(
+        default=Required, title="To POSIX Lines", description="Flag indicating if to convert to POSIX lines"
+    )  # TODO check correctness
+    auto_decompress: bool = Field(
+        default=Required, title="Auto Decompress", description="Flag indicating if to auto decompress"
+    )  # TODO check correctness
+    src: str = Field(default=Required, title="Source", description="Source")  # TODO check correctness
+    paste_content: str = Field(
+        default=Required, title="Paste Content", description="Content to paste"
+    )  # TODO check correctness
+    hashes: List[str] = Field(default=Required, title="Hashes", description="List of hashes")  # TODO check correctness
+    purge_source: bool = Field(
+        default=Required, title="Purge Source", description="Flag indicating if to purge the source"
+    )  # TODO check correctness
+    object_id: EncodedDatabaseIdField = Field(
+        default=Required, title="Object ID", description="Object ID"
+    )  # TODO check correctness
+
+
+class JobTargetDestination(Model):
+    type: str = Field(
+        default=Required,
+        title="Type",
+        description="Type of destination, either `hda` or `ldda` depending on the destination",
+    )  # TODO check correctness
+
+
+class JobTarget(Model):  # TODO rename?
+    destination: JobTargetDestination = Field(
+        default=Required, title="Destination", description="Destination details"
+    )  # TODO check correctness
+    elements: List[JobTargetElement] = Field(
+        default=Required, title="Elements", description="List of job target elements"
+    )  # TODO check correctness
+
+
+class JobParameterValuesExtensive(Model):  # TODO rename?
+    targets: List[JobTarget] = Field(
+        default=Required, title="Targets", description="List of job value targets"
+    )  # TODO check correctness
+    check_content: bool = Field(
+        default=Required, title="Check Content", description="Flag to check content"
+    )  # TODO check correctness
+
+
 class JobParameter(Model):
     text: str = Field(
         default=Required,
@@ -198,11 +248,16 @@ class JobParameter(Model):
         title="Depth",
         description="The depth of the job parameter.",
     )
-    value: List[JobParameterValues]
+    value: Union[List[JobParameterValuesSimple], JobParameterValuesExtensive, str] = Field(
+        default=Required, title="Value", description="The values of the job parameter"
+    )
+    notes: Optional[str] = Field(default=None, title="notes", description="Notes associated with the job parameter.")
 
 
 class JobDisplayParametersSummary(Model):
-    parameters: List[JobParameter]
+    parameters: List[JobParameter] = Field(
+        default=Required, title="Parameters", description="The parameters of the job in a nested format."
+    )
     has_parameter_errors: bool = Field(
         default=Required, title="Has parameter errors", description="The job has parameter errors"
     )
@@ -211,29 +266,3 @@ class JobDisplayParametersSummary(Model):
         title="Outputs",
         description="Dictionary mapping all the tool outputs (by name) with the corresponding dataset information in a nested format.",
     )
-
-
-# class ParameterValueModel(Model):
-#     src: str
-#     id: str
-#     hid: int
-#     name: str
-
-
-# class ParametersModel(Model):
-#     text: str
-#     depth: int
-#     value: List[Optional[ParameterValueModel]]
-
-
-# class OutputsModel(Model):
-#     label: Optional[str]
-#     value: EncodedDatasetSourceId
-
-
-# class MyPydanticModel(Model):
-#     parameters: List[ParametersModel]
-#     has_parameter_errors: bool
-#     outputs: dict[str, List[OutputsModel]]
-
-# = Field(default="",title="",description="")
