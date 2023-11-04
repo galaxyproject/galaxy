@@ -99,7 +99,7 @@ class AbstractTestCases:
             # we forcibly disable it for now
             cls.disableOauthlibHttps()
             cls.container_name = f"{cls.__name__}_container"
-            # start_keycloak_docker(container_name=cls.container_name)
+            start_keycloak_docker(container_name=cls.container_name)
             super().setUpClass()
             # For the oidc callback to work, we need to know Galaxy's hostname and port.
             # However, we won't know what the host and port are until the Galaxy test driver is started.
