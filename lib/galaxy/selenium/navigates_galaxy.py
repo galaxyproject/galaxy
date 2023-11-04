@@ -1526,6 +1526,7 @@ class NavigatesGalaxy(HasDriver):
         save_button.wait_for_visible()
         assert not save_button.has_class("disabled")
         save_button.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
         return name
 
     def invocation_index_table_elements(self):
