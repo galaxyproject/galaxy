@@ -2830,7 +2830,7 @@ class FieldTypeToolParameter(ToolParameter):
 
     def __init__(self, tool, input_source, context=None):
         input_source = ensure_input_source(input_source)
-        ToolParameter.__init__(self, tool, input_source)
+        super().__init__(tool, input_source)
         # self.field_type = input_source.parse_field_type()
 
     def from_json(self, value, trans, other_values=None):
@@ -2842,6 +2842,8 @@ class FieldTypeToolParameter(ToolParameter):
 
         if not isinstance(value, dict) or "src" not in value:
             value = {"src": "json", "value": value}
+        elif value.get("class") == "File":
+            return raw_to_galaxy(trans.app, trans.history, value)
         return self.to_python(value, trans.app)
 
     def to_json(self, value, app, use_security):
@@ -2858,21 +2860,24 @@ class FieldTypeToolParameter(ToolParameter):
         if not isinstance(value, dict):
             value = json.loads(value)
         assert isinstance(value, dict)
-        assert "src" in value
-        src = value["src"]
-        if "value" in value:
-            # We have an expanded value, not an ID
-            return value
-        elif src in ["hda", "hdca", "dce"]:
-            id = value["id"] if isinstance(value["id"], int) else app.security.decode_id(value["id"])
-            if src == "dce":
-                value = app.model.context.query(app.model.DatasetCollectionElement).get(id)
-            elif src == "hdca":
-                value = app.model.context.query(app.model.HistoryDatasetCollectionAssociation).get(id)
-            else:
-                value = app.model.context.query(app.model.HistoryDatasetAssociation).get(id)
+        assert "src" in value or "class" in value
+        if "src" in value:
+            src = value["src"]
+            if "value" in value:
+                # We have an expanded value, not an ID
+                return value
+            elif src in ["hda", "hdca", "dce"]:
+                id = value["id"] if isinstance(value["id"], int) else app.security.decode_id(value["id"])
+                if src == "dce":
+                    value = app.model.context.query(app.model.DatasetCollectionElement).get(id)
+                elif src == "hdca":
+                    value = app.model.context.query(app.model.HistoryDatasetCollectionAssociation).get(id)
+                else:
+                    value = app.model.context.query(app.model.HistoryDatasetAssociation).get(id)
 
-            return {"src": src, "value": value}
+                return {"src": src, "value": value}
+        # Reaching this if we have a default filex
+        return value
 
     def value_to_basic(self, value, app, use_security=False):
         log.info(f"value_to_basic of {value} ({type(value)})")
@@ -2883,11 +2888,14 @@ class FieldTypeToolParameter(ToolParameter):
             return None
 
         assert isinstance(value, dict), f"value [{value}] is not valid for [{self}]"
-        assert "src" in value
-        src = value["src"]
-        if src in ["hda", "hdca", "dce"]:
-            id = value["value"].id if not use_security else app.security.encode_id(value["value"].id)
-            value = {"src": src, "id": id}
+        if "src" in value:
+            src = value["src"]
+            if src in ["hda", "hdca", "dce"]:
+                id = value["value"].id if not use_security else app.security.encode_id(value["value"].id)
+                value = {"src": src, "id": id}
+        else:
+            # Default file
+            assert "class" in value
 
         return json.dumps(value)
 
