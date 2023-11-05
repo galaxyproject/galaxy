@@ -2415,12 +2415,20 @@ class ToolModule(WorkflowModule):
             )
 
             def expression_callback(input, prefixed_name, **kwargs):
+                history = trans.history
+                app = trans.app
                 if prefixed_name in expression_replacements:  # noqa: B023
                     expression_replacement = expression_replacements[prefixed_name]  # noqa: B023
                     if isinstance(input, FieldTypeToolParameter):
                         return {"src": "json", "value": expression_replacement}
                     else:
                         return expression_replacement
+                # This is not the right spot to fill in a tool default,
+                # but at this point we know there was no replacement via step defaults or value_from
+                value = kwargs["value"]
+                if isinstance(value, dict) and value.get("class") == "File":
+                    value = raw_to_galaxy(app, history, kwargs["value"])
+                    return {"src": "hda", "value": value}
 
                 return NO_REPLACEMENT
 
