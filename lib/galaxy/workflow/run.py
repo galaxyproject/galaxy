@@ -558,8 +558,9 @@ class WorkflowProgress:
                 if is_data:
                     for step_input in step.inputs:
                         if step_input.name == prefixed_name and step_input.value_from:
-                            log.debug("THIS?")
-                            log.debug("GOT DEFAULT VALUE %s, value_from %s", step_input.default_value, step_input.value_from)
+                            # This might not be correct since value_from might be an expression to evaluate,
+                            # and default values need to be applied before expressions.
+                            # TODO: check if any tests fail because of this ?
                             return raw_to_galaxy(trans.app, trans.history, step_input.value_from)
                 replacement = self.replacement_for_input_connections(
                     step,
@@ -572,11 +573,14 @@ class WorkflowProgress:
             replacement = state_input
         else:
             for step_input in step.inputs:
-                if step_input.name == prefixed_name:
-                    log.debug("GOT DEFAULT VALUE %s, value_from %s", step_input.default_value, step_input.value_from)
                 if step_input.name == prefixed_name and (step_input.default_value or step_input.value_from):
                     if is_data:
-                        replacement = raw_to_galaxy(trans.app, trans.history, step_input.value_from or step_input.default_value)
+                        # as above, this might not be correct since the default value needs to be applied
+                        # before the value_from evaluation occurs.
+                        # TODO: check if any tests fail because of this ?
+                        replacement = raw_to_galaxy(
+                            trans.app, trans.history, step_input.value_from or step_input.default_value
+                        )
         return replacement
 
     def replacement_for_connection(self, connection: "WorkflowStepConnection", is_data: bool = True):
