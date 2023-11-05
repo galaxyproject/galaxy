@@ -183,10 +183,7 @@ class DatasetInstanceMaterializer:
         return materialized_dataset_instance
 
     def _stream_source(self, target_source: DatasetSource, datatype) -> str:
-        if target_source.source_uri.startswith("file://"):
-            path = target_source.source_uri[len("file://") :]
-        else:
-            path = stream_url_to_file(target_source.source_uri, file_sources=self._file_sources)
+        path = stream_url_to_file(target_source.source_uri, file_sources=self._file_sources)
         transform = target_source.transform or []
         to_posix_lines = False
         spaces_to_tabs = False
