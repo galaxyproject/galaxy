@@ -2442,7 +2442,11 @@ class CwlPopulator:
         assert_ok: bool = True,
     ):
         workflow_path, object_id = urllib.parse.urldefrag(workflow_path)
-        workflow_id = self.workflow_populator.import_workflow_from_path(workflow_path, object_id)
+        from .cwl_location_rewriter import rewrite_locations
+
+        with tempfile.NamedTemporaryFile() as temp:
+            rewrite_locations(workflow_path=workflow_path, output_path=temp.name)
+            workflow_id = self.workflow_populator.import_workflow_from_path(temp.name, object_id)
 
         request = {
             # TODO: rework tool state corrections so more of these are valid in Galaxy
