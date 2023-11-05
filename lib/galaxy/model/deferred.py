@@ -146,7 +146,7 @@ class DatasetInstanceMaterializer:
             # TODO: optimize this by streaming right to this path...
             # TODO: take into acount transform and ensure we are and are not modifying the file as appropriate.
             path = self._stream_source(target_source, datatype=dataset_instance.datatype)
-            shutil.move(path, transient_paths.external_filename)
+            shutil.copy(path, transient_paths.external_filename)
             materialized_dataset.external_filename = transient_paths.external_filename
 
         history = target_history
