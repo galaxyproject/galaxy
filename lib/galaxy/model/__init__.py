@@ -4809,6 +4809,7 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
         self.extension = "expression.json"
         self.state = self.states.OK
         self.blurb = "skipped"
+        self.peek = json.dumps(None)
         self.visible = False
         null = json.dumps(None)
         with open(self.dataset.get_file_name(), "w") as out:
