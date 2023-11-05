@@ -2426,16 +2426,16 @@ class ToolModule(WorkflowModule):
                 f"Tool {self.tool_id} missing. Cannot recover runtime state.", tool_id=self.tool_id
             )
 
-    def evaluate_value_from_expressions(self, progress, step, execution_state, extra_step_state, use_default=False):
+    def evaluate_value_from_expressions(self, progress, step, execution_state, extra_step_state):
         value_from_expressions = {}
         replacements: dict = {}
 
-        for key in execution_state.inputs.keys():
+        for key, value in execution_state.inputs.items():
             step_input = step.inputs_by_name.get(key)
             if step_input:
-                if step_input.value_from is not None and not use_default:
+                if step_input.value_from is not None:
                     value_from_expressions[key] = step_input.value_from
-                else:
+                elif step_input.default_value is not None and value is None:
                     value_from_expressions[key] = step_input.default_value
 
         if not value_from_expressions:
@@ -2612,7 +2612,10 @@ class ToolModule(WorkflowModule):
                 log.warning(f"Failed to use input connections for inputs [{unmatched_input_connections}]")
 
             expression_replacements = self.evaluate_value_from_expressions(
-                progress, step, execution_state, extra_step_state, use_default=True
+                progress,
+                step,
+                execution_state,
+                extra_step_state,
             )
 
             def expression_callback(input, prefixed_name, **kwargs):
