@@ -2808,7 +2808,9 @@ def raw_to_galaxy(
     object_class = as_dict_value["class"]
     if object_class == "File":
         # TODO: relative_to = "/"
-        location = as_dict_value.get("location")
+        location = as_dict_value.get("location") or as_dict_value.get("path")
+        assert location
+        assert os.path.exists(location[len("file://")])
         name = (
             as_dict_value.get("identifier")
             or as_dict_value.get("basename")

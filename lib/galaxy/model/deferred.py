@@ -202,7 +202,7 @@ class DatasetInstanceMaterializer:
             # TODO: take into account transform and ensure we are and are not modifying the file as appropriate.
             try:
                 path = self._stream_source(target_source, dataset_instance.datatype, materialized_dataset)
-                shutil.move(path, transient_paths.external_filename)
+                shutil.copy(path, transient_paths.external_filename)
                 materialized_dataset.external_filename = transient_paths.external_filename
             except Exception as e:
                 exception_materializing = e
