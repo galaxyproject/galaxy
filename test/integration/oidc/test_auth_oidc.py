@@ -55,8 +55,6 @@ def start_keycloak_docker(container_name, port=8443, image="keycloak/keycloak:22
     START_SLURM_DOCKER = [
         "docker",
         "run",
-        "-h",
-        "localhost",
         "-p",
         f"{port}:8443",
         "-d",
