@@ -684,6 +684,7 @@ class DefaultToolAction(ToolAction):
                 data.extension = "expression.json"
                 data.state = "ok"
                 data.blurb = "skipped"
+                data.peek = json.dumps(None)
                 data.visible = False
                 with open(data.dataset.get_file_name(), "w") as out:
                     out.write(json.dumps(None))

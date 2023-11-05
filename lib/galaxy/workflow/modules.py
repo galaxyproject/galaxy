@@ -2298,20 +2298,39 @@ class ToolModule(WorkflowModule):
             def callback(input, prefixed_name: str, **kwargs):
                 input_dict = all_inputs_by_name[prefixed_name]
 
-                replacement: Union[model.Dataset, NoReplacement] = NO_REPLACEMENT
+                replacement: Any = NO_REPLACEMENT
                 if iteration_elements and prefixed_name in iteration_elements:  # noqa: B023
                     replacement = iteration_elements[prefixed_name]  # noqa: B023
                 else:
                     replacement = progress.replacement_for_input(trans, step, input_dict)
 
                 if replacement is not NO_REPLACEMENT:
+                    # We need to check if the replacement is an expression tool null,
+                    # since that would mean that we have to pick a possible default value
+                    dataset_instance: Optional[model.DatasetInstance] = None
+                    if isinstance(replacement, model.DatasetCollectionElement):
+                        dataset_instance = replacement.hda
+                    elif isinstance(replacement, model.DatasetInstance):
+                        dataset_instance = replacement
+
+                    if dataset_instance and dataset_instance.extension == "expression.json":
+                        # We could do this only if there is a default value on a step
+                        if not dataset_instance.dataset.in_ready_state():
+                            why = (
+                                "dataset [%s] is needed for non-data connection and is non-ready" % dataset_instance.id
+                            )
+                            raise DelayedWorkflowEvaluation(why=why)
+
+                        if not dataset_instance.is_ok:
+                            raise CancelWorkflowEvaluation()
+
+                        with open(dataset_instance.get_file_name()) as f:
+                            replacement = json.loads(dataset_instance.peek)
+                            if replacement is None:
+                                return None
+
                     if not isinstance(input, BaseDataToolParameter):
                         # Probably a parameter that can be replaced
-                        dataset_instance: Optional[model.DatasetInstance] = None
-                        if isinstance(replacement, model.DatasetCollectionElement):
-                            dataset_instance = replacement.hda
-                        elif isinstance(replacement, model.DatasetInstance):
-                            dataset_instance = replacement
                         if dataset_instance and dataset_instance.extension == "expression.json":
                             with open(dataset_instance.get_file_name()) as f:
                                 replacement = json.load(f)
