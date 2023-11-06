@@ -901,6 +901,10 @@ export interface paths {
          * Parameters
          * - id: ID of job to return
          * - full: Return extra information ?
+         * - stdout_position: The index of the character to begin reading stdout from
+         * - stdout_length: How many characters of stdout to read
+         * - stderr_position: The index of the character to begin reading stderr from
+         * - stderr_length: How many characters of stderr to read
          */
         get: operations["show_api_jobs__id__get"];
     };
@@ -14596,10 +14600,18 @@ export interface operations {
          * Parameters
          * - id: ID of job to return
          * - full: Return extra information ?
+         * - stdout_position: The index of the character to begin reading stdout from
+         * - stdout_length: How many characters of stdout to read
+         * - stderr_position: The index of the character to begin reading stderr from
+         * - stderr_length: How many characters of stderr to read
          */
         parameters: {
             query?: {
                 full?: boolean;
+                stdout_position?: number;
+                stdout_length?: number;
+                stderr_position?: number;
+                stderr_length?: number;
             };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
