@@ -18,7 +18,8 @@ KEYCLOAK_ADMIN_USERNAME = "admin"
 KEYCLOAK_ADMIN_PASSWORD = "admin"
 KEYCLOAK_TEST_USERNAME = "gxyuser"
 KEYCLOAK_TEST_PASSWORD = "gxypass"
-KEYCLOAK_URL = "https://localhost:8443/realms/gxyrealm"
+KEYCLOAK_HOST_PORT = 9443
+KEYCLOAK_URL = f"https://localhost:{KEYCLOAK_HOST_PORT}/realms/gxyrealm"
 
 
 OIDC_BACKEND_CONFIG_TEMPLATE = f"""<?xml version="1.0"?>
@@ -35,7 +36,7 @@ OIDC_BACKEND_CONFIG_TEMPLATE = f"""<?xml version="1.0"?>
 """
 
 
-def wait_till_keycloak_ready(port):
+def wait_till_app_ready(url):
     return (
         subprocess.call(
             [
@@ -43,20 +44,20 @@ def wait_till_keycloak_ready(port):
                 "300",
                 "bash",
                 "-c",
-                f"'until curl --silent --output /dev/null http://localhost:{port}; do sleep 0.5; done'",
+                f"'until curl --silent --output /dev/null {url}; do sleep 0.5; done'",
             ]
         )
         == 0
     )
 
 
-def start_keycloak_docker(container_name, port=8443, image="keycloak/keycloak:22.0.1"):
+def start_keycloak_docker(container_name, image="keycloak/keycloak:22.0.1"):
     keycloak_realm_data = os.path.dirname(__file__)
     START_SLURM_DOCKER = [
         "docker",
         "run",
         "-p",
-        f"{port}:8443",
+        f"{KEYCLOAK_HOST_PORT}:8443",
         "-d",
         "--name",
         container_name,
@@ -77,7 +78,7 @@ def start_keycloak_docker(container_name, port=8443, image="keycloak/keycloak:22
         "--https-certificate-key-file=/opt/keycloak/data/import/keycloak-server.key.pem",
     ]
     subprocess.check_call(START_SLURM_DOCKER)
-    wait_till_keycloak_ready(port)
+    wait_till_app_ready(KEYCLOAK_URL)
 
 
 def stop_keycloak_docker(container_name):
