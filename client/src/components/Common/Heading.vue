@@ -39,7 +39,10 @@ const element = computed(() => {
 <template>
     <div v-if="props.separator" class="separator heading">
         <div class="stripe"></div>
-        <component :is="element" :class="[sizeClass, props.bold ? 'font-weight-bold' : '']" @click="$emit('click')">
+        <component
+            :is="element"
+            :class="[sizeClass, props.bold ? 'font-weight-bold' : '', props.collapsible ? 'collapsible' : '']"
+            @click="$emit('click')">
             <slot />
             <FontAwesomeIcon v-if="collapsible" :icon="collapsed ? 'chevron-down' : 'chevron-up'" />
         </component>
@@ -49,7 +52,12 @@ const element = computed(() => {
         :is="element"
         v-else
         class="heading"
-        :class="[sizeClass, props.bold ? 'font-weight-bold' : '', props.inline ? 'inline' : '']"
+        :class="[
+            sizeClass,
+            props.bold ? 'font-weight-bold' : '',
+            props.inline ? 'inline' : '',
+            props.collapsible ? 'collapsible' : '',
+        ]"
         @click="$emit('click')">
         <FontAwesomeIcon v-if="props.icon" :icon="props.icon" />
         <slot />
@@ -74,6 +82,10 @@ h1, h2, h3, h4, h5, h6 {
         display: inline-flex;
         margin-bottom: 0;
     }
+}
+
+.collapsible {
+    cursor: pointer;
 }
 
 .separator {
