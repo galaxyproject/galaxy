@@ -240,10 +240,11 @@ export default {
                 const url = entryPointsForHda[0].target;
                 window.open(url, "_blank");
             } else {
-                // vue-router 4 supports a force push, but we work around it here until then.
-                // upon update, we can use `force` and avoid the full reload.
+                // vue-router 4 supports a native force push with clean URLs,
+                // but we're using a workaround with a __vkey__ bit as a workaround
+                // Only conditionally force to keep urls clean most of the time.
                 if (this.$router.currentRoute.path === this.itemUrls.display) {
-                    this.$router.go();
+                    this.$router.push(this.itemUrls.display, { title: this.name, force: true });
                 } else {
                     this.$router.push(this.itemUrls.display, { title: this.name });
                 }
