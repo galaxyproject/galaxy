@@ -7625,10 +7625,20 @@ class WorkflowStep(Base, RepresentById):
 
     @property
     def input_default_value(self):
-        tool_state = self.tool_inputs
-        default_value = tool_state.get("default")
-        if default_value:
-            default_value = json.loads(default_value)["value"]
+        self.get_input_default_value(None)
+
+    def get_input_default_value(self, default_default):
+        # parameter_input and the data parameters handle this slightly differently
+        # unfortunately.
+        if self.type == "parameter_input":
+            tool_state = self.tool_inputs
+            default_value = tool_state.get("default", default_default)
+        else:
+            default_value = default_default
+            for step_input in self.inputs:
+                if step_input.name == "input" and step_input.default_value_set:
+                    default_value = step_input.default_value
+                    break
         return default_value
 
     @property

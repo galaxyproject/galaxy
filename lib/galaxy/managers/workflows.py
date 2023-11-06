@@ -1005,7 +1005,7 @@ class WorkflowContentsManager(UsesAnnotations):
                     for pja in step.post_job_actions
                 ]
             else:
-                inputs = step.module.get_runtime_inputs(connections=step.output_connections)
+                inputs = step.module.get_runtime_inputs(step, connections=step.output_connections)
                 step_model = {"inputs": [input.to_dict(trans) for input in inputs.values()]}
             step_model["when"] = step.when_expression
             step_model["replacement_parameters"] = step.module.get_informal_replacement_parameters(step)
@@ -1157,7 +1157,7 @@ class WorkflowContentsManager(UsesAnnotations):
             else:
                 module = step.module
                 step_dict["label"] = module.name
-                step_dict["inputs"] = do_inputs(module.get_runtime_inputs(), step.state.inputs, "", step)
+                step_dict["inputs"] = do_inputs(module.get_runtime_inputs(step), step.state.inputs, "", step)
             step_dicts.append(step_dict)
         return {
             "name": workflow.name,
@@ -1806,6 +1806,11 @@ class WorkflowContentsManager(UsesAnnotations):
 
         if "in" in step_dict:
             for input_name, input_dict in step_dict["in"].items():
+                # This is just a bug in gxformat? I think the input
+                # defaults should be called input to match the input modules's
+                # input parameter name.
+                if input_name == "default":
+                    input_name = "input"
                 step_input = step.get_or_add_input(input_name)
                 NO_DEFAULT_DEFINED = object()
                 default = input_dict.get("default", NO_DEFAULT_DEFINED)

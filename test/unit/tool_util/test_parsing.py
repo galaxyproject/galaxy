@@ -693,6 +693,79 @@ class TestExpressionTestToolLoader(BaseLoaderTestCase):
         assert output0["attributes"]["object"] is None
 
 
+class TestDefaultDataTestToolLoader(BaseLoaderTestCase):
+    source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/for_workflows/cat_default.xml")
+    source_contents = None
+
+    def test_input_parsing(self):
+        input_pages = self._tool_source.parse_input_pages()
+        assert input_pages.inputs_defined
+        page_sources = input_pages.page_sources
+        assert len(page_sources) == 1
+        page_source = page_sources[0]
+        input_sources = page_source.parse_input_sources()
+        assert len(input_sources) == 1
+        data_input = input_sources[0]
+        default_dict = data_input.parse_default()
+        assert default_dict
+        assert default_dict["location"] == "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed"
+
+
+class TestDefaultCollectionDataTestToolLoader(BaseLoaderTestCase):
+    source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/collection_paired_default.xml")
+    source_contents = None
+
+    def test_input_parsing(self):
+        input_pages = self._tool_source.parse_input_pages()
+        assert input_pages.inputs_defined
+        page_sources = input_pages.page_sources
+        assert len(page_sources) == 1
+        page_source = page_sources[0]
+        input_sources = page_source.parse_input_sources()
+        assert len(input_sources) == 1
+        data_input = input_sources[0]
+        default_dict = data_input.parse_default()
+        assert default_dict
+        assert default_dict["collection_type"] == "paired"
+        elements = default_dict["elements"]
+        assert len(elements) == 2
+        element0 = elements[0]
+        assert element0["identifier"] == "forward"
+        assert element0["location"] == "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed"
+        element1 = elements[1]
+        assert element1["identifier"] == "reverse"
+        assert element1["location"] == "https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.fasta"
+
+
+class TestDefaultNestedCollectionDataTestToolLoader(BaseLoaderTestCase):
+    source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/collection_nested_default.xml")
+    source_contents = None
+
+    def test_input_parsing(self):
+        input_pages = self._tool_source.parse_input_pages()
+        assert input_pages.inputs_defined
+        page_sources = input_pages.page_sources
+        assert len(page_sources) == 1
+        page_source = page_sources[0]
+        input_sources = page_source.parse_input_sources()
+        assert len(input_sources) == 1
+        data_input = input_sources[0]
+        default_dict = data_input.parse_default()
+        assert default_dict
+        assert default_dict["collection_type"] == "list:paired"
+        elements = default_dict["elements"]
+        assert len(elements) == 1
+        element0 = elements[0]
+        assert element0["identifier"] == "i1"
+
+        elements0 = element0["elements"]
+        assert len(elements0) == 2
+        elements00 = elements0[0]
+        assert elements00["identifier"] == "forward"
+        elements01 = elements0[1]
+        assert elements01["identifier"] == "reverse"
+
+
 class TestExpressionOutputDataToolLoader(BaseLoaderTestCase):
     source_file_name = os.path.join(galaxy_directory(), "test/functional/tools/expression_pick_larger_file.xml")
     source_contents = None

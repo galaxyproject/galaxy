@@ -3731,6 +3731,7 @@ allow access to Python code to generate options for a select list. See
       <xs:element name="options" type="ParamOptions"/>
       <xs:element name="validator" type="Validator" />
       <xs:element name="sanitizer" type="Sanitizer"/>
+      <xs:element name="default" type="ParamDefault" />
       <xs:element name="help" type="xs:string">
         <xs:annotation>
           <xs:documentation xml:lang="en">Documentation for help</xs:documentation>
@@ -4111,6 +4112,73 @@ dataset for the contained input of the type specified using the ``type`` tag.
     <xs:attribute name="type" type="xs:string" use="required">
       <xs:annotation>
         <xs:documentation xml:lang="en">The short extension describing the datatype to convert to - Galaxy must have a datatype converter from the parent input's type to this.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+
+  <xs:complexType name="ParamDefault">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+]]>
+</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <!-- can have zero or one collection elements -->
+      <xs:element name="element" type="ParamDefaultElement" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+    <xs:attribute name="collection_type" type="CollectionType" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"><![CDATA[
+Collection type for default collection (if param type is data_collection). Simple collection types are
+either ``list`` or ``paired``, nested collections are specified as colon separated list of simple
+collection types (the most common types are ``list``, ``paired``,
+``list:paired``, or ``list:list``).
+        ]]></xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+
+    <xs:attribute name="location" type="xs:anyURI" gxdocs:added="23.2" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"><![CDATA[
+Galaxy-aware URI for the default file. This should only be used with parameters of type "data".
+        ]]></xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+
+  </xs:complexType>
+
+  <xs:complexType name="ParamDefaultCollection">
+    <xs:sequence>
+      <xs:element name="element" type="ParamDefaultElement" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+
+    <xs:attribute name="collection_type" type="CollectionType" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"><![CDATA[
+Collection type for default collection (if param type is data_collection). Simple collection types are
+either ``list`` or ``paired``, nested collections are specified as colon separated list of simple
+collection types (the most common types are ``list``, ``paired``,
+``list:paired``, or ``list:list``).
+        ]]></xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+
+  </xs:complexType>
+
+  <xs:complexType name="ParamDefaultElement">
+    <xs:sequence>
+      <xs:element name="collection" type="ParamDefaultCollection" minOccurs="0" maxOccurs="1" />
+    </xs:sequence>
+    <xs:attribute name="name" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Name (and element identifier) for this element</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="location" type="xs:anyURI" gxdocs:added="23.2" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"><![CDATA[
+Galaxy-aware URI for the default file for collection element.
+        ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
