@@ -175,6 +175,7 @@ import { useUid } from "@/composables/utils/uid";
 import { provideScopedWorkflowStores } from "@/composables/workflowStores";
 import { hide_modal } from "@/layout/modal";
 import { getAppRoot } from "@/onload/loadConfig";
+import { useScopePointerStore } from "@/stores/scopePointerStore";
 import { LastQueue } from "@/utils/promise-queue";
 
 import { defaultPosition } from "./composables/useDefaultStepPosition";
@@ -534,10 +535,13 @@ export default {
                 .then((response) => {
                     this.onWorkflowMessage("Workflow saved as", "success");
                     this.hideModal();
+                    this.onNavigate(`${getAppRoot()}workflows/edit?id=${response.data}`);
+
                     if (create) {
-                        window.location = `${getAppRoot()}workflows/edit?id=${response.data}`;
-                    } else {
-                        this.onNavigate(`${getAppRoot()}workflows/edit?id=${response.data}`);
+                        const { addScopePointer } = useScopePointerStore();
+                        // map scoped stores to existing stores, before updating the id
+                        addScopePointer(response.data, this.id);
+                        this.id = response.data;
                     }
                 })
                 .catch((response) => {
