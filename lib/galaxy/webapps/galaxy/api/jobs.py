@@ -16,7 +16,7 @@ from typing import (
     Optional,
     Union,
 )
-from pathlib import Path
+
 from fastapi import (
     Depends,
     Query,
@@ -194,7 +194,7 @@ class FastAPIJobs:
         - stderr_position: The index of the character to begin reading stderr from
         - stderr_length: How many characters of stderr to read
         """
-        return self.service.show( 
+        return self.service.show(
             trans,
             id,
             bool(full),

@@ -8,8 +8,9 @@
                 <b-col cols="11">
                     <pre :class="codeClass">{{ codeItem }}</pre>
                 </b-col>
-                <b-col class="nopadding pointer"
+                <b-col
                     v-b-tooltip.hover
+                    class="nopadding pointer"
                     :title="`click to ${action}`"
                     @mousedown="mouseIsDown = true"
                     @mousemove="mouseIsDown ? (mouseMoved = true) : (mouseMoved = false)"
@@ -57,12 +58,12 @@ export default {
     updated() {
         try {
             var codeDiv = this.$el.querySelector(".code");
-            if (codeDiv.scrollTop + codeDiv.offsetHeight >= this.lastPos - 5)  {
-                    // scroll is at the bottom
-                    codeDiv.scrollTop = codeDiv.scrollHeight;
+            if (codeDiv.scrollTop + codeDiv.offsetHeight >= this.lastPos - 5) {
+                // scroll is at the bottom
+                codeDiv.scrollTop = codeDiv.scrollHeight;
             }
             this.lastPos = codeDiv.scrollHeight;
-        } catch(exception) {
+        } catch (exception) {
             console.debug("Code div is not present");
         }
     },

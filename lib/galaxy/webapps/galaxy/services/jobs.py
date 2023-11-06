@@ -54,12 +54,7 @@ class JobsService:
         stderr_length: int = 0,
     ) -> Dict[str, Any]:
         job = self.job_manager.get_accessible_job(
-            trans, 
-            id, 
-            stdout_position, 
-            stdout_length, 
-            stderr_position, 
-            stderr_length
+            trans, id, stdout_position, stdout_length, stderr_position, stderr_length
         )
         return view_show_job(trans, job, bool(full))
 

@@ -1,6 +1,13 @@
 <template>
     <div>
-        <JobDetailsProvider auto-refresh :job-id="job_id" :stdout_position=stdout_position :stdout_length=stdout_length :stderr_position=stderr_position :stderr_length=stderr_length @update:result="updateJob" />
+        <JobDetailsProvider
+            auto-refresh
+            :job-id="job_id"
+            :stdout_position="stdout_position"
+            :stdout_length="stdout_length"
+            :stderr_position="stderr_position"
+            :stderr_length="stderr_length"
+            @update:result="updateJob" />
         <h2 class="h-md">Job Information</h2>
         <table id="job-information" class="tabletip info_data_table">
             <tbody>
