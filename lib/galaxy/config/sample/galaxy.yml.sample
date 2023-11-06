@@ -2169,6 +2169,11 @@ galaxy:
   # <config_dir>.
   #oidc_backends_config_file: oidc_backends_config.xml
 
+  # Sets the prefix for OIDC scopes specific to this Galaxy instance.
+  # If an API call is made against this Galaxy instance using an OIDC bearer token,
+  # it must include a scope with "<prefix>:*". e.g "https://galaxyproject.org/api:*"
+  #oidc_scope_prefix: https://galaxyproject.org/api
+
   # XML config file that allows the use of different authentication
   # providers (e.g. LDAP) instead or in addition to local authentication
   # (.sample is used if default does not exist).

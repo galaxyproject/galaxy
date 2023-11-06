@@ -424,7 +424,7 @@
     "clientScope" : "offline_access",
     "roles" : [ "offline_access" ]
   }, {
-    "clientScope" : "gx:*",
+    "clientScope" : "https://galaxyproject.org/api:*",
     "roles" : [ "galaxy-access-role" ]
   } ],
   "clientScopeMappings" : {
@@ -567,7 +567,7 @@
     "fullScopeAllowed" : true,
     "nodeReRegistrationTimeout" : -1,
     "defaultClientScopes" : [ "web-origins", "acr", "bpa.*", "profile", "roles", "email" ],
-    "optionalClientScopes" : [ "gx:*", "address", "phone", "offline_access", "microprofile-jwt" ]
+    "optionalClientScopes" : [ "https://galaxyproject.org/api:*", "address", "phone", "offline_access", "microprofile-jwt" ]
   }, {
     "id" : "4a0e0a29-e407-4154-94f3-a82d85ceff04",
     "clientId" : "broker",
@@ -632,7 +632,7 @@
     "authenticationFlowBindingOverrides" : { },
     "fullScopeAllowed" : true,
     "nodeReRegistrationTimeout" : -1,
-    "defaultClientScopes" : [ "web-origins", "acr", "profile", "roles", "email", "gx:*" ],
+    "defaultClientScopes" : [ "web-origins", "acr", "profile", "roles", "email", "https://galaxyproject.org/api:*" ],
     "optionalClientScopes" : [ "address", "phone", "offline_access", "microprofile-jwt" ]
   }, {
     "id" : "d27406eb-c929-4658-904f-f42f8bd2812c",
@@ -1047,7 +1047,7 @@
     } ]
   }, {
     "id" : "aabfb2e4-8718-4f21-a290-873729b9a64a",
-    "name" : "gx:*",
+    "name" : "https://galaxyproject.org/api:*",
     "description" : "",
     "protocol" : "openid-connect",
     "attributes" : {
@@ -1259,7 +1259,7 @@
     } ]
   } ],
   "defaultDefaultClientScopes" : [ "role_list", "profile", "email", "roles", "web-origins", "acr" ],
-  "defaultOptionalClientScopes" : [ "offline_access", "address", "phone", "microprofile-jwt", "gx:*" ],
+  "defaultOptionalClientScopes" : [ "offline_access", "address", "phone", "microprofile-jwt", "https://galaxyproject.org/api:*" ],
   "browserSecurityHeaders" : {
     "contentSecurityPolicyReportOnly" : "",
     "xContentTypeOptions" : "nosniff",

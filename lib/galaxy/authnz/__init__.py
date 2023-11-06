@@ -88,15 +88,18 @@ class IdentityProvider:
         """
         raise NotImplementedError()
 
-    def find_user_by_access_token(self, sa_session, access_token):
+    def decode_user_access_token(self, sa_session, access_token):
         """
-        Locates a user by access_token. The access token must be verified prior
-        to returning the relevant user.
+        Verifies and decodes an access token against this provider, returning the user and
+        a dict containing the decoded token data.
 
         :type  sa_session:      sqlalchemy.orm.scoping.scoped_session
         :param sa_session:      SQLAlchemy database handle.
 
         :type  access_token: string
         :param access_token: An OIDC access token
+
+        :return: A tuple containing the user and decoded jwt data
+        :rtype: Tuple[User, dict]
         """
         raise NotImplementedError()

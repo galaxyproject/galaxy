@@ -2903,6 +2903,15 @@ mapping:
         desc: |
           Sets the path to OIDC backends configuration file.
 
+      oidc_scope_prefix:
+        type: str
+        default: https://galaxyproject.org/api
+        required: false
+        desc: |
+          Sets the prefix for OIDC scopes specific to this Galaxy instance.
+          If an API call is made against this Galaxy instance using an OIDC bearer token,
+          it must include a scope with "<prefix>:*". e.g "https://galaxyproject.org/api:*"
+
       auth_config_file:
         type: str
         default: auth_conf.xml

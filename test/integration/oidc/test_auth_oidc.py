@@ -18,7 +18,7 @@ KEYCLOAK_ADMIN_USERNAME = "admin"
 KEYCLOAK_ADMIN_PASSWORD = "admin"
 KEYCLOAK_TEST_USERNAME = "gxyuser"
 KEYCLOAK_TEST_PASSWORD = "gxypass"
-KEYCLOAK_HOST_PORT = 9443
+KEYCLOAK_HOST_PORT = 8443
 KEYCLOAK_URL = f"https://localhost:{KEYCLOAK_HOST_PORT}/realms/gxyrealm"
 
 
@@ -128,7 +128,7 @@ class AbstractTestCases:
 
         @classmethod
         def tearDownClass(cls):
-            # stop_keycloak_docker(cls.container_name)
+            stop_keycloak_docker(cls.container_name)
             cls.restoreOauthlibHttps()
             os.remove(cls.backend_config_file)
             super().tearDownClass()
@@ -250,7 +250,9 @@ class TestGalaxyOIDCLoginIntegration(AbstractTestCases.BaseKeycloakIntegrationTe
 
     def test_auth_with_another_authorized_client(self):
         _, response = self._login_via_keycloak(KEYCLOAK_TEST_USERNAME, KEYCLOAK_TEST_PASSWORD)
-        access_token = self._get_keycloak_access_token(client_id="bpaclient", scopes=["gx:*"])
+        access_token = self._get_keycloak_access_token(
+            client_id="bpaclient", scopes=["https://galaxyproject.org/api:*"]
+        )
         response = self._get("users/current", headers={"Authorization": f"Bearer {access_token}"})
         self._assert_status_code_is(response, 200)
         assert response.json()["email"] == "gxyuser@galaxy.org"
@@ -264,5 +266,10 @@ class TestGalaxyOIDCLoginIntegration(AbstractTestCases.BaseKeycloakIntegrationTe
     def test_auth_with_unauthorized_client(self):
         _, response = self._login_via_keycloak(KEYCLOAK_TEST_USERNAME, KEYCLOAK_TEST_PASSWORD)
         access_token = self._get_keycloak_access_token(client_id="unauthorizedclient")
+        response = self._get("users/current", headers={"Authorization": f"Bearer {access_token}"})
+        self._assert_status_code_is(response, 400)
+
+    def test_auth_without_required_scopes(self):
+        access_token = self._get_keycloak_access_token(client_id="bpaclient")
         response = self._get("users/current", headers={"Authorization": f"Bearer {access_token}"})
         self._assert_status_code_is(response, 400)

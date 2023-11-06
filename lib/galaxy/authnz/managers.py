@@ -408,16 +408,32 @@ class AuthnzManager:
             log.exception(msg)
             return False, msg, (None, None)
 
-    def _find_user_by_access_token_in_provider(self, sa_session, provider, access_token):
+    def _assert_jwt_contains_scopes(self, user, jwt, required_scopes):
+        if not jwt:
+            raise exceptions.AuthenticationFailed(
+                err_msg=f"User: {user.username} does not have the required scopes: [{required_scopes}]"
+            )
+        scopes = jwt.get("scope") or ""
+        if not set(required_scopes).issubset(scopes.split(" ")):
+            raise exceptions.AuthenticationFailed(
+                err_msg=f"User: {user.username} has JWT with scopes: [{scopes}] but not required scopes: [{required_scopes}]"
+            )
+
+    def _validate_permissions(self, user, jwt):
+        required_scopes = [f"{self.app.config.oidc_scope_prefix}:*"]
+        self._assert_jwt_contains_scopes(user, jwt, required_scopes)
+
+    def _match_access_token_to_user_in_provider(self, sa_session, provider, access_token):
         try:
             success, message, backend = self._get_authnz_backend(provider)
             if success is False:
                 msg = f"An error occurred when obtaining user by token with provider `{provider}`: {message}"
                 log.error(msg)
                 return None
-            user = backend.find_user_by_access_token(sa_session, access_token)
+            user, jwt = backend.decode_user_access_token(sa_session, access_token)
             if user:
                 log.debug(f"Found user: {user} via `{provider}` identity provider")
+                self._validate_permissions(user, jwt)
                 return user
             return None
         except NotImplementedError:
@@ -429,7 +445,7 @@ class AuthnzManager:
 
     def match_access_token_to_user(self, sa_session, access_token):
         for provider in self.oidc_backends_config:
-            user = self._find_user_by_access_token_in_provider(sa_session, provider, access_token)
+            user = self._match_access_token_to_user_in_provider(sa_session, provider, access_token)
             if user:
                 return user
         return None
