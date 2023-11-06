@@ -2322,7 +2322,14 @@ class ToolModule(WorkflowModule):
                             raise DelayedWorkflowEvaluation(why=why)
 
                         if not dataset_instance.is_ok:
-                            raise CancelWorkflowEvaluation()
+                            raise CancelWorkflowEvaluation(
+                                why=InvocationFailureDatasetFailed(
+                                    reason=FailureReason.dataset_failed,
+                                    workflow_step_id=step.id,
+                                    hda_id=dataset_instance.id,
+                                    dependent_workflow_step_id=None,
+                                )
+                            )
 
                         with open(dataset_instance.get_file_name()) as f:
                             replacement = json.loads(dataset_instance.peek)
@@ -2348,17 +2355,22 @@ class ToolModule(WorkflowModule):
                 )
                 if (
                     not is_data
-                    and not isinstance(replacement, NoReplacement)
-                    and getattr(replacement, "history_content_type", None) == "dataset"
-                    and getattr(replacement, "ext", None) == "expression.json"
+                    and isinstance(replacement, model.HistoryDatasetAssociation)
+                    and replacement.ext == "expression.json"
                 ):
-                    if isinstance(replacement, model.HistoryDatasetAssociation):
-                        if not replacement.dataset.in_ready_state():
-                            why = "dataset [%s] is needed for non-data connection and is non-ready" % replacement.id
-                            raise DelayedWorkflowEvaluation(why=why)
+                    if not replacement.dataset.in_ready_state():
+                        why = "dataset [%s] is needed for non-data connection and is non-ready" % replacement.id
+                        raise DelayedWorkflowEvaluation(why=why)
 
-                        if not replacement.is_ok:
-                            raise CancelWorkflowEvaluation()
+                    if not replacement.is_ok:
+                        raise CancelWorkflowEvaluation(
+                            why=InvocationFailureDatasetFailed(
+                                reason=FailureReason.dataset_failed,
+                                workflow_step_id=step.id,
+                                hda_id=replacement.id,
+                                dependent_workflow_step_id=None,
+                            )
+                        )
 
                     with open(replacement.get_file_name()) as f:
                         replacement = safe_loads(f.read())
