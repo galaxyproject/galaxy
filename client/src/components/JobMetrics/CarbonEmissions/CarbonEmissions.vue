@@ -270,7 +270,7 @@ function getEnergyNeededText(energyNeededInKiloWattHours: number) {
 
 <template v-if="carbonEmissions && carbonEmissionsComparisons">
     <div class="mt-4">
-        <Heading h2 separator inline bold> Carbon Footprint </Heading>
+        <Heading h2 separator size="md" inline> Carbon Footprint </Heading>
 
         <section class="carbon-emission-values my-4">
             <div class="emissions-grid">
