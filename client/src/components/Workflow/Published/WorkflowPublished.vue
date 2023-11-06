@@ -46,7 +46,7 @@ const errorMessage = ref("");
 
 const { datatypesMapper } = useDatatypesMapper();
 
-const { stateStore } = provideScopedWorkflowStores(props.id);
+const { stateStore } = provideScopedWorkflowStores(ref(props.id));
 
 stateStore.setScale(0.75);
 

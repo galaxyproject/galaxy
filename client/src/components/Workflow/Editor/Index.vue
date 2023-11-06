@@ -243,7 +243,7 @@ export default {
         const uid = unref(useUid("workflow-editor-"));
         const id = ref(props.workflowId || uid);
 
-        const { connectionStore, stepStore, stateStore, commentStore } = provideScopedWorkflowStores(id.value);
+        const { connectionStore, stepStore, stateStore, commentStore } = provideScopedWorkflowStores(id);
 
         const { comments } = storeToRefs(commentStore);
         const { getStepIndex, steps } = storeToRefs(stepStore);
