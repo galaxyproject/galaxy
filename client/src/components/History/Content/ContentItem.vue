@@ -240,7 +240,13 @@ export default {
                 const url = entryPointsForHda[0].target;
                 window.open(url, "_blank");
             } else {
-                this.$router.push(this.itemUrls.display, { title: this.name });
+                // vue-router 4 supports a force push, but we work around it here until then.
+                // upon update, we can use `force` and avoid the full reload.
+                if (this.$router.currentRoute.path === this.itemUrls.display) {
+                    this.$router.go();
+                } else {
+                    this.$router.push(this.itemUrls.display, { title: this.name });
+                }
             }
         },
         onDelete(recursive = false) {
