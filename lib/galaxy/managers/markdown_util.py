@@ -138,6 +138,10 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
                 _check_object(object_id, line)
                 hda = hda_manager.get_accessible(object_id, trans.user)
                 rval = self.handle_dataset_as_image(line, hda)
+            elif container == "history_dataset_as_table":
+                _check_object(object_id, line)
+                hda = hda_manager.get_accessible(object_id, trans.user)
+                rval = self.handle_dataset_as_table(line, hda)
             elif container == "history_dataset_peek":
                 _check_object(object_id, line)
                 hda = hda_manager.get_accessible(object_id, trans.user)
@@ -251,6 +255,10 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def handle_dataset_as_image(self, line, hda):
+        pass
+
+    @abc.abstractmethod
+    def handle_dataset_as_table(self, line, hda):
         pass
 
     @abc.abstractmethod
@@ -413,6 +421,9 @@ class ReadyForExportMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHand
     def handle_dataset_as_image(self, line, hda):
         pass
 
+    def handle_dataset_as_table(self, line, hda):
+        pass
+
     def handle_job_metrics(self, line, job):
         pass
 
@@ -540,6 +551,14 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
     def _embed_image(self, name: str, image_type: str, image_data: bytes):
         base64_image_data = base64.b64encode(image_data).decode("utf-8")
         return f"![{name}](data:image/{image_type};base64,{base64_image_data})"
+
+    def handle_dataset_as_table(self, line, hda):
+        # TODO: this form of the rendering doesn't do anything special with advanced
+        # options yet but could easily be modified in the future. show_column_headers,
+        # compact, title, and footer should be handled in here to bring the PDF and the
+        # web rendering closer.
+        rval = self.handle_dataset_embedded(line, hda)
+        return rval
 
     def handle_history_link(self, line, history):
         if history:
