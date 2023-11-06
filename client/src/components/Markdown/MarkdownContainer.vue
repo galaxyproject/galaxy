@@ -4,6 +4,7 @@ import { computed, ref } from "vue";
 import { useConfig } from "@/composables/config";
 
 import HistoryDatasetAsImage from "./Elements/HistoryDatasetAsImage.vue";
+import HistoryDatasetAsTable from "./Elements/HistoryDatasetAsTable.vue";
 import HistoryDatasetCollectionDisplay from "./Elements/HistoryDatasetCollection/CollectionDisplay.vue";
 import HistoryDatasetDetails from "./Elements/HistoryDatasetDetails.vue";
 import HistoryDatasetDisplay from "./Elements/HistoryDatasetDisplay.vue";
@@ -68,6 +69,17 @@ const props = defineProps({
 
 const isCollapsible = computed(() => props.args.collapse !== undefined);
 const isVisible = computed(() => !isCollapsible.value || toggle.value);
+
+function argToBoolean(args, name, booleanDefault) {
+    const valueAsString = args[name];
+    if (valueAsString == "true") {
+        return true;
+    } else if (valueAsString == "false") {
+        return false;
+    } else {
+        return booleanDefault;
+    }
+}
 </script>
 
 <template>
@@ -126,6 +138,13 @@ const isVisible = computed(() => !isCollapsible.value || toggle.value);
             </InstanceUrl>
             <HistoryLink v-else-if="name == 'history_link'" :args="args" :histories="histories" />
             <HistoryDatasetAsImage v-else-if="name == 'history_dataset_as_image'" :args="args" />
+            <HistoryDatasetAsTable
+                v-else-if="name == 'history_dataset_as_table'"
+                :history-dataset-id="args.history_dataset_id"
+                :compact="argToBoolean(args, 'compact', false)"
+                :show-column-headers="argToBoolean(args, 'show_column_headers', true)"
+                :title="args.title"
+                :footer="args.footer" />
             <HistoryDatasetLink v-else-if="name == 'history_dataset_link'" :args="args" />
             <HistoryDatasetIndex v-else-if="name == 'history_dataset_index'" :args="args" />
             <InvocationTime v-else-if="name == 'invocation_time'" :args="args" :invocations="invocations" />

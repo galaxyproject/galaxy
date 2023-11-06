@@ -78,6 +78,11 @@ const historySharedElements = [
         emitter: "onHistoryDatasetId",
     },
     {
+        id: "history_dataset_as_table",
+        name: "Embedded Dataset (as table)",
+        emitter: "onHistoryDatasetId",
+    },
+    {
         id: "history_dataset_type",
         name: "Dataset Type",
         emitter: "onHistoryDatasetId",
