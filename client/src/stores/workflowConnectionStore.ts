@@ -4,6 +4,8 @@ import Vue from "vue";
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 import { pushOrSet } from "@/utils/pushOrSet";
 
+import { useScopePointerStore } from "./scopePointerStore";
+
 interface InvalidConnections {
     [index: ConnectionId]: string | undefined;
 }
@@ -43,11 +45,9 @@ interface TerminalToOutputTerminals {
 }
 
 export const useConnectionStore = (workflowId: string) => {
-    if (!workflowId) {
-        throw new Error("WorkflowId is undefined");
-    }
+    const { scope } = useScopePointerStore();
 
-    return defineStore(`workflowConnectionStore${workflowId}`, {
+    return defineStore(`workflowConnectionStore${scope(workflowId)}`, {
         state: (): State => ({
             connections: [] as Array<Readonly<Connection>>,
             invalidConnections: {} as InvalidConnections,
