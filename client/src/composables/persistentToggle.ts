@@ -5,7 +5,7 @@ interface ToggleStateInterface {
     toggle: () => void;
 }
 
-export function usePersistentToggle(uniqueId: string): ToggleStateInterface{
+export function usePersistentToggle(uniqueId: string): ToggleStateInterface {
     const localStorageKey = `toggle-state-${uniqueId}`;
 
     // Retrieve the toggled state from localStorage if available, otherwise default to false

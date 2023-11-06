@@ -14,9 +14,13 @@ interface Props {
     inline?: boolean;
     size?: "xl" | "lg" | "md" | "sm" | "text";
     icon?: string | [string, string];
+    collapsible?: boolean;
+    collapsed?: boolean;
 }
 
 const props = defineProps<Props>();
+
+defineEmits(["click"]);
 
 const sizeClass = computed(() => {
     return `h-${props.size ?? "lg"}`;
@@ -37,6 +41,10 @@ const element = computed(() => {
         <div class="stripe"></div>
         <component :is="element" :class="[sizeClass, props.bold ? 'font-weight-bold' : '']">
             <slot />
+            <FontAwesomeIcon
+                v-if="collapsible"
+                :icon="collapsed ? 'chevron-down' : 'chevron-up'"
+                @click="$emit('click')" />
         </component>
         <div class="stripe"></div>
     </div>
@@ -47,6 +55,7 @@ const element = computed(() => {
         :class="[sizeClass, props.bold ? 'font-weight-bold' : '', props.inline ? 'inline' : '']">
         <FontAwesomeIcon v-if="props.icon" :icon="props.icon" />
         <slot />
+        <FontAwesomeIcon v-if="collapsible" :icon="collapsed ? 'chevron-down' : 'chevron-up'" @click="$emit('click')" />
     </component>
 </template>
 
