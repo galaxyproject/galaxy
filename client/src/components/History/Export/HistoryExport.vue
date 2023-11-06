@@ -1,20 +1,48 @@
 <script setup>
-import { computed, ref, reactive, onMounted, watch } from "vue";
-import { BAlert, BCard, BButton, BTab, BTabs } from "bootstrap-vue";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faFileExport } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { BAlert, BButton, BCard, BTab, BTabs } from "bootstrap-vue";
 import LoadingSpan from "components/LoadingSpan";
-import ExportRecordDetails from "components/Common/ExportRecordDetails.vue";
-import ExportRecordTable from "components/Common/ExportRecordTable.vue";
-import ExportOptions from "./ExportOptions.vue";
-import ExportToFileSourceForm from "components/Common/ExportForm.vue";
-import { getExportRecords, exportToFileSource, reimportHistoryFromRecord } from "./services";
-import { useTaskMonitor } from "composables/taskMonitor";
-import { useFileSources } from "composables/fileSources";
-import { useShortTermStorage, DEFAULT_EXPORT_PARAMS } from "composables/shortTermStorage";
 import { useConfirmDialog } from "composables/confirmDialog";
+import { useFileSources } from "composables/fileSources";
+import { DEFAULT_EXPORT_PARAMS, useShortTermStorage } from "composables/shortTermStorage";
+import { useTaskMonitor } from "composables/taskMonitor";
+import { copy as sendToClipboard } from "utils/clipboard";
+import { computed, onMounted, reactive, ref, watch } from "vue";
+import { RouterLink } from "vue-router";
 
-const { isRunning: isExportTaskRunning, waitForTask } = useTaskMonitor();
-const { hasWritable: hasWritableFileSources } = useFileSources();
-const { isPreparing: isPreparingDownload, downloadHistory, downloadObjectByRequestId } = useShortTermStorage();
+import {
+    exportHistoryToFileSource,
+    fetchHistoryExportRecords,
+    reimportHistoryFromRecord,
+} from "@/api/histories.export";
+import { useHistoryStore } from "@/stores/historyStore";
+import { absPath } from "@/utils/redirect";
+
+import ExportOptions from "./ExportOptions.vue";
+import ExportToFileSourceForm from "@/components/Common/ExportForm.vue";
+import ExportToRDMRepositoryForm from "@/components/Common/ExportRDMForm.vue";
+import ExportRecordDetails from "@/components/Common/ExportRecordDetails.vue";
+import ExportRecordTable from "@/components/Common/ExportRecordTable.vue";
+
+const {
+    isRunning: isExportTaskRunning,
+    waitForTask,
+    requestHasFailed: taskMonitorRequestFailed,
+    hasFailed: taskHasFailed,
+} = useTaskMonitor();
+
+const { hasWritable: hasWritableFileSources } = useFileSources({ exclude: ["rdm"] });
+const { hasWritable: hasWritableRDMFileSources } = useFileSources({ include: ["rdm"] });
+
+const {
+    isPreparing: isPreparingDownload,
+    prepareHistoryDownload,
+    downloadObjectByRequestId,
+    getDownloadObjectUrl,
+} = useShortTermStorage();
+
 const { confirm } = useConfirmDialog();
 
 const props = defineProps({
@@ -24,10 +52,24 @@ const props = defineProps({
     },
 });
 
+library.add(faFileExport);
+
+const POLLING_DELAY = 3000;
+
 const exportParams = reactive(DEFAULT_EXPORT_PARAMS);
 const isLoadingRecords = ref(true);
 const exportRecords = ref(null);
+
+const historyName = computed(() => history.value?.name ?? props.historyId);
 const latestExportRecord = computed(() => (exportRecords.value?.length ? exportRecords.value.at(0) : null));
+const isLatestExportRecordReadyToDownload = computed(
+    () =>
+        latestExportRecord.value &&
+        latestExportRecord.value.isUpToDate &&
+        latestExportRecord.value.canDownload &&
+        latestExportRecord.value.exportParams?.equals(exportParams)
+);
+const canGenerateDownload = computed(() => !isPreparingDownload.value && !isLatestExportRecordReadyToDownload.value);
 const previousExportRecords = computed(() => (exportRecords.value ? exportRecords.value.slice(1) : null));
 const hasPreviousExports = computed(() => previousExportRecords.value?.length > 0);
 const availableRecordsMessage = computed(() =>
@@ -35,6 +77,14 @@ const availableRecordsMessage = computed(() =>
         ? "Loading export records..."
         : "This history has no export records yet. You can choose one of the export options above."
 );
+
+const historyStore = useHistoryStore();
+
+const history = computed(() => {
+    const history = historyStore.getHistoryById(props.historyId);
+    return history;
+});
+
 const errorMessage = ref(null);
 const actionMessage = ref(null);
 const actionMessageVariant = ref(null);
@@ -54,29 +104,35 @@ async function updateExports() {
     isLoadingRecords.value = true;
     try {
         errorMessage.value = null;
-        exportRecords.value = await getExportRecords(props.historyId);
-        const shouldWaitForTask = latestExportRecord.value?.isPreparing && !isExportTaskRunning.value;
+        exportRecords.value = await fetchHistoryExportRecords(props.historyId);
+        const shouldWaitForTask =
+            latestExportRecord.value?.isPreparing &&
+            !isExportTaskRunning.value &&
+            !taskMonitorRequestFailed.value &&
+            !taskHasFailed.value;
         if (shouldWaitForTask) {
-            waitForTask(latestExportRecord.value.taskUUID, 3000);
+            waitForTask(latestExportRecord.value.taskUUID, POLLING_DELAY);
+        }
+        if (taskMonitorRequestFailed.value) {
+            errorMessage.value = "Something went wrong trying to get the export progress. Please check back later.";
+        }
+        if (taskHasFailed.value) {
+            errorMessage.value = "Something went wrong trying to export the history. Please try again later.";
         }
     } catch (error) {
         errorMessage.value = error;
+    } finally {
+        isLoadingRecords.value = false;
     }
-    isLoadingRecords.value = false;
 }
 
 async function doExportToFileSource(exportDirectory, fileName) {
-    await exportToFileSource(props.historyId, exportDirectory, fileName, exportParams);
+    await exportHistoryToFileSource(props.historyId, exportDirectory, fileName, exportParams);
     updateExports();
 }
 
 async function prepareDownload() {
-    const upToDateDownloadRecord = findValidUpToDateDownloadRecord();
-    if (upToDateDownloadRecord) {
-        downloadObjectByRequestId(upToDateDownloadRecord.stsDownloadId);
-        return;
-    }
-    await downloadHistory(props.historyId, { pollDelayInMs: 3000, exportParams: exportParams });
+    await prepareHistoryDownload(props.historyId, { pollDelayInMs: POLLING_DELAY, exportParams: exportParams });
     updateExports();
 }
 
@@ -86,12 +142,11 @@ function downloadFromRecord(record) {
     }
 }
 
-function findValidUpToDateDownloadRecord() {
-    return exportRecords.value
-        ? exportRecords.value.find(
-              (record) => record.canDownload && record.isUpToDate && record.exportParams?.equals(exportParams)
-          )
-        : null;
+function copyDownloadLinkFromRecord(record) {
+    if (record.canDownload) {
+        const relativeLink = getDownloadObjectUrl(record.stsDownloadId);
+        sendToClipboard(absPath(relativeLink), "Download link copied to your clipboard");
+    }
 }
 
 async function reimportFromRecord(record) {
@@ -126,37 +181,48 @@ function updateExportParams(newParams) {
 </script>
 <template>
     <span class="history-export-component">
-        <h1 class="h-lg">Export history {{ props.historyId }}</h1>
+        <FontAwesomeIcon icon="file-export" size="2x" class="text-primary float-left mr-2" />
+        <h1 class="h-lg">
+            Export
+            <LoadingSpan v-if="!history" spinner-only />
+            <b v-else id="history-name">{{ historyName }}</b>
+        </h1>
 
-        <export-options
+        <ExportOptions
             id="history-export-options"
+            class="mt-3"
             :export-params="exportParams"
             @onValueChanged="updateExportParams" />
 
-        <b-card no-body class="mt-3">
-            <b-tabs pills card>
-                <b-tab id="direct-download-tab" title="to direct download" title-link-class="tab-export-to-link" active>
+        <h2 class="h-md mt-3">How do you want to export this history?</h2>
+        <BCard no-body class="mt-3">
+            <BTabs pills card vertical>
+                <BTab id="direct-download-tab" title="to direct download" title-link-class="tab-export-to-link" active>
                     <p>
                         Here you can generate a temporal download for your history. When your download link expires or
                         your history changes you can re-generate it again.
                     </p>
-                    <b-alert show variant="warning">
+                    <BAlert show variant="warning">
                         History archive downloads can expire and are removed at regular intervals. For permanent
                         storage, export to a <b>remote file</b> or download and then import the archive on another
                         Galaxy server.
-                    </b-alert>
-                    <b-button
-                        class="direct-download-btn"
-                        :disabled="isPreparingDownload"
+                    </BAlert>
+                    <BButton
+                        class="gen-direct-download-btn"
+                        :disabled="!canGenerateDownload"
                         variant="primary"
                         @click="prepareDownload">
-                        Download
-                    </b-button>
+                        Generate direct download
+                    </BButton>
                     <span v-if="isPreparingDownload">
-                        <loading-span message="Galaxy is preparing your download, this will likely take a while" />
+                        <LoadingSpan message="Galaxy is preparing your download, this will likely take a while" />
                     </span>
-                </b-tab>
-                <b-tab
+                    <BAlert v-else-if="isLatestExportRecordReadyToDownload" variant="success" class="mt-3" show>
+                        The latest export record is ready. Use the download button below to download it or change the
+                        advanced export options above to generate a new one.
+                    </BAlert>
+                </BTab>
+                <BTab
                     v-if="hasWritableFileSources"
                     id="file-source-tab"
                     title="to remote file"
@@ -166,32 +232,60 @@ function updateExportParams(newParams) {
                         one of the available remote file sources here. You will be able to re-import it later as long as
                         it remains available on the remote server.
                     </p>
-                    <export-to-file-source-form
+                    <ExportToFileSourceForm
                         what="history"
                         :clear-input-after-export="true"
                         @export="doExportToFileSource" />
-                </b-tab>
-            </b-tabs>
-        </b-card>
+                </BTab>
+                <BTab
+                    v-if="hasWritableRDMFileSources"
+                    id="rdm-file-source-tab"
+                    title="to RDM repository"
+                    title-link-class="tab-export-to-rdm-repo">
+                    <p>You can <b>upload your history</b> to one of the available RDM repositories here.</p>
+                    <p>
+                        Your history export archive needs to be uploaded to an existing <i>draft</i> record. You will
+                        need to create a <b>new record</b> on the repository or select an existing
+                        <b>draft record</b> and then export your history to it.
+                    </p>
+                    <BAlert show variant="info">
+                        You may need to setup your credentials for the selected repository in your
+                        <RouterLink to="/user/information" target="_blank">settings page</RouterLink> to be able to
+                        export. You can also define some default options for the export in those settings, like the
+                        public name you want to associate with your records or whether you want to publish them
+                        immediately or keep them as drafts after export.
+                    </BAlert>
+                    <ExportToRDMRepositoryForm
+                        what="history"
+                        :default-filename="historyName + ' (Galaxy History)'"
+                        :default-record-name="historyName"
+                        :clear-input-after-export="true"
+                        @export="doExportToFileSource" />
+                </BTab>
+            </BTabs>
+        </BCard>
 
-        <export-record-details
-            v-if="latestExportRecord"
-            :record="latestExportRecord"
-            object-type="history"
-            class="mt-3"
-            :action-message="actionMessage"
-            :action-message-variant="actionMessageVariant"
-            @onDownload="downloadFromRecord"
-            @onReimport="reimportFromRecord"
-            @onActionMessageDismissed="onActionMessageDismissedFromRecord" />
-        <b-alert v-else-if="errorMessage" id="last-export-record-error-alert" variant="danger" class="mt-3" show>
+        <BAlert v-if="errorMessage" id="last-export-record-error-alert" variant="danger" class="mt-3" show>
             {{ errorMessage }}
-        </b-alert>
-        <b-alert v-else id="no-export-records-alert" variant="info" class="mt-3" show>
+        </BAlert>
+        <div v-else-if="latestExportRecord">
+            <h2 class="h-md mt-3">Latest Export Record</h2>
+            <ExportRecordDetails
+                :record="latestExportRecord"
+                object-type="history"
+                class="mt-3"
+                :action-message="actionMessage"
+                :action-message-variant="actionMessageVariant"
+                @onDownload="downloadFromRecord"
+                @onCopyDownloadLink="copyDownloadLinkFromRecord"
+                @onReimport="reimportFromRecord"
+                @onActionMessageDismissed="onActionMessageDismissedFromRecord" />
+        </div>
+        <BAlert v-else id="no-export-records-alert" variant="info" class="mt-3" show>
             {{ availableRecordsMessage }}
-        </b-alert>
+        </BAlert>
 
-        <export-record-table
+        <ExportRecordTable
             v-if="hasPreviousExports"
             id="previous-export-records"
             :records="previousExportRecords"

@@ -1,6 +1,7 @@
 import errno
 import os
 import tempfile
+from enum import Enum
 from io import StringIO
 from typing import Dict
 
@@ -139,3 +140,12 @@ def test_listify() -> None:
     assert util.listify(d) == [d]
     o = object()
     assert util.listify(o) == [o]
+
+
+def test_enum_values():
+    class Stuff(str, Enum):
+        A = "a"
+        C = "c"
+        B = "b"
+
+    assert util.enum_values(Stuff) == ["a", "c", "b"]

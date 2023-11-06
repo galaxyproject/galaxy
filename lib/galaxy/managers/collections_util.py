@@ -178,6 +178,7 @@ def dictify_element_reference(element, rank_fuzzy_counts=None, recursive=True, s
             object_details["state"] = element_object.state
             object_details["hda_ldda"] = "hda"
             object_details["history_id"] = element_object.history_id
+            object_details["tags"] = element_object.make_tag_string_list()
 
         dictified["object"] = object_details
     else:

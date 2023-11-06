@@ -12,7 +12,7 @@ configuration, simply `cp config/galaxy.yml.sample config/galaxy.yml` and it
 should work fine.
 
 
-1. Add the following code snippet to `~/galaxy/.vscode/launch.json` (create the file if it does not already exist)
+1. Add the following code snippet to `~/galaxy/.vscode/launch.json` (create the file if it does not already exist):
     ``` 
     {
         "version": "0.2.0",
@@ -36,7 +36,6 @@ should work fine.
             },
         ]
     }
-
     ```
 2. Re-start VS Code
 3. Add a breakpoint somewhere in your code

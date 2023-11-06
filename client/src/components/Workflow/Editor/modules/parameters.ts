@@ -1,4 +1,4 @@
-import type { Step, Steps, PostJobAction } from "@/stores/workflowStepStore";
+import type { PostJobAction, Step, Steps } from "@/stores/workflowStepStore";
 import Utils from "@/utils/utils";
 
 class UntypedParameterReference {
@@ -80,7 +80,7 @@ export function getUntypedWorkflowParameters(steps: Steps) {
     Object.values(steps).forEach((step) => {
         if (step.config_form?.inputs) {
             // TODO: with new tool state we could type this and drop the any
-            Utils.deepeach(step.config_form.inputs, (d: any) => {
+            Utils.deepEach(step.config_form.inputs, (d: any) => {
                 if (typeof d.value == "string") {
                     const formMatches = d.value.match(parameter_re);
                     if (formMatches) {

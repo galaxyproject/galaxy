@@ -25,12 +25,12 @@ from galaxy.managers.collections_util import (
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.managers.hdcas import HDCAManager
 from galaxy.managers.histories import HistoryManager
+from galaxy.model import DatasetCollectionElement
 from galaxy.schema.fields import (
     DecodedDatabaseIdField,
     ModelClassField,
 )
 from galaxy.schema.schema import (
-    AnyHDCA,
     CreateNewCollectionPayload,
     DatasetCollectionInstanceType,
     DCESummary,
@@ -123,7 +123,7 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
         if payload.instance_type == "history":
             if payload.history_id is None:
                 raise exceptions.RequestParameterInvalidException("Parameter history_id is required.")
-            history = self.history_manager.get_owned(payload.history_id, trans.user, current_history=trans.history)
+            history = self.history_manager.get_mutable(payload.history_id, trans.user, current_history=trans.history)
             create_params["parent"] = history
             create_params["history"] = history
         elif payload.instance_type == "library" and payload.folder_id:
@@ -185,11 +185,11 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
         trans: ProvidesHistoryContext,
         id: DecodedDatabaseIdField,
         instance_type: DatasetCollectionInstanceType = "history",
-    ) -> AnyHDCA:
+    ) -> HDCADetailed:
         """
         Returns information about a particular dataset collection.
         """
-        dataset_collection_instance: Union["HistoryDatasetCollectionAssociation", "LibraryDatasetCollectionAssociation"]
+        dataset_collection_instance: Union[HistoryDatasetCollectionAssociation, LibraryDatasetCollectionAssociation]
         if instance_type == "history":
             dataset_collection_instance = self.collection_manager.get_dataset_collection_instance(trans, "history", id)
             parent = dataset_collection_instance.history
@@ -207,6 +207,17 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
             view="element",
         )
         return rval
+
+    def dce_content(self, trans: ProvidesHistoryContext, dce_id: DecodedDatabaseIdField) -> DCESummary:
+        dce: Optional[DatasetCollectionElement] = trans.model.session.get(DatasetCollectionElement, dce_id)
+        if not dce:
+            raise exceptions.ObjectNotFound("No DatasetCollectionElement found")
+        if not trans.user_is_admin:
+            collection = dce.child_collection or dce.collection
+            if not trans.app.security_agent.can_access_collection(trans.get_current_user_roles(), collection):
+                raise exceptions.ItemAccessibilityException("Collection not accessible by user.")
+        serialized_dce = dictify_element_reference(dce, recursive=False, security=trans.security)
+        return trans.security.encode_all_ids(serialized_dce, recursive=True)
 
     def contents(
         self,
@@ -237,7 +248,7 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
             raise exceptions.RequestParameterInvalidException(
                 "Parameter instance_type not being 'history' is not yet implemented."
             )
-        hdca: "HistoryDatasetCollectionAssociation" = self.collection_manager.get_dataset_collection_instance(
+        hdca: HistoryDatasetCollectionAssociation = self.collection_manager.get_dataset_collection_instance(
             trans, "history", hdca_id, check_ownership=True
         )
 

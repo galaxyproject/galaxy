@@ -60,15 +60,16 @@
 
 <script>
 import axios from "axios";
-import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+import DataDialog from "components/DataDialog/DataDialog";
+import BasicSelectionDialog from "components/SelectionDialog/BasicSelectionDialog";
+import DatasetCollectionDialog from "components/SelectionDialog/DatasetCollectionDialog";
 import { getAppRoot } from "onload/loadConfig";
 import { getCurrentGalaxyHistory } from "utils/data";
+import Vue from "vue";
+
 import MarkdownSelector from "./MarkdownSelector";
 import MarkdownVisualization from "./MarkdownVisualization";
-import DataDialog from "components/DataDialog/DataDialog";
-import DatasetCollectionDialog from "components/SelectionDialog/DatasetCollectionDialog";
-import BasicSelectionDialog from "components/SelectionDialog/BasicSelectionDialog";
 
 Vue.use(BootstrapVue);
 
@@ -176,7 +177,7 @@ export default {
         },
         onWorkflow(response) {
             this.workflowShow = false;
-            this.$emit("onInsert", `workflow_display(workflow_id=${response.id})`);
+            this.$emit("onInsert", `${this.argumentName}(workflow_id=${response.id})`);
         },
         onVisualization(response) {
             this.visualizationShow = false;

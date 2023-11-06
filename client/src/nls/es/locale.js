@@ -54,16 +54,16 @@ define({
 
     Register: "Registro",
 
-    "Login or Register": "Iniciar sesión o Registrarse",
+    "Log in or Register": "Iniciar sesión o Registrarse",
     "Subscribe to mailing list": false,
     "Already have an account?": false,
     "Log in here.": false,
     "Create a Galaxy account": false,
     "Or, register with email": false,
-    "Forgot password?": false,
-    "Register here.": false,
-    "Click here to reset your password.": false,
-    "Logged in as": "Se ha conectado como",
+    "Forgot password?": "¿Olvidó su contraseña?",
+    "Register here.": "Regístrese aquí.",
+    "Click here to reset your password.": "Haga clic aquí para restablecer su contraseña.",
+    "Signed in as": "Se ha conectado como",
 
     Preferences: "Preferencias",
 
@@ -585,7 +585,7 @@ define({
     "Edit your email, addresses and custom parameters or change your public name.":
         "Edita tus direcciones de correo y personaliza los parámetros o cambia tu nombre público.",
     "User preferences": "Preferencias de usuario",
-    "You are logged in as": "Iniciaste sesión como",
+    "You are signed in as": "Iniciaste sesión como",
     "Sign out": "Cerrar sesión",
     "Manage custom builds": "Administrar construcciones personalizadas",
     "Manage OpenIDs": "Administrar OpenIDs",

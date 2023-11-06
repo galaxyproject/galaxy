@@ -1,14 +1,14 @@
 import { createTestingPinia } from "@pinia/testing";
-import { setActivePinia, PiniaVuePlugin } from "pinia";
-import InteractiveTools from "./InteractiveTools";
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
-import testInteractiveToolsResponse from "./testData/testInteractiveToolsResponse";
-import { useEntryPointStore } from "stores/entryPointStore";
-
-import flushPromises from "flush-promises";
-import MockAdapter from "axios-mock-adapter";
 import axios from "axios";
+import MockAdapter from "axios-mock-adapter";
+import flushPromises from "flush-promises";
+import { PiniaVuePlugin, setActivePinia } from "pinia";
+import { useEntryPointStore } from "stores/entryPointStore";
+import { getLocalVue } from "tests/jest/helpers";
+
+import InteractiveTools from "./InteractiveTools";
+import testInteractiveToolsResponse from "./testData/testInteractiveToolsResponse";
 
 describe("InteractiveTools/InteractiveTools.vue", () => {
     const localVue = getLocalVue();

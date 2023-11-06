@@ -111,8 +111,8 @@ def parse_arguments():
 
     if args.debug:
         print("Got options:")
-        for i in vars(args).items():
-            print("%s: %s" % i)
+        for key, value in vars(args).items():
+            print(f"{key}: {value}")
 
     return args
 

@@ -1,10 +1,13 @@
 <script setup lang="ts">
-import axios, { type AxiosError } from "axios";
-import { computed, ref, type Ref } from "vue";
-import { withPrefix } from "@/utils/redirect";
-import { getRedirectOnImportPath } from "../redirectPath";
-import LoadingSpan from "@/components/LoadingSpan.vue";
+import axios from "axios";
+import { computed, type Ref, ref } from "vue";
 import { useRouter } from "vue-router/composables";
+
+import { withPrefix } from "@/utils/redirect";
+
+import { getRedirectOnImportPath } from "../redirectPath";
+
+import LoadingSpan from "@/components/LoadingSpan.vue";
 
 const loading = ref(false);
 const sourceURL: Ref<string | null> = ref(null);
@@ -28,6 +31,18 @@ const hasErrorMessage = computed(() => {
     return errorMessage.value != null;
 });
 
+function autoAppendJson(urlString: string): string {
+    const sharedWorkflowRegex = /^(https?:\/\/[\S]+\/u\/[\S]+\/w\/[^\s/]+)\/?$/;
+    const matches = urlString.match(sharedWorkflowRegex);
+    const bareUrl = matches?.[1];
+
+    if (bareUrl) {
+        return `${bareUrl}/json`;
+    } else {
+        return urlString;
+    }
+}
+
 const router = useRouter();
 
 async function submit(ev: SubmitEvent) {
@@ -39,7 +54,8 @@ async function submit(ev: SubmitEvent) {
     }
 
     if (sourceURL.value) {
-        formData.append("archive_source", sourceURL.value);
+        const url = autoAppendJson(sourceURL.value);
+        formData.append("archive_source", url);
     }
 
     loading.value = true;
@@ -50,7 +66,10 @@ async function submit(ev: SubmitEvent) {
 
         router.push(path);
     } catch (error) {
-        const message = (error as AxiosError).response?.data && (error as AxiosError).response?.data.err_msg;
+        let message = null;
+        if (axios.isAxiosError(error)) {
+            message = error.response?.data?.err_msg;
+        }
         errorMessage.value = message || "Import failed for an unknown reason.";
     } finally {
         loading.value = false;
@@ -59,7 +78,7 @@ async function submit(ev: SubmitEvent) {
 </script>
 
 <template>
-    <b-form class="mt-4" @submit="submit">
+    <b-form class="mt-4 workflow-import-file" @submit="submit">
         <h2 class="h-sm">Import from a Galaxy workflow export URL or a workflow file</h2>
         <b-form-group label="Archived Workflow URL">
             <b-form-input

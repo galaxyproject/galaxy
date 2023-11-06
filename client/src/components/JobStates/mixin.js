@@ -24,10 +24,10 @@ export default {
             return this.countStates(["running"]);
         },
         okCount() {
-            return this.countStates(["ok"]);
+            return this.countStates(["ok", "skipped"]);
         },
         errorCount() {
-            return this.countStates(["error"]);
+            return this.countStates(["error", "deleted"]);
         },
         newCount() {
             return this.jobCount - this.okCount - this.runningCount - this.errorCount;

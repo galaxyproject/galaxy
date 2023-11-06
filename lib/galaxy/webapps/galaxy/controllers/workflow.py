@@ -20,6 +20,7 @@ from galaxy.managers.workflows import (
     MissingToolsException,
     WorkflowUpdateOptions,
 )
+from galaxy.model.base import transaction
 from galaxy.model.item_attrs import UsesItemRatings
 from galaxy.tools.parameters.basic import workflow_building_modes
 from galaxy.util import FILENAME_VALID_CHARS
@@ -38,14 +39,7 @@ from galaxy.workflow.extract import (
     extract_workflow,
     summarize,
 )
-from galaxy.workflow.modules import (
-    load_module_sections,
-    module_factory,
-)
-from galaxy.workflow.render import (
-    STANDALONE_SVG_TEMPLATE,
-    WorkflowCanvas,
-)
+from galaxy.workflow.modules import load_module_sections
 
 log = logging.getLogger(__name__)
 
@@ -219,7 +213,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         return self.published_list_grid(trans, **kwargs)
 
     @web.expose
-    def display_by_username_and_slug(self, trans, username, slug, format="html"):
+    def display_by_username_and_slug(self, trans, username, slug, format="html", **kwargs):
         """
         Display workflow based on a username and slug. Format can be html, json, or json-download.
         """
@@ -301,8 +295,9 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
 
         # Redirect to load galaxy frames.
         return trans.show_ok_message(
-            message="""Workflow "%s" has been imported. <br>You can <a href="%s">start using this workflow</a> or %s."""
-            % (stored.name, web.url_for("/workflows/list"), referer_message)
+            message="""Workflow "{}" has been imported. <br>You can <a href="{}">start using this workflow</a> or {}.""".format(
+                stored.name, web.url_for("/workflows/list"), referer_message
+            )
         )
 
     @web.expose
@@ -313,7 +308,8 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             san_new_name = sanitize_html(new_name)
             stored.name = san_new_name
             stored.latest_workflow.name = san_new_name
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
             return stored.name
 
     @web.expose
@@ -324,49 +320,22 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             # Sanitize annotation before adding it.
             new_annotation = sanitize_html(new_annotation)
             self.add_item_annotation(trans.sa_session, trans.get_user(), stored, new_annotation)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
             return new_annotation
 
     @web.expose
-    def get_embed_html_async(self, trans, id):
-        """Returns HTML for embedding a workflow in a page."""
-
-        # TODO: user should be able to embed any item he has access to. see display_by_username_and_slug for security code.
-        stored = self.get_stored_workflow(trans, id)
-        if stored:
-            return f"Embedded Workflow '{stored.name}'"
-
-    @web.expose
-    @web.json
     @web.require_login("use Galaxy workflows")
-    def get_name_and_link_async(self, trans, id=None):
-        """Returns workflow's name and link."""
-        stored = self.get_stored_workflow(trans, id)
-        return_dict = {
-            "name": stored.name,
-            "link": url_for(
-                controller="workflow",
-                action="display_by_username_and_slug",
-                username=stored.user.username,
-                slug=stored.slug,
-            ),
-        }
-        return return_dict
-
-    @web.expose
-    @web.require_login("use Galaxy workflows")
-    def gen_image(self, trans, id):
-        stored = self.get_stored_workflow(trans, id, check_ownership=True)
+    def gen_image(self, trans, id, embed="false", **kwargs):
+        embed = util.asbool(embed)
         try:
-            svg = self._workflow_to_svg_canvas(trans, stored)
-        except Exception:
-            message = (
-                "Galaxy is unable to create the SVG image. Please check your workflow, there might be missing tools."
-            )
-            return trans.show_error_message(message)
-        trans.response.set_content_type("image/svg+xml")
-        s = STANDALONE_SVG_TEMPLATE % svg.tostring()
-        return s.encode("utf-8")
+            s = trans.app.workflow_manager.get_workflow_svg_from_id(trans, id, for_embed=embed)
+            trans.response.set_content_type("image/svg+xml")
+            return s
+        except Exception as e:
+            log.exception("Failed to generate SVG image")
+            error_message = str(e)
+            return trans.show_error_message(error_message)
 
     @web.legacy_expose_api
     def create(self, trans, payload=None, **kwd):
@@ -404,14 +373,17 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             # Persist
             session = trans.sa_session
             session.add(stored_workflow)
-            session.flush()
+            with transaction(session):
+                session.commit()
             return {
                 "id": trans.security.encode_id(stored_workflow.id),
                 "message": f"Workflow {workflow_name} has been created.",
             }
 
     @web.json
-    def save_workflow_as(self, trans, workflow_name, workflow_data, workflow_annotation="", from_tool_form=False):
+    def save_workflow_as(
+        self, trans, workflow_name, workflow_data, workflow_annotation="", from_tool_form=False, **kwargs
+    ):
         """
         Creates a new workflow based on Save As command. It is a new workflow, but
         is created with workflow_data already present.
@@ -434,7 +406,8 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             # Persist
             session = trans.sa_session
             session.add(stored_workflow)
-            session.flush()
+            with transaction(session):
+                session.commit()
             workflow_update_options = WorkflowUpdateOptions(
                 update_stored_workflow_attributes=False,  # taken care of above
                 from_tool_form=from_tool_form,
@@ -463,7 +436,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
     @web.expose
     @web.json
     @web.require_login("edit workflows")
-    def editor(self, trans, id=None, workflow_id=None, version=None):
+    def editor(self, trans, id=None, workflow_id=None, version=None, **kwargs):
         """
         Render the main workflow editor interface. The canvas is embedded as
         an iframe (necessary for scrolling to work properly), which is
@@ -550,19 +523,19 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         return editor_config
 
     @web.json
-    def load_workflow(self, trans, id, version=None):
+    def load_workflow(self, trans, id, version=None, **kwargs):
         """
         Get the latest Workflow for the StoredWorkflow identified by `id` and
         encode it as a json string that can be read by the workflow editor
         web interface.
         """
         trans.workflow_building_mode = workflow_building_modes.ENABLED
-        stored = self.get_stored_workflow(trans, id, check_ownership=True, check_accessible=False)
+        stored = self.get_stored_workflow(trans, id, check_ownership=False, check_accessible=True)
         workflow_contents_manager = self.app.workflow_contents_manager
         return workflow_contents_manager.workflow_to_dict(trans, stored, style="editor", version=version)
 
     @web.json_pretty
-    def for_direct_import(self, trans, id):
+    def for_direct_import(self, trans, id, **kwargs):
         """
         Get the latest Workflow for the StoredWorkflow identified by `id` and
         encode it as a json string that can be imported back into Galaxy
@@ -578,7 +551,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
     def export_to_file(self, trans, id):
         """
         Get the latest Workflow for the StoredWorkflow identified by `id` and
-        encode it as a json string that can be imported back into Galaxy
+        export it to a JSON file that can be imported back into Galaxy.
 
         This has slightly different information than the above. In particular,
         it does not attempt to decode forms and build UIs, it just stores
@@ -610,6 +583,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
         workflow_name=None,
         dataset_names=None,
         dataset_collection_names=None,
+        **kwargs,
     ):
         user = trans.get_user()
         history = trans.get_history()
@@ -647,21 +621,3 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
 
     def get_item(self, trans, id):
         return self.get_stored_workflow(trans, id)
-
-    def _workflow_to_svg_canvas(self, trans, stored):
-        workflow = stored.latest_workflow
-        workflow_canvas = WorkflowCanvas()
-        for step in workflow.steps:
-            # Load from database representation
-            module = module_factory.from_workflow_step(trans, step)
-            module_name = module.get_name()
-            module_data_inputs = module.get_data_inputs()
-            module_data_outputs = module.get_data_outputs()
-            workflow_canvas.populate_data_for_step(
-                step,
-                module_name,
-                module_data_inputs,
-                module_data_outputs,
-            )
-        workflow_canvas.add_steps()
-        return workflow_canvas.finish()

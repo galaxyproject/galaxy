@@ -1,18 +1,21 @@
 <script setup>
 import { computed, ref } from "vue";
+
 import HistoryDatasetAsImage from "./Elements/HistoryDatasetAsImage.vue";
-import HistoryDatasetDisplay from "./Elements/HistoryDatasetDisplay.vue";
-import HistoryDatasetLink from "./Elements/HistoryDatasetLink.vue";
-import HistoryDatasetIndex from "./Elements/HistoryDatasetIndex.vue";
 import HistoryDatasetCollectionDisplay from "./Elements/HistoryDatasetCollection/CollectionDisplay.vue";
 import HistoryDatasetDetails from "./Elements/HistoryDatasetDetails.vue";
+import HistoryDatasetDisplay from "./Elements/HistoryDatasetDisplay.vue";
+import HistoryDatasetIndex from "./Elements/HistoryDatasetIndex.vue";
+import HistoryDatasetLink from "./Elements/HistoryDatasetLink.vue";
 import HistoryLink from "./Elements/HistoryLink.vue";
 import InvocationTime from "./Elements/InvocationTime.vue";
 import JobMetrics from "./Elements/JobMetrics.vue";
 import JobParameters from "./Elements/JobParameters.vue";
 import ToolStd from "./Elements/ToolStd.vue";
-import WorkflowDisplay from "./Elements/Workflow/WorkflowDisplay.vue";
 import Visualization from "./Elements/Visualization.vue";
+import WorkflowDisplay from "./Elements/Workflow/WorkflowDisplay.vue";
+import WorkflowImage from "./Elements/Workflow/WorkflowImage.vue";
+import WorkflowLicense from "./Elements/Workflow/WorkflowLicense.vue";
 
 const toggle = ref(false);
 const props = defineProps({
@@ -74,6 +77,12 @@ const isVisible = computed(() => !isCollapsible.value || toggle.value);
             <div v-else-if="name == 'generate_time'" class="galaxy-time">
                 <pre><code>{{ time }}</code></pre>
             </div>
+            <div v-else-if="name == 'workflow_image'" class="workflow-image" style="text-align: center">
+                <WorkflowImage :workflow-id="args.workflow_id" :size="args.size || 'lg'" />
+            </div>
+            <div v-else-if="name == 'workflow_license'" class="workflow-license">
+                <WorkflowLicense :license-id="workflows[args.workflow_id]['license']" />
+            </div>
             <HistoryLink v-else-if="name == 'history_link'" :args="args" :histories="histories" />
             <HistoryDatasetAsImage v-else-if="name == 'history_dataset_as_image'" :args="args" />
             <HistoryDatasetLink v-else-if="name == 'history_dataset_link'" :args="args" />
@@ -81,7 +90,10 @@ const isVisible = computed(() => !isCollapsible.value || toggle.value);
             <InvocationTime v-else-if="name == 'invocation_time'" :args="args" :invocations="invocations" />
             <JobMetrics v-else-if="name == 'job_metrics'" :args="args" />
             <JobParameters v-else-if="name == 'job_parameters'" :args="args" />
-            <WorkflowDisplay v-else-if="name == 'workflow_display'" :args="args" :workflows="workflows" />
+            <WorkflowDisplay
+                v-else-if="name == 'workflow_display'"
+                :workflow-id="args.workflow_id"
+                :workflows="workflows" />
             <Visualization v-else-if="name == 'visualization'" :args="args" />
             <HistoryDatasetCollectionDisplay
                 v-else-if="name == 'history_dataset_collection_display'"

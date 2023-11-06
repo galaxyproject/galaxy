@@ -20,6 +20,7 @@ from galaxy import (
     model,
     util,
 )
+from galaxy.util import UNKNOWN
 from galaxy.web.legacy_framework import grids
 from galaxy.webapps.base.controller import (
     BaseUIController,
@@ -47,7 +48,7 @@ class SpecifiedDateListGrid(grids.Grid):
         def get_value(self, trans, grid, stored_workflow):
             if stored_workflow.user:
                 return escape(stored_workflow.user.email)
-            return "unknown"
+            return UNKNOWN
 
     class EmailColumn(grids.GridColumn):
         def filter(self, trans, user, query, column_filter):
@@ -187,20 +188,20 @@ class Workflows(BaseUIController, ReportQueryBuilder):
         else:
             page = 1
 
-        q = sa.select(
-            (
+        q = (
+            sa.select(
                 self.select_month(model.StoredWorkflow.table.c.create_time).label("date"),
                 sa.func.count(model.StoredWorkflow.table.c.id).label("total_workflows"),
-            ),
-            from_obj=[sa.outerjoin(model.StoredWorkflow.table, model.User.table)],
-            group_by=self.group_by_month(model.StoredWorkflow.table.c.create_time),
-            order_by=[_order],
-            offset=offset,
-            limit=limit,
+            )
+            .select_from(sa.outerjoin(model.StoredWorkflow.table, model.User.table))
+            .group_by(self.group_by_month(model.StoredWorkflow.table.c.create_time))
+            .order_by(_order)
+            .offset(offset)
+            .limit(limit)
         )
 
         all_workflows = sa.select(
-            (self.select_day(model.StoredWorkflow.table.c.create_time).label("date"), model.StoredWorkflow.table.c.id)
+            self.select_day(model.StoredWorkflow.table.c.create_time).label("date"), model.StoredWorkflow.table.c.id
         )
 
         trends = dict()
@@ -273,26 +274,23 @@ class Workflows(BaseUIController, ReportQueryBuilder):
             page = 1
 
         workflows = []
-        q = sa.select(
-            (
+        q = (
+            sa.select(
                 model.User.table.c.email.label("user_email"),
                 sa.func.count(model.StoredWorkflow.table.c.id).label("total_workflows"),
-            ),
-            from_obj=[sa.outerjoin(model.StoredWorkflow.table, model.User.table)],
-            group_by=["user_email"],
-            order_by=[_order],
-            offset=offset,
-            limit=limit,
+            )
+            .select_from(sa.outerjoin(model.StoredWorkflow.table, model.User.table))
+            .group_by("user_email")
+            .order_by(_order)
+            .offset(offset)
+            .limit(limit)
         )
 
         all_workflows_per_user = sa.select(
-            (
-                model.User.table.c.email.label("user_email"),
-                self.select_day(model.StoredWorkflow.table.c.create_time).label("date"),
-                model.StoredWorkflow.table.c.id,
-            ),
-            from_obj=[sa.outerjoin(model.StoredWorkflow.table, model.User.table)],
-        )
+            model.User.table.c.email.label("user_email"),
+            self.select_day(model.StoredWorkflow.table.c.create_time).label("date"),
+            model.StoredWorkflow.table.c.id,
+        ).select_from(sa.outerjoin(model.StoredWorkflow.table, model.User.table))
         currday = datetime.today()
         trends = dict()
         for workflow in trans.sa_session.execute(all_workflows_per_user):
@@ -344,22 +342,19 @@ class Workflows(BaseUIController, ReportQueryBuilder):
         email = util.restore_text(params.get("email", ""))
         user_id = trans.security.decode_id(params.get("id", ""))
 
-        q = sa.select(
-            (
+        q = (
+            sa.select(
                 self.select_month(model.StoredWorkflow.table.c.create_time).label("date"),
                 sa.func.count(model.StoredWorkflow.table.c.id).label("total_workflows"),
-            ),
-            whereclause=model.StoredWorkflow.table.c.user_id == user_id,
-            from_obj=[model.StoredWorkflow.table],
-            group_by=self.group_by_month(model.StoredWorkflow.table.c.create_time),
-            order_by=[_order],
+            )
+            .where(model.StoredWorkflow.table.c.user_id == user_id)
+            .group_by(self.group_by_month(model.StoredWorkflow.table.c.create_time))
+            .order_by(_order)
         )
 
         all_workflows_user_month = sa.select(
-            (self.select_day(model.StoredWorkflow.table.c.create_time).label("date"), model.StoredWorkflow.table.c.id),
-            whereclause=model.StoredWorkflow.table.c.user_id == user_id,
-            from_obj=[model.StoredWorkflow.table],
-        )
+            self.select_day(model.StoredWorkflow.table.c.create_time).label("date"), model.StoredWorkflow.table.c.id
+        ).where(model.StoredWorkflow.table.c.user_id == user_id)
 
         trends = dict()
         for workflow in trans.sa_session.execute(all_workflows_user_month):
@@ -427,28 +422,28 @@ class Workflows(BaseUIController, ReportQueryBuilder):
 
         # In case we don't know which is the monitor user we will query for all jobs
 
-        q = sa.select(
-            (
+        q = (
+            sa.select(
                 model.Workflow.table.c.id.label("workflow_id"),
                 sa.func.min(model.Workflow.table.c.name).label("workflow_name"),
                 sa.func.count(model.WorkflowInvocation.table.c.id).label("total_runs"),
-            ),
-            from_obj=[model.Workflow.table, model.WorkflowInvocation.table],
-            whereclause=sa.and_(model.WorkflowInvocation.table.c.workflow_id == model.Workflow.table.c.id),
-            group_by=[model.Workflow.table.c.id],
-            order_by=[_order],
-            offset=offset,
-            limit=limit,
+            )
+            .select_from(model.Workflow.table, model.WorkflowInvocation.table)
+            .where(sa.and_(model.WorkflowInvocation.table.c.workflow_id == model.Workflow.table.c.id))
+            .group_by(model.Workflow.table.c.id)
+            .order_by(_order)
+            .offset(offset)
+            .limit(limit)
         )
 
-        all_runs_per_workflow = sa.select(
-            (
+        all_runs_per_workflow = (
+            sa.select(
                 model.Workflow.table.c.id.label("workflow_id"),
                 model.Workflow.table.c.name.label("workflow_name"),
                 self.select_day(model.WorkflowInvocation.table.c.create_time).label("date"),
-            ),
-            from_obj=[model.Workflow.table, model.WorkflowInvocation.table],
-            whereclause=sa.and_(model.WorkflowInvocation.table.c.workflow_id == model.Workflow.table.c.id),
+            )
+            .select_from(model.Workflow.table, model.WorkflowInvocation.table)
+            .where(sa.and_(model.WorkflowInvocation.table.c.workflow_id == model.Workflow.table.c.id))
         )
 
         currday = date.today()
@@ -496,4 +491,4 @@ class Workflows(BaseUIController, ReportQueryBuilder):
 
 
 def get_workflow(trans, id):
-    return trans.sa_session.query(trans.model.Workflow).get(trans.security.decode_id(id))
+    return trans.sa_session.get(model.Workflow, trans.security.decode_id(id))

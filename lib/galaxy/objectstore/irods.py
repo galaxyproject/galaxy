@@ -111,6 +111,7 @@ def parse_config_xml(config_xml):
                 "path": staging_path,
             },
             "extra_dirs": extra_dirs,
+            "private": DiskObjectStore.parse_private_from_config_xml(config_xml),
         }
     except Exception:
         # Toss it back up after logging, we can't continue loading at this point.
@@ -201,10 +202,8 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         if self.connection_pool_monitor_interval is None:
             _config_dict_error("connection->connection_pool_monitor_interval")
 
-        cache_dict = config_dict["cache"]
-        if cache_dict is None:
-            _config_dict_error("cache")
-        self.cache_size = cache_dict.get("size", -1)
+        cache_dict = config_dict.get("cache") or {}
+        self.cache_size = cache_dict.get("size") or self.config.object_store_cache_path
         if self.cache_size is None:
             _config_dict_error("cache->size")
         self.staging_path = cache_dict.get("path") or self.config.object_store_cache_path
@@ -329,6 +328,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         extra_dir_at_root=False,
         alt_name=None,
         obj_dir=False,
+        in_cache=False,
         **kwargs,
     ):
         ipt_timer = ExecutionTimer()
@@ -364,6 +364,10 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         if not dir_only:
             rel_path = os.path.join(rel_path, alt_name if alt_name else f"dataset_{self._get_object_id(obj)}.dat")
         log.debug("irods_pt _construct_path: %s", ipt_timer)
+
+        if in_cache:
+            return self._get_cache_path(rel_path)
+
         return rel_path
 
     def _get_cache_path(self, rel_path):
@@ -599,6 +603,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
                 open(os.path.join(self.staging_path, rel_path), "w").close()
                 self._push_to_irods(rel_path, from_string="")
         log.debug("irods_pt _create: %s", ipt_timer)
+        return self
 
     def _empty(self, obj, **kwargs):
         if self._exists(obj, **kwargs):
@@ -606,7 +611,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
         else:
             raise ObjectNotFound(f"objectstore.empty, object does not exist: {obj}, kwargs: {kwargs}")
 
-    def _size(self, obj, **kwargs):
+    def _size(self, obj, **kwargs) -> int:
         ipt_timer = ExecutionTimer()
         rel_path = self._construct_path(obj, **kwargs)
         if self._in_cache(rel_path):

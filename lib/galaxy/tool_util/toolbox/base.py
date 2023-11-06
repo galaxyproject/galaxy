@@ -95,7 +95,13 @@ class ToolBoxRegistryImpl(ToolBoxRegistry):
         self.__toolbox = toolbox
 
     def has_tool(self, tool_id: str) -> bool:
-        return tool_id in self.__toolbox._tools_by_id
+        toolbox = self.__toolbox
+        # tool_id could be full guid, old tool id (no toolshed and version info) or versionless guid.
+        return (
+            tool_id in toolbox._tools_by_id
+            or tool_id in toolbox._tools_by_old_id
+            or bool(toolbox._lineage_map.lineage_map.get(tool_id))
+        )
 
     def get_tool(self, tool_id: str):
         return self.__toolbox.get_tool(tool_id)
@@ -118,6 +124,14 @@ class AbstractToolTagManager(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def handle_tags(self, tool_id, tool_definition_source):
         """Parse out tags and persist them."""
+
+
+class NullToolTagManager(AbstractToolTagManager):
+    def reset_tags(self) -> None:
+        return None
+
+    def handle_tags(self, tool_id, tool_definition_source) -> None:
+        return None
 
 
 class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
@@ -153,6 +167,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         # so each will be present once in the above dictionary. The following
         # dictionary can instead hold multiple tools with different versions.
         self._tool_versions_by_id = {}
+        self._tools_by_old_id = {}
         self._workflows_by_id = {}
         # Cache for tool's to_dict calls specific to toolbox. Invalidates on toolbox reload.
         self._tool_to_dict_cache = {}
@@ -710,9 +725,8 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                         rval.append(lineage_tool)
             if not rval:
                 # still no tool, do a deeper search and try to match by old ids
-                for tool in self._tools_by_id.values():
-                    if tool.old_id == tool_id:
-                        rval.append(tool)
+                if tool_id in self._tools_by_old_id:
+                    rval.extend(self._tools_by_old_id[tool_id])
                 if get_all_versions and tool_id in self._tool_versions_by_id:
                     for tool in self._tool_versions_by_id[tool_id].values():
                         if tool not in rval:
@@ -882,11 +896,8 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             if labels is not None:
                 tool.labels = labels
         except OSError as exc:
-            msg = "Error reading tool configuration file from path '%s': %s", path, unicodify(exc)
-            if exc.errno == ENOENT:
-                log.error(msg)
-            else:
-                log.exception(msg)
+            exc_info = exc.errno != ENOENT
+            log.error("Error reading tool configuration file from path '%s': %s", path, exc, exc_info=exc_info)
         except Exception:
             log.exception("Error reading tool from path: %s", path)
 
@@ -1155,6 +1166,10 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                 self._tools_by_id[tool_id] = tool
         else:
             self._tools_by_id[tool_id] = tool
+        old_id = tool.old_id
+        if old_id not in self._tools_by_old_id:
+            self._tools_by_old_id[old_id] = []
+        self._tools_by_old_id[old_id].append(tool)
 
     def package_tool(self, trans, tool_id):
         """
@@ -1214,6 +1229,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         else:
             tool = self._tools_by_id[tool_id]
             del self._tools_by_id[tool_id]
+            self._tools_by_old_id[tool.old_id].remove(tool)
             tool_cache = getattr(self.app, "tool_cache", None)
             if tool_cache:
                 tool_cache.expire_tool(tool_id)
@@ -1314,6 +1330,25 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
                     continue
                 rval.append(self.get_tool_to_dict(trans, tool, tool_help=tool_help))
         return rval
+
+    def to_panel_view(self, trans, view="default_panel_view", **kwds):
+        """
+        Create a panel view representation of the toolbox.
+        Uses the structure:
+            {section_id: { section but with .tools=List[all tool ids] }, ...}}
+        """
+        if view == "default_panel_view":
+            view = self._default_panel_view
+        view_contents: Dict[str, Dict] = {}
+        panel_elts = self.tool_panel_contents(trans, view=view, **kwds)
+        for elt in panel_elts:
+            # Only use cache for objects that are Tools.
+            if hasattr(elt, "tool_type"):
+                view_contents[elt.id] = self.get_tool_to_dict(trans, elt, tool_help=False)
+            else:
+                kwargs = dict(trans=trans, link_details=True, tool_help=False, toolbox=self, only_ids=True)
+                view_contents[elt.id] = elt.to_dict(**kwargs)
+        return view_contents
 
     def _lineage_in_panel(self, panel_dict, tool=None, tool_lineage=None):
         """If tool with same lineage already in panel (or section) - find

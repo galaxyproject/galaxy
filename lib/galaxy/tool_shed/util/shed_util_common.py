@@ -2,9 +2,9 @@ import logging
 import re
 
 from galaxy import util
+from galaxy.model.base import transaction
 from galaxy.tool_shed.util import repository_util
 from galaxy.util.tool_shed import common_util
-from galaxy.web import url_for
 
 log = logging.getLogger(__name__)
 
@@ -44,8 +44,10 @@ def clean_dependency_relationships(trans, metadata_dict, tool_shed_repository, t
             message = "Repository dependency %s by owner %s is not required by repository %s, owner %s, "
             message += "removing from list of repository dependencies."
             log.debug(message % (r.name, r.owner, tool_shed_repository.name, tool_shed_repository.owner))
-            trans.install_model.context.delete(rrda)
-            trans.install_model.context.flush()
+            session = trans.install_model.context
+            session.delete(rrda)
+            with transaction(session):
+                session.commit()
 
 
 def generate_tool_guid(repository_clone_url, tool):
@@ -171,13 +173,6 @@ def set_image_paths(app, text, encoded_repository_id=None, tool_shed_repository=
     return text
 
 
-def tool_shed_is_this_tool_shed(toolshed_base_url):
-    """Determine if a tool shed is the current tool shed."""
-    cleaned_toolshed_base_url = common_util.remove_protocol_from_tool_shed_url(toolshed_base_url)
-    cleaned_tool_shed = common_util.remove_protocol_from_tool_shed_url(str(url_for("/", qualified=True)))
-    return cleaned_toolshed_base_url == cleaned_tool_shed
-
-
 __all__ = (
     "can_eliminate_repository_dependency",
     "clean_dependency_relationships",
@@ -189,5 +184,4 @@ __all__ = (
     "get_user",
     "have_shed_tool_conf_for_install",
     "set_image_paths",
-    "tool_shed_is_this_tool_shed",
 )

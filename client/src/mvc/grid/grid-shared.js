@@ -1,11 +1,11 @@
 /** This class renders the grid list with shared section. */
-import _ from "underscore";
-import $ from "jquery";
-import Backbone from "backbone";
-import { getAppRoot } from "onload/loadConfig";
 import { getGalaxyInstance } from "app";
+import Backbone from "backbone";
+import $ from "jquery";
 import GridView from "mvc/grid/grid-view";
+import { getAppRoot } from "onload/loadConfig";
 import LoadingIndicator from "ui/loading-indicator";
+import _ from "underscore";
 
 var View = Backbone.View.extend({
     initialize: function (options) {

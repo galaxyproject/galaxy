@@ -65,9 +65,11 @@ class FastAPIToolData:
         summary="Import a data manager bundle",
         require_admin=True,
     )
-    async def create(self, import_bundle_model: ImportToolDataBundle = Body(...)) -> AsyncTaskResultSummary:
+    async def create(
+        self, tool_data_file_path=None, import_bundle_model: ImportToolDataBundle = Body(...)
+    ) -> AsyncTaskResultSummary:
         source = import_bundle_model.source
-        result = import_data_bundle.delay(**source.dict())
+        result = import_data_bundle.delay(tool_data_file_path=tool_data_file_path, **source.dict())
         summary = async_task_summary(result)
         return summary
 

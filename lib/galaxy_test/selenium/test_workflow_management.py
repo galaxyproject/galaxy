@@ -25,20 +25,43 @@ class TestWorkflowManagement(SeleniumTestCase, TestsGalaxyPagers, UsesWorkflowAs
         assert "TestWorkflow1 (imported from URL)" in new_workflow.text, new_workflow.text
 
     @selenium_test
+    def test_import_accessibility(self):
+        self.workflow_index_open()
+        self.workflow_index_click_import()
+        workflows = self.components.workflows
+        workflows.import_file.assert_no_axe_violations_with_impact_of_at_least("moderate")
+        workflows.import_trs_search_link.wait_for_and_click()
+        # moderate violation relating to header ordering
+        workflows.import_trs_search.assert_no_axe_violations_with_impact_of_at_least("serious")
+        workflows.import_trs_id_link.wait_for_and_click()
+        # ditto - moderate violation relating to header ordering
+        workflows.import_trs_id.assert_no_axe_violations_with_impact_of_at_least("serious")
+
+    @selenium_test
     def test_view(self):
         self.workflow_index_open()
         self._workflow_import_from_url()
         self.workflow_index_click_option("View external link")
+        self.driver.switch_to.window(self.driver.window_handles[1])
         assert self.driver.current_url == EXAMPLE_WORKFLOW_URL_1
-        self.driver.back()
+        self.driver.close()
+        self.driver.switch_to.window(self.driver.window_handles[0])
         self.components.workflows.external_link.wait_for_visible()
         # font-awesome title handling broken... https://github.com/FortAwesome/vue-fontawesome/issues/63
         # title_element = external_link_icon.find_element(By.TAG_NAME, "title")
         # assert EXAMPLE_WORKFLOW_URL_1 in title_element.text
         self.workflow_index_click_option("View")
         workflow_show = self.components.workflow_show
-        title_item = self.components.workflow_show.title.wait_for_visible()
-        assert "TestWorkflow1" in title_item.text
+
+        @retry_assertion_during_transitions
+        def check_title():
+            title_item = self.components.workflow_show.title.wait_for_visible()
+            assert "TestWorkflow1" in title_item.text
+
+        check_title()
+        # Since the workflow view now uses the workflow editor, axe violations need to be fixed there first
+        # TODO: fix axe violations in workflow editor
+        # workflow_show._.assert_no_axe_violations_with_impact_of_at_least("moderate")
         import_link = workflow_show.import_link.wait_for_visible()
         assert "Import Workflow" in import_link.get_attribute("title")
         self.screenshot("workflow_manage_view")
@@ -56,6 +79,14 @@ class TestWorkflowManagement(SeleniumTestCase, TestsGalaxyPagers, UsesWorkflowAs
             assert "CoolNewName" == name, name
 
         check_name()
+
+    @selenium_test
+    def test_workflow_index_accessibility(self):
+        self.workflow_index_open()
+        index_table = self.components.workflows.workflow_table
+        # The selenium_test decorator will check for critical axe violations,
+        # this test will be more rigorous but test only a specific component.
+        index_table.assert_no_axe_violations_with_impact_of_at_least("critical")
 
     @selenium_test
     def test_download(self):
@@ -149,6 +180,38 @@ class TestWorkflowManagement(SeleniumTestCase, TestsGalaxyPagers, UsesWorkflowAs
         self.workflow_index_search_for("n:doesnotmatch")
         self._assert_showing_n_workflows(0)
         self.screenshot("workflow_manage_search_name_alias")
+
+    @selenium_test
+    def test_index_advanced_search(self):
+        self.workflow_index_open()
+        self._workflow_import_from_url()
+        self.workflow_index_rename("searchforthis")
+        self._assert_showing_n_workflows(1)
+
+        self.workflow_index_add_tag("mytag")
+        self.components.workflows.advanced_search_toggle.wait_for_and_click()
+        # search by tag and name
+        self.components.workflows.advanced_search_name_input.wait_for_and_send_keys("searchforthis")
+        self.components.workflows.advanced_search_tag_input.wait_for_and_click()
+        self.tagging_add(["mytag"])
+        self.components.workflows.advanced_search_submit.wait_for_and_click()
+        self._assert_showing_n_workflows(1)
+        curr_value = self.workflow_index_get_current_filter()
+        assert curr_value == "name:searchforthis tag:mytag", curr_value
+
+        # clear filter
+        self.components.workflows.clear_filter.wait_for_and_click()
+        curr_value = self.workflow_index_get_current_filter()
+        assert curr_value == "", curr_value
+
+        self.components.workflows.advanced_search_toggle.wait_for_and_click()
+        # search by 2 tags, one of which is not present
+        self.components.workflows.advanced_search_tag_input.wait_for_and_click()
+        self.tagging_add(["'mytag'", "'DNEtag'"])
+        self.components.workflows.advanced_search_submit.wait_for_and_click()
+        curr_value = self.workflow_index_get_current_filter()
+        assert curr_value == "tag:'mytag' tag:'DNEtag'", curr_value
+        self._assert_showing_n_workflows(0)
 
     @selenium_test
     def test_workflow_delete(self):

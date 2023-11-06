@@ -33,6 +33,21 @@ class Repository(BaseModel):
     times_downloaded: int
     deprecated: bool
     create_time: str
+    update_time: str
+
+
+class DetailedRepository(Repository):
+    long_description: Optional[str]
+
+
+class RepositoryPermissions(BaseModel):
+    allow_push: List[str]
+    can_manage: bool  # can the requesting user manage the repository
+    can_push: bool
+
+
+class RepositoryRevisionReadmes(BaseModel):
+    __root__: Dict[str, str]
 
 
 class CreateUserRequest(BaseModel):
@@ -46,9 +61,16 @@ class User(BaseModel):
     username: str
 
 
+class UserV2(User):
+    is_admin: bool
+
+
 class Category(BaseModel):
     id: str
     name: str
+    description: str
+    deleted: bool
+    repositories: int
 
 
 class CreateCategoryRequest(BaseModel):
@@ -113,19 +135,28 @@ class RepositoryUpdate(BaseModel):
         return isinstance(self.__root__, ValidRepostiroyUpdateMessage)
 
 
-class RepositoryDependency(BaseModel):
-    pass
-
-
 class RepositoryTool(BaseModel):
-    pass
+    # Added back in post v2 in order for the frontend to render
+    # tool descriptions on the repository page.
+    description: str
+    guid: str
+    id: str
+    name: str
+    requirements: list
+    tool_config: str
+    tool_type: str
+    version: str
+    # add_to_tool_panel: bool
+    # tests: list
+    # version_string_cmd: Optional[str]
 
 
 class RepositoryRevisionMetadata(BaseModel):
     id: str
     repository: Repository
-    repository_dependencies: List[RepositoryDependency]
-    tools: Optional[List[RepositoryTool]]
+    repository_dependencies: List["RepositoryDependency"]
+    tools: Optional[List["RepositoryTool"]]
+    invalid_tools: List[str]  # added for rendering list of invalid tools in 2.0 frontend
     repository_id: str
     numeric_revision: int
     changeset_revision: str
@@ -139,6 +170,15 @@ class RepositoryRevisionMetadata(BaseModel):
     includes_tool_dependencies: Optional[bool]
     includes_datatypes: Optional[bool]
     includes_workflows: Optional[bool]
+
+
+class RepositoryDependency(RepositoryRevisionMetadata):
+    # This only needs properties for tests it seems?
+    # e.g. test_0550_metadata_updated_dependencies.py
+    pass
+
+
+RepositoryRevisionMetadata.update_forward_refs()
 
 
 class RepositoryMetadata(BaseModel):
@@ -216,6 +256,14 @@ class RepositoryIndexRequest(BaseModel):
     owner: Optional[str]
     name: Optional[str]
     deleted: str = "false"
+
+
+class RepositoriesByCategory(BaseModel):
+    id: str
+    name: str
+    description: str
+    repository_count: int
+    repositories: List[Repository]
 
 
 class RepositoryIndexResponse(BaseModel):
@@ -309,7 +357,11 @@ ExtraRepoInfo = Dict[str, List]
 #     ]
 # }
 
-EmptyDict = TypedDict("EmptyDict", {})
+
+class EmptyDict(TypedDict):
+    pass
+
+
 LegacyInstallInfoTuple = Tuple[
     Optional[Dict], Union[RepositoryMetadataInstallInfoDict, EmptyDict], Union[ExtraRepoInfo, EmptyDict]
 ]
@@ -393,7 +445,7 @@ class RepositoryMetadataInstallInfo(BaseModel):
             malicious=as_dict["malicious"],
             repository_id=as_dict["repository_id"],
             url=as_dict["url"],
-            valid_tools=ValidTool.from_legacy_list(as_dict["valid_tools"]),
+            valid_tools=ValidTool.from_legacy_list(as_dict.get("valid_tools", [])),
         )
 
 
@@ -420,3 +472,14 @@ def from_legacy_install_info(legacy_install_info: LegacyInstallInfoTuple) -> Ins
         metadata_info=metadata_info,
         repo_info=repo_info,
     )
+
+
+class BuildSearchIndexResponse(BaseModel):
+    repositories_indexed: int
+    tools_indexed: int
+
+
+class Version(BaseModel):
+    version_major: str
+    version: str
+    api_version: str = "v1"

@@ -141,12 +141,14 @@ def include_legacy_openapi(app, gx_app):
     return app.openapi_schema
 
 
-def get_fastapi_instance() -> FastAPI:
+def get_fastapi_instance(root_path="") -> FastAPI:
     return FastAPI(
         title="Galaxy API",
         docs_url="/api/docs",
+        redoc_url="/api/redoc",
         openapi_tags=api_tags_metadata,
         license_info={"name": "MIT", "url": "https://github.com/galaxyproject/galaxy/blob/dev/LICENSE.txt"},
+        root_path=root_path,
     )
 
 
@@ -167,7 +169,8 @@ def get_openapi_schema() -> Dict[str, Any]:
 
 
 def initialize_fast_app(gx_wsgi_webapp, gx_app):
-    app = get_fastapi_instance()
+    root_path = "" if gx_app.config.galaxy_url_prefix == "/" else gx_app.config.galaxy_url_prefix
+    app = get_fastapi_instance(root_path=root_path)
     add_exception_handler(app)
     add_galaxy_middleware(app, gx_app)
     add_request_id_middleware(app)

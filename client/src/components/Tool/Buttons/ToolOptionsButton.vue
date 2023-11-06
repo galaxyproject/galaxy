@@ -1,12 +1,20 @@
 <script setup>
-import { computed, ref } from "vue";
-import { copyLink, copyId, downloadTool, openLink } from "../utilities";
-import { useCurrentUser } from "composables/user";
-import Webhooks from "utils/webhooks";
-import ToolSourceMenuItem from "components/Tool/ToolSourceMenuItem";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faCopy } from "@fortawesome/free-regular-svg-icons";
+import { faCaretDown, faDownload, faExternalLinkAlt, faLink } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import ToolSourceMenuItem from "components/Tool/ToolSourceMenuItem";
+import { storeToRefs } from "pinia";
+import Webhooks from "utils/webhooks";
+import { computed, ref } from "vue";
 
-const { currentUser: user } = useCurrentUser(false, true);
+import { useUserStore } from "@/stores/userStore";
+
+import { copyId, copyLink, downloadTool, openLink } from "../utilities";
+
+library.add(faCaretDown, faLink, faDownload, faExternalLinkAlt, faCopy);
+
+const { currentUser } = storeToRefs(useUserStore());
 
 const props = defineProps({
     id: {
@@ -43,7 +51,7 @@ Webhooks.load({
     },
 });
 
-const showDownload = computed(() => user.value?.is_admin);
+const showDownload = computed(() => currentUser.value?.is_admin);
 const showLink = computed(() => Boolean(props.sharableUrl));
 
 function onCopyLink() {
@@ -61,14 +69,6 @@ function onDownload() {
 function onLink() {
     openLink(props.sharableUrl);
 }
-</script>
-
-<script>
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCaretDown, faLink, faDownload, faExternalLinkAlt } from "@fortawesome/free-solid-svg-icons";
-import { faCopy } from "@fortawesome/free-regular-svg-icons";
-
-library.add(faCaretDown, faLink, faDownload, faExternalLinkAlt, faCopy);
 </script>
 
 <template>

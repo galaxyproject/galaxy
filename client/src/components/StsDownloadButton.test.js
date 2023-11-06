@@ -1,12 +1,17 @@
-import MockConfigProvider from "components/providers/MockConfigProvider";
+import "jest-location-mock";
+
 import { mount } from "@vue/test-utils";
-import flushPromises from "flush-promises";
-import { getLocalVue } from "tests/jest/helpers";
-import StsDownloadButton from "./StsDownloadButton";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
+import flushPromises from "flush-promises";
+import { createPinia } from "pinia";
+import { getLocalVue } from "tests/jest/helpers";
 
-import "jest-location-mock";
+import { mockFetcher } from "@/api/schema/__mocks__";
+
+import StsDownloadButton from "./StsDownloadButton";
+
+jest.mock("@/api/schema");
 
 const localVue = getLocalVue();
 const NO_TASKS_CONFIG = {
@@ -20,16 +25,16 @@ const DOWNLOAD_ENDPOINT = "http://cow.com/prepare_download";
 const STORAGE_REQUEST_ID = "moocow1235";
 
 async function mountStsDownloadButtonWrapper(config) {
+    mockFetcher.path("/api/configuration").method("get").mock({ data: config });
+    const pinia = createPinia();
     const wrapper = mount(StsDownloadButton, {
         propsData: {
             title: "my title",
             fallbackUrl: FALLBACK_URL,
             downloadEndpoint: DOWNLOAD_ENDPOINT,
         },
-        stubs: {
-            ConfigProvider: MockConfigProvider(config),
-        },
         localVue,
+        pinia,
     });
     await flushPromises();
     return wrapper;
@@ -47,10 +52,12 @@ describe("StsDownloadButton", () => {
     });
 
     it("should fallback to a URL if tasks not enabled", async () => {
+        const windowSpy = jest.spyOn(window, "open");
+        windowSpy.mockImplementation(() => {});
         const wrapper = await mountStsDownloadButtonWrapper(NO_TASKS_CONFIG);
         wrapper.vm.onDownload(NO_TASKS_CONFIG);
         await flushPromises();
-        expect(window.location).toBeAt(FALLBACK_URL);
+        expect(window.open).toBeCalled();
     });
 
     it("should poll until ready", async () => {

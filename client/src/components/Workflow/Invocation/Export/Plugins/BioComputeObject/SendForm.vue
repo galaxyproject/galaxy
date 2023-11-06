@@ -1,11 +1,13 @@
 <script setup>
-import { ref, reactive, inject } from "vue";
-import { BModal } from "bootstrap-vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
+import { BModal } from "bootstrap-vue";
+import ExternalLink from "components/ExternalLink";
 import { Toast } from "composables/toast";
 import { withPrefix } from "utils/redirect";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import ExternalLink from "components/ExternalLink";
+import { inject, reactive, ref } from "vue";
+
+import { wait } from "@/utils/utils";
 
 const sendBCOModal = ref(null);
 const generatingBCO = ref(false);
@@ -55,12 +57,12 @@ async function generateBcoContent() {
         let pollingResponse = await axios.get(pollUrl);
         let maxRetries = 120;
         while (!pollingResponse.data && maxRetries) {
-            await wait();
+            await wait(2000);
             pollingResponse = await axios.get(pollUrl);
             maxRetries -= 1;
         }
         if (!pollingResponse.data) {
-            throw "Timeout waiting for BioCompute Object export result!";
+            throw Error("Timeout waiting for BioCompute Object export result!");
         } else {
             const resultResponse = await axios.get(resultUrl);
             return resultResponse.data;
@@ -71,12 +73,6 @@ async function generateBcoContent() {
         generatingBCO.value = false;
     }
 }
-
-const wait = function (ms = 2000) {
-    return new Promise((resolve) => {
-        setTimeout(resolve, ms);
-    });
-};
 
 async function sendBco(bcoContent) {
     const bcoData = {
@@ -113,13 +109,13 @@ defineExpose({ showModal });
 </script>
 
 <template>
-    <b-modal ref="sendBCOModal" title="Submit To BCODB" title-tag="h2" centered hide-footer>
+    <BModal ref="sendBCOModal" title="Submit To BCODB" title-tag="h2" centered hide-footer>
         <div>
             <p>
                 To submit to a BCODB you need to already have an authenticated account. Instructions on submitting a BCO
                 from Galaxy are available
-                <external-link href="https://w3id.org/biocompute/tutorials/galaxy_quick_start/" target="_blank"
-                    >here</external-link
+                <ExternalLink href="https://w3id.org/biocompute/tutorials/galaxy_quick_start/" target="_blank"
+                    >here</ExternalLink
                 >.
             </p>
             <form @submit.prevent="submitForm">
@@ -174,12 +170,12 @@ defineExpose({ showModal });
                 </div>
                 <div class="form-group">
                     <div v-if="generatingBCO">
-                        <font-awesome-icon icon="spinner" spin />
+                        <FontAwesomeIcon icon="spinner" spin />
                         Generating BCO please wait...
                     </div>
                     <button v-else class="btn btn-primary">{{ "Submit" | localize }}</button>
                 </div>
             </form>
         </div>
-    </b-modal>
+    </BModal>
 </template>

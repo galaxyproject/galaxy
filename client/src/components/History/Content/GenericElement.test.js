@@ -1,5 +1,6 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
+
 import GenericElement from "./GenericElement";
 
 const localVue = getLocalVue();

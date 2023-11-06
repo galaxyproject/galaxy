@@ -7,9 +7,12 @@ from typing import (
     Dict,
     List,
     Optional,
-    TYPE_CHECKING,
 )
 
+from galaxy.tool_shed.galaxy_install.client import (
+    DataManagerInterface,
+    InstallationTarget,
+)
 from galaxy.util import (
     Element,
     etree,
@@ -21,9 +24,6 @@ from galaxy.util.renamed_temporary_file import RenamedTemporaryFile
 from galaxy.util.tool_shed.xml_util import parse_xml
 from . import tool_panel_manager
 
-if TYPE_CHECKING:
-    from galaxy.tools.data_manager.manager import DataManager
-
 log = logging.getLogger(__name__)
 
 SHED_DATA_MANAGER_CONF_XML = """<?xml version="1.0"?>
@@ -33,9 +33,10 @@ SHED_DATA_MANAGER_CONF_XML = """<?xml version="1.0"?>
 
 
 class DataManagerHandler:
+    app: InstallationTarget
     root: Optional[Element] = None
 
-    def __init__(self, app):
+    def __init__(self, app: InstallationTarget):
         self.app = app
 
     @property
@@ -73,8 +74,8 @@ class DataManagerHandler:
         relative_install_dir: StrPath,
         repository,
         repository_tools_tups,
-    ) -> List["DataManager"]:
-        rval: List["DataManager"] = []
+    ) -> List["DataManagerInterface"]:
+        rval: List["DataManagerInterface"] = []
         if "data_manager" in metadata_dict:
             tpm = tool_panel_manager.ToolPanelManager(self.app)
             repository_tools_by_guid = {}
@@ -135,15 +136,17 @@ class DataManagerHandler:
                     tool_dict = repository_tools_by_guid.get(tool_guid, None)
                     if tool_dict is None:
                         log.error(
-                            "Data manager tool guid '%s' could not be found for '%s'. Perhaps the tool is invalid?"
-                            % (tool_guid, data_manager_id)
+                            "Data manager tool guid '%s' could not be found for '%s'. Perhaps the tool is invalid?",
+                            tool_guid,
+                            data_manager_id,
                         )
                         continue
                     tool = tool_dict.get("tool", None)
                     if tool is None:
                         log.error(
-                            "Data manager tool with guid '%s' could not be found for '%s'. Perhaps the tool is invalid?"
-                            % (tool_guid, data_manager_id)
+                            "Data manager tool with guid '%s' could not be found for '%s'. Perhaps the tool is invalid?",
+                            tool_guid,
+                            data_manager_id,
                         )
                         continue
                     tool_config_filename = tool_dict.get("tool_config_filename", None)

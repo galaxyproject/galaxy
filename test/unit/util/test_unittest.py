@@ -19,8 +19,8 @@ class TestTestCase(TestCase):
 
     def test_assertRaises(self):
         with self.assertRaises(ZeroDivisionError):
-            1 / 0
+            1 / 0  # noqa: B018
 
     def test_assertRaisesRegex(self):
         with self.assertRaisesRegex(ZeroDivisionError, "^division .* zero"):
-            1 / 0
+            1 / 0  # noqa: B018

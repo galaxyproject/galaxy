@@ -82,10 +82,8 @@ def build_command(
 
     __handle_task_splitting(commands_builder, job_wrapper)
 
-    externalized = False
     for_pulsar = "pulsar_version" in remote_command_params
     if (container and modify_command_for_container) or job_wrapper.commands_in_new_shell:
-        externalized = True
         if container and modify_command_for_container:
             # Many Docker containers do not have /bin/bash.
             external_command_shell = container.shell
@@ -106,14 +104,12 @@ def build_command(
         else:
             commands_builder = CommandsBuilder(externalized_commands)
 
-    wrap_stdio = externalized or not for_pulsar
-    if wrap_stdio:
-        # Galaxy writes I/O files to outputs, Pulsar uses metadata. metadata seems like
-        # it should be preferred - at least if the directory exists.
-        io_directory = "../metadata" if for_pulsar else "../outputs"
-        commands_builder.capture_stdout_stderr(
-            f"{io_directory}/tool_stdout", f"{io_directory}/tool_stderr", stream_stdout_stderr=stream_stdout_stderr
-        )
+    # Galaxy writes I/O files to outputs, Pulsar uses metadata. metadata seems like
+    # it should be preferred - at least if the directory exists.
+    io_directory = "../metadata" if for_pulsar else "../outputs"
+    commands_builder.capture_stdout_stderr(
+        f"{io_directory}/tool_stdout", f"{io_directory}/tool_stderr", stream_stdout_stderr=stream_stdout_stderr
+    )
 
     # Don't need to create a separate tool working directory for Pulsar
     # jobs - that is handled by Pulsar.

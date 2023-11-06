@@ -6,6 +6,7 @@ import pytest
 from tusclient import client
 
 from galaxy.tool_util.verify.test_data import TestDataResolver
+from galaxy.util import UNKNOWN
 from galaxy.util.unittest_utils import (
     skip_if_github_down,
     skip_if_site_down,
@@ -279,6 +280,40 @@ class TestToolsUpload(ApiTestCase):
         assert content == "This is a line of text."
         details = self.dataset_populator.get_history_dataset_details(history_id=history_id, dataset=dataset)
         assert details["genome_build"] == "hg19"
+
+    @skip_if_github_down
+    def test_stage_fetch_decompress_true(self, history_id: str) -> None:
+        job = {
+            "input1": {
+                "class": "File",
+                "format": "fasta",
+                "location": "https://github.com/galaxyproject/galaxy/blob/dev/test-data/1.fasta.gz?raw=true",
+                "decompress": True,
+            }
+        }
+        inputs, datasets = stage_inputs(
+            self.galaxy_interactor, history_id, job, use_path_paste=False, to_posix_lines=False
+        )
+        dataset = datasets[0]
+        content = self.dataset_populator.get_history_dataset_content(history_id=history_id, dataset=dataset)
+        assert content.startswith(">hg17")
+
+    @skip_if_github_down
+    def test_stage_fetch_decompress_false(self, history_id: str) -> None:
+        job = {
+            "input1": {
+                "class": "File",
+                "format": "fasta",
+                "location": "https://github.com/galaxyproject/galaxy/blob/dev/test-data/1.fasta.gz?raw=true",
+                "decompress": False,
+            }
+        }
+        inputs, datasets = stage_inputs(
+            self.galaxy_interactor, history_id, job, use_path_paste=False, to_posix_lines=False
+        )
+        dataset = datasets[0]
+        content = self.dataset_populator.get_history_dataset_content(history_id=history_id, dataset=dataset)
+        assert not content.startswith(">hg17")
 
     @skip_if_github_down
     def test_upload_multiple_mixed_success(self, history_id):
@@ -875,7 +910,7 @@ class TestToolsUpload(ApiTestCase):
         with open(path, "rb") as fh:
             metadata = self._upload_and_get_details(fh, file_type="fastqcssanger")
         assert "validated_state" in metadata
-        assert metadata["validated_state"] == "unknown"
+        assert metadata["validated_state"] == UNKNOWN
         history_id = metadata["history_id"]
         dataset_id = metadata["id"]
         terminal_validated_state = self.dataset_populator.validate_dataset_and_wait(history_id, dataset_id)
@@ -886,7 +921,7 @@ class TestToolsUpload(ApiTestCase):
         with open(path, "rb") as fh:
             metadata = self._upload_and_get_details(fh, file_type="fastqsanger")
         assert "validated_state" in metadata
-        assert metadata["validated_state"] == "unknown"
+        assert metadata["validated_state"] == UNKNOWN
         history_id = metadata["history_id"]
         dataset_id = metadata["id"]
         terminal_validated_state = self.dataset_populator.validate_dataset_and_wait(history_id, dataset_id)

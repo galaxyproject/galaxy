@@ -1,12 +1,27 @@
 <script setup>
+import { library } from "@fortawesome/fontawesome-svg-core";
+import {
+    faAngleDown,
+    faAngleUp,
+    faCheck,
+    faExclamationTriangle,
+    faExternalLinkAlt,
+    faTimes,
+    faUser,
+    faWrench,
+} from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { ref, computed } from "vue";
-import { useFormattedToolHelp } from "composables/formattedToolHelp";
 import ToolFavoriteButton from "components/Tool/Buttons/ToolFavoriteButton";
+import { useFormattedToolHelp } from "composables/formattedToolHelp";
+import { computed, ref } from "vue";
+
+library.add(faWrench, faExternalLinkAlt, faCheck, faTimes, faAngleDown, faAngleUp, faExclamationTriangle, faUser);
+
 const props = defineProps({
     id: { type: String, required: true },
     name: { type: String, required: true },
     section: { type: String, required: true },
+    ontologies: { type: Array, default: null },
     description: { type: String, default: null },
     summary: { type: String, default: null },
     help: { type: String, default: null },
@@ -14,6 +29,7 @@ const props = defineProps({
     link: { type: String, default: null },
     workflowCompatible: { type: Boolean, default: false },
     local: { type: Boolean, default: false },
+    owner: { type: String, default: null },
 });
 
 const emit = defineEmits(["open"]);
@@ -30,23 +46,8 @@ const formattedToolHelp = computed(() => {
 });
 </script>
 
-<script>
-import { library } from "@fortawesome/fontawesome-svg-core";
-import {
-    faWrench,
-    faExternalLinkAlt,
-    faCheck,
-    faTimes,
-    faAngleDown,
-    faAngleUp,
-    faExclamationTriangle,
-} from "@fortawesome/free-solid-svg-icons";
-
-library.add(faWrench, faExternalLinkAlt, faCheck, faTimes, faAngleDown, faAngleUp, faExclamationTriangle);
-</script>
-
 <template>
-    <div class="tool-list-item ui-portlet-section">
+    <div class="tool-list-item">
         <div class="top-bar bg-secondary px-2 py-1 rounded-right">
             <div class="py-1 d-flex flex-wrap flex-gapx-1">
                 <span>
@@ -63,41 +64,50 @@ library.add(faWrench, faExternalLinkAlt, faCheck, faTimes, faAngleDown, faAngleU
                 <span itemprop="description">{{ props.description }}</span>
                 <span>(Galaxy Version {{ props.version }})</span>
             </div>
-            <div>
-                <b-button-group>
-                    <ToolFavoriteButton :id="props.id" />
+            <div class="d-flex align-items-start">
+                <ToolFavoriteButton :id="props.id" />
 
-                    <b-button
-                        v-if="props.local"
-                        class="text-nowrap"
-                        variant="primary"
-                        size="sm"
-                        @click="() => emit('open')">
-                        <FontAwesomeIcon icon="fa-wrench" fixed-width />
-                        Open
-                    </b-button>
-                    <b-button v-else class="text-nowrap" variant="primary" size="sm" :href="props.link">
-                        <FontAwesomeIcon icon="fa-external-link-alt" fixed-width />
-                        Open
-                    </b-button>
-                </b-button-group>
+                <b-button
+                    v-if="props.local"
+                    class="text-nowrap"
+                    variant="primary"
+                    size="sm"
+                    @click="() => emit('open')">
+                    <FontAwesomeIcon icon="fa-wrench" fixed-width />
+                    Open
+                </b-button>
+                <b-button v-else class="text-nowrap" variant="primary" size="sm" :href="props.link">
+                    <FontAwesomeIcon icon="fa-external-link-alt" fixed-width />
+                    Open
+                </b-button>
             </div>
         </div>
 
-        <div class="portlet-content">
+        <div class="tool-list-item-content">
             <div class="d-flex flex-gapx-1 py-2">
-                <span v-if="props.section" class="info px-1 rounded">
+                <span v-if="props.section" class="tag info">
                     <b>Section:</b> <b-link :to="`/tools/list?section=${props.section}`">{{ section }}</b-link>
                 </span>
 
-                <span v-if="!props.local" class="info px-1 rounded">
+                <span v-if="!props.local" class="tag info">
                     <FontAwesomeIcon icon="fa-external-link-alt" fixed-width />
                     External
                 </span>
 
-                <span v-if="!props.workflowCompatible" class="warn px-1 rounded">
+                <span v-if="!props.workflowCompatible" class="tag warn">
                     <FontAwesomeIcon icon="fa-exclamation-triangle" />
                     Not Workflow compatible
+                </span>
+
+                <span v-if="props.owner" class="tag success">
+                    <FontAwesomeIcon icon="fa-user" />
+                    <b>Owner:</b> <b-link :to="`/tools/list?owner=${props.owner}`">{{ props.owner }}</b-link>
+                </span>
+
+                <span v-if="props.ontologies && props.ontologies.length > 0">
+                    <span v-for="ontology in props.ontologies" :key="ontology" class="tag toggle">
+                        <b-link :to="`/tools/list?ontology=${ontology}`">{{ ontology }}</b-link>
+                    </span>
                 </span>
             </div>
 
@@ -123,16 +133,38 @@ library.add(faWrench, faExternalLinkAlt, faCheck, faTimes, faAngleDown, faAngleU
 @import "theme/blue.scss";
 
 .tool-list-item {
+    border-left: solid 3px $brand-secondary;
+    border-radius: 0.25rem;
+
+    .tool-list-item-content {
+        padding-left: 0.5rem;
+    }
+
+    .tag {
+        border-style: solid;
+        border-width: 0 2px 1px 0;
+        border-radius: 4px;
+        padding: 0 0.5rem;
+    }
+
     .info {
         background-color: scale-color($brand-info, $lightness: +75%);
+        border-color: scale-color($brand-info, $lightness: +55%);
     }
 
     .success {
         background-color: scale-color($brand-success, $lightness: +75%);
+        border-color: scale-color($brand-success, $lightness: +55%);
     }
 
     .warn {
         background-color: scale-color($brand-warning, $lightness: +75%);
+        border-color: scale-color($brand-warning, $lightness: +55%);
+    }
+
+    .toggle {
+        background-color: scale-color($brand-toggle, $lightness: +75%);
+        border-color: scale-color($brand-toggle, $lightness: +55%);
     }
 
     .top-bar {

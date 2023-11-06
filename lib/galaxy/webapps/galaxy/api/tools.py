@@ -39,7 +39,6 @@ from galaxy.web import (
     expose_api_anonymous_and_sessionless,
     expose_api_raw_anonymous_and_sessionless,
 )
-from galaxy.web.framework.decorators import expose_api_raw
 from galaxy.webapps.base.controller import UsesVisualizationMixin
 from galaxy.webapps.base.webapp import GalaxyWebTransaction
 from galaxy.webapps.galaxy.services.tools import ToolsService
@@ -179,6 +178,40 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
             raise exceptions.InternalServerError("Error: Could not convert toolbox to dictionary")
 
     @expose_api_anonymous_and_sessionless
+    def panel_views(self, trans: GalaxyWebTransaction, **kwds):
+        """
+        GET /api/tool_panels
+        returns a dictionary of available tool panel views and default view
+        """
+
+        rval = {}
+        rval["default_panel_view"] = self.app.toolbox._default_panel_view
+        rval["views"] = self.app.toolbox.panel_view_dicts()
+        return rval
+
+    @expose_api_anonymous_and_sessionless
+    def panel_view(self, trans: GalaxyWebTransaction, view, **kwds):
+        """
+        GET /api/tool_panels/{view}
+
+        returns a dictionary of tools and tool sections for the given view
+
+        :param trackster: if true, only tools that are compatible with
+                          Trackster are returned
+        """
+
+        # Read param.
+        trackster = util.string_as_bool(kwds.get("trackster", "False"))
+
+        # Return panel view.
+        try:
+            return self.app.toolbox.to_panel_view(trans, trackster=trackster, view=view)
+        except exceptions.MessageException:
+            raise
+        except Exception:
+            raise exceptions.InternalServerError("Error: Could not convert toolbox to dictionary")
+
+    @expose_api_anonymous_and_sessionless
     def show(self, trans: GalaxyWebTransaction, id, **kwd):
         """
         GET /api/tools/{tool_id}
@@ -223,7 +256,10 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         kwd = _kwd_or_payload(kwd)
         tool_version = kwd.get("tool_version", None)
         tool = self.service._get_tool(trans, id, tool_version=tool_version, user=trans.user)
-        path = tool.test_data_path(kwd.get("filename"))
+        try:
+            path = tool.test_data_path(kwd.get("filename"))
+        except ValueError as e:
+            raise exceptions.MessageException(str(e))
         if path:
             return path
         else:
@@ -496,6 +532,8 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
             else:
                 raise exceptions.RequestParameterInvalidException("Must run conversion on either hdca or hda.")
 
+        self.history_manager.error_unless_mutable(target_history)
+
         # Make the target datatype available to the converter
         params["__target_datatype__"] = target_type
         vars = converter.handle_input(trans, params, history=target_history)
@@ -515,7 +553,7 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         trans.response.headers["Content-Disposition"] = f'attachment; filename="{id}.tgz"'
         return download_file
 
-    @expose_api_raw
+    @expose_api_raw_anonymous_and_sessionless
     def raw_tool_source(self, trans: GalaxyWebTransaction, id, **kwds):
         """Returns tool source. ``language`` is included in the response header."""
         if not trans.app.config.enable_tool_source_display and not trans.user_is_admin:

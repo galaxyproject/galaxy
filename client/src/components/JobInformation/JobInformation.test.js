@@ -1,11 +1,11 @@
+import { mount } from "@vue/test-utils";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
-import { mount } from "@vue/test-utils";
+import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
+
 import JobInformation from "./JobInformation";
 import jobResponse from "./testData/jobInformationResponse.json";
-
-import flushPromises from "flush-promises";
 
 jest.mock("app");
 

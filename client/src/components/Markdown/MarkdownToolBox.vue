@@ -10,21 +10,17 @@
                 <b-alert v-if="error" variant="danger" class="my-2 mx-3 px-2 py-1" show>
                     {{ error }}
                 </b-alert>
-                <tool-section
-                    v-if="isWorkflow"
-                    :category="historyInEditorSection"
-                    :expanded="true"
-                    @onClick="onClick" />
-                <tool-section v-else :category="historySection" :expanded="true" @onClick="onClick" />
-                <tool-section :category="jobSection" :expanded="true" @onClick="onClick" />
-                <tool-section
+                <ToolSection v-if="isWorkflow" :category="historyInEditorSection" :expanded="true" @onClick="onClick" />
+                <ToolSection v-else :category="historySection" :expanded="true" @onClick="onClick" />
+                <ToolSection :category="jobSection" :expanded="true" @onClick="onClick" />
+                <ToolSection
                     v-if="isWorkflow"
                     :category="workflowInEditorSection"
                     :expanded="true"
                     @onClick="onClick" />
-                <tool-section v-else :category="workflowSection" :expanded="true" @onClick="onClick" />
-                <tool-section :category="otherSection" :expanded="true" @onClick="onClick" />
-                <tool-section
+                <ToolSection v-else :category="workflowSection" :expanded="true" @onClick="onClick" />
+                <ToolSection :category="otherSection" :expanded="true" @onClick="onClick" />
+                <ToolSection
                     v-if="hasVisualizations"
                     :category="visualizationSection"
                     :expanded="true"
@@ -44,12 +40,13 @@
 </template>
 
 <script>
-import Vue from "vue";
 import axios from "axios";
 import BootstrapVue from "bootstrap-vue";
 import ToolSection from "components/Panels/Common/ToolSection";
-import MarkdownDialog from "./MarkdownDialog";
 import { getAppRoot } from "onload/loadConfig";
+import Vue from "vue";
+
+import MarkdownDialog from "./MarkdownDialog";
 
 Vue.use(BootstrapVue);
 
@@ -193,6 +190,16 @@ export default {
                         name: "Workflow Display",
                         emitter: "onWorkflowId",
                     },
+                    {
+                        id: "workflow_license",
+                        name: "Workflow License",
+                        emitter: "onWorkflowId",
+                    },
+                    {
+                        id: "workflow_image",
+                        name: "Workflow Image",
+                        emitter: "onWorkflowId",
+                    },
                 ],
             },
             workflowInEditorSection: {
@@ -216,6 +223,14 @@ export default {
                         id: "workflow_display",
                         name: "Current Workflow",
                         description: "containing all steps",
+                    },
+                    {
+                        id: "workflow_image",
+                        name: "Current Workflow Image",
+                    },
+                    {
+                        id: "workflow_license",
+                        name: "Current Workflow License",
                     },
                 ],
             },
@@ -258,8 +273,8 @@ export default {
             const steps = [];
             this.steps &&
                 Object.values(this.steps).forEach((step) => {
-                    if (step.label || step.content_id) {
-                        steps.push(step.label || step.content_id);
+                    if (step.label) {
+                        steps.push(step.label);
                     }
                 });
             return steps;

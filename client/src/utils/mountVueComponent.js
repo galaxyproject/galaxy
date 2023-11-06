@@ -2,11 +2,12 @@
 // use this instead of your own mount function so that all vue components get
 // the same plugins and events.
 
+import BootstrapVue from "bootstrap-vue";
+import { eventHubPlugin, iconPlugin, localizationPlugin, vueRxShortcutPlugin } from "components/plugins";
 import Vue from "vue";
 import Vuex from "vuex";
-import BootstrapVue from "bootstrap-vue";
+
 import store from "../store";
-import { eventHubPlugin, localizationPlugin, vueRxShortcutPlugin, iconPlugin } from "components/plugins";
 
 Vue.use(Vuex);
 

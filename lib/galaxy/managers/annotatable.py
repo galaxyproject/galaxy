@@ -4,10 +4,14 @@ Mixins for Annotatable model managers and serializers.
 
 import abc
 import logging
-from typing import Dict
+from typing import (
+    Dict,
+    Optional,
+)
 
 from sqlalchemy.orm import scoped_session
 
+from galaxy.model.base import transaction
 from .base import (
     Deserializer,
     FunctionFilterParsersType,
@@ -21,7 +25,7 @@ log = logging.getLogger(__name__)
 # needed to extract this for use in manager *and* serializer, ideally, would use self.manager.annotation
 # from serializer, but history_contents has no self.manager
 # TODO: fix
-def _match_by_user(item, user):
+def _match_by_user(item, user) -> Optional[str]:
     if not user:
         return None
     for annotation in item.annotations:
@@ -38,7 +42,7 @@ class AnnotatableManagerMixin:
     def session(self) -> scoped_session:
         ...
 
-    def annotation(self, item):
+    def annotation(self, item) -> Optional[str]:
         """
         Return the annotation string made by the `item`'s owner or `None` if there
         is no annotation.
@@ -60,7 +64,9 @@ class AnnotatableManagerMixin:
 
         annotation_obj = item.add_item_annotation(self.session(), user, item, annotation)
         if flush:
-            self.session().flush()
+            session = self.session()
+            with transaction(session):
+                session.commit()
         return annotation_obj
 
     def _user_annotation(self, item, user):
@@ -69,7 +75,9 @@ class AnnotatableManagerMixin:
     def _delete_annotation(self, item, user, flush=True):
         returned = item.delete_item_annotation(self.session(), user, item)
         if flush:
-            self.session().flush()
+            session = self.session()
+            with transaction(session):
+                session.commit()
         return returned
 
 
@@ -106,20 +114,20 @@ class AnnotatableDeserializerMixin:
 class AnnotatableFilterMixin:
     fn_filter_parsers: FunctionFilterParsersType
 
-    def _owner_annotation(self, item):
+    def _owner_annotation(self, item) -> Optional[str]:
         """
         Get the annotation by the item's owner.
         """
         return _match_by_user(item, item.user)
 
-    def filter_annotation_contains(self, item, val):
+    def filter_annotation_contains(self, item, val: str) -> bool:
         """
         Test whether `val` is in the owner's annotation.
         """
         owner_annotation = self._owner_annotation(item)
         if owner_annotation is None:
             return False
-        return val in owner_annotation
+        return val.lower() in owner_annotation.lower()
 
     def _add_parsers(self):
         self.fn_filter_parsers.update(

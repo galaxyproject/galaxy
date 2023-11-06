@@ -102,7 +102,6 @@ Activating virtualenv at .venv
 optional arguments:
   -h, --help     show this help message and exit
   -v, --verbose  Display more detailed output
-
 ```
 
 
@@ -147,7 +146,7 @@ Galaxy's data model includes the [galaxy model](https://github.com/galaxyproject
 These two models may be persisted in one combined database (which is the default) or two separate databases (which is enabled by setting the
 [`install_database_connection`](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/webapps/galaxy/config_schema.yml#L157) configuration option). 
 
-These models are represented by migration [branches](https://alembic.sqlalchemy.org/en/latest/branches.html#working-with-branches) (versioning lineages with a common base) labeled as *gxy* for the galaxy model and *tsi* for the install model. If both models are hosted in the same databases, the branches will share the same Alembic version table; otherwise, each database has its own version table. 
+These models are represented by migration [branches](https://alembic.sqlalchemy.org/en/latest/branches.html) (versioning lineages with a common base) labeled as *gxy* for the galaxy model and *tsi* for the install model. If both models are hosted in the same databases, the branches will share the same Alembic version table; otherwise, each database has its own version table. 
 
 Each branch has its own version history, represented by revision scripts located in the branch version directory (`migrations/alembic/versions_gxy` for *gxy* and `migrations/alembic/versions_tsi` for *tsi*). 
 
@@ -198,7 +197,7 @@ You may also combine relative migration identifiers with partial revision identi
 
 `./db_dev.sh upgrade 6a+2`. 
 
-(Ref: [Alembic documentation](https://alembic.sqlalchemy.org/en/latest/tutorial.html#relative-migration-identifiers)
+(Ref: [Alembic documentation](https://alembic.sqlalchemy.org/en/latest/tutorial.html#relative-migration-identifiers))
 
 *Revision identifiers and relative migration identifiers can be used with all the provided scripts.*
 
@@ -320,7 +319,6 @@ Activating virtualenv at .venv
 optional arguments:
   -h, --help     show this help message and exit
   -v, --verbose  Display more detailed output
-
 ```
 
 The output of this command will include the head revisions for both branches:

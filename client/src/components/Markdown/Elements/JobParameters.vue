@@ -6,6 +6,7 @@
 
 <script>
 import JobParameters from "components/JobParameters/JobParameters";
+
 export default {
     components: {
         JobParameters,

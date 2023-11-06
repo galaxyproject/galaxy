@@ -51,7 +51,7 @@ class ToolEntryPointsAPIController(BaseGalaxyAPIController):
             )
 
         if job_id is not None:
-            job = trans.sa_session.query(Job).get(self.decode_id(job_id))
+            job = trans.sa_session.get(Job, self.decode_id(job_id))
             if not self.interactivetool_manager.can_access_job(trans, job):
                 raise exceptions.ItemAccessibilityException()
             entry_points = job.interactivetool_entry_points
@@ -94,10 +94,10 @@ class ToolEntryPointsAPIController(BaseGalaxyAPIController):
             raise exceptions.RequestParameterMissingException("Must supply entry point id")
         try:
             entry_point_id = self.decode_id(id)
-            entry_point = trans.sa_session.query(InteractiveToolEntryPoint).get(entry_point_id)
+            entry_point = trans.sa_session.get(InteractiveToolEntryPoint, entry_point_id)
         except Exception:
-            raise exceptions.RequestParameterInvalidException("entry point '{id}' invalid")
+            raise exceptions.RequestParameterInvalidException("entry point invalid")
         if self.app.interactivetool_manager.can_access_entry_point(trans, entry_point):
             self.app.interactivetool_manager.stop(trans, entry_point)
         else:
-            raise exceptions.ItemAccessibilityException(f"entry point '{id}' is not accessible")
+            raise exceptions.ItemAccessibilityException("entry point is not accessible")

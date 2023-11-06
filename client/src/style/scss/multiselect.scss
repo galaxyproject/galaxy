@@ -1,18 +1,40 @@
 .multiselect {
     font-weight: normal;
-}
-.multiselect .multiselect__option--highlight {
-    background: #dee2e6;
-    color: #2c3143;
-}
-.multiselect__tag {
-    background: #dee2e6;
-    color: #2c3143;
-}
-.multiselect__tag-icon:after {
-    color: white;
-}
-.multiselect__tag-icon:focus,
-.multiselect__tag-icon:hover {
-    background: #132c40;
+    .multiselect__content-wrapper {
+        background: darken($white, 2%);
+        overflow-x: hidden;
+    }
+    .multiselect__input {
+        background: transparent;
+    }
+    .multiselect__option {
+        white-space: normal;
+        font-size: $font-size-base;
+    }
+    .multiselect__option--highlight {
+        background-color: $brand-info;
+        color: $white;
+    }
+    .multiselect__option--selected {
+        background: $brand-primary;
+        color: $brand-light;
+    }
+    .multiselect__tag {
+        min-height: 0;
+        white-space: normal;
+        word-break: break-all;
+    }
+    .multiselect__tags {
+        background: transparent;
+        border: $border-default;
+        min-height: unset;
+        .multiselect__single {
+            background: transparent;
+            color: $text-color;
+            font-size: $font-size-base;
+            overflow: hidden;
+            white-space: normal;
+            word-break: break-all;
+        }
+    }
 }

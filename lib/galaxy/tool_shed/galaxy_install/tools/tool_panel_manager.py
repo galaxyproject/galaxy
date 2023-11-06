@@ -7,7 +7,8 @@ from typing import (
 )
 
 from galaxy.exceptions import RequestParameterInvalidException
-from galaxy.structured_app import MinimalManagerApp
+from galaxy.model.base import transaction
+from galaxy.tool_shed.galaxy_install.client import InstallationTarget
 from galaxy.tool_shed.util.basic_util import strip_path
 from galaxy.tool_shed.util.repository_util import get_repository_owner
 from galaxy.tool_shed.util.shed_util_common import get_tool_panel_config_tool_path_install_dir
@@ -24,9 +25,9 @@ log = logging.getLogger(__name__)
 
 
 class ToolPanelManager:
-    app: MinimalManagerApp
+    app: InstallationTarget
 
-    def __init__(self, app: MinimalManagerApp):
+    def __init__(self, app: InstallationTarget):
         self.app = app
 
     def add_to_shed_tool_config(self, shed_tool_conf_dict: Dict[str, Any], elem_list: list) -> None:
@@ -134,7 +135,7 @@ class ToolPanelManager:
             self.app.toolbox.update_shed_config(shed_tool_conf_dict)
             self.add_to_shed_tool_config(shed_tool_conf_dict, elem_list)
 
-    def config_elems_to_xml_file(self, config_elems, config_filename, tool_path, tool_cache_data_dir=None):
+    def config_elems_to_xml_file(self, config_elems, config_filename, tool_path, tool_cache_data_dir=None) -> None:
         """
         Persist the current in-memory list of config_elems to a file named by the
         value of config_filename.
@@ -514,8 +515,12 @@ class ToolPanelManager:
         # activated or reinstalled.
         tool_panel_dict = self.generate_tool_panel_dict_from_shed_tool_conf_entries(repository)
         repository.metadata_["tool_panel_section"] = tool_panel_dict
-        self.app.install_model.context.add(repository)
-        self.app.install_model.context.flush()
+
+        session = self.app.install_model.context
+        session.add(repository)
+        with transaction(session):
+            session.commit()
+
         # Create a list of guids for all tools that will be removed from the in-memory tool panel
         # and config file on disk.
         guids_to_remove = list(tool_panel_dict.keys())

@@ -1,5 +1,5 @@
-import $ from "jquery";
 import Backbone from "backbone";
+import $ from "jquery";
 
 /**
  * Stringifies a number adding commas for digit grouping as per North America.

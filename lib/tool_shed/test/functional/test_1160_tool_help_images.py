@@ -1,9 +1,7 @@
 import logging
 
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from ..base import common
+from ..base.twilltestcase import ShedTwillTestCase
 
 log = logging.getLogger(__name__)
 
@@ -22,6 +20,8 @@ category_description = "Test 0140 Tool Help Images"
 
 class TestToolHelpImages(ShedTwillTestCase):
     """Test features related to tool help images."""
+
+    requires_galaxy = True
 
     def test_0000_initiate_users(self):
         """Create necessary user accounts."""
@@ -47,16 +47,10 @@ class TestToolHelpImages(ShedTwillTestCase):
         )
         if self.repository_is_new(repository):
             # Upload htseq_count.tar to the repository if it hasn't already been populated.
-            self.upload_file(
+            self.commit_tar_to_repository(
                 repository,
-                filename="htseq_count/htseq_count.tar",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=False,
-                remove_repo_files_not_in_tar=False,
+                "htseq_count/htseq_count.tar",
                 commit_message="Uploaded htseq_count.tar.",
-                strings_displayed=[],
-                strings_not_displayed=[],
             )
 
     def test_0010_load_tool_page(self):
@@ -73,6 +67,8 @@ class TestToolHelpImages(ShedTwillTestCase):
         # should be the tool that contains a link to the image.
         repository_metadata = self._db_repository(repository).metadata_revisions[0].metadata
         tool_path = repository_metadata["tools"][0]["tool_config"]
-        self.load_display_tool_page(
-            repository, tool_path, changeset_revision, strings_displayed=[image_path], strings_not_displayed=[]
-        )
+        # V2 is not going to have this page right? So... do we need this test at all or that route? Likely not?
+        if self._browser.is_twill and not self.is_v2:
+            self.load_display_tool_page(
+                repository, tool_path, changeset_revision, strings_displayed=[image_path], strings_not_displayed=[]
+            )

@@ -4,6 +4,7 @@
 
 <script>
 import GridShared from "mvc/grid/grid-shared";
+
 export default {
     props: {
         actionId: {

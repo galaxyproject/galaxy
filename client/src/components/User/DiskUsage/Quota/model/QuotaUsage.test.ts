@@ -1,20 +1,20 @@
-import { DEFAULT_QUOTA_SOURCE_LABEL, QuotaUsage, type QuotaUsageResponse } from "./QuotaUsage";
+import { DEFAULT_QUOTA_SOURCE_LABEL, QuotaUsage, type UserQuotaUsageData } from "./QuotaUsage";
 
-const RAW_DEFAULT_QUOTA_USAGE: QuotaUsageResponse = {
+const RAW_DEFAULT_QUOTA_USAGE: UserQuotaUsageData = {
     quota_source_label: undefined,
     quota_bytes: 68468436,
     total_disk_usage: 4546654,
     quota_percent: 20,
 };
 
-const RAW_LIMITED_SOURCE_QUOTA_USAGE: QuotaUsageResponse = {
+const RAW_LIMITED_SOURCE_QUOTA_USAGE: UserQuotaUsageData = {
     quota_source_label: "The source",
     quota_bytes: 68468436,
     total_disk_usage: 4546654,
     quota_percent: 20,
 };
 
-const RAW_UNLIMITED_SOURCE_QUOTA_USAGE: QuotaUsageResponse = {
+const RAW_UNLIMITED_SOURCE_QUOTA_USAGE: UserQuotaUsageData = {
     quota_source_label: "The unlimited source",
     quota_bytes: undefined,
     total_disk_usage: 4546654,

@@ -1,35 +1,37 @@
 <template>
     <div class="markdown-wrapper">
-        <loading-span v-if="loading" />
+        <LoadingSpan v-if="loading" />
         <div v-else>
             <div>
-                <sts-download-button
+                <StsDownloadButton
                     v-if="effectiveExportLink"
                     class="float-right markdown-pdf-export"
-                    variant="link"
                     :fallback-url="exportLink"
                     :download-endpoint="downloadEndpoint"
-                    title="Download PDF"></sts-download-button>
+                    size="sm"
+                    title="Generate PDF">
+                </StsDownloadButton>
                 <b-button
                     v-if="!readOnly"
-                    v-b-tooltip.hover.bottom
-                    class="float-right markdown-edit"
-                    title="Edit Markdown"
-                    variant="link"
+                    v-b-tooltip.hover
+                    class="float-right markdown-edit mr-2"
                     role="button"
+                    size="sm"
+                    title="Edit Markdown"
                     @click="$emit('onEdit')">
-                    <font-awesome-icon icon="edit" />
+                    Edit
+                    <FontAwesomeIcon icon="edit" />
                 </b-button>
-                <h1 class="float-right align-middle mr-1 mt-2 h-md">Galaxy {{ markdownConfig.model_class }}</h1>
-                <span class="float-left font-weight-light mb-3">
-                    <small>Title: {{ markdownConfig.title || markdownConfig.model_class }}</small>
-                    <br />
-                    <small>Created by {{ markdownConfig.username }}</small>
+                <h1 class="float-right align-middle mr-2 mt-1 h-md">Galaxy {{ markdownConfig.model_class }}</h1>
+                <span class="float-left font-weight-light">
+                    <h1 class="text-break align-middle">
+                        Title: {{ markdownConfig.title || markdownConfig.model_class }}
+                    </h1>
                 </span>
             </div>
-            <b-badge variant="info" class="w-100 rounded mb-3">
-                <div class="float-left m-1">Published with Galaxy {{ version }} on {{ time }}</div>
-                <div class="float-right m-1">Identifier {{ markdownConfig.id }}</div>
+            <b-badge variant="info" class="w-100 rounded mb-3 white-space-normal">
+                <div class="float-left m-1 text-break">Generated with Galaxy {{ version }} on {{ time }}</div>
+                <div class="float-right m-1">Identifier: {{ markdownConfig.id }}</div>
             </b-badge>
             <div>
                 <b-alert v-if="markdownErrors.length > 0" variant="warning" show>
@@ -41,7 +43,7 @@
             </div>
             <div v-for="(obj, index) in markdownObjects" :key="index" class="markdown-components">
                 <p v-if="obj.name == 'default'" class="text-justify m-2" v-html="obj.content" />
-                <markdown-container
+                <MarkdownContainer
                     v-else
                     :name="obj.name"
                     :args="obj.args"
@@ -59,18 +61,18 @@
 </template>
 
 <script>
-import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
-import store from "store";
-import MarkdownIt from "markdown-it";
-import markdownItRegexp from "markdown-it-regexp";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faDownload, faEdit } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import BootstrapVue from "bootstrap-vue";
+import MarkdownIt from "markdown-it";
+import markdownItRegexp from "markdown-it-regexp";
+import store from "store";
+import Vue from "vue";
 
+import MarkdownContainer from "./MarkdownContainer.vue";
 import LoadingSpan from "components/LoadingSpan.vue";
 import StsDownloadButton from "components/StsDownloadButton.vue";
-import MarkdownContainer from "./MarkdownContainer.vue";
 
 const FUNCTION_VALUE_REGEX = `\\s*(?:[\\w_\\-]+|\\"[^\\"]+\\"|\\'[^\\']+\\')\\s*`;
 const FUNCTION_CALL = `\\s*[\\w\\|]+\\s*=` + FUNCTION_VALUE_REGEX;
@@ -136,8 +138,13 @@ export default {
             return this.enable_beta_markdown_export ? this.exportLink : null;
         },
         time() {
-            const generateTime = this.markdownConfig.generate_time;
+            let generateTime = this.markdownConfig.generate_time;
             if (generateTime) {
+                if (!generateTime.endsWith("Z")) {
+                    // We don't have tzinfo, but this will always be UTC coming
+                    // from Galaxy so append Z to assert that prior to parsing
+                    generateTime += "Z";
+                }
                 const date = new Date(generateTime);
                 return date.toLocaleString("default", {
                     day: "numeric",
@@ -145,6 +152,8 @@ export default {
                     year: "numeric",
                     minute: "numeric",
                     hour: "numeric",
+                    timeZone: "UTC",
+                    timeZoneName: "short",
                 });
             }
             return "unavailable";
@@ -241,9 +250,6 @@ export default {
                 args: args,
                 content: content,
             };
-        },
-        onDownload() {
-            window.location.href = this.exportLink;
         },
     },
 };

@@ -357,8 +357,6 @@ class AttributeValueSplitterFilter(Filter):
     """
     Filters a list of attribute-value pairs to be unique attribute names.
 
-    DEPRECATED: just replace with 2 rounds of MultipleSplitterFilter
-
     Type: attribute_value_splitter
 
     Required Attributes:
@@ -570,7 +568,7 @@ class DynamicOptions:
         self._tool_data_table = None
         self.elem = elem
         self.column_elem = elem.find("column")
-        self.tool_data_table  # Need to touch tool data table once to populate self.columns
+        self.tool_data_table  # noqa: B018 Need to touch tool data table once to populate self.columns
 
         # Options are defined by parsing tabular text data from a data file
         # on disk, a dataset, or the value of another parameter

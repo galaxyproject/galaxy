@@ -23,8 +23,9 @@
 </template>
 
 <script>
-import SelectionDialogMixin from "./SelectionDialogMixin";
 import { errorMessageAsString } from "utils/simple-error";
+
+import SelectionDialogMixin from "./SelectionDialogMixin";
 
 export default {
     mixins: [SelectionDialogMixin],

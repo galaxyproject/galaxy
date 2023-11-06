@@ -3,13 +3,16 @@ import logging
 import os
 from typing import (
     Dict,
+    List,
     Optional,
+    Union,
 )
 
 from typing_extensions import Protocol
 
 from galaxy import util
 from galaxy.structured_app import StructuredApp
+from galaxy.tool_shed.galaxy_install.client import DataManagersInterface
 from galaxy.tool_util.data import (
     BundleProcessingOptions,
     OutputDataset,
@@ -23,16 +26,17 @@ from galaxy.util import Element
 log = logging.getLogger(__name__)
 
 
-class DataManagers:
+class DataManagers(DataManagersInterface):
     data_managers: Dict[str, "DataManager"]
     managed_data_tables: Dict[str, "DataManager"]
+    __reload_count: int
 
-    def __init__(self, app: StructuredApp, xml_filename=None):
+    def __init__(self, app: StructuredApp, xml_filename=None, reload_count: Optional[int] = None):
         self.app = app
         self.data_managers = {}
         self.managed_data_tables = {}
         self.tool_path = None
-        self._reload_count = 0
+        self.__reload_count = reload_count or 0
         self.filename = xml_filename or self.app.config.data_manager_config_file
         for filename in util.listify(self.filename):
             if not filename:
@@ -44,6 +48,10 @@ class DataManagers:
             except OSError as exc:
                 if exc.errno != errno.ENOENT or self.app.config.is_set("shed_data_manager_config_file"):
                     raise
+
+    @property
+    def _reload_count(self) -> int:
+        return self.__reload_count
 
     def load_from_xml(self, xml_filename, store_tool_path=True) -> None:
         try:
@@ -102,7 +110,7 @@ class DataManagers:
     def get_manager(self, *args, **kwds):
         return self.data_managers.get(*args, **kwds)
 
-    def remove_manager(self, manager_ids):
+    def remove_manager(self, manager_ids: Union[str, List[str]]) -> None:
         if not isinstance(manager_ids, list):
             manager_ids = [manager_ids]
         for manager_id in manager_ids:
@@ -236,9 +244,9 @@ class DataManager:
     def write_bundle(
         self,
         out_data: Dict[str, OutputDataset],
-    ) -> None:
+    ) -> Dict[str, OutputDataset]:
         tool_data_tables = self.data_managers.app.tool_data_tables
-        tool_data_tables.write_bundle(
+        return tool_data_tables.write_bundle(
             out_data,
             self.processor_description,
             self.repo_info,

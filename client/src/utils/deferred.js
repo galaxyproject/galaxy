@@ -1,8 +1,8 @@
 /**
  *  This class defines a queue to ensure that multiple deferred callbacks are executed sequentially.
  */
-import $ from "jquery";
 import Backbone from "backbone";
+import $ from "jquery";
 import Utils from "utils/utils";
 
 export default Backbone.Model.extend({

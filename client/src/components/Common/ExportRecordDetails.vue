@@ -1,13 +1,20 @@
 <script setup>
-import { computed } from "vue";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import {
+    faCheckCircle,
+    faClock,
+    faExclamationCircle,
+    faExclamationTriangle,
+    faLink,
+} from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BCard, BCardTitle } from "bootstrap-vue";
 import LoadingSpan from "components/LoadingSpan";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faExclamationCircle, faExclamationTriangle, faCheckCircle, faClock } from "@fortawesome/free-solid-svg-icons";
+import { computed } from "vue";
+
 import { ExportRecordModel } from "./models/exportRecordModel";
 
-library.add(faExclamationCircle, faExclamationTriangle, faCheckCircle, faClock);
+library.add(faExclamationCircle, faExclamationTriangle, faCheckCircle, faClock, faLink);
 
 const props = defineProps({
     record: {
@@ -28,7 +35,7 @@ const props = defineProps({
     },
 });
 
-const emit = defineEmits(["onReimport", "onDownload", "onActionMessageDismissed"]);
+const emit = defineEmits(["onReimport", "onDownload", "onCopyDownloadLink", "onActionMessageDismissed"]);
 
 const title = computed(() => (props.record.isReady ? `Exported` : `Export started`));
 const preparingMessage = computed(
@@ -43,25 +50,29 @@ function downloadObject() {
     emit("onDownload", props.record);
 }
 
+function copyDownloadLink() {
+    emit("onCopyDownloadLink", props.record);
+}
+
 function onMessageDismissed() {
     emit("onActionMessageDismissed");
 }
 </script>
 
 <template>
-    <b-card class="export-record-details">
-        <b-card-title>
+    <BCard class="export-record-details">
+        <BCardTitle>
             <b>{{ title }}</b> {{ props.record.elapsedTime }}
-        </b-card-title>
+        </BCardTitle>
         <p v-if="!props.record.isPreparing">
             Format: <b class="record-archive-format">{{ props.record.modelStoreFormat }}</b>
         </p>
         <span v-if="props.record.isPreparing">
-            <loading-span :message="preparingMessage" />
+            <LoadingSpan :message="preparingMessage" />
         </span>
         <div v-else>
             <div v-if="props.record.hasFailed">
-                <font-awesome-icon
+                <FontAwesomeIcon
                     icon="exclamation-circle"
                     class="text-danger record-failed-icon"
                     title="Export failed" />
@@ -69,14 +80,14 @@ function onMessageDismissed() {
                     Something failed during this export. Please try again and if the problem persist contact your
                     administrator.
                 </span>
-                <b-alert show variant="danger">{{ props.record.errorMessage }}</b-alert>
+                <BAlert show variant="danger">{{ props.record.errorMessage }}</BAlert>
             </div>
             <div v-else-if="props.record.isUpToDate" title="Up to date">
-                <font-awesome-icon icon="check-circle" class="text-success record-up-to-date-icon" />
+                <FontAwesomeIcon icon="check-circle" class="text-success record-up-to-date-icon" />
                 <span> This export record contains the latest changes of the {{ props.objectType }}. </span>
             </div>
             <div v-else>
-                <font-awesome-icon icon="exclamation-triangle" class="text-warning record-outdated-icon" />
+                <FontAwesomeIcon icon="exclamation-triangle" class="text-warning record-outdated-icon" />
                 <span>
                     This export is outdated and contains the changes of this {{ props.objectType }} from
                     {{ props.record.elapsedTime }}.
@@ -85,18 +96,18 @@ function onMessageDismissed() {
 
             <p v-if="props.record.canExpire" class="mt-3">
                 <span v-if="props.record.hasExpired">
-                    <font-awesome-icon icon="clock" class="text-danger record-expired-icon" /> This download link has
+                    <FontAwesomeIcon icon="clock" class="text-danger record-expired-icon" /> This download link has
                     expired.
                 </span>
                 <span v-else>
-                    <font-awesome-icon icon="clock" class="text-warning record-expiration-warning-icon" /> This download
+                    <FontAwesomeIcon icon="clock" class="text-warning record-expiration-warning-icon" /> This download
                     link expires {{ props.record.expirationElapsedTime }}.
                 </span>
             </p>
 
             <div v-if="props.record.isReady">
                 <p class="mt-3">You can do the following actions with this {{ props.objectType }} export:</p>
-                <b-alert
+                <BAlert
                     v-if="props.actionMessage !== null"
                     :variant="props.actionMessageVariant"
                     show
@@ -104,7 +115,7 @@ function onMessageDismissed() {
                     dismissible
                     @dismissed="onMessageDismissed">
                     {{ props.actionMessage }}
-                </b-alert>
+                </BAlert>
                 <div v-else class="actions">
                     <b-button
                         v-if="props.record.canDownload"
@@ -112,6 +123,14 @@ function onMessageDismissed() {
                         variant="primary"
                         @click="downloadObject">
                         Download
+                    </b-button>
+                    <b-button
+                        v-if="props.record.canDownload"
+                        title="Copy Download Link"
+                        size="sm"
+                        variant="link"
+                        @click.stop="copyDownloadLink">
+                        <FontAwesomeIcon icon="link" />
                     </b-button>
                     <b-button
                         v-if="props.record.canReimport"
@@ -123,5 +142,5 @@ function onMessageDismissed() {
                 </div>
             </div>
         </div>
-    </b-card>
+    </BCard>
 </template>

@@ -58,21 +58,23 @@ class BaseParserBuilder(abc.ABC):
         self.subparsers = parser.add_subparsers(required=subcommand_required)
         self._init_arg_parsers()
 
-    def add_upgrade_command(self):
+    def add_upgrade_command(self, dev_options=False):
+        parents = self._get_upgrade_downgrade_arg_parsers(dev_options)
         parser = self._add_parser(
             "upgrade",
             self._cmd.upgrade,
             "Upgrade to a later version",
-            parents=[self._sql_arg_parser],
+            parents=parents,
         )
         parser.add_argument("revision", help="Revision identifier or release tag", nargs="?")
 
-    def add_downgrade_command(self):
+    def add_downgrade_command(self, dev_options=False):
+        parents = self._get_upgrade_downgrade_arg_parsers(dev_options)
         parser = self._add_parser(
             "downgrade",
             self._cmd.downgrade,
             "Revert to a previous version",
-            parents=[self._sql_arg_parser],
+            parents=parents,
         )
         parser.add_argument("revision", help="Revision identifier or release tag")
 
@@ -131,6 +133,13 @@ class BaseParserBuilder(abc.ABC):
     def _init_arg_parsers(self):
         self._verbose_arg_parser = self._make_verbose_arg_parser()
         self._sql_arg_parser = self._make_sql_arg_parser()
+        self._repair_arg_parser = self._make_repair_arg_parser()
+
+    def _get_upgrade_downgrade_arg_parsers(self, dev_options):
+        parsers = [self._sql_arg_parser]
+        if dev_options:
+            parsers.append(self._make_repair_arg_parser())
+        return parsers
 
     def _make_verbose_arg_parser(self):
         parser = ArgumentParser(add_help=False)
@@ -143,6 +152,20 @@ class BaseParserBuilder(abc.ABC):
             "--sql",
             action="store_true",
             help="Don't emit SQL to database - dump to standard output/file instead. See Alembic docs on offline mode.",
+        )
+        return parser
+
+    def _make_repair_arg_parser(self):
+        parser = ArgumentParser(add_help=False)
+        parser.add_argument(
+            "--repair",
+            action="store_true",
+            help="""Skip revisions that conflict with the current state of the database (examples of
+            conflict: creating an object that exists or dropping an object that does not exist).
+            Note: implicitly created objects (such as those created by Alembic as part of ALTER
+            statement workaround) that may have been left over will still raise an error. Such
+            objects must be removed manually.
+            """,
         )
         return parser
 
@@ -174,6 +197,7 @@ class BaseDbScript(abc.ABC):
         command.revision(self.alembic_config, message=args.message, rev_id=args.rev_id, head=head)
 
     def upgrade(self, args: Namespace) -> None:
+        self._process_repair_arg(args)
         if args.revision:
             revision = self._parse_revision(args.revision)
             self._upgrade_to_revision(revision, args.sql)
@@ -181,6 +205,7 @@ class BaseDbScript(abc.ABC):
             self._upgrade_to_head(args.sql)
 
     def downgrade(self, args: Namespace) -> None:
+        self._process_repair_arg(args)
         revision = self._parse_revision(args.revision)
         command.downgrade(self.alembic_config, revision, args.sql)
 
@@ -226,6 +251,10 @@ class BaseDbScript(abc.ABC):
     def _revision_tags(self):
         # Subclasses that have revision tags should overwrite this method.
         return {}
+
+    def _process_repair_arg(self, args: Namespace) -> None:
+        if "repair" in args and args.repair:
+            self.alembic_config.set_main_option("repair", "1")
 
 
 class BaseCommand(abc.ABC):

@@ -40,6 +40,7 @@
 
 <script>
 import { prependPath } from "utils/redirect";
+
 import { downloadUrlMixin } from "./mixins.js";
 
 export default {

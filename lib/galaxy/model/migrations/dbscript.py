@@ -34,8 +34,10 @@ REVISION_TAGS = {
     "22.01": "base",
     "release_22.05": "186d4835587b",
     "22.05": "186d4835587b",
-    "release_23.0": "c39f1de47a04",
-    "23.0": "c39f1de47a04",
+    "release_23.0": "caa7742f7bca",
+    "23.0": "caa7742f7bca",
+    "release_23.1": "e93c5d0b47a9",
+    "23.1": "e93c5d0b47a9",
 }
 
 

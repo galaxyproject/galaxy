@@ -18,6 +18,7 @@ from galaxy import (
 )
 from galaxy.exceptions import Conflict
 from galaxy.managers import users
+from galaxy.managers.users import get_user_by_email
 from galaxy.security.validate_user_input import (
     validate_email,
     validate_publicname,
@@ -188,7 +189,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin):
                 message, status = self.resend_activation_email(trans, user.email, user.username)
                 return self.message_exception(trans, message, sanitize=False)
         else:  # activation is OFF
-            pw_expires = trans.app.config.password_expiration_period
+            pw_expires = getattr(trans.app.config, "password_expiration_period", None)
             if pw_expires and user.last_password_change < datetime.today() - pw_expires:
                 # Password is expired, we don't log them in.
                 return {
@@ -205,7 +206,7 @@ class User(BaseUIController, UsesFormDefinitionsMixin):
         return {"message": "Success.", "redirect": self.__get_redirect_url(redirect)}
 
     @web.expose
-    def resend_verification(self, trans):
+    def resend_verification(self, trans, **kwargs):
         """
         Exposed function for use outside of the class. E.g. when user click on the resend link in the masthead.
         """
@@ -284,39 +285,37 @@ class User(BaseUIController, UsesFormDefinitionsMixin):
         if email is not None:
             email = unquote(email)
         activation_token = params.get("activation_token", None)
+        index_url = web.url_for(controller="root", action="index")
 
         if email is None or activation_token is None:
             #  We don't have the email or activation_token, show error.
             return trans.show_error_message(
-                "You are using an invalid activation link. Try to log in and we will send you a new activation email. <br><a href='%s'>Go to login page.</a>"
-            ) % web.url_for(controller="root", action="index")
+                f"You are using an invalid activation link. Try to log in and we will send you a new activation email. <br><a href='{index_url}'>Go to login page.</a>"
+            )
         else:
             # Find the user
-            user = (
-                trans.sa_session.query(trans.app.model.User).filter(trans.app.model.User.table.c.email == email).first()
-            )
+            user = get_user_by_email(trans.sa_session, email)
             if not user:
                 # Probably wrong email address
                 return trans.show_error_message(
-                    "You are using an invalid activation link. Try to log in and we will send you a new activation email. <br><a href='%s'>Go to login page.</a>"
-                ) % web.url_for(controller="root", action="index")
+                    f"You are using an invalid activation link. Try to log in and we will send you a new activation email. <br><a href='{index_url}'>Go to login page.</a>"
+                )
             # If the user is active already don't try to activate
             if user.active is True:
                 return trans.show_ok_message(
-                    "Your account is already active. Nothing has changed. <br><a href='%s'>Go to login page.</a>"
-                ) % web.url_for(controller="root", action="index")
-            if user.activation_token == activation_token:
+                    f"Your account is already active. Nothing has changed. <br><a href='{index_url}'>Go to login page.</a>"
+                )
+            if user.activation_token == activation_token[:64]:
                 user.activation_token = None
                 self.user_manager.activate(user)
                 return trans.show_ok_message(
-                    "Your account has been successfully activated! <br><a href='%s'>Go to login page.</a>"
-                ) % web.url_for(controller="root", action="index")
+                    f"Your account has been successfully activated! <br><a href='{index_url}'>Go to login page.</a>"
+                )
             else:
                 #  Tokens don't match. Activation is denied.
                 return trans.show_error_message(
-                    "You are using an invalid activation link. Try to log in and we will send you a new activation email. <br><a href='%s'>Go to login page.</a>"
-                ) % web.url_for(controller="root", action="index")
-        return
+                    f"You are using an invalid activation link. Try to log in and we will send you a new activation email. <br><a href='{index_url}'>Go to login page.</a>"
+                )
 
     @expose_api_anonymous_and_sessionless
     def change_password(self, trans, payload=None, **kwd):

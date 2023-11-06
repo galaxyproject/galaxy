@@ -24,7 +24,7 @@ class TestUserLibraryImport(SeleniumIntegrationTestCase):
     @selenium_test
     def test_user_library_import_dir(self):
         # create new user, create user_library_import_dir, create new email-dir, insert a random text file
-        email = self.get_logged_in_user()["email"]
+        email = self.get_user_email()
         current_user_import_dir = os.path.join(self.user_import_dir(), email)
         os.makedirs(current_user_import_dir)
         random_filename = self._get_random_name()
@@ -46,7 +46,7 @@ class TestUserLibraryImport(SeleniumIntegrationTestCase):
     @selenium_test
     def test_user_library_import_dir_warning(self):
         # do not create email-dir, assert just warning
-        email = self.get_logged_in_user()["email"]
+        email = self.get_user_email()
         self.create_lib_and_permit_adding(email)
 
         self.libraries_open_with_name(self.name)
@@ -84,6 +84,7 @@ class TestUserLibraryImport(SeleniumIntegrationTestCase):
     def create_lib_and_permit_adding(self, email):
         # logout of the current user, only admin can create new libraries
         self.logout()
+        self.admin_login()
         self.create_new_library()
         self.libraries_index_search_for(self.name)
         # open permission manage dialog

@@ -60,9 +60,11 @@ def lint_tests(tool_xml, lint_ctx):
         _check_asserts(test_idx, test.findall(".//assert_contents"), lint_ctx)
 
         # check if expect_num_outputs is set if there are outputs with filters
+        # (except for tests with expect_failure .. which can't have test outputs)
         filter = tool_xml.findall("./outputs//filter")
         if len(filter) > 0 and "expect_num_outputs" not in test.attrib:
-            lint_ctx.warn("Test should specify 'expect_num_outputs' if outputs have filters", node=test)
+            if not asbool(test.attrib.get("expect_failure", False)):
+                lint_ctx.warn("Test should specify 'expect_num_outputs' if outputs have filters", node=test)
 
         # really simple test that test parameters are also present in the inputs
         for param in test.findall("param"):
@@ -145,7 +147,7 @@ def lint_tests(tool_xml, lint_ctx):
                                 node=output,
                             )
 
-        if "expect_failure" in test.attrib and asbool(test.attrib["expect_failure"]):
+        if asbool(test.attrib.get("expect_failure", False)):
             if found_output_test:
                 lint_ctx.error(f"Test {test_idx}: Cannot specify outputs in a test expecting failure.", node=test)
                 continue
@@ -185,23 +187,11 @@ def _check_asserts(test_idx, assertions, lint_ctx):
                 lint_ctx.error(f"Test {test_idx}: unknown assertion '{a.tag}'", node=a)
                 continue
             assert_function_sig = signature(asserts.assertion_functions[assert_function_name])
-            # check type of the attributes (int, float ...)
+            # check of the attributes
             for attrib in a.attrib:
                 if attrib not in assert_function_sig.parameters:
                     lint_ctx.error(f"Test {test_idx}: unknown attribute '{attrib}' for '{a.tag}'", node=a)
                     continue
-                annotation = assert_function_sig.parameters[attrib].annotation
-                annotation = _handle_optionals(annotation)
-                if annotation is not Parameter.empty:
-                    try:
-                        annotation(a.attrib[attrib])
-                    except TypeError:
-                        raise Exception(f"Faild to instantiate {attrib} for {assert_function_name}")
-                    except ValueError:
-                        lint_ctx.error(
-                            f"Test {test_idx}: attribute '{attrib}' for '{a.tag}' needs to be '{annotation.__name__}' got '{a.attrib[attrib]}'",
-                            node=a,
-                        )
             # check missing required attributes
             for p in assert_function_sig.parameters:
                 if p in ["output", "output_bytes", "verify_assertions_function", "children"]:

@@ -31,6 +31,11 @@ jobs:
       - uses: actions/checkout@v3
         with:
           path: 'galaxy root'
+      - uses: actions/setup-node@v3
+        with:
+          node-version: '18.12.1'
+          cache: 'yarn'
+          cache-dependency-path: 'galaxy root/client/yarn.lock'
       - name: Clone galaxyproject/galaxy-test-data
         uses: actions/checkout@v3
         with:
@@ -63,7 +68,7 @@ jobs:
       - name: Run tests
         run: |
           mapfile -t TOOL_ARRAY < tool_list.txt
-          planemo test --galaxy_python_version ${{ matrix.python-version }} --galaxy_root 'galaxy root' "${TOOL_ARRAY[@]}"
+          planemo test --biocontainers --galaxy_python_version ${{ matrix.python-version }} --galaxy_root 'galaxy root' "${TOOL_ARRAY[@]}"
       - uses: actions/upload-artifact@v3
         if: failure()
         with:

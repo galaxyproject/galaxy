@@ -173,8 +173,7 @@ class BlastXml(GenericXml):
                     # Enough to check <BlastOutput_program> and <BlastOutput_version> match
                     h.close()
                     raise ValueError(
-                        "BLAST XML headers don't match for %s and %s - have:\n%s\n...\n\nAnd:\n%s\n...\n"
-                        % (split_files[0], f, old_header[:300], header[:300])
+                        f"BLAST XML headers don't match for {split_files[0]} and {f} - have:\n{old_header[:300]}\n...\n\nAnd:\n{header[:300]}\n...\n"
                     )
                 else:
                     out.write("    <Iteration>\n")

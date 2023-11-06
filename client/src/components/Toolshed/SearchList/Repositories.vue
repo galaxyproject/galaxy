@@ -12,14 +12,16 @@
             </template>
         </b-table>
         <div v-if="noResultsFound" class="unavailable-message">No matching repositories found.</div>
-        <loading-span v-if="pageLoading" message="Loading repositories" />
+        <LoadingSpan v-if="pageLoading" message="Loading repositories" />
     </div>
 </template>
 <script>
-import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
-import { Services } from "../services";
 import LoadingSpan from "components/LoadingSpan";
+import Vue from "vue";
+
+import { Services } from "../services";
+
 import RepositoryDetails from "../RepositoryDetails/Index.vue";
 
 Vue.use(BootstrapVue);

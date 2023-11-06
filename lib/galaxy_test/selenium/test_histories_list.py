@@ -80,14 +80,14 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         self.assert_histories_in_grid([self.history2_name], False)
 
         self.histories_click_advanced_search()
-        self.select_filter("deleted", "True")
+        self.select_filter("status", "deleted")
         self.sleep_for(self.wait_types.UX_RENDER)
 
         # Restore the history
         self.click_grid_popup_option(self.history2_name, "Undelete")
 
         self.assert_grid_histories_are([])
-        self.select_filter("deleted", "False")
+        self.select_filter("status", "active")
 
         self.assert_histories_in_grid([self.history2_name])
 
@@ -106,7 +106,7 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         self.assert_histories_in_grid([self.history4_name], False)
 
         self.histories_click_advanced_search()
-        self.select_filter("deleted", "True")
+        self.select_filter("status", "deleted")
 
         self.assert_histories_in_grid([self.history4_name])
 
@@ -125,7 +125,7 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         self.assert_histories_in_grid([self.history2_name, self.history3_name], False)
 
         self.histories_click_advanced_search()
-        self.select_filter("deleted", "True")
+        self.select_filter("status", "deleted")
         self.sleep_for(self.wait_types.UX_RENDER)
 
         # Restore multiple histories
@@ -135,7 +135,7 @@ class TestSavedHistories(SharedStateSeleniumTestCase):
         self.assert_grid_histories_are([])
         # Following msg popups but goes away and so can cause transient errors.
         # self.wait_for_selector_visible('.donemessage')
-        self.select_filter("deleted", "False")
+        self.select_filter("status", "active")
 
         self.assert_histories_in_grid([self.history2_name, self.history3_name])
 

@@ -11,9 +11,9 @@
 </template>
 
 <script>
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faChevronUp } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 library.add(faChevronUp);
 
@@ -30,8 +30,8 @@ export default {
 
 <style lang="scss" scoped>
 .back-to-top {
-    bottom: 0.5rem;
-    left: 0.5rem;
+    bottom: 0.25rem;
+    right: 0.25rem;
     position: absolute;
     opacity: 0;
     transition: opacity 0.4s;

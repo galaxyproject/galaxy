@@ -41,7 +41,8 @@ def main():
 
         # grep comments
         grep_comments = ["grep", "^#"]
-        exit_code = subprocess.call(grep_comments, stdout=output_fh)
+        exit_code = subprocess.call(grep_comments, stdin=input_fh, stdout=output_fh)
+        input_fh.seek(0)
         if exit_code not in [0, 1]:
             stop_err("Searching for comment lines failed")
 

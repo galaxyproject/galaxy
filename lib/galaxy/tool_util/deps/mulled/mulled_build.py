@@ -18,6 +18,12 @@ import string
 import subprocess
 import sys
 from sys import platform as _platform
+from typing import (
+    Any,
+    Dict,
+    Iterable,
+    List,
+)
 
 import yaml
 
@@ -25,6 +31,7 @@ from galaxy.tool_util.deps import installable
 from galaxy.tool_util.deps.conda_util import (
     best_search_result,
     CondaContext,
+    CondaTarget,
 )
 from galaxy.tool_util.deps.docker_util import command_list as docker_command_list
 from galaxy.util import (
@@ -40,7 +47,7 @@ from .util import (
     conda_build_target_str,
     create_repository,
     default_mulled_conda_channels_from_env,
-    get_file_from_recipe_url,
+    get_files_from_conda_package,
     PrintProgress,
     quay_repository,
     v1_image_name,
@@ -150,21 +157,27 @@ def conda_versions(pkg_name, file_name):
     return ret
 
 
-def get_conda_hits_for_targets(targets, conda_context):
+def get_conda_hits_for_targets(targets: Iterable[CondaTarget], conda_context: CondaContext) -> List[Dict[str, Any]]:
     search_results = (best_search_result(t, conda_context, platform="linux-64")[0] for t in targets)
     return [r for r in search_results if r]
 
 
-def base_image_for_targets(targets, conda_context):
+def base_image_for_targets(targets: Iterable[CondaTarget], conda_context: CondaContext) -> str:
+    """
+    determine base image (DEFAULT_BASE_IMAGE/DEFAULT_EXTENDED_BASE_IMAGE) for a
+    list of targets by inspecting the conda package (i.e. if the use of an
+    extended image is indicated in info/about.json or info/recipe/meta.yaml
+    """
     hits = get_conda_hits_for_targets(targets, conda_context)
     for hit in hits:
         try:
-            tarball = get_file_from_recipe_url(hit["url"])
-            meta_content = unicodify(tarball.extractfile("info/about.json").read())
-            if json.loads(meta_content).get("extra", {}).get("container", {}).get("extended-base", False):
+            content_dict = get_files_from_conda_package(hit["url"], ["info/about.json", "info/recipe/meta.yaml"])
+            if "info/about.json" in content_dict and json.loads(unicodify(content_dict["info/about.json"])).get(
+                "extra", {}
+            ).get("container", {}).get("extended-base", False):
                 return DEFAULT_EXTENDED_BASE_IMAGE
-            elif (
-                yaml.safe_load(unicodify(tarball.extractfile("info/recipe/meta.yaml").read()))
+            elif "info/recipe/meta.yaml" in content_dict and (
+                yaml.safe_load(unicodify(content_dict["info/recipe/meta.yaml"]))
                 .get("extra", {})
                 .get("container", {})
                 .get("extended-base", False)
@@ -186,7 +199,7 @@ class BuildExistsException(Exception):
 
 
 def mull_targets(
-    targets,
+    targets: List[CondaTarget],
     involucro_context=None,
     command="build",
     channels=DEFAULT_CHANNELS,
@@ -210,7 +223,6 @@ def mull_targets(
     base_image=None,
     determine_base_image=True,
 ):
-    targets = list(targets)
     if involucro_context is None:
         involucro_context = InvolucroContext()
 

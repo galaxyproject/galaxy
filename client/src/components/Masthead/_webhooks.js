@@ -1,5 +1,5 @@
-import Webhooks from "utils/webhooks";
 import Utils from "utils/utils";
+import Webhooks from "utils/webhooks";
 
 export function loadWebhookMenuItems(items) {
     Webhooks.load({

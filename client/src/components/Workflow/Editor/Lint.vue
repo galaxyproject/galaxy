@@ -2,11 +2,11 @@
     <b-card id="lint-panel" header-tag="header" body-class="p-0" class="right-content">
         <template v-slot:header>
             <div class="mb-1 font-weight-bold">
-                <font-awesome-icon icon="magic" class="mr-1" />
+                <FontAwesomeIcon icon="magic" class="mr-1" />
                 Best Practices Review
             </div>
             <div v-if="showRefactor">
-                <a href="#" @click="onRefactor"> Try to automatically fix issues. </a>
+                <a class="refactor-button" href="#" @click="onRefactor"> Try to automatically fix issues. </a>
             </div>
         </template>
         <b-card-body>
@@ -67,7 +67,7 @@
                 @onMouseLeave="onUnhighlight"
                 @onClick="onFixUnlabeledOutputs" />
             <div v-if="!hasActiveOutputs">
-                <font-awesome-icon icon="exclamation-triangle" class="text-warning" />
+                <FontAwesomeIcon icon="exclamation-triangle" class="text-warning" />
                 <span>This workflow has no labeled outputs, please select and label at least one output.</span>
             </div>
         </b-card-body>
@@ -75,26 +75,28 @@
 </template>
 
 <script>
-import Vue from "vue";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faExclamationTriangle, faMagic } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import BootstrapVue from "bootstrap-vue";
-import { UntypedParameters } from "components/Workflow/Editor/modules/parameters";
 import LintSection from "components/Workflow/Editor/LintSection";
+import { UntypedParameters } from "components/Workflow/Editor/modules/parameters";
+import { storeToRefs } from "pinia";
+import Vue from "vue";
+
+import { DatatypesMapperModel } from "@/components/Datatypes/model";
+import { useWorkflowStores } from "@/composables/workflowStores";
+
 import {
-    getDisconnectedInputs,
-    getUntypedParameters,
-    getMissingMetadata,
-    getUnlabeledOutputs,
     fixAllIssues,
     fixDisconnectedInput,
     fixUnlabeledOutputs,
     fixUntypedParameter,
+    getDisconnectedInputs,
+    getMissingMetadata,
+    getUnlabeledOutputs,
+    getUntypedParameters,
 } from "./modules/linting";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faMagic, faExclamationTriangle } from "@fortawesome/free-solid-svg-icons";
-import { useWorkflowStepStore } from "@/stores/workflowStepStore";
-import { DatatypesMapperModel } from "@/components/Datatypes/model";
-import { storeToRefs } from "pinia";
 
 Vue.use(BootstrapVue);
 
@@ -133,8 +135,9 @@ export default {
         },
     },
     setup() {
-        const { hasActiveOutputs } = storeToRefs(useWorkflowStepStore());
-        return { hasActiveOutputs };
+        const { connectionStore, stepStore } = useWorkflowStores();
+        const { hasActiveOutputs } = storeToRefs(stepStore);
+        return { connectionStore, stepStore, hasActiveOutputs };
     },
     computed: {
         showRefactor() {
@@ -168,7 +171,7 @@ export default {
             return getUntypedParameters(this.untypedParameters);
         },
         warningDisconnectedInputs() {
-            return getDisconnectedInputs(this.steps, this.datatypesMapper);
+            return getDisconnectedInputs(this.steps, this.datatypesMapper, this.connectionStore, this.stepStore);
         },
         warningMissingMetadata() {
             return getMissingMetadata(this.steps);
@@ -224,7 +227,13 @@ export default {
             this.$emit("onUnhighlight", item.stepId);
         },
         onRefactor() {
-            const actions = fixAllIssues(this.steps, this.untypedParameters);
+            const actions = fixAllIssues(
+                this.steps,
+                this.untypedParameters,
+                this.datatypesMapper,
+                this.connectionStore,
+                this.stepStore
+            );
             this.$emit("onRefactor", actions);
         },
     },

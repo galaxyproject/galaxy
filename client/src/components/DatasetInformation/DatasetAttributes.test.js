@@ -1,10 +1,11 @@
-import axios from "axios";
 import { mount } from "@vue/test-utils";
-import { getLocalVue } from "tests/jest/helpers";
-import DatasetAttributes from "./DatasetAttributes";
-import MockProvider from "../providers/MockProvider";
+import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import flushPromises from "flush-promises";
+import { getLocalVue } from "tests/jest/helpers";
+
+import MockProvider from "../providers/MockProvider";
+import DatasetAttributes from "./DatasetAttributes";
 
 const localVue = getLocalVue();
 

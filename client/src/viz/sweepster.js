@@ -3,20 +3,20 @@
  * genomic visualization.
  */
 
-import _ from "underscore";
-import $ from "jquery";
 import Backbone from "backbone";
-import { getAppRoot } from "onload/loadConfig";
-import _l from "utils/localization";
 import * as d3 from "d3v3";
-import visualization from "viz/visualization";
-import tracks from "viz/trackster/tracks";
-import tools from "viz/tools";
+import $ from "jquery";
+import { hide_modal, show_modal } from "layout/modal";
 import { Dataset } from "mvc/dataset/data";
-import config from "utils/config";
 import mod_icon_btn from "mvc/ui/icon-button";
+import { getAppRoot } from "onload/loadConfig";
 import { make_popupmenu } from "ui/popupmenu";
-import { show_modal, hide_modal } from "layout/modal";
+import _ from "underscore";
+import config from "utils/config";
+import _l from "utils/localization";
+import tools from "viz/tools";
+import tracks from "viz/trackster/tracks";
+import visualization from "viz/visualization";
 
 /**
  * A collection of tool input settings. Object is useful for keeping a list of settings

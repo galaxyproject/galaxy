@@ -1,19 +1,19 @@
 import os
 
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from ..base import common
+from ..base.twilltestcase import ShedTwillTestCase
 
 matplotlib_repository_name = "package_matplotlib_1_2_0170"
-matplotlib_repository_description = "Contains a tool dependency definition that downloads and compiles version 1.2.x of the the python matplotlib package."
+matplotlib_repository_description = (
+    "Contains a tool dependency definition that downloads and compiles version 1.2.x of the python matplotlib package."
+)
 matplotlib_repository_long_description = (
     "This repository is intended to be defined as a complex repository dependency within a separate repository."
 )
 
 numpy_repository_name = "package_numpy_1_7_0170"
 numpy_repository_description = (
-    "Contains a tool dependency definition that downloads and compiles version 1.7 of the the python numpy package."
+    "Contains a tool dependency definition that downloads and compiles version 1.7 of the python numpy package."
 )
 numpy_repository_long_description = (
     "This repository is intended to be defined as a complex repository dependency within a separate repository."
@@ -52,16 +52,11 @@ class TestComplexPriorInstallation(ShedTwillTestCase):
             category=category,
             strings_displayed=[],
         )
-        self.upload_file(
+        self.commit_tar_to_repository(
             repository,
-            filename="package_matplotlib/package_matplotlib_1_2.tar",
-            filepath=None,
-            valid_tools_only=False,
-            uncompress_file=True,
-            remove_repo_files_not_in_tar=False,
+            "package_matplotlib/package_matplotlib_1_2.tar",
             commit_message="Uploaded matplotlib tool dependency tarball.",
-            strings_displayed=["This repository currently contains a single file named <b>tool_dependencies.xml</b>"],
-            strings_not_displayed=[],
+            strings_displayed=["tool_dependencies.xml"],
         )
 
     def test_0010_create_numpy_repository(self):
@@ -79,16 +74,10 @@ class TestComplexPriorInstallation(ShedTwillTestCase):
             category=category,
             strings_displayed=[],
         )
-        self.upload_file(
+        self.commit_tar_to_repository(
             repository,
-            filename="package_numpy/package_numpy_1_7.tar",
-            filepath=None,
-            valid_tools_only=False,
-            uncompress_file=True,
-            remove_repo_files_not_in_tar=False,
+            "package_numpy/package_numpy_1_7.tar",
             commit_message="Uploaded numpy tool dependency tarball.",
-            strings_displayed=["This repository currently contains a single file named <b>tool_dependencies.xml</b>"],
-            strings_not_displayed=[],
         )
 
     def test_0015_create_complex_repository_dependency(self):
@@ -120,17 +109,7 @@ class TestComplexPriorInstallation(ShedTwillTestCase):
         new_xml_file = os.path.join(dependency_xml_path, "tool_dependencies.xml")
         open(new_xml_file, "w").write(original_xml.replace("<!--NUMPY-->", processed_xml))
         # Upload the generated complex repository dependency XML to the matplotlib repository.
-        self.upload_file(
-            matplotlib_repository,
-            filename="tool_dependencies.xml",
-            filepath=dependency_xml_path,
-            valid_tools_only=True,
-            uncompress_file=True,
-            remove_repo_files_not_in_tar=False,
-            commit_message="Uploaded complex repository dependency on numpy 1.7.",
-            strings_displayed=[],
-            strings_not_displayed=[],
-        )
+        self.add_file_to_repository(matplotlib_repository, new_xml_file, "tool_dependencies.xml")
 
     def test_0020_verify_generated_dependency(self):
         """Verify that matplotlib now has a package tool dependency and a complex repository dependency.
@@ -146,6 +125,7 @@ class TestComplexPriorInstallation(ShedTwillTestCase):
         )
         changeset_revision = self.get_repository_tip(numpy_repository)
         self.check_repository_dependency(matplotlib_repository, depends_on_repository=numpy_repository)
-        self.display_manage_repository_page(
-            matplotlib_repository, strings_displayed=["numpy", "1.7", "package", changeset_revision]
-        )
+        if not self.is_v2:
+            self.display_manage_repository_page(
+                matplotlib_repository, strings_displayed=["numpy", "1.7", "package", changeset_revision]
+            )

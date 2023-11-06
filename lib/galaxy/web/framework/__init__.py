@@ -26,7 +26,13 @@ def legacy_url_for(mapper, *args, **kwargs) -> str:
     Re-establishes the mapper for legacy WSGI routes.
     """
     rc = request_config()
+    environ = kwargs.pop("environ", None)
     rc.mapper = mapper
+    if environ:
+        rc.environ = environ
+        if hasattr(rc, "using_request_local"):
+            rc.request_local = lambda: rc
+            rc = request_config()
     return base.routes.url_for(*args, **kwargs)
 
 

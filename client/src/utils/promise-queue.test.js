@@ -1,4 +1,5 @@
 import { LastQueue } from "./promise-queue";
+
 const x = 10;
 const lastQueue = new LastQueue(x);
 

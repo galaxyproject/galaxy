@@ -38,9 +38,9 @@ class Dictifiable:
                 assert value_mapper is not None
                 if key in value_mapper:
                     return value_mapper[key](item)
-                if type(item) == datetime.datetime:
+                if isinstance(item, datetime.datetime):
                     return item.isoformat()
-                elif type(item) == uuid.UUID:
+                elif isinstance(item, uuid.UUID):
                     return str(item)
                 # Leaving this for future reference, though we may want a more
                 # generic way to handle special type mappings going forward.

@@ -19,6 +19,10 @@ from sqlalchemy import (
     and_,
     asc,
     desc,
+    false,
+    func,
+    select,
+    true,
 )
 from typing_extensions import Literal
 
@@ -33,10 +37,14 @@ from galaxy.managers import (
     sharable,
 )
 from galaxy.managers.base import (
+    combine_lists,
+    ModelDeserializingError,
     Serializer,
     SortableManager,
+    StorageCleanerManager,
 )
 from galaxy.managers.export_tracker import StoreExportTracker
+from galaxy.model.base import transaction
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     ExportObjectMetadata,
@@ -44,6 +52,14 @@ from galaxy.schema.schema import (
     HDABasicInfo,
     ShareHistoryExtra,
 )
+from galaxy.schema.storage_cleaner import (
+    CleanableItemsSummary,
+    StorageItemCleanupError,
+    StorageItemsCleanupResult,
+    StoredItem,
+    StoredItemOrderBy,
+)
+from galaxy.security.validate_user_input import validate_preferred_object_store_id
 from galaxy.structured_app import MinimalManagerApp
 
 log = logging.getLogger(__name__)
@@ -120,7 +136,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         if self.user_manager.is_anonymous(user):
             return None if (not current_history or current_history.deleted) else current_history
         desc_update_time = desc(self.model_class.update_time)
-        filters = self._munge_filters(filters, self.model_class.user_id == user.id)
+        filters = combine_lists(filters, self.model_class.user_id == user.id)
         # TODO: normalize this return value
         return self.query(filters=filters, order_by=desc_update_time, limit=1, **kwargs).first()
 
@@ -129,11 +145,12 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         """
         Purge this history and all HDAs, Collections, and Datasets inside this history.
         """
+        self.error_unless_mutable(history)
         self.hda_manager.dataset_manager.error_unless_dataset_purge_allowed()
         # First purge all the datasets
         for hda in history.datasets:
             if not hda.purged:
-                self.hda_manager.purge(hda, flush=True)
+                self.hda_manager.purge(hda, flush=True, **kwargs)
 
         # Now mark the history as purged
         super().purge(history, flush=flush, **kwargs)
@@ -352,6 +369,165 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
                 else:
                     log.warning(f"User without permissions tried to make dataset with id: {dataset.id} public")
 
+    def archive_history(self, history: model.History, archive_export_id: Optional[int]):
+        """Marks the history with the given id as archived and optionally associates it with the given archive export record.
+
+        **Important**: The caller is responsible for passing a valid `archive_export_id` that belongs to the given history.
+        """
+        history.archived = True
+        history.archive_export_id = archive_export_id
+        with transaction(self.session()):
+            self.session().commit()
+
+        return history
+
+    def restore_archived_history(self, history: model.History, force: bool = False):
+        """Marks the history with the given id as not archived anymore.
+
+        Only un-archives the history if it is not associated with an archive export record. You can force the un-archiving
+        in this case by passing `force=True`.
+
+        Please note that histories that are associated with an archive export are usually purged after export, so un-archiving them
+        will not restore the datasets that were in the history before it was archived. You will need to import the archive export
+        record to restore the history and its datasets as a new copy.
+        """
+        if history.archive_export_id is not None and history.purged and not force:
+            raise glx_exceptions.RequestParameterInvalidException(
+                "Cannot restore an archived (and purged) history that is associated with an archive export record. "
+                "Please try importing it back as a new copy from the associated archive export record instead. "
+                "You can still force the un-archiving of the purged history by setting the 'force' parameter."
+            )
+
+        history.archived = False
+        with transaction(self.session()):
+            self.session().commit()
+
+        return history
+
+    def get_active_count(self, user: model.User) -> int:
+        """Return the number of active histories for the given user."""
+        user_active_histories_filter = [
+            model.History.user_id == user.id,
+            model.History.deleted == false(),
+            model.History.archived == false(),
+        ]
+        return self.count(filters=user_active_histories_filter)
+
+
+class HistoryStorageCleanerManager(StorageCleanerManager):
+    def __init__(self, history_manager: HistoryManager):
+        self.history_manager = history_manager
+        self.sort_map = {
+            StoredItemOrderBy.NAME_ASC: asc(model.History.name),
+            StoredItemOrderBy.NAME_DSC: desc(model.History.name),
+            StoredItemOrderBy.SIZE_ASC: asc(model.History.disk_size),
+            StoredItemOrderBy.SIZE_DSC: desc(model.History.disk_size),
+            StoredItemOrderBy.UPDATE_TIME_ASC: asc(model.History.update_time),
+            StoredItemOrderBy.UPDATE_TIME_DSC: desc(model.History.update_time),
+        }
+
+    def get_discarded_summary(self, user: model.User) -> CleanableItemsSummary:
+        stmt = select(func.sum(model.History.disk_size), func.count(model.History.id)).where(
+            model.History.user_id == user.id,
+            model.History.deleted == true(),
+            model.History.purged == false(),
+        )
+        result = self.history_manager.session().execute(stmt).fetchone()
+        total_size = 0 if result[0] is None else result[0]
+        return CleanableItemsSummary(total_size=total_size, total_items=result[1])
+
+    def get_discarded(
+        self,
+        user: model.User,
+        offset: Optional[int],
+        limit: Optional[int],
+        order: Optional[StoredItemOrderBy],
+    ) -> List[StoredItem]:
+        stmt = select(model.History).where(
+            model.History.user_id == user.id,
+            model.History.deleted == true(),
+            model.History.purged == false(),
+        )
+        if offset:
+            stmt = stmt.offset(offset)
+        if limit:
+            stmt = stmt.limit(limit)
+        if order:
+            stmt = stmt.order_by(self.sort_map[order])
+        result = self.history_manager.session().execute(stmt).scalars()
+        discarded = [self._history_to_stored_item(item) for item in result]
+        return discarded
+
+    # TODO reduce duplication
+
+    def get_archived_summary(self, user: model.User) -> CleanableItemsSummary:
+        stmt = select(func.sum(model.History.disk_size), func.count(model.History.id)).where(
+            model.History.user_id == user.id,
+            model.History.archived == true(),
+            model.History.purged == false(),
+        )
+        result = self.history_manager.session().execute(stmt).fetchone()
+        total_size = 0 if result[0] is None else result[0]
+        return CleanableItemsSummary(total_size=total_size, total_items=result[1])
+
+    def get_archived(
+        self,
+        user: model.User,
+        offset: Optional[int],
+        limit: Optional[int],
+        order: Optional[StoredItemOrderBy],
+    ) -> List[StoredItem]:
+        stmt = select(model.History).where(
+            model.History.user_id == user.id,
+            model.History.archived == true(),
+            model.History.purged == false(),
+        )
+        if offset:
+            stmt = stmt.offset(offset)
+        if limit:
+            stmt = stmt.limit(limit)
+        if order:
+            stmt = stmt.order_by(self.sort_map[order])
+        result = self.history_manager.session().execute(stmt).scalars()
+        archived = [self._history_to_stored_item(item) for item in result]
+        return archived
+
+    def cleanup_items(self, user: model.User, item_ids: Set[int]) -> StorageItemsCleanupResult:
+        success_item_count = 0
+        total_free_bytes = 0
+        errors: List[StorageItemCleanupError] = []
+
+        for history_id in item_ids:
+            try:
+                history = self.history_manager.get_owned(history_id, user)
+                self._unarchive_if_needed(history)
+                self.history_manager.purge(history, flush=False, user=user)
+                success_item_count += 1
+                total_free_bytes += int(history.disk_size)
+            except BaseException as e:
+                errors.append(StorageItemCleanupError(item_id=history_id, error=str(e)))
+
+        if success_item_count:
+            session = self.history_manager.session()
+            with transaction(session):
+                session.commit()
+
+        return StorageItemsCleanupResult(
+            total_item_count=len(item_ids),
+            success_item_count=success_item_count,
+            total_free_bytes=total_free_bytes,
+            errors=errors,
+        )
+
+    def _unarchive_if_needed(self, history: model.History):
+        if history.archived:
+            self.history_manager.restore_archived_history(history, force=True)
+
+    def _history_to_stored_item(self, history: model.History) -> StoredItem:
+        return StoredItem(
+            id=history.id, name=history.name, type="history", size=history.disk_size, update_time=history.update_time
+        )
+
 
 class HistoryExportManager:
     export_object_type = ExportObjectType.HISTORY
@@ -368,20 +544,23 @@ class HistoryExportManager:
         )
         return [self._serialize_task_export(export, history) for export in export_associations]
 
+    def get_task_export_by_id(self, store_export_id: int) -> model.StoreExportAssociation:
+        return self.export_tracker.get_export_association(store_export_id)
+
     def create_export_association(self, history_id: int) -> model.StoreExportAssociation:
         return self.export_tracker.create_export_association(object_id=history_id, object_type=self.export_object_type)
+
+    def get_record_metadata(self, export: model.StoreExportAssociation) -> Optional[ExportObjectMetadata]:
+        json_metadata = export.export_metadata
+        export_metadata = ExportObjectMetadata.parse_raw(json_metadata) if json_metadata else None
+        return export_metadata
 
     def _serialize_task_export(self, export: model.StoreExportAssociation, history: model.History):
         task_uuid = export.task_uuid
         export_date = export.create_time
         history_has_changed = history.update_time > export_date
-        json_metadata = export.export_metadata
-        export_metadata = ExportObjectMetadata.parse_raw(json_metadata) if json_metadata else None
-        is_ready = (
-            export_metadata is not None
-            and export_metadata.result_data is not None
-            and export_metadata.result_data.success
-        )
+        export_metadata = self.get_record_metadata(export)
+        is_ready = export_metadata is not None and export_metadata.is_ready()
         is_export_up_to_date = is_ready and not history_has_changed
         return {
             "id": export.id,
@@ -467,6 +646,7 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
                 "name",
                 "deleted",
                 "purged",
+                "archived",
                 "count",
                 "url",
                 # TODO: why these?
@@ -474,6 +654,7 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
                 "annotation",
                 "tags",
                 "update_time",
+                "preferred_object_store_id",
             ],
         )
         self.add_view(
@@ -485,7 +666,6 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
                 "size",
                 "user_id",
                 "create_time",
-                "update_time",
                 "importable",
                 "slug",
                 "username",
@@ -511,7 +691,6 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
                 "size",
                 "user_id",
                 "create_time",
-                "update_time",
                 "importable",
                 "slug",
                 "username_and_slug",
@@ -539,8 +718,6 @@ class HistorySerializer(sharable.SharableModelSerializer, deletable.PurgableSeri
             "contents_url": lambda item, key, **context: self.url_for(
                 "history_contents", history_id=self.app.security.encode_id(item.id), context=context
             ),
-            "empty": lambda item, key, **context: (len(item.datasets) + len(item.dataset_collections)) <= 0,
-            "count": lambda item, key, **context: len(item.datasets),
             "hdas": lambda item, key, **context: [self.app.security.encode_id(hda.id) for hda in item.datasets],
             "state_details": self.serialize_state_counts,
             "state_ids": self.serialize_state_ids,
@@ -680,8 +857,16 @@ class HistoryDeserializer(sharable.SharableModelDeserializer, deletable.Purgable
             {
                 "name": self.deserialize_basestring,
                 "genome_build": self.deserialize_genome_build,
+                "preferred_object_store_id": self.deserialize_preferred_object_store_id,
             }
         )
+
+    def deserialize_preferred_object_store_id(self, item, key, val, **context):
+        preferred_object_store_id = val
+        validation_error = validate_preferred_object_store_id(self.app.object_store, preferred_object_store_id)
+        if validation_error:
+            raise ModelDeserializingError(validation_error)
+        return self.default_deserializer(item, key, preferred_object_store_id, **context)
 
 
 class HistoryFilters(sharable.SharableModelFilters, deletable.PurgableFiltersMixin):
@@ -700,3 +885,19 @@ class HistoryFilters(sharable.SharableModelFilters, deletable.PurgableFiltersMix
                 "update_time": {"op": ("le", "ge", "gt", "lt"), "val": self.parse_date},
             }
         )
+        self.fn_filter_parsers.update(
+            {
+                "username": {
+                    "op": {
+                        "eq": self.username_eq,
+                        "contains": self.username_contains,
+                    },
+                },
+            }
+        )
+
+    def username_eq(self, item, val: str) -> bool:
+        return val.lower() == str(item.user.username).lower()
+
+    def username_contains(self, item, val: str) -> bool:
+        return val.lower() in str(item.user.username).lower()

@@ -1,6 +1,7 @@
 import axios from "axios";
 import { getAppRoot } from "onload";
 import { mountVueComponent } from "utils/mountVueComponent";
+
 import Tour from "./Tour";
 
 // delays and maximum number of attempts to wait for element
@@ -20,7 +21,7 @@ function getElement(selector) {
         try {
             return document.querySelector(selector);
         } catch (error) {
-            throw `Tour - Invalid selector. ${selector}`;
+            throw Error(`Tour - Invalid selector. ${selector}`);
         }
     }
 }

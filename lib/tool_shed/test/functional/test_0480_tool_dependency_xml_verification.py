@@ -1,9 +1,7 @@
 import logging
 
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from ..base import common
+from ..base.twilltestcase import ShedTwillTestCase
 
 log = logging.getLogger(__name__)
 
@@ -48,17 +46,7 @@ class TestDependencyDefinitionValidation(ShedTwillTestCase):
             category=category,
             strings_displayed=[],
         )
-        self.upload_file(
-            repository,
-            filename="0480_files/tool_dependencies.xml",
-            filepath=None,
-            valid_tools_only=False,
-            uncompress_file=False,
-            remove_repo_files_not_in_tar=False,
-            commit_message="Populate package_invalid_tool_dependency_xml_1_0_0 with an improperly defined tool dependency.",
-            strings_displayed=["package cannot be installed because", "missing either an &lt;actions&gt; tag set"],
-            strings_not_displayed=[],
-        )
+        self.user_populator().setup_test_data_repo("0480", repository, assert_ok=False)
 
     def test_0010_populate_tool_dependency_repository(self):
         """Verify package_invalid_tool_dependency_xml_1_0_0.

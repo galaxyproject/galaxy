@@ -1,29 +1,27 @@
 import { defineStore } from "pinia";
-import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 import Vue from "vue";
 
+import { useWorkflowStepStore } from "@/stores/workflowStepStore";
+import { pushOrSet } from "@/utils/pushOrSet";
+
 interface InvalidConnections {
-    [index: string]: string | undefined;
+    [index: ConnectionId]: string | undefined;
 }
 
 export interface State {
     connections: Connection[];
     invalidConnections: InvalidConnections;
+    inputTerminalToOutputTerminals: TerminalToOutputTerminals;
+    terminalToConnection: { [index: string]: Connection[] };
+    stepToConnections: { [index: number]: Connection[] };
 }
 
-export class Connection {
+export interface Connection {
     input: InputTerminal;
     output: OutputTerminal;
-
-    constructor(input: InputTerminal, output: OutputTerminal) {
-        this.input = input;
-        this.output = output;
-    }
-
-    get id(): string {
-        return `${this.input.stepId}-${this.input.name}-${this.output.stepId}-${this.output.name}`;
-    }
 }
+
+export type ConnectionId = `${string}-${string}-${string}-${string}`;
 
 export interface BaseTerminal {
     stepId: number;
@@ -44,119 +42,119 @@ interface TerminalToOutputTerminals {
     [index: string]: OutputTerminal[];
 }
 
-interface TerminalToInputTerminals {
-    [index: string]: InputTerminal[];
-}
-
-/**
- * Pushes a value to an array in an object, if the array exists. Else creates a new array containing value.
- * @param object Object which contains array
- * @param key Key which array is in
- * @param value Value to push
- */
-function pushOrSet<T>(object: { [key: string | number]: Array<T> }, key: string | number, value: T) {
-    if (key in object) {
-        object[key]!.push(value);
-    } else {
-        object[key] = [value];
+export const useConnectionStore = (workflowId: string) => {
+    if (!workflowId) {
+        throw new Error("WorkflowId is undefined");
     }
+
+    return defineStore(`workflowConnectionStore${workflowId}`, {
+        state: (): State => ({
+            connections: [] as Array<Readonly<Connection>>,
+            invalidConnections: {} as InvalidConnections,
+            inputTerminalToOutputTerminals: {} as TerminalToOutputTerminals,
+            terminalToConnection: {} as { [index: string]: Connection[] },
+            stepToConnections: {} as { [index: number]: Connection[] },
+        }),
+        getters: {
+            getOutputTerminalsForInputTerminal(state: State) {
+                return (terminalId: string): OutputTerminal[] => {
+                    return state.inputTerminalToOutputTerminals[terminalId] || [];
+                };
+            },
+            getConnectionsForTerminal(state: State) {
+                return (terminalId: string): Connection[] => {
+                    return state.terminalToConnection[terminalId] || [];
+                };
+            },
+            getConnectionsForStep(state: State) {
+                return (stepId: number): Connection[] => state.stepToConnections[stepId] || [];
+            },
+        },
+        actions: {
+            addConnection(this, _connection: Connection) {
+                const connection = Object.freeze(_connection);
+                this.connections.push(connection);
+                const stepStore = useWorkflowStepStore(workflowId);
+                stepStore.addConnection(connection);
+                this.terminalToConnection = updateTerminalToConnection(this.connections);
+                this.inputTerminalToOutputTerminals = updateTerminalToTerminal(this.connections);
+                this.stepToConnections = updateStepToConnections(this.connections);
+            },
+            markInvalidConnection(this: State, connectionId: string, reason: string) {
+                Vue.set(this.invalidConnections, connectionId, reason);
+            },
+            dropFromInvalidConnections(this: State, connectionId: string) {
+                Vue.delete(this.invalidConnections, connectionId);
+            },
+            removeConnection(this, terminal: InputTerminal | OutputTerminal | ConnectionId) {
+                const stepStore = useWorkflowStepStore(workflowId);
+                this.connections = this.connections.filter((connection) => {
+                    const id = getConnectionId(connection);
+
+                    if (typeof terminal === "string") {
+                        if (id === terminal) {
+                            stepStore.removeConnection(connection);
+                            Vue.delete(this.invalidConnections, id);
+                            return false;
+                        } else {
+                            return true;
+                        }
+                    } else if (terminal.connectorType === "input") {
+                        if (connection.input.stepId == terminal.stepId && connection.input.name == terminal.name) {
+                            stepStore.removeConnection(connection);
+                            Vue.delete(this.invalidConnections, id);
+                            return false;
+                        } else {
+                            return true;
+                        }
+                    } else {
+                        if (connection.output.stepId == terminal.stepId && connection.output.name == terminal.name) {
+                            stepStore.removeConnection(connection);
+                            Vue.delete(this.invalidConnections, id);
+                            return false;
+                        } else {
+                            return true;
+                        }
+                    }
+                });
+                this.terminalToConnection = updateTerminalToConnection(this.connections);
+                this.inputTerminalToOutputTerminals = updateTerminalToTerminal(this.connections);
+                this.stepToConnections = updateStepToConnections(this.connections);
+            },
+        },
+    })();
+};
+
+function updateTerminalToTerminal(connections: Connection[]) {
+    const inputTerminalToOutputTerminals: TerminalToOutputTerminals = {};
+    connections.forEach((connection) => {
+        const terminals = getTerminals(connection);
+        const inputTerminalId = getTerminalId(terminals.input);
+        pushOrSet(inputTerminalToOutputTerminals, inputTerminalId, terminals.output);
+    });
+    return inputTerminalToOutputTerminals;
 }
 
-export const useConnectionStore = defineStore("workflowConnectionStore", {
-    state: (): State => ({
-        connections: [] as Connection[],
-        invalidConnections: {} as InvalidConnections,
-    }),
-    getters: {
-        getOutputTerminalsForInputTerminal(state: State) {
-            const inputTerminalToOutputTerminals: TerminalToOutputTerminals = {};
-            state.connections.map((connection) => {
-                const terminals = getTerminals(connection);
-                const inputTerminalId = getTerminalId(terminals.input);
-                pushOrSet(inputTerminalToOutputTerminals, inputTerminalId, terminals.output);
-            });
-            return (terminalId: string): OutputTerminal[] => {
-                return inputTerminalToOutputTerminals[terminalId] || [];
-            };
-        },
-        getInputTerminalsForOutputTerminal(state: State) {
-            const outputTerminalToInputTerminals: TerminalToInputTerminals = {};
-            state.connections.map((connection) => {
-                const terminals = getTerminals(connection);
-                const outputTerminalId = getTerminalId(terminals.output);
-                pushOrSet(outputTerminalToInputTerminals, outputTerminalId, terminals.input);
-            });
-            return (terminalId: string): BaseTerminal[] => {
-                return outputTerminalToInputTerminals[terminalId] || [];
-            };
-        },
-        getConnectionsForTerminal(state: State) {
-            const terminalToConnection: { [index: string]: Connection[] } = {};
-            state.connections.map((connection) => {
-                const terminals = getTerminals(connection);
-                const outputTerminalId = getTerminalId(terminals.output);
-                pushOrSet(terminalToConnection, outputTerminalId, connection);
+function updateTerminalToConnection(connections: Connection[]) {
+    const terminalToConnection: { [index: string]: Connection[] } = {};
+    connections.forEach((connection) => {
+        const terminals = getTerminals(connection);
+        const outputTerminalId = getTerminalId(terminals.output);
+        pushOrSet(terminalToConnection, outputTerminalId, connection);
+        const inputTerminalId = getTerminalId(terminals.input);
+        pushOrSet(terminalToConnection, inputTerminalId, connection);
+    });
+    return terminalToConnection;
+}
 
-                const inputTerminalId = getTerminalId(terminals.input);
-                pushOrSet(terminalToConnection, inputTerminalId, connection);
-            });
-            return (terminalId: string): Connection[] => {
-                return terminalToConnection[terminalId] || [];
-            };
-        },
-        getConnectionsForStep(state: State) {
-            const stepToConnections: { [index: number]: Connection[] } = {};
-            state.connections.map((connection) => {
-                pushOrSet(stepToConnections, connection.input.stepId, connection);
-                pushOrSet(stepToConnections, connection.output.stepId, connection);
-            });
-            return (stepId: number): Connection[] => stepToConnections[stepId] || [];
-        },
-    },
-    actions: {
-        addConnection(this: State, connection: Connection) {
-            this.connections.push(connection);
-            const stepStore = useWorkflowStepStore();
-            stepStore.addConnection(connection);
-        },
-        markInvalidConnection(this: State, connectionId: string, reason: string) {
-            Vue.set(this.invalidConnections, connectionId, reason);
-        },
-        dropFromInvalidConnections(this: State, connectionId: string) {
-            Vue.delete(this.invalidConnections, connectionId);
-        },
-        removeConnection(this: State, terminal: InputTerminal | OutputTerminal | Connection["id"]) {
-            const stepStore = useWorkflowStepStore();
-            this.connections = this.connections.filter((connection) => {
-                if (typeof terminal === "string") {
-                    if (connection.id == terminal) {
-                        stepStore.removeConnection(connection);
-                        Vue.delete(this.invalidConnections, connection.id);
-                        return false;
-                    } else {
-                        return true;
-                    }
-                } else if (terminal.connectorType === "input") {
-                    if (connection.input.stepId == terminal.stepId && connection.input.name == terminal.name) {
-                        stepStore.removeConnection(connection);
-                        Vue.delete(this.invalidConnections, connection.id);
-                        return false;
-                    } else {
-                        return true;
-                    }
-                } else {
-                    if (connection.output.stepId == terminal.stepId && connection.output.name == terminal.name) {
-                        stepStore.removeConnection(connection);
-                        Vue.delete(this.invalidConnections, connection.id);
-                        return false;
-                    } else {
-                        return true;
-                    }
-                }
-            });
-        },
-    },
-});
+function updateStepToConnections(connections: Connection[]) {
+    const stepToConnections: { [index: number]: Connection[] } = {};
+    connections.forEach((connection) => {
+        pushOrSet(stepToConnections, connection.input.stepId, connection);
+        pushOrSet(stepToConnections, connection.output.stepId, connection);
+    });
+    return stepToConnections;
+}
 
 export function getTerminalId(item: BaseTerminal): string {
     return `node-${item.stepId}-${item.connectorType}-${item.name}`;
@@ -167,4 +165,8 @@ export function getTerminals(item: Connection): { input: InputTerminal; output: 
         input: { stepId: item.input.stepId, name: item.input.name, connectorType: "input" },
         output: { stepId: item.output.stepId, name: item.output.name, connectorType: "output" },
     };
+}
+
+export function getConnectionId(item: Connection): ConnectionId {
+    return `${item.input.stepId}-${item.input.name}-${item.output.stepId}-${item.output.name}`;
 }

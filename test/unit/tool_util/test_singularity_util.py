@@ -6,7 +6,7 @@ def test_build_singularity_run_command_defaults():
         container_command="echo hi",
         image="busybox",
     )
-    assert cmd == "singularity -s exec --cleanenv busybox echo hi"
+    assert cmd == "singularity -s exec --cleanenv --no-mount tmp busybox echo hi"
 
 
 def test_build_singularity_run_command_no_cleanenv():
@@ -15,4 +15,4 @@ def test_build_singularity_run_command_no_cleanenv():
         image="busybox",
         cleanenv=False,
     )
-    assert cmd == "singularity -s exec busybox echo hi"
+    assert cmd == "singularity -s exec --no-mount tmp busybox echo hi"

@@ -11,6 +11,7 @@ from alembic.script import ScriptDirectory
 from alembic.script.base import Script
 from sqlalchemy import create_engine
 
+from galaxy.model import Base
 from galaxy.model.migrations import (
     GXY,
     ModelId,
@@ -18,7 +19,7 @@ from galaxy.model.migrations import (
 )
 
 config = context.config
-target_metadata = None  # Not implemented: used for autogenerate, which we don't use here.
+target_metadata = Base.metadata
 log = logging.getLogger(__name__)
 
 

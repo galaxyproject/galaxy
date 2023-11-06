@@ -1,8 +1,9 @@
-To stay up to date with Galaxy's progress watch our `screencasts <https://www.youtube.com/c/galaxyproject>`__,
-visit our community `hub <https://galaxyproject.org/>`__, and follow
+To stay up to date with Galaxy's progress, watch our `screencasts <https://www.youtube.com/@GalaxyProject>`__,
+visit our community `Hub <https://galaxyproject.org/>`__, and follow
+`@galaxyproject@mstdn.science <https://mstdn.science/@galaxyproject>`__ on Mastodon or
 `@galaxyproject <https://twitter.com/galaxyproject>`__ on Twitter.
 
-You can always reach us on `Gitter <https://gitter.im/galaxyproject/Lobby>`__ or `IRC <https://galaxyproject.org/support/irc/>`__.
+You can always chat with us on `Matrix <https://matrix.to/#/#galaxyproject_Lobby:gitter.im>`__.
 
 *Thanks for using Galaxy!*
 

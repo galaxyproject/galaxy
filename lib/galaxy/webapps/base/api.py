@@ -152,6 +152,12 @@ class GalaxyFileResponse(FileResponse):
             await self.background()
 
 
+def add_sentry_middleware(app: FastAPI) -> None:
+    from sentry_sdk.integrations.asgi import SentryAsgiMiddleware
+
+    app.add_middleware(SentryAsgiMiddleware)
+
+
 def get_error_response_for_request(request: Request, exc: MessageException) -> JSONResponse:
     error_dict = api_error_message(None, exception=exc)
     status_code = exc.status_code
@@ -159,7 +165,14 @@ def get_error_response_for_request(request: Request, exc: MessageException) -> J
     if "ga4gh" in path:
         # When serving GA4GH APIs use limited exceptions to conform their expected
         # error schema. Tailored to DRS currently.
-        content = {"status_code": status_code, "msg": error_dict["err_msg"]}
+        message = error_dict["err_msg"]
+        if "drs" in path:
+            content = {"status_code": status_code, "msg": message}
+        elif "trs" in path:
+            content = {"code": status_code, "message": message}
+        else:
+            # unknown schema - just yield the most useful error message
+            content = error_dict
     else:
         content = error_dict
 

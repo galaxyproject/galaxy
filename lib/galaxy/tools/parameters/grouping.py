@@ -36,7 +36,9 @@ if TYPE_CHECKING:
     from galaxy.tools.parameter.basic import ToolParameter
 
 log = logging.getLogger(__name__)
-URI_PREFIXES = [f"{x}://" for x in ["http", "https", "ftp", "file", "gxfiles", "gximport", "gxuserimport", "gxftp"]]
+URI_PREFIXES = [
+    f"{x}://" for x in ["http", "https", "ftp", "file", "gxfiles", "gximport", "gxuserimport", "gxftp", "drs"]
+]
 
 
 class Group(Dictifiable):
@@ -100,6 +102,7 @@ class Repeat(Group):
     def title_plural(self):
         return inflector.pluralize(self.title)
 
+    @property
     def label(self):
         return f"Repeat ({self.title})"
 
@@ -181,6 +184,7 @@ class Section(Group):
     def title_plural(self):
         return inflector.pluralize(self.title)
 
+    @property
     def label(self):
         return f"Section ({self.title})"
 
@@ -721,7 +725,7 @@ class Conditional(Group):
 
     def __init__(self):
         Group.__init__(self)
-        self.test_param: Optional["ToolParameter"] = None
+        self.test_param: Optional[ToolParameter] = None
         self.cases = []
         self.value_ref = None
         self.value_ref_in_group = True  # When our test_param is not part of the conditional Group, this is False

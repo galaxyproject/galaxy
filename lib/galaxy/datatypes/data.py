@@ -50,6 +50,7 @@ from galaxy.util import (
     inflector,
     iter_start_of_line,
     unicodify,
+    UNKNOWN,
 )
 from galaxy.util.bunch import Bunch
 from galaxy.util.compression_utils import FileObjType
@@ -106,7 +107,7 @@ class DatatypeValidation:
 
     @staticmethod
     def unvalidated() -> "DatatypeValidation":
-        return DatatypeValidation("unknown", "Dataset validation unimplemented for this datatype.")
+        return DatatypeValidation(UNKNOWN, "Dataset validation unimplemented for this datatype.")
 
     def __repr__(self) -> str:
         return f"DatatypeValidation[state={self.state},message={self.message}]"
@@ -132,6 +133,8 @@ def get_params_and_input_name(
             params[value.name] = deps[value.name]
         elif value.type == "data":
             input_name = key
+        elif value.optional:
+            params[value.name] = None
 
     # add potentially required/common internal tool parameters e.g. '__job_resource'
     if target_context:
@@ -152,6 +155,36 @@ class DataMeta(type):
             if hasattr(base, "metadata_spec"):  # base of class Data (object) has no metadata
                 cls.metadata_spec.update(base.metadata_spec)  # add contents of metadata spec of base class to cls
         metadata.Statement.process(cls)
+
+
+def _is_binary_file(data):
+    from galaxy.datatypes import binary
+
+    return isinstance(data.datatype, binary.Binary) or type(data.datatype) is Data
+
+
+def _get_max_peak_size(data):
+    from galaxy.datatypes import (
+        binary,
+        text,
+    )
+
+    max_peek_size = DEFAULT_MAX_PEEK_SIZE  # 1 MB
+    if isinstance(data.datatype, text.Html):
+        max_peek_size = 10000000  # 10 MB for html
+    elif isinstance(data.datatype, binary.Binary):
+        max_peek_size = 100000  # 100 KB for binary
+    return max_peek_size
+
+
+def _get_file_size(data):
+    file_size = int(data.dataset.file_size or 0)
+    if file_size == 0:
+        if data.dataset.object_store:
+            file_size = data.dataset.object_store.size(data.dataset)
+        else:
+            file_size = os.stat(data.file_name).st_size
+    return file_size
 
 
 @p_dataproviders.decorators.has_dataproviders
@@ -427,6 +460,57 @@ class Data(metaclass=DataMeta):
             file_paths.append(dataset.file_name)
         return zip(file_paths, rel_paths)
 
+    def _serve_file_download(self, headers, data, trans, to_ext, file_size, **kwd):
+        composite_extensions = trans.app.datatypes_registry.get_composite_extensions()
+        composite_extensions.append("html")  # for archiving composite datatypes
+        composite_extensions.append("data_manager_json")  # for downloading bundles if bundled.
+
+        if data.extension in composite_extensions:
+            return self._archive_composite_dataset(trans, data, headers, do_action=kwd.get("do_action", "zip"))
+        else:
+            headers["Content-Length"] = str(file_size)
+            filename = self._download_filename(
+                data,
+                to_ext,
+                hdca=kwd.get("hdca"),
+                element_identifier=kwd.get("element_identifier"),
+                filename_pattern=kwd.get("filename_pattern"),
+            )
+            headers[
+                "content-type"
+            ] = "application/octet-stream"  # force octet-stream so Safari doesn't append mime extensions to filename
+            headers["Content-Disposition"] = f'attachment; filename="{filename}"'
+            return open(data.file_name, "rb"), headers
+
+    def _serve_binary_file_contents_as_text(self, trans, data, headers, file_size, max_peek_size):
+        headers["content-type"] = "text/html"
+        return (
+            trans.fill_template_mako(
+                "/dataset/binary_file.mako",
+                data=data,
+                file_contents=open(data.file_name, "rb").read(max_peek_size),
+                file_size=util.nice_size(file_size),
+                truncated=file_size > max_peek_size,
+            ),
+            headers,
+        )
+
+    def _serve_file_contents(self, trans, data, headers, preview, file_size, max_peek_size):
+        from galaxy.datatypes import images
+
+        preview = util.string_as_bool(preview)
+        if not preview or isinstance(data.datatype, images.Image) or file_size < max_peek_size:
+            return self._yield_user_file_content(trans, data, data.file_name, headers), headers
+
+        # preview large text file
+        headers["content-type"] = "text/html"
+        return (
+            trans.fill_template_mako(
+                "/dataset/large_file.mako", truncated_data=open(data.file_name, "rb").read(max_peek_size), data=data
+            ),
+            headers,
+        )
+
     def display_data(
         self,
         trans,
@@ -446,13 +530,10 @@ class Data(metaclass=DataMeta):
         providers?).
         """
         headers = kwd.get("headers", {})
-        # Relocate all composite datatype display to a common location.
-        composite_extensions = trans.app.datatypes_registry.get_composite_extensions()
-        composite_extensions.append("html")  # for archiving composite datatypes
-        composite_extensions.append("data_manager_json")  # for downloading bundles if bundled.
         # Prevent IE8 from sniffing content type since we're explicit about it.  This prevents intentionally text/plain
         # content from being rendered in the browser
         headers["X-Content-Type-Options"] = "nosniff"
+
         if filename and filename != "index":
             # For files in extra_files_path
             extra_dir = dataset.dataset.extra_files_path_name
@@ -497,52 +578,24 @@ class Data(metaclass=DataMeta):
                 raise ObjectNotFound(f"Could not find '{filename}' on the extra files path {file_path}.")
         self._clean_and_set_mime_type(trans, dataset.get_mime(), headers)
 
-        trans.log_event(f"Display dataset id: {str(dataset.id)}")
-        from galaxy.datatypes import (  # DBTODO REMOVE THIS AT REFACTOR
-            binary,
-            images,
-            text,
-        )
+        downloading = to_ext is not None
+        file_size = _get_file_size(dataset)
 
-        if to_ext or isinstance(dataset.datatype, binary.Binary):  # Saving the file, or binary file
-            if dataset.extension in composite_extensions:
-                return self._archive_composite_dataset(trans, dataset, headers, do_action=kwd.get("do_action", "zip"))
-            else:
-                headers["Content-Length"] = str(os.stat(dataset.file_name).st_size)
-                filename = self._download_filename(
-                    dataset,
-                    to_ext,
-                    hdca=kwd.get("hdca"),
-                    element_identifier=kwd.get("element_identifier"),
-                    filename_pattern=kwd.get("filename_pattern"),
-                )
-                headers[
-                    "content-type"
-                ] = "application/octet-stream"  # force octet-stream so Safari doesn't append mime extensions to filename
-                headers["Content-Disposition"] = f'attachment; filename="{filename}"'
-                return open(dataset.file_name, "rb"), headers
         if not os.path.exists(dataset.file_name):
             raise ObjectNotFound(f"File Not Found ({dataset.file_name}).")
-        max_peek_size = DEFAULT_MAX_PEEK_SIZE  # 1 MB
-        if isinstance(dataset.datatype, text.Html):
-            max_peek_size = 10000000  # 10 MB for html
-        preview = util.string_as_bool(preview)
-        if (
-            not preview
-            or isinstance(dataset.datatype, images.Image)
-            or os.stat(dataset.file_name).st_size < max_peek_size
-        ):
-            return self._yield_user_file_content(trans, dataset, dataset.file_name, headers), headers
-        else:
-            headers["content-type"] = "text/html"
-            return (
-                trans.fill_template_mako(
-                    "/dataset/large_file.mako",
-                    truncated_data=open(dataset.file_name, "rb").read(max_peek_size),
-                    data=dataset,
-                ),
-                headers,
-            )
+
+        if downloading:
+            trans.log_event(f"Download dataset id: {str(dataset.id)}")
+            return self._serve_file_download(headers, dataset, trans, to_ext, file_size, **kwd)
+        else:  # displaying
+            trans.log_event(f"Display dataset id: {str(dataset.id)}")
+            max_peek_size = _get_max_peak_size(dataset)
+            if (
+                _is_binary_file(dataset) and preview and hasattr(trans, "fill_template_mako")
+            ):  # preview file which format is unknown (to Galaxy), we still try to display this as text
+                return self._serve_binary_file_contents_as_text(trans, dataset, headers, file_size, max_peek_size)
+            else:  # text/html, or image, or display was called without preview flag
+                return self._serve_file_contents(trans, dataset, headers, preview, file_size, max_peek_size)
 
     def display_as_markdown(self, dataset_instance: DatasetProtocol) -> str:
         """Prepare for embedding dataset into a basic Markdown document.
@@ -551,7 +604,7 @@ class Data(metaclass=DataMeta):
         on datatypes not tightly tied to a Galaxy version (e.g. datatypes in the
         Tool Shed).
 
-        Speaking very losely - the datatype should should load a bounded amount
+        Speaking very losely - the datatype should load a bounded amount
         of data from the supplied dataset instance and prepare for embedding it
         into Markdown. This should be relatively vanilla Markdown - the result of
         this is bleached and it should not contain nested Galaxy Markdown
@@ -711,7 +764,7 @@ class Data(metaclass=DataMeta):
         try:
             return self.supported_display_apps[type]["label"]
         except Exception:
-            return "unknown"
+            return UNKNOWN
 
     def as_display_type(self, dataset: DatasetProtocol, type: str, **kwd) -> Union[FileObjType, str]:
         """Returns modified file contents for a particular display type"""
@@ -728,7 +781,7 @@ class Data(metaclass=DataMeta):
         return f"This display type ({type}) is not implemented for this datatype ({dataset.ext})."
 
     def get_display_links(
-        self, dataset: DatasetProtocol, type: str, app, base_url: str, target_frame: str = "_blank", **kwd
+        self, dataset: DatasetProtocol, type: str, app, base_url: str, request, target_frame: str = "_blank", **kwd
     ):
         """
         Returns a list of tuples of (name, link) for a particular display type.  No check on
@@ -739,7 +792,7 @@ class Data(metaclass=DataMeta):
         try:
             if app.config.enable_old_display_applications and type in self.get_display_types():
                 return target_frame, getattr(self, self.supported_display_apps[type]["links_function"])(
-                    dataset, type, app, base_url, **kwd
+                    dataset, type, app, base_url, request, **kwd
                 )
         except Exception:
             log.exception(

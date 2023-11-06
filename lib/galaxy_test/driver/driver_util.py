@@ -227,7 +227,6 @@ def setup_galaxy_config(
         template_cache_path=template_cache_path,
         tool_config_file=tool_config_file,
         tool_data_table_config_path=tool_data_table_config_path,
-        tool_parse_help=False,
         tool_path=tool_path,
         update_integrated_tool_panel=update_integrated_tool_panel,
         use_tasked_jobs=True,
@@ -237,7 +236,7 @@ def setup_galaxy_config(
         logging=LOGGING_CONFIG_DEFAULT,
         monitor_thread_join_timeout=5,
         object_store_store_by="uuid",
-        fetch_url_allowlist="127.0.0.1",
+        fetch_url_allowlist=["127.0.0.0/24"],
         job_handler_monitor_sleep=0.2,
         job_runner_monitor_sleep=0.2,
         workflow_monitor_sleep=0.2,
@@ -342,6 +341,13 @@ def copy_database_template(source, db_path):
         raise Exception(f"Failed to copy database template from source {source}")
 
 
+def init_database(database_connection):
+    # We pass by migrations and instantiate the current table
+    create_database(database_connection)
+    mapping.init("/tmp", database_connection, create_tables=True, map_install_models=True)
+    toolshed_mapping.init(database_connection, create_tables=True)
+
+
 def database_conf(db_path, prefix="GALAXY", prefer_template_database=False):
     """Find (and populate if needed) Galaxy database connection."""
     database_auto_migrate = False
@@ -359,10 +365,7 @@ def database_conf(db_path, prefix="GALAXY", prefer_template_database=False):
             actual_database_parsed = database_template_parsed._replace(path=f"/{actual_db}")
             database_connection = actual_database_parsed.geturl()
             if not database_exists(database_connection):
-                # We pass by migrations and instantiate the current table
-                create_database(database_connection)
-                mapping.init("/tmp", database_connection, create_tables=True, map_install_models=True)
-                toolshed_mapping.init(database_connection, create_tables=True)
+                init_database(database_connection)
                 check_migrate_databases = False
     else:
         default_db_filename = f"{prefix.lower()}.sqlite"
@@ -581,7 +584,7 @@ def build_galaxy_app(simple_kwargs) -> GalaxyUniverseApplication:
     simple_kwargs["global_conf"]["__file__"] = "lib/galaxy/config/sample/galaxy.yml.sample"
     simple_kwargs = load_app_properties(kwds=simple_kwargs)
     # Build the Universe Application
-    app = GalaxyUniverseApplication(**simple_kwargs)
+    app = GalaxyUniverseApplication(**simple_kwargs, is_webapp=True)
     log.info("Embedded Galaxy application started")
 
     global install_context
@@ -742,7 +745,9 @@ def launch_gravity(port, gxit_port=None, galaxy_config=None):
     if "interactivetools_proxy_host" not in galaxy_config:
         galaxy_config["interactivetools_proxy_host"] = f"localhost:{gxit_port}"
     # Can't use in-memory celery broker, just fall back to sqlalchemy
-    galaxy_config.update({"celery_conf": {"broker_url": None}})
+    celery_conf = galaxy_config.get("celery_conf", {})
+    celery_conf.update({"broker_url": None})
+    galaxy_config["celery_conf"] = celery_conf
     state_dir = tempfile.mkdtemp(suffix="state")
     config = {
         "gravity": {

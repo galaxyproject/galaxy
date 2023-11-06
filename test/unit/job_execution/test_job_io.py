@@ -9,6 +9,7 @@ from galaxy.files import (
 )
 from galaxy.job_execution.setup import JobIO
 from galaxy.model import Job
+from galaxy.model.base import transaction
 from galaxy.model.unittest_utils import GalaxyDataTestApp
 
 WORKING_DIRECTORY = "/tmp"
@@ -40,7 +41,9 @@ def app() -> FileSourcesMockApp:
 def job(app: FileSourcesMockApp) -> Job:
     job = Job()
     app.model.session.add(job)
-    app.model.session.flush()
+    session = app.model.session
+    with transaction(session):
+        session.commit()
     return job
 
 

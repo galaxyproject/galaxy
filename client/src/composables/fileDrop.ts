@@ -1,5 +1,5 @@
-import { computed, ref, unref, type Ref } from "vue";
-import { useEventListener, type MaybeComputedRef } from "@vueuse/core";
+import { type MaybeRefOrGetter, useEventListener } from "@vueuse/core";
+import { computed, type Ref, ref, unref } from "vue";
 
 export type FileDropHandler = (event: DragEvent) => void;
 
@@ -11,9 +11,9 @@ export type FileDropHandler = (event: DragEvent) => void;
  * @param idleTime how long to wait until state resets
  */
 export function useFileDrop(
-    dropZone: MaybeComputedRef<EventTarget | null | undefined>,
+    dropZone: MaybeRefOrGetter<EventTarget | null | undefined>,
     onDrop: Ref<FileDropHandler> | FileDropHandler,
-    solo: MaybeComputedRef<boolean>,
+    solo: MaybeRefOrGetter<boolean>,
     idleTime = 800
 ) {
     /** returns if any bootstrap modal is open */
@@ -23,7 +23,7 @@ export function useFileDrop(
 
     type State = "idle" | "blocked" | "fileDragging";
     type StateMachine = {
-        [state in State]: (event: MouseEvent) => State;
+        [_state in State]: (event: MouseEvent) => State;
     };
 
     const currentState: Ref<State> = ref("idle");

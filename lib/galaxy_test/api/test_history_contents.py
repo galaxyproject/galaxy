@@ -495,7 +495,7 @@ class TestHistoryContentsApi(ApiTestCase):
 
     def test_dataset_collection_hide_originals(self, history_id):
         payload = self.dataset_collection_populator.create_pair_payload(
-            history_id, type="dataset_collection", direct_upload=False
+            history_id, type="dataset_collection", direct_upload=False, copy_elements=False
         )
 
         payload["hide_source_items"] = True
@@ -503,9 +503,7 @@ class TestHistoryContentsApi(ApiTestCase):
         self.__check_create_collection_response(dataset_collection_response)
 
         contents_response = self._get(f"histories/{history_id}/contents")
-        datasets = [
-            d for d in contents_response.json() if d["history_content_type"] == "dataset" and d["hid"] in [1, 2]
-        ]
+        datasets = [d for d in contents_response.json() if d["history_content_type"] == "dataset"]
         # Assert two datasets in source were hidden.
         assert len(datasets) == 2
         assert not datasets[0]["visible"]
@@ -553,7 +551,7 @@ class TestHistoryContentsApi(ApiTestCase):
         assert len(contents) == 1
         new_forward, _ = self.__get_paired_response_elements(history_id, contents[0])
         self._assert_has_keys(new_forward, "history_id")
-        assert new_forward["history_id"] == history_id
+        assert new_forward["history_id"] == second_history_id
 
     def test_hdca_copy_with_new_dbkey(self, history_id):
         fetch_response = self.dataset_collection_populator.create_pair_in_history(history_id, wait=True).json()
@@ -737,6 +735,38 @@ class TestHistoryContentsApi(ApiTestCase):
         ).json()
         assert len(contents_response) == 0
 
+    @skip_without_tool("cat_data_and_sleep")
+    def test_index_filter_by_related_items(self, history_id):
+        # initialise history with 2 datasets
+        input_hda_id = self.dataset_populator.new_dataset(history_id)["id"]
+        unrelated_hid = self.dataset_populator.new_dataset(history_id)["hid"]
+
+        # Run tool on first dataset to get 3rd, related dataset
+        inputs = {
+            "input1": {"src": "hda", "id": input_hda_id},
+            "sleep_time": 0,
+        }
+        run_response = self.dataset_populator.run_tool_raw(
+            "cat_data_and_sleep",
+            inputs,
+            history_id,
+        )
+        related_hid = run_response.json()["outputs"][0]["hid"]
+
+        # Test q = related-eq, for related items
+        contents_response = self._get(f"histories/{history_id}/contents?v=dev&q=related-eq&qv={related_hid}").json()
+        assert len(contents_response) == 2
+
+        # Test q = related, for unrelated item
+        contents_response = self._get(f"histories/{history_id}/contents?v=dev&q=related&qv={unrelated_hid}").json()
+        assert len(contents_response) == 1
+
+        # Test error case: qv is string
+        related_qv = "one"
+        contents_response = self._get(f"histories/{history_id}/contents?v=dev&q=related-eq&qv={related_qv}")
+        assert contents_response.status_code == 400
+        assert contents_response.json()["err_msg"] == "unparsable value for related filter"
+
     def test_elements_datatypes_field(self, history_id):
         collection_name = "homogeneous"
         expected_datatypes = ["txt"]
@@ -769,6 +799,45 @@ class TestHistoryContentsApi(ApiTestCase):
         self._assert_status_code_is(contents_response, 200)
         collection = contents_response.json()[0]
         assert sorted(collection["elements_datatypes"]) == sorted(expected_datatypes)
+
+    @skip_without_tool("cat1")
+    def test_cannot_run_tools_on_immutable_histories(self, history_id):
+        create_response = self.dataset_collection_populator.create_pair_in_history(
+            history_id, contents=["123", "456"], wait=True
+        )
+        hdca_id = create_response.json()["outputs"][0]["id"]
+        inputs = {
+            "input1": {"batch": True, "values": [{"src": "hdca", "id": hdca_id}]},
+        }
+
+        # once we purge the history, it becomes immutable
+        self._delete(f"histories/{history_id}", data={"purge": True}, json=True)
+
+        with self.assertRaisesRegex(AssertionError, "History is immutable"):
+            self.dataset_populator.run_tool("cat1", inputs=inputs, history_id=history_id)
+
+    def test_cannot_update_dataset_collection_on_immutable_history(self, history_id):
+        hdca = self._create_pair_collection(history_id)
+
+        # once we purge the history, it becomes immutable
+        self._delete(f"histories/{history_id}", data={"purge": True}, json=True)
+
+        body = dict(name="newnameforpair")
+        update_response = self._put(
+            f"histories/{history_id}/contents/dataset_collections/{hdca['id']}", data=body, json=True
+        )
+        self._assert_status_code_is(update_response, 403)
+        assert update_response.json()["err_msg"] == "History is immutable"
+
+    def test_cannot_update_dataset_on_immutable_history(self, history_id):
+        hda1 = self._wait_for_new_hda(history_id)
+
+        # once we purge the history, it becomes immutable
+        self._delete(f"histories/{history_id}", data={"purge": True}, json=True)
+
+        update_response = self._update(history_id, hda1["id"], dict(name="Updated Name"))
+        self._assert_status_code_is(update_response, 403)
+        assert update_response.json()["err_msg"] == "History is immutable"
 
 
 class TestHistoryContentsApiBulkOperation(ApiTestCase):
@@ -955,6 +1024,41 @@ class TestHistoryContentsApiBulkOperation(ApiTestCase):
                 if item["history_content_type"] == "dataset":
                     self.dataset_populator.wait_for_purge(history_id=history_id, content_id=item["id"])
 
+    def test_deleting_collection_should_delete_contents(self):
+        with self.dataset_populator.test_history() as history_id:
+            num_expected_datasets = 2
+            # Create collection and datasets
+            collection_ids = self._create_collection_in_history(history_id, num_collections=1)
+            original_collection_id = collection_ids[0]
+            # Check datasets are hidden and not deleted
+            history_contents = self._get_history_contents(history_id)
+            datasets = list(filter(lambda item: item["history_content_type"] == "dataset", history_contents))
+            assert len(datasets) == num_expected_datasets
+            for dataset in datasets:
+                assert dataset["deleted"] is False
+                assert dataset["visible"] is False
+
+            # Delete the collection
+            payload = {
+                "operation": "delete",
+                "items": [
+                    {
+                        "id": original_collection_id,
+                        "history_content_type": "dataset_collection",
+                    },
+                ],
+            }
+            bulk_operation_result = self._apply_bulk_operation(history_id, payload)
+            self._assert_bulk_success(bulk_operation_result, 1)
+
+            # We expect the original collection and the datasets to be deleted
+            num_expected_history_contents = num_expected_datasets + 1
+
+            history_contents = self._get_history_contents(history_id)
+            assert len(history_contents) == num_expected_history_contents
+            for item in history_contents:
+                assert item["deleted"] is True
+
     @requires_new_user
     def test_only_owner_can_apply_bulk_operations(self):
         with self.dataset_populator.test_history() as history_id:
@@ -1096,13 +1200,14 @@ class TestHistoryContentsApiBulkOperation(ApiTestCase):
             _, collection_ids, history_contents = self._create_test_history_contents(history_id)
 
             history_contents = self._get_history_contents(history_id, query="?v=dev&keys=extension,data_type,metadata")
+            original_collection_update_times = []
             for item in history_contents:
                 if item["history_content_type"] == "dataset":
                     assert item["extension"] == "txt"
                     assert item["data_type"] == "galaxy.datatypes.data.Text"
                     assert "metadata_column_names" not in item
-
-            self.dataset_populator.wait_for_history_jobs(history_id)
+                if item["history_content_type"] == "dataset_collection":
+                    original_collection_update_times.append(item["update_time"])
 
             expected_datatype = "tabular"
             # Change datatype of all datasets
@@ -1122,11 +1227,16 @@ class TestHistoryContentsApiBulkOperation(ApiTestCase):
             self.dataset_populator.wait_for_history(history_id)
 
             history_contents = self._get_history_contents(history_id, query="?v=dev&keys=extension,data_type,metadata")
+            new_collection_update_times = []
             for item in history_contents:
                 if item["history_content_type"] == "dataset":
                     assert item["extension"] == "tabular"
                     assert item["data_type"] == "galaxy.datatypes.tabular.Tabular"
                     assert "metadata_column_names" in item
+                if item["history_content_type"] == "dataset_collection":
+                    new_collection_update_times.append(item["update_time"])
+
+            assert original_collection_update_times != new_collection_update_times
 
     def test_bulk_datatype_change_should_skip_set_metadata_on_deferred_data(self):
         with self.dataset_populator.test_history() as history_id:

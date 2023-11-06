@@ -1,7 +1,8 @@
-<script lang="ts" setup>
-import Vue, { computed } from "vue";
+<script setup lang="ts">
 import BootstrapVue from "bootstrap-vue";
-import { getZoomInLevel, getZoomOutLevel, isMinZoom, isMaxZoom } from "./modules/zoomLevels";
+import Vue, { computed } from "vue";
+
+import { getZoomInLevel, getZoomOutLevel, isMaxZoom, isMinZoom } from "./modules/zoomLevels";
 
 Vue.use(BootstrapVue);
 
@@ -70,6 +71,6 @@ function onZoomReset() {
     left: 1rem;
     bottom: 1rem;
     cursor: pointer;
-    z-index: 1002;
+    z-index: 2000;
 }
 </style>

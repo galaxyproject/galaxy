@@ -3,14 +3,17 @@ import re
 import tarfile
 import tempfile
 import zipfile
-from typing import Optional
+from typing import (
+    Optional,
+    Union,
+)
 
 from galaxy.util import asbool
 from ._util import _assert_presence_number
 
 
-def _extract_from_tar(bytes, fn):
-    with io.BytesIO(bytes) as temp:
+def _extract_from_tar(output_bytes, fn):
+    with io.BytesIO(output_bytes) as temp:
         with tarfile.open(fileobj=temp, mode="r") as tar_temp:
             ti = tar_temp.getmember(fn)
             # zip treats directories like empty files.
@@ -23,9 +26,9 @@ def _extract_from_tar(bytes, fn):
                 return member_fh.read()
 
 
-def _list_from_tar(bytes, path):
+def _list_from_tar(output_bytes, path):
     lst = list()
-    with io.BytesIO(bytes) as temp:
+    with io.BytesIO(output_bytes) as temp:
         with tarfile.open(fileobj=temp, mode="r") as tar_temp:
             for fn in tar_temp.getnames():
                 if not re.match(path, fn):
@@ -34,16 +37,16 @@ def _list_from_tar(bytes, path):
     return sorted(lst)
 
 
-def _extract_from_zip(bytes, fn):
-    with io.BytesIO(bytes) as temp:
+def _extract_from_zip(output_bytes, fn):
+    with io.BytesIO(output_bytes) as temp:
         with zipfile.ZipFile(temp, mode="r") as zip_temp:
             with zip_temp.open(fn) as member_fh:
                 return member_fh.read()
 
 
-def _list_from_zip(bytes, path):
+def _list_from_zip(output_bytes, path):
     lst = list()
-    with io.BytesIO(bytes) as temp:
+    with io.BytesIO(output_bytes) as temp:
         with zipfile.ZipFile(temp, mode="r") as zip_temp:
             for fn in zip_temp.namelist():
                 if not re.match(path, fn):
@@ -53,17 +56,17 @@ def _list_from_zip(bytes, path):
 
 
 def assert_has_archive_member(
-    output_bytes,
-    path,
+    output_bytes: bytes,
+    path: str,
     verify_assertions_function,
     children,
-    all="false",
-    n: Optional[int] = None,
-    delta: int = 0,
-    min: Optional[int] = None,
-    max: Optional[int] = None,
-    negate: bool = False,
-):
+    all: Union[bool, str] = False,
+    n: Optional[Union[int, str]] = None,
+    delta: Union[int, str] = 0,
+    min: Optional[Union[int, str]] = None,
+    max: Optional[Union[int, str]] = None,
+    negate: Union[bool, str] = False,
+) -> None:
     """Recursively checks the specified children assertions against the text of
     the first element matching the specified path found within the archive.
     Currently supported formats: .zip, .tar, .tar.gz."""

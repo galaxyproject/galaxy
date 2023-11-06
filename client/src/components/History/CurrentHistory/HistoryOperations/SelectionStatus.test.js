@@ -1,6 +1,7 @@
 import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
+
 import HistorySelectionStatus from "./SelectionStatus.vue";
 
 const localVue = getLocalVue();

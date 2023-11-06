@@ -6,7 +6,7 @@ from .framework import (
 
 
 class TestLibraryLanding(SeleniumTestCase):
-    requires_admin = True
+    run_as_admin = True
 
     def setup_with_driver(self):
         super().setup_with_driver()
@@ -72,8 +72,7 @@ class TestLibraryLanding(SeleniumTestCase):
 
         self._assert_num_displayed_libraries_is(3)
         self.screenshot("libraries_index_search")
-        # sort ascending
-        self.libraries_index_sort_click()
+        #  ascending sort is default
         self._assert_names_are([f"{namebase} a", f"{namebase} b", f"{namebase} c"])
         # sort descending
         self.libraries_index_sort_click()

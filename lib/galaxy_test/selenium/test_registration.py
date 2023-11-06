@@ -18,6 +18,15 @@ class TestRegistration(SeleniumTestCase):
         self.register()
 
     @selenium_test
+    def test_registration_accessibility(self):
+        self.home()
+        self.components.masthead.register_or_login.wait_for_and_click()
+        registration = self.components.registration
+        registration.toggle.wait_for_and_click()
+        registration.form.wait_for_visible()
+        registration.form.assert_no_axe_violations_with_impact_of_at_least("moderate")
+
+    @selenium_test
     def test_logout(self):
         self.home()
         self.register()

@@ -9,6 +9,7 @@ from galaxy import (
     model,
     util,
 )
+from galaxy.model.base import transaction
 from galaxy.web.framework.helpers import (
     grids,
     iff,
@@ -298,7 +299,8 @@ class Forms(BaseUIController):
         form_definition.form_definition_current = form_definition_current
         form_definition_current.latest_form = form_definition
         trans.sa_session.add(form_definition_current)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         return form_definition, None
 
     @web.expose
@@ -308,7 +310,8 @@ class Forms(BaseUIController):
             form = get_form(trans, form_id)
             form.deleted = True
             trans.sa_session.add(form)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
         return ("Deleted %i form(s)." % len(ids), "done")
 
     @web.expose
@@ -318,7 +321,8 @@ class Forms(BaseUIController):
             form = get_form(trans, form_id)
             form.deleted = False
             trans.sa_session.add(form)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
         return ("Undeleted %i form(s)." % len(ids), "done")
 
 

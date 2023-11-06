@@ -6,7 +6,8 @@
 
 <script>
 import { mapCacheActions } from "vuex-cache";
-import { getCompositeDatasetInfo } from "components/Dataset/services";
+
+import { fetchDatasetDetails } from "@/api/datasets";
 
 export default {
     props: {
@@ -57,7 +58,7 @@ export default {
             });
         } else {
             // download whole dataset
-            getCompositeDatasetInfo(this.history_dataset_id).then((response) => {
+            fetchDatasetDetails({ id: this.history_dataset_id }).then((response) => {
                 this.pathDestination = { fileLink: `${response.download_url}?to_ext=${response.file_ext}` };
             });
         }

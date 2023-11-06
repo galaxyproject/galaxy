@@ -3,7 +3,7 @@
 
 <% _=n_ %>
 <!DOCTYPE HTML>
-<html>
+<html lang="en">
     <!--base.mako-->
     ${self.init()}
     <head>

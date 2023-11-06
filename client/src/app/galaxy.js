@@ -1,10 +1,11 @@
+import { getGalaxyInstance } from "app";
+import Backbone from "backbone";
 import $ from "jquery";
 import _ from "underscore";
-import Backbone from "backbone";
-import userModel from "./user-model";
-import { localize, _setUserLocale, _getUserLocale } from "utils/localization";
-import { getGalaxyInstance } from "app";
 import { create, dialog } from "utils/data";
+import { _getUserLocale, _setUserLocale, localize } from "utils/localization";
+
+import userModel from "./user-model";
 
 // ============================================================================
 /** Base galaxy client-side application.

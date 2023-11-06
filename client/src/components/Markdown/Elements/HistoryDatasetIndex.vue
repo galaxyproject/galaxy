@@ -4,6 +4,7 @@
 
 <script>
 import DatasetIndex from "components/Dataset/DatasetIndex/DatasetIndex";
+
 export default {
     components: {
         DatasetIndex,

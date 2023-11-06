@@ -7,6 +7,7 @@ if TYPE_CHECKING:
     from tool_shed.repository_types.registry import Registry as RepositoryTypesRegistry
     from tool_shed.util.hgweb_config import HgWebConfigManager
     from tool_shed.webapp.model import mapping
+    from tool_shed.webapp.security import CommunityRBACAgent
 
 
 class ToolShedApp(BasicSharedApp):
@@ -14,3 +15,4 @@ class ToolShedApp(BasicSharedApp):
     model: "mapping.ToolShedModelMapping"
     repository_registry: "RepositoryRegistry"
     hgweb_config_manager: "HgWebConfigManager"
+    security_agent: "CommunityRBACAgent"

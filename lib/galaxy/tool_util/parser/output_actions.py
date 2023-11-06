@@ -7,7 +7,11 @@ import os.path
 import re
 
 from galaxy import util
-from galaxy.util.template import fill_template
+
+try:
+    from galaxy.util.template import fill_template
+except ImportError:
+    fill_template = None  # type: ignore[assignment]
 
 log = logging.getLogger(__name__)
 
@@ -311,11 +315,17 @@ class MetadataToolOutputAction(ToolOutputAction):
         if self.default:
             # For historical reasons the default value takes preference over value,
             # and we only treat the default value as potentially containing cheetah.
-            value = fill_template(
-                self.default,
-                context=other_values,
-                python_template_version=other_values.get("__python_template_version__"),
-            ).split(",")
+            if fill_template is not None:
+                value = fill_template(
+                    self.default,
+                    context=other_values,
+                    python_template_version=other_values.get("__python_template_version__"),
+                ).split(",")
+            else:
+                # fallback when Cheetah not available, equivalent to how this was handled prior 23.0
+                # definitely not needed for CWL tool parsing
+                log.warning("Cheetah not installed, falling back to legacy 'apply_action' behavior.")
+                value = self.default
         if value is not None:
             setattr(output_dataset.metadata, self.name, value)
 

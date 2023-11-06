@@ -7,29 +7,34 @@
             size="sm"
             autocomplete="off"
             :placeholder="placeholder"
+            data-description="filter text input"
             @input="delayQuery"
             @change="setQuery"
             @keydown.esc="setQuery('')" />
         <b-input-group-append>
             <b-button
                 v-if="enableAdvanced"
+                v-b-tooltip.hover.bottom.noninteractive
+                aria-haspopup="true"
                 size="sm"
                 :pressed="showAdvanced"
                 :variant="showAdvanced ? 'info' : 'secondary'"
                 :title="titleAdvanced | l"
                 data-description="toggle advanced search"
                 @click="onToggle">
-                <icon v-if="showAdvanced" icon="angle-double-up" />
-                <icon v-else icon="angle-double-down" />
+                <icon v-if="showAdvanced" fixed-width icon="angle-double-up" />
+                <icon v-else fixed-width icon="angle-double-down" />
             </b-button>
             <b-button
+                v-b-tooltip.hover.bottom.noninteractive
+                aria-haspopup="true"
                 class="search-clear"
                 size="sm"
                 :title="titleClear | l"
                 data-description="reset query"
                 @click="clearBox">
-                <icon v-if="loading" icon="spinner" spin />
-                <icon v-else icon="times" />
+                <icon v-if="loading" fixed-width icon="spinner" spin />
+                <icon v-else fixed-width icon="times" />
             </b-button>
         </b-input-group-append>
     </b-input-group>
@@ -67,14 +72,19 @@ export default {
             queryInput: null,
             queryTimer: null,
             queryCurrent: null,
-            titleClear: "clear search (esc)",
-            titleAdvanced: "toggle advanced search",
+            titleClear: "Clear Search (esc)",
+            titleAdvanced: "Toggle Advanced Search",
         };
     },
     watch: {
         query(queryNew) {
             this.setQuery(queryNew);
         },
+    },
+    created() {
+        if (this.query) {
+            this.setQuery(this.query);
+        }
     },
     methods: {
         clearTimer() {

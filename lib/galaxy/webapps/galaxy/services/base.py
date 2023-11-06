@@ -1,3 +1,4 @@
+import mimetypes
 from tempfile import NamedTemporaryFile
 from typing import (
     Any,
@@ -44,6 +45,10 @@ def ensure_celery_tasks_enabled(config):
         )
 
 
+class SecurityNotProvidedError(Exception):
+    pass
+
+
 class ServiceBase:
     """Base class with common logic and utils reused by other services.
 
@@ -56,8 +61,16 @@ class ServiceBase:
        the required parameters and outputs of each operation.
     """
 
-    def __init__(self, security: IdEncodingHelper):
-        self.security = security
+    def __init__(self, security: Optional[IdEncodingHelper] = None):
+        self._security = security
+
+    @property
+    def security(self) -> IdEncodingHelper:
+        if self._security is None:
+            raise SecurityNotProvidedError(
+                "Security encoding helper must be set in the service constructor to encode/decode ids."
+            )
+        return self._security
 
     def decode_id(self, id: EncodedDatabaseIdField, kind: Optional[str] = None) -> int:
         """Decodes a previously encoded database ID."""
@@ -123,14 +136,12 @@ class ServedExportStore(NamedTuple):
 def model_store_storage_target(
     short_term_storage_allocator: ShortTermStorageAllocator, file_name: str, model_store_format: str
 ) -> ShortTermStorageTarget:
-    cleaned_filename = ready_name_for_url(f"{file_name}.{model_store_format}")
-    if model_store_format.endswith("gz"):
-        mime_type = "application/x-gzip"
-    else:
-        mime_type = "application/x-tar"
+    cleaned_filename = ready_name_for_url(file_name)
+    filename_with_extension = f"{cleaned_filename}.{model_store_format}"
+    mime_type = mimetypes.guess_type(filename_with_extension)[0] or "application/octet-stream"
 
     return short_term_storage_allocator.new_target(
-        cleaned_filename,
+        filename_with_extension,
         mime_type,
     )
 

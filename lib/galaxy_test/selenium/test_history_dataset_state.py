@@ -54,7 +54,7 @@ class TestHistoryDatasetState(SeleniumTestCase, UsesHistoryItemAssertions):
         self.components.edit_dataset_attributes.dbkey_dropdown_results.dbkey_dropdown_option(
             dbkey_text=TEST_DBKEY_TEXT
         ).wait_for_and_click()
-        self.components.edit_dataset_attributes.save_btn.wait_for_and_click()
+        self.components.edit_dataset_attributes.save_button.wait_for_and_click()
         self.sleep_for(self.wait_types.JOB_COMPLETION)
         self.history_panel_wait_for_hid_ok(FIRST_HID)
         self.assert_item_dbkey_displayed_as(FIRST_HID, "apiMel3")
@@ -126,15 +126,13 @@ class TestHistoryDatasetState(SeleniumTestCase, UsesHistoryItemAssertions):
 
     def _assert_downloadable(self, hid, is_downloadable=True):
         item = self.history_panel_item_component(hid=hid)
-        item.dataset_operations_dropdown.wait_for_and_click()
+        item.dataset_operations.wait_for_visible()
         item.info_button.wait_for_visible()
         if is_downloadable:
             assert item.download_button.is_displayed
         else:
             item.download_button.assert_absent_or_hidden()
-
-        # close menu...
-        item.dataset_operations_dropdown.wait_for_and_click()
+        item.dataset_operations.wait_for_visible()
         self.sleep_for(self.wait_types.UX_RENDER)
 
     def _assert_buttons(self, hid, expected_buttons):

@@ -23,7 +23,7 @@ from galaxy.util import (
     unicodify,
 )
 from .custos_authnz import (
-    CustosAuthnz,
+    CustosAuthFactory,
     KEYCLOAK_BACKENDS,
 )
 from .psa_authnz import (
@@ -39,7 +39,7 @@ log = logging.getLogger(__name__)
 # Note: This if for backward compatibility. Icons can be specified in oidc_backends_config.xml.
 DEFAULT_OIDC_IDP_ICONS = {
     "google": "https://developers.google.com/identity/images/btn_google_signin_light_normal_web.png",
-    "elixir": "https://elixir-europe.org/sites/default/files/images/login-button-orange.png",
+    "elixir": "https://lifescience-ri.eu/fileadmin/lifescience-ri/media/Images/button-login-small.png",
     "okta": "https://www.okta.com/sites/all/themes/Okta/images/blog/Logos/Okta_Logo_BrightBlue_Medium.png",
 }
 
@@ -67,7 +67,7 @@ class AuthnzManager:
             if root.tag != "OIDC":
                 raise etree.ParseError(
                     "The root element in OIDC_Config xml file is expected to be `OIDC`, "
-                    "found `{}` instead -- unable to continue.".format(root.tag)
+                    f"found `{root.tag}` instead -- unable to continue."
                 )
             for child in root:
                 if child.tag != "Setter":
@@ -79,7 +79,7 @@ class AuthnzManager:
                 if "Property" not in child.attrib or "Value" not in child.attrib or "Type" not in child.attrib:
                     log.error(
                         "Could not find the node attributes `Property` and/or `Value` and/or `Type`;"
-                        " found these attributes: `{}`; skipping this node.".format(child.attrib)
+                        f" found these attributes: `{child.attrib}`; skipping this node."
                     )
                     continue
                 try:
@@ -110,7 +110,7 @@ class AuthnzManager:
             if root.tag != "OIDC":
                 raise etree.ParseError(
                     "The root element in OIDC config xml file is expected to be `OIDC`, "
-                    "found `{}` instead -- unable to continue.".format(root.tag)
+                    f"found `{root.tag}` instead -- unable to continue."
                 )
             for child in root:
                 if child.tag != "provider":
@@ -147,6 +147,10 @@ class AuthnzManager:
             "redirect_uri": config_xml.find("redirect_uri").text,
             "enable_idp_logout": asbool(config_xml.findtext("enable_idp_logout", "false")),
         }
+        if config_xml.find("label") is not None:
+            rtv["label"] = config_xml.find("label").text
+        if config_xml.find("require_create_confirmation") is not None:
+            rtv["require_create_confirmation"] = asbool(config_xml.find("require_create_confirmation").text)
         if config_xml.find("prompt") is not None:
             rtv["prompt"] = config_xml.find("prompt").text
         if config_xml.find("api_url") is not None:
@@ -157,6 +161,8 @@ class AuthnzManager:
             rtv["icon"] = config_xml.find("icon").text
         if config_xml.find("extra_scopes") is not None:
             rtv["extra_scopes"] = listify(config_xml.find("extra_scopes").text)
+        if config_xml.find("tenant_id") is not None:
+            rtv["tenant_id"] = config_xml.find("tenant_id").text
         if config_xml.find("pkce_support") is not None:
             rtv["pkce_support"] = asbool(config_xml.find("pkce_support").text)
 
@@ -170,6 +176,10 @@ class AuthnzManager:
             "redirect_uri": config_xml.find("redirect_uri").text,
             "enable_idp_logout": asbool(config_xml.findtext("enable_idp_logout", "false")),
         }
+        if config_xml.find("label") is not None:
+            rtv["label"] = config_xml.find("label").text
+        if config_xml.find("require_create_confirmation") is not None:
+            rtv["require_create_confirmation"] = asbool(config_xml.find("require_create_confirmation").text)
         if config_xml.find("credential_url") is not None:
             rtv["credential_url"] = config_xml.find("credential_url").text
         if config_xml.find("well_known_oidc_config_uri") is not None:
@@ -200,7 +210,7 @@ class AuthnzManager:
         unified_provider_name = self._unify_provider_name(provider)
         if unified_provider_name in self.oidc_backends_config:
             provider = unified_provider_name
-            identity_provider_class = self._get_identity_provider_class(self.oidc_backends_implementation[provider])
+            identity_provider_class = self._get_identity_provider_factory(self.oidc_backends_implementation[provider])
             try:
                 if provider in KEYCLOAK_BACKENDS:
                     return (
@@ -230,11 +240,11 @@ class AuthnzManager:
             return False, msg, None
 
     @staticmethod
-    def _get_identity_provider_class(implementation):
+    def _get_identity_provider_factory(implementation):
         if implementation == "psa":
             return PSAAuthnz
         elif implementation == "custos":
-            return CustosAuthnz
+            return CustosAuthFactory.GetCustosBasedAuthProvider
         else:
             return None
 
@@ -308,6 +318,31 @@ class AuthnzManager:
             log.warning(msg)
             raise exceptions.ItemAccessibilityException(msg)
         return qres
+
+    def refresh_expiring_oidc_tokens_for_provider(self, trans, auth):
+        try:
+            success, message, backend = self._get_authnz_backend(auth.provider)
+            if success is False:
+                msg = f"An error occurred when refreshing user token on `{auth.provider}` identity provider: {message}"
+                log.error(msg)
+                return False
+            refreshed = backend.refresh(trans, auth)
+            if refreshed:
+                log.debug(f"Refreshed user token via `{auth.provider}` identity provider")
+            return True
+        except Exception as e:
+            msg = f"An error occurred when refreshing user token: {e}"
+            log.error(msg)
+            return False
+
+    def refresh_expiring_oidc_tokens(self, trans, user=None):
+        user = trans.user or user
+        if not isinstance(user, model.User):
+            return
+        for auth in user.custos_auth or []:
+            self.refresh_expiring_oidc_tokens_for_provider(trans, auth)
+        for auth in user.social_auth or []:
+            self.refresh_expiring_oidc_tokens_for_provider(trans, auth)
 
     def authenticate(self, provider, trans, idphint=None):
         """

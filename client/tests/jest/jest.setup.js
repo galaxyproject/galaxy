@@ -1,4 +1,6 @@
 import "@testing-library/jest-dom";
+import "@testing-library/jest-dom/jest-globals";
+
 import Vue from "vue";
 
 // Set Vue to suppress production / devtools / etc. warnings
@@ -9,3 +11,7 @@ Vue.config.devtools = false;
 and this makes the tag tests work correctly */
 global.XMLHttpRequest = undefined;
 global.setImmediate = global.setTimeout;
+
+// Always mock the following imports
+jest.mock("@/composables/hashedUserId");
+jest.mock("@/composables/userLocalStorage");

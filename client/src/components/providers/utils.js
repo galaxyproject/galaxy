@@ -1,5 +1,5 @@
+import { snakeCase } from "lodash";
 import JOB_STATES_MODEL from "utils/job-states-model";
-import { snakeCase } from "snake-case";
 
 export function stateIsTerminal(result) {
     return !JOB_STATES_MODEL.NON_TERMINAL_STATES.includes(result.state);

@@ -16,12 +16,14 @@ from typing import (
 from sqlalchemy.orm.scoping import ScopedSession
 
 from galaxy.model import (
+    DatasetInstance,
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
     Job,
     JobToOutputDatasetAssociation,
     LibraryDatasetDatasetAssociation,
 )
+from galaxy.model.base import transaction
 from galaxy.model.dataset_collections import builder
 from galaxy.model.dataset_collections.structure import UninitializedTree
 from galaxy.model.dataset_collections.type_description import COLLECTION_TYPE_DESCRIPTION_FACTORY
@@ -39,7 +41,10 @@ from galaxy.model.store.discover import (
     SessionlessModelPersistenceContext,
     UNSET,
 )
-from galaxy.objectstore import ObjectStore
+from galaxy.objectstore import (
+    ObjectStore,
+    persist_extra_files,
+)
 from galaxy.tool_util.parser.output_collection_def import (
     DEFAULT_DATASET_COLLECTOR_DESCRIPTION,
     INPUT_DBKEY_TOKEN,
@@ -90,7 +95,7 @@ class PermissionProvider(AbstractPermissionProvider):
             self._security_agent.set_all_dataset_permissions(primary_data.dataset, permissions, new=True, flush=False)
 
     def copy_dataset_permissions(self, init_from, primary_data):
-        self._security_agent.copy_dataset_permissions(init_from.dataset, primary_data.dataset)
+        self._security_agent.copy_dataset_permissions(init_from.dataset, primary_data.dataset, flush=False)
 
 
 class MetadataSourceProvider(AbstractMetadataSourceProvider):
@@ -243,14 +248,14 @@ class JobContext(BaseJobContext):
     @property
     def tag_handler(self):
         if self._tag_handler is None:
-            self._tag_handler = self.app.tag_handler.create_tag_handler_session()
+            self._tag_handler = self.app.tag_handler.create_tag_handler_session(self.job.galaxy_session)
         return self._tag_handler
 
     @property
     def work_context(self):
         from galaxy.work.context import WorkRequestContext
 
-        return WorkRequestContext(self.app, user=self.user)
+        return WorkRequestContext(self.app, user=self.user, galaxy_session=self.job.galaxy_session)
 
     @property
     def sa_session(self) -> ScopedSession:
@@ -292,7 +297,8 @@ class JobContext(BaseJobContext):
         self.sa_session.add(obj)
 
     def flush(self):
-        self.sa_session.flush()
+        with transaction(self.sa_session):
+            self.sa_session.commit()
 
     def get_library_folder(self, destination):
         app = self.app
@@ -332,20 +338,23 @@ class JobContext(BaseJobContext):
         trans = self.work_context
         trans.app.security_agent.copy_library_permissions(trans, library_folder, ld)
         trans.sa_session.add(ld)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
 
         # Permissions must be the same on the LibraryDatasetDatasetAssociation and the associated LibraryDataset
         trans.app.security_agent.copy_library_permissions(trans, ld, ldda)
         # Copy the current user's DefaultUserPermissions to the new LibraryDatasetDatasetAssociation.dataset
         trans.app.security_agent.set_all_dataset_permissions(
-            ldda.dataset, trans.app.security_agent.user_get_default_permissions(trans.user)
+            ldda.dataset, trans.app.security_agent.user_get_default_permissions(trans.user), flush=False, new=True
         )
         library_folder.add_library_dataset(ld, genome_build=ldda.dbkey)
         trans.sa_session.add(library_folder)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
 
         trans.sa_session.add(ld)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
 
     def add_datasets_to_history(self, datasets, for_output_dataset=None):
         sa_session = self.sa_session
@@ -718,26 +727,26 @@ def default_exit_code_file(files_dir, id_tag):
     return os.path.join(files_dir, f"galaxy_{id_tag}.ec")
 
 
-def collect_extra_files(object_store, dataset, job_working_directory):
+def collect_extra_files(object_store: ObjectStore, dataset: "DatasetInstance", job_working_directory: str) -> None:
+    # TODO: should this use compute_environment to determine the extra files path ?
+    assert dataset.dataset
     file_name = dataset.dataset.extra_files_path_name_from(object_store)
-    temp_file_path = os.path.join(job_working_directory, "working", file_name)
-    extra_dir = None
+    assert file_name
+    output_location = "outputs"
+    temp_file_path = os.path.join(job_working_directory, output_location, file_name)
+    if not os.path.exists(temp_file_path):
+        # Fall back to working dir, remove in 23.2
+        output_location = "working"
+        temp_file_path = os.path.join(job_working_directory, output_location, file_name)
+    if not os.path.exists(temp_file_path):
+        # no outputs to working directory, but may still need to push form cache to backend
+        temp_file_path = dataset.extra_files_path
     try:
         # This skips creation of directories - object store
         # automatically creates them.  However, empty directories will
         # not be created in the object store at all, which might be a
         # problem.
-        for root, _dirs, files in os.walk(temp_file_path):
-            extra_dir = root.replace(os.path.join(job_working_directory, "working"), "", 1).lstrip(os.path.sep)
-            for f in files:
-                object_store.update_from_file(
-                    dataset.dataset,
-                    extra_dir=extra_dir,
-                    alt_name=f,
-                    file_name=os.path.join(root, f),
-                    create=True,
-                    preserve_symlinks=True,
-                )
+        persist_extra_files(object_store=object_store, src_extra_files_path=temp_file_path, primary_data=dataset)
     except Exception as e:
         log.debug("Error in collect_associated_files: %s", unicodify(e))
 

@@ -2,7 +2,7 @@
     <div>
         <b-link
             id="dataset-dropdown"
-            class="workflow-dropdown font-weight-bold p-2"
+            class="workflow-dropdown p-2"
             data-toggle="dropdown"
             aria-haspopup="true"
             aria-expanded="false">
@@ -22,7 +22,7 @@
         <div class="dropdown-menu" aria-labelledby="dataset-dropdown">
             <a class="dropdown-item" href="#" @click.prevent="showDataset">
                 <span class="fa fa-eye fa-fw mr-1" />
-                <span>Switch to History containing dataset</span>
+                <span>Show in History containing dataset</span>
             </a>
             <a class="dropdown-item" href="#" @click.prevent="copyDataset">
                 <span class="fa fa-copy fa-fw mr-1" />
@@ -32,8 +32,8 @@
     </div>
 </template>
 <script>
-import Vue from "vue";
 import BootstrapVue from "bootstrap-vue";
+import Vue from "vue";
 
 Vue.use(BootstrapVue);
 

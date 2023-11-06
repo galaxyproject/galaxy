@@ -76,4 +76,4 @@ class EmbeddedMessageQueuePulsarIntegrationInstance(integration_util.Integration
 
 instance = integration_util.integration_module_instance(EmbeddedMessageQueuePulsarIntegrationInstance)
 
-test_tools = integration_util.integration_tool_runner(["simple_constructs"])
+test_tools = integration_util.integration_tool_runner(["simple_constructs", "composite_output_tests"])

@@ -53,17 +53,20 @@
 </template>
 
 <script>
-import FormDisplay from "@/components/Form/FormDisplay.vue";
-import ToolCard from "@/components/Tool/ToolCard.vue";
-import FormSection from "./FormSection.vue";
-import FormElement from "@/components/Form/FormElement.vue";
-import FormConditional from "./FormConditional.vue";
 import Utils from "utils/utils";
-import Heading from "@/components/Common/Heading.vue";
-import { useWorkflowStepStore } from "@/stores/workflowStepStore";
-import { useUniqueLabelError } from "../composables/useUniqueLabelError";
-import { useStepProps } from "../composables/useStepProps";
 import { toRef } from "vue";
+
+import { useWorkflowStores } from "@/composables/workflowStores";
+
+import { useStepProps } from "../composables/useStepProps";
+import { useUniqueLabelError } from "../composables/useUniqueLabelError";
+
+import FormConditional from "./FormConditional.vue";
+import FormSection from "./FormSection.vue";
+import Heading from "@/components/Common/Heading.vue";
+import FormDisplay from "@/components/Form/FormDisplay.vue";
+import FormElement from "@/components/Form/FormElement.vue";
+import ToolCard from "@/components/Tool/ToolCard.vue";
 
 export default {
     components: {
@@ -90,7 +93,7 @@ export default {
         const { stepId, annotation, label, stepInputs, stepOutputs, configForm, postJobActions } = useStepProps(
             toRef(props, "step")
         );
-        const stepStore = useWorkflowStepStore();
+        const { stepStore } = useWorkflowStores();
         const uniqueErrorLabel = useUniqueLabelError(stepStore, label);
 
         return {
@@ -123,11 +126,12 @@ export default {
         },
         inputs() {
             const inputs = this.configForm.inputs;
-            Utils.deepeach(inputs, (input) => {
+            Utils.deepEach(inputs, (input) => {
                 if (input.type) {
                     if (["data", "data_collection"].indexOf(input.type) != -1) {
+                        const extensions = Array.isArray(input.extensions) ? Utils.textify(input.extensions) : "";
                         input.titleonly = true;
-                        input.info = `Data input '${input.name}' (${Utils.textify(input.extensions)})`;
+                        input.info = `Data input '${input.name}' (${extensions})`;
                         input.value = { __class__: "RuntimeValue" };
                     } else {
                         input.connectable = ["rules"].indexOf(input.type) == -1;
@@ -140,7 +144,7 @@ export default {
                     }
                 }
             });
-            Utils.deepeach(inputs, (input) => {
+            Utils.deepEach(inputs, (input) => {
                 if (input.type === "conditional") {
                     input.connectable = false;
                     input.test_param.collapsible_value = undefined;

@@ -1,38 +1,54 @@
-import { setActivePinia, createPinia } from "pinia";
+import { createPinia, setActivePinia } from "pinia";
 
-import { useWorkflowStepStore, type TerminalSource } from "@/stores/workflowStepStore";
-import {
-    terminalFactory,
-    InputCollectionTerminal,
-    InputTerminal,
-    InputParameterTerminal,
-    OutputCollectionTerminal,
-    OutputTerminal,
-    OutputParameterTerminal,
-    producesAcceptableDatatype,
-    InvalidOutputTerminal,
-} from "./terminals";
 import { testDatatypesMapper } from "@/components/Datatypes/test_fixtures";
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
-import type { DataOutput, Steps, Step } from "@/stores/workflowStepStore";
+import { DataOutput, Step, Steps, type TerminalSource, useWorkflowStepStore } from "@/stores/workflowStepStore";
+
+import { advancedSteps, simpleSteps } from "../test_fixtures";
 import {
     ANY_COLLECTION_TYPE_DESCRIPTION,
     CollectionTypeDescription,
     NULL_COLLECTION_TYPE_DESCRIPTION,
 } from "./collectionTypeDescription";
-import { simpleSteps, advancedSteps } from "../test_fixtures";
+import {
+    InputCollectionTerminal,
+    InputParameterTerminal,
+    InputTerminal,
+    InvalidOutputTerminal,
+    OutputCollectionTerminal,
+    OutputParameterTerminal,
+    OutputTerminal,
+    producesAcceptableDatatype,
+    terminalFactory,
+} from "./terminals";
 
 function setupAdvanced() {
     const terminals: { [index: string]: { [index: string]: ReturnType<typeof terminalFactory> } } = {};
+
+    const connectionStore = useConnectionStore("mock-workflow");
+    const stepStore = useWorkflowStepStore("mock-workflow");
+
     Object.values(advancedSteps).map((step) => {
         const stepLabel = step.label;
         if (stepLabel) {
             terminals[stepLabel] = {};
             step.inputs?.map((input) => {
-                terminals[stepLabel]![input.name] = terminalFactory(step.id, input, testDatatypesMapper);
+                terminals[stepLabel]![input.name] = terminalFactory(
+                    step.id,
+                    input,
+                    testDatatypesMapper,
+                    connectionStore,
+                    stepStore
+                );
             });
             step.outputs?.map((output) => {
-                terminals[stepLabel]![output.name] = terminalFactory(step.id, output, testDatatypesMapper);
+                terminals[stepLabel]![output.name] = terminalFactory(
+                    step.id,
+                    output,
+                    testDatatypesMapper,
+                    connectionStore,
+                    stepStore
+                );
             });
         }
     });
@@ -42,12 +58,16 @@ function setupAdvanced() {
 function rebuildTerminal<T extends ReturnType<typeof terminalFactory>>(terminal: T): T {
     let terminalSource: TerminalSource;
     const step = terminal.stepStore.getStep(terminal.stepId);
+
+    const connectionStore = useConnectionStore("mock-workflow");
+    const stepStore = useWorkflowStepStore("mock-workflow");
+
     if (terminal.terminalType === "input") {
         terminalSource = step!.inputs.find((input) => input.name == terminal.name)!;
     } else {
         terminalSource = step!.outputs.find((output) => output.name == terminal.name)!;
     }
-    return terminalFactory(terminal.stepId, terminalSource, testDatatypesMapper) as T;
+    return terminalFactory(terminal.stepId, terminalSource, testDatatypesMapper, connectionStore, stepStore) as T;
 }
 
 describe("terminalFactory", () => {
@@ -83,7 +103,10 @@ describe("terminalFactory", () => {
         expect(terminals["filter_failed"]?.["output"]).toBeInstanceOf(OutputCollectionTerminal);
     });
     it("throws error on invalid terminalSource", () => {
-        const invalidFactory = () => terminalFactory(1, {} as any, testDatatypesMapper);
+        const connectionStore = useConnectionStore("mock-workflow");
+        const stepStore = useWorkflowStepStore("mock-workflow");
+
+        const invalidFactory = () => terminalFactory(1, {} as any, testDatatypesMapper, connectionStore, stepStore);
         expect(invalidFactory).toThrow();
     });
 });
@@ -95,8 +118,8 @@ describe("canAccept", () => {
     beforeEach(() => {
         setActivePinia(createPinia());
         terminals = setupAdvanced();
-        stepStore = useWorkflowStepStore();
-        connectionStore = useConnectionStore();
+        stepStore = useWorkflowStepStore("mock-workflow");
+        connectionStore = useConnectionStore("mock-workflow");
         Object.values(JSON.parse(JSON.stringify(advancedSteps)) as Steps).map((step) => {
             stepStore.addStep(step);
         });
@@ -380,22 +403,31 @@ describe("canAccept", () => {
         dataInTwo.disconnect(dataOut);
         expect(dataIn.mapOver).toEqual(NULL_COLLECTION_TYPE_DESCRIPTION);
     });
+    it("maintains step map over state when disconnecting output", () => {
+        const listListOut = terminals["list:list input"]?.["output"] as OutputCollectionTerminal;
+        const filterFailedInput = terminals["filter_failed"]?.["input"] as InputCollectionTerminal;
+        const filterFailedOutput = terminals["filter_failed"]?.["output"] as OutputCollectionTerminal;
+        const dataIn = terminals["simple data"]?.["input"] as InputTerminal;
+        filterFailedInput.connect(listListOut);
+        dataIn.connect(filterFailedOutput);
+        expect(filterFailedInput.isMappedOver()).toBe(true);
+        expect(stepStore.stepMapOver[filterFailedOutput.stepId]?.isCollection).toBe(true);
+        dataIn.disconnect(filterFailedOutput);
+        expect(stepStore.stepMapOver[filterFailedOutput.stepId]?.isCollection).toBe(true);
+    });
     it("rejects connecting incompatible connection types", () => {
         const pairedOut = terminals["paired input"]!["output"] as OutputCollectionTerminal;
         const collectionIn = terminals["list collection input"]!["input1"] as InputCollectionTerminal;
         expect(collectionIn.canAccept(pairedOut).canAccept).toBe(false);
         expect(collectionIn.canAccept(pairedOut).reason).toBe("Incompatible collection type(s) for attachment.");
     });
-    it("rejects mapping over collection input if other inputs have an incompatible map over collection type", () => {
+    it("accepts a collection input if other input has a map over collection type", () => {
         const collectionOut = terminals["list input"]!["output"] as OutputCollectionTerminal;
         const listListOut = terminals["list:list input"]!["output"] as OutputCollectionTerminal;
         const listOneIn = terminals["two list inputs"]!["kind|f1"] as InputCollectionTerminal;
         const listTwoIn = terminals["two list inputs"]!["kind|f2"] as InputCollectionTerminal;
         listOneIn.connect(listListOut);
-        expect(listTwoIn.canAccept(collectionOut).canAccept).toBe(false);
-        expect(listTwoIn.canAccept(collectionOut).reason).toBe(
-            "Can't map over this input with output collection type - other inputs have an incompatible map over collection type. Disconnect inputs (and potentially outputs) and retry."
-        );
+        expect(listTwoIn.canAccept(collectionOut).canAccept).toBe(true);
     });
     it("rejects mapping over collection input if outputs constrain input to incompatible collection type", () => {
         const collectionOut = terminals["list input"]!["output"] as OutputCollectionTerminal;
@@ -405,11 +437,15 @@ describe("canAccept", () => {
         const mapOverOut = terminals["two list inputs"]!["out1"] as OutputTerminal;
         const dataIn = terminals["simple data"]!["input"] as InputTerminal;
         listOneIn.connect(listListOut);
+        // two list inputs constrained to a list map over
         dataIn.connect(mapOverOut);
         listOneIn.disconnect(listListOut);
-        // TODO: this should be possible eventually IMHO
-        expect(listTwoIn.canAccept(collectionOut).canAccept).toBe(false);
-        expect(listTwoIn.canAccept(collectionOut).reason).toBe(
+        // still constrained to list map over via output connection
+        // can accept other input
+        expect(listTwoIn.canAccept(collectionOut).canAccept).toBe(true);
+        // but cannot accept on the constrained input
+        expect(listOneIn.canAccept(collectionOut).canAccept).toBe(false);
+        expect(listOneIn.canAccept(collectionOut).reason).toBe(
             "Can't map over this input with output collection type - this step has outputs defined constraining the mapping of this tool. Disconnect outputs and retry."
         );
     });
@@ -463,7 +499,7 @@ describe("canAccept", () => {
         );
     });
     it("rejects connections to input collection constrained by other input", () => {
-        const collectionOut = terminals["list input"]!["output"] as OutputCollectionTerminal;
+        const listListListOut = terminals["list:list:list input"]!["output"] as OutputCollectionTerminal;
         const dataIn = terminals["simple data"]!["input"] as InputTerminal;
         const listOneIn = terminals["two list inputs"]!["kind|f1"] as InputCollectionTerminal;
         const listTwoIn = terminals["two list inputs"]!["kind|f2"] as InputCollectionTerminal;
@@ -473,8 +509,8 @@ describe("canAccept", () => {
         listOneIn.connect(listListOut);
         dataIn.connect(mapOverOut);
         // Can't connect list as output acts like "list:list"
-        expect(listTwoIn.canAccept(collectionOut).canAccept).toBe(false);
-        expect(listTwoIn.canAccept(collectionOut).reason).toBe(
+        expect(listTwoIn.canAccept(listListListOut).canAccept).toBe(false);
+        expect(listTwoIn.canAccept(listListListOut).reason).toBe(
             "Can't map over this input with output collection type - other inputs have an incompatible map over collection type. Disconnect inputs (and potentially outputs) and retry."
         );
     });
@@ -529,18 +565,30 @@ describe("Input terminal", () => {
     let terminals: { [index: number]: { [index: string]: ReturnType<typeof terminalFactory> } };
     beforeEach(() => {
         setActivePinia(createPinia());
-        stepStore = useWorkflowStepStore();
-        connectionStore = useConnectionStore();
+        stepStore = useWorkflowStepStore("mock-workflow");
+        connectionStore = useConnectionStore("mock-workflow");
         terminals = {};
         Object.values(simpleSteps).map((step) => {
             stepStore.addStep(step);
             terminals[step.id] = {};
             const stepTerminals = terminals[step.id]!;
             step.inputs?.map((input) => {
-                stepTerminals[input.name] = terminalFactory(step.id, input, testDatatypesMapper);
+                stepTerminals[input.name] = terminalFactory(
+                    step.id,
+                    input,
+                    testDatatypesMapper,
+                    connectionStore,
+                    stepStore
+                );
             });
             step.outputs?.map((output) => {
-                stepTerminals[output.name] = terminalFactory(step.id, output, testDatatypesMapper);
+                stepTerminals[output.name] = terminalFactory(
+                    step.id,
+                    output,
+                    testDatatypesMapper,
+                    connectionStore,
+                    stepStore
+                );
             });
         });
     });

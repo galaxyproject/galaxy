@@ -158,7 +158,7 @@ def legacy_expose_api(func, to_json=True, user_required=True):
         if user_required and trans.anonymous:
             error_message = "API Authentication Required for this request"
             return error
-        if trans.request.body:
+        if trans.request.is_body_readable:
             try:
                 kwargs["payload"] = __extract_payload_from_request(trans, func, kwargs)
             except ValueError:
@@ -273,7 +273,7 @@ def expose_api(func, to_json=True, user_required=True, user_or_session_required=
 
     @wraps(func)
     def decorator(self, trans, *args, **kwargs):
-        # errors passed in from trans._authenicate_api
+        # errors passed in from trans._authenticate_api
         if trans.error_message:
             return __api_error_response(
                 trans, status_code=403, err_code=error_codes.USER_NO_API_KEY, err_msg=trans.error_message
@@ -296,7 +296,7 @@ def expose_api(func, to_json=True, user_required=True, user_or_session_required=
                     err_msg="API authentication or Galaxy session required for this request",
                 )
 
-        if trans.request.body:
+        if trans.request.is_body_readable:
             try:
                 kwargs["payload"] = __extract_payload_from_request(trans, func, kwargs)
             except ValueError:

@@ -16,7 +16,11 @@ from galaxy.exceptions import (
     ObjectNotFound,
     RequestParameterInvalidException,
 )
-from galaxy.model import LibraryDataset
+from galaxy.model import (
+    LibraryDataset,
+    LibraryFolder,
+)
+from galaxy.model.base import transaction
 from galaxy.tools.actions import upload_common
 from galaxy.tools.parameters import populate_state
 from galaxy.util.path import (
@@ -299,28 +303,27 @@ class LibraryActions:
         if link_data_only == "link_to_files":
             uploaded_dataset.data.link_to(path)
             trans.sa_session.add_all((uploaded_dataset.data, uploaded_dataset.data.dataset))
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
         return uploaded_dataset
 
     def _create_folder(self, trans, parent_id: int, **kwd):
         is_admin = trans.user_is_admin
         current_user_roles = trans.get_current_user_roles()
-        try:
-            parent_folder = trans.sa_session.query(trans.app.model.LibraryFolder).get(parent_id)
-        except Exception:
-            parent_folder = None
+        parent_folder = trans.sa_session.get(LibraryFolder, parent_id)
         # Check the library which actually contains the user-supplied parent folder, not the user-supplied
         # library, which could be anything.
         self._check_access(trans, is_admin, parent_folder, current_user_roles)
         self._check_add(trans, is_admin, parent_folder, current_user_roles)
-        new_folder = trans.app.model.LibraryFolder(name=kwd.get("name", ""), description=kwd.get("description", ""))
+        new_folder = LibraryFolder(name=kwd.get("name", ""), description=kwd.get("description", ""))
         # We are associating the last used genome build with folders, so we will always
         # initialize a new folder with the first dbkey in genome builds list which is currently
         # ?    unspecified (?)
         new_folder.genome_build = trans.app.genome_builds.default_value
         parent_folder.add_folder(new_folder)
         trans.sa_session.add(new_folder)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         # New folders default to having the same permissions as their parent folder
         trans.app.security_agent.copy_library_permissions(trans, parent_folder, new_folder)
         return 200, dict(created=new_folder)
@@ -333,7 +336,7 @@ class LibraryActions:
                 raise ObjectNotFound(message)
             elif (
                 not trans.app.security_agent.can_access_dataset(current_user_roles, item.dataset)
-                and item.history.user == trans.user
+                and item.user == trans.user
             ):
                 message = f"You do not have permission to access the history dataset with id ({str(item.id)})."
                 raise ItemAccessibilityException(message)
@@ -347,7 +350,7 @@ class LibraryActions:
             ):
                 if isinstance(item, trans.model.Library):
                     item_type = "data library"
-                elif isinstance(item, trans.model.LibraryFolder):
+                elif isinstance(item, LibraryFolder):
                     item_type = "folder"
                 else:
                     item_type = "(unknown item type)"

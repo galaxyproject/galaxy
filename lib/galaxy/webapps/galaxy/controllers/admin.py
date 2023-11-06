@@ -18,6 +18,7 @@ from galaxy.exceptions import (
 )
 from galaxy.managers.quotas import QuotaManager
 from galaxy.model import tool_shed_install as install_model
+from galaxy.model.base import transaction
 from galaxy.security.validate_user_input import validate_password
 from galaxy.structured_app import StructuredApp
 from galaxy.util import (
@@ -76,7 +77,7 @@ class UserListGrid(grids.Grid):
     class LastLoginColumn(grids.GridColumn):
         def get_value(self, trans, grid, user):
             if user.galaxy_sessions:
-                return self.format(user.galaxy_sessions[0].update_time)
+                return self.format(user.current_galaxy_session.update_time)
             return "never"
 
         def sort(self, trans, query, ascending, column_name=None):
@@ -408,6 +409,15 @@ class QuotaListGrid(grids.Grid):
                 return len(quota.groups)
             return 0
 
+    class QuotaSourceLabelColumn(grids.TextColumn):
+        def get_value(self, trans, grid, quota):
+            raw_label = quota.quota_source_label
+            if raw_label is None:
+                rval = "<i>unlabelled object stores</i>"
+            else:
+                rval = raw_label
+            return rval
+
     # Grid definition
     title = "Quotas"
     model_class = model.Quota
@@ -427,6 +437,7 @@ class QuotaListGrid(grids.Grid):
         AmountColumn("Amount", key="amount", model_class=model.Quota, attach_popup=False),
         UsersColumn("Users", attach_popup=False),
         GroupsColumn("Groups", attach_popup=False),
+        QuotaSourceLabelColumn("Source Label", key="quota_source_label", visible=False, filterable="advanced"),
         StatusColumn("Status", attach_popup=False),
         # Columns that are valid for filtering but are not visible.
         grids.DeletedColumn("Deleted", key="deleted", visible=False, filterable="advanced"),
@@ -690,6 +701,9 @@ class AdminGalaxy(controller.JSAppLauncher):
         if message:
             kwargs["message"] = util.sanitize_text(message)
             kwargs["status"] = status or "done"
+        labels = trans.app.object_store.get_quota_source_map().get_quota_source_labels()
+        if labels:
+            self.quota_list_grid.columns[5].visible = True
         return self.quota_list_grid(trans, **kwargs)
 
     @web.legacy_expose_api
@@ -698,6 +712,9 @@ class AdminGalaxy(controller.JSAppLauncher):
         if trans.request.method == "GET":
             all_users = []
             all_groups = []
+            labels = trans.app.object_store.get_quota_source_map().get_quota_source_labels()
+            label_options = [("Default Quota", "__default__")]
+            label_options.extend([(label, label) for label in labels])
             for user in (
                 trans.sa_session.query(trans.app.model.User)
                 .filter(trans.app.model.User.table.c.deleted == false())
@@ -713,7 +730,7 @@ class AdminGalaxy(controller.JSAppLauncher):
             default_options = [("No", "no")]
             for type_ in trans.app.model.DefaultQuotaAssociation.types:
                 default_options.append((f"Yes, {type_}", type_))
-            return {
+            rval = {
                 "title": "Create Quota",
                 "inputs": [
                     {"name": "name", "label": "Name"},
@@ -730,12 +747,28 @@ class AdminGalaxy(controller.JSAppLauncher):
                         "options": default_options,
                         "help": "Warning: Any users or groups associated with this quota will be disassociated.",
                     },
-                    build_select_input("in_groups", "Groups", all_groups, []),
-                    build_select_input("in_users", "Users", all_users, []),
                 ],
             }
+            if len(label_options) > 1:
+                rval["inputs"].append(
+                    {
+                        "name": "quota_source_label",
+                        "label": "Apply quota to labeled object stores.",
+                        "options": label_options,
+                    }
+                )
+            rval["inputs"].extend(
+                [
+                    build_select_input("in_groups", "Groups", all_groups, []),
+                    build_select_input("in_users", "Users", all_users, []),
+                ]
+            )
+            return rval
         else:
             try:
+                quota_source_label = payload.get("quota_source_label")
+                if quota_source_label == "__default__":
+                    payload["quota_source_label"] = None
                 quota, message = self.quota_manager.create_quota(payload, decode_id=trans.security.decode_id)
                 return {"message": message}
             except ActionInputError as e:
@@ -1003,7 +1036,8 @@ class AdminGalaxy(controller.JSAppLauncher):
                     num_in_groups = len(in_groups) + 1
                 else:
                     num_in_groups = len(in_groups)
-                trans.sa_session.flush()
+                with transaction(trans.sa_session):
+                    trans.sa_session.commit()
                 message = f"Role '{role.name}' has been created with {len(in_users)} associated users and {num_in_groups} associated groups."
                 if auto_create_checked:
                     message += (
@@ -1043,7 +1077,8 @@ class AdminGalaxy(controller.JSAppLauncher):
                         role.name = new_name
                         role.description = new_description
                         trans.sa_session.add(role)
-                        trans.sa_session.flush()
+                        with transaction(trans.sa_session):
+                            trans.sa_session.commit()
             return {"message": f"Role '{old_name}' has been renamed to '{new_name}'."}
 
     @web.legacy_expose_api
@@ -1107,7 +1142,8 @@ class AdminGalaxy(controller.JSAppLauncher):
                         for dhp in history.default_permissions:
                             if role == dhp.role:
                                 trans.sa_session.delete(dhp)
-                    trans.sa_session.flush()
+                    with transaction(trans.sa_session):
+                        trans.sa_session.commit()
             trans.app.security_agent.set_entity_role_associations(roles=[role], users=in_users, groups=in_groups)
             trans.sa_session.refresh(role)
             return {
@@ -1120,7 +1156,8 @@ class AdminGalaxy(controller.JSAppLauncher):
             role = get_role(trans, role_id)
             role.deleted = True
             trans.sa_session.add(role)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
             message += f" {role.name} "
         return (message, "done")
 
@@ -1133,7 +1170,8 @@ class AdminGalaxy(controller.JSAppLauncher):
                 return (f"Role '{role.name}' has not been deleted, so it cannot be undeleted.", "error")
             role.deleted = False
             trans.sa_session.add(role)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
             count += 1
             undeleted_roles += f" {role.name}"
         return ("Undeleted %d roles: %s" % (count, undeleted_roles), "done")
@@ -1170,7 +1208,8 @@ class AdminGalaxy(controller.JSAppLauncher):
             # Delete DatasetPermissionss
             for dp in role.dataset_actions:
                 trans.sa_session.delete(dp)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
             message += f" {role.name} "
         return (message, "done")
 
@@ -1223,7 +1262,8 @@ class AdminGalaxy(controller.JSAppLauncher):
                     if not (group.name == new_name):
                         group.name = new_name
                         trans.sa_session.add(group)
-                        trans.sa_session.flush()
+                        with transaction(trans.sa_session):
+                            trans.sa_session.commit()
             return {"message": f"Group '{old_name}' has been renamed to '{new_name}'."}
 
     @web.legacy_expose_api
@@ -1362,7 +1402,8 @@ class AdminGalaxy(controller.JSAppLauncher):
                     num_in_roles = len(in_roles) + 1
                 else:
                     num_in_roles = len(in_roles)
-                trans.sa_session.flush()
+                with transaction(trans.sa_session):
+                    trans.sa_session.commit()
                 message = "Group '%s' has been created with %d associated users and %d associated roles." % (
                     group.name,
                     len(in_users),
@@ -1380,7 +1421,8 @@ class AdminGalaxy(controller.JSAppLauncher):
             group = get_group(trans, group_id)
             group.deleted = True
             trans.sa_session.add(group)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
             message += f" {group.name} "
         return (message, "done")
 
@@ -1393,7 +1435,8 @@ class AdminGalaxy(controller.JSAppLauncher):
                 return (f"Group '{group.name}' has not been deleted, so it cannot be undeleted.", "error")
             group.deleted = False
             trans.sa_session.add(group)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
             count += 1
             undeleted_groups += f" {group.name}"
         return ("Undeleted %d groups: %s" % (count, undeleted_groups), "done")
@@ -1410,7 +1453,8 @@ class AdminGalaxy(controller.JSAppLauncher):
             # Delete GroupRoleAssociations
             for gra in group.roles:
                 trans.sa_session.delete(gra)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
             message += f" {group.name} "
         return (message, "done")
 
@@ -1442,7 +1486,8 @@ class AdminGalaxy(controller.JSAppLauncher):
                 for user in users.values():
                     user.set_password_cleartext(password)
                     trans.sa_session.add(user)
-                    trans.sa_session.flush()
+                    with transaction(trans.sa_session):
+                        trans.sa_session.commit()
                 return {"message": "Passwords reset for %d user(s)." % len(users)}
         else:
             return self.message_exception(trans, "Please specify user ids.")
@@ -1510,7 +1555,8 @@ class AdminGalaxy(controller.JSAppLauncher):
             user_id=trans.security.decode_id(user_id), key=trans.app.security.get_new_guid()
         )
         trans.sa_session.add(new_key)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         return (f"New key '{new_key.key}' generated for requested user '{user.email}'.", "done")
 
     def _activate_user(self, trans, user_id):

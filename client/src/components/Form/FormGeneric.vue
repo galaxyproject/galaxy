@@ -25,12 +25,13 @@
 </template>
 
 <script>
-import { withPrefix } from "utils/redirect";
-import { submitData } from "./services";
-import { UrlDataProvider } from "components/providers/UrlDataProvider";
-import { visitInputs } from "components/Form/utilities";
 import FormCard from "components/Form/FormCard";
 import FormDisplay from "components/Form/FormDisplay";
+import { visitInputs } from "components/Form/utilities";
+import { UrlDataProvider } from "components/providers/UrlDataProvider";
+import { withPrefix } from "utils/redirect";
+
+import { submitData } from "./services";
 
 export default {
     components: {
@@ -132,7 +133,7 @@ export default {
         showMessage(message, variant = "success") {
             this.messageText = message;
             this.messageVariant = variant;
-            document.querySelector(".center-panel").scrollTop = 0;
+            document.querySelector("#center").scrollTop = 0;
         },
     },
 };

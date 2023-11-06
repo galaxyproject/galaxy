@@ -4,7 +4,11 @@ from typing import (
     List,
 )
 
-from sqlalchemy import false
+from sqlalchemy import (
+    false,
+    select,
+)
+from sqlalchemy.orm import Session
 
 from galaxy import model
 from galaxy.exceptions import (
@@ -14,6 +18,12 @@ from galaxy.exceptions import (
 )
 from galaxy.managers.base import decode_id
 from galaxy.managers.context import ProvidesAppContext
+from galaxy.managers.users import get_users_by_ids
+from galaxy.model import (
+    Group,
+    Role,
+)
+from galaxy.model.base import transaction
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.fields import (
     DecodedDatabaseIdField,
@@ -34,7 +44,7 @@ class GroupsManager:
         Displays a collection (list) of groups.
         """
         rval = []
-        for group in trans.sa_session.query(model.Group).filter(model.Group.deleted == false()):
+        for group in get_not_deleted_groups(trans.sa_session):
             item = group.to_dict(value_mapper={"id": DecodedDatabaseIdField.encode})
             encoded_id = DecodedDatabaseIdField.encode(group.id)
             item["url"] = url_for("group", id=encoded_id)
@@ -58,7 +68,8 @@ class GroupsManager:
         encoded_role_ids = payload.get("role_ids", [])
         roles = self._get_roles_by_encoded_ids(sa_session, encoded_role_ids)
         trans.app.security_agent.set_entity_group_associations(groups=[group], roles=roles, users=users)
-        sa_session.flush()
+        with transaction(sa_session):
+            sa_session.commit()
 
         encoded_id = DecodedDatabaseIdField.encode(group.id)
         item = group.to_dict(view="element", value_mapper={"id": DecodedDatabaseIdField.encode})
@@ -95,34 +106,44 @@ class GroupsManager:
         self._app.security_agent.set_entity_group_associations(
             groups=[group], roles=roles, users=users, delete_existing_assocs=False
         )
-        sa_session.flush()
+        with transaction(sa_session):
+            sa_session.commit()
 
     def _check_duplicated_group_name(self, sa_session: galaxy_scoped_session, group_name: str) -> None:
-        if sa_session.query(model.Group).filter(model.Group.name == group_name).first():
+        if get_group_by_name(sa_session, group_name):
             raise Conflict(f"A group with name '{group_name}' already exists")
 
     def _get_group(self, sa_session: galaxy_scoped_session, group_id: int) -> model.Group:
-        group = sa_session.query(model.Group).get(group_id)
+        group = sa_session.get(model.Group, group_id)
         if group is None:
-            raise ObjectNotFound(f"Group with id {DecodedDatabaseIdField.encode(group_id)} was not found.")
+            raise ObjectNotFound("Group with the provided id was not found.")
         return group
 
     def _get_users_by_encoded_ids(
         self, sa_session: galaxy_scoped_session, encoded_user_ids: List[EncodedDatabaseIdField]
     ) -> List[model.User]:
         user_ids = self._decode_ids(encoded_user_ids)
-        users = sa_session.query(model.User).filter(model.User.table.c.id.in_(user_ids)).all()
-        return users
+        return get_users_by_ids(sa_session, user_ids)
 
     def _get_roles_by_encoded_ids(
         self, sa_session: galaxy_scoped_session, encoded_role_ids: List[EncodedDatabaseIdField]
     ) -> List[model.Role]:
         role_ids = self._decode_ids(encoded_role_ids)
-        roles = sa_session.query(model.Role).filter(model.Role.id.in_(role_ids)).all()
-        return roles
+        stmt = select(Role).where(Role.id.in_(role_ids))
+        return sa_session.scalars(stmt).all()
 
     def _decode_id(self, encoded_id: EncodedDatabaseIdField) -> int:
         return decode_id(self._app, encoded_id)
 
     def _decode_ids(self, encoded_ids: List[EncodedDatabaseIdField]) -> List[int]:
         return [self._decode_id(encoded_id) for encoded_id in encoded_ids]
+
+
+def get_group_by_name(session: Session, name: str):
+    stmt = select(Group).filter(Group.name == name).limit(1)
+    return session.scalars(stmt).first()
+
+
+def get_not_deleted_groups(session: Session):
+    stmt = select(Group).where(Group.deleted == false())
+    return session.scalars(stmt)

@@ -10,8 +10,8 @@ from os.path import (
     join,
 )
 
-import pkg_resources
 import yaml
+from dparse import parse
 
 from galaxy.util import (
     asbool,
@@ -63,6 +63,8 @@ class ConditionalDependencies:
                 job_conf_path = join(dirname(self.config_file), "job_conf.yml")
                 if not exists(job_conf_path):
                     job_conf_path = join(dirname(self.config_file), "job_conf.xml")
+            else:
+                job_conf_path = join(dirname(self.config_file), job_conf_path)
             if ".xml" in job_conf_path:
                 try:
                     try:
@@ -171,8 +173,10 @@ class ConditionalDependencies:
 
     def get_conditional_requirements(self):
         crfile = join(dirname(__file__), "conditional-requirements.txt")
-        for req in pkg_resources.parse_requirements(open(crfile).readlines()):
-            self.conditional_reqs.append(req)
+        with open(crfile) as fh:
+            dependency_file = parse(fh.read(), file_type="requirements.txt")
+            for dep in dependency_file.dependencies:
+                self.conditional_reqs.append(dep)
 
     def check(self, name):
         try:
@@ -245,10 +249,6 @@ class ConditionalDependencies:
     def check_fs_webdavfs(self):
         return "webdav" in self.file_sources
 
-    def check_fs_s3fs(self):
-        # pyfilesystem plugin access to s3
-        return "s3" in self.file_sources
-
     def check_fs_anvilfs(self):
         # pyfilesystem plugin access to terra on anvil
         return "anvil" in self.file_sources
@@ -256,17 +256,16 @@ class ConditionalDependencies:
     def check_fs_sshfs(self):
         return "ssh" in self.file_sources
 
-    def check_s3fs(self):
-        # use s3fs directly (skipping pyfilesystem) for direct access to more options
-        return "s3fs" in self.file_sources
-
     def check_fs_googledrivefs(self):
         return "googledrive" in self.file_sources
 
     def check_fs_gcsfs(self):
         return "googlecloudstorage" in self.file_sources
 
-    def check_fs_onedatafs(self):
+    def check_google_cloud_storage(self):
+        return "googlecloudstorage" in self.file_sources
+
+    def check_fs_onedatarestfs(self):
         return "onedata" in self.file_sources
 
     def check_fs_basespace(self):
@@ -310,7 +309,7 @@ def optional(config_file=None):
         return []
     rval = []
     conditional = ConditionalDependencies(config_file)
-    for opt in conditional.conditional_reqs:
-        if conditional.check(opt.key):
-            rval.append(str(opt))
+    for dependency in conditional.conditional_reqs:
+        if conditional.check(dependency.name):
+            rval.append(dependency.line)
     return rval

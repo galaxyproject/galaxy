@@ -1,9 +1,7 @@
 import logging
 
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from ..base import common
+from ..base.twilltestcase import ShedTwillTestCase
 
 column_repository_name = "column_maker_0080"
 column_repository_description = "Add column"
@@ -24,9 +22,10 @@ running_standalone = False
 class TestRepositoryDependencies(ShedTwillTestCase):
     """Testing uninstalling and reinstalling repository dependencies, and setting tool panel sections."""
 
+    requires_galaxy = True
+
     def test_0000_create_or_login_admin_user(self):
         """Create necessary user accounts and login as an admin user."""
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
         self.login(email=common.test_user_1_email, username=common.test_user_1_name)
         self.login(email=common.admin_email, username=common.admin_username)
 
@@ -44,16 +43,10 @@ class TestRepositoryDependencies(ShedTwillTestCase):
             strings_displayed=[],
         )
         if self.repository_is_new(repository):
-            self.upload_file(
+            self.commit_tar_to_repository(
                 repository,
-                filename="column_maker/column_maker.tar",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
+                "column_maker/column_maker.tar",
                 commit_message="Uploaded column_maker tarball.",
-                strings_displayed=[],
-                strings_not_displayed=[],
             )
             running_standalone = True
 
@@ -72,16 +65,10 @@ class TestRepositoryDependencies(ShedTwillTestCase):
             strings_displayed=[],
         )
         if self.repository_is_new(repository):
-            self.upload_file(
+            self.commit_tar_to_repository(
                 repository,
-                filename="convert_chars/convert_chars.tar",
-                filepath=None,
-                valid_tools_only=True,
-                uncompress_file=True,
-                remove_repo_files_not_in_tar=False,
+                "convert_chars/convert_chars.tar",
                 commit_message="Uploaded convert_chars tarball.",
-                strings_displayed=[],
-                strings_not_displayed=[],
             )
             running_standalone = True
 
@@ -119,7 +106,6 @@ class TestRepositoryDependencies(ShedTwillTestCase):
 
     def test_0020_install_convert_repository(self):
         """Install convert_chars without repository dependencies into convert_chars tool panel section."""
-        self.galaxy_login(email=common.admin_email, username=common.admin_username)
         self._install_repository(
             convert_repository_name,
             common.test_user_1_name,
@@ -128,22 +114,25 @@ class TestRepositoryDependencies(ShedTwillTestCase):
             install_repository_dependencies=False,
             new_tool_panel_section_label="convert_chars",
         )
-        installed_convert_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        installed_convert_repository = self._get_installed_repository_by_name_owner(
             convert_repository_name, common.test_user_1_name
         )
-        installed_column_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        installed_column_repository = self._get_installed_repository_by_name_owner(
             column_repository_name, common.test_user_1_name
         )
-        assert self.get_installed_repository_for(
-            common.test_user_1, "convert_chars_0080", installed_convert_repository.installed_changeset_revision
+        assert self._get_installed_repository_for(
+            common.test_user_1, convert_repository_name, installed_convert_repository.installed_changeset_revision
         )
-        self._assert_has_installed_repository_dependency(
-            installed_convert_repository, "column_maker_0080", installed_column_repository.installed_changeset_revision
-        )
-        # installed_convert_repository has required_repositories and the following string
-        # is included when not installing via the API. This distrubs me but we've not installed
-        # not from the API for a long time so I'm just dropping the check. -John
-        # "Missing repository dependencies",
+        if self.full_stack_galaxy:
+            # This branch has been broken since we switched from mako to API for installing...
+            self._assert_has_installed_repository_dependency(
+                installed_convert_repository,
+                column_repository_name,
+                installed_column_repository.installed_changeset_revision,
+            )
+        else:
+            # Previous mako had some string checks and such equivalent to this.
+            self._assert_has_missing_dependency(installed_convert_repository, column_repository_name)
 
     def test_0025_install_column_repository(self):
         """Install column maker with repository dependencies into column_maker tool panel section."""
@@ -154,16 +143,16 @@ class TestRepositoryDependencies(ShedTwillTestCase):
             install_repository_dependencies=True,
             new_tool_panel_section_label="column_maker",
         )
-        installed_convert_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        installed_convert_repository = self._get_installed_repository_by_name_owner(
             convert_repository_name, common.test_user_1_name
         )
-        installed_column_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        installed_column_repository = self._get_installed_repository_by_name_owner(
             column_repository_name, common.test_user_1_name
         )
-        assert self.get_installed_repository_for(
+        assert self._get_installed_repository_for(
             common.test_user_1, "convert_chars_0080", installed_convert_repository.installed_changeset_revision
         )
-        assert self.get_installed_repository_for(
+        assert self._get_installed_repository_for(
             common.test_user_1, "column_maker_0080", installed_column_repository.installed_changeset_revision
         )
         self._assert_has_installed_repository_dependency(
@@ -172,10 +161,10 @@ class TestRepositoryDependencies(ShedTwillTestCase):
 
     def test_0030_deactivate_convert_repository(self):
         """Deactivate convert_chars, verify that column_maker is installed and missing repository dependencies."""
-        installed_convert_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        installed_convert_repository = self._get_installed_repository_by_name_owner(
             convert_repository_name, common.test_user_1_name
         )
-        installed_column_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        installed_column_repository = self._get_installed_repository_by_name_owner(
             column_repository_name, common.test_user_1_name
         )
         self.deactivate_repository(installed_convert_repository)
@@ -183,10 +172,10 @@ class TestRepositoryDependencies(ShedTwillTestCase):
 
     def test_0035_reactivate_convert_repository(self):
         """Reactivate convert_chars, both convert_chars and column_maker should now show as installed."""
-        installed_convert_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        installed_convert_repository = self._get_installed_repository_by_name_owner(
             convert_repository_name, common.test_user_1_name
         )
-        installed_column_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        installed_column_repository = self._get_installed_repository_by_name_owner(
             column_repository_name, common.test_user_1_name
         )
         self.reactivate_repository(installed_convert_repository)
@@ -196,10 +185,10 @@ class TestRepositoryDependencies(ShedTwillTestCase):
 
     def test_0040_deactivate_column_repository(self):
         """Deactivate column_maker, verify that convert_chars is installed and missing repository dependencies."""
-        installed_convert_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        installed_convert_repository = self._get_installed_repository_by_name_owner(
             convert_repository_name, common.test_user_1_name
         )
-        installed_column_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        installed_column_repository = self._get_installed_repository_by_name_owner(
             column_repository_name, common.test_user_1_name
         )
         self.deactivate_repository(installed_column_repository)
@@ -207,7 +196,7 @@ class TestRepositoryDependencies(ShedTwillTestCase):
 
     def test_0045_deactivate_convert_repository(self):
         """Deactivate convert_chars, verify that both convert_chars and column_maker are deactivated."""
-        installed_convert_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        installed_convert_repository = self._get_installed_repository_by_name_owner(
             convert_repository_name, common.test_user_1_name
         )
         self.deactivate_repository(installed_convert_repository)
@@ -215,7 +204,7 @@ class TestRepositoryDependencies(ShedTwillTestCase):
 
     def test_0050_reactivate_column_repository(self):
         """Reactivate column_maker. This should not automatically reactivate convert_chars, so column_maker should be displayed as installed but missing repository dependencies."""
-        installed_column_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        installed_column_repository = self._get_installed_repository_by_name_owner(
             column_repository_name, common.test_user_1_name
         )
         self.reactivate_repository(installed_column_repository)
@@ -223,10 +212,10 @@ class TestRepositoryDependencies(ShedTwillTestCase):
 
     def test_0055_reactivate_convert_repository(self):
         """Activate convert_chars. Both convert_chars and column_maker should now show as installed."""
-        installed_convert_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        installed_convert_repository = self._get_installed_repository_by_name_owner(
             convert_repository_name, common.test_user_1_name
         )
-        installed_column_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        installed_column_repository = self._get_installed_repository_by_name_owner(
             column_repository_name, common.test_user_1_name
         )
         self.reactivate_repository(installed_convert_repository)
@@ -236,21 +225,21 @@ class TestRepositoryDependencies(ShedTwillTestCase):
 
     def test_0060_uninstall_column_repository(self):
         """Uninstall column_maker. Verify that convert_chars is installed and missing repository dependencies."""
-        installed_convert_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        installed_convert_repository = self._get_installed_repository_by_name_owner(
             convert_repository_name, common.test_user_1_name
         )
-        installed_column_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        installed_column_repository = self._get_installed_repository_by_name_owner(
             column_repository_name, common.test_user_1_name
         )
-        self.uninstall_repository(installed_column_repository)
+        self._uninstall_repository(installed_column_repository)
         self._assert_has_missing_dependency(installed_convert_repository, "column_maker_0080")
 
     def test_0065_reinstall_column_repository(self):
         """Reinstall column_maker without repository dependencies, verify both convert_chars and column_maker are installed."""
-        installed_convert_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        installed_convert_repository = self._get_installed_repository_by_name_owner(
             convert_repository_name, common.test_user_1_name
         )
-        installed_column_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        installed_column_repository = self._get_installed_repository_by_name_owner(
             column_repository_name, common.test_user_1_name
         )
         self.reinstall_repository_api(installed_column_repository, install_repository_dependencies=False)
@@ -260,10 +249,10 @@ class TestRepositoryDependencies(ShedTwillTestCase):
 
     def test_0070_uninstall_convert_repository(self):
         """Uninstall convert_chars, verify column_maker installed but missing repository dependencies."""
-        installed_convert_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        installed_convert_repository = self._get_installed_repository_by_name_owner(
             convert_repository_name, common.test_user_1_name
         )
-        installed_column_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        installed_column_repository = self._get_installed_repository_by_name_owner(
             column_repository_name, common.test_user_1_name
         )
         self.deactivate_repository(installed_convert_repository)
@@ -271,7 +260,7 @@ class TestRepositoryDependencies(ShedTwillTestCase):
 
     def test_0075_uninstall_column_repository(self):
         """Uninstall column_maker, verify that both convert_chars and column_maker are uninstalled."""
-        installed_column_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        installed_column_repository = self._get_installed_repository_by_name_owner(
             column_repository_name, common.test_user_1_name
         )
         self.deactivate_repository(installed_column_repository)
@@ -279,10 +268,10 @@ class TestRepositoryDependencies(ShedTwillTestCase):
 
     def test_0080_reinstall_convert_repository(self):
         """Reinstall convert_chars with repository dependencies, verify that this installs both convert_chars and column_maker."""
-        installed_convert_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        installed_convert_repository = self._get_installed_repository_by_name_owner(
             convert_repository_name, common.test_user_1_name
         )
-        installed_column_repository = self.test_db_util.get_installed_repository_by_name_owner(
+        installed_column_repository = self._get_installed_repository_by_name_owner(
             column_repository_name, common.test_user_1_name
         )
         self.reinstall_repository_api(installed_convert_repository, install_repository_dependencies=True)

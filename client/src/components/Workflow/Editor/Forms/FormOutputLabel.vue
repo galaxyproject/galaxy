@@ -9,12 +9,14 @@
         @input="onInput" />
 </template>
 
-<script lang="ts" setup>
-import FormElement from "@/components/Form/FormElement.vue";
-import { useWorkflowStepStore } from "@/stores/workflowStepStore";
-import { computed, ref } from "vue";
+<script setup lang="ts">
 import type { Ref } from "vue";
+import { computed, ref } from "vue";
+
+import { useWorkflowStores } from "@/composables/workflowStores";
 import type { Step } from "@/stores/workflowStepStore";
+
+import FormElement from "@/components/Form/FormElement.vue";
 
 const props = withDefaults(
     defineProps<{
@@ -27,7 +29,7 @@ const props = withDefaults(
     }
 );
 
-const stepStore = useWorkflowStepStore();
+const { stepStore } = useWorkflowStores();
 
 const error: Ref<string | undefined> = ref(undefined);
 const id = computed(() => `__label__${props.name}`);

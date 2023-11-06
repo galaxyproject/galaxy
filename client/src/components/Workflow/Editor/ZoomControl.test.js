@@ -1,5 +1,6 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
+
 import ZoomControl from "./ZoomControl";
 
 jest.mock("app");

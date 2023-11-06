@@ -12,7 +12,7 @@
                     @click.prevent.stop="onError">
                     <span class="fa fa-bug" />
                 </b-button>
-                <dataset-download v-if="showDownloads" :item="item" @on-download="onDownload" />
+                <DatasetDownload v-if="showDownloads" :item="item" @on-download="onDownload" />
                 <b-button
                     v-if="showDownloads"
                     class="px-1"
@@ -54,8 +54,8 @@
                 </b-button>
                 <b-button
                     v-if="showHighlight"
-                    class="px-1"
-                    title="Show Inputs for this item"
+                    class="highlight-btn px-1"
+                    title="Show Related Items"
                     size="sm"
                     variant="link"
                     @click.stop="onHighlight">
@@ -71,9 +71,11 @@
 
 <script>
 import { copy as sendToClipboard } from "utils/clipboard";
+
 import { absPath, prependPath } from "@/utils/redirect";
-import { downloadUrlMixin } from "./mixins.js";
+
 import DatasetDownload from "./DatasetDownload";
+import { downloadUrlMixin } from "./mixins.js";
 
 export default {
     components: {
@@ -91,7 +93,7 @@ export default {
             return !this.item.purged && ["ok", "failed_metadata", "error"].includes(this.item.state);
         },
         showError() {
-            return this.item.state == "error";
+            return this.item.state == "error" || this.item.state == "failed_metadata";
         },
         showInfo() {
             return this.item.state != "noPermission";
@@ -123,7 +125,7 @@ export default {
     },
     methods: {
         onCopyLink() {
-            const msg = this.localize("Link is copied to your clipboard");
+            const msg = this.localize("Link copied to your clipboard");
             sendToClipboard(absPath(this.downloadUrl), msg);
         },
         onDownload(resource) {

@@ -7,9 +7,9 @@ import shutil
 
 from galaxy import (
     exceptions,
-    model,
     util,
 )
+from galaxy.model import Job
 from galaxy.web import (
     expose_api_anonymous_and_sessionless,
     expose_api_raw_anonymous_and_sessionless,
@@ -126,7 +126,7 @@ class JobFilesAPIController(BaseGalaxyAPIController):
             raise exceptions.ItemAccessibilityException("Invalid job_key supplied.")
 
         # Verify job is active. Don't update the contents of complete jobs.
-        job = trans.sa_session.query(model.Job).get(job_id)
+        job = trans.sa_session.get(Job, job_id)
         if job.finished:
             error_message = "Attempting to read or modify the files of a job that has already completed."
             raise exceptions.ItemAccessibilityException(error_message)

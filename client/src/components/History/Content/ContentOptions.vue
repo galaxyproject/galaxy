@@ -1,5 +1,5 @@
 <template>
-    <span class="align-self-start btn-group">
+    <span class="align-self-start btn-group align-items-baseline">
         <!-- Special case for collections -->
         <b-button
             v-if="isCollection && canShowCollectionDetails"
@@ -11,7 +11,6 @@
             @click.prevent.stop="$emit('showCollectionInfo')">
             <icon icon="info-circle" />
         </b-button>
-
         <!-- Common for all content items -->
         <b-button
             v-if="isDataset"
@@ -22,7 +21,7 @@
             size="sm"
             variant="link"
             :href="displayUrl"
-            @click.prevent.stop="$emit('display')">
+            @click.prevent.stop="onDisplay($event)">
             <icon icon="eye" />
         </b-button>
         <b-button
@@ -44,8 +43,21 @@
             title="Delete"
             size="sm"
             variant="link"
-            @click.stop="$emit('delete')">
-            <icon icon="trash" />
+            @click.stop="onDelete($event)">
+            <icon v-if="isDataset" icon="trash" />
+            <b-dropdown v-else ref="deleteCollectionMenu" size="sm" variant="link" no-caret toggle-class="p-0 m-0">
+                <template v-slot:button-content>
+                    <icon icon="trash" />
+                </template>
+                <b-dropdown-item title="Delete collection only" @click.prevent.stop="onDeleteItem">
+                    <icon icon="file" />
+                    Collection only
+                </b-dropdown-item>
+                <b-dropdown-item title="Delete collection and elements" @click.prevent.stop="onDeleteItemRecursively">
+                    <icon icon="copy" />
+                    Collection and elements
+                </b-dropdown-item>
+            </b-dropdown>
         </b-button>
         <b-button
             v-if="writable && isHistoryItem && isDeleted"
@@ -72,6 +84,7 @@
 
 <script>
 import { prependPath } from "@/utils/redirect";
+
 export default {
     props: {
         writable: { type: Boolean, default: true },
@@ -121,5 +134,36 @@ export default {
             return this.keyboardSelectable ? "0" : "-1";
         },
     },
+    methods: {
+        onDisplay($event) {
+            // Wrap display handler to allow ctrl/meta click to open in new tab
+            // instead of triggering display.
+            if ($event.ctrlKey || $event.metaKey) {
+                window.open(this.displayUrl, "_blank");
+            } else {
+                this.$emit("display");
+            }
+        },
+        onDelete() {
+            if (this.isCollection) {
+                this.$refs.deleteCollectionMenu.show();
+            } else {
+                this.onDeleteItem();
+            }
+        },
+        onDeleteItem() {
+            this.$emit("delete");
+        },
+        onDeleteItemRecursively() {
+            const recursive = true;
+            this.$emit("delete", recursive);
+        },
+    },
 };
 </script>
+<style lang="css">
+.dropdown-menu .dropdown-item {
+    font-weight: normal;
+}
+</style>
+```

@@ -3,11 +3,12 @@
  * environments such as the existing python scripts and Backbone views.
  */
 
-import Tags from "./Tags";
 import { mountVueComponent } from "utils/mountVueComponent";
 import { redirectToUrl } from "utils/redirect";
-import { TagService } from "./tagService";
+
 import { BackboneTagService } from "./backboneTagService";
+import Tags from "./Tags";
+import { TagService } from "./tagService";
 
 /**
  * General mount function for the tags that were previously rendered

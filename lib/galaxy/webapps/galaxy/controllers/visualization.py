@@ -25,6 +25,7 @@ from galaxy import (
 )
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.sharable import SlugBuilder
+from galaxy.model.base import transaction
 from galaxy.model.item_attrs import (
     UsesAnnotations,
     UsesItemRatings,
@@ -362,12 +363,13 @@ class VisualizationController(
             operation = kwargs["operation"].lower()
             ids = util.listify(kwargs["id"])
             for id in ids:
-                item = session.query(model.Visualization).get(self.decode_id(id))
                 if operation == "delete":
+                    item = self.get_visualization(trans, id)
                     item.deleted = True
                 if operation == "copy":
                     self.copy(trans, **kwargs)
-            session.flush()
+            with transaction(session):
+                session.commit()
         kwargs["embedded"] = True
         if message and status:
             kwargs["message"] = sanitize_text(message)
@@ -404,7 +406,7 @@ class VisualizationController(
     @web.expose
     @web.require_login()
     def copy(self, trans, id, **kwargs):
-        visualization = self.get_visualization(trans, id, check_ownership=False)
+        visualization = self.get_visualization(trans, id, check_ownership=False, check_accessible=True)
         user = trans.get_user()
         owner = visualization.user == user
         new_title = f"Copy of '{visualization.title}'"
@@ -416,32 +418,16 @@ class VisualizationController(
         # Persist
         session = trans.sa_session
         session.add(copied_viz)
-        session.flush()
+        with transaction(session):
+            session.commit()
 
         # Display the management page
         trans.set_message(f'Created new visualization with name "{copied_viz.title}"')
         return
 
     @web.expose
-    @web.require_login("use Galaxy visualizations")
-    def set_accessible_async(self, trans, id=None, accessible=False):
-        """Set visualization's importable attribute and slug."""
-        visualization = self.get_visualization(trans, id)
-
-        # Only set if importable value would change; this prevents a change in the update_time unless attribute really changed.
-        importable = accessible in ["True", "true", "t", "T"]
-        if visualization and visualization.importable != importable:
-            if importable:
-                self._make_item_accessible(trans.sa_session, visualization)
-            else:
-                visualization.importable = importable
-            trans.sa_session.flush()
-
-        return
-
-    @web.expose
     @web.require_login("share Galaxy visualizations")
-    def imp(self, trans, id):
+    def imp(self, trans, id, **kwargs):
         """Import a visualization into user's workspace."""
         # Set referer message.
         referer = trans.request.referer
@@ -452,7 +438,7 @@ class VisualizationController(
 
         # Do import.
         session = trans.sa_session
-        visualization = self.get_visualization(trans, id, check_ownership=False)
+        visualization = self.get_visualization(trans, id, check_ownership=False, check_accessible=True)
         if visualization.importable is False:
             return trans.show_error_message(
                 f"The owner of this visualization has disabled imports via this link.<br>You can {referer_message}",
@@ -472,17 +458,19 @@ class VisualizationController(
             # Persist
             session = trans.sa_session
             session.add(imported_visualization)
-            session.flush()
+            with transaction(session):
+                session.commit()
 
             # Redirect to load galaxy frames.
             return trans.show_ok_message(
-                message="""Visualization "%s" has been imported. <br>You can <a href="%s">start using this visualization</a> or %s."""
-                % (visualization.title, web.url_for("/visualizations/list"), referer_message),
+                message="""Visualization "{}" has been imported. <br>You can <a href="{}">start using this visualization</a> or {}.""".format(
+                    visualization.title, web.url_for("/visualizations/list"), referer_message
+                ),
                 use_panels=True,
             )
 
     @web.expose
-    def display_by_username_and_slug(self, trans, username, slug):
+    def display_by_username_and_slug(self, trans, username, slug, **kwargs):
         """Display visualization based on a username and slug."""
 
         # Get visualization.
@@ -509,28 +497,8 @@ class VisualizationController(
             )
         )
 
-    @web.expose
     @web.json
-    @web.require_login("get item name and link")
-    def get_name_and_link_async(self, trans, id=None):
-        """Returns visualization's name and link."""
-        visualization = self.get_visualization(trans, id, check_ownership=False, check_accessible=True)
-
-        if self.slug_builder.create_item_slug(trans.sa_session, visualization):
-            trans.sa_session.flush()
-        return_dict = {
-            "name": visualization.title,
-            "link": web.url_for(
-                controller="visualization",
-                action="display_by_username_and_slug",
-                username=visualization.user.username,
-                slug=visualization.slug,
-            ),
-        }
-        return return_dict
-
-    @web.json
-    def save(self, trans, vis_json=None, type=None, id=None, title=None, dbkey=None, annotation=None):
+    def save(self, trans, vis_json=None, type=None, id=None, title=None, dbkey=None, annotation=None, **kwargs):
         """
         Save a visualization; if visualization does not have an ID, a new
         visualization is created. Returns JSON of visualization.
@@ -613,7 +581,8 @@ class VisualizationController(
                     v_annotation = sanitize_html(v_annotation)
                     self.add_item_annotation(trans.sa_session, trans_user, v, v_annotation)
                 trans.sa_session.add(v)
-                trans.sa_session.flush()
+                with transaction(trans.sa_session):
+                    trans.sa_session.commit()
             return {"message": "Attributes of '%s' successfully saved." % v.title, "status": "success"}
 
     # ------------------------- registry.
@@ -765,7 +734,7 @@ class VisualizationController(
         return trans.fill_template("visualization/trackster.mako", config={"app": app, "bundle": "extended"})
 
     @web.expose
-    def circster(self, trans, id=None, hda_ldda=None, dataset_id=None, dbkey=None):
+    def circster(self, trans, id=None, hda_ldda=None, dataset_id=None, dbkey=None, **kwargs):
         """
         Display a circster visualization.
         """
@@ -826,7 +795,7 @@ class VisualizationController(
         return trans.fill_template("visualization/trackster.mako", config={"app": app, "bundle": "extended"})
 
     @web.expose
-    def sweepster(self, trans, id=None, hda_ldda=None, dataset_id=None, regions=None):
+    def sweepster(self, trans, id=None, hda_ldda=None, dataset_id=None, regions=None, **kwargs):
         """
         Displays a sweepster visualization using the incoming parameters. If id is available,
         get the visualization with the given id; otherwise, create a new visualization using

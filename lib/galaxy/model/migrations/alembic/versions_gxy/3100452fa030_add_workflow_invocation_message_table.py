@@ -5,7 +5,6 @@ Revises: 518c8438a91b
 Create Date: 2023-01-13 16:13:09.578391
 
 """
-from alembic import op
 from sqlalchemy import (
     Column,
     ForeignKey,
@@ -14,6 +13,10 @@ from sqlalchemy import (
 )
 
 from galaxy.model.custom_types import TrimmedString
+from galaxy.model.migrations.util import (
+    create_table,
+    drop_table,
+)
 
 # revision identifiers, used by Alembic.
 revision = "3100452fa030"
@@ -27,7 +30,7 @@ table_name = "workflow_invocation_message"
 
 
 def upgrade():
-    op.create_table(
+    create_table(
         table_name,
         Column("id", Integer, primary_key=True),
         Column("reason", String(32)),
@@ -43,4 +46,4 @@ def upgrade():
 
 
 def downgrade():
-    op.drop_table(table_name)
+    drop_table(table_name)

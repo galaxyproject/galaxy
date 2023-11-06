@@ -399,6 +399,7 @@ class Repository(Base, Dictifiable):
         "times_downloaded",
         "deprecated",
         "create_time",
+        "update_time",
     ]
     dict_element_visible_keys = [
         "id",
@@ -414,6 +415,7 @@ class Repository(Base, Dictifiable):
         "times_downloaded",
         "deprecated",
         "create_time",
+        "update_time",
     ]
     file_states = Bunch(NORMAL="n", NEEDS_MERGING="m", MARKED_FOR_REMOVAL="r", MARKED_FOR_ADDITION="a", NOT_TRACKED="?")
 
@@ -438,8 +440,7 @@ class Repository(Base, Dictifiable):
             if str(role.name) == admin_role_name:
                 return role
         raise Exception(
-            "Repository %s owned by %s is not associated with a required administrative role."
-            % (str(self.name), str(self.user.username))
+            f"Repository {self.name} owned by {self.user.username} is not associated with a required administrative role."
         )
 
     def allow_push(self):

@@ -3,6 +3,7 @@ import mimetypes
 from typing import Optional
 from urllib.parse import quote_plus
 
+from galaxy.model.base import transaction
 from galaxy.util import string_as_bool
 from galaxy.util.bunch import Bunch
 from galaxy.util.template import fill_template
@@ -151,7 +152,8 @@ class DisplayApplicationDataParameter(DisplayApplicationParameter):
                         parent=data, file_type=target_ext, dataset=new_data, metadata_safe=False
                     )
                     trans.sa_session.add(assoc)
-                    trans.sa_session.flush()
+                    with transaction(trans.sa_session):
+                        trans.sa_session.commit()
                 elif converted_dataset and converted_dataset.state == converted_dataset.states.ERROR:
                     raise Exception(f"Dataset conversion failed for data parameter: {self.name}")
         return self.get_value(other_values, dataset_hash, user_hash, trans)
@@ -227,7 +229,8 @@ class DisplayParameterValueWrapper:
             base_url = f"http{base_url[5:]}"
         return "{}{}".format(
             base_url,
-            self.trans.app.url_for(
+            self.trans.app.legacy_url_for(
+                mapper=self.trans.app.legacy_mapper,
                 controller="dataset",
                 action="display_application",
                 dataset_id=self._dataset_hash,
@@ -236,6 +239,7 @@ class DisplayParameterValueWrapper:
                 link_name=quote_plus(self.parameter.link.id),
                 app_action=self.action_name,
                 action_param=self._url,
+                environ=self.trans.request.environ,
             ),
         )
 

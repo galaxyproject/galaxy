@@ -11,7 +11,7 @@ import time
 
 from galaxy import model
 from galaxy.jobs import JobDestination
-from galaxy.jobs.handler import DEFAULT_JOB_PUT_FAILURE_MESSAGE
+from galaxy.jobs.handler import DEFAULT_JOB_RUNNER_FAILURE_MESSAGE
 from galaxy.jobs.runners import (
     AsynchronousJobRunner,
     AsynchronousJobState,
@@ -199,7 +199,7 @@ class DRMAAJobRunner(AsynchronousJobRunner):
             else:
                 log.error(f"({galaxy_id_tag}) All attempts to submit job failed")
                 if not fail_msg:
-                    fail_msg = DEFAULT_JOB_PUT_FAILURE_MESSAGE
+                    fail_msg = DEFAULT_JOB_RUNNER_FAILURE_MESSAGE
                 job_wrapper.fail(fail_msg)
                 return
         else:

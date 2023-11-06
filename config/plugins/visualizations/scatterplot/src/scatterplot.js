@@ -821,7 +821,7 @@ var ScatterplotDisplay = Backbone.View.extend({
         var view = this,
             config = this.model.get("config"),
             //TODO: very tied to datasets - should be generalized eventually
-            baseUrl = window.parent && window.parent.galaxy_config ? window.parent.galaxy_config.root : "/",
+            baseUrl = window.parent && window.parent.options ? window.parent.options.root : "/",
             xhr = $.getJSON(baseUrl + "api/datasets/" + this.dataset.id, {
                 data_type: "raw_data",
                 provider: "dataset-column",
@@ -986,7 +986,7 @@ var ScatterplotDisplay = Backbone.View.extend({
         }
         var view = this;
         var config = this.model.get("config");
-        var meanWorker = new window.Worker("worker-stats.js");
+        var meanWorker = new window.Worker("./static/worker-stats.js");
         meanWorker.postMessage({
             data: this.data,
             keys: [config.xColumn, config.yColumn]

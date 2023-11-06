@@ -1,17 +1,12 @@
 # Writing Tests for Galaxy
 
-[Other Sources of Documentation](#other_sources)  
-[An Overview of Galaxy Tests](#overview)  
-[Backend/Python Unit Tests](#python_unit)  
-[Frontend/ES6 Unit Tests](#es6_unit)  
-[Tool Framework Tests](#framework)  
-[API Tests](#api)  
-[Integration Tests](#integration)  
-[Selenium Tests](#selenium)  
-[Selenium Integration Tests](#selenium_integration)  
-[Running Python Tests](#running_tests)
+```{contents} Contents
+:depth: 1
+:local:
+```
 
-## <a name="other_sources"></a> Other Sources of Documentation
+{#other_sources}
+## Other Sources of Documentation
 
 Over the last several years, the most up-to-date documentation on the
 structure and running of Galaxy tests has been in the help text for
@@ -22,7 +17,8 @@ and the corresponding [YouTube playlist](https://bit.ly/gx-arch-vids).
 Some more specifics on running and writing Galaxy client unit tests
 can be found in ``client/README.md`` of the Galaxy codebase.
 
-## <a name="overview"></a> An Overview of Galaxy Tests
+{#overview}
+## An Overview of Galaxy Tests
 
 Galaxy has many test suites and frameworks. A potentially overwhelming question
 at first is, *where does a given test belong? What testing suite or framework
@@ -130,7 +126,8 @@ find the right documentation for a given test one wishes to write.
             the [Selenium Integration Tests](#selenium_integration)
             information below for more information.
 
-## <a name="python_unit"></a> Backend/Python Unit Tests
+{#python_unit}
+## Backend/Python Unit Tests
 
 These are Python unit tests either defined inside of ``test/unit`` or
 via doctests within a Python component. These should generally not require
@@ -165,7 +162,8 @@ ping the Galaxy committers on the pull request and request a re-run. The
 CircleCI test definition for these tests is located in ``.circleci/config.yml``
 below Galaxy's root.
 
-## <a name="es6_unit"></a> Frontend/ES6 Unit Tests
+{#es6_unit}
+## Frontend/ES6 Unit Tests
 
 Detailed information on writing Galaxy client tests can be found in
 [client/README.md](https://github.com/galaxyproject/galaxy/blob/dev/client/README.md#client-side-unit-testing).
@@ -181,7 +179,8 @@ ping the Galaxy committers on the pull request and request a re-run. The
 GitHub actions workflow definition for these tests is located in
 ``.github/workflows/jest.yaml`` below Galaxy's root.
 
-## <a name="framework"></a> Tool Framework Tests
+{#framework}
+## Tool Framework Tests
 
 A great deal of the complexity and interface exposed to Galaxy plugin 
 developers comes in the form of Galaxy tool wrapper definition files.
@@ -211,7 +210,8 @@ transiently failed tests unrelated to the pull request being tested. The
 GitHub actions workflow definition for these tests is located in
 ``.github/workflows/framework.yaml`` below Galaxy's root.
 
-## <a name="api"></a> API Tests
+{#api}
+## API Tests
 
 These tests are located in ``lib/galaxy_test/api`` and test various aspects 
 of the Galaxy API, as well as general backend aspects of Galaxy using the API.
@@ -224,7 +224,7 @@ both typical user and admin user-only functionality.
 
 ### Common Code for Populating Fixture Data
 
-The [``galaxy_test.base.populators``](../lib/galaxy_test.base.html#module-galaxy_test.base.populators) module contains detailed docstrings
+The [``galaxy_test.base.populators`` module](../lib/galaxy_test.base.html#module-galaxy_test.base.populators) contains detailed docstrings
 describing the concept and implementation of "Populators" that can be used
 for this purposes.
 
@@ -239,7 +239,7 @@ Galaxy server (e.g. fetch information from datasets, users, Galaxy's
 configuration, etc.).
 
 Populators and API tests in general make heavy use of the [requests
-library](https://requests.readthedocs.io/en/master/) for Python.
+library](https://requests.readthedocs.io/) for Python.
 
 ### API Test Assertions
 
@@ -259,7 +259,8 @@ transiently failed tests unrelated to the pull request being tested. The
 GitHub actions workflow definition for these tests is located in
 ``.github/workflows/api.yaml`` below Galaxy's root.
 
-## <a name="integration"></a> Integration Tests
+{#integration}
+## Integration Tests
 
 These tests are located in ``test/integration``. These tests have access
 to all the same API utilities as API tests described above, but can access
@@ -344,7 +345,8 @@ ping the Galaxy committers on the pull request and request a re-run. The
 GitHub actions workflow definition for these tests is located in
 ``.github/workflows/integration.yaml`` below Galaxy's root.
 
-## <a name="selenium"></a> Selenium Tests
+{#selenium}
+## Selenium Tests
 
 These are full stack tests meant to test the Galaxy UI with real
 browsers and are located in ``lib/galaxy_test/selenium``.
@@ -352,7 +354,7 @@ browsers and are located in ``lib/galaxy_test/selenium``.
 ### Jupyter + Selenium
 
 Jupyter can leveraged to develop Selenium test cases interactively,
-checkout out the [``galaxy_test.selenium.jupyter``](../lib/galaxy_test.selenium.jupyter)
+checkout out the [``galaxy_test.selenium.jupyter`` documentation](../lib/galaxy_test.selenium.jupyter)
 for more a full discussion of this.
 
 ### Continuous Integration
@@ -366,7 +368,8 @@ ping the Galaxy committers on the pull request and request a re-run. The
 GitHub actions workflow definition for these tests is located in
 ``.github/workflows/selenium.yaml`` below Galaxy's root.
 
-## <a name="selenium_integration"></a> Selenium Integration Tests
+{#selenium_integration}
+## Selenium Integration Tests
 
 These tests are located in ``test/integration_selenium`` and simply
 combine the capabilities of Selenium tests and Integration tests
@@ -391,12 +394,12 @@ ping the Galaxy committers on the pull request and request a re-run. The
 GitHub actions workflow definition for these tests is located in
 ``.github/workflows/selenium_integration.yaml`` below Galaxy's root.
 
-## <a name="running_tests"></a> Running Python Tests
+{#running_tests}
+## Running Python Tests
 
 The best information about how to run Galaxy's Python tests can be
 found in the help output of ``run_tests.sh --help``.
 
-```eval_rst
-.. include:: run_tests_help.txt
-   :literal:
+```{include} run_tests_help.txt
+:literal:
 ```

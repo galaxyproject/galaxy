@@ -1,11 +1,9 @@
 <template>
-    <div>
-        <SidePanel id="left" side="left">
-            <template v-slot:panel>
-                <MarkdownToolBox :steps="steps" @onInsert="onInsert" />
-            </template>
-        </SidePanel>
-        <div id="center" class="workflow-markdown-editor">
+    <div id="columns" class="d-flex">
+        <FlexPanel side="left">
+            <MarkdownToolBox :steps="steps" @onInsert="onInsert" />
+        </FlexPanel>
+        <div id="center" class="overflow-auto w-100">
             <div class="markdown-editor h-100">
                 <div class="unified-panel-header" unselectable="on">
                     <div class="unified-panel-header-inner">
@@ -17,7 +15,7 @@
                                 variant="link"
                                 role="button"
                                 @click="onHelp">
-                                <font-awesome-icon icon="question" />
+                                <FontAwesomeIcon icon="question" />
                             </b-button>
                         </div>
                         <div class="my-1">
@@ -40,15 +38,16 @@
 </template>
 
 <script>
-import _ from "underscore";
-import Vue from "vue";
-import BootstrapVue from "bootstrap-vue";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faQuestion } from "@fortawesome/free-solid-svg-icons";
-import MarkdownToolBox from "./MarkdownToolBox";
-import SidePanel from "components/Panels/SidePanel";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import BootstrapVue from "bootstrap-vue";
+import FlexPanel from "components/Panels/FlexPanel";
+import _ from "underscore";
+import Vue from "vue";
+
 import MarkdownHelp from "./MarkdownHelp";
+import MarkdownToolBox from "./MarkdownToolBox";
 
 Vue.use(BootstrapVue);
 
@@ -59,7 +58,7 @@ const FENCE = "```";
 export default {
     components: {
         MarkdownToolBox,
-        SidePanel,
+        FlexPanel,
         FontAwesomeIcon,
         MarkdownHelp,
     },
@@ -74,7 +73,7 @@ export default {
         },
         steps: {
             type: Object,
-            required: true,
+            default: null,
         },
         title: {
             type: String,

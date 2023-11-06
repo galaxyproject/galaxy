@@ -58,28 +58,26 @@
                         v-for="(resultMessage, index) in resultMessages"
                         :key="index"
                         :variant="resultMessage[1]"
-                        show
-                        >{{ resultMessage[0] }}</b-alert
-                    >
-                    <CurrentUser v-slot="{ user }">
-                        <div v-if="showForm" id="fieldsAndButton">
-                            <span class="mr-2 font-weight-bold">{{ emailTitle }}</span>
-                            <span v-if="!!user.email">{{ user.email }}</span>
-                            <span v-else>{{ "You must be logged in to receive emails" | l }}</span>
-                            <FormElement
-                                id="dataset-error-message"
-                                v-model="message"
-                                :area="true"
-                                title="Please provide detailed information on the activities leading to this issue:" />
-                            <b-button
-                                id="dataset-error-submit"
-                                variant="primary"
-                                class="mt-3"
-                                @click="submit(dataset, jobDetails.user_email)">
-                                <font-awesome-icon icon="bug" class="mr-1" />Report
-                            </b-button>
-                        </div>
-                    </CurrentUser>
+                        show>
+                        <span v-html="renderMarkdown(resultMessage[0])"></span>
+                    </b-alert>
+                    <div v-if="showForm" id="fieldsAndButton">
+                        <span class="mr-2 font-weight-bold">{{ emailTitle }}</span>
+                        <span v-if="!!currentUser?.email">{{ currentUser?.email }}</span>
+                        <span v-else>{{ "You must be logged in to receive emails" | l }}</span>
+                        <FormElement
+                            id="dataset-error-message"
+                            v-model="message"
+                            :area="true"
+                            title="Please provide detailed information on the activities leading to this issue:" />
+                        <b-button
+                            id="dataset-error-submit"
+                            variant="primary"
+                            class="mt-3"
+                            @click="submit(dataset, jobDetails.user_email)">
+                            <FontAwesomeIcon icon="bug" class="mr-1" />Report
+                        </b-button>
+                    </div>
                 </div>
             </JobDetailsProvider>
         </DatasetProvider>
@@ -87,15 +85,19 @@
 </template>
 
 <script>
-import DatasetErrorDetails from "./DatasetErrorDetails";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faBug } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import FormElement from "components/Form/FormElement";
 import { DatasetProvider } from "components/providers";
 import { JobDetailsProvider, JobProblemProvider } from "components/providers/JobProvider";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { library } from "@fortawesome/fontawesome-svg-core";
-import { faBug } from "@fortawesome/free-solid-svg-icons";
+import { mapState } from "pinia";
+
+import { useMarkdown } from "@/composables/markdown";
+import { useUserStore } from "@/stores/userStore";
+
+import DatasetErrorDetails from "./DatasetErrorDetails";
 import { sendErrorReport } from "./services";
-import CurrentUser from "components/providers/CurrentUser";
 
 library.add(faBug);
 
@@ -107,13 +109,16 @@ export default {
         FormElement,
         JobDetailsProvider,
         JobProblemProvider,
-        CurrentUser,
     },
     props: {
         datasetId: {
             type: String,
             required: true,
         },
+    },
+    setup() {
+        const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });
+        return { renderMarkdown };
     },
     data() {
         return {
@@ -124,6 +129,7 @@ export default {
         };
     },
     computed: {
+        ...mapState(useUserStore, ["currentUser"]),
         showForm() {
             const noResult = !this.resultMessages.length;
             const hasError = this.resultMessages.some((msg) => msg[1] === "danger");

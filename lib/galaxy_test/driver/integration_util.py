@@ -5,6 +5,7 @@ order to test something that cannot be tested with the default functional/api
 testing configuration.
 """
 import os
+import re
 from typing import (
     ClassVar,
     Iterator,
@@ -22,8 +23,12 @@ import pytest
 
 from galaxy.app import UniverseApplication
 from galaxy.tool_util.verify.test_data import TestDataResolver
-from galaxy.util.commands import which
+from galaxy.util import safe_makedirs
 from galaxy.util.unittest import TestCase
+from galaxy.util.unittest_utils import (
+    _identity,
+    skip_unless_executable,
+)
 from galaxy_test.base.api import (
     UsesApiTestCaseMixin,
     UsesCeleryTasks,
@@ -37,10 +42,8 @@ NO_APP_MESSAGE = "test_case._app called though no Galaxy has been configured."
 # Following should be for Homebrew Rabbitmq and Docker on Mac "amqp://guest:guest@localhost:5672//"
 AMQP_URL = os.environ.get("GALAXY_TEST_AMQP_URL", None)
 POSTGRES_CONFIGURED = "postgres" in os.environ.get("GALAXY_TEST_DBURI", "")
-
-
-def _identity(func):
-    return func
+SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
+VAULT_CONF = os.path.join(SCRIPT_DIRECTORY, "vault_conf.yml")
 
 
 def skip_if_jenkins(cls):
@@ -60,12 +63,6 @@ def skip_unless_postgres():
     if POSTGRES_CONFIGURED:
         return _identity
     return pytest.mark.skip("GALAXY_TEST_DBURI does not point to postgres database, required for this test.")
-
-
-def skip_unless_executable(executable):
-    if which(executable):
-        return _identity
-    return pytest.mark.skip(f"PATH doesn't contain executable {executable}")
 
 
 def skip_unless_docker():
@@ -220,3 +217,30 @@ def integration_tool_runner(tool_ids):
         instance._run_tool_test(tool_id)
 
     return pytest.mark.parametrize("tool_id", tool_ids)(test_tools)
+
+
+class ConfiguresObjectStores:
+    object_stores_parent: ClassVar[str]
+    _test_driver: GalaxyTestDriver
+
+    @classmethod
+    def _configure_object_store(cls, template, config):
+        temp_directory = cls._test_driver.mkdtemp()
+        cls.object_stores_parent = temp_directory
+        config_path = os.path.join(temp_directory, "object_store_conf.xml")
+        xml = template.safe_substitute({"temp_directory": temp_directory})
+        with open(config_path, "w") as f:
+            f.write(xml)
+        config["object_store_config_file"] = config_path
+        for path in re.findall(r'files_dir path="([^"]*)"', xml):
+            assert path.startswith(temp_directory)
+            dir_name = os.path.basename(path)
+            os.path.join(temp_directory, dir_name)
+            safe_makedirs(path)
+            setattr(cls, f"{dir_name}_path", path)
+
+
+class ConfiguresDatabaseVault:
+    @classmethod
+    def _configure_database_vault(cls, config):
+        config["vault_config_file"] = VAULT_CONF

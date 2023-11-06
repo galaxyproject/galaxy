@@ -249,6 +249,18 @@ def test_subworkflow_new_outputs():
     assert output2["name"] == "4:out_file1", output2["name"]
 
 
+def test_to_cwl():
+    hda = model.HistoryDatasetAssociation(create_dataset=True, flush=False)
+    hda.dataset.state = model.Dataset.states.OK
+    hdas = [hda]
+    hda_references = []
+    result = modules.to_cwl(hdas, hda_references, model.WorkflowStep())
+    assert isinstance(result, list)
+    assert len(result) == 1
+    assert result[0]["class"] == "File"
+    assert hda_references == hdas
+
+
 class MapOverTestCase(NamedTuple):
     data_input: str
     step_input_def: Union[str, List[str]]
@@ -415,7 +427,10 @@ def __new_subworkflow_module(workflow=TEST_WORKFLOW_YAML):
 
 
 def __assert_has_runtime_input(module, label=None, collection_type=None):
-    inputs = module.get_runtime_inputs()
+    test_step = getattr(module, "test_step", None)
+    if test_step is None:
+        test_step = mock.MagicMock()
+    inputs = module.get_runtime_inputs(test_step)
     assert len(inputs) == 1
     assert "input" in inputs
     input_param = inputs["input"]
@@ -480,7 +495,6 @@ def __mock_tool(
         params_from_strings=mock.Mock(),
         check_and_update_param_values=mock.Mock(),
         to_json=_to_json,
-        assert_finalized=lambda: None,
     )
 
     return tool

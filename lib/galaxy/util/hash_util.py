@@ -14,6 +14,7 @@ from typing import (
     Dict,
     List,
     Optional,
+    Tuple,
     Union,
 )
 
@@ -40,6 +41,12 @@ class HashFunctionNameEnum(str, Enum):
     sha256 = "SHA-256"
     sha512 = "SHA-512"
 
+
+HASH_NAME_ALIAS: Dict[str, str] = {
+    "SHA1": "SHA-1",
+    "SHA256": "SHA-256",
+    "SHA512": "SHA-512",
+}
 
 HASH_NAME_MAP: Dict[HashFunctionNameEnum, HashFunctionT] = {
     HashFunctionNameEnum.md5: md5,
@@ -135,4 +142,25 @@ def is_hashable(value: Any) -> bool:
     return True
 
 
-__all__ = ("md5", "hashlib", "sha1", "sha", "new_insecure_hash", "new_secure_hash_v2", "hmac_new", "is_hashable")
+def parse_checksum_hash(checksum: str) -> Tuple[HashFunctionNameEnum, str]:
+    """Parses checksum strings in the form of `hash_type$hash_value` considering possible aliases."""
+    hash_name, hash_value = checksum.split("$", 1)
+    hash_name = hash_name.upper()
+    if hash_name in HASH_NAME_ALIAS:
+        hash_name = HASH_NAME_ALIAS[hash_name]
+    if hash_name not in HASH_NAMES:
+        raise ValueError(f"Unsupported hash function '{hash_name}'. Supported functions: [{','.join(HASH_NAMES)}]")
+    return HashFunctionNameEnum(hash_name), hash_value
+
+
+__all__ = (
+    "md5",
+    "hashlib",
+    "sha1",
+    "sha",
+    "new_insecure_hash",
+    "new_secure_hash_v2",
+    "hmac_new",
+    "is_hashable",
+    "parse_checksum_hash",
+)

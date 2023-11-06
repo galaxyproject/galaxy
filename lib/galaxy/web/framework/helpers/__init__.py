@@ -35,7 +35,7 @@ def time_ago(x):
         kwargs = dict()
         if not default_locale("LC_TIME"):
             kwargs["locale"] = "en_US_POSIX"
-        return format_timedelta(x - datetime.utcnow(), threshold=1, add_direction=True, **kwargs)
+        return format_timedelta(x - datetime.utcnow(), threshold=1, add_direction=True, **kwargs)  # type: ignore[arg-type] # https://github.com/python/mypy/issues/9676
 
 
 def iff(a, b, c):

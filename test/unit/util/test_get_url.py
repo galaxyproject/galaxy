@@ -1,9 +1,9 @@
 import pytest
 import requests
 import responses
+from werkzeug.wrappers.response import Response
 
 from galaxy.util import url_get
-from galaxy.util.unittest_utils import skip_if_site_down
 
 
 @responses.activate
@@ -23,11 +23,21 @@ def test_get_url_forbidden():
     assert "403 Client Error: Forbidden for url: https://toolshed.g2.bx.psu.edu/" in str(excinfo)
 
 
-@skip_if_site_down("https://httpbin.org")
-def test_get_url_retry_after():
-    # This test is not ideal since it contacts an external resource
-    # and doesn't actually verify multiple attempts have been made.
-    # responses doesn't mock the right place to fully simulate this.
-    url = "https://httpbin.org/status/429"
+def test_get_url_retry_after(httpserver):
+    attempts = []
+
+    def retry_handler(request):
+        attempts.append(requests)
+        if len(attempts) < 4:
+            return Response("try again later", status=429, content_type="text/plain")
+        else:
+            return Response("ok", status=200, content_type="text/plain")
+
+    httpserver.expect_request("/429").respond_with_handler(retry_handler)
+    url = httpserver.url_for("/429")
     with pytest.raises(requests.exceptions.RetryError):
-        url_get(url, max_retries=2, backoff_factor=0.01)
+        url_get(url, max_retries=1, backoff_factor=0.01)
+    assert len(attempts) == 2
+    response = url_get(url, max_retries=2, backoff_factor=0.01)
+    assert len(attempts) == 4
+    assert response == "ok"

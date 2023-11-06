@@ -1,4 +1,5 @@
 util
+schema
 config
 files
 job_metrics
@@ -13,7 +14,8 @@ job_execution
 web_stack
 web_framework
 app
-webapps
+web_apps
 test_base
 test_driver
 test_api
+tool_shed

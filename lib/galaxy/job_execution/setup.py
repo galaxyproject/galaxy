@@ -92,11 +92,11 @@ class JobIO(Dictifiable):
         is_task: bool = False,
     ):
         user_context_instance: Union[ProvidesUserFileSourcesUserContext, DictFileSourcesUserContext]
+        self.file_sources_dict = file_sources_dict
         if isinstance(user_context, dict):
-            user_context_instance = DictFileSourcesUserContext(**user_context)
+            user_context_instance = DictFileSourcesUserContext(**user_context, file_sources=self.file_sources)
         else:
             user_context_instance = user_context
-        self.file_sources_dict = file_sources_dict
         self.user_context = user_context_instance
         self.sa_session = sa_session
         self.job = job

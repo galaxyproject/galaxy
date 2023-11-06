@@ -1,6 +1,5 @@
-import { ref } from "vue";
-
 import type { Ref } from "vue";
+import { ref } from "vue";
 
 import type { DatatypesMapperModel } from "@/components/Datatypes/model";
 import { useDatatypesMapperStore } from "@/stores/datatypesMapperStore";
@@ -24,7 +23,7 @@ export function useDatatypesMapper() {
             datatypesMapperLoading.value = false;
         }
         if (!datatypesMapperStore.datatypesMapper) {
-            throw "Error creating datatypesMapper";
+            throw Error("Error creating datatypesMapper");
         }
     }
 

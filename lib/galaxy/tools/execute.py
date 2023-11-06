@@ -19,6 +19,8 @@ from typing import (
 from boltons.iterutils import remap
 
 from galaxy import model
+from galaxy.exceptions import ToolInputsNotOKException
+from galaxy.model.base import transaction
 from galaxy.model.dataset_collections.matching import MatchingCollections
 from galaxy.model.dataset_collections.structure import (
     get_structure,
@@ -57,6 +59,7 @@ def execute(
     mapping_params: MappingParameters,
     history: model.History,
     rerun_remap_job_id: Optional[int] = None,
+    preferred_object_store_id: Optional[str] = None,
     collection_info: Optional[MatchingCollections] = None,
     workflow_invocation_uuid: Optional[str] = None,
     invocation_step: Optional[model.WorkflowInvocationStep] = None,
@@ -120,6 +123,7 @@ def execute(
             completed_job,
             collection_info,
             job_callback=job_callback,
+            preferred_object_store_id=preferred_object_store_id,
             flush_job=False,
             skip=skip,
         )
@@ -140,14 +144,17 @@ def execute(
     if check_inputs_ready:
         for params in execution_tracker.param_combinations:
             # This will throw an exception if the tool is not ready.
-            check_inputs_ready(
-                tool,
-                trans,
-                params,
-                history,
-                execution_cache=execution_cache,
-                collection_info=collection_info,
-            )
+            try:
+                check_inputs_ready(
+                    tool,
+                    trans,
+                    params,
+                    history,
+                    execution_cache=execution_cache,
+                    collection_info=collection_info,
+                )
+            except ToolInputsNotOKException as e:
+                execution_tracker.record_error(e)
 
     execution_tracker.ensure_implicit_collections_populated(history, mapping_params.param_template)
     job_count = len(execution_tracker.param_combinations)
@@ -175,12 +182,13 @@ def execute(
     if execution_slice:
         history.add_pending_items()
     # Make sure collections, implicit jobs etc are flushed even if there are no precreated output datasets
-    trans.sa_session.flush()
+    with transaction(trans.sa_session):
+        trans.sa_session.commit()
 
     tool_id = tool.id
     for job2 in execution_tracker.successful_jobs:
         # Put the job in the queue if tracking in memory
-        if tool_id == "__DATA_FETCH__" and tool.app.config.enable_celery_tasks:
+        if tool_id == "__DATA_FETCH__" and tool.app.config.is_fetch_with_celery_enabled():
             job_id = job2.id
             from galaxy.celery.tasks import (
                 fetch_data,
@@ -190,8 +198,13 @@ def execute(
             )
 
             raw_tool_source = tool.tool_source.to_string()
+            #  task_user_id parameter is used to do task user rate limiting. It is only passed
+            #  to first task in chain because it is only necessary to rate limit the first
+            #  task in a chain.
             async_result = (
-                setup_fetch_data.s(job_id, raw_tool_source=raw_tool_source)
+                setup_fetch_data.s(
+                    job_id, raw_tool_source=raw_tool_source, task_user_id=getattr(trans.user, "id", None)
+                )
                 | fetch_data.s(job_id=job_id)
                 | set_job_metadata.s(
                     extended_metadata_collection="extended" in tool.app.config.metadata_strategy,
@@ -203,7 +216,8 @@ def execute(
             continue
         tool.app.job_manager.enqueue(job2, tool=tool, flush=False)
         trans.log_event(f"Added job to the job queue, id: {str(job2.id)}", tool_id=tool_id)
-    trans.sa_session.flush()
+    with transaction(trans.sa_session):
+        trans.sa_session.commit()
 
     if has_remaining_jobs:
         raise PartialJobExecution(execution_tracker)
@@ -423,7 +437,8 @@ class ExecutionTracker:
             trans.sa_session.add(collection_instance)
         # Needed to flush the association created just above with
         # job.add_output_dataset_collection.
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         self.implicit_collections = collection_instances
 
     @property
@@ -451,6 +466,24 @@ class ExecutionTracker:
                 )
                 trans.sa_session.add(implicit_collection.collection)
         else:
+            completed_collections = {}
+            if (
+                self.completed_jobs
+                and self.implicit_collection_jobs
+                and len(self.completed_jobs) == len(self.successful_jobs)
+            ):
+                # If the same number of implicit collection jobs went into
+                # creating the collection and those jobs are all cached
+                # the HDCA has effectively been copied.
+                # We mark this here so that the job cache query in subsequent
+                # jobs considers this to be a valid cached input.
+                completed_job_ids = {job.id for job in self.completed_jobs.values() if job}
+                if all(job.copied_from_job_id in completed_job_ids for job in self.implicit_collection_jobs.job_list):
+                    completed_collections = {
+                        jtodca.name: jtodca.dataset_collection_instance
+                        for jtodca in self.completed_jobs[0].output_dataset_collection_instances
+                    }
+            implicit_collection = None
             for i, implicit_collection in enumerate(self.implicit_collections.values()):
                 if i == 0:
                     implicit_collection_jobs = implicit_collection.implicit_collection_jobs
@@ -459,8 +492,20 @@ class ExecutionTracker:
                 implicit_collection.collection.finalize(
                     collection_type_description=self.collection_info.structure.collection_type_description
                 )
+
+                # Mark implicit HDCA as copied
+                completed_implicit_collection = implicit_collection and completed_collections.get(
+                    implicit_collection.implicit_output_name
+                )
+                if completed_implicit_collection:
+                    implicit_collection.copied_from_history_dataset_collection_association_id = (
+                        completed_implicit_collection.id
+                    )
+
                 trans.sa_session.add(implicit_collection.collection)
-        trans.sa_session.flush()
+
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
 
     @property
     def implicit_inputs(self):

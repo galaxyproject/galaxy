@@ -1,13 +1,16 @@
 <script setup lang="ts">
+import { ref } from "vue";
+
+import { useConfig } from "@/composables/config";
 import localize from "@/utils/localization";
-import { delay } from "@/utils/utils";
+import { wait } from "@/utils/utils";
+
+import { useCleanupCategories } from "./Cleanup/categories";
+import type { CleanableItem, CleanupOperation, CleanupResult } from "./Cleanup/model";
+
 import CleanupOperationSummary from "./Cleanup/CleanupOperationSummary.vue";
 import CleanupResultDialog from "./Cleanup/CleanupResultDialog.vue";
 import ReviewCleanupDialog from "./Cleanup/ReviewCleanupDialog.vue";
-import { useCleanupCategories } from "./Cleanup/categories";
-import { useConfig } from "@/composables/config";
-import { ref } from "vue";
-import type { CleanableItem, CleanupOperation, CleanupResult } from "./Cleanup/model";
 
 interface ModalDialog {
     openModal: () => void;
@@ -36,10 +39,10 @@ function onReviewItems(operation: CleanupOperation, totalItems: number) {
 async function onConfirmCleanupSelected(selectedItems: CleanableItem[]) {
     cleanupResult.value = undefined;
     resultModal.value?.openModal();
-    await delay(1000);
+    await wait(1000);
     if (currentOperation.value) {
         cleanupResult.value = await currentOperation.value.cleanupItems(selectedItems);
-        if (cleanupResult.value.success) {
+        if (cleanupResult.value.hasUpdatedResults) {
             refreshOperationId.value = currentOperation.value.id.toString();
         }
     }

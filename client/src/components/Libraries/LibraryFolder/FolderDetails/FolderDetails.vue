@@ -5,7 +5,7 @@
             class="details-btn"
             title="Show location details"
             data-testid="loc-details-btn">
-            <font-awesome-icon icon="info-circle" /> {{ detailsCaption }}
+            <FontAwesomeIcon icon="info-circle" /> {{ detailsCaption }}
         </b-button>
 
         <b-modal
@@ -61,14 +61,14 @@
 </template>
 
 <script>
-import _l from "utils/localization";
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faInfoCircle } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
-import { getAppRoot } from "onload/loadConfig";
-import UtcDate from "components/UtcDate";
 import { buildFields } from "components/Libraries/library-utils";
+import UtcDate from "components/UtcDate";
+import { getAppRoot } from "onload/loadConfig";
+import _l from "utils/localization";
 
 library.add(faInfoCircle);
 

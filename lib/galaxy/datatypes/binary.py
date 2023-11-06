@@ -6,6 +6,7 @@ import io
 import json
 import logging
 import os
+import re
 import shutil
 import struct
 import subprocess
@@ -21,6 +22,7 @@ from typing import (
     Optional,
     Tuple,
     TYPE_CHECKING,
+    Union,
 )
 
 import h5py
@@ -30,6 +32,12 @@ from bx.seq.twobit import (
     TWOBIT_MAGIC_NUMBER,
     TWOBIT_MAGIC_NUMBER_SWAP,
 )
+from h5grove.content import (
+    DatasetContent,
+    get_content_from_file,
+    ResolvedEntityContent,
+)
+from h5grove.encoders import encode
 
 from galaxy import util
 from galaxy.datatypes import metadata
@@ -76,6 +84,7 @@ from galaxy.util import (
     compression_utils,
     nice_size,
     sqlite,
+    UNKNOWN,
 )
 from galaxy.util.checkers import (
     is_bz2,
@@ -85,6 +94,13 @@ from . import (
     data,
     dataproviders,
 )
+
+# Optional dependency to enable better metadata support in FITS datatype
+try:
+    from astropy.io import fits
+except ModuleNotFoundError:
+    # If astropy cannot be found FITS datatype will work with minimal metadata support
+    pass
 
 if TYPE_CHECKING:
     from galaxy.util.compression_utils import FileObjType
@@ -123,6 +139,9 @@ class Binary(data.Data):
     def get_mime(self) -> str:
         """Returns the mime type of the datatype"""
         return "application/octet-stream"
+
+    def get_structured_content(self, dataset, content_type, **kwargs):
+        raise Exception("get_structured_content is not implemented for this datatype.")
 
 
 class Ab1(Binary):
@@ -170,7 +189,7 @@ class Cel(Binary):
     """
 
     # cel 3 is a text format
-    is_binary = "maybe"  # type: ignore[assignment]  # https://github.com/python/mypy/issues/8796
+    is_binary = "maybe"
     file_ext = "cel"
     edam_format = "format_1638"
     edam_data = "data_3110"
@@ -243,7 +262,7 @@ class MashSketch(Binary):
 
     file_ext = "msh"
     # example data is actually text, maybe text would be a better base
-    is_binary = "maybe"  # type: ignore[assignment]  # https://github.com/python/mypy/issues/8796
+    is_binary = "maybe"
 
 
 class CompressedArchive(Binary):
@@ -254,7 +273,7 @@ class CompressedArchive(Binary):
 
     file_ext = "compressed_archive"
     compressed = True
-    is_binary = "maybe"  # type: ignore[assignment]  # https://github.com/python/mypy/issues/8796
+    is_binary = "maybe"
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
@@ -295,6 +314,29 @@ class Meryldb(CompressedArchive):
                     # 64 data files ad 64 indices + 2 folders
                     if len(_tar_content) == 130:
                         if len([_ for _ in _tar_content if _.endswith(".merylIndex")]) == 64:
+                            return True
+        except Exception as e:
+            log.warning("%s, sniff Exception: %s", self, e)
+        return False
+
+
+class Visium(CompressedArchive):
+    """Visium is a tar.gz archive with at least a 'Spatial' subfolder, a filtered h5 file and a raw h5 file."""
+
+    file_ext = "visium.tar.gz"
+
+    def sniff(self, filename: str) -> bool:
+        """
+        Check data structure:
+        Contains h5 files
+        Contains spatial folder
+        """
+        try:
+            if filename and tarfile.is_tarfile(filename):
+                with tarfile.open(filename, "r") as temptar:
+                    _tar_content = temptar.getnames()
+                    if "spatial" in _tar_content:
+                        if len([_ for _ in _tar_content if _.endswith("matrix.h5")]) == 2:
                             return True
         except Exception as e:
             log.warning("%s, sniff Exception: %s", self, e)
@@ -608,31 +650,36 @@ class BamNative(CompressedArchive, _BamOrSam):
         if not offset == -1:
             try:
                 with pysam.AlignmentFile(dataset.file_name, "rb", check_sq=False) as bamfile:
-                    ck_size = 300  # 300 lines
-                    ck_data = ""
-                    header_line_count = 0
+                    if ck_size is None:
+                        ck_size = 300  # 300 lines
                     if offset == 0:
-                        ck_data = bamfile.text.replace("\t", " ")  # type: ignore[attr-defined]
-                        header_line_count = bamfile.text.count("\n")  # type: ignore[attr-defined]
+                        offset = bamfile.tell()
+                        ck_lines = bamfile.text.strip().replace("\t", " ").splitlines()  # type: ignore[attr-defined]
                     else:
                         bamfile.seek(offset)
-                    for line_number, alignment in enumerate(bamfile):
+                        ck_lines = []
+                    for line_number, alignment in enumerate(bamfile, len(ck_lines)):
                         # return only Header lines if 'header_line_count' exceeds 'ck_size'
                         # FIXME: Can be problematic if bam has million lines of header
-                        offset = bamfile.tell()
-                        if (line_number + header_line_count) > ck_size:
+                        if line_number >= ck_size:
                             break
-                        else:
-                            bamline = alignment.tostring(bamfile)
-                            # Galaxy display each tag as separate column because 'tostring()' funcition put tabs in between each tag of tags column.
-                            # Below code will remove spaces between each tag.
-                            bamline_modified = ("\t").join(bamline.split()[:11] + [(" ").join(bamline.split()[11:])])
-                            ck_data = f"{ck_data}\n{bamline_modified}"
+
+                        offset = bamfile.tell()
+                        bamline = alignment.to_string()
+                        # With multiple tags, Galaxy would display each as a separate column
+                        # because the 'to_string()' function uses tabs also between tags.
+                        # Below code will turn these extra tabs into spaces.
+                        n_tabs = bamline.count("\t")
+                        if n_tabs > 11:
+                            bamline, *extra_tags = bamline.rsplit("\t", maxsplit=n_tabs - 11)
+                            bamline = f"{bamline} {' '.join(extra_tags)}"
+                        ck_lines.append(bamline)
                     else:
                         # Nothing to enumerate; we've either offset to the end
                         # of the bamfile, or there is no data. (possible with
                         # header-only bams)
                         offset = -1
+                    ck_data = "\n".join(ck_lines)
             except Exception as e:
                 offset = -1
                 ck_data = f"Could not display BAM file, error was:\n{e}"
@@ -1137,6 +1184,40 @@ class H5(Binary):
         except Exception:
             return f"Binary HDF5 file ({nice_size(dataset.get_size())})"
 
+    def get_structured_content(
+        self,
+        dataset,
+        content_type=None,
+        path="/",
+        dtype="origin",
+        format="json",
+        flatten=False,
+        selection=None,
+        **kwargs,
+    ):
+        """
+        Implements h5grove protocol (https://silx-kit.github.io/h5grove/).
+        This allows the h5web visualization tool (https://github.com/silx-kit/h5web)
+        to be used directly with Galaxy datasets.
+        """
+        with get_content_from_file(dataset.file_name, path, self._create_error) as content:
+            if content_type == "attr":
+                assert isinstance(content, ResolvedEntityContent)
+                resp = encode(content.attributes(), "json")
+            elif content_type == "meta":
+                resp = encode(content.metadata(), "json")
+            elif content_type == "stats":
+                assert isinstance(content, DatasetContent)
+                resp = encode(content.data_stats(selection), "json")
+            else:  # default 'data'
+                assert isinstance(content, DatasetContent)
+                resp = encode(content.data(selection, flatten, dtype), format)
+
+            return resp.content, resp.headers
+
+    def _create_error(self, status_code, message):
+        return Exception(status_code, message)
+
 
 class Loom(H5):
     """
@@ -1402,6 +1483,22 @@ class Anndata(H5):
             dataset.metadata.layers_count = len(anndata_file)
             dataset.metadata.layers_names = list(anndata_file.keys())
 
+            def get_index_value(tmp: Union[h5py.Dataset, h5py.Datatype, h5py.Group]):
+                if isinstance(tmp, (h5py.Dataset, h5py.Datatype)):
+                    if "index" in tmp.dtype.names:
+                        return tmp["index"]
+                    if "_index" in tmp.dtype.names:
+                        return tmp["_index"]
+                    return None
+                else:
+                    index_var = tmp.attrs.get("index")
+                    if index_var is not None:
+                        return tmp[index_var]
+                    index_var = tmp.attrs.get("_index")
+                    if index_var is not None:
+                        return tmp[index_var]
+                    return None
+
             def _layercountsize(tmp, lennames=0):
                 "From TMP and LENNAMES, return layers, their number, and the length of one of the layers (all equal)."
                 if hasattr(tmp, "dtype"):
@@ -1409,30 +1506,17 @@ class Anndata(H5):
                     count = len(tmp.dtype)
                     size = int(tmp.size)
                 else:
-                    layers = list(tmp.keys())
+                    layers = list(tmp.attrs)
                     count = len(layers)
                     size = lennames
                 return (layers, count, size)
 
             if "obs" in dataset.metadata.layers_names:
                 tmp = anndata_file["obs"]
-                obs_index = None
-                if "index" in tmp:
-                    obs_index = "index"
-                elif "_index" in tmp:
-                    obs_index = "_index"
+                obs = get_index_value(tmp)
                 # Determine cell labels
-                if obs_index:
-                    dataset.metadata.obs_names = list(tmp[obs_index])
-                elif hasattr(tmp, "dtype"):
-                    if "index" in tmp.dtype.names:
-                        # Yes, we call tmp["index"], and not tmp.dtype["index"]
-                        # here, despite the above tests.
-                        dataset.metadata.obs_names = list(tmp["index"])
-                    elif "_index" in tmp.dtype.names:
-                        dataset.metadata.obs_names = list(tmp["_index"])
-                    else:
-                        log.warning("Could not determine cell labels for %s", self)
+                if obs is not None:
+                    dataset.metadata.obs_names = [n.decode() for n in obs]
                 else:
                     log.warning("Could not determine observation index for %s", self)
 
@@ -1456,15 +1540,11 @@ class Anndata(H5):
 
             if "var" in dataset.metadata.layers_names:
                 tmp = anndata_file["var"]
-                var_index = None
-                if "index" in tmp:
-                    var_index = "index"
-                elif "_index" in tmp:
-                    var_index = "_index"
+                index = get_index_value(tmp)
                 # We never use var_names
                 # dataset.metadata.var_names = tmp[var_index]
-                if var_index:
-                    x, y, z = _layercountsize(tmp, len(tmp[var_index]))
+                if index is not None:
+                    x, y, z = _layercountsize(tmp, len(index))
                 else:
                     # failing to detect a var_index is not an indicator
                     # that the dataset is empty
@@ -2021,7 +2101,7 @@ class H5MLM(H5):
         to_ext: Optional[str] = None,
         **kwd,
     ):
-        headers = kwd.get("headers", {})
+        headers = kwd.pop("headers", {})
         preview = util.string_as_bool(preview)
 
         if to_ext or not preview:
@@ -2461,7 +2541,7 @@ class GeminiSQLite(SQlite):
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            dataset.peek = "Gemini SQLite Database, version %s" % (dataset.metadata.gemini_version or "unknown")
+            dataset.peek = "Gemini SQLite Database, version %s" % (dataset.metadata.gemini_version or UNKNOWN)
             dataset.blurb = nice_size(dataset.get_size())
         else:
             dataset.peek = "file does not exist"
@@ -2471,7 +2551,7 @@ class GeminiSQLite(SQlite):
         try:
             return dataset.peek
         except Exception:
-            return "Gemini SQLite Database, version %s" % (dataset.metadata.gemini_version or "unknown")
+            return "Gemini SQLite Database, version %s" % (dataset.metadata.gemini_version or UNKNOWN)
 
 
 class ChiraSQLite(SQlite):
@@ -2548,7 +2628,7 @@ class CuffDiffSQlite(SQlite):
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            dataset.peek = "CuffDiff SQLite Database, version %s" % (dataset.metadata.cuffdiff_version or "unknown")
+            dataset.peek = "CuffDiff SQLite Database, version %s" % (dataset.metadata.cuffdiff_version or UNKNOWN)
             dataset.blurb = nice_size(dataset.get_size())
         else:
             dataset.peek = "file does not exist"
@@ -2558,7 +2638,7 @@ class CuffDiffSQlite(SQlite):
         try:
             return dataset.peek
         except Exception:
-            return "CuffDiff SQLite Database, version %s" % (dataset.metadata.cuffdiff_version or "unknown")
+            return "CuffDiff SQLite Database, version %s" % (dataset.metadata.cuffdiff_version or UNKNOWN)
 
 
 class MzSQlite(SQlite):
@@ -2978,8 +3058,8 @@ class NcbiTaxonomySQlite(SQlite):
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "NCBI Taxonomy SQLite Database, version {} ({} taxons)".format(
-                getattr(dataset.metadata, "ncbitaxonomy_schema_version", "unknown"),
-                getattr(dataset.metadata, "taxon_count", "unknown"),
+                getattr(dataset.metadata, "ncbitaxonomy_schema_version", UNKNOWN),
+                getattr(dataset.metadata, "taxon_count", UNKNOWN),
             )
             dataset.blurb = nice_size(dataset.get_size())
         else:
@@ -2991,8 +3071,8 @@ class NcbiTaxonomySQlite(SQlite):
             return dataset.peek
         except Exception:
             return "NCBI Taxonomy SQLite Database, version {} ({} taxons)".format(
-                getattr(dataset.metadata, "ncbitaxonomy_schema_version", "unknown"),
-                getattr(dataset.metadata, "taxon_count", "unknown"),
+                getattr(dataset.metadata, "ncbitaxonomy_schema_version", UNKNOWN),
+                getattr(dataset.metadata, "taxon_count", UNKNOWN),
             )
 
 
@@ -3449,7 +3529,7 @@ class PostgresqlArchive(CompressedArchive):
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = f"PostgreSQL Archive ({nice_size(dataset.get_size())})"
-            dataset.blurb = "PostgreSQL version %s" % (dataset.metadata.version or "unknown")
+            dataset.blurb = "PostgreSQL version %s" % (dataset.metadata.version or UNKNOWN)
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
@@ -3459,6 +3539,90 @@ class PostgresqlArchive(CompressedArchive):
             return dataset.peek
         except Exception:
             return f"PostgreSQL Archive ({nice_size(dataset.get_size())})"
+
+
+class MongoDBArchive(CompressedArchive):
+    """
+    Class describing a Mongo database packed into a tar archive
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('mongodb_fake.tar.bz2')
+    >>> MongoDBArchive().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.fast5.tar')
+    >>> MongoDBArchive().sniff(fname)
+    False
+    """
+
+    MetadataElement(
+        name="version",
+        default=None,
+        param=MetadataParameter,
+        desc="MongoDB database version",
+        readonly=True,
+        visible=True,
+    )
+    file_ext = "mongodb"
+
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
+        try:
+            if dataset and tarfile.is_tarfile(dataset.file_name):
+                with tarfile.open(dataset.file_name, "r") as temptar:
+                    metrics_file = next(
+                        filter(lambda x: x.startswith("mongo_db/diagnostic.data/metrics"), temptar.getnames()), None
+                    )
+
+                    if metrics_file:
+                        md_version_file = temptar.extractfile(metrics_file)
+
+                        if md_version_file:
+                            vchunk = md_version_file.read(500)
+
+                            version_match = re.match(b".*version\x00\x06\x00\x00\x00([0-9.]+).*", vchunk)
+
+                            if version_match:
+                                dataset.metadata.version = util.unicodify(
+                                    version_match.group(1).decode("utf-8")
+                                ).strip()
+        except Exception as e:
+            log.warning("%s CompressedArchive set_meta Exception: %s", self, e)
+
+    def sniff(self, filename: str) -> bool:
+        if filename and tarfile.is_tarfile(filename):
+            with tarfile.open(filename, "r") as temptar:
+                return "mongo_db/_mdb_catalog.wt" in temptar.getnames()
+        return False
+
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+        if not dataset.dataset.purged:
+            dataset.peek = f"MongoDB Archive ({nice_size(dataset.get_size())})"
+            dataset.blurb = f'MongoDB version {dataset.metadata.version or "unknown"}'
+        else:
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
+
+    def display_peek(self, dataset: DatasetProtocol) -> str:
+        try:
+            return dataset.peek
+        except Exception:
+            return f"MongoDB Archive ({nice_size(dataset.get_size())})"
+
+
+class GeneNoteBook(MongoDBArchive):
+    """
+    Class describing a bzip2-compressed GeneNoteBook archive
+
+    >>> from galaxy.datatypes.sniff import get_test_fname
+    >>> fname = get_test_fname('mongodb_fake.tar.bz2')
+    >>> GeneNoteBook().sniff(fname)
+    True
+    >>> fname = get_test_fname('test.fast5.tar.gz')
+    >>> GeneNoteBook().sniff(fname)
+    False
+    """
+
+    file_ext = "genenotebook"
 
 
 class Fast5Archive(CompressedArchive):
@@ -3503,7 +3667,7 @@ class Fast5Archive(CompressedArchive):
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = f"FAST5 Archive ({nice_size(dataset.get_size())})"
-            dataset.blurb = "%s sequences" % (dataset.metadata.fast5_count or "unknown")
+            dataset.blurb = "%s sequences" % (dataset.metadata.fast5_count or UNKNOWN)
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
@@ -3611,7 +3775,7 @@ class SearchGuiArchive(CompressedArchive):
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            dataset.peek = "SearchGUI Archive, version %s" % (dataset.metadata.searchgui_version or "unknown")
+            dataset.peek = "SearchGUI Archive, version %s" % (dataset.metadata.searchgui_version or UNKNOWN)
             dataset.blurb = nice_size(dataset.get_size())
         else:
             dataset.peek = "file does not exist"
@@ -3621,7 +3785,7 @@ class SearchGuiArchive(CompressedArchive):
         try:
             return dataset.peek
         except Exception:
-            return "SearchGUI Archive, version %s" % (dataset.metadata.searchgui_version or "unknown")
+            return "SearchGUI Archive, version %s" % (dataset.metadata.searchgui_version or UNKNOWN)
 
 
 @build_sniff_from_prefix
@@ -4302,3 +4466,77 @@ class HexrdEtaOmeNpz(Npz):
             return dataset.peek
         except Exception:
             return "Binary Numpy npz file (%s)" % (nice_size(dataset.get_size()))
+
+
+class FITS(Binary):
+    """
+    FITS (Flexible Image Transport System) file data format, widely used in astronomy
+    Represents sky images (in celestial coordinates) and tables
+    https://fits.gsfc.nasa.gov/fits_primer.html
+    """
+
+    file_ext = "fits"
+
+    MetadataElement(
+        name="HDUs",
+        default=["FITS File HDUs"],
+        desc="Header Data Units",
+        param=metadata.ListParameter,
+        readonly=True,
+        visible=True,
+        no_value=(),
+    )
+
+    def __init__(self, **kwd):
+        super().__init__(**kwd)
+        self._magic = b"SIMPLE  ="
+
+    def sniff(self, filename: str) -> bool:
+        """
+        Determines whether the file is a FITS file
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('test.fits')
+        >>> FITS().sniff(fname)
+        True
+        >>> fname = FilePrefix(get_test_fname('interval.interval'))
+        >>> FITS().sniff(fname)
+        False
+        """
+
+        try:
+            # The first 9 bytes of any FITS file are always "SIMPLE  ="
+            with open(filename, "rb") as header:
+                if header.read(9) == self._magic:
+                    return True
+                return False
+        except Exception as e:
+            log.warning("%s, sniff Exception: %s", self, e)
+            return False
+
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
+        super().set_meta(dataset, overwrite=overwrite, **kwd)
+        try:
+            with fits.open(dataset.file_name) as hdul:
+                dataset.metadata.HDUs = []
+                for i in range(len(hdul)):
+                    dataset.metadata.HDUs.append(
+                        " ".join(
+                            filter(None, [str(i), hdul[i].__class__.__name__, hdul[i].name, str(hdul[i]._summary()[4])])
+                        )
+                    )
+        except Exception as e:
+            log.warning("%s, set_meta Exception: %s", self, e)
+
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
+        if not dataset.dataset.purged:
+            dataset.peek = "\n".join(dataset.metadata.HDUs)
+            dataset.blurb = nice_size(dataset.get_size())
+        else:
+            dataset.peek = "file does not exist"
+            dataset.blurb = "file purged from disk"
+
+    def display_peek(self, dataset: DatasetProtocol) -> str:
+        try:
+            return dataset.peek
+        except Exception:
+            return f"Binary FITS file size ({nice_size(dataset.get_size())})"

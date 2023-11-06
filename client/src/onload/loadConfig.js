@@ -21,9 +21,10 @@
  */
 
 import { BehaviorSubject, Subject } from "rxjs";
-import { debounceTime, scan, filter } from "rxjs/operators";
-import { getRootFromIndexLink } from "./getRootFromIndexLink";
+import { debounceTime, filter, scan } from "rxjs/operators";
+
 import { defaultConfigs } from "./defaultConfigs";
+import { getRootFromIndexLink } from "./getRootFromIndexLink";
 
 // exporting this addInitialization to window.config variable
 export { addInitialization } from "./initQueue";

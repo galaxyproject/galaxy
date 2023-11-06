@@ -112,6 +112,7 @@ class ConfigSerializer(base.ModelSerializer):
         def _config_is_truthy(item, key, **context):
             return True if item.get(key) else False
 
+        object_store = self.app.object_store
         self.serializers: Dict[str, base.Serializer] = {
             # TODO: this is available from user data, remove
             "is_admin_user": lambda *a, **c: False,
@@ -123,6 +124,7 @@ class ConfigSerializer(base.ModelSerializer):
             "wiki_url": _use_config,
             "screencasts_url": _use_config,
             "citation_url": _use_config,
+            "citations_export_message_html": _use_config,
             "support_url": _use_config,
             "quota_url": _use_config,
             "helpsite_url": _use_config,
@@ -155,7 +157,6 @@ class ConfigSerializer(base.ModelSerializer):
             "enable_unique_workflow_defaults": _use_config,
             "enable_beta_markdown_export": _use_config,
             "enable_beacon_integration": _use_config,
-            "use_legacy_history": _use_config,
             "simplified_workflow_run_ui": _use_config,
             "simplified_workflow_run_ui_target_history": _use_config,
             "simplified_workflow_run_ui_job_cache": _use_config,
@@ -174,6 +175,11 @@ class ConfigSerializer(base.ModelSerializer):
             "visualizations_visible": _use_config,
             "interactivetools_enable": _use_config,
             "aws_estimate": _use_config,
+            "carbon_emission_estimates": _defaults_to(True),
+            "carbon_intensity": _use_config,
+            "geographical_server_location_name": _use_config,
+            "geographical_server_location_code": _use_config,
+            "power_usage_effectiveness": _use_config,
             "message_box_content": _use_config,
             "message_box_visible": _use_config,
             "message_box_class": _use_config,
@@ -195,9 +201,18 @@ class ConfigSerializer(base.ModelSerializer):
             "expose_user_email": _use_config,
             "enable_tool_source_display": _use_config,
             "enable_celery_tasks": _use_config,
+            "quota_source_labels": lambda item, key, **context: list(
+                object_store.get_quota_source_map().get_quota_source_labels()
+            ),
+            "object_store_allows_id_selection": lambda item, key, **context: object_store.object_store_allows_id_selection(),
+            "object_store_ids_allowing_selection": lambda item, key, **context: object_store.object_store_ids_allowing_selection(),
             "user_library_import_dir_available": lambda item, key, **context: bool(item.get("user_library_import_dir")),
             "welcome_directory": _use_config,
             "themes": _use_config,
+            "tool_training_recommendations": _use_config,
+            "tool_training_recommendations_link": _use_config,
+            "tool_training_recommendations_api_url": _use_config,
+            "enable_notification_system": _use_config,
         }
 
 
@@ -218,5 +233,9 @@ class AdminConfigSerializer(ConfigSerializer):
                 "user_library_import_dir": _defaults_to(None),
                 "allow_library_path_paste": _defaults_to(False),
                 "allow_user_deletion": _defaults_to(False),
+                "tool_shed_urls": self._serialize_tool_shed_urls,
             }
         )
+
+    def _serialize_tool_shed_urls(self, item: Any, key: str, **context) -> List[str]:
+        return list(self.app.tool_shed_registry.tool_sheds.values()) if self.app.tool_shed_registry else []

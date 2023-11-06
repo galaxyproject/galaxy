@@ -16,7 +16,7 @@ Example: accessing the current user from the store
 
 ```vue
 <script setup>
-import { useCurrentUser } from "composables/user";
+import { useCurrentUser } from "@/composables/user";
 
 const { currentUser } = useCurrentUser();
 </script>
@@ -30,7 +30,7 @@ Composables are not limited to the composition api. This is the same example fro
 
 ```vue
 <script>
-import { useCurrentUser } from "composables/user";
+import { useCurrentUser } from "@/composables/user";
 
 export default {
     setup() {
@@ -75,7 +75,7 @@ const store = new Vuex.Store({
 The second option is to mock the composable:
 
 ```js
-import { useCurrentUser } from "composables/user";
+import { useCurrentUser } from "@/composables/user";
 
 jest.mock("composables/user");
 useCurrentUser.mockReturnValue({
@@ -87,13 +87,13 @@ While simpler in this example, you may need to manually mock more return values 
 
 ## Using Composables for more than Stores
 
-Composables can be of great use to extract any reactive code from your components. For an example of this, take a look at [useFilterObjectArray](https://github.com/galaxyproject/galaxy/blob/dev/client/src/composables/utils/filter.js).
+Composables can be of great use to extract any reactive code from your components. For an example of this, take a look at [useFilterObjectArray](https://github.com/galaxyproject/galaxy/blob/dev/client/src/composables/filter/filter.ts).
 
 Usage:
 
 ```vue
 <script setup>
-import { useFilterObjectArray } from "composables/utils/filter";
+import { useFilterObjectArray } from "@/composables/filter/filter";
 
 const filteredArray = useFilterObjectArray(someReactiveArray, searchValue, ["name", "description"]);
 </script>

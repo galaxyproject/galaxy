@@ -288,6 +288,16 @@ tool_shed:
   # store this information.
   #citation_cache_lock_dir: database/citations/lock
 
+  # Url to database used by beaker for citation related caching.
+  #citation_cache_url: null
+
+  # Database table used by beaker for citation related caching.
+  #citation_cache_table_name: beaker_cache
+
+  # Schema of database table used by beaker for citation related
+  # caching.
+  #citation_cache_schema_name: null
+
   # Turn on logging of user actions to the database.  Actions currently
   # logged are grid views, tool searches, and use of "recently" used
   # tools menu.  The log_events and log_actions functionality will
@@ -315,6 +325,11 @@ tool_shed:
   # transaction created will have that percentage chance of being sent
   # to Sentry. A value higher than 0 is required to analyze performance.
   #sentry_traces_sample_rate: 0.0
+
+  # Use this option to provide the path to location of the CA
+  # (Certificate Authority) certificate file if the sentry server uses a
+  # self-signed certificate.
+  #sentry_ca_certs: null
 
   # Galaxy Session Timeout This provides a timeout (in minutes) after
   # which a user will have to log back in. A duration of 0 disables this

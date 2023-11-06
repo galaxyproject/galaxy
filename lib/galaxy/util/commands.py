@@ -155,14 +155,14 @@ class CommandLineException(Exception):
         self.stderr = stderr
         self.returncode = returncode
         self.message = (
-            "Failed to execute command-line %s, stderr was:\n"
+            f"Failed to execute command-line {command}, stderr was:\n"
             "-------->>begin stderr<<--------\n"
-            "%s\n"
+            f"{stderr}\n"
             "-------->>end stderr<<--------\n"
             "-------->>begin stdout<<--------\n"
-            "%s\n"
+            f"{stdout}\n"
             "-------->>end stdout<<--------\n"
-        ) % (command, stderr, stdout)
+        )
 
     def __str__(self):
         """Return a verbose error message indicating the command problem."""

@@ -5,7 +5,18 @@ from abc import (
     abstractmethod,
 )
 from logging import getLogger
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+    Tuple,
+    Type,
+    TYPE_CHECKING,
+)
 from uuid import uuid4
+
+from typing_extensions import Protocol
 
 from galaxy.util import (
     asbool,
@@ -20,6 +31,14 @@ from .requirements import (
     DEFAULT_CONTAINER_RESOLVE_DEPENDENCIES,
     DEFAULT_CONTAINER_SHELL,
 )
+
+if TYPE_CHECKING:
+    from .dependencies import (
+        AppInfo,
+        JobInfo,
+        ToolInfo,
+    )
+    from .requirements import ContainerDescription
 
 log = getLogger(__name__)
 
@@ -71,10 +90,43 @@ fi
 """
 
 
+class ContainerProtocol(Protocol):
+    """
+    Helper class to allow typing for the HasDockerLikeVolumes mixin
+    """
+
+    @property
+    def app_info(self) -> "AppInfo":
+        ...
+
+    @property
+    def tool_info(self) -> "ToolInfo":
+        ...
+
+    @property
+    def job_info(self) -> Optional["JobInfo"]:
+        ...
+
+
 class Container(metaclass=ABCMeta):
+    """
+    TODO The container resolvers currently initialize job_info as None,
+    ContainerFinder.find_container fixes this by constructing a new container
+    with job_info (see __destination_container)
+    """
+
+    container_type: str
+
     def __init__(
-        self, container_id, app_info, tool_info, destination_info, job_info, container_description, container_name=None
-    ):
+        self,
+        container_id: str,
+        app_info: "AppInfo",
+        tool_info: "ToolInfo",
+        destination_info: Dict[str, Any],
+        job_info: Optional["JobInfo"],
+        container_description: Optional["ContainerDescription"],
+        container_name: Optional[str] = None,
+    ) -> None:
         self.container_id = container_id
         self.app_info = app_info
         self.tool_info = tool_info
@@ -82,14 +134,14 @@ class Container(metaclass=ABCMeta):
         self.job_info = job_info
         self.container_description = container_description
         self.container_name = container_name or uuid4().hex
-        self.container_info = {}
+        self.container_info: Dict[str, Any] = {}
 
-    def prop(self, name, default):
+    def prop(self, name: str, default: Any) -> Any:
         destination_name = f"{self.container_type}_{name}"
         return self.destination_info.get(destination_name, default)
 
     @property
-    def resolve_dependencies(self):
+    def resolve_dependencies(self) -> bool:
         return (
             DEFAULT_CONTAINER_RESOLVE_DEPENDENCIES
             if not self.container_description
@@ -97,17 +149,17 @@ class Container(metaclass=ABCMeta):
         )
 
     @property
-    def shell(self):
+    def shell(self) -> str:
         return DEFAULT_CONTAINER_SHELL if not self.container_description else self.container_description.shell
 
     @property
-    def source_environment(self):
+    def source_environment(self) -> str:
         if self.container_description and not self.container_description.explicit:
             return SOURCE_CONDA_ACTIVATE
         return ""
 
     @abstractmethod
-    def containerize_command(self, command):
+    def containerize_command(self, command: str) -> str:
         """
         Use destination supplied container configuration parameters,
         container_id, and command to build a new command that runs
@@ -115,15 +167,108 @@ class Container(metaclass=ABCMeta):
         """
 
 
-def preprocess_volumes(volumes_raw_str, container_type):
+class Volume:
+    """
+    helper class to manage a container volume string
+    """
+
+    def __init__(self, rawstr: str, container_type: str):
+        self.source, self.target, self.mode = Volume.parse_volume_str(rawstr)
+        self.container_type = container_type
+
+    @staticmethod
+    def parse_volume_str(rawstr: str) -> Tuple[str, str, str]:
+        """
+        >>> Volume.parse_volume_str('A:B:rw')
+        ('A', 'B', 'rw')
+        >>> Volume.parse_volume_str('A : B: ro')
+        ('A', 'B', 'ro')
+        >>> Volume.parse_volume_str('A:B')
+        ('A', 'B', 'rw')
+        >>> Volume.parse_volume_str('A:ro')
+        ('A', 'A', 'ro')
+        >>> Volume.parse_volume_str('A')
+        ('A', 'A', 'rw')
+        >>> Volume.parse_volume_str(' ')
+        Traceback (most recent call last):
+        ...
+        Exception: Unparsable volumes string in configuration [ ]
+        >>> Volume.parse_volume_str('A:B:C:D')
+        Traceback (most recent call last):
+        ...
+        Exception: Unparsable volumes string in configuration [A:B:C:D]
+        """
+        if rawstr.strip() == "":
+            raise Exception(f"Unparsable volumes string in configuration [{rawstr}]")
+
+        volume_parts = rawstr.split(":")
+        if len(volume_parts) > 3:
+            raise Exception(f"Unparsable volumes string in configuration [{rawstr}]")
+        if len(volume_parts) == 3:
+            source = volume_parts[0]
+            target = volume_parts[1]
+            mode = volume_parts[2]
+        elif len(volume_parts) == 2:
+            if volume_parts[1] not in ("rw", "ro", "default_ro"):
+                source = volume_parts[0]
+                target = volume_parts[1]
+                mode = "rw"
+            else:
+                source = volume_parts[0]
+                target = volume_parts[0]
+                mode = volume_parts[1]
+        elif len(volume_parts) == 1:
+            source = volume_parts[0]
+            target = volume_parts[0]
+            mode = "rw"
+
+        source = source.strip()
+        target = target.strip()
+        mode = mode.strip()
+
+        return source, target, mode
+
+    def __str__(self):
+        """
+        >>> str(Volume('A:A:rw', 'docker'))
+        'A:rw'
+        >>> str(Volume('A:B:rw', 'docker'))
+        'A:B:rw'
+        >>> str(Volume('A:A:ro', 'singularity'))
+        'A:ro'
+        >>> str(Volume('A:B:ro', 'singularity'))
+        'A:B:ro'
+        >>> str(Volume('A:A:rw', 'singularity'))
+        'A'
+        >>> str(Volume('A:B:rw', 'singularity'))
+        'A:B'
+        """
+        if self.source == self.target:
+            path = self.source
+        else:
+            path = f"{self.source}:{self.target}"
+
+        # TODO remove this, we require quite recent singularity anyway
+        # for a while singularity did not allow to specify the bind type rw
+        # (which is the default). so we omit this default
+        # see https://github.com/hpcng/singularity/pull/5487
+        if self.container_type == SINGULARITY_CONTAINER_TYPE and self.mode == "rw":
+            return path
+        else:
+            return f"{path}:{self.mode}"
+
+
+def preprocess_volumes(volumes_raw_str: str, container_type: str) -> List[str]:
     """Process Galaxy volume specification string to either Docker or Singularity specification.
 
     Galaxy allows the mount try "default_ro" which translates to ro for Docker and
     ro for Singularity iff no subdirectories are rw (Singularity does not allow ro
     parent directories with rw subdirectories).
 
-    >>> preprocess_volumes(None, DOCKER_CONTAINER_TYPE)
-    []
+    Removes volumes that have the same target directory which is not allowed
+    (for docker and singularity). Volumes that are specified later in the volumes_raw_str
+    are favoured which allows admins to overwrite defaults.
+
     >>> preprocess_volumes("", DOCKER_CONTAINER_TYPE)
     []
     >>> preprocess_volumes("/a/b", DOCKER_CONTAINER_TYPE)
@@ -138,49 +283,32 @@ def preprocess_volumes(volumes_raw_str, container_type):
     ['/a/b:ro', '/a/b/c:ro']
     >>> preprocess_volumes("/a/b:default_ro,/a/b/c:rw", SINGULARITY_CONTAINER_TYPE)
     ['/a/b', '/a/b/c']
+    >>> preprocess_volumes("/x:/a/b:default_ro,/y:/a/b/c:ro", SINGULARITY_CONTAINER_TYPE)
+    ['/x:/a/b:ro', '/y:/a/b/c:ro']
+    >>> preprocess_volumes("/x:/a/b:default_ro,/y:/a/b/c:rw", SINGULARITY_CONTAINER_TYPE)
+    ['/x:/a/b', '/y:/a/b/c']
+    >>> preprocess_volumes("/x:/x,/y:/x", SINGULARITY_CONTAINER_TYPE)
+    ['/y:/x']
     """
 
     if not volumes_raw_str:
         return []
 
-    volumes_raw_strs = [v.strip() for v in volumes_raw_str.split(",")]
-    volumes = []
-    rw_paths = []
-
-    for volume_raw_str in volumes_raw_strs:
-        volume_parts = volume_raw_str.split(":")
-        if len(volume_parts) > 3:
-            raise Exception(f"Unparsable volumes string in configuration [{volumes_raw_str}]")
-        if len(volume_parts) == 3:
-            volume_parts = [f"{volume_parts[0]}:{volume_parts[1]}", volume_parts[2]]
-        if len(volume_parts) == 2 and volume_parts[1] not in ("rw", "ro", "default_ro"):
-            volume_parts = [f"{volume_parts[0]}:{volume_parts[1]}", "rw"]
-        if len(volume_parts) == 1:
-            volume_parts.append("rw")
-        volumes.append(volume_parts)
-        if volume_parts[1] == "rw":
-            rw_paths.append(volume_parts[0])
-
+    volumes = [Volume(v, container_type) for v in volumes_raw_str.split(",")]
+    rw_paths = [v.target for v in volumes if v.mode == "rw"]
     for volume in volumes:
-        path = volume[0]
-        how = volume[1]
-
-        if how == "default_ro":
-            how = "ro"
+        mode = volume.mode
+        if volume.mode == "default_ro":
+            mode = "ro"
             if container_type == SINGULARITY_CONTAINER_TYPE:
                 for rw_path in rw_paths:
-                    if in_directory(rw_path, path):
-                        how = "rw"
+                    if in_directory(rw_path, volume.target):
+                        mode = "rw"
+        volume.mode = mode
 
-        volume[1] = how
-
-        # for a while singularity did not allow to specify the bind type rw
-        # (which is the default). so we omit this default
-        # see https://github.com/hpcng/singularity/pull/5487
-        if container_type == SINGULARITY_CONTAINER_TYPE and volume[1] == "rw":
-            del volume[1]
-
-    return [":".join(v) for v in volumes]
+    # remove duplicate targets
+    target_to_volume = {v.target: str(v) for v in volumes}
+    return list(target_to_volume.values())
 
 
 class HasDockerLikeVolumes:
@@ -189,7 +317,7 @@ class HasDockerLikeVolumes:
     Singularity seems to have a fairly compatible syntax for volume handling.
     """
 
-    def _expand_volume_str(self, value):
+    def _expand_volume_str(self: ContainerProtocol, value: str) -> str:
         if not value:
             return value
 
@@ -202,6 +330,7 @@ class HasDockerLikeVolumes:
                     value = os.path.abspath(value)
                 variables[name] = value
 
+        assert self.job_info is not None
         add_var("working_directory", self.job_info.working_directory)
         add_var("tmp_directory", self.job_info.tmp_directory)
         add_var("job_directory", self.job_info.job_directory)
@@ -221,21 +350,21 @@ class HasDockerLikeVolumes:
                 defaults += ",$tool_directory:default_ro"
             defaults += ",$job_directory/outputs:rw,$working_directory:rw"
         else:
-            defaults = "$galaxy_root:default_ro"
+            if self.job_info.tmp_directory is not None:
+                defaults = "$tmp_directory:rw"
+                # If a tool definitely has a temp directory available set it to /tmp in container for compat.
+                # with CWL. This is part of that spec and should make it easier to share containers between CWL
+                # and Galaxy.
+                defaults += ",$tmp_directory:/tmp:rw"
+            else:
+                defaults = "$_GALAXY_JOB_TMP_DIR:rw,$TMPDIR:rw,$TMP:rw,$TEMP:rw"
+            defaults += ",$galaxy_root:default_ro"
             if self.job_info.tool_directory:
                 defaults += ",$tool_directory:default_ro"
             if self.job_info.job_directory:
                 defaults += ",$job_directory:default_ro,$job_directory/outputs:rw"
                 if self.tool_info.profile <= 19.09:
                     defaults += ",$job_directory/configs:rw"
-            if self.job_info.tmp_directory is not None:
-                defaults += ",$tmp_directory:rw"
-                # If a tool definitely has a temp directory available set it to /tmp in container for compat.
-                # with CWL. This is part of that spec and should make it easier to share containers between CWL
-                # and Galaxy.
-                defaults += ",$tmp_directory:/tmp:rw"
-            else:
-                defaults += ",$_GALAXY_JOB_TMP_DIR:rw,$TMPDIR:rw,$TMP:rw,$TEMP:rw"
             if self.job_info.home_directory is not None:
                 defaults += ",$home_directory:rw"
             if self.app_info.outputs_to_working_directory:
@@ -274,7 +403,7 @@ class DockerContainer(Container, HasDockerLikeVolumes):
     container_type = DOCKER_CONTAINER_TYPE
 
     @property
-    def docker_host_props(self):
+    def docker_host_props(self) -> Dict[str, Any]:
         docker_host_props = dict(
             docker_cmd=self.prop("cmd", docker_util.DEFAULT_DOCKER_COMMAND),
             sudo=asbool(self.prop("sudo", docker_util.DEFAULT_SUDO)),
@@ -284,13 +413,13 @@ class DockerContainer(Container, HasDockerLikeVolumes):
         return docker_host_props
 
     @property
-    def connection_configuration(self):
+    def connection_configuration(self) -> Dict[str, Any]:
         return self.docker_host_props
 
-    def build_pull_command(self):
+    def build_pull_command(self) -> List[str]:
         return docker_util.build_pull_command(self.container_id, **self.docker_host_props)
 
-    def containerize_command(self, command):
+    def containerize_command(self, command: str) -> str:
         env_directives = []
         for pass_through_var in self.tool_info.env_pass_through:
             env_directives.append(f'"{pass_through_var}=${pass_through_var}"')
@@ -303,6 +432,7 @@ class DockerContainer(Container, HasDockerLikeVolumes):
                 env = key[len("docker_env_") :]
                 env_directives.append(f'"{env}={value}"')
 
+        assert self.job_info is not None
         working_directory = self.job_info.working_directory
         if not working_directory:
             raise Exception(f"Cannot containerize command [{working_directory}] without defined working directory.")
@@ -353,7 +483,7 @@ _on_exit() {{
 {cache_command}
 {run_command}"""
 
-    def __cache_from_file_command(self, cached_image_file, docker_host_props):
+    def __cache_from_file_command(self, cached_image_file: str, docker_host_props: Dict[str, Any]) -> str:
         images_cmd = docker_util.build_docker_images_command(truncate=False, **docker_host_props)
         load_cmd = docker_util.build_docker_load_command(**docker_host_props)
 
@@ -361,13 +491,13 @@ _on_exit() {{
             cached_image_file=cached_image_file, images_cmd=images_cmd, load_cmd=load_cmd
         )
 
-    def __get_cached_image_file(self):
+    def __get_cached_image_file(self) -> Optional[str]:
         container_id = self.container_id
         cache_directory = os.path.abspath(self.__get_destination_overridable_property("container_image_cache_path"))
         cache_path = docker_cache_path(cache_directory, container_id)
         return cache_path if os.path.exists(cache_path) else None
 
-    def __get_destination_overridable_property(self, name):
+    def __get_destination_overridable_property(self, name: str) -> Any:
         prop_name = f"docker_{name}"
         if prop_name in self.destination_info:
             return self.destination_info[prop_name]
@@ -375,7 +505,7 @@ _on_exit() {{
             return getattr(self.app_info, name)
 
 
-def docker_cache_path(cache_directory, container_id):
+def docker_cache_path(cache_directory: str, container_id: str) -> str:
     file_container_id = container_id.replace("/", "_slash_")
     cache_file_name = f"docker_{file_container_id}.tar"
     return os.path.join(cache_directory, cache_file_name)
@@ -384,7 +514,7 @@ def docker_cache_path(cache_directory, container_id):
 class SingularityContainer(Container, HasDockerLikeVolumes):
     container_type = SINGULARITY_CONTAINER_TYPE
 
-    def get_singularity_target_kwds(self):
+    def get_singularity_target_kwds(self) -> Dict[str, Any]:
         return dict(
             singularity_cmd=self.prop("cmd", singularity_util.DEFAULT_SINGULARITY_COMMAND),
             sudo=asbool(self.prop("sudo", singularity_util.DEFAULT_SUDO)),
@@ -392,10 +522,12 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
         )
 
     @property
-    def connection_configuration(self):
+    def connection_configuration(self) -> Dict[str, Any]:
         return self.get_singularity_target_kwds()
 
-    def build_mulled_singularity_pull_command(self, cache_directory, namespace="biocontainers"):
+    def build_mulled_singularity_pull_command(
+        self, cache_directory: str, namespace: str = "biocontainers"
+    ) -> List[str]:
         return singularity_util.pull_mulled_singularity_command(
             docker_image_identifier=self.container_id,
             cache_directory=cache_directory,
@@ -403,12 +535,12 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
             **self.get_singularity_target_kwds(),
         )
 
-    def build_singularity_pull_command(self, cache_path):
+    def build_singularity_pull_command(self, cache_path: str) -> List[str]:
         return singularity_util.pull_singularity_command(
             image_identifier=self.container_id, cache_path=cache_path, **self.get_singularity_target_kwds()
         )
 
-    def containerize_command(self, command):
+    def containerize_command(self, command: str) -> str:
         env = []
         for pass_through_var in self.tool_info.env_pass_through:
             env.append((pass_through_var, f"${pass_through_var}"))
@@ -421,6 +553,7 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
                 real_key = key[len("singularity_env_") :]
                 env.append((real_key, value))
 
+        assert self.job_info is not None
         working_directory = self.job_info.working_directory
         if not working_directory:
             raise Exception(f"Cannot containerize command [{working_directory}] without defined working directory.")
@@ -439,12 +572,13 @@ class SingularityContainer(Container, HasDockerLikeVolumes):
             guest_ports=self.tool_info.guest_ports,
             container_name=self.container_name,
             cleanenv=asbool(self.prop("cleanenv", singularity_util.DEFAULT_CLEANENV)),
+            no_mount=self.prop("no_mount", singularity_util.DEFAULT_NO_MOUNT),
             **self.get_singularity_target_kwds(),
         )
         return run_command
 
 
-CONTAINER_CLASSES = dict(
+CONTAINER_CLASSES: Dict[str, Type[Container]] = dict(
     docker=DockerContainer,
     singularity=SingularityContainer,
 )

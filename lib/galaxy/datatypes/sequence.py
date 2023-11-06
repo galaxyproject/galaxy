@@ -175,7 +175,7 @@ class Sequence(data.Text):
     def do_fast_split(cls, input_datasets, toc_file_datasets, subdir_generator_function, split_params):
         data = json.load(open(toc_file_datasets[0].file_name))
         sections = data["sections"]
-        total_sequences = int(0)
+        total_sequences = 0
         for section in sections:
             total_sequences += int(section["sequences"])
         sequences_per_file = cls.get_sequences_per_file(total_sequences, split_params)
@@ -247,7 +247,7 @@ class Sequence(data.Text):
         sections = toc_file["sections"]
         result = []
 
-        current_sequence = int(0)
+        current_sequence = 0
         i = 0
         # skip to the section that contains my starting sequence
         while i < len(sections) and start_sequence >= current_sequence + int(sections[i]["sequences"]):
@@ -277,8 +277,7 @@ class Sequence(data.Text):
                     start_chunk = -1
                 # extract, unzip, trim, recompress
                 result.append(
-                    "(dd bs=1 skip=%s count=%s if=%s 2> /dev/null )| zcat | ( tail -n +%s 2> /dev/null) | head -%s | gzip -c >> %s"
-                    % (
+                    "(dd bs=1 skip={} count={} if={} 2> /dev/null )| zcat | ( tail -n +{} 2> /dev/null) | head -{} | gzip -c >> {}".format(
                         start_copy,
                         end_copy - start_copy,
                         input_name,

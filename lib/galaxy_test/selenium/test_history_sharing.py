@@ -135,7 +135,7 @@ class TestHistoryRequiresLoginSelenium(SeleniumTestCase):
 
     @selenium_test
     def test_share_history_login_redirect(self):
-        user_email = self.get_logged_in_user()["email"]
+        user_email = self.get_user_email()
         history_id = self.current_history_id()
         self.logout()
         self.go_to_history_sharing(history_id)

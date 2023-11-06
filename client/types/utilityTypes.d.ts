@@ -17,3 +17,12 @@ export type Last<A extends readonly [...any]> = A[Subtract<Length<A>, 1>];
 
 /** type of the first element of a readonly array or tuple */
 export type First<A extends readonly [...any]> = A[Length<A>];
+
+/**
+ * Extract the prop types of a vue 2 component. This is an alternative to `ExtractPropTypes`, which has unreliable behavior in vue 2.
+ * @example
+ * type MyComponentPropsType = GetComponentPropTypes<typeof MyComponent>;
+ */
+export type GetComponentPropTypes<
+    T extends import("vue/types/v3-component-public-instance").ComponentPublicInstanceConstructor
+> = InstanceType<T>["$props"];

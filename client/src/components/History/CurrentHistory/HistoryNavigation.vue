@@ -3,34 +3,34 @@
 
 <template>
     <div>
-        <nav class="d-flex justify-content-between mx-3 my-2">
+        <nav class="d-flex justify-content-between mx-3 my-2" aria-label="current history management">
             <h2 class="m-1 h-sm">History</h2>
             <b-button-group>
                 <b-button
-                    v-b-tooltip.bottom.hover
+                    v-b-tooltip.top.hover.noninteractive
                     class="create-hist-btn"
                     data-description="create new history"
                     size="sm"
                     variant="link"
-                    :disabled="currentUser.isAnonymous"
+                    :disabled="isAnonymous"
                     :title="userTitle('Create new history')"
-                    @click="$emit('createNewHistory')">
+                    @click="createNewHistory">
                     <Icon fixed-width icon="plus" />
                 </b-button>
 
                 <b-button
-                    v-b-modal.selector-history-modal
-                    v-b-tooltip.bottom.hover
+                    v-b-tooltip.top.hover.noninteractive
                     data-description="switch to another history"
                     size="sm"
                     variant="link"
-                    :disabled="currentUser.isAnonymous"
-                    :title="userTitle('Switch to history')">
+                    :disabled="isAnonymous"
+                    :title="userTitle('Switch to history')"
+                    @click="showSwitchModal = !showSwitchModal">
                     <Icon fixed-width icon="exchange-alt" />
                 </b-button>
 
                 <b-dropdown
-                    v-b-tooltip.bottom.hover
+                    v-b-tooltip.top.hover.noninteractive
                     size="sm"
                     variant="link"
                     toggle-class="text-decoration-none"
@@ -45,12 +45,12 @@
                             <b-spinner v-if="historiesLoading" small />
                             <span>Fetching histories from server</span>
                         </div>
-                        <span v-else>You have {{ histories.length }} histories.</span>
+                        <span v-else>You have {{ totalHistoryCount }} histories.</span>
                     </b-dropdown-text>
 
                     <b-dropdown-item
                         data-description="switch to multi history view"
-                        :disabled="currentUser.isAnonymous"
+                        :disabled="isAnonymous"
                         :title="userTitle('Open History Multiview')"
                         @click="$router.push('/histories/view_multiple')">
                         <Icon fixed-width class="mr-1" icon="columns" />
@@ -69,8 +69,8 @@
                     <b-dropdown-divider></b-dropdown-divider>
 
                     <b-dropdown-item
-                        v-b-modal:copy-history-modal
-                        :disabled="currentUser.isAnonymous"
+                        v-b-modal:copy-current-history-modal
+                        :disabled="isAnonymous"
                         :title="userTitle('Copy History to a New History')">
                         <Icon fixed-width icon="copy" class="mr-1" />
                         <span v-localize>Copy this History</span>
@@ -97,17 +97,34 @@
                     </b-dropdown-item>
 
                     <b-dropdown-item
-                        :disabled="currentUser.isAnonymous"
+                        :disabled="isAnonymous"
+                        data-description="archive history"
+                        :title="userTitle('Archive this History')"
+                        @click="$router.push(`/histories/${history.id}/archive`)">
+                        <Icon fixed-width icon="archive" class="mr-1" />
+                        <span v-localize>Archive History</span>
+                    </b-dropdown-item>
+
+                    <b-dropdown-item
+                        :disabled="isAnonymous"
                         :title="userTitle('Convert History to Workflow')"
                         @click="iframeRedirect('/workflow/build_from_current_history')">
                         <Icon fixed-width icon="file-export" class="mr-1" />
                         <span v-localize>Extract Workflow</span>
                     </b-dropdown-item>
 
+                    <b-dropdown-item
+                        :disabled="isAnonymous"
+                        :title="userTitle('Display Workflow Invocations')"
+                        @click="$router.push(`/histories/${history.id}/invocations`)">
+                        <Icon fixed-width icon="sitemap" class="fa-rotate-270 mr-1" />
+                        <span v-localize>Show Invocations</span>
+                    </b-dropdown-item>
+
                     <b-dropdown-divider></b-dropdown-divider>
 
                     <b-dropdown-item
-                        :disabled="currentUser.isAnonymous"
+                        :disabled="isAnonymous"
                         :title="userTitle('Share or Publish this History')"
                         data-description="share or publish"
                         @click="$router.push(`/histories/sharing?id=${history.id}`)">
@@ -116,7 +133,7 @@
                     </b-dropdown-item>
 
                     <b-dropdown-item
-                        :disabled="currentUser.isAnonymous"
+                        :disabled="isAnonymous"
                         :title="userTitle('Set who can View or Edit this History')"
                         @click="$router.push(`/histories/permissions?id=${history.id}`)">
                         <Icon fixed-width icon="user-lock" class="mr-1" />
@@ -125,7 +142,7 @@
 
                     <b-dropdown-item
                         v-b-modal:history-privacy-modal
-                        :disabled="currentUser.isAnonymous"
+                        :disabled="isAnonymous"
                         :title="userTitle('Make this History Private')">
                         <Icon fixed-width icon="lock" class="mr-1" />
                         <span v-localize>Make Private</span>
@@ -135,18 +152,16 @@
         </nav>
 
         <SelectorModal
+            v-show="showSwitchModal"
             id="selector-history-modal"
             :histories="histories"
-            :current-history-id="history.id"
-            @selectHistory="$emit('setCurrentHistory', $event)" />
+            :additional-options="['center', 'multi']"
+            :show-modal.sync="showSwitchModal"
+            @selectHistory="setCurrentHistory($event.id)" />
 
-        <CopyModal id="copy-history-modal" :history="history" />
+        <CopyModal id="copy-current-history-modal" :history="history" />
 
-        <b-modal
-            id="history-privacy-modal"
-            title="Make History Private"
-            title-tag="h2"
-            @ok="$emit('secureHistory', history)">
+        <b-modal id="history-privacy-modal" title="Make History Private" title-tag="h2" @ok="secureHistory(history)">
             <p v-localize>
                 This will make all the data in this history private (excluding library datasets), and will set
                 permissions such that all new data is created as private. Any datasets within that are currently shared
@@ -154,7 +169,7 @@
             </p>
         </b-modal>
 
-        <b-modal id="delete-history-modal" title="Delete History?" title-tag="h2" @ok="$emit('deleteHistory', history)">
+        <b-modal id="delete-history-modal" title="Delete History?" title-tag="h2" @ok="deleteHistory(history.id)">
             <p v-localize>Really delete the current history?</p>
         </b-modal>
 
@@ -162,17 +177,20 @@
             id="purge-history-modal"
             title="Permanently Delete History?"
             title-tag="h2"
-            @ok="$emit('purgeHistory', history)">
+            @ok="deleteHistory(history.id, true)">
             <p v-localize>Really delete the current history permanently? This cannot be undone.</p>
         </b-modal>
     </div>
 </template>
 
 <script>
-import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
 import CopyModal from "components/History/Modals/CopyModal";
 import SelectorModal from "components/History/Modals/SelectorModal";
-import { mapGetters } from "vuex";
+import { legacyNavigationMixin } from "components/plugins/legacyNavigation";
+import { mapActions, mapState } from "pinia";
+
+import { useHistoryStore } from "@/stores/historyStore";
+import { useUserStore } from "@/stores/userStore";
 
 export default {
     components: {
@@ -186,12 +204,19 @@ export default {
         title: { type: String, default: "Histories" },
         historiesLoading: { type: Boolean, default: false },
     },
+    data() {
+        return {
+            showSwitchModal: false,
+        };
+    },
     computed: {
-        ...mapGetters("user", ["currentUser"]),
+        ...mapState(useUserStore, ["isAnonymous"]),
+        ...mapState(useHistoryStore, ["totalHistoryCount"]),
     },
     methods: {
+        ...mapActions(useHistoryStore, ["createNewHistory", "deleteHistory", "secureHistory", "setCurrentHistory"]),
         userTitle(title) {
-            if (this.currentUser.isAnonymous) {
+            if (this.isAnonymous) {
                 return this.l("Log in to") + " " + this.l(title);
             } else {
                 return this.l(title);

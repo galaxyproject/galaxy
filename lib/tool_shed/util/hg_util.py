@@ -85,7 +85,11 @@ def create_hgrc_file(app, repository):
         fp.write("default = .\n")
         fp.write("default-push = .\n")
         fp.write("[web]\n")
-        fp.write(f"allow_push = {repository.user.username}\n")
+        if app.config.config_hg_for_dev:
+            allow_push = "*"
+        else:
+            allow_push = repository.user.username
+        fp.write(f"allow_push = {allow_push}\n")
         fp.write(f"name = {repository.name}\n")
         fp.write("push_ssl = false\n")
         fp.write("[extensions]\n")

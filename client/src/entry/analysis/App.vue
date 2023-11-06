@@ -12,59 +12,79 @@
                 :tabs="tabs"
                 :window-tab="windowTab"
                 @open-url="openUrl" />
-            <alert
+            <Alert
                 v-if="config.message_box_visible && config.message_box_content"
                 id="messagebox"
                 class="rounded-0 m-0 p-2"
                 :variant="config.message_box_class || 'info'">
                 <span class="fa fa-fw mr-1 fa-exclamation" />
-                <span>{{ config.message_box_content }}</span>
-            </alert>
-            <alert
+                <!-- eslint-disable-next-line vue/no-v-html -->
+                <span v-html="config.message_box_content"></span>
+            </Alert>
+            <Alert
                 v-if="config.show_inactivity_warning && config.inactivity_box_content"
                 id="inactivebox"
                 class="rounded-0 m-0 p-2"
-                variant="alert-warning">
+                variant="warning">
                 <span class="fa fa-fw mr-1 fa-exclamation-triangle" />
                 <span>{{ config.inactivity_box_content }}</span>
                 <span>
                     <a class="ml-1" :href="resendUrl">Resend Verification</a>
                 </span>
-            </alert>
+            </Alert>
             <router-view @update:confirmation="confirmation = $event" />
         </div>
         <div id="dd-helper" />
         <Toast ref="toastRef" />
         <ConfirmDialog ref="confirmDialogRef" />
         <UploadModal ref="uploadModal" />
+        <BroadcastsOverlay />
+        <DragGhost />
     </div>
 </template>
 <script>
-import Modal from "mvc/ui/ui-modal";
-import Masthead from "components/Masthead/Masthead.vue";
 import { getGalaxyInstance } from "app";
-import { getAppRoot } from "onload";
-import { HistoryPanelProxy } from "components/History/adapters/HistoryPanelProxy";
-import { fetchMenu } from "entry/analysis/menu";
-import { WindowManager } from "layout/window-manager";
-import { withPrefix } from "utils/redirect";
-import Toast from "components/Toast";
 import ConfirmDialog from "components/ConfirmDialog";
-import UploadModal from "components/Upload/UploadModal.vue";
-import { ref } from "vue";
-import { setToastComponentRef } from "composables/toast";
+import { HistoryPanelProxy } from "components/History/adapters/HistoryPanelProxy";
+import Toast from "components/Toast";
 import { setConfirmDialogComponentRef } from "composables/confirmDialog";
 import { setGlobalUploadModal } from "composables/globalUploadModal";
-import { useCurrentTheme } from "@/composables/user";
+import { setToastComponentRef } from "composables/toast";
+import { fetchMenu } from "entry/analysis/menu";
+import { WindowManager } from "layout/window-manager";
+import Modal from "mvc/ui/ui-modal";
+import { getAppRoot } from "onload";
+import { storeToRefs } from "pinia";
+import { withPrefix } from "utils/redirect";
+import { ref } from "vue";
+
+import { useHistoryStore } from "@/stores/historyStore";
+import { useNotificationsStore } from "@/stores/notificationsStore";
+import { useUserStore } from "@/stores/userStore";
+
+import Alert from "@/components/Alert.vue";
+import DragGhost from "@/components/DragGhost.vue";
+import BroadcastsOverlay from "@/components/Notifications/Broadcasts/BroadcastsOverlay.vue";
+import Masthead from "components/Masthead/Masthead.vue";
+import UploadModal from "components/Upload/UploadModal.vue";
 
 export default {
     components: {
+        Alert,
+        DragGhost,
         Masthead,
         Toast,
         ConfirmDialog,
         UploadModal,
+        BroadcastsOverlay,
     },
     setup() {
+        const userStore = useUserStore();
+        const { currentTheme } = storeToRefs(userStore);
+        const { currentHistory } = storeToRefs(useHistoryStore());
+
+        userStore.loadUser();
+
         const toastRef = ref(null);
         setToastComponentRef(toastRef);
 
@@ -74,9 +94,7 @@ export default {
         const uploadModal = ref(null);
         setGlobalUploadModal(uploadModal);
 
-        const { currentTheme } = useCurrentTheme();
-
-        return { toastRef, confirmDialogRef, uploadModal, currentTheme };
+        return { toastRef, confirmDialogRef, uploadModal, currentTheme, currentHistory };
     },
     data() {
         return {
@@ -115,12 +133,18 @@ export default {
             console.debug("App - Confirmation before route change: ", this.confirmation);
             this.$router.confirmation = this.confirmation;
         },
+        currentHistory() {
+            this.Galaxy.currHistoryPanel.syncCurrentHistoryModel(this.currentHistory);
+        },
     },
     mounted() {
-        const Galaxy = getGalaxyInstance();
-        Galaxy.currHistoryPanel = new HistoryPanelProxy();
-        Galaxy.modal = new Modal.View();
-        Galaxy.frame = this.windowManager;
+        this.Galaxy = getGalaxyInstance();
+        this.Galaxy.currHistoryPanel = new HistoryPanelProxy();
+        this.Galaxy.modal = new Modal.View();
+        this.Galaxy.frame = this.windowManager;
+        if (this.Galaxy.config.enable_notification_system) {
+            this.startNotificationsPolling();
+        }
     },
     created() {
         window.onbeforeunload = () => {
@@ -130,6 +154,10 @@ export default {
         };
     },
     methods: {
+        startNotificationsPolling() {
+            const notificationsStore = useNotificationsStore();
+            notificationsStore.startPollingNotifications();
+        },
         openUrl(urlObj) {
             if (!urlObj.target) {
                 this.$router.push(urlObj.url);

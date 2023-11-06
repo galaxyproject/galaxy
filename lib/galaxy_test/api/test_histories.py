@@ -140,6 +140,42 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
         assert len(index_response) == 1
         assert index_response[0]["name"] == expected_history_name
 
+    def test_index_case_insensitive_contains_query(self):
+        # Create the histories with a different user to ensure the test
+        # is not conflicted with the current user's histories.
+        with self._different_user(f"user_{uuid4()}@bx.psu.edu"):
+            unique_id = uuid4()
+            expected_history_name = f"Test History That Match Query_{unique_id}"
+            self._create_history(expected_history_name)
+            self._create_history(expected_history_name.upper())
+            self._create_history(expected_history_name.lower())
+            self._create_history(f"Another history_{uuid4()}")
+
+            name_contains = "history"
+            query = f"?q=name-contains&qv={name_contains}"
+            index_response = self._get(f"histories{query}").json()
+            assert len(index_response) == 4
+
+            name_contains = "history that match query"
+            query = f"?q=name-contains&qv={name_contains}"
+            index_response = self._get(f"histories{query}").json()
+            assert len(index_response) == 3
+
+            name_contains = "ANOTHER"
+            query = f"?q=name-contains&qv={name_contains}"
+            index_response = self._get(f"histories{query}").json()
+            assert len(index_response) == 1
+
+            name_contains = "test"
+            query = f"?q=name-contains&qv={name_contains}"
+            index_response = self._get(f"histories{query}").json()
+            assert len(index_response) == 3
+
+            name_contains = unique_id
+            query = f"?q=name-contains&qv={name_contains}"
+            index_response = self._get(f"histories{query}").json()
+            assert len(index_response) == 3
+
     def test_delete(self):
         # Setup a history and ensure it is in the index
         history_id = self._create_history("TestHistoryForDelete")["id"]
@@ -316,6 +352,91 @@ class TestHistoriesApi(ApiTestCase, BaseHistories):
             }
             self.dataset_populator.import_history(import_data)
 
+    def test_immutable_history_update_fails(self):
+        history_id = self._create_history("TestHistoryForImmutability")["id"]
+
+        # we can update the name as usual
+        self._update(history_id, {"name": "Immutable Name"})
+        show_response = self._show(history_id)
+        assert show_response["name"] == "Immutable Name"
+
+        # once we purge the history, it becomes immutable
+        self._delete(f"histories/{history_id}", data={"purge": True}, json=True)
+
+        # we cannot update the name anymore
+        response = self._update(history_id, {"name": "New Name"})
+        self._assert_status_code_is(response, 403)
+        assert response.json()["err_msg"] == "History is immutable"
+        show_response = self._show(history_id)
+        assert show_response["name"] == "Immutable Name"
+
+    def test_immutable_history_cannot_add_datasets(self):
+        history_id = self._create_history("TestHistoryForAddImmutability")["id"]
+
+        # we add a dataset
+        self.dataset_populator.new_dataset(history_id, content="TestContents")
+
+        # once we purge the history, it becomes immutable
+        self._delete(f"histories/{history_id}", data={"purge": True}, json=True)
+
+        # we cannot add another dataset
+        with self.assertRaisesRegex(AssertionError, "History is immutable"):
+            self.dataset_populator.new_dataset(history_id, content="TestContents")
+
+    def test_cannot_modify_tags_on_immutable_history(self):
+        history_id = self._create_history("TestHistoryForTagImmutability")["id"]
+        hda = self.dataset_populator.new_dataset(history_id, content="TestContents")
+
+        # we add a tag
+        self._update(history_id, {"tags": ["FirstTag"]})
+
+        # once we purge the history, it becomes immutable
+        self._delete(f"histories/{history_id}", data={"purge": True}, json=True)
+
+        # we cannot add another tag
+        response = self._update(history_id, {"tags": ["SecondTag"]})
+        self._assert_status_code_is(response, 403)
+        assert response.json()["err_msg"] == "History is immutable"
+
+        # we cannot remove the tag
+        response = self._update(history_id, {"tags": []})
+        self._assert_status_code_is(response, 403)
+        assert response.json()["err_msg"] == "History is immutable"
+
+        # we cannot add a tag to the dataset
+        response = self.dataset_populator.tag_dataset(history_id, hda["id"], ["DatasetTag"], raise_on_error=False)
+        assert response["err_msg"] == "History is immutable"
+
+    def test_histories_count(self):
+        # Create a new user so we can test the count without other existing histories
+        with self._different_user("user_for_count@test.com"):
+            first_history_id = self._create_history("TestHistoryForCount 1")["id"]
+            self._assert_expected_histories_count(expected_count=1)
+
+            second_history_id = self._create_history("TestHistoryForCount 2")["id"]
+            self._assert_expected_histories_count(expected_count=2)
+
+            third_history_id = self._create_history("TestHistoryForCount 3")["id"]
+            self._assert_expected_histories_count(expected_count=3)
+
+            # Delete the second history
+            self.dataset_populator.delete_history(second_history_id)
+            self._assert_expected_histories_count(expected_count=2)
+
+            # Archive the first history
+            self.dataset_populator.archive_history(first_history_id)
+            self._assert_expected_histories_count(expected_count=1)
+
+            # Only the third history should be active
+            active_histories = self._get("histories").json()
+            assert len(active_histories) == 1
+            assert active_histories[0]["id"] == third_history_id
+
+    def _assert_expected_histories_count(self, expected_count):
+        response = self._get("histories/count")
+        self._assert_status_code_is(response, 200)
+        assert response.json() == expected_count
+
 
 class ImportExportTests(BaseHistories):
     task_based: ClassVar[bool]
@@ -415,9 +536,7 @@ class ImportExportTests(BaseHistories):
             raise SkipTest("skipping test_import_metadata_regeneration for task based...")
         history_name = f"for_import_metadata_regeneration_{uuid4()}"
         history_id = self.dataset_populator.new_history(name=history_name)
-        self.dataset_populator.new_dataset(
-            history_id, content=open(self.test_data_resolver.get_filename("1.bam"), "rb"), file_type="bam", wait=True
-        )
+        self.dataset_populator.new_bam_dataset(history_id, self.test_data_resolver)
         imported_history_id = self._reimport_history(history_id, history_name)
         self._assert_history_length(imported_history_id, 1)
         self._check_imported_dataset(history_id=imported_history_id, hid=1)
@@ -716,3 +835,112 @@ class TestSharingHistory(ApiTestCase, BaseHistories, SharingApiTests):
         update_url = self._api_url(url, **{"use_admin_key": True})
         update_response = put(update_url, json=payload)
         return update_response
+
+
+class TestArchivingHistoriesWithoutExportRecord(ApiTestCase, BaseHistories):
+    def setUp(self):
+        super().setUp()
+        self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+
+    def test_archive(self):
+        history_id = self.dataset_populator.new_history()
+
+        history_details = self._show(history_id)
+        assert history_details["archived"] is False
+
+        archive_response = self.dataset_populator.archive_history(history_id)
+        self._assert_status_code_is(archive_response, 200)
+        assert archive_response.json()["archived"] is True
+
+        history_details = self._show(history_id)
+        assert history_details["archived"] is True
+
+    def test_other_users_cannot_archive_history(self):
+        history_id = self.dataset_populator.new_history()
+
+        with self._different_user():
+            archive_response = self.dataset_populator.archive_history(history_id)
+            self._assert_status_code_is(archive_response, 403)
+
+    def test_restore(self):
+        history_id = self.dataset_populator.new_history()
+
+        archive_response = self.dataset_populator.archive_history(history_id)
+        self._assert_status_code_is(archive_response, 200)
+        assert archive_response.json()["archived"] is True
+
+        restore_response = self.dataset_populator.restore_archived_history(history_id)
+        self._assert_status_code_is(restore_response, 200)
+        assert restore_response.json()["archived"] is False
+
+    def test_other_users_cannot_restore_history(self):
+        history_id = self.dataset_populator.new_history()
+
+        archive_response = self.dataset_populator.archive_history(history_id)
+        self._assert_status_code_is(archive_response, 200)
+        assert archive_response.json()["archived"] is True
+
+        with self._different_user():
+            restore_response = self.dataset_populator.restore_archived_history(history_id)
+            self._assert_status_code_is(restore_response, 403)
+
+    def test_archived_histories_index(self):
+        with self._different_user("archived_histories_index_user@bx.psu.edu"):
+            history_id = self.dataset_populator.new_history()
+
+            archive_response = self.dataset_populator.archive_history(history_id)
+            self._assert_status_code_is(archive_response, 200)
+            assert archive_response.json()["archived"] is True
+
+            archived_histories = self.dataset_populator.get_archived_histories()
+            assert len(archived_histories) == 1
+            assert archived_histories[0]["id"] == history_id
+
+    def test_archived_histories_filtering_and_sorting(self):
+        with self._different_user("archived_histories_filtering_user@bx.psu.edu"):
+            num_histories = 2
+            history_ids = []
+            for i in range(num_histories):
+                history_id = self.dataset_populator.new_history(name=f"History {i}")
+                archive_response = self.dataset_populator.archive_history(history_id)
+                self._assert_status_code_is(archive_response, 200)
+                assert archive_response.json()["archived"] is True
+                history_ids.append(history_id)
+
+            # Filter by name
+            archived_histories = self.dataset_populator.get_archived_histories(query="q=name-contains&qv=history")
+            assert len(archived_histories) == num_histories
+
+            archived_histories = self.dataset_populator.get_archived_histories(query="q=name-contains&qv=History 1")
+            assert len(archived_histories) == 1
+
+            # Order by name
+            archived_histories = self.dataset_populator.get_archived_histories(query="order=name-dsc")
+            assert len(archived_histories) == num_histories
+            assert archived_histories[0]["name"] == "History 1"
+            assert archived_histories[1]["name"] == "History 0"
+
+            archived_histories = self.dataset_populator.get_archived_histories(query="order=name-asc")
+            assert len(archived_histories) == num_histories
+            assert archived_histories[0]["name"] == "History 0"
+            assert archived_histories[1]["name"] == "History 1"
+
+    def test_archiving_an_archived_history_conflicts(self):
+        history_id = self.dataset_populator.new_history()
+
+        archive_response = self.dataset_populator.archive_history(history_id)
+        self._assert_status_code_is(archive_response, 200)
+        assert archive_response.json()["archived"] is True
+
+        archive_response = self.dataset_populator.archive_history(history_id)
+        self._assert_status_code_is(archive_response, 409)
+
+    def test_archived_histories_are_not_listed_by_default(self):
+        history_id = self.dataset_populator.new_history()
+        archive_response = self.dataset_populator.archive_history(history_id)
+        self._assert_status_code_is(archive_response, 200)
+        assert archive_response.json()["archived"] is True
+
+        histories = self.dataset_populator.get_histories()
+        for history in histories:
+            assert history["id"] != history_id

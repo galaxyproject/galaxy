@@ -1,14 +1,21 @@
 import os
+import time
 from tempfile import (
     mkdtemp,
     mkstemp,
 )
+from unittest.mock import patch
 from uuid import uuid4
 
 import pytest
 
 from galaxy.exceptions import ObjectInvalid
 from galaxy.objectstore.azure_blob import AzureBlobObjectStore
+from galaxy.objectstore.caching import (
+    CacheTarget,
+    check_cache,
+    InProcessCacheMonitor,
+)
 from galaxy.objectstore.cloud import Cloud
 from galaxy.objectstore.pithos import PithosObjectStore
 from galaxy.objectstore.s3 import S3ObjectStore
@@ -21,6 +28,29 @@ from galaxy.util import (
     directory_hash_id,
     unlink,
 )
+
+
+# Unit testing the cloud and advanced infrastructure object stores is difficult, but
+# we can at least stub out initializing and test the configuration of these things from
+# XML and dicts.
+class UninitializedPithosObjectStore(PithosObjectStore):
+    def _initialize(self):
+        pass
+
+
+class UninitializedS3ObjectStore(S3ObjectStore):
+    def _initialize(self):
+        pass
+
+
+class UninitializedAzureBlobObjectStore(AzureBlobObjectStore):
+    def _initialize(self):
+        pass
+
+
+class UninitializedCloudObjectStore(Cloud):
+    def _initialize(self):
+        pass
 
 
 def test_unlink_path():
@@ -307,8 +337,26 @@ def test_concrete_name_without_objectstore_id():
             assert files1_name is None
 
 
+MIXED_STORE_BY_DISTRIBUTED_TEST_CONFIG = """<?xml version="1.0"?>
+<object_store type="distributed">
+    <backends>
+        <backend id="files1" type="disk" weight="1" order="0" store_by="id">
+            <files_dir path="${temp_directory}/files1"/>
+            <extra_dir type="temp" path="${temp_directory}/tmp1"/>
+            <extra_dir type="job_work" path="${temp_directory}/job_working_directory1"/>
+        </backend>
+        <backend id="files2" type="disk" weight="1" order="1" store_by="uuid" private="true">
+            <files_dir path="${temp_directory}/files2"/>
+            <extra_dir type="temp" path="${temp_directory}/tmp2"/>
+            <extra_dir type="job_work" path="${temp_directory}/job_working_directory2"/>
+        </backend>
+    </backends>
+</object_store>
+"""
+
+
 MIXED_STORE_BY_HIERARCHICAL_TEST_CONFIG = """<?xml version="1.0"?>
-<object_store type="hierarchical">
+<object_store type="hierarchical" private="true">
     <backends>
         <backend id="files1" type="disk" weight="1" order="0" store_by="id">
             <files_dir path="${temp_directory}/files1"/>
@@ -326,21 +374,164 @@ MIXED_STORE_BY_HIERARCHICAL_TEST_CONFIG = """<?xml version="1.0"?>
 
 
 def test_mixed_store_by():
+    with TestConfig(MIXED_STORE_BY_DISTRIBUTED_TEST_CONFIG) as (directory, object_store):
+        as_dict = object_store.to_dict()
+        assert as_dict["backends"][0]["store_by"] == "id"
+        assert as_dict["backends"][1]["store_by"] == "uuid"
+
     with TestConfig(MIXED_STORE_BY_HIERARCHICAL_TEST_CONFIG) as (directory, object_store):
         as_dict = object_store.to_dict()
         assert as_dict["backends"][0]["store_by"] == "id"
         assert as_dict["backends"][1]["store_by"] == "uuid"
 
 
+def test_mixed_private():
+    # Distributed object store can combine private and non-private concrete objectstores
+    with TestConfig(MIXED_STORE_BY_DISTRIBUTED_TEST_CONFIG) as (directory, object_store):
+        ids = object_store.object_store_ids()
+        print(ids)
+        assert len(ids) == 2
+
+        ids = object_store.object_store_ids(private=True)
+        assert len(ids) == 1
+        assert ids[0] == "files2"
+
+        ids = object_store.object_store_ids(private=False)
+        assert len(ids) == 1
+        assert ids[0] == "files1"
+
+        as_dict = object_store.to_dict()
+        assert not as_dict["backends"][0]["private"]
+        assert as_dict["backends"][1]["private"]
+
+    with TestConfig(MIXED_STORE_BY_HIERARCHICAL_TEST_CONFIG) as (directory, object_store):
+        as_dict = object_store.to_dict()
+        assert as_dict["backends"][0]["private"]
+        assert as_dict["backends"][1]["private"]
+
+        assert object_store.private
+        assert as_dict["private"] is True
+
+
+def test_empty_cache_targets_for_disk_nested_stores():
+    with TestConfig(MIXED_STORE_BY_DISTRIBUTED_TEST_CONFIG) as (directory, object_store):
+        assert len(object_store.cache_targets()) == 0
+
+    with TestConfig(MIXED_STORE_BY_HIERARCHICAL_TEST_CONFIG) as (directory, object_store):
+        assert len(object_store.cache_targets()) == 0
+
+
+BADGES_TEST_1_CONFIG_XML = """<?xml version="1.0"?>
+<object_store type="disk">
+    <files_dir path="${temp_directory}/files1"/>
+    <extra_dir type="temp" path="${temp_directory}/tmp1"/>
+    <extra_dir type="job_work" path="${temp_directory}/job_working_directory1"/>
+    <badges>
+        <short_term />
+        <faster>Fast interconnects.</faster>
+        <less_stable />
+        <more_secure />
+        <backed_up>Storage is backed up to tape nightly.</backed_up>
+    </badges>
+</object_store>
+"""
+
+
+BADGES_TEST_1_CONFIG_YAML = """
+type: disk
+files_dir: "${temp_directory}/files1"
+store_by: uuid
+extra_dirs:
+  - type: temp
+    path: "${temp_directory}/tmp1"
+  - type: job_work
+    path: "${temp_directory}/job_working_directory1"
+badges:
+  - type: short_term
+  - type: faster
+    message: Fast interconnects.
+  - type: less_stable
+  - type: more_secure
+  - type: backed_up
+    message: Storage is backed up to tape nightly.
+"""
+
+
+def test_badges_parsing():
+    for config_str in [BADGES_TEST_1_CONFIG_XML, BADGES_TEST_1_CONFIG_YAML]:
+        with TestConfig(config_str) as (directory, object_store):
+            badges = object_store.to_dict()["badges"]
+            assert len(badges) == 6
+            badge_1 = badges[0]
+            assert badge_1["type"] == "short_term"
+            assert badge_1["message"] is None
+
+            badge_2 = badges[1]
+            assert badge_2["type"] == "faster"
+            assert badge_2["message"] == "Fast interconnects."
+
+            badge_3 = badges[2]
+            assert badge_3["type"] == "less_stable"
+            assert badge_3["message"] is None
+
+            badge_4 = badges[3]
+            assert badge_4["type"] == "more_secure"
+            assert badge_4["message"] is None
+
+
+BADGES_TEST_CONFLICTS_1_CONFIG_YAML = """
+type: disk
+files_dir: "${temp_directory}/files1"
+badges:
+  - type: slower
+  - type: faster
+"""
+
+
+BADGES_TEST_CONFLICTS_2_CONFIG_YAML = """
+type: disk
+files_dir: "${temp_directory}/files1"
+badges:
+  - type: more_secure
+  - type: less_secure
+"""
+
+
+def test_badges_parsing_conflicts():
+    for config_str in [BADGES_TEST_CONFLICTS_1_CONFIG_YAML]:
+        exception_raised = False
+        try:
+            with TestConfig(config_str) as (directory, object_store):
+                pass
+        except Exception as e:
+            assert "faster" in str(e)
+            assert "slower" in str(e)
+            exception_raised = True
+        assert exception_raised
+
+    for config_str in [BADGES_TEST_CONFLICTS_2_CONFIG_YAML]:
+        exception_raised = False
+        try:
+            with TestConfig(config_str) as (directory, object_store):
+                pass
+        except Exception as e:
+            assert "more_secure" in str(e)
+            assert "less_secure" in str(e)
+            exception_raised = True
+        assert exception_raised
+
+
 DISTRIBUTED_TEST_CONFIG = """<?xml version="1.0"?>
 <object_store type="distributed">
     <backends>
         <backend id="files1" type="disk" weight="2">
+            <quota source="1files" />
             <files_dir path="${temp_directory}/files1"/>
             <extra_dir type="temp" path="${temp_directory}/tmp1"/>
             <extra_dir type="job_work" path="${temp_directory}/job_working_directory1"/>
         </backend>
         <backend id="files2" type="disk" weight="1">
+            <quota source="2files" />
             <files_dir path="${temp_directory}/files2"/>
             <extra_dir type="temp" path="${temp_directory}/tmp2"/>
             <extra_dir type="job_work" path="${temp_directory}/job_working_directory2"/>
@@ -354,6 +545,8 @@ DISTRIBUTED_TEST_CONFIG_YAML = """
 type: distributed
 backends:
    - id: files1
+     quota:
+       source: 1files
      type: disk
      weight: 2
      files_dir: "${temp_directory}/files1"
@@ -363,6 +556,8 @@ backends:
      - type: job_work
        path: "${temp_directory}/job_working_directory1"
    - id: files2
+     quota:
+       source: 2files
      type: disk
      weight: 1
      files_dir: "${temp_directory}/files2"
@@ -395,31 +590,94 @@ def test_distributed_store():
             _assert_has_keys(as_dict, ["backends", "extra_dirs", "type"])
             _assert_key_has_value(as_dict, "type", "distributed")
 
+            backends = as_dict["backends"]
+            assert len(backends)
+            assert backends[0]["quota"]["source"] == "1files"
+            assert backends[1]["quota"]["source"] == "2files"
+
             extra_dirs = as_dict["extra_dirs"]
             assert len(extra_dirs) == 2
 
 
-# Unit testing the cloud and advanced infrastructure object stores is difficult, but
-# we can at least stub out initializing and test the configuration of these things from
-# XML and dicts.
-class UnitializedPithosObjectStore(PithosObjectStore):
-    def _initialize(self):
-        pass
+def test_distributed_store_empty_cache_targets():
+    for config_str in [DISTRIBUTED_TEST_CONFIG, DISTRIBUTED_TEST_CONFIG_YAML]:
+        with TestConfig(config_str) as (directory, object_store):
+            assert len(object_store.cache_targets()) == 0
 
 
-class UnitializeS3ObjectStore(S3ObjectStore):
-    def _initialize(self):
-        pass
+DISTRIBUTED_TEST_S3_CONFIG_YAML = """
+type: distributed
+backends:
+  - id: files1
+    weight: 1
+    type: s3
+    auth:
+      access_key: access_moo
+      secret_key: secret_cow
+
+    bucket:
+      name: unique_bucket_name_all_lowercase
+      use_reduced_redundancy: false
+
+    extra_dirs:
+    - type: job_work
+      path: ${temp_directory}/job_working_directory_s3
+    - type: temp
+      path: ${temp_directory}/tmp_s3
+  - id: files2
+    weight: 1
+    type: s3
+    auth:
+      access_key: access_moo
+      secret_key: secret_cow
+
+    bucket:
+      name: unique_bucket_name_all_lowercase_2
+      use_reduced_redundancy: false
+
+    extra_dirs:
+    - type: job_work
+      path: ${temp_directory}/job_working_directory_s3_2
+    - type: temp
+      path: ${temp_directory}/tmp_s3_2
+"""
 
 
-class UnitializedAzureBlobObjectStore(AzureBlobObjectStore):
-    def _initialize(self):
-        pass
+@patch("galaxy.objectstore.s3.S3ObjectStore", UninitializedS3ObjectStore)
+def test_distributed_store_with_cache_targets():
+    for config_str in [DISTRIBUTED_TEST_S3_CONFIG_YAML]:
+        with TestConfig(config_str) as (directory, object_store):
+            assert len(object_store.cache_targets()) == 2
 
 
-class UnitializedCloudObjectStore(Cloud):
-    def _initialize(self):
-        pass
+HIERARCHICAL_MUST_HAVE_UNIFIED_QUOTA_SOURCE = """<?xml version="1.0"?>
+<object_store type="hierarchical" private="true">
+    <backends>
+        <backend type="disk" weight="1" order="0" store_by="id">
+            <quota source="1files" /> <!-- Cannot do this here, only in distributedobjectstore -->
+            <files_dir path="${temp_directory}/files1"/>
+            <extra_dir type="temp" path="${temp_directory}/tmp1"/>
+            <extra_dir type="job_work" path="${temp_directory}/job_working_directory1"/>
+        </backend>
+        <backend type="disk" weight="1" order="1" store_by="uuid">
+            <files_dir path="${temp_directory}/files2"/>
+            <extra_dir type="temp" path="${temp_directory}/tmp2"/>
+            <extra_dir type="job_work" path="${temp_directory}/job_working_directory2"/>
+        </backend>
+    </backends>
+</object_store>
+"""
+
+
+def test_hiercachical_backend_must_share_quota_source():
+    the_exception = None
+    for config_str in [HIERARCHICAL_MUST_HAVE_UNIFIED_QUOTA_SOURCE]:
+        try:
+            with TestConfig(config_str) as (directory, object_store):
+                pass
+        except Exception as e:
+            the_exception = e
+    assert the_exception is not None
 
 
 PITHOS_TEST_CONFIG = """<?xml version="1.0"?>
@@ -452,7 +710,7 @@ extra_dirs:
 
 def test_config_parse_pithos():
     for config_str in [PITHOS_TEST_CONFIG, PITHOS_TEST_CONFIG_YAML]:
-        with TestConfig(config_str, clazz=UnitializedPithosObjectStore) as (directory, object_store):
+        with TestConfig(config_str, clazz=UninitializedPithosObjectStore) as (directory, object_store):
             configured_config_dict = object_store.config_dict
             _assert_has_keys(configured_config_dict, ["auth", "container", "extra_dirs"])
 
@@ -486,7 +744,7 @@ def test_config_parse_pithos():
             assert len(extra_dirs) == 2
 
 
-S3_TEST_CONFIG = """<object_store type="s3">
+S3_TEST_CONFIG = """<object_store type="s3" private="true">
      <auth access_key="access_moo" secret_key="secret_cow" />
      <bucket name="unique_bucket_name_all_lowercase" use_reduced_redundancy="False" />
      <cache path="database/object_store_cache" size="1000" />
@@ -498,6 +756,7 @@ S3_TEST_CONFIG = """<object_store type="s3">
 
 S3_TEST_CONFIG_YAML = """
 type: s3
+private: true
 auth:
   access_key: access_moo
   secret_key: secret_cow
@@ -520,7 +779,8 @@ extra_dirs:
 
 def test_config_parse_s3():
     for config_str in [S3_TEST_CONFIG, S3_TEST_CONFIG_YAML]:
-        with TestConfig(config_str, clazz=UnitializeS3ObjectStore) as (directory, object_store):
+        with TestConfig(config_str, clazz=UninitializedS3ObjectStore) as (directory, object_store):
+            assert object_store.private
             assert object_store.access_key == "access_moo"
             assert object_store.secret_key == "secret_cow"
 
@@ -533,15 +793,16 @@ def test_config_parse_s3():
             assert object_store.is_secure is True
             assert object_store.conn_path == "/"
 
-            assert object_store.cache_size == 1000
-            assert object_store.staging_path == "database/object_store_cache"
+            cache_target = object_store.cache_target
+            assert cache_target.size == 1000
+            assert cache_target.path == "database/object_store_cache"
             assert object_store.extra_dirs["job_work"] == "database/job_working_directory_s3"
             assert object_store.extra_dirs["temp"] == "database/tmp_s3"
 
             as_dict = object_store.to_dict()
             _assert_has_keys(as_dict, ["auth", "bucket", "connection", "cache", "extra_dirs", "type"])
 
-            _assert_key_has_value(as_dict, "type", "s3")
+            _assert_key_has_value(as_dict, "type", "aws_s3")
 
             auth_dict = as_dict["auth"]
             bucket_dict = as_dict["bucket"]
@@ -564,6 +825,41 @@ def test_config_parse_s3():
 
             extra_dirs = as_dict["extra_dirs"]
             assert len(extra_dirs) == 2
+
+
+S3_DEFAULT_CACHE_TEST_CONFIG = """<object_store type="s3" private="true">
+     <auth access_key="access_moo" secret_key="secret_cow" />
+     <bucket name="unique_bucket_name_all_lowercase" use_reduced_redundancy="False" />
+     <extra_dir type="job_work" path="database/job_working_directory_s3"/>
+     <extra_dir type="temp" path="database/tmp_s3"/>
+</object_store>
+"""
+
+
+S3_DEFAULT_CACHE_TEST_CONFIG_YAML = """
+type: s3
+private: true
+auth:
+  access_key: access_moo
+  secret_key: secret_cow
+
+bucket:
+  name: unique_bucket_name_all_lowercase
+  use_reduced_redundancy: false
+
+extra_dirs:
+- type: job_work
+  path: database/job_working_directory_s3
+- type: temp
+  path: database/tmp_s3
+"""
+
+
+def test_config_parse_s3_with_default_cache():
+    for config_str in [S3_DEFAULT_CACHE_TEST_CONFIG, S3_DEFAULT_CACHE_TEST_CONFIG_YAML]:
+        with TestConfig(config_str, clazz=UninitializedS3ObjectStore) as (directory, object_store):
+            assert object_store.cache_size == -1
+            assert object_store.staging_path == directory.global_config.object_store_cache_path
 
 
 CLOUD_AWS_TEST_CONFIG = """<object_store type="cloud" provider="aws">
@@ -681,7 +977,7 @@ def test_config_parse_cloud():
             path = os.path.join(tmpdir, "gcp.config")
             open(path, "w").write("some_gcp_config")
             config_str = config_str.replace("gcp.config", path)
-        with TestConfig(config_str, clazz=UnitializedCloudObjectStore) as (directory, object_store):
+        with TestConfig(config_str, clazz=UninitializedCloudObjectStore) as (directory, object_store):
             assert object_store.bucket_name == "unique_bucket_name_all_lowercase"
             assert object_store.use_rr is False
 
@@ -691,8 +987,9 @@ def test_config_parse_cloud():
             assert object_store.is_secure is True
             assert object_store.conn_path == "/"
 
-            assert object_store.cache_size == 1000.0
-            assert object_store.staging_path == "database/object_store_cache"
+            cache_target = object_store.cache_target
+            assert cache_target.size == 1000.0
+            assert cache_target.path == "database/object_store_cache"
             assert object_store.extra_dirs["job_work"] == "database/job_working_directory_cloud"
             assert object_store.extra_dirs["temp"] == "database/tmp_cloud"
 
@@ -729,8 +1026,6 @@ def test_config_parse_cloud():
             _assert_key_has_value(cache_dict, "size", 1000.0)
             _assert_key_has_value(cache_dict, "path", "database/object_store_cache")
 
-            _assert_key_has_value(as_dict, "enable_cache_monitor", False)
-
             extra_dirs = as_dict["extra_dirs"]
             assert len(extra_dirs) == 2
 
@@ -747,7 +1042,7 @@ CLOUD_AWS_NO_AUTH_TEST_CONFIG = """<object_store type="cloud" provider="aws">
 
 def test_config_parse_cloud_noauth_for_aws():
     for config_str in [CLOUD_AWS_NO_AUTH_TEST_CONFIG]:
-        with TestConfig(config_str, clazz=UnitializedCloudObjectStore) as (directory, object_store):
+        with TestConfig(config_str, clazz=UninitializedCloudObjectStore) as (directory, object_store):
             assert object_store.bucket_name == "unique_bucket_name_all_lowercase"
             assert object_store.use_rr is False
 
@@ -757,8 +1052,9 @@ def test_config_parse_cloud_noauth_for_aws():
             assert object_store.is_secure is True
             assert object_store.conn_path == "/"
 
-            assert object_store.cache_size == 1000.0
-            assert object_store.staging_path == "database/object_store_cache"
+            cache_target = object_store.cache_target
+            assert cache_target.size == 1000.0
+            assert cache_target.path == "database/object_store_cache"
             assert object_store.extra_dirs["job_work"] == "database/job_working_directory_cloud"
             assert object_store.extra_dirs["temp"] == "database/tmp_cloud"
 
@@ -791,6 +1087,22 @@ def test_config_parse_cloud_noauth_for_aws():
 
             extra_dirs = as_dict["extra_dirs"]
             assert len(extra_dirs) == 2
+
+
+CLOUD_AWS_NO_CACHE_TEST_CONFIG = """<object_store type="cloud" provider="aws">
+     <auth />
+     <bucket name="unique_bucket_name_all_lowercase" use_reduced_redundancy="False" />
+     <extra_dir type="job_work" path="database/job_working_directory_cloud"/>
+     <extra_dir type="temp" path="database/tmp_cloud"/>
+</object_store>
+"""
+
+
+def test_config_parse_cloud_no_cache_for_aws():
+    for config_str in [CLOUD_AWS_NO_CACHE_TEST_CONFIG]:
+        with TestConfig(config_str, clazz=UninitializedCloudObjectStore) as (directory, object_store):
+            assert object_store.staging_path == directory.global_config.object_store_cache_path
+            assert object_store.cache_size == -1
 
 
 AZURE_BLOB_TEST_CONFIG = """<object_store type="azure_blob">
@@ -827,15 +1139,16 @@ extra_dirs:
 
 def test_config_parse_azure():
     for config_str in [AZURE_BLOB_TEST_CONFIG, AZURE_BLOB_TEST_CONFIG_YAML]:
-        with TestConfig(config_str, clazz=UnitializedAzureBlobObjectStore) as (directory, object_store):
+        with TestConfig(config_str, clazz=UninitializedAzureBlobObjectStore) as (directory, object_store):
             assert object_store.account_name == "azureact"
             assert object_store.account_key == "password123"
 
             assert object_store.container_name == "unique_container_name"
             assert object_store.max_chunk_size == 250
 
-            assert object_store.cache_size == 100
-            assert object_store.staging_path == "database/object_store_cache"
+            cache_target = object_store.cache_target
+            assert cache_target.size == 100
+            assert cache_target.path == "database/object_store_cache"
             assert object_store.extra_dirs["job_work"] == "database/job_working_directory_azure"
             assert object_store.extra_dirs["temp"] == "database/tmp_azure"
 
@@ -859,6 +1172,88 @@ def test_config_parse_azure():
 
             extra_dirs = as_dict["extra_dirs"]
             assert len(extra_dirs) == 2
+
+
+def test_cache_monitor_thread(tmp_path):
+    cache_dir = tmp_path
+    path = cache_dir / "a_file_0"
+    path.write_text("this is an example file")
+
+    cache_target = CacheTarget(cache_dir, 1, 0.000000001)
+    monitor = InProcessCacheMonitor(cache_target, 30, 0)
+
+    path_cleaned = False
+    for _ in range(100):
+        time.sleep(0.1)
+        path_cleaned = not path.exists()
+        if path_cleaned:
+            break
+    monitor.shutdown()
+    assert path_cleaned
+
+    # just verify things cleaned up okay also
+    assert not monitor.cache_monitor_thread.is_alive()
+    assert monitor.stop_cache_monitor_event.is_set()
+
+
+def test_check_cache_sanity(tmp_path):
+    # sanity check the caching code - create a 1 gig cache with a single file.
+    # when the cache is allowed to be 20% full the file will exist but when the
+    # cache is only allowed to be a very small fraction full headed toward zero
+    # the file will be deleted
+    cache_dir = tmp_path
+    path = cache_dir / "a_file_0"
+    path.write_text("this is an example file")
+    big_cache_target = CacheTarget(cache_dir, 1, 0.2)
+    check_cache(big_cache_target)
+    assert path.exists()
+    small_cache_target = CacheTarget(cache_dir, 1, 0.000000001)
+    check_cache(small_cache_target)
+    assert not path.exists()
+
+
+def test_fits_in_cache_check(tmp_path):
+    cache_dir = tmp_path
+    big_cache_target = CacheTarget(cache_dir, 1, 0.2)
+    assert not big_cache_target.fits_in_cache(int(1024 * 1024 * 1024 * 0.3))
+    assert big_cache_target.fits_in_cache(int(1024 * 1024 * 1024 * 0.1))
+
+    noop_cache_target = CacheTarget(cache_dir, -1, 0.2)
+    assert noop_cache_target.fits_in_cache(1024 * 1024 * 1024 * 100)
+
+
+AZURE_BLOB_NO_CACHE_TEST_CONFIG = """<object_store type="azure_blob">
+    <auth account_name="azureact" account_key="password123" />
+    <container name="unique_container_name" max_chunk_size="250"/>
+    <extra_dir type="job_work" path="database/job_working_directory_azure"/>
+    <extra_dir type="temp" path="database/tmp_azure"/>
+</object_store>
+"""
+
+
+AZURE_BLOB_NO_CACHE_TEST_CONFIG_YAML = """
+type: azure_blob
+auth:
+  account_name: azureact
+  account_key: password123
+
+container:
+  name: unique_container_name
+  max_chunk_size: 250
+
+extra_dirs:
+- type: job_work
+  path: database/job_working_directory_azure
+- type: temp
+  path: database/tmp_azure
+"""
+
+
+def test_config_parse_azure_no_cache():
+    for config_str in [AZURE_BLOB_NO_CACHE_TEST_CONFIG, AZURE_BLOB_NO_CACHE_TEST_CONFIG_YAML]:
+        with TestConfig(config_str, clazz=UninitializedAzureBlobObjectStore) as (directory, object_store):
+            assert object_store.cache_size == -1
+            assert object_store.staging_path == directory.global_config.object_store_cache_path
 
 
 class MockDataset:

@@ -9,7 +9,11 @@ echo \$(id -g) > '$group_id' &&
 echo \$(pwd) > '$pwd' &&
 echo "\$HOME" > '$home' &&
 echo "\$TMP"  > '$tmp' &&
-echo "\$SOME_ENV_VAR" > '$some_env_var'
+echo "\$SOME_ENV_VAR" > '$some_env_var' &&
+
+touch "\${TMP:-/tmp}/job_tmp" &&
+touch "\${TEMP:-/tmp}/job_temp" &&
+touch "\${TMPDIR:-/tmp}/job_tmpdir"
     ]]></command>
     <inputs>
     </inputs>

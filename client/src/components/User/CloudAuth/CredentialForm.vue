@@ -32,7 +32,7 @@
                 :options="resourceProviderOptions" />
         </b-form-group>
 
-        <credential-config v-model="credential.config" />
+        <CredentialConfig v-model="credential.config" />
 
         <footer class="border-top">
             <b-button variant="secondary" @click.prevent="$emit('delete', credential)"> Delete Key </b-button>
@@ -48,9 +48,9 @@
 </template>
 
 <script>
+import CredentialConfig from "./CredentialConfig";
 import { Credential, ResourceProviders } from "./model";
 import { getIdentityProviders } from "./model/service";
-import CredentialConfig from "./CredentialConfig";
 
 export default {
     components: {

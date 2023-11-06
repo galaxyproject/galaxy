@@ -1,13 +1,15 @@
 <template>
     <div class="listing-layout">
-        <virtual-list
+        <VirtualList
             ref="listing"
             class="listing"
             role="list"
-            data-key="id"
+            :data-key="dataKey"
             :offset="offset"
             :data-sources="items"
             :data-component="{}"
+            :estimate-size="estimatedItemHeight"
+            :keeps="estimatedItemCount"
             @scroll="onScroll">
             <template v-slot:item="{ item }">
                 <slot name="item" :item="item" :current-offset="getOffset()" />
@@ -15,12 +17,14 @@
             <template v-slot:footer>
                 <LoadingSpan v-if="loading" class="m-2" message="Loading" />
             </template>
-        </virtual-list>
+        </VirtualList>
     </div>
 </template>
 <script>
-import VirtualList from "vue-virtual-scroll-list";
+import { useElementBounding } from "@vueuse/core";
 import LoadingSpan from "components/LoadingSpan";
+import { computed, ref } from "vue";
+import VirtualList from "vue-virtual-scroll-list";
 
 export default {
     components: {
@@ -28,10 +32,23 @@ export default {
         VirtualList,
     },
     props: {
+        dataKey: { type: String, default: "id" },
         offset: { type: Number, default: 0 },
         loading: { type: Boolean, default: false },
         items: { type: Array, default: null },
         queryKey: { type: String, default: null },
+    },
+    setup() {
+        const listing = ref(null);
+        const { height } = useElementBounding(listing);
+
+        const estimatedItemHeight = 40;
+        const estimatedItemCount = computed(() => {
+            const baseCount = Math.ceil(height.value / estimatedItemHeight);
+            return baseCount + 20;
+        });
+
+        return { listing, estimatedItemHeight, estimatedItemCount };
     },
     data() {
         return {
@@ -40,19 +57,19 @@ export default {
     },
     watch: {
         queryKey() {
-            this.$refs.listing.scrollToOffset(0);
+            this.listing.scrollToOffset(0);
         },
     },
     methods: {
         onScroll() {
-            const rangeStart = this.$refs.listing.range.start;
+            const rangeStart = this.listing.range.start;
             if (this.previousStart !== rangeStart) {
                 this.previousStart = rangeStart;
                 this.$emit("scroll", rangeStart);
             }
         },
         getOffset() {
-            return this.$refs.listing?.getOffset() || 0;
+            return this.listing?.getOffset() || 0;
         },
     },
 };

@@ -4,7 +4,6 @@ Universe configuration builder.
 # absolute_import needed for tool_shed package.
 
 import configparser
-import ipaddress
 import json
 import locale
 import logging
@@ -34,6 +33,7 @@ from urllib.parse import urlparse
 
 import yaml
 
+from galaxy.carbon_emissions import get_carbon_intensity_entry
 from galaxy.config.schema import AppSchema
 from galaxy.exceptions import ConfigurationError
 from galaxy.util import (
@@ -42,6 +42,7 @@ from galaxy.util import (
     string_as_bool,
     unicodify,
 )
+from galaxy.util.config_parsers import parse_allowlist_ips
 from galaxy.util.custom_logging import LOGLV_TRACE
 from galaxy.util.dynamic import HasDynamicProperties
 from galaxy.util.facts import get_facts
@@ -112,6 +113,10 @@ LOGGING_CONFIG_DEFAULT: Dict[str, Any] = {
             "propagate": False,
             "handlers": ["console"],
         },
+        "watchdog.observers.inotify_buffer": {
+            "level": "INFO",
+            "qualname": "watchdog.observers.inotify_buffer",
+        },
     },
     "filters": {
         "stack": {
@@ -135,8 +140,18 @@ LOGGING_CONFIG_DEFAULT: Dict[str, Any] = {
 }
 """Default value for logging configuration, passed to :func:`logging.config.dictConfig`"""
 
+DEPENDENT_CONFIG_DEFAULTS: Dict[str, str] = {
+    "mulled_resolution_cache_url": "database_connection",
+    "citation_cache_url": "database_connection",
+    "biotools_service_cache_url": "database_connection",
+}
+"""Config parameters whose default is the value of another config parameter
+This should be moved to a .yml config file.
+"""
+
 VERSION_JSON_FILE = "version.json"
 DEFAULT_EMAIL_FROM_LOCAL_PART = "galaxy-no-reply"
+DISABLED_FLAG = "disabled"  # Used to mark a config option as disabled
 
 
 def configure_logging(config, facts=None):
@@ -502,7 +517,7 @@ class BaseAppConfiguration(HasDynamicProperties):
         for key in self.schema.paths_to_resolve:
             value = getattr(self, key)
             # Check if value is a list or should be listified; if so, listify and resolve each item separately.
-            if type(value) is list or (self.listify_options and key in self.listify_options):
+            if isinstance(value, list) or (self.listify_options and key in self.listify_options):
                 saved_values = listify(getattr(self, key), do_strip=True)  # listify and save original value
                 setattr(self, key, "_")  # replace value with temporary placeholder
                 resolve(key)  # resolve temporary value (`_` becomes `parent-path/_`)
@@ -531,7 +546,7 @@ class BaseAppConfiguration(HasDynamicProperties):
             return current_path
 
         current_value = getattr(self, key)  # resolved path or list of resolved paths
-        if type(current_value) is list:
+        if isinstance(current_value, list):
             initial_paths = listify(self._raw_config[key], do_strip=True)  # initial unresolved paths
             updated_paths = []
             # check and, if needed, update each path in the list
@@ -677,55 +692,72 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         "tool_data_table_config_path",
         "tool_config_file",
     }
-    database_connection: str
-    tool_path: str
-    tool_data_path: str
-    new_file_path: str
-    drmaa_external_runjob_script: str
-    track_jobs_in_database: bool
-    monitor_thread_join_timeout: int
-    manage_dependency_relationships: bool
-    enable_tool_shed_check: bool
-    builds_file_path: str
-    len_file_path: str
-    integrated_tool_panel_config: str
-    toolbox_filter_base_modules: List[str]
-    tool_filters: List[str]
-    tool_label_filters: List[str]
-    tool_section_filters: List[str]
-    user_tool_filters: List[str]
-    user_tool_section_filters: List[str]
-    user_tool_label_filters: List[str]
-    password_expiration_period: timedelta
-    shed_tool_data_path: str
-    hours_between_check: int
-    galaxy_data_manager_data_path: str
-    use_remote_user: bool
-    preserve_python_environment: str
-    email_from: Optional[str]
-    workflow_resource_params_mapper: str
-    sanitize_allowlist_file: str
+
     allowed_origin_hostnames: List[str]
-    trust_jupyter_notebook_conversion: bool
-    user_library_import_symlink_allowlist: List[str]
-    user_library_import_dir_auto_creation: bool
+    builds_file_path: str
+    carbon_intensity: float
     container_resolvers_config_file: str
-    tool_dependency_dir: Optional[str]
-    involucro_path: str
-    mulled_channels: List[str]
-    nginx_upload_store: str
-    tus_upload_store: str
-    pretty_datetime_format: str
-    visualization_plugins_directory: str
+    database_connection: str
+    drmaa_external_runjob_script: str
+    email_from: Optional[str]
+    enable_tool_shed_check: bool
+    galaxy_data_manager_data_path: str
     galaxy_infrastructure_url: str
+    geographical_server_location_name: str
+    hours_between_check: int
+    integrated_tool_panel_config: str
+    involucro_path: str
+    len_file_path: str
+    manage_dependency_relationships: bool
+    monitor_thread_join_timeout: int
+    mulled_channels: List[str]
+    new_file_path: str
+    nginx_upload_store: str
+    password_expiration_period: timedelta
+    preserve_python_environment: str
+    pretty_datetime_format: str
+    sanitize_allowlist_file: str
+    shed_tool_data_path: str
     themes: Dict[str, Dict[str, str]]
     themes_by_host: Dict[str, Dict[str, Dict[str, str]]]
+    tool_data_path: str
+    tool_dependency_dir: Optional[str]
+    tool_filters: List[str]
+    tool_label_filters: List[str]
+    tool_path: str
+    tool_section_filters: List[str]
+    toolbox_filter_base_modules: List[str]
+    track_jobs_in_database: bool
+    trust_jupyter_notebook_conversion: bool
+    tus_upload_store: str
+    use_remote_user: bool
+    user_library_import_dir_auto_creation: bool
+    user_library_import_symlink_allowlist: List[str]
+    user_tool_filters: List[str]
+    user_tool_label_filters: List[str]
+    user_tool_section_filters: List[str]
+    visualization_plugins_directory: str
+    workflow_resource_params_mapper: str
 
     def __init__(self, **kwargs):
         super().__init__(**kwargs)
         self._override_tempdir(kwargs)
         self._configure_sqlalchemy20_warnings(kwargs)
         self._process_config(kwargs)
+        self._set_dependent_defaults()
+
+    def _set_dependent_defaults(self):
+        """Set values of unset parameters which take their default values from other parameters"""
+        for dependent_config_param, config_param in DEPENDENT_CONFIG_DEFAULTS.items():
+            try:
+                if getattr(self, dependent_config_param) is None:
+                    setattr(self, dependent_config_param, getattr(self, config_param))
+            except AttributeError:
+                raise Exception(
+                    "One or more invalid config parameter names specified in "
+                    "DEPENDENT_CONFIG_DEFAULTS, "
+                    f"{dependent_config_param}, {config_param}"
+                )
 
     def _configure_sqlalchemy20_warnings(self, kwargs):
         """
@@ -781,6 +813,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         return val
 
     def _process_config(self, kwargs: Dict[str, Any]) -> None:
+        self._check_database_connection_strings()
         # Backwards compatibility for names used in too many places to fix
         self.datatypes_config = self.datatypes_config_file
         self.tool_configs = self.tool_config_file
@@ -806,6 +839,11 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             log.error("Error loading Galaxy extra version JSON file %s - details not loaded.", json_file)
         else:
             self.version_extra = extra_info
+
+        # Carbon emissions configuration
+        carbon_intensity_entry = get_carbon_intensity_entry(kwargs.get("geographical_server_location_code", ""))
+        self.carbon_intensity = carbon_intensity_entry["carbon_intensity"]
+        self.geographical_server_location_name = carbon_intensity_entry["location_name"]
 
         # Database related configuration
         self.check_migrate_databases = string_as_bool(kwargs.get("check_migrate_databases", True))
@@ -877,13 +915,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self.tool_secret = kwargs.get("tool_secret", "")
         self.metadata_strategy = kwargs.get("metadata_strategy", "directory")
         self.use_remote_user = self.use_remote_user or self.single_user
-        self.fetch_url_allowlist_ips = [
-            ipaddress.ip_network(unicodify(ip.strip()))  # If it has a slash, assume 127.0.0.1/24 notation
-            if "/" in ip
-            else ipaddress.ip_address(unicodify(ip.strip()))  # Otherwise interpret it as an ip address.
-            for ip in kwargs.get("fetch_url_allowlist", "").split(",")
-            if len(ip.strip()) > 0
-        ]
+        self.fetch_url_allowlist_ips = parse_allowlist_ips(listify(kwargs.get("fetch_url_allowlist")))
         self.job_queue_cleanup_interval = int(kwargs.get("job_queue_cleanup_interval", "5"))
 
         # Fall back to legacy job_working_directory config variable if set.
@@ -1190,6 +1222,29 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         else:
             _load_theme(self.themes_config_file, self.themes)
 
+    def _check_database_connection_strings(self):
+        """
+        Verify connection URI strings in galaxy's configuration are parseable with urllib.
+        """
+
+        def try_parsing(value, name):
+            try:
+                urlparse(value)
+            except ValueError as e:
+                msg = f"The `{name}` configuration property cannot be parsed as a connection URI."
+                if "Invalid IPv6 URL" in str(e):
+                    msg += (
+                        "\nBesides an invalid IPv6 format, this may be caused by a bracket character in the `netloc` part of "
+                        "the URI (most likely, the password). In this case, you should percent-encode that character: for `[` "
+                        "use `%5B`, for `]` use `%5D`. For example, if your URI is `postgresql://user:pass[word@host/db`, "
+                        "change it to `postgresql://user:pass%5Bword@host/db`. "
+                    )
+                raise ConfigurationError(msg) from e
+
+        try_parsing(self.database_connection, "database_connection")
+        try_parsing(self.install_database_connection, "install_database_connection")
+        try_parsing(self.amqp_internal_connection, "amqp_internal_connection")
+
     def _configure_dataset_storage(self):
         # The default for `file_path` has changed in 20.05; we may need to fall back to the old default
         self._set_alt_paths("file_path", self._in_data_dir("files"))  # this is called BEFORE guessing id/uuid
@@ -1288,6 +1343,17 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
                 log.warning(
                     f"Config option '{key}' is deprecated and will be removed in a future release.  Please consult the latest version of the sample configuration file."
                 )
+
+    def is_fetch_with_celery_enabled(self):
+        """
+        True iff celery is enabled and celery_conf["task_routes"]["galaxy.fetch_data"] != DISABLED_FLAG.
+        """
+        celery_enabled = self.enable_celery_tasks
+        try:
+            fetch_disabled = self.celery_conf["task_routes"]["galaxy.fetch_data"] == DISABLED_FLAG
+        except (TypeError, KeyError):  # celery_conf is None or sub-dictionary is none or either key is not present
+            fetch_disabled = False
+        return celery_enabled and not fetch_disabled
 
     @staticmethod
     def _parse_allowed_origin_hostnames(allowed_origin_hostnames):

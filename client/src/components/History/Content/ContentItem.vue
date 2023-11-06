@@ -7,9 +7,9 @@
         tabindex="0"
         role="button"
         @keydown="onKeyDown">
-        <div class="p-1 cursor-pointer" draggable @dragstart="onDragStart" @click.stop="onClick">
+        <div class="p-1 cursor-pointer" draggable @dragstart="onDragStart" @dragend="onDragEnd" @click.stop="onClick">
             <div class="d-flex justify-content-between">
-                <span class="p-1 font-weight-bold">
+                <span class="p-1" data-description="content item header info">
                     <b-button v-if="selectable" class="selector p-0" @click.stop="$emit('update:selected', !selected)">
                         <icon v-if="selected" fixed-width size="lg" :icon="['far', 'check-square']" />
                         <icon v-else fixed-width size="lg" :icon="['far', 'square']" />
@@ -21,7 +21,7 @@
                         class="p-0"
                         title="Input"
                         @click.stop="toggleHighlights">
-                        <font-awesome-icon class="text-info" icon="arrow-circle-up" />
+                        <FontAwesomeIcon class="text-info" icon="arrow-circle-up" />
                     </b-button>
                     <b-button
                         v-else-if="highlight == 'active'"
@@ -31,7 +31,7 @@
                         title="Inputs/Outputs highlighted for this item"
                         @click.stop="toggleHighlights"
                         @keypress="toggleHighlights">
-                        <font-awesome-icon icon="check-circle" />
+                        <FontAwesomeIcon icon="check-circle" />
                     </b-button>
                     <b-button
                         v-else-if="highlight == 'output'"
@@ -40,14 +40,13 @@
                         class="p-0"
                         title="Output"
                         @click.stop="toggleHighlights">
-                        <font-awesome-icon class="text-info" icon="arrow-circle-down" />
+                        <FontAwesomeIcon class="text-info" icon="arrow-circle-down" />
                     </b-button>
                     <span v-if="hasStateIcon" class="state-icon">
                         <icon fixed-width :icon="contentState.icon" :spin="contentState.spin" />
                     </span>
-                    <span class="id hid">{{ id }}</span>
-                    <span>:</span>
-                    <span class="content-title name">{{ name }}</span>
+                    <span class="id hid">{{ id }}:</span>
+                    <span class="content-title name font-weight-bold">{{ name }}</span>
                 </span>
                 <span v-if="item.purged" class="align-self-start btn-group p-1">
                     <b-badge variant="secondary" title="This dataset has been permanently deleted">
@@ -55,7 +54,7 @@
                     </b-badge>
                 </span>
                 <ContentOptions
-                    v-else
+                    v-if="!isPlaceholder && !item.purged"
                     :writable="writable"
                     :is-dataset="isDataset"
                     :is-deleted="item.deleted"
@@ -64,7 +63,7 @@
                     :state="state"
                     :item-urls="itemUrls"
                     :keyboard-selectable="expandDataset"
-                    @delete="$emit('delete')"
+                    @delete="onDelete"
                     @display="onDisplay"
                     @showCollectionInfo="onShowCollectionInfo"
                     @edit="onEdit"
@@ -91,9 +90,9 @@
         <b-collapse :visible="expandDataset">
             <DatasetDetails
                 v-if="expandDataset"
-                :dataset="item"
+                :id="item.id"
                 :writable="writable"
-                :show-highlight="isHistoryItem && filterable"
+                :show-highlight="(isHistoryItem && filterable) || addHighlightBtn"
                 :item-urls="itemUrls"
                 @edit="onEdit"
                 @toggleHighlights="toggleHighlights" />
@@ -102,19 +101,22 @@
 </template>
 
 <script>
-import StatelessTags from "components/TagsMultiselect/StatelessTags";
-import { STATES, HIERARCHICAL_COLLECTION_JOB_STATES } from "./model/states";
-import CollectionDescription from "./Collection/CollectionDescription";
-import ContentOptions from "./ContentOptions";
-import DatasetDetails from "./Dataset/DatasetDetails";
-import { updateContentFields } from "components/History/model/queries";
-import { JobStateSummary } from "./Collection/JobStateSummary";
 import { library } from "@fortawesome/fontawesome-svg-core";
+import { faArrowCircleDown, faArrowCircleUp, faCheckCircle, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { faArrowCircleUp, faArrowCircleDown, faCheckCircle } from "@fortawesome/free-solid-svg-icons";
+import { updateContentFields } from "components/History/model/queries";
+import StatelessTags from "components/TagsMultiselect/StatelessTags";
 import { useEntryPointStore } from "stores/entryPointStore";
 
-library.add(faArrowCircleUp, faArrowCircleDown, faCheckCircle);
+import { clearDrag, setDrag } from "@/utils/setDrag.js";
+
+import CollectionDescription from "./Collection/CollectionDescription";
+import { JobStateSummary } from "./Collection/JobStateSummary";
+import ContentOptions from "./ContentOptions";
+import DatasetDetails from "./Dataset/DatasetDetails";
+import { HIERARCHICAL_COLLECTION_JOB_STATES, STATES } from "./model/states";
+
+library.add(faArrowCircleUp, faArrowCircleDown, faCheckCircle, faSpinner);
 export default {
     components: {
         CollectionDescription,
@@ -124,17 +126,19 @@ export default {
         FontAwesomeIcon,
     },
     props: {
-        writable: { type: Boolean, default: true },
-        expandDataset: { type: Boolean, required: true },
-        highlight: { type: String, default: null },
         id: { type: Number, required: true },
-        isDataset: { type: Boolean, default: true },
-        isHistoryItem: { type: Boolean, default: false },
         item: { type: Object, required: true },
         name: { type: String, required: true },
+        expandDataset: { type: Boolean, default: false },
+        writable: { type: Boolean, default: true },
+        addHighlightBtn: { type: Boolean, default: false },
+        highlight: { type: String, default: null },
+        isDataset: { type: Boolean, default: true },
+        isHistoryItem: { type: Boolean, default: false },
         selected: { type: Boolean, default: false },
         selectable: { type: Boolean, default: false },
         filterable: { type: Boolean, default: false },
+        isPlaceholder: { type: Boolean, default: false },
     },
     computed: {
         jobState() {
@@ -163,6 +167,9 @@ export default {
             return this.contentState && this.contentState.icon;
         },
         state() {
+            if (this.isPlaceholder) {
+                return "placeholder";
+            }
             if (this.item.job_state_summary) {
                 for (const state of HIERARCHICAL_COLLECTION_JOB_STATES) {
                     if (this.item.job_state_summary[state] > 0) {
@@ -216,6 +223,9 @@ export default {
             }
         },
         onClick() {
+            if (this.isPlaceholder) {
+                return;
+            }
             if (this.isDataset) {
                 this.$emit("update:expand-dataset", !this.expandDataset);
             } else {
@@ -233,10 +243,14 @@ export default {
                 this.$router.push(this.itemUrls.display, { title: this.name });
             }
         },
+        onDelete(recursive = false) {
+            this.$emit("delete", this.item, recursive);
+        },
         onDragStart(evt) {
-            evt.dataTransfer.dropEffect = "move";
-            evt.dataTransfer.effectAllowed = "move";
-            evt.dataTransfer.setData("text", JSON.stringify([this.item]));
+            setDrag(evt, this.item);
+        },
+        onDragEnd: function () {
+            clearDrag();
         },
         onEdit() {
             this.$router.push(this.itemUrls.edit);

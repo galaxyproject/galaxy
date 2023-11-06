@@ -1,6 +1,5 @@
 from markupsafe import escape
 from sqlalchemy import (
-    desc,
     false,
     true,
 )
@@ -19,9 +18,16 @@ from galaxy.managers.histories import (
     HistoryManager,
     HistorySerializer,
 )
-from galaxy.managers.pages import PageManager
+from galaxy.managers.pages import (
+    get_page as get_page_,
+    get_shared_pages,
+    page_exists,
+    PageManager,
+)
 from galaxy.managers.sharable import SlugBuilder
+from galaxy.managers.users import get_user_by_username
 from galaxy.managers.workflows import WorkflowsManager
+from galaxy.model.base import transaction
 from galaxy.model.item_attrs import UsesItemRatings
 from galaxy.schema.schema import CreatePagePayload
 from galaxy.structured_app import StructuredApp
@@ -375,10 +381,12 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
             operation = kwargs["operation"].lower()
             ids = util.listify(kwargs["id"])
             for id in ids:
-                item = session.query(model.Page).get(self.decode_id(id))
                 if operation == "delete":
+                    item = session.get(model.Page, self.decode_id(id))
+                    self.security_check(trans, item, check_ownership=True)
                     item.deleted = True
-            session.flush()
+            with transaction(session):
+                session.commit()
 
         # Build grid dictionary.
         grid = self._page_list(trans, *args, **kwargs)
@@ -394,14 +402,7 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
 
     def _get_shared(self, trans):
         """Identify shared pages"""
-        shared_by_others = (
-            trans.sa_session.query(model.PageUserShareAssociation)
-            .filter_by(user=trans.get_user())
-            .join(model.Page.table)
-            .filter(model.Page.deleted == false())
-            .order_by(desc(model.Page.update_time))
-            .all()
-        )
+        shared_by_others = get_shared_pages(trans.sa_session, trans.get_user())
         return [
             {"username": p.page.user.username, "slug": p.page.slug, "title": p.page.title} for p in shared_by_others
         ]
@@ -450,8 +451,8 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
                     {
                         "name": "content_format",
                         "label": "Content Format",
-                        "type": "hidden",
                         "value": "markdown",
+                        "hidden": True,
                     },
                     {
                         "name": "content",
@@ -477,7 +478,8 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
             return self.message_exception(trans, "No page id received for editing.")
         decoded_id = self.decode_id(id)
         user = trans.get_user()
-        p = trans.sa_session.query(model.Page).get(decoded_id)
+        p = trans.sa_session.get(model.Page, decoded_id)
+        p = self.security_check(trans, p, check_ownership=True)
         if trans.request.method == "GET":
             if p.slug is None:
                 self.slug_builder.create_item_slug(trans.sa_session, p)
@@ -511,10 +513,7 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
                 return self.message_exception(
                     trans, "Page identifier can only contain lowercase letters, numbers, and dashes (-)."
                 )
-            elif (
-                p_slug != p.slug
-                and trans.sa_session.query(model.Page).filter_by(user=p.user, slug=p_slug, deleted=False).first()
-            ):
+            elif p_slug != p.slug and page_exists(trans.sa_session, p.user, p_slug):
                 return self.message_exception(trans, "Page id must be unique.")
             else:
                 p.title = p_title
@@ -523,26 +522,26 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
                     p_annotation = sanitize_html(p_annotation)
                     self.add_item_annotation(trans.sa_session, user, p, p_annotation)
                 trans.sa_session.add(p)
-                trans.sa_session.flush()
+                with transaction(trans.sa_session):
+                    trans.sa_session.commit()
             return {"message": "Attributes of '%s' successfully saved." % p.title, "status": "success"}
 
     @web.expose
     @web.require_login()
-    def display(self, trans, id):
+    def display(self, trans, id, **kwargs):
         id = self.decode_id(id)
-        page = trans.sa_session.query(model.Page).get(id)
+        page = trans.sa_session.get(model.Page, id)
         if not page:
             raise web.httpexceptions.HTTPNotFound()
         return self.display_by_username_and_slug(trans, page.user.username, page.slug)
 
     @web.expose
-    def display_by_username_and_slug(self, trans, username, slug):
+    def display_by_username_and_slug(self, trans, username, slug, **kwargs):
         """Display page based on a username and slug."""
 
         # Get page.
-        session = trans.sa_session
-        user = session.query(model.User).filter_by(username=username).first()
-        page = trans.sa_session.query(model.Page).filter_by(user=user, slug=slug, deleted=False).first()
+        user = get_user_by_username(trans.sa_session, username)
+        page = get_page_(trans.sa_session, user, slug)
         if page is None:
             raise web.httpexceptions.HTTPNotFound()
 
@@ -560,48 +559,6 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
                 id=page_id,
             )
         )
-
-    @web.expose
-    @web.require_login("use Galaxy pages")
-    def set_accessible_async(self, trans, id=None, accessible=False):
-        """Set page's importable attribute and slug."""
-        page = self.get_page(trans, id)
-
-        # Only set if importable value would change; this prevents a change in the update_time unless attribute really changed.
-        importable = accessible in ["True", "true", "t", "T"]
-        if page.importable != importable:
-            if importable:
-                self._make_item_accessible(trans.sa_session, page)
-            else:
-                page.importable = importable
-            trans.sa_session.flush()
-        return
-
-    @web.expose
-    def get_embed_html_async(self, trans, id):
-        """Returns HTML for embedding a workflow in a page."""
-
-        # TODO: user should be able to embed any item he has access to. see display_by_username_and_slug for security code.
-        page = self.get_page(trans, id)
-        if page:
-            return f"Embedded Page '{page.title}'"
-
-    @web.expose
-    @web.json
-    @web.require_login("use Galaxy pages")
-    def get_name_and_link_async(self, trans, id=None):
-        """Returns page's name and link."""
-        page = self.get_page(trans, id)
-
-        if self.slug_builder.create_item_slug(trans.sa_session, page):
-            trans.sa_session.flush()
-        return_dict = {
-            "name": page.title,
-            "link": url_for(
-                controller="page", action="display_by_username_and_slug", username=page.user.username, slug=page.slug
-            ),
-        }
-        return return_dict
 
     @web.expose
     @web.json
@@ -642,7 +599,7 @@ class PageController(BaseUIController, SharableMixin, UsesStoredWorkflowMixin, U
         """Get a page from the database by id."""
         # Load history from database
         id = self.decode_id(id)
-        page = trans.sa_session.query(model.Page).get(id)
+        page = trans.sa_session.get(model.Page, id)
         if not page:
             error("Page not found")
         else:

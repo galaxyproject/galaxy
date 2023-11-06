@@ -53,7 +53,6 @@ export default {
     methods: {
         createStep() {
             if (this.targetElement) {
-                this.targetElement.scrollIntoView({ behavior: "smooth" });
                 createPopper(this.targetElement, this.$refs["tour-element"], {
                     modifiers: [
                         {

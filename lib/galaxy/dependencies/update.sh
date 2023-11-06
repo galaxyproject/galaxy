@@ -50,6 +50,7 @@ PINNED_REQUIREMENTS_FILE=$this_directory/pinned-requirements.txt
 PINNED_DEV_REQUIREMENTS_FILE=$this_directory/dev-requirements.txt
 poetry export -f requirements.txt --without-hashes --output "$PINNED_REQUIREMENTS_FILE"
 poetry export --only dev -f requirements.txt --without-hashes --output "$PINNED_DEV_REQUIREMENTS_FILE"
+poetry export --only typecheck -f requirements.txt --without-hashes --output "$this_directory/pinned-typecheck-requirements.txt"
 
 # Fix requirements
 
@@ -88,5 +89,6 @@ split_requirement () {
 # supported by Galaxy, so Poetry resorts to an old version that didn't have a
 # maximum Python version pin. Here we replace any such requirement with multiple
 # Python-version-specific requirements.
+split_requirement matplotlib
 split_requirement numpy
 split_requirement scipy

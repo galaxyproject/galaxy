@@ -1,15 +1,19 @@
 <script setup lang="ts">
+import { storeToRefs } from "pinia";
+import { computed, type Ref, ref, watch } from "vue";
+import { useRouter } from "vue-router/composables";
+
+import { Toast } from "@/composables/toast";
+import { useUserStore } from "@/stores/userStore";
+
+import { getRedirectOnImportPath } from "../redirectPath";
+import { Services } from "../services";
+import type { TrsSelection, TrsTool as TrsToolInterface } from "./types";
+
+import TrsServerSelection from "./TrsServerSelection.vue";
 import TrsTool from "./TrsTool.vue";
 import TrsUrlImport from "./TrsUrlImport.vue";
-import { Toast } from "@/composables/toast";
-import { Services } from "../services";
-import { getGalaxyInstance } from "@/app";
-import { computed, ref, watch, type Ref } from "vue";
-import { getRedirectOnImportPath } from "../redirectPath";
 import LoadingSpan from "@/components/LoadingSpan.vue";
-import TrsServerSelection from "./TrsServerSelection.vue";
-import { useRouter } from "vue-router/composables";
-import type { TrsSelection, TrsTool as TrsToolInterface } from "./types";
 
 const props = defineProps({
     queryTrsServer: {
@@ -40,8 +44,10 @@ const importing = ref(false);
 const trsSelection: Ref<TrsSelection | null> = ref(null);
 const errorMessage: Ref<string | null> = ref(null);
 const toolId = ref(props.queryTrsId);
-const isAnonymous: Ref<boolean> = getGalaxyInstance().user?.isAnonymous();
-const isAutoImport = ref(Boolean(props.queryTrsVersionId && props.queryTrsServer && props.queryTrsId));
+const { isAnonymous } = storeToRefs(useUserStore());
+const isAutoImport = ref(
+    Boolean((props.queryTrsVersionId && props.queryTrsServer && props.queryTrsId) || props.queryTrsUrl)
+);
 
 const toolIdTrimmed = computed(() => {
     return toolId.value?.trim() || null;
@@ -151,7 +157,7 @@ async function importVersionFromUrl(url: string, isRunFormRedirect = false) {
 </script>
 
 <template>
-    <div>
+    <div class="workflow-import-trs-id">
         <b-card v-if="!isAnonymous" title="GA4GH Tool Registry Server (TRS) Workflow Import">
             <div>
                 <b>TRS Server:</b>
@@ -166,7 +172,7 @@ async function importVersionFromUrl(url: string, isRunFormRedirect = false) {
             </b-alert>
             <div v-else>
                 <div class="my-3">
-                    <b-form-group label="TRS ID:" label-class="font-weight-bold">
+                    <b-form-group label="TRS ID:" label-for="trs-id-input" label-class="font-weight-bold">
                         <b-form-input id="trs-id-input" v-model="toolId" debounce="500" />
                     </b-form-group>
                 </div>
@@ -186,7 +192,9 @@ async function importVersionFromUrl(url: string, isRunFormRedirect = false) {
             </div>
             <hr />
             <div>
-                <TrsUrlImport :query-trs-url="props.queryTrsUrl" @onImport="(url) => importVersionFromUrl(url)" />
+                <TrsUrlImport
+                    :query-trs-url="props.queryTrsUrl"
+                    @onImport="(url) => importVersionFromUrl(url, isRun)" />
             </div>
         </b-card>
         <b-alert v-else class="text-center my-2" show variant="danger">

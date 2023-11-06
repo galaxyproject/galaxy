@@ -10,9 +10,9 @@ from fastapi import (
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
-    AnyHDCA,
     CreateNewCollectionPayload,
     DatasetCollectionInstanceType,
+    DCESummary,
     HDCADetailed,
 )
 from galaxy.webapps.galaxy.api import (
@@ -34,6 +34,11 @@ router = Router(tags=["dataset collections"])
 
 DatasetCollectionIdPathParam: DecodedDatabaseIdField = Path(
     ..., description="The encoded identifier of the dataset collection."
+)
+
+
+DatasetCollectionElementIdPathParam: DecodedDatabaseIdField = Path(
+    ..., description="The encoded identifier of the dataset collection element."
 )
 
 InstanceTypeQueryParam: DatasetCollectionInstanceType = Query(
@@ -102,7 +107,7 @@ class FastAPIDatasetCollections:
         trans: ProvidesHistoryContext = DependsOnTrans,
         id: DecodedDatabaseIdField = DatasetCollectionIdPathParam,
         instance_type: DatasetCollectionInstanceType = InstanceTypeQueryParam,
-    ) -> AnyHDCA:
+    ) -> HDCADetailed:
         return self.service.show(trans, id, instance_type)
 
     @router.get(
@@ -129,3 +134,11 @@ class FastAPIDatasetCollections:
         ),
     ) -> DatasetCollectionContentElements:
         return self.service.contents(trans, hdca_id, parent_id, instance_type, limit, offset)
+
+    @router.get("/api/dataset_collection_element/{dce_id}")
+    def content(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        dce_id: DecodedDatabaseIdField = DatasetCollectionElementIdPathParam,
+    ) -> DCESummary:
+        return self.service.dce_content(trans, dce_id)

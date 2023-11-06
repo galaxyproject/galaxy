@@ -1,21 +1,17 @@
+import type { components } from "@/api/schema";
 import { bytesToString } from "@/utils/utils";
 
 export const DEFAULT_QUOTA_SOURCE_LABEL = "Default";
 
-export interface QuotaUsageResponse {
-    quota_source_label?: string;
-    quota_bytes?: number;
-    total_disk_usage: number;
-    quota_percent?: number;
-}
+export type UserQuotaUsageData = components["schemas"]["UserQuotaUsage"];
 
 /**
  * Contains information about quota usage for a particular ObjectStore.
  */
 export class QuotaUsage {
-    private _data: QuotaUsageResponse;
+    private _data: UserQuotaUsageData;
 
-    constructor(data: QuotaUsageResponse) {
+    constructor(data: UserQuotaUsageData) {
         this._data = data;
     }
 
@@ -54,7 +50,10 @@ export class QuotaUsage {
         if (this.isUnlimited) {
             return "unlimited";
         }
-        return bytesToString(this.quotaInBytes, true, undefined);
+        if (this.quotaInBytes !== undefined) {
+            return bytesToString(this.quotaInBytes, true, undefined);
+        }
+        return "unknown";
     }
 
     /**

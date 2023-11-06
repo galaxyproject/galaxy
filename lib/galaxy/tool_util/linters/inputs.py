@@ -1,5 +1,7 @@
 """This module contains a linting functions for tool inputs."""
+import ast
 import re
+from typing import TYPE_CHECKING
 
 from galaxy.util import string_as_bool
 from ._util import (
@@ -7,6 +9,10 @@ from ._util import (
     is_valid_cheetah_placeholder,
 )
 from ..parser.util import _parse_name
+
+if TYPE_CHECKING:
+    from galaxy.tool_util.lint import LintContext
+    from galaxy.tool_util.parser import ToolSource
 
 FILTER_TYPES = [
     "data_meta",
@@ -32,6 +38,7 @@ ATTRIB_VALIDATOR_COMPATIBILITY = {
     ],
     "filename": ["dataset_metadata_in_file"],
     "metadata_name": [
+        "dataset_metadata_equal",
         "dataset_metadata_in_data_table",
         "dataset_metadata_not_in_data_table",
         "dataset_metadata_in_file",
@@ -51,6 +58,8 @@ ATTRIB_VALIDATOR_COMPATIBILITY = {
     "exclude_max": ["in_range", "dataset_metadata_in_range"],
     "split": ["dataset_metadata_in_file"],
     "skip": ["metadata"],
+    "value": ["dataset_metadata_equal"],
+    "value_json": ["dataset_metadata_equal"],
 }
 
 PARAMETER_VALIDATOR_TYPE_COMPATIBILITY = {
@@ -61,6 +70,7 @@ PARAMETER_VALIDATOR_TYPE_COMPATIBILITY = {
         "no_options",
         "unspecified_build",
         "dataset_ok_validator",
+        "dataset_metadata_equal",
         "dataset_metadata_in_range",
         "dataset_metadata_in_file",
         "dataset_metadata_in_data_table",
@@ -72,6 +82,7 @@ PARAMETER_VALIDATOR_TYPE_COMPATIBILITY = {
         "no_options",
         "unspecified_build",
         "dataset_ok_validator",
+        "dataset_metadata_equal",
         "dataset_metadata_in_range",
         "dataset_metadata_in_file",
         "dataset_metadata_in_data_table",
@@ -115,8 +126,12 @@ PARAM_TYPE_CHILD_COMBINATIONS = [
 ]
 
 
-def lint_inputs(tool_xml, lint_ctx):
+def lint_inputs(tool_source: "ToolSource", lint_ctx: "LintContext"):
     """Lint parameters in a tool's inputs block."""
+    tool_xml = getattr(tool_source, "xml_tree", None)
+    if tool_xml is None:
+        return
+    profile = tool_source.parse_profile()
     datasource = is_datasource(tool_xml)
     input_names = set()
     inputs = tool_xml.findall("./inputs//param")
@@ -326,6 +341,20 @@ def lint_inputs(tool_xml, lint_ctx):
             if len(set(select_options_values)) != len(select_options_values):
                 lint_ctx.error(f"Select parameter [{param_name}] has multiple options with the same value", node=param)
 
+        if param_type == "boolean":
+            truevalue = param_attrib.get("truevalue", "true")
+            falsevalue = param_attrib.get("falsevalue", "false")
+            problematic_booleans_allowed = profile < "23.1"
+            lint_level = lint_ctx.warn if problematic_booleans_allowed else lint_ctx.error
+            if truevalue == falsevalue:
+                lint_level(
+                    f"Boolean parameter [{param_name}] needs distinct 'truevalue' and 'falsevalue' values.", node=param
+                )
+            if truevalue.lower() == "false":
+                lint_level(f"Boolean parameter [{param_name}] has invalid truevalue [{truevalue}].", node=param)
+            if falsevalue.lower() == "true":
+                lint_level(f"Boolean parameter [{param_name}] has invalid falsevalue [{falsevalue}].", node=param)
+
         if param_type in ["select", "data_column", "drill_down"]:
             multiple = string_as_bool(param_attrib.get("multiple", "false"))
             optional = string_as_bool(param_attrib.get("optional", multiple))
@@ -367,14 +396,17 @@ def lint_inputs(tool_xml, lint_ctx):
                         f"Parameter [{param_name}]: attribute '{attrib}' is incompatible with validator of type '{vtype}'",
                         node=validator,
                     )
-            if vtype == "expression":
+            if vtype in ["expression", "regex"]:
                 if validator.text is None:
                     lint_ctx.error(
-                        f"Parameter [{param_name}]: expression validators are expected to contain text", node=validator
+                        f"Parameter [{param_name}]: {vtype} validators are expected to contain text", node=validator
                     )
                 else:
                     try:
-                        re.compile(validator.text)
+                        if vtype == "regex":
+                            re.compile(validator.text)
+                        else:
+                            ast.parse(validator.text, mode="eval")
                     except Exception as e:
                         lint_ctx.error(
                             f"Parameter [{param_name}]: '{validator.text}' is no valid regular expression: {str(e)}",
@@ -392,6 +424,21 @@ def lint_inputs(tool_xml, lint_ctx):
                     f"Parameter [{param_name}]: '{vtype}' validators need to define the 'min' or 'max' attribute(s)",
                     node=validator,
                 )
+            if vtype in ["dataset_metadata_equal"]:
+                if (
+                    not ("value" in validator.attrib or "value_json" in validator.attrib)
+                    or "metadata_name" not in validator.attrib
+                ):
+                    lint_ctx.error(
+                        f"Parameter [{param_name}]: '{vtype}' validators need to define the 'value'/'value_json' and 'metadata_name' attributes",
+                        node=validator,
+                    )
+                if "value" in validator.attrib and "value_json" in validator.attrib:
+                    lint_ctx.error(
+                        f"Parameter [{param_name}]: '{vtype}' validators must not define the 'value' and the 'value_json' attributes",
+                        node=validator,
+                    )
+
             if vtype in ["metadata"] and ("check" not in validator.attrib and "skip" not in validator.attrib):
                 lint_ctx.error(
                     f"Parameter [{param_name}]: '{vtype}' validators need to define the 'check' or 'skip' attribute(s)",
@@ -515,8 +562,11 @@ def lint_inputs(tool_xml, lint_ctx):
                 )
 
 
-def lint_repeats(tool_xml, lint_ctx):
+def lint_repeats(tool_source: "ToolSource", lint_ctx):
     """Lint repeat blocks in tool inputs."""
+    tool_xml = getattr(tool_source, "xml_tree", None)
+    if tool_xml is None:
+        return
     repeats = tool_xml.findall("./inputs//repeat")
     for repeat in repeats:
         if "name" not in repeat.attrib:

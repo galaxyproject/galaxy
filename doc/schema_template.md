@@ -13,6 +13,11 @@ how to build tools for Galaxy,
 [Planemo](https://planemo.readthedocs.io/en/latest/writing.html) features a
 number of tutorials on building Galaxy tools that would better serve that purpose.
 
+```{contents} Contents
+:depth: 1
+:local:
+```
+
 $tag:tool://element[@name='tool']
 $tag:tool|description://element[@name='tool']//element[@name='description']
 $tag:tool|macros://complexType[@name='Macros']

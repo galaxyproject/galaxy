@@ -1,4 +1,5 @@
 import textwrap
+import urllib
 import zipfile
 from io import BytesIO
 from typing import (
@@ -341,6 +342,147 @@ class TestDatasetsApi(ApiTestCase):
         self._assert_status_code_is(display_response, 200)
         assert display_response.text == contents
 
+    def test_get_content_as_text(self, history_id):
+        contents = textwrap.dedent(
+            """\
+        1   2   3   4
+        A   B   C   D
+        10  20  30  40
+        """
+        )
+        hda1 = self.dataset_populator.new_dataset(history_id, content=contents, wait=True)
+        get_content_as_text_response = self._get(f"datasets/{hda1['id']}/get_content_as_text")
+        self._assert_status_code_is(get_content_as_text_response, 200)
+        self._assert_has_key(get_content_as_text_response.json(), "item_data")
+        assert get_content_as_text_response.json().get("item_data") == contents
+
+    def test_anon_get_content_as_text(self, history_id):
+        contents = "accessible data"
+        hda1 = self.dataset_populator.new_dataset(history_id, content=contents, wait=True)
+        with self._different_user(anon=True):
+            get_content_as_text_response = self._get(f"datasets/{hda1['id']}/get_content_as_text")
+            self._assert_status_code_is(get_content_as_text_response, 200)
+
+    def test_anon_private_get_content_as_text(self, history_id):
+        contents = "private data"
+        hda1 = self.dataset_populator.new_dataset(history_id, content=contents, wait=True)
+        self.dataset_populator.make_private(history_id=history_id, dataset_id=hda1["id"])
+        with self._different_user(anon=True):
+            get_content_as_text_response = self._get(f"datasets/{hda1['id']}/get_content_as_text")
+            self._assert_status_code_is(get_content_as_text_response, 403)
+
+    def test_dataprovider_chunk(self, history_id):
+        contents = textwrap.dedent(
+            """\
+        1   2   3   4
+        A   B   C   D
+        10  20  30  40
+        """
+        )
+        # test first chunk
+        hda1 = self.dataset_populator.new_dataset(history_id, content=contents, wait=True)
+        kwds = {
+            "data_type": "raw_data",
+            "provider": "chunk",
+            "chunk_index": "0",
+            "chunk_size": "5",
+        }
+
+        display_response = self._get(f"datasets/{hda1['id']}", kwds)
+        self._assert_status_code_is(display_response, 200)
+        display = display_response.json()
+        self._assert_has_key(display, "data")
+        assert display["data"] == ["1   2"]
+
+        # test index
+        kwds = {
+            "data_type": "raw_data",
+            "provider": "chunk",
+            "chunk_index": "1",
+            "chunk_size": "5",
+        }
+
+        display_response = self._get(f"datasets/{hda1['id']}", kwds)
+        self._assert_status_code_is(display_response, 200)
+        display = display_response.json()
+        self._assert_has_key(display, "data")
+        assert display["data"] == ["   3 "]
+
+        # test line breaks
+        kwds = {
+            "data_type": "raw_data",
+            "provider": "chunk",
+            "chunk_index": "0",
+            "chunk_size": "20",
+        }
+
+        display_response = self._get(f"datasets/{hda1['id']}", kwds)
+        self._assert_status_code_is(display_response, 200)
+        display = display_response.json()
+        self._assert_has_key(display, "data")
+        assert "\nA" in display["data"][0]
+
+    def test_bam_chunking_through_display_endpoint(self, history_id):
+        # This endpoint does not use data providers and instead overrides display_data
+        # in the bam datatype. This is the endpoint is very close to the legacy non-API
+        # controller endpoint used by the UI to produce these chunks.
+        bam_dataset = self.dataset_populator.new_bam_dataset(history_id, self.test_data_resolver)
+        bam_id = bam_dataset["id"]
+
+        chunk_1 = self._display_chunk(bam_id, 0, 1)
+        self._assert_has_keys(chunk_1, "offset", "ck_data")
+
+        offset = chunk_1["offset"]
+
+        chunk_2 = self._display_chunk(bam_id, offset, 1)
+        assert chunk_2["offset"] > offset
+        # chunk_1 just contains all the headers so this check wouldn't work.
+        assert len(chunk_2["ck_data"].split("\n")) == 1
+
+        double_chunk = self._display_chunk(bam_id, offset, 2)
+        assert len(double_chunk["ck_data"].split("\n")) == 2
+
+    def _display_chunk(self, dataset_id: str, offset: int, ck_size: int):
+        return self.dataset_populator.display_chunk(dataset_id, offset, ck_size)
+
+    def test_tabular_chunking_through_display_endpoint(self, history_id):
+        contents = textwrap.dedent(
+            """\
+        1   2   3   4
+        A   B   C   D
+        10  20  30  40
+        """
+        )
+        # test first chunk
+        hda1 = self.dataset_populator.new_dataset(history_id, content=contents, wait=True, file_type="tabular")
+        dataset_id = hda1["id"]
+        chunk_1 = self._display_chunk(dataset_id, 0, 1)
+        self._assert_has_keys(chunk_1, "offset", "ck_data")
+
+        assert chunk_1["ck_data"] == "1   2   3   4"
+        assert chunk_1["offset"] == 14
+
+        chunk_2 = self._display_chunk(dataset_id, 14, 1)
+        assert chunk_2["ck_data"] == "A   B   C   D"
+        assert chunk_2["offset"] == 28
+
+        chunk_3 = self._display_chunk(dataset_id, 28, 1)
+        assert chunk_3["ck_data"] == "10  20  30  40"
+
+    def test_connectivity_table_chunking_through_display_endpoint(self, history_id):
+        ct_dataset = self.dataset_populator.new_dataset(
+            history_id, content=open(self.test_data_resolver.get_filename("1.ct"), "rb"), file_type="ct", wait=True
+        )
+        dataset_id = ct_dataset["id"]
+        chunk_1 = self._display_chunk(dataset_id, 0, 1)
+        self._assert_has_keys(chunk_1, "offset", "ck_data")
+
+        assert chunk_1["ck_data"] == "363	tmRNA"
+        assert chunk_1["offset"] == 10, chunk_1
+
+        chunk_2 = self._display_chunk(dataset_id, 10, 1)
+        assert chunk_2["ck_data"] == "1	G	0	2	359	1"
+
     def test_head(self, history_id):
         hda1 = self.dataset_populator.new_dataset(history_id, wait=True)
         display_response = self._head(f"histories/{history_id}/contents/{hda1['id']}/display", {"raw": "True"})
@@ -388,6 +530,39 @@ class TestDatasetsApi(ApiTestCase):
         assert "tag_c" in updated_hda["tags"]
         assert "name:tag_d" in updated_hda["tags"]
         assert "name:tag_e" in updated_hda["tags"]
+
+    def test_anon_tag_permissions(self):
+        with self._different_user(anon=True):
+            history_id = self._get(urllib.parse.urljoin(self.url, "history/current_history_json")).json()["id"]
+            hda_id = self.dataset_populator.new_dataset(history_id, content="abc", wait=True)["id"]
+            payload = {
+                "item_id": hda_id,
+                "item_class": "HistoryDatasetAssociation",
+                "item_tags": ["cool:tag_a", "cool:tag_b", "tag_c", "name:tag_d", "#tag_e"],
+            }
+            put_response = self._put("tags", data=payload, json=True)
+            updated_hda = self._get(f"histories/{history_id}/contents/{hda_id}").json()
+            assert len(updated_hda["tags"]) == 5
+            # ensure we can remove these tags again
+            payload = {
+                "item_id": hda_id,
+                "item_class": "HistoryDatasetAssociation",
+                "item_tags": [],
+            }
+            put_response = self._put("tags", data=payload, json=True)
+            put_response.raise_for_status()
+            updated_hda = self._get(f"histories/{history_id}/contents/{hda_id}").json()
+            assert len(updated_hda["tags"]) == 0
+        with self._different_user(anon=True):
+            # another anon user can't modify tags
+            payload = {
+                "item_id": hda_id,
+                "item_class": "HistoryDatasetAssociation",
+                "item_tags": ["cool:tag_a", "cool:tag_b", "tag_c", "name:tag_d", "#tag_e"],
+            }
+            put_response = self._put("tags", data=payload, json=True)
+            updated_hda = self._get(f"histories/{history_id}/contents/{hda_id}").json()
+            assert len(updated_hda["tags"]) == 0
 
     @skip_without_tool("cat_data_and_sleep")
     def test_update_datatype(self, history_id):
@@ -676,3 +851,15 @@ class TestDatasetsApi(ApiTestCase):
         output = self.dataset_populator.fetch_hda(history_id, item)
         dataset_details = self.dataset_populator.get_history_dataset_details(history_id, dataset=output, assert_ok=True)
         assert "display_application/" in dataset_details["display_apps"][0]["links"][0]["href"]
+
+    def test_cannot_update_datatype_on_immutable_history(self, history_id):
+        hda_id = self.dataset_populator.new_dataset(history_id)["id"]
+        self.dataset_populator.wait_for_history_jobs(history_id)
+
+        # once we purge the history, it becomes immutable
+        self._delete(f"histories/{history_id}", data={"purge": True}, json=True)
+
+        # now we can't update the datatype
+        response = self._put(f"histories/{history_id}/contents/{hda_id}", data={"datatype": "tabular"}, json=True)
+        self._assert_status_code_is(response, 403)
+        assert response.json()["err_msg"] == "History is immutable"

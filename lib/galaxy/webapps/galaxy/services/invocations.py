@@ -167,10 +167,10 @@ class InvocationsService(ServiceBase):
             short_term_storage_request_id=short_term_storage_target.request_id,
             user=trans.async_request_user,
             invocation_id=workflow_invocation.id,
-            galaxy_url=trans.request.base,
+            galaxy_url=trans.request.url_path,
             **payload.dict(),
         )
-        result = prepare_invocation_download.delay(request=request)
+        result = prepare_invocation_download.delay(request=request, task_user_id=getattr(trans.user, "id", None))
         return AsyncFile(storage_request_id=short_term_storage_target.request_id, task=async_task_summary(result))
 
     def write_store(
@@ -181,12 +181,12 @@ class InvocationsService(ServiceBase):
         if not workflow_invocation:
             raise ObjectNotFound()
         request = WriteInvocationTo(
-            galaxy_url=trans.request.base,
+            galaxy_url=trans.request.url_path,
             user=trans.async_request_user,
             invocation_id=workflow_invocation.id,
             **payload.dict(),
         )
-        result = write_invocation_to.delay(request=request)
+        result = write_invocation_to.delay(request=request, task_user_id=getattr(trans.user, "id", None))
         rval = async_task_summary(result)
         return rval
 
@@ -199,7 +199,7 @@ class InvocationsService(ServiceBase):
         view = params.view or default_view
         step_details = params.step_details
         legacy_job_state = params.legacy_job_state
-        as_dict = invocation.to_dict(view, step_details=step_details, legacy_job_state=legacy_job_state)
+        as_dict = invocation.to_dict(view.value, step_details=step_details, legacy_job_state=legacy_job_state)
         as_dict = self.security.encode_all_ids(as_dict, recursive=True)
         as_dict["messages"] = [
             InvocationMessageResponseModel.parse_obj(message).__root__.dict() for message in invocation.messages

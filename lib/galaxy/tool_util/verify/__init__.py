@@ -69,7 +69,7 @@ def verify(
     assertions = attributes.get("assert_list", None)
     if attributes is not None and assertions is not None:
         try:
-            verify_assertions(output_content, attributes["assert_list"])
+            verify_assertions(output_content, attributes["assert_list"], attributes.get("decompress"))
         except AssertionError as err:
             errmsg = f"{item_label} different than expected\n"
             errmsg += unicodify(err)

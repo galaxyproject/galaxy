@@ -368,6 +368,102 @@ steps:
       queries_0|input2: nested_workflow/workflow_output
 """
 
+# WORKFLOW_NESTED_SIMPLE with a nested workflow output marked as an
+# output on the outer workflow.
+WORKFLOW_NESTED_OUTPUT = """
+class: GalaxyWorkflow
+inputs:
+  outer_input: data
+outputs:
+  outer_output:
+    outputSource: second_cat/out_file1
+  nested_output:
+    outputSource: nested_workflow/workflow_output
+steps:
+  first_cat:
+    tool_id: cat1
+    in:
+      input1: outer_input
+  nested_workflow:
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        inner_input: data
+      outputs:
+        workflow_output:
+          outputSource: random_lines/out_file1
+      steps:
+        random_lines:
+          tool_id: random_lines1
+          state:
+            num_lines: 1
+            input:
+              $link: inner_input
+            seed_source:
+              seed_source_selector: set_seed
+              seed: asdf
+    in:
+      inner_input: first_cat/out_file1
+  second_cat:
+    tool_id: cat1
+    in:
+      input1: nested_workflow/workflow_output
+      queries_0|input2: nested_workflow/workflow_output
+"""
+
+# WORKFLOW_NESTED_OUTPUT with two levels of nesting for the workflow
+# output
+WORKFLOW_NESTED_TWICE_OUTPUT = """
+class: GalaxyWorkflow
+inputs:
+  outer_input: data
+outputs:
+  outer_output:
+    outputSource: second_cat/out_file1
+  nested_output:
+    outputSource: nested_workflow/workflow_output
+steps:
+  first_cat:
+    tool_id: cat1
+    in:
+      input1: outer_input
+  nested_workflow:
+    run:
+      class: GalaxyWorkflow
+      inputs:
+        inner_input: data
+      outputs:
+        workflow_output:
+          outputSource: inner_nested_workflow/inner_workflow_output
+      steps:
+        inner_nested_workflow:
+          run:
+            class: GalaxyWorkflow
+            inputs:
+              really_inner_input: data
+            outputs:
+              inner_workflow_output:
+                outputSource: random_lines/out_file1
+            steps:
+              random_lines:
+                tool_id: random_lines1
+                state:
+                  num_lines: 1
+                  input:
+                    $link: really_inner_input
+                  seed_source:
+                    seed_source_selector: set_seed
+                    seed: asdf
+          in:
+            really_inner_input: inner_input
+    in:
+      inner_input: first_cat/out_file1
+  second_cat:
+    tool_id: cat1
+    in:
+      input1: nested_workflow/workflow_output
+      queries_0|input2: nested_workflow/workflow_output
+"""
 
 WORKFLOW_NESTED_RUNTIME_PARAMETER = """
 class: GalaxyWorkflow
@@ -1050,4 +1146,34 @@ outputs:
     outputSource: subworkflow/inner_output_1
   outer_output_2:
     outputSource: subworkflow/inner_output_2
+"""
+
+WORKFLOW_WITH_DEFAULT_FILE_DATASET_INPUT = """
+class: GalaxyWorkflow
+inputs:
+  default_file_input:
+    default:
+      class: File
+      basename: a file
+      format: txt
+      location: https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed
+steps:
+  cat1:
+    tool_id: cat1
+    in:
+      input1: default_file_input
+"""
+
+WORKFLOW_WITH_STEP_DEFAULT_FILE_DATASET_INPUT = """
+class: GalaxyWorkflow
+steps:
+  cat1:
+    tool_id: cat1
+    in:
+      input1:
+        default:
+          class: File
+          basename: a file
+          format: txt
+          location: https://raw.githubusercontent.com/galaxyproject/galaxy/dev/test-data/1.bed
 """

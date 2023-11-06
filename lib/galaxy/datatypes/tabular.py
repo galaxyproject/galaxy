@@ -175,7 +175,7 @@ class TabularData(Text):
         ck_size: Optional[int] = None,
         **kwd,
     ):
-        headers = kwd.get("headers", {})
+        headers = kwd.pop("headers", {})
         preview = util.string_as_bool(preview)
         if offset is not None:
             return self.get_chunk(trans, dataset, offset, ck_size), headers
@@ -795,8 +795,8 @@ class Sam(Tabular, _BamOrSam):
         >>> from galaxy.model.mapping import init
         >>> sa_session = init("/tmp", "sqlite:///:memory:", create_tables=True).session
         >>> hist = History()
-        >>> sa_session.add(hist)
-        >>> sa_session.flush()
+        >>> with sa_session.begin():
+        ...     sa_session.add(hist)
         >>> set_datatypes_registry(example_datatype_registry_for_sample())
         >>> fname = get_test_fname( 'sam_with_header.sam' )
         >>> samds = Dataset(external_filename=fname)
@@ -1587,12 +1587,12 @@ class ConnectivityTable(Tabular):
                     if not self.header_regexp.match(line):
                         return False
                     else:
-                        length = int(re.split(r"\W+", line, 1)[0])
+                        length = int(re.split(r"\W+", line, maxsplit=1)[0])
                 else:
                     if not self.structure_regexp.match(line.upper()):
                         return False
                     else:
-                        if j != int(re.split(r"\W+", line, 1)[0]):
+                        if j != int(re.split(r"\W+", line, maxsplit=1)[0]):
                             return False
                         elif j == length:  # Last line of first sequence has been reached
                             return True
