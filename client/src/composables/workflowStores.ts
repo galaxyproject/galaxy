@@ -1,4 +1,4 @@
-import { inject, onScopeDispose, provide, type Ref } from "vue";
+import { inject, onScopeDispose, provide, type Ref, ref } from "vue";
 
 import { useConnectionStore } from "@/stores/workflowConnectionStore";
 import { useWorkflowCommentStore } from "@/stores/workflowEditorCommentStore";
@@ -15,7 +15,11 @@ import { useWorkflowStepStore } from "@/stores/workflowStepStore";
  * @param workflowId the workflow to scope to
  * @returns workflow Stores
  */
-export function provideScopedWorkflowStores(workflowId: Ref<string>) {
+export function provideScopedWorkflowStores(workflowId: Ref<string> | string) {
+    if (typeof workflowId === "string") {
+        workflowId = ref(workflowId);
+    }
+
     provide("workflowId", workflowId);
 
     const connectionStore = useConnectionStore(workflowId.value);
