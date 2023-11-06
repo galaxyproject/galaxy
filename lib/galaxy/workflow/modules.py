@@ -2434,7 +2434,14 @@ class ToolModule(WorkflowModule):
                             raise DelayedWorkflowEvaluation(why=why)
 
                         if not dataset_instance.is_ok:
-                            raise CancelWorkflowEvaluation()
+                            raise CancelWorkflowEvaluation(
+                                why=InvocationFailureDatasetFailed(
+                                    reason=FailureReason.dataset_failed,
+                                    workflow_step_id=step.id,
+                                    hda_id=dataset_instance.id,
+                                    dependent_workflow_step_id=None,
+                                )
+                            )
 
                         with open(dataset_instance.get_file_name()) as f:
                             replacement = json.loads(dataset_instance.peek)
