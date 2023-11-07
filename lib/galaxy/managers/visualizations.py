@@ -195,6 +195,7 @@ class VisualizationSerializer(sharable.SharableModelSerializer):
             "detailed",
             [
                 "create_time",
+                "deleted",
                 "tags",
                 "update_time",
             ],

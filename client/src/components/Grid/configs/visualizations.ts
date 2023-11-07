@@ -16,6 +16,7 @@ const updateTags = fetcher.path("/api/tags").method("put").create();
  * Local types
  */
 type SortKeyLiteral = "create_time" | "title" | "update_time" | "username" | undefined;
+type VisualizationEntry = Record<string, unknown>;
 
 /**
  * Request and return data from server
@@ -54,25 +55,29 @@ const fields = [
         key: "title",
         type: "operations",
         width: "40%",
+        condition: (data: VisualizationEntry) => !data.deleted,
         operations: [
             {
                 title: "Open",
                 icon: "eye",
-                handler: (data: Record<string, unknown>) => {
+                condition: (data: VisualizationEntry) => !data.deleted,
+                handler: (data: VisualizationEntry) => {
                     window.location.href = withPrefix(`/plugins/visualizations/${data.type}/saved?id=${data.id}`);
                 },
             },
             {
                 title: "Edit Attributes",
                 icon: "edit",
-                handler: (data: Record<string, unknown>, router: Router) => {
+                condition: (data: VisualizationEntry) => !data.deleted,
+                handler: (data: VisualizationEntry, router: Router) => {
                     router.push(`/visualizations/edit?id=${data.id}`);
                 },
             },
             {
                 title: "Copy",
                 icon: "copy",
-                handler: async (data: Record<string, unknown>) => {
+                condition: (data: VisualizationEntry) => !data.deleted,
+                handler: async (data: VisualizationEntry) => {
                     try {
                         const copyResponse = await axios.get(withPrefix(`/api/visualizations/${data.id}`));
                         const copyViz = copyResponse.data;
@@ -97,14 +102,16 @@ const fields = [
             {
                 title: "Share and Publish",
                 icon: "share-alt",
-                handler: (data: Record<string, unknown>, router: Router) => {
+                condition: (data: VisualizationEntry) => !data.deleted,
+                handler: (data: VisualizationEntry, router: Router) => {
                     router.push(`/visualizations/sharing?id=${data.id}`);
                 },
             },
             {
                 title: "Delete",
                 icon: "trash",
-                handler: async (data: Record<string, unknown>) => {
+                condition: (data: VisualizationEntry) => !data.deleted,
+                handler: async (data: VisualizationEntry) => {
                     try {
                         await axios.put(`/api/visualizations/${data.id}`, { deleted: true });
                         return {
@@ -115,6 +122,25 @@ const fields = [
                         return {
                             status: "danger",
                             message: `Failed to delete '${data.title}': ${errorMessageAsString(e)}.`,
+                        };
+                    }
+                },
+            },
+            {
+                title: "Restore",
+                icon: "trash-restore",
+                condition: (data: VisualizationEntry) => data.deleted,
+                handler: async (data: VisualizationEntry) => {
+                    try {
+                        await axios.put(`/api/visualizations/${data.id}`, { deleted: false });
+                        return {
+                            status: "success",
+                            message: `'${data.title}' has been restored.`,
+                        };
+                    } catch (e) {
+                        return {
+                            status: "danger",
+                            message: `Failed to restore '${data.title}': ${errorMessageAsString(e)}.`,
                         };
                     }
                 },
@@ -130,7 +156,7 @@ const fields = [
         key: "tags",
         title: "Tags",
         type: "tags",
-        handler: async (data: Record<string, unknown>) => {
+        handler: async (data: VisualizationEntry) => {
             try {
                 await updateTags({
                     item_id: data.id as string,

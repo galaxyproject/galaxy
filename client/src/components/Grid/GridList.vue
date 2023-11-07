@@ -217,8 +217,8 @@ watch(operationMessage, () => {
                     :style="{ width: fieldEntry.width }">
                     <GridOperations
                         v-if="fieldEntry.type == 'operations'"
-                        :title="rowData.title"
                         :operations="fieldEntry.operations"
+                        :row-data="rowData"
                         @execute="onOperation($event, rowData)" />
                     <GridText v-else-if="fieldEntry.type == 'text'" :text="rowData[fieldEntry.key]" />
                     <SharingIndicators

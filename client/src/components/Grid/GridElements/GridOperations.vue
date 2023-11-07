@@ -1,29 +1,37 @@
 <script setup lang="ts">
-import type { FieldOperations } from "@/components/Grid/configs/types";
+import type { FieldOperations, RowData } from "@/components/Grid/configs/types";
 
 interface Props {
-    title: string;
+    rowData: RowData;
     operations: FieldOperations;
 }
 
-defineProps<Props>();
+const props = defineProps<Props>();
+
+/**
+ * Availibility of operations might required certain conditions
+ */
+function hasCondition(conditionHandler: (rowData: RowData) => Boolean) {
+    return conditionHandler ? conditionHandler(props.rowData) : true;
+}
 </script>
 
 <template>
     <span>
         <b-link id="grid-operations" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
             <icon icon="caret-down" class="fa-lg" />
-            <span class="font-weight-bold">{{ title }}</span>
+            <span class="font-weight-bold">{{ rowData.title }}</span>
         </b-link>
         <div class="dropdown-menu" aria-labelledby="dataset-dropdown">
-            <a
-                v-for="(operation, operationIndex) in operations"
-                :key="operationIndex"
-                class="dropdown-item"
-                @click.prevent="$emit('execute', operation)">
-                <icon :icon="operation.icon" />
-                <span v-localize>{{ operation.title }}</span>
-            </a>
+            <span v-for="(operation, operationIndex) in operations" :key="operationIndex">
+                <a
+                    v-if="hasCondition(operation.condition)"
+                    class="dropdown-item"
+                    @click.prevent="$emit('execute', operation)">
+                    <icon :icon="operation.icon" />
+                    <span v-localize>{{ operation.title }}</span>
+                </a>
+            </span>
         </div>
     </span>
 </template>
