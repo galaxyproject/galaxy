@@ -11,7 +11,7 @@ export const useScopePointerStore = defineStore("scopePointerStore", () => {
     const scopePointers = ref<Record<FromScopeId, ToScopeId | undefined>>({});
 
     function addScopePointer(from: FromScopeId, to: ToScopeId) {
-        scopePointers.value[from] = to;
+        scopePointers.value[from] = scope.value(to);
     }
 
     const scope = computed(() => (scopeId: string) => scopePointers.value[scopeId] ?? scopeId);

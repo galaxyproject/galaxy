@@ -546,6 +546,12 @@ export default {
                 const response = await axios.post(`${getAppRoot()}workflow/save_workflow_as`, formData);
                 const newId = response.data;
 
+                if (!create) {
+                    this.name = rename_name;
+                    this.annotation = rename_annotation;
+                }
+
+                this.hasChanges = false;
                 await this.routeToWorkflow(newId);
             } catch (e) {
                 this.onWorkflowError("Saving workflow failed, please contact an administrator.");
@@ -575,18 +581,9 @@ export default {
             this.onUpdateStep(step);
         },
         async routeToWorkflow(id) {
-            const { addScopePointer, scope } = useScopePointerStore();
-
-            let pointedTo;
-            // the current workflow id might be pointing to existing stores
-            const originalPointed = scope(this.id);
-            if (originalPointed !== this.id) {
-                pointedTo = originalPointed;
-            } else {
-                pointedTo = this.id;
-            }
             // map scoped stores to existing stores, before updating the id
-            addScopePointer(id, pointedTo);
+            const { addScopePointer } = useScopePointerStore();
+            addScopePointer(id, this.id);
 
             this.id = id;
             await this.onSave();
@@ -618,7 +615,6 @@ export default {
                     await this.routeToWorkflow(id);
                 } else {
                     // otherwise, use `save_as` endpoint to include steps, etc.
-                    this.hasChanges = false;
                     await this.doSaveAs(true);
                 }
             } catch (e) {
