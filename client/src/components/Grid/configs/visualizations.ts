@@ -197,7 +197,6 @@ const validFilters: Record<string, ValidFilter<string | boolean | undefined>> = 
         handler: contains("tag", "tag", expandNameTag),
         menuItem: true,
     },
-    user: { placeholder: "user name", type: String, handler: contains("user"), menuItem: true },
     published: {
         placeholder: "Filter on published visualizations",
         type: Boolean,
