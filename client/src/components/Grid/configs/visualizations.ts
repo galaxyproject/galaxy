@@ -1,3 +1,4 @@
+import axios from "axios";
 import type Router from "vue-router";
 
 import { fetcher } from "@/api/schema";
@@ -8,10 +9,7 @@ import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
 /**
  * Api endpoint handlers
  */
-const createVisualization = fetcher.path("/api/visualizations").method("post").create();
-const getVisualization = fetcher.path("/api/visualizations/{visualization_id}").method("get").create();
 const getDetailedVisualizations = fetcher.path("/api/visualizations/detailed").method("get").create();
-const updateVisualization = fetcher.path("/api/visualizations/{visualization_id}").method("put").create();
 const updateTags = fetcher.path("/api/tags").method("put").create();
 
 /**
@@ -76,14 +74,14 @@ const fields = [
                 icon: "copy",
                 handler: async (data: Record<string, unknown>) => {
                     try {
-                        const copyResponse = await getVisualization({ visualization_id: data.id });
+                        const copyResponse = await axios.get(withPrefix(`/api/visualizations/${data.id}`));
                         const copyViz = copyResponse.data;
                         const newViz = {
                             title: `Copy of '${copyViz.title}'`,
                             type: copyViz.type,
                             config: copyViz.config,
                         };
-                        await createVisualization(newViz);
+                        await axios.post(withPrefix(`/api/visualizations`), newViz);
                         return {
                             status: "success",
                             message: `'${data.title}' has been copied.`,
@@ -108,7 +106,7 @@ const fields = [
                 icon: "trash",
                 handler: async (data: Record<string, unknown>) => {
                     try {
-                        await updateVisualization({ visualization_id: data.id, deleted: true });
+                        await axios.put(`/api/visualizations/${data.id}`, { deleted: true });
                         return {
                             status: "success",
                             message: `'${data.title}' has been deleted.`,
