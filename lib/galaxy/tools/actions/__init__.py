@@ -699,7 +699,7 @@ class DefaultToolAction(ToolAction):
         )
         # Add all the top-level (non-child) datasets to the history unless otherwise specified
         for name, data in out_data.items():
-            if name not in incoming and name not in child_dataset_names:
+            if getattr(data, "hid", None) is None or (name not in incoming and name not in child_dataset_names):
                 # don't add already existing datasets, i.e. async created
                 history.stage_addition(data)
         history.add_pending_items(set_output_hid=set_output_hid)
