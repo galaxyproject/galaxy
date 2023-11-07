@@ -368,9 +368,9 @@ export default {
             this.$emit("update:confirmation", this.hasChanges);
         },
     },
-    created() {
+    async created() {
         this.lastQueue = new LastQueue();
-        this._loadCurrent(this.id, this.version);
+        await this._loadCurrent(this.id, this.version);
         hide_modal();
     },
     methods: {
@@ -730,19 +730,18 @@ export default {
             await Vue.nextTick();
             this.hasChanges = has_changes;
         },
-        _loadCurrent(id, version) {
+        async _loadCurrent(id, version) {
             if (!this.isNewTempWorkflow) {
                 this.resetStores();
                 this.onWorkflowMessage("Loading workflow...", "progress");
-                this.lastQueue
-                    .enqueue(loadWorkflow, { id, version })
-                    .then((data) => {
-                        fromSimple(id, data);
-                        this._loadEditorData(data);
-                    })
-                    .catch((response) => {
-                        this.onWorkflowError("Loading workflow failed...", response);
-                    });
+
+                try {
+                    const data = await this.lastQueue.enqueue(loadWorkflow, { id, version });
+                    await fromSimple(id, data);
+                    await this._loadEditorData(data);
+                } catch (e) {
+                    this.onWorkflowError("Loading workflow failed...", e);
+                }
             }
         },
         onTags(tags) {
