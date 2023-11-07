@@ -3928,8 +3928,8 @@ mapping:
         per_host: true
         desc: |
           The URL pointing to the Galaxy Help Forum API base URL. The API must be compatible with Discourse API (https://docs.discourse.org/).
-      
-      help_forum_tool_panel_integration_enabled:
+
+      enable_help_forum_tool_panel_integration:
         type: bool
         required: false
         default: false

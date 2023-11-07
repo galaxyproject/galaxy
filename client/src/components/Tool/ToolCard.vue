@@ -103,7 +103,7 @@ function onUpdatePreferredObjectStoreId(selectedToolPreferredObjectStoreId) {
     emit("updatePreferredObjectStoreId", selectedToolPreferredObjectStoreId);
 }
 
-const showHelpForum = computed(() => isConfigLoaded.value && config.value.help_forum_tool_panel_integration_enabled);
+const showHelpForum = computed(() => isConfigLoaded.value && config.value.enable_help_forum_tool_panel_integration);
 </script>
 
 <template>
