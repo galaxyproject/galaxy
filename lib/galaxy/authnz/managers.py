@@ -430,17 +430,23 @@ class AuthnzManager:
                 msg = f"An error occurred when obtaining user by token with provider `{provider}`: {message}"
                 log.error(msg)
                 return None
-            user, jwt = backend.decode_user_access_token(sa_session, access_token)
-            if user:
-                log.debug(f"Found user: {user} via `{provider}` identity provider")
+            user, jwt = None, None
+            try:
+                user, jwt = backend.decode_user_access_token(sa_session, access_token)
+            except Exception:
+                log.exception("Could not decode access token")
+                raise exceptions.AuthenticationFailed(err_msg="Invalid access token or an unexpected error occurred.")
+            if user and jwt:
                 self._validate_permissions(user, jwt)
                 return user
+            elif not user and jwt:
+                # jwt was decoded, but no user could be matched
+                raise exceptions.AuthenticationFailed(
+                    err_msg="Cannot locate user by access token. The user should log into Galaxy at least once with this OIDC provider."
+                )
+            # Both jwt and user are empty, which means that this provider can't process this access token
             return None
         except NotImplementedError:
-            return None
-        except Exception as e:
-            msg = f"An error occurred with provider: {provider} when finding user by token: {e}"
-            log.error(msg)
             return None
 
     def match_access_token_to_user(self, sa_session, access_token):

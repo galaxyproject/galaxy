@@ -512,27 +512,36 @@ class OIDCAuthnzBase(IdentityProvider):
         :type  access_token: string
         :param access_token: An OIDC access token
 
-        :return: A tuple containing the user and decoded jwt data
+        :return: A tuple containing the user and decoded jwt data or [None, None]
+                 if the access token does not belong to this provider.
         :rtype: Tuple[User, dict]
         """
         if not self.jwks_client:
             return None
-        signing_key = self.jwks_client.get_signing_key_from_jwt(access_token)
-        decoded_jwt = jwt.decode(
-            access_token,
-            signing_key.key,
-            algorithms=["RS256"],
-            issuer=self.config.issuer,
-            audience=self.config.accepted_audiences,
-            options={
-                "verify_signature": True,
-                "verify_exp": True,
-                "verify_nbf": True,
-                "verify_iat": True,
-                "verify_aud": bool(self.config.accepted_audiences),
-                "verify_iss": True,
-            },
-        )
+        try:
+            signing_key = self.jwks_client.get_signing_key_from_jwt(access_token)
+            decoded_jwt = jwt.decode(
+                access_token,
+                signing_key.key,
+                algorithms=["RS256"],
+                issuer=self.config.issuer,
+                audience=self.config.accepted_audiences,
+                options={
+                    "verify_signature": True,
+                    "verify_exp": True,
+                    "verify_nbf": True,
+                    "verify_iat": True,
+                    "verify_aud": bool(self.config.accepted_audiences),
+                    "verify_iss": True,
+                },
+            )
+        except jwt.exceptions.PyJWKClientError:
+            log.debug(f"Could not get signing keys for access token with provider: {self.config.provider}. Ignoring...")
+            return None, None
+        except jwt.exceptions.InvalidIssuerError:
+            # An Invalid issuer means that the access token is not relevant to this provider.
+            # All other exceptions are bubbled up
+            return None, None
         # jwt verified, we can now fetch the user
         user_id = decoded_jwt["sub"]
         custos_authnz_token = self._get_custos_authnz_token(sa_session, user_id, self.config.provider)
