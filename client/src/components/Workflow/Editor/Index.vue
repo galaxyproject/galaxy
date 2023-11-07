@@ -18,7 +18,7 @@
             title="Save As a New Workflow"
             ok-title="Save"
             cancel-title="Cancel"
-            @ok="doSaveAs">
+            @ok="doSaveAs(false)">
             <b-form-group label="Name">
                 <b-form-input v-model="saveAsName" />
             </b-form-group>
@@ -257,14 +257,19 @@ export default {
         });
 
         const hasChanges = ref(false);
+        const initialLoading = ref(true);
         const hasInvalidConnections = computed(() => Object.keys(connectionStore.invalidConnections).length > 0);
 
         stepStore.$subscribe((_mutation, _state) => {
-            hasChanges.value = true;
+            if (!initialLoading.value) {
+                hasChanges.value = true;
+            }
         });
 
         commentStore.$subscribe((_mutation, _state) => {
-            hasChanges.value = true;
+            if (!initialLoading.value) {
+                hasChanges.value = true;
+            }
         });
 
         function resetStores() {
@@ -278,8 +283,6 @@ export default {
             resetStores();
             emit("update:confirmation", false);
         });
-
-        const initialLoading = ref(true);
 
         return {
             id,
@@ -358,17 +361,22 @@ export default {
             }
         },
         annotation(newAnnotation, oldAnnotation) {
-            if (newAnnotation != oldAnnotation) {
+            if (newAnnotation != oldAnnotation && !this.isNewTempWorkflow) {
                 this.hasChanges = true;
             }
         },
         name(newName, oldName) {
-            if (newName != oldName) {
+            if (newName != oldName && !this.isNewTempWorkflow) {
                 this.hasChanges = true;
             }
         },
         hasChanges() {
             this.$emit("update:confirmation", this.hasChanges);
+        },
+        initialVersion(newVal, oldVal) {
+            if (newVal != oldVal && oldVal === undefined) {
+                this.version = this.initialVersion;
+            }
         },
     },
     async created() {
@@ -524,8 +532,8 @@ export default {
             window.location = `${getAppRoot()}api/workflows/${this.id}/download?format=json-download`;
         },
         async doSaveAs(create = false) {
-            const rename_name = this.saveAsName ?? create ? this.name : `SavedAs_${this.name}`;
-            const rename_annotation = this.saveAsAnnotation ?? create ? this.annotation : "";
+            const rename_name = create ? this.name : this.saveAsName ?? `SavedAs_${this.name}`;
+            const rename_annotation = create ? this.annotation || "" : this.saveAsAnnotation ?? "";
 
             // This is an old web controller endpoint that wants form data posted...
             const formData = new FormData();
@@ -538,16 +546,7 @@ export default {
                 const response = await axios.post(`${getAppRoot()}workflow/save_workflow_as`, formData);
                 const newId = response.data;
 
-                if (create) {
-                    const { addScopePointer } = useScopePointerStore();
-                    // map scoped stores to existing stores, before updating the id
-                    addScopePointer(newId, this.id);
-                    this.id = newId;
-                }
-
-                await this.onSave();
-                this.hasChanges = false;
-                this.$router.replace({ query: { id: newId } });
+                await this.routeToWorkflow(newId);
             } catch (e) {
                 this.onWorkflowError("Saving workflow failed, please contact an administrator.");
             }
@@ -575,7 +574,26 @@ export default {
             const step = { ...this.steps[nodeId], annotation: newAnnotation };
             this.onUpdateStep(step);
         },
-        onCreate() {
+        async routeToWorkflow(id) {
+            const { addScopePointer, scope } = useScopePointerStore();
+
+            let pointedTo;
+            // the current workflow id might be pointing to existing stores
+            const originalPointed = scope(this.id);
+            if (originalPointed !== this.id) {
+                pointedTo = originalPointed;
+            } else {
+                pointedTo = this.id;
+            }
+            // map scoped stores to existing stores, before updating the id
+            addScopePointer(id, pointedTo);
+
+            this.id = id;
+            await this.onSave();
+            this.hasChanges = false;
+            this.$router.replace({ query: { id } });
+        },
+        async onCreate() {
             if (!this.name) {
                 const response = "Please provide a name for your workflow.";
                 this.onWorkflowError("Creating workflow failed", response, {
@@ -586,8 +604,32 @@ export default {
                 this.onAttributes();
                 return;
             }
-            this.hasChanges = false;
-            this.doSaveAs(true);
+            try {
+                // if nothing other than payload vars changed, just use `create` endpoint
+                if (!this.hasChanges) {
+                    const payload = {
+                        workflow_name: this.name,
+                        workflow_annotation: this.annotation || "",
+                        workflow_tags: this.tags,
+                    };
+                    const { data } = await axios.put(`${getAppRoot()}workflow/create`, payload);
+                    const { id } = data;
+
+                    await this.routeToWorkflow(id);
+                } else {
+                    // otherwise, use `save_as` endpoint to include steps, etc.
+                    this.hasChanges = false;
+                    await this.doSaveAs(true);
+                }
+            } catch (e) {
+                this.onWorkflowError("Creating workflow failed"),
+                    e || "Please contact an administrator.",
+                    {
+                        Ok: () => {
+                            this.hideModal();
+                        },
+                    };
+            }
         },
         onSetData(stepId, newData) {
             this.lastQueue

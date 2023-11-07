@@ -364,6 +364,7 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             user = trans.get_user()
             workflow_name = payload.get("workflow_name")
             workflow_annotation = payload.get("workflow_annotation")
+            workflow_tags = payload.get("workflow_tags", [])
             if not workflow_name:
                 return self.message_exception(trans, "Please provide a workflow name.")
             # Create the new stored workflow
@@ -379,6 +380,12 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
             # Add annotation.
             workflow_annotation = sanitize_html(workflow_annotation)
             self.add_item_annotation(trans.sa_session, trans.get_user(), stored_workflow, workflow_annotation)
+            # Add tags
+            trans.tag_handler.set_tags_from_list(
+                trans.user,
+                stored_workflow,
+                workflow_tags,
+            )
             # Persist
             session = trans.sa_session
             session.add(stored_workflow)

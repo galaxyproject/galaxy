@@ -84,7 +84,7 @@ async function onSave() {
                 variant="link"
                 aria-label="Save Workflow"
                 class="editor-button-save"
-                :disabled="!hasChanges"
+                :disabled="!isNewTempWorkflow && !hasChanges"
                 @click="onSave">
                 <span class="fa fa-floppy-o" />
             </BButton>

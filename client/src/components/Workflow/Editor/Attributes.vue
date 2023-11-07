@@ -12,7 +12,7 @@
                 :state="!nameCurrent ? false : null"
                 @keyup="$emit('update:nameCurrent', nameCurrent)" />
         </div>
-        <div v-if="versionCurrent !== null" id="workflow-version-area" class="mt-2">
+        <div v-if="versionOptions.length > 0" id="workflow-version-area" class="mt-2">
             <b>Version</b>
             <b-form-select v-model="versionCurrent" @change="onVersion">
                 <b-form-select-option v-for="v in versionOptions" :key="v.version" :value="v.version">
