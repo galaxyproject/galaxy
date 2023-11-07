@@ -519,7 +519,7 @@ export default {
         onDownload() {
             window.location = `${getAppRoot()}api/workflows/${this.id}/download?format=json-download`;
         },
-        doSaveAs(create = false) {
+        async doSaveAs(create = false) {
             const rename_name = this.saveAsName ?? create ? this.name : `SavedAs_${this.name}`;
             const rename_annotation = this.saveAsAnnotation ?? create ? this.annotation : "";
 
@@ -530,23 +530,23 @@ export default {
             formData.append("from_tool_form", true);
             formData.append("workflow_data", JSON.stringify(toSimple(this.id, this)));
 
-            axios
-                .post(`${getAppRoot()}workflow/save_workflow_as`, formData)
-                .then((response) => {
-                    this.onWorkflowMessage("Workflow saved as", "success");
-                    this.hideModal();
-                    this.onNavigate(`${getAppRoot()}workflows/edit?id=${response.data}`);
+            try {
+                const response = await axios.post(`${getAppRoot()}workflow/save_workflow_as`, formData);
+                const newId = response.data;
 
-                    if (create) {
-                        const { addScopePointer } = useScopePointerStore();
-                        // map scoped stores to existing stores, before updating the id
-                        addScopePointer(response.data, this.id);
-                        this.id = response.data;
-                    }
-                })
-                .catch((response) => {
-                    this.onWorkflowError("Saving workflow failed, please contact an administrator.");
-                });
+                if (create) {
+                    const { addScopePointer } = useScopePointerStore();
+                    // map scoped stores to existing stores, before updating the id
+                    addScopePointer(newId, this.id);
+                    this.id = newId;
+                }
+
+                await this.onSave();
+                this.hasChanges = false;
+                this.$router.replace({ query: { id: newId } });
+            } catch (e) {
+                this.onWorkflowError("Saving workflow failed, please contact an administrator.");
+            }
         },
         onSaveAs() {
             this.showSaveAsModal = true;
