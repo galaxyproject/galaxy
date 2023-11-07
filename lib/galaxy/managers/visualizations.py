@@ -97,12 +97,6 @@ class VisualizationManager(sharable.SharableModelManager):
                 query = query.outerjoin(self.model_class.users_shared_with)
             query = query.filter(or_(*filters))
 
-        if not show_deleted:
-            query = query.filter(self.model_class.deleted == false())
-        elif not is_admin:
-            # don't let non-admins see other user's deleted entries
-            query = query.filter(or_(self.model_class.deleted == false(), self.model_class.user == user))
-
         if payload.user_id:
             query = query.filter(self.model_class.user_id == payload.user_id)
 
@@ -130,6 +124,9 @@ class VisualizationManager(sharable.SharableModelManager):
                     elif key == "user":
                         query = append_user_filter(query, self.model_class, term)
                     elif key == "is":
+                        if q == "deleted":
+                            query = query.filter(self.model_class.deleted == true())
+                            show_deleted = True
                         if q == "published":
                             query = query.filter(self.model_class.published == true())
                         if q == "importable":
@@ -154,6 +151,9 @@ class VisualizationManager(sharable.SharableModelManager):
                             term,
                         )
                     )
+
+        query = query.filter(self.model_class.deleted == (true() if show_deleted else false()))
+
         if include_total_count:
             total_matches = query.count()
         else:

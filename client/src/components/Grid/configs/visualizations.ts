@@ -186,6 +186,13 @@ const validFilters: Record<string, ValidFilter<string | boolean | undefined>> = 
         handler: equals("importable", "importable", toBool),
         menuItem: true,
     },
+    deleted: {
+        placeholder: "Filter on deleted visualizations",
+        type: Boolean,
+        boolType: "is",
+        handler: equals("deleted", "deleted", toBool),
+        menuItem: true,
+    },
 };
 
 /**
