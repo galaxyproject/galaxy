@@ -167,7 +167,7 @@ export default {
         initConfig() {
             if (Object.keys(this.markdownConfig).length) {
                 const config = this.markdownConfig;
-                const markdown = config.content || config.markdown;
+                const markdown = config.content || config.markdown || "";
                 this.markdownErrors = config.errors || [];
                 this.markdownObjects = this.splitMarkdown(markdown);
                 this.datasets = config.history_datasets || {};
