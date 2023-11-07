@@ -1,7 +1,5 @@
 import logging
 from typing import (
-    Any,
-    List,
     Tuple,
 )
 
@@ -15,7 +13,7 @@ from galaxy.schema.visualization import VisualizationIndexQueryPayload
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.webapps.galaxy.services.base import ServiceBase
 from galaxy.webapps.galaxy.services.sharable import ShareableService
-
+from galaxy.schema.visualization import VisualizationSummaryList
 log = logging.getLogger(__name__)
 
 
@@ -44,9 +42,8 @@ class VisualizationsService(ServiceBase):
         self,
         trans,
         payload: VisualizationIndexQueryPayload,
-        detailed: bool = False,
         include_total_count: bool = False,
-    ) -> Tuple[List[Any], int]:
+    ) -> Tuple[VisualizationSummaryList, int]:
         """Return a list of Visualizations viewable by the user
 
         :rtype:     list
@@ -58,17 +55,9 @@ class VisualizationsService(ServiceBase):
                 raise exceptions.AdminRequiredException("Only admins can index the visualizations of others")
 
         entries, total_matches = self.manager.index_query(trans, payload, include_total_count)
-
-        results = []
-        for content in entries:
-            view = "detailed" if detailed else "summary"
-            serialized_content = self.serializer.serialize_to_view(content, user=trans.user, trans=trans, view=view)
-            if detailed and content.deleted is False:
-                sharing_dict = self.shareable_service.sharing(trans, content.id)
-                serialized_content["sharing_status"] = sharing_dict
-            results.append(serialized_content)
-
         return (
-            results,
+            VisualizationSummaryList.construct(
+                __root__=[trans.security.encode_all_ids(entry.to_dict(), recursive=True) for entry in entries]
+            ),
             total_matches,
         )

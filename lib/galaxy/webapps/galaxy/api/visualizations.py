@@ -32,7 +32,6 @@ from galaxy.schema.schema import (
     SharingStatus,
 )
 from galaxy.schema.visualization import (
-    VisualizationDetailsList,
     VisualizationIndexQueryPayload,
     VisualizationSortByEnum,
     VisualizationSummaryList,
@@ -116,7 +115,7 @@ class FastAPIVisualizations:
         "/api/visualizations",
         summary="Returns visualizations for the current user.",
     )
-    def index(
+    async def index(
         self,
         response: Response,
         trans: ProvidesUserContext = DependsOnTrans,
@@ -143,40 +142,7 @@ class FastAPIVisualizations:
         )
         entries, total_matches = self.service.index(trans, payload, include_total_count=True)
         response.headers["total_matches"] = str(total_matches)
-        return VisualizationSummaryList.construct(__root__=entries)
-
-    @router.get(
-        "/api/visualizations/detailed",
-        summary="Returns visualizations for the current user with detailed resolution.",
-    )
-    def index_detailed(
-        self,
-        response: Response,
-        trans: ProvidesUserContext = DependsOnTrans,
-        deleted: bool = DeletedQueryParam,
-        limit: Optional[int] = LimitQueryParam,
-        offset: Optional[int] = OffsetQueryParam,
-        user_id: Optional[DecodedDatabaseIdField] = UserIdQueryParam,
-        show_published: bool = ShowPublishedQueryParam,
-        show_shared: bool = ShowSharedQueryParam,
-        sort_by: VisualizationSortByEnum = SortByQueryParam,
-        sort_desc: bool = SortDescQueryParam,
-        search: Optional[str] = SearchQueryParam,
-    ) -> VisualizationDetailsList:
-        payload = VisualizationIndexQueryPayload.construct(
-            deleted=deleted,
-            user_id=user_id,
-            show_published=show_published,
-            show_shared=show_shared,
-            sort_by=sort_by,
-            sort_desc=sort_desc,
-            limit=limit,
-            offset=offset,
-            search=search,
-        )
-        entries, total_matches = self.service.index(trans, payload, detailed=True, include_total_count=True)
-        response.headers["total_matches"] = str(total_matches)
-        return VisualizationDetailsList.construct(__root__=entries)
+        return entries
 
     @router.get(
         "/api/visualizations/{id}/sharing",

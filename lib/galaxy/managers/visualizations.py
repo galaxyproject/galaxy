@@ -182,25 +182,8 @@ class VisualizationSerializer(sharable.SharableModelSerializer):
         self.visualization_manager = self.manager
 
         self.default_view = "summary"
-        self.add_view(
-            "summary",
-            [
-                "id",
-                "title",
-                "type",
-                "dbkey",
-            ],
-        )
-        self.add_view(
-            "detailed",
-            [
-                "create_time",
-                "deleted",
-                "tags",
-                "update_time",
-            ],
-            include_keys_from="summary",
-        )
+        self.add_view("summary", [])
+        self.add_view("detailed", [])
 
     def add_serializers(self):
         super().add_serializers()

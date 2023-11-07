@@ -228,8 +228,8 @@ watch(operationMessage, () => {
                         @execute="onOperation($event, rowData)" />
                     <GridText v-else-if="fieldEntry.type == 'text'" :text="rowData[fieldEntry.key]" />
                     <SharingIndicators
-                        v-else-if="fieldEntry.type == 'sharing' && rowData.sharing_status"
-                        :object="rowData.sharing_status"
+                        v-else-if="fieldEntry.type == 'sharing'"
+                        :object="rowData"
                         @filter="(filter) => applyFilter(filter, true)" />
                     <UtcDate v-else-if="fieldEntry.type == 'date'" :date="rowData[fieldEntry.key]" mode="elapsed" />
                     <StatelessTags

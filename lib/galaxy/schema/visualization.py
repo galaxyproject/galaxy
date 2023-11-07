@@ -42,6 +42,31 @@ class VisualizationSummary(Model):
         title="ID",
         description="Encoded ID of the Visualization.",
     )
+    dbkey: Optional[str] = Field(
+        default=None,
+        title="DbKey",
+        description="The database key of the visualization.",
+    )
+    deleted: bool = Field(
+        ...,  # Required
+        title="Deleted",
+        description="Whether this Visualization has been deleted.",
+    )
+    importable: bool = Field(
+        ...,  # Required
+        title="Importable",
+        description="Whether this Visualization can be imported.",
+    )
+    published: bool = Field(
+        ...,  # Required
+        title="Published",
+        description="Whether this Visualization has been published.",
+    )
+    tags: Optional[TagCollection] = Field(
+        ...,
+        title="Tags",
+        description="A list of tags to add to this item.",
+    )
     title: str = Field(
         title="Title",
         description="The name of the visualization.",
@@ -51,36 +76,15 @@ class VisualizationSummary(Model):
         title="Type",
         description="The type of the visualization.",
     )
-    dbkey: Optional[str] = Field(
-        default=None,
-        title="DbKey",
-        description="The database key of the visualization.",
-    )
-
-
-class VisualizationSummaryList(Model):
-    __root__: List[VisualizationSummary] = Field(
-        default=[],
-        title="List with detailed information of Visualizations.",
-    )
-
-
-class VisualizationDetails(VisualizationSummary):
     create_time: Optional[datetime] = CreateTimeField
     update_time: Optional[datetime] = UpdateTimeField
-    sharing_status: Optional[SharingStatus]
-    tags: Optional[TagCollection] = Field(
-        ...,
-        title="Tags",
-        description="A list of tags to add to this item.",
-    )
 
     class Config:
         extra = Extra.allow  # Allow any other extra fields
 
 
-class VisualizationDetailsList(Model):
-    __root__: List[VisualizationDetails] = Field(
+class VisualizationSummaryList(Model):
+    __root__: List[VisualizationSummary] = Field(
         default=[],
         title="List with detailed information of Visualizations.",
     )

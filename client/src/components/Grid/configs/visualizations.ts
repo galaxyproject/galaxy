@@ -9,7 +9,7 @@ import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
 /**
  * Api endpoint handlers
  */
-const getDetailedVisualizations = fetcher.path("/api/visualizations/detailed").method("get").create();
+const getDetailedVisualizations = fetcher.path("/api/visualizations").method("get").create();
 const updateTags = fetcher.path("/api/tags").method("put").create();
 
 /**
