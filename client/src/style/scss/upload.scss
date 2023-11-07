@@ -32,7 +32,8 @@
 
 .upload-wrapper {
     .upload-box.highlight {
-        border-color: $border-color;
+        border-color: $brand-primary;
+        background-color: $workflow-editor-grid-color;
         border-width: 2px;
         padding: 7px !important;
         .upload-helper {
