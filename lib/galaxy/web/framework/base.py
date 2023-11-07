@@ -222,6 +222,12 @@ class WebApplication:
         rc = routes.request_config()
         rc.mapper = self.mapper
         rc.mapper_dict = map_match
+        server_port = environ["SERVER_PORT"]
+        if isinstance(server_port, int):
+            # Workaround bug in the routes package, which would concatenate this
+            # without casting to str in
+            # https://github.com/bbangert/routes/blob/c4d5a5fb693ce8dc7cf5dbc591861acfc49d5c23/routes/__init__.py#L73
+            environ["SERVER_PORT"] = str(server_port)
         rc.environ = environ
         # Setup the transaction
         trans = self.transaction_factory(environ)
