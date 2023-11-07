@@ -193,7 +193,13 @@ watch(operationMessage, () => {
             </div>
         </div>
         <LoadingSpan v-if="loading" />
-        <BAlert v-else-if="!isAvailable" v-localize variant="info" show>No entries found.</BAlert>
+        <BAlert v-else-if="!isAvailable" variant="info" show>
+            <span v-if="searchTerm" v-localize>
+                No entries found for: <b>{{ searchTerm }}</b
+                >.
+            </span>
+            <span v-else v-localize> No entries found. </span>
+        </BAlert>
         <table v-else class="grid-table">
             <thead>
                 <th v-for="(fieldEntry, fieldIndex) in gridConfig.fields" :key="fieldIndex" class="text-nowrap px-2">
@@ -222,7 +228,7 @@ watch(operationMessage, () => {
                         @execute="onOperation($event, rowData)" />
                     <GridText v-else-if="fieldEntry.type == 'text'" :text="rowData[fieldEntry.key]" />
                     <SharingIndicators
-                        v-else-if="fieldEntry.type == 'sharing'"
+                        v-else-if="fieldEntry.type == 'sharing' && rowData.sharing_status"
                         :object="rowData.sharing_status"
                         @filter="(filter) => applyFilter(filter, true)" />
                     <UtcDate v-else-if="fieldEntry.type == 'date'" :date="rowData[fieldEntry.key]" mode="elapsed" />
