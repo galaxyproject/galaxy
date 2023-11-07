@@ -27,6 +27,9 @@
                     <h1 class="text-break align-middle">
                         Title: {{ markdownConfig.title || markdownConfig.model_class }}
                     </h1>
+                    <h2 v-if="workflowVersions" class="text-break align-middle">
+                        Workflow Checkpoint: {{ workflowVersions.version }}
+                    </h2>
                 </span>
             </div>
             <b-badge variant="info" class="w-100 rounded mb-3 white-space-normal">
@@ -67,8 +70,11 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import BootstrapVue from "bootstrap-vue";
 import MarkdownIt from "markdown-it";
 import markdownItRegexp from "markdown-it-regexp";
+import { mapActions } from "pinia";
 import store from "store";
 import Vue from "vue";
+
+import { useWorkflowStore } from "@/stores/workflowStore";
 
 import MarkdownContainer from "./MarkdownContainer.vue";
 import LoadingSpan from "components/LoadingSpan.vue";
@@ -131,6 +137,7 @@ export default {
             jobs: {},
             invocations: {},
             loading: true,
+            workflowID: "",
         };
     },
     computed: {
@@ -158,6 +165,9 @@ export default {
             }
             return "unavailable";
         },
+        workflowVersions() {
+            return this.getStoredWorkflowByInstanceId(this.workflowID);
+        },
         version() {
             return this.markdownConfig.generate_version || "Unknown Galaxy Version";
         },
@@ -169,8 +179,10 @@ export default {
     },
     created() {
         this.initConfig();
+        this.fetchWorkflowForInstanceId(this.workflowID);
     },
     methods: {
+        ...mapActions(useWorkflowStore, ["getStoredWorkflowByInstanceId", "fetchWorkflowForInstanceId"]),
         initConfig() {
             if (Object.keys(this.markdownConfig).length) {
                 const config = this.markdownConfig;
@@ -184,6 +196,7 @@ export default {
                 this.jobs = config.jobs || {};
                 this.invocations = config.invocations || {};
                 this.loading = false;
+                this.workflowID = Object.keys(this.markdownConfig.workflows)[0];
             }
         },
         splitMarkdown(markdown) {
