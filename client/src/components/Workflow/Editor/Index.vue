@@ -86,7 +86,7 @@
                     </div>
                 </div>
                 <div ref="right-panel" class="unified-panel-body workflow-right p-2">
-                    <div>
+                    <div v-if="!initialLoading">
                         <FormTool
                             v-if="hasActiveNodeTool"
                             :key="activeStep.id"
@@ -279,6 +279,8 @@ export default {
             emit("update:confirmation", false);
         });
 
+        const initialLoading = ref(true);
+
         return {
             id,
             connectionStore,
@@ -295,6 +297,7 @@ export default {
             datatypesMapperLoading,
             stateStore,
             resetStores,
+            initialLoading,
         };
     },
     data() {
@@ -372,6 +375,7 @@ export default {
         this.lastQueue = new LastQueue();
         await this._loadCurrent(this.id, this.version);
         hide_modal();
+        this.initialLoading = false;
     },
     methods: {
         onUpdateStep(step) {
