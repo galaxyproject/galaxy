@@ -84,6 +84,8 @@ SharingQueryParam: bool = Query(
     default=False, title="Provide sharing status", description="Whether to provide sharing details in the result."
 )
 
+ShowOwnQueryParam: bool = Query(default=True, title="Show visualizations owned by user.", description="")
+
 ShowPublishedQueryParam: bool = Query(default=True, title="Include published visualizations.", description="")
 
 ShowSharedQueryParam: bool = Query(
@@ -123,6 +125,7 @@ class FastAPIVisualizations:
         limit: Optional[int] = LimitQueryParam,
         offset: Optional[int] = OffsetQueryParam,
         user_id: Optional[DecodedDatabaseIdField] = UserIdQueryParam,
+        show_own: bool = ShowOwnQueryParam,
         show_published: bool = ShowPublishedQueryParam,
         show_shared: bool = ShowSharedQueryParam,
         sort_by: VisualizationSortByEnum = SortByQueryParam,
@@ -133,6 +136,7 @@ class FastAPIVisualizations:
             deleted=deleted,
             user_id=user_id,
             show_published=show_published,
+            show_own=show_own,
             show_shared=show_shared,
             sort_by=sort_by,
             sort_desc=sort_desc,

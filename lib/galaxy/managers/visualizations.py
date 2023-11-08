@@ -77,6 +77,7 @@ class VisualizationManager(sharable.SharableModelManager):
         show_deleted = payload.deleted
         show_shared = payload.show_shared
         show_published = payload.show_published
+        show_own = payload.show_own
         is_admin = trans.user_is_admin
         user = trans.user
 
@@ -89,20 +90,15 @@ class VisualizationManager(sharable.SharableModelManager):
 
         query = trans.sa_session.query(self.model_class)
 
-        if not is_admin:
-            filters = [self.model_class.user == trans.user]
-            if show_published:
-                filters.append(self.model_class.published == true())
-            if user and show_shared:
-                filters.append(self.user_share_model.user == user)
-                query = query.outerjoin(self.model_class.users_shared_with)
-            query = query.filter(or_(*filters))
-
-        if not show_deleted:
-            query = query.filter(self.model_class.deleted == false())
-        elif not is_admin:
-            # don't let non-admins see other user's deleted visualizations
-            query = query.filter(or_(self.model_class.deleted == false(), self.model_class.user == user))
+        filters = []
+        if show_own or (not show_published and not is_admin):
+            filters = [self.model_class.user == user]
+        if show_published:
+            filters.append(self.model_class.published == true())
+        if user and show_shared:
+            filters.append(self.user_share_model.user == user)
+            query = query.outerjoin(self.model_class.users_shared_with)
+        query = query.filter(or_(*filters))
 
         if payload.user_id:
             query = query.filter(self.model_class.user_id == payload.user_id)
@@ -132,7 +128,7 @@ class VisualizationManager(sharable.SharableModelManager):
                         query = append_user_filter(query, self.model_class, term)
                     elif key == "is":
                         if q == "deleted":
-                            query = query.filter(self.model_class.deleted == true())
+                            show_deleted = True
                         if q == "published":
                             query = query.filter(self.model_class.published == true())
                         if q == "importable":
@@ -157,6 +153,8 @@ class VisualizationManager(sharable.SharableModelManager):
                             term,
                         )
                     )
+
+        query = query.filter(self.model_class.deleted == (true() if show_deleted else false()))
 
         if include_total_count:
             total_matches = query.count()

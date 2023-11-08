@@ -23,6 +23,7 @@ VisualizationSortByEnum = Literal["create_time", "title", "update_time", "userna
 
 class VisualizationIndexQueryPayload(Model):
     deleted: bool = False
+    show_own: Optional[bool] = None
     show_published: Optional[bool] = None
     show_shared: Optional[bool] = None
     user_id: Optional[DecodedDatabaseIdField] = None
@@ -40,6 +41,11 @@ class VisualizationSummary(Model):
         ...,
         title="ID",
         description="Encoded ID of the Visualization.",
+    )
+    annotation: Optional[str] = Field(
+        default=None,
+        title="Annotation",
+        description="The annotation of this Visualization.",
     )
     dbkey: Optional[str] = Field(
         default=None,
@@ -74,6 +80,11 @@ class VisualizationSummary(Model):
         ...,
         title="Type",
         description="The type of the visualization.",
+    )
+    username: str = Field(
+        ...,  # Required
+        title="Username",
+        description="The name of the user owning this Visualization.",
     )
     create_time: Optional[datetime] = CreateTimeField
     update_time: Optional[datetime] = UpdateTimeField

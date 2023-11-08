@@ -9456,6 +9456,11 @@ export interface components {
          */
         VisualizationSummary: {
             /**
+             * Annotation
+             * @description The annotation of this Visualization.
+             */
+            annotation?: string;
+            /**
              * Create Time
              * Format: date-time
              * @description The time and date this item was created.
@@ -9508,6 +9513,11 @@ export interface components {
              * @description The last time and date this item was updated.
              */
             update_time?: string;
+            /**
+             * Username
+             * @description The name of the user owning this Visualization.
+             */
+            username: string;
         };
         /**
          * VisualizationSummaryList
@@ -17976,6 +17986,7 @@ export interface operations {
                 limit?: number;
                 offset?: number;
                 user_id?: string;
+                show_own?: boolean;
                 show_published?: boolean;
                 show_shared?: boolean;
                 sort_by?: "create_time" | "title" | "update_time" | "username";

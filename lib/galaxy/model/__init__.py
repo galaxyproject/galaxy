@@ -9926,6 +9926,7 @@ class Visualization(Base, HasTags, Dictifiable, RepresentById):
 
     dict_element_visible_keys = [
         "id",
+        "annotation",
         "create_time",
         "db_key",
         "deleted",
@@ -9935,12 +9936,19 @@ class Visualization(Base, HasTags, Dictifiable, RepresentById):
         "title",
         "type",
         "update_time",
+        "username",
     ]
 
     def __init__(self, **kwd):
         super().__init__(**kwd)
         if self.latest_revision:
             self.revisions.append(self.latest_revision)
+
+    @property
+    def annotation(self):
+        if (len(self.annotations) == 1):
+            return self.annotations[0].annotation
+        return None
 
     def copy(self, user=None, title=None):
         """
@@ -9966,6 +9974,11 @@ class Visualization(Base, HasTags, Dictifiable, RepresentById):
     def to_dict(self, view="element"):
         rval = super().to_dict(view=view)
         return rval
+
+    # username needed for slug generation
+    @property
+    def username(self):
+        return self.user.username
 
 
 class VisualizationRevision(Base, RepresentById):

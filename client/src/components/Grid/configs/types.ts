@@ -28,7 +28,7 @@ type OperationHandlerReturn = OperationHandlerMessage | void;
  * Exported Type declarations
  */
 export interface Config {
-    actions: Array<Action>;
+    actions?: Array<Action>;
     fields: Array<Field>;
     filtering: Filtering<any>;
     getData: (offset: number, limit: number, search: string, sort_by: string, sort_desc: boolean) => Promise<any>;

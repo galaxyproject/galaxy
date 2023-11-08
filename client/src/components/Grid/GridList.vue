@@ -8,6 +8,7 @@ import { timeout } from "@/utils/timeout";
 import { registry } from "./configs/registry";
 import { FieldKeyHandler, Operation, RowData } from "./configs/types";
 
+import GridLink from "./GridElements/GridLink.vue";
 import GridOperations from "./GridElements/GridOperations.vue";
 import GridText from "./GridElements/GridText.vue";
 import FilterMenu from "@/components/Common/FilterMenu.vue";
@@ -227,6 +228,10 @@ watch(operationMessage, () => {
                         :row-data="rowData"
                         @execute="onOperation($event, rowData)" />
                     <GridText v-else-if="fieldEntry.type == 'text'" :text="rowData[fieldEntry.key]" />
+                    <GridLink
+                        v-else-if="fieldEntry.type == 'link'"
+                        :text="rowData[fieldEntry.key]"
+                        @click="fieldEntry.handler(rowData, router)" />
                     <SharingIndicators
                         v-else-if="fieldEntry.type == 'sharing'"
                         :object="rowData"
@@ -236,6 +241,7 @@ watch(operationMessage, () => {
                         v-else-if="fieldEntry.type == 'tags'"
                         clickable
                         :value="rowData[fieldEntry.key]"
+                        :disabled="fieldEntry.disabled"
                         @input="(tags) => onTagInput(rowData, tags, fieldEntry.handler)"
                         @tag-click="(t) => applyFilter('tag', t, true)" />
                 </td>

@@ -35,6 +35,7 @@ async function getData(offset: number, limit: number, search: string, sort_by: s
         search,
         sort_by: sort_by as SortKeyLiteral,
         sort_desc,
+        show_published: false,
         user_id: userId,
     });
     const totalMatches = parseInt(headers.get("total_matches") ?? "0");
@@ -241,5 +242,5 @@ export const VisualizationsGrid = {
     sortBy: "update_time",
     sortDesc: true,
     sortKeys: ["create_time", "title", "update_time"],
-    title: "My Visualizations",
+    title: "Saved Visualizations",
 };
