@@ -115,7 +115,11 @@ watch(
             </section>
             <section class="position-relative flex-grow-1 scroller">
                 <div>
+                    <b-alert v-if="collectionElements.length === 0" class="m-2" variant="info" show>
+                        This is an empty list/collection.
+                    </b-alert>
                     <ListingLayout
+                        v-else
                         data-key="element_index"
                         :items="collectionElements"
                         :loading="loading"

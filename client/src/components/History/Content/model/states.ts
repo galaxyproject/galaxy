@@ -2,13 +2,14 @@ import type { components } from "@/api/schema";
 
 type DatasetState = components["schemas"]["DatasetState"];
 // The 'failed' state is for the collection job state summary, not a dataset state.
-type State = DatasetState | "failed" | "placeholder";
+type State = DatasetState | "failed" | "placeholder" | "emptyCollection";
 
 interface StateRepresentation {
     status: "success" | "warning" | "info" | "danger" | "secondary";
     text?: string;
     icon?: string;
     spin?: boolean;
+    nonDb?: boolean;
 }
 
 type StateMap = {
@@ -103,6 +104,14 @@ export const STATES: StateMap = {
         text: "This dataset is being fetched.",
         icon: "spinner",
         spin: true,
+        nonDb: true,
+    },
+    /** the collection is empty. This state is only visual and transitional, it does not exist in the database. */
+    emptyCollection: {
+        status: "secondary",
+        text: "This is an empty list/collection.",
+        icon: "exclamation-triangle",
+        nonDb: true,
     },
 } as const satisfies StateMap;
 

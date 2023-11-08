@@ -43,7 +43,11 @@
                         <FontAwesomeIcon class="text-info" icon="arrow-circle-down" />
                     </b-button>
                     <span v-if="hasStateIcon" class="state-icon">
-                        <icon fixed-width :icon="contentState.icon" :spin="contentState.spin" />
+                        <icon
+                            fixed-width
+                            :icon="contentState.icon"
+                            :spin="contentState.spin"
+                            :title="contentState.text" />
                     </span>
                     <span class="id hid">{{ id }}:</span>
                     <span class="content-title name font-weight-bold">{{ name }}</span>
@@ -169,6 +173,8 @@ export default {
         state() {
             if (this.isPlaceholder) {
                 return "placeholder";
+            } else if (this.item.element_count !== undefined && this.item.element_count === 0) {
+                return "emptyCollection";
             }
             if (this.item.job_state_summary) {
                 for (const state of HIERARCHICAL_COLLECTION_JOB_STATES) {
