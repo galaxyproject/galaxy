@@ -2,7 +2,7 @@ import axios from "axios";
 import type Router from "vue-router";
 
 import { fetcher } from "@/api/schema";
-import { useCurrentUser } from "@/composables/user";
+import { getGalaxyInstance } from "@/app";
 import Filtering, { contains, equals, expandNameTag, toBool, type ValidFilter } from "@/utils/filtering";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
@@ -23,8 +23,9 @@ type VisualizationEntry = Record<string, unknown>;
  * Request and return data from server
  */
 async function getData(offset: number, limit: number, search: string, sort_by: string, sort_desc: boolean) {
-    const { currentUser } = useCurrentUser();
-    const userId = currentUser.value && !currentUser.value.isAnonymous ? currentUser.value.id : null;
+    // TODO: Avoid using Galaxy instance to identify current user
+    const Galaxy = getGalaxyInstance();
+    const userId = !Galaxy.isAnonymous && Galaxy.user.id;
     if (!userId) {
         rethrowSimple("Please login to access this page.");
     }
@@ -240,5 +241,5 @@ export const VisualizationsGrid = {
     sortBy: "update_time",
     sortDesc: true,
     sortKeys: ["create_time", "title", "update_time"],
-    title: "Saved Visualizations",
+    title: "My Visualizations",
 };
