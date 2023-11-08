@@ -9946,7 +9946,7 @@ class Visualization(Base, HasTags, Dictifiable, RepresentById):
 
     @property
     def annotation(self):
-        if (len(self.annotations) == 1):
+        if len(self.annotations) == 1:
             return self.annotations[0].annotation
         return None
 

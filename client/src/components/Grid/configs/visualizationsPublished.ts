@@ -1,5 +1,5 @@
 import { fetcher } from "@/api/schema";
-import Filtering, { contains, equals, expandNameTag, toBool, type ValidFilter } from "@/utils/filtering";
+import Filtering, { contains, expandNameTag, type ValidFilter } from "@/utils/filtering";
 import { withPrefix } from "@/utils/redirect";
 
 /**
