@@ -29,9 +29,9 @@ function onDrop(event) {
 </script>
 
 <template>
-    <b-modal v-model="isFileOverDocument" :modal-class="modalClass" hide-header hide-footer centered>
+    <BModal v-model="isFileOverDocument" :modal-class="modalClass"  size="md" hide-header hide-footer centered>
         <div ref="modalContentElement" class="inner-content h-xl">Drop Files here to Upload</div>
-    </b-modal>
+    </BModal>
 </template>
 
 <style lang="scss">
