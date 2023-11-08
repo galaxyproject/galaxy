@@ -462,6 +462,13 @@ export function getRouter(Galaxy) {
                         },
                     },
                     {
+                        path: "visualizations/list_published",
+                        component: GridList,
+                        props: {
+                            id: "visualizations_published",
+                        },
+                    },
+                    {
                         path: "visualizations/:actionId",
                         component: GridShared,
                         props: (route) => ({
