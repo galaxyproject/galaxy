@@ -13,7 +13,6 @@ from typing import (
 
 from sqlalchemy import (
     false,
-    or_,
     true,
 )
 from sqlalchemy.orm import aliased

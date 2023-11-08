@@ -48,7 +48,7 @@ class VisualizationsService(ServiceBase):
         """Return a list of Visualizations viewable by the user
 
         :rtype:     list
-        :returns:   dictionaries containing summary or detailed Visualization information
+        :returns:   dictionaries containing Visualization details
         """
         if not trans.user_is_admin:
             user_id = trans.user and trans.user.id

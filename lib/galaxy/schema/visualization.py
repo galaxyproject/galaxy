@@ -14,7 +14,6 @@ from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
     CreateTimeField,
     Model,
-    SharingStatus,
     TagCollection,
     UpdateTimeField,
 )

@@ -1508,10 +1508,6 @@ export interface paths {
         /** Returns visualizations for the current user. */
         get: operations["index_api_visualizations_get"];
     };
-    "/api/visualizations/detailed": {
-        /** Returns visualizations for the current user with detailed resolution. */
-        get: operations["index_detailed_api_visualizations_detailed_get"];
-    };
     "/api/visualizations/{id}/disable_link_access": {
         /**
          * Makes this item inaccessible by a URL link.
@@ -9455,10 +9451,10 @@ export interface components {
          */
         Visualization: Record<string, never>;
         /**
-         * VisualizationDetails
+         * VisualizationSummary
          * @description Base model definition with common configuration used by all derived models.
          */
-        VisualizationDetails: {
+        VisualizationSummary: {
             /**
              * Create Time
              * Format: date-time
@@ -9471,12 +9467,26 @@ export interface components {
              */
             dbkey?: string;
             /**
+             * Deleted
+             * @description Whether this Visualization has been deleted.
+             */
+            deleted: boolean;
+            /**
              * ID
              * @description Encoded ID of the Visualization.
              * @example 0123456789ABCDEF
              */
             id: string;
-            sharing_status?: components["schemas"]["SharingStatus"];
+            /**
+             * Importable
+             * @description Whether this Visualization can be imported.
+             */
+            importable: boolean;
+            /**
+             * Published
+             * @description Whether this Visualization has been published.
+             */
+            published: boolean;
             /**
              * Tags
              * @description A list of tags to add to this item.
@@ -9498,39 +9508,6 @@ export interface components {
              * @description The last time and date this item was updated.
              */
             update_time?: string;
-        };
-        /**
-         * VisualizationDetailsList
-         * @description Base model definition with common configuration used by all derived models.
-         * @default []
-         */
-        VisualizationDetailsList: components["schemas"]["VisualizationDetails"][];
-        /**
-         * VisualizationSummary
-         * @description Base model definition with common configuration used by all derived models.
-         */
-        VisualizationSummary: {
-            /**
-             * DbKey
-             * @description The database key of the visualization.
-             */
-            dbkey?: string;
-            /**
-             * ID
-             * @description Encoded ID of the Visualization.
-             * @example 0123456789ABCDEF
-             */
-            id: string;
-            /**
-             * Title
-             * @description The name of the visualization.
-             */
-            title: string;
-            /**
-             * Type
-             * @description The type of the visualization.
-             */
-            type: string;
         };
         /**
          * VisualizationSummaryList
@@ -18015,81 +17992,6 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["VisualizationSummaryList"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    index_detailed_api_visualizations_detailed_get: {
-        /** Returns visualizations for the current user with detailed resolution. */
-        parameters?: {
-            /** @description Whether to include deleted pages in the result. */
-            /** @description The maximum number of items to return. */
-            /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
-            /** @description Sort page index by this specified attribute on the page model */
-            /** @description Sort in descending order? */
-            /**
-             * @description A mix of free text and GitHub-style tags used to filter the index operation.
-             *
-             * ## Query Structure
-             *
-             * GitHub-style filter tags (not be confused with Galaxy tags) are tags of the form
-             * `<tag_name>:<text_no_spaces>` or `<tag_name>:'<text with potential spaces>'`. The tag name
-             * *generally* (but not exclusively) corresponds to the name of an attribute on the model
-             * being indexed (i.e. a column in the database).
-             *
-             * If the tag is quoted, the attribute will be filtered exactly. If the tag is unquoted,
-             * generally a partial match will be used to filter the query (i.e. in terms of the implementation
-             * this means the database operation `ILIKE` will typically be used).
-             *
-             * Once the tagged filters are extracted from the search query, the remaining text is just
-             * used to search various documented attributes of the object.
-             *
-             * ## GitHub-style Tags Available
-             *
-             * `title`
-             * : The page's title.
-             *
-             * `slug`
-             * : The page's slug. (The tag `s` can be used a short hand alias for this tag to filter on this attribute.)
-             *
-             * `tag`
-             * : The page's tags. (The tag `t` can be used a short hand alias for this tag to filter on this attribute.)
-             *
-             * `user`
-             * : The page's owner's username. (The tag `u` can be used a short hand alias for this tag to filter on this attribute.)
-             *
-             * ## Free Text
-             *
-             * Free text search terms will be searched against the following attributes of the
-             * Visualizations: `title`, `slug`, `tag`, `type`.
-             */
-            query?: {
-                deleted?: boolean;
-                limit?: number;
-                offset?: number;
-                user_id?: string;
-                show_published?: boolean;
-                show_shared?: boolean;
-                sort_by?: "create_time" | "title" | "update_time" | "username";
-                sort_desc?: boolean;
-                search?: string;
-            };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string;
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json": components["schemas"]["VisualizationDetailsList"];
                 };
             };
             /** @description Validation Error */
