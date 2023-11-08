@@ -37,7 +37,7 @@ function onDropFail(event) {
 </script>
 
 <template>
-    <BModal v-model="isFileOverDocument" :modal-class="modalClass" size="md" hide-header hide-footer centered>
+    <BModal v-model="isFileOverDocument" :modal-class="modalClass" hide-header hide-footer centered>
         <div ref="modalContentElement" class="inner-content h-xl">Drop Files here to Upload</div>
     </BModal>
 </template>
@@ -46,12 +46,17 @@ function onDropFail(event) {
 @import "theme/blue.scss";
 
 .ui-drag-and-drop-modal {
+    .modal-dialog {
+        width: 100%;
+        max-width: 85%;
+    }
+
     .modal-content {
         background-color: transparent;
         border-radius: 16px;
         border: 6px dashed;
         border-color: $brand-secondary;
-        min-height: 40vh;
+        min-height: 80vh;
 
         .modal-body {
             display: flex;
