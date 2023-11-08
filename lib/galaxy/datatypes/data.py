@@ -163,7 +163,7 @@ def _is_binary_file(data):
     return isinstance(data.datatype, binary.Binary) or type(data.datatype) is Data
 
 
-def _get_max_peak_size(data):
+def _get_max_peek_size(data):
     from galaxy.datatypes import (
         binary,
         text,
@@ -589,7 +589,7 @@ class Data(metaclass=DataMeta):
             return self._serve_file_download(headers, dataset, trans, to_ext, file_size, **kwd)
         else:  # displaying
             trans.log_event(f"Display dataset id: {str(dataset.id)}")
-            max_peek_size = _get_max_peak_size(dataset)
+            max_peek_size = _get_max_peek_size(dataset)
             if (
                 _is_binary_file(dataset) and preview and hasattr(trans, "fill_template_mako")
             ):  # preview file which format is unknown (to Galaxy), we still try to display this as text
@@ -604,7 +604,7 @@ class Data(metaclass=DataMeta):
         on datatypes not tightly tied to a Galaxy version (e.g. datatypes in the
         Tool Shed).
 
-        Speaking very losely - the datatype should load a bounded amount
+        Speaking very loosely - the datatype should load a bounded amount
         of data from the supplied dataset instance and prepare for embedding it
         into Markdown. This should be relatively vanilla Markdown - the result of
         this is bleached and it should not contain nested Galaxy Markdown
