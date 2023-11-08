@@ -2,6 +2,7 @@ import axios from "axios";
 import type Router from "vue-router";
 
 import { fetcher } from "@/api/schema";
+import { useCurrentUser } from "@/composables/user";
 import Filtering, { contains, equals, expandNameTag, toBool, type ValidFilter } from "@/utils/filtering";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
@@ -22,12 +23,18 @@ type VisualizationEntry = Record<string, unknown>;
  * Request and return data from server
  */
 async function getData(offset: number, limit: number, search: string, sort_by: string, sort_desc: boolean) {
+    const { currentUser } = useCurrentUser();
+    const userId = currentUser.value && !currentUser.value.isAnonymous ? currentUser.value.id : null;
+    if (!userId) {
+        rethrowSimple("Please login to access this page.");
+    }
     const { data, headers } = await getVisualizations({
         limit,
         offset,
         search,
         sort_by: sort_by as SortKeyLiteral,
         sort_desc,
+        user_id: userId,
     });
     const totalMatches = parseInt(headers.get("total_matches") ?? "0");
     return [data, totalMatches];
