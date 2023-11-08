@@ -9,7 +9,7 @@ import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
 /**
  * Api endpoint handlers
  */
-const getDetailedVisualizations = fetcher.path("/api/visualizations").method("get").create();
+const getVisualizations = fetcher.path("/api/visualizations").method("get").create();
 const updateTags = fetcher.path("/api/tags").method("put").create();
 
 /**
@@ -22,7 +22,7 @@ type VisualizationEntry = Record<string, unknown>;
  * Request and return data from server
  */
 async function getData(offset: number, limit: number, search: string, sort_by: string, sort_desc: boolean) {
-    const { data, headers } = await getDetailedVisualizations({
+    const { data, headers } = await getVisualizations({
         limit,
         offset,
         search,

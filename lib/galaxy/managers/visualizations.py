@@ -13,6 +13,7 @@ from typing import (
 
 from sqlalchemy import (
     false,
+    or_,
     true,
 )
 from sqlalchemy.orm import aliased
@@ -89,8 +90,21 @@ class VisualizationManager(sharable.SharableModelManager):
         query = trans.sa_session.query(self.model_class)
 
         if not is_admin:
-            query = query.filter(self.model_class.user == user)
-        elif payload.user_id:
+            filters = [self.model_class.user == trans.user]
+            if show_published:
+                filters.append(self.model_class.published == true())
+            if user and show_shared:
+                filters.append(self.user_share_model.user == user)
+                query = query.outerjoin(self.model_class.users_shared_with)
+            query = query.filter(or_(*filters))
+
+        if not show_deleted:
+            query = query.filter(self.model_class.deleted == false())
+        elif not is_admin:
+            # don't let non-admins see other user's deleted visualizations
+            query = query.filter(or_(self.model_class.deleted == false(), self.model_class.user == user))
+
+        if payload.user_id:
             query = query.filter(self.model_class.user_id == payload.user_id)
 
         if payload.search:
@@ -118,13 +132,16 @@ class VisualizationManager(sharable.SharableModelManager):
                         query = append_user_filter(query, self.model_class, term)
                     elif key == "is":
                         if q == "deleted":
-                            show_deleted = True
+                            query = query.filter(self.model_class.deleted == true())
                         if q == "published":
                             query = query.filter(self.model_class.published == true())
                         if q == "importable":
                             query = query.filter(self.model_class.importable == true())
                         elif q == "shared_with_me":
-                            show_shared = True
+                            if not show_shared:
+                                message = "Can only use tag is:shared_with_me if show_shared parameter also true."
+                                raise exceptions.RequestParameterInvalidException(message)
+                            query = query.filter(self.user_share_model.user == user)
                 elif isinstance(term, RawTextTerm):
                     tf = p_tag_filter(term.text, False)
                     alias = aliased(model.User)
@@ -140,15 +157,6 @@ class VisualizationManager(sharable.SharableModelManager):
                             term,
                         )
                     )
-
-        query = query.filter(self.model_class.deleted == (true() if show_deleted else false()))
-
-        if user and show_shared:
-            query = query.filter(self.user_share_model.user == user)
-            query = query.outerjoin(self.model_class.users_shared_with)
-
-        if not show_published:
-            query = query.filter(self.model_class.published == false())
 
         if include_total_count:
             total_matches = query.count()
