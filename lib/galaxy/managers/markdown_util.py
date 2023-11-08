@@ -183,6 +183,28 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
                 rval = self.handle_generate_galaxy_version(line, version)
             elif container == "generate_time":
                 rval = self.handle_generate_time(line, now())
+            elif container == "instance_access_link":
+                url = trans.app.config.instance_access_url
+                rval = self.handle_instance_access_link(line, url)
+            elif container == "instance_resources_link":
+                url = trans.app.config.instance_resource_url
+                rval = self.handle_instance_resources_link(line, url)
+            elif container == "instance_help_link":
+                url = trans.app.config.helpsite_url
+                rval = self.handle_instance_help_link(line, url)
+            elif container == "instance_support_link":
+                url = trans.app.config.support_url
+                rval = self.handle_instance_support_link(line, url)
+            elif container == "instance_citation_link":
+                url = trans.app.config.citation_url
+                rval = self.handle_instance_citation_link(line, url)
+            elif container == "instance_terms_link":
+                url = trans.app.config.terms_url
+                rval = self.handle_instance_terms_link(line, url)
+            elif container == "instance_organization_link":
+                title = trans.app.config.organization_name
+                url = trans.app.config.organization_url
+                rval = self.handle_instance_organization_link(line, title, url)
             elif container == "invocation_time":
                 invocation = workflow_manager.get_invocation(trans, object_id)
                 rval = self.handle_invocation_time(line, invocation)
@@ -288,6 +310,34 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
+    def handle_instance_access_link(self, line, url):
+        pass
+
+    @abc.abstractmethod
+    def handle_instance_resources_link(self, line, url):
+        pass
+
+    @abc.abstractmethod
+    def handle_instance_help_link(self, line, url):
+        pass
+
+    @abc.abstractmethod
+    def handle_instance_support_link(self, line, url):
+        pass
+
+    @abc.abstractmethod
+    def handle_instance_citation_link(self, line, url):
+        pass
+
+    @abc.abstractmethod
+    def handle_instance_terms_link(self, line, url):
+        pass
+
+    @abc.abstractmethod
+    def handle_instance_organization_link(self, line, title, url):
+        pass
+
+    @abc.abstractmethod
     def handle_invocation_time(self, line, date):
         pass
 
@@ -369,6 +419,27 @@ class ReadyForExportMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHand
         pass
 
     def handle_generate_time(self, line, generate_time):
+        pass
+
+    def handle_instance_access_link(self, line, url):
+        pass
+
+    def handle_instance_resources_link(self, line, url):
+        pass
+
+    def handle_instance_help_link(self, line, url):
+        pass
+
+    def handle_instance_support_link(self, line, url):
+        pass
+
+    def handle_instance_citation_link(self, line, url):
+        pass
+
+    def handle_instance_terms_link(self, line, url):
+        pass
+
+    def handle_instance_organization_link(self, line, title, url):
         pass
 
     def handle_invocation_time(self, line, invocation):
@@ -595,6 +666,35 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
     def handle_generate_time(self, line, generate_time):
         content = literal_via_fence(generate_time.isoformat())
         return (content, True)
+
+    def handle_instance_access_link(self, line, url):
+        return self._handle_link(url)
+
+    def handle_instance_resources_link(self, line, url):
+        return self._handle_link(url)
+
+    def handle_instance_help_link(self, line, url):
+        return self._handle_link(url)
+
+    def handle_instance_support_link(self, line, url):
+        return self._handle_link(url)
+
+    def handle_instance_citation_link(self, line, url):
+        return self._handle_link(url)
+
+    def handle_instance_terms_link(self, line, url):
+        return self._handle_link(url)
+
+    def handle_instance_organization_link(self, line, title, url):
+        return self._handle_link(url, title)
+
+    def _handle_link(self, url, title=None):
+        if not url:
+            content = "*Not configured, please contact Galaxy admin*"
+            return (content, True)
+        elif not title:
+            title = url
+        return (f"[{title}]({url})", True)
 
     def handle_invocation_time(self, line, invocation):
         content = literal_via_fence(invocation.create_time.strftime("%Y-%m-%d, %H:%M:%S"))

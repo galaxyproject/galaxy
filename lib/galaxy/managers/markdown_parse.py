@@ -46,6 +46,13 @@ VALID_ARGUMENTS: Dict[str, Union[List[str], DynamicArguments]] = {
     "tool_stdout": ["step", "job_id"],
     "generate_galaxy_version": [],
     "generate_time": [],
+    "instance_access_link": [],
+    "instance_resources_link": [],
+    "instance_help_link": [],
+    "instance_support_link": [],
+    "instance_citation_link": [],
+    "instance_terms_link": [],
+    "instance_organization_link": [],
     "visualization": DYNAMIC_ARGUMENTS,
     # Invocation Flavored Markdown
     "invocation_time": ["invocation_id"],

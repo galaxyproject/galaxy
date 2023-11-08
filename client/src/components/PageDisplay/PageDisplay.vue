@@ -12,7 +12,7 @@
                     @onEdit="onEdit" />
                 <PageHtml v-else :page="page" />
             </div>
-            <b-alert v-else variant="info" show>Unsupported page format.</b-alert>
+            <LoadingSpan v-else message="Loading Galaxy configuration" />
         </template>
     </PublishedItem>
 </template>
@@ -27,10 +27,12 @@ import { urlData } from "@/utils/url";
 
 import PageHtml from "./PageHtml.vue";
 import PublishedItem from "@/components/Common/PublishedItem.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 import Markdown from "@/components/Markdown/Markdown.vue";
 
 export default {
     components: {
+        LoadingSpan,
         Markdown,
         PageHtml,
         PublishedItem,
