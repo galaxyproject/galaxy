@@ -74,7 +74,7 @@ function onDropFail(event) {
     &.drag-over {
         .modal-content {
             border-color: lighten($brand-info, 30%);
-            background-color: rgba($black, 0.3);
+            background-color: rgba(darken($brand-info, 20%), 0.4);
 
             .inner-content {
                 color: lighten($brand-info, 30%);
