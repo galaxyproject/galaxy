@@ -236,7 +236,6 @@ watch(operationMessage, () => {
                         v-else-if="fieldEntry.type == 'tags'"
                         clickable
                         :value="rowData[fieldEntry.key]"
-                        :disabled="rowData.published"
                         @input="(tags) => onTagInput(rowData, tags, fieldEntry.handler)"
                         @tag-click="(t) => applyFilter('tag', t, true)" />
                 </td>
