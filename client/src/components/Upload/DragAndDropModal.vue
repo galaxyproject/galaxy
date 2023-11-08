@@ -3,8 +3,10 @@ import { useFileDrop } from "composables/fileDrop";
 import { useGlobalUploadModal } from "composables/globalUploadModal";
 import { computed, ref } from "vue";
 
+import { Toast } from "@/composables/toast";
+
 const modalContentElement = ref(null);
-const { isFileOverDocument, isFileOverDropZone } = useFileDrop(modalContentElement, onDrop, true);
+const { isFileOverDocument, isFileOverDropZone } = useFileDrop(modalContentElement, onDrop, onDropFail, true);
 
 const modalClass = computed(() => {
     if (isFileOverDropZone.value) {
@@ -24,6 +26,12 @@ function onDrop(event) {
             immediateUpload: true,
             immediateFiles: event.dataTransfer.files,
         });
+    }
+}
+
+function onDropFail(event) {
+    if (event.dataTransfer?.files?.length > 0) {
+        Toast.error("Please try again", "File failed");
     }
 }
 </script>
