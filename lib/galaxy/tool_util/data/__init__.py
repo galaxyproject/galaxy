@@ -250,6 +250,11 @@ class ToolDataTable(Dictifiable):
                 self.add_entry(
                     entry, allow_duplicates=allow_duplicates, persist=persist, entry_source=entry_source, **kwd
                 )
+            except MessageException as e:
+                if e.type == "warning":
+                    log.warning(str(e))
+                else:
+                    log.error(str(e))
             except Exception as e:
                 log.error(str(e))
         return self._loaded_content_version
@@ -686,7 +691,8 @@ class TabularToolDataTable(ToolDataTable):
                 self.data.append(fields)
             else:
                 raise MessageException(
-                    f"Attempted to add fields ({fields}) to data table '{self.name}', but this entry already exists and allow_duplicates is False."
+                    f"Attempted to add fields ({fields}) to data table '{self.name}', but this entry already exists and allow_duplicates is False.",
+                    type="warning",
                 )
         else:
             raise MessageException(
