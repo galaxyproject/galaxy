@@ -29,7 +29,7 @@ function onDrop(event) {
 </script>
 
 <template>
-    <BModal v-model="isFileOverDocument" :modal-class="modalClass"  size="md" hide-header hide-footer centered>
+    <BModal v-model="isFileOverDocument" :modal-class="modalClass" size="md" hide-header hide-footer centered>
         <div ref="modalContentElement" class="inner-content h-xl">Drop Files here to Upload</div>
     </BModal>
 </template>
@@ -61,6 +61,7 @@ function onDrop(event) {
     &.drag-over {
         .modal-content {
             border-color: lighten($brand-info, 30%);
+            background-color: rgba($black, 0.3);
 
             .inner-content {
                 color: lighten($brand-info, 30%);
