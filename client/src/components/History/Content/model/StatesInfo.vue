@@ -34,8 +34,11 @@ function onFilter(value: string) {
         <dl v-for="(state, key, index) in states" :key="index">
             <div :class="['alert', 'content-item', 'alert-' + state.status]" :data-state="key">
                 <dt>
-                    <a class="text-decoration-none" href="javascript:void(0)" @click="onFilter(key)"
+                    <a v-if="!state.nonDb" class="text-decoration-none" href="javascript:void(0)" @click="onFilter(key)"
                         ><code>{{ key }}</code></a
+                    >
+                    <span v-else
+                        ><code>{{ key }}</code></span
                     >
                     <icon v-if="state.icon" :icon="state.icon" />
                 </dt>
