@@ -47,6 +47,7 @@ const baseRules = {
             required: {
                 some: ["nesting", "id"],
             },
+            allowChildren: true,
         },
     ],
     "vuejs-accessibility/mouse-events-have-key-events": "warn",
