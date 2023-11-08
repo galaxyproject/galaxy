@@ -7,7 +7,6 @@ import { toRef, ref, computed, onMounted } from "vue";
 import { useDetailedHistory } from "./usesDetailedHistory.js";
 import { useConfig } from "@/composables/config";
 import { HistoryFilters } from "@/components/History/HistoryFilters.js";
-import PreferredStorePopover from "./PreferredStorePopover.vue";
 import SelectPreferredStore from "./SelectPreferredStore.vue";
 
 import { useRouter } from "vue-router/composables";
@@ -15,6 +14,7 @@ import { useRouter } from "vue-router/composables";
 interface HistoryBase {
     id: string;
     preferred_object_store_id: string;
+    name: string;
 }
 
 const props = withDefaults(
@@ -35,7 +35,7 @@ const props = withDefaults(
 
 const router = useRouter();
 const { config } = useConfig();
-const { currentUser } = storeToRefs(useUserStore());
+const { currentUser, isAnonymous } = storeToRefs(useUserStore());
 const { historySize, numItemsActive, numItemsDeleted, numItemsHidden } = useDetailedHistory(toRef(props, "history"));
 
 const reloadButtonCls = ref("fa fa-sync");
@@ -45,6 +45,7 @@ const showPreferredObjectStoreModal = ref(false);
 const historyPreferredObjectStoreId = ref(props.history.preferred_object_store_id);
 
 const niceHistorySize = computed(() => prettyBytes(historySize.value));
+const storageButtonTitle = computed(() => (!isAnonymous.value ? "History Size - click to manage" : "History Size"));
 
 const emit = defineEmits(["update:filter-text", "reloadContents"]);
 
@@ -109,39 +110,40 @@ function onUpdatePreferredObjectStoreId(preferredObjectStoreId: string) {
     // this information.
     historyPreferredObjectStoreId.value = preferredObjectStoreId;
 }
+
+function onCancelPreferredObjectStoreId() {
+    showPreferredObjectStoreModal.value = false;
+}
 </script>
 
 <template>
     <div class="history-size my-1 d-flex justify-content-between">
-        <b-button
-            v-b-tooltip.hover
-            title="History Size"
-            variant="link"
-            size="sm"
-            class="rounded-0 text-decoration-none history-storage-overview-button"
-            :disabled="!showControls"
-            data-description="storage dashboard button"
-            @click="onDashboard">
-            <icon icon="database" />
-            <span>{{ niceHistorySize }}</span>
-        </b-button>
         <b-button-group v-if="currentUser">
             <b-button
-                v-if="config && config.object_store_allows_id_selection"
+                v-if="!isAnonymous && config && config.object_store_allows_id_selection"
                 :id="`history-storage-${history.id}`"
-                title="Manage Preferred History Storage"
+                v-b-tooltip.hover.noninteractive
+                title="Storage Location - click to manage"
                 variant="link"
                 size="sm"
                 class="rounded-0 text-decoration-none"
                 @click="showPreferredObjectStoreModal = true">
                 <icon icon="hdd" />
             </b-button>
-            <PreferredStorePopover
-                v-if="config && config.object_store_allows_id_selection"
-                :history-id="history.id"
-                :history-preferred-object-store-id="historyPreferredObjectStoreId"
-                :user="currentUser">
-            </PreferredStorePopover>
+            <b-button
+                v-b-tooltip.hover.noninteractive
+                :title="storageButtonTitle"
+                variant="link"
+                size="sm"
+                class="rounded-0 text-decoration-none history-storage-overview-button"
+                :disabled="!showControls || isAnonymous"
+                data-description="storage dashboard button"
+                @click="onDashboard">
+                <icon icon="database" />
+                <span>{{ niceHistorySize }}</span>
+            </b-button>
+        </b-button-group>
+        <b-button-group v-if="currentUser">
             <b-button-group>
                 <b-button
                     v-b-tooltip.hover
@@ -192,15 +194,16 @@ function onUpdatePreferredObjectStoreId(preferredObjectStoreId: string) {
             </b-button-group>
             <b-modal
                 v-model="showPreferredObjectStoreModal"
-                title="History Preferred Storage Location"
+                title="Select Preferred Storage Location"
                 modal-class="history-preferred-object-store-modal"
-                title-tag="h3"
-                size="sm"
+                :title-html="`<h1>Select Preferred Storage Location</h1><h3>for history '${history.name}'</h3>`"
+                :hide-header-close="false"
                 hide-footer>
                 <SelectPreferredStore
                     :user-preferred-object-store-id="currentUser.preferred_object_store_id"
                     :history="history"
-                    @updated="onUpdatePreferredObjectStoreId" />
+                    @updated="onUpdatePreferredObjectStoreId"
+                    @cancelled="onCancelPreferredObjectStoreId" />
             </b-modal>
         </b-button-group>
     </div>

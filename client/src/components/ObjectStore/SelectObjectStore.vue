@@ -3,7 +3,6 @@ import { ref, watch, onMounted } from "vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import DescribeObjectStore from "@/components/ObjectStore/DescribeObjectStore.vue";
 import { errorMessageAsString } from "@/utils/simple-error";
-import ObjectStoreBadges from "@/components/ObjectStore/ObjectStoreBadges.vue";
 import ProvidedQuotaSourceUsageBar from "@/components/User/DiskUsage/Quota/ProvidedQuotaSourceUsageBar.vue";
 import { getSelectableObjectStores } from "./services";
 
@@ -11,7 +10,7 @@ interface SelectObjectStoreProps {
     selectedObjectStoreId?: String | null;
     defaultOptionTitle: String;
     defaultOptionDescription: String;
-    forWhat: String;
+    forWhat: string;
     parentError?: String | null;
 }
 
@@ -22,20 +21,16 @@ const props = withDefaults(defineProps<SelectObjectStoreProps>(), {
 
 const loading = ref(true);
 const error = ref(props.parentError);
-const popoverProps = {
-    placement: "rightbottom",
-    boundary: "window", // don't warp the popover to squeeze it into this modal
-};
+const selected: any = ref(props.selectedObjectStoreId || "no_preference");
 const objectStores = ref<Array<object>>([]);
 
 const loadingObjectStoreInfoMessage = ref("Loading storage location information");
-const whyIsSelectionPreferredText = ref(`
-Select a preferred storage location for new datasets. Depending on the job and workflow execution configuration of
-this Galaxy a different storage location may be ultimately used. After a dataset is created,
-click on the info icon in the history panel to view information about where it is stored. If it
-is not stored in the place you want, contact Galaxy administrator for more information.
-`);
-
+const whyIsSelectionPreferredText = ref(
+    `Depending on the job and workflow execution configuration of this Galaxy a different storage location may be ultimately used. The order of priority is tool > workflow > history > user preferences > Galaxy administrator.`
+);
+const datasetInfoText = ref(
+    `After a dataset is created, click on the info icon in the history panel to view information about where it is stored. If it is not stored in the place you want, contact Galaxy administrator for more information.`
+);
 watch(
     () => props.parentError,
     () => {
@@ -58,19 +53,18 @@ onMounted(async () => {
     }
 });
 
-function variant(objectStoreId: string) {
-    if (props.selectedObjectStoreId == objectStoreId) {
-        return "outline-primary";
-    } else {
-        return "outline-info";
-    }
-}
-
 const emit = defineEmits<{
     (e: "onSubmit", id: string | null): void;
+    (e: "onCancel"): void;
 }>();
 
-async function handleSubmit(preferredObjectStoreId: string) {
+async function handleSubmit() {
+    let preferredObjectStoreId: string | null;
+    if (selected.value === "no_preference") {
+        preferredObjectStoreId = null;
+    } else {
+        preferredObjectStoreId = selected.value;
+    }
     emit("onSubmit", preferredObjectStoreId);
 }
 </script>
@@ -83,52 +77,55 @@ async function handleSubmit(preferredObjectStoreId: string) {
                 {{ error }}
             </b-alert>
             <b-row>
-                <b-col cols="7">
-                    <b-button-group vertical size="lg" style="width: 100%">
-                        <b-button
-                            id="no-preferred-object-store-button"
-                            :variant="variant(null)"
-                            class="preferred-object-store-select-button"
-                            data-object-store-id="__null__"
-                            @click="handleSubmit(null)"
-                            ><i>{{ defaultOptionTitle | localize }}</i></b-button
-                        >
-                        <b-button
-                            v-for="object_store in objectStores"
-                            :id="`preferred-object-store-button-${object_store.object_store_id}`"
-                            :key="object_store.object_store_id"
-                            :variant="variant(object_store.object_store_id)"
-                            class="preferred-object-store-select-button"
-                            :data-object-store-id="object_store.object_store_id"
-                            @click="handleSubmit(object_store.object_store_id)"
-                            >{{ object_store.name }}
-                            <ObjectStoreBadges :badges="object_store.badges" size="lg" :more-on-hover="false" />
-                            <ProvidedQuotaSourceUsageBar :object-store="object_store" :compact="true">
-                            </ProvidedQuotaSourceUsageBar>
-                        </b-button>
-                    </b-button-group>
+                <b-col cols="4">
+                    <b-form-group v-slot="{ ariaDescribedby }">
+                        <b-form-radio-group
+                            id="btn-radios-3"
+                            v-model="selected"
+                            :aria-describedby="ariaDescribedby"
+                            name="radio-btn-stacked"
+                            button-variant="outline-primary"
+                            size="lg"
+                            buttons
+                            stacked>
+                            <b-form-radio id="nopref" value="no_preference">{{ defaultOptionTitle }}</b-form-radio>
+                            <b-form-radio
+                                v-for="object_store in objectStores"
+                                :key="object_store.object_store_id"
+                                :value="object_store.object_store_id">
+                                {{ object_store.name }}
+                            </b-form-radio>
+                        </b-form-radio-group>
+                    </b-form-group>
                 </b-col>
-                <b-col cols="5">
-                    <p v-localize style="float: right">
+                <b-col cols="8">
+                    <span v-show="selected === 'no_preference'">
+                        <span v-localize>{{ defaultOptionDescription }}</span>
+                    </span>
+                    <span v-for="object_store in objectStores" :key="object_store.object_store_id">
+                        <span v-show="selected === object_store.object_store_id">
+                            <DescribeObjectStore :what="forWhat" :storage-info="object_store" />
+                            <ProvidedQuotaSourceUsageBar :object-store="object_store" :compact="true" />
+                        </span>
+                    </span>
+                </b-col>
+            </b-row>
+            <b-row>
+                <b-col cols="12">
+                    <p v-localize>
                         {{ whyIsSelectionPreferredText }}
+                    </p>
+                    <p>
+                        {{ datasetInfoText }}
                     </p>
                 </b-col>
             </b-row>
-            <b-popover target="no-preferred-object-store-button" triggers="hover" v-bind="popoverProps">
-                <template v-slot:title
-                    ><span v-localize>{{ defaultOptionTitle }}</span></template
-                >
-                <span v-localize>{{ defaultOptionDescription }}</span>
-            </b-popover>
-            <b-popover
-                v-for="object_store in objectStores"
-                :key="object_store.object_store_id"
-                :target="`preferred-object-store-button-${object_store.object_store_id}`"
-                triggers="hover"
-                v-bind="popoverProps">
-                <template v-slot:title>{{ object_store.name }}</template>
-                <DescribeObjectStore :what="forWhat" :storage-info="object_store"> </DescribeObjectStore>
-            </b-popover>
+            <b-row class="modal-footer">
+                <b-col cols="12">
+                    <b-button title="Cancel" variant="secondary" @click="$emit('onCancel')"> Cancel </b-button>
+                    <b-button title="Save" variant="primary" @click="handleSubmit"> Save </b-button>
+                </b-col>
+            </b-row>
         </div>
     </div>
 </template>

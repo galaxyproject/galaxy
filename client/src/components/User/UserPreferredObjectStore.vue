@@ -66,14 +66,14 @@ export default {
         return {
             error: null,
             popoverPlacement: "left",
-            newDatasetsDescription: "New dataset outputs from tools and workflows",
+            newDatasetsDescription: "New dataset outputs from tools and workflows will use",
             titleTag: "h3",
             modalSize: "sm",
             showModal: false,
             selectedObjectStoreId: this.preferredObjectStoreId,
             galaxySelectionDefaultTitle: "Use Galaxy Defaults",
             galaxySelectionDefaultDescription:
-                "Selecting this will reset Galaxy to default behaviors configured by your Galaxy administrator.",
+                "Storage location will default to what is configured by Galaxy administrator.",
         };
     },
     methods: {

@@ -19,13 +19,13 @@ const props = defineProps({
 const error = ref<string | null>(null);
 const selectedObjectStoreId = ref(props.history.preferred_object_store_id);
 
-const newDatasetsDescription = "New dataset outputs from tools and workflows executed in this history";
+const newDatasetsDescription = "New dataset outputs from tools and workflows executed in this history will use";
 const galaxySelectionDefaultTitle = "Use Galaxy Defaults";
 const galaxySelectionDefaultDescription =
-    "Selecting this will reset Galaxy to default behaviors configured by your Galaxy administrator.";
+    "Storage location will default to what is configured by Galaxy administrator.";
 const userSelectionDefaultTitle = "Use Your User Preference Defaults";
 const userSelectionDefaultDescription =
-    "Selecting this will cause the history to not set a default and to fallback to your user preference defined default.";
+    "Selecting this will cause the history to not set a default and to fallback to your user preference default.";
 
 const defaultOptionTitle = computed(() => {
     if (props.userPreferredObjectStoreId) {
@@ -44,6 +44,7 @@ const defaultOptionDescription = computed(() => {
 
 const emit = defineEmits<{
     (e: "updated", id: string | null): void;
+    (e: "cancelled"): void;
 }>();
 
 async function handleSubmit(preferredObjectStoreId: string | null) {
@@ -60,10 +61,12 @@ async function handleSubmit(preferredObjectStoreId: string | null) {
 </script>
 <template>
     <SelectObjectStore
-        :parent-error="error || undefined"
+        :parent-error="error ?? undefined"
         :for-what="newDatasetsDescription"
         :selected-object-store-id="selectedObjectStoreId"
         :default-option-title="defaultOptionTitle"
         :default-option-description="defaultOptionDescription"
-        @onSubmit="handleSubmit" />
+        :history-name="history.name"
+        @onSubmit="handleSubmit"
+        @onCancel="$emit('cancelled')" />
 </template>
