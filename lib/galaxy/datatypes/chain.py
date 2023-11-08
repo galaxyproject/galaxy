@@ -39,7 +39,7 @@ class Chain(data.Text):
         """
         data_lines = 0
         chains = 0
-        with compression_utils.get_fileobj(dataset.file_name) as fh:
+        with compression_utils.get_fileobj(dataset.get_file_name()) as fh:
             for line in fh:
                 line = line.strip()
                 if line and line.startswith("#"):
@@ -55,7 +55,7 @@ class Chain(data.Text):
 
     def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
-            dataset.peek = data.get_file_peek(dataset.file_name)
+            dataset.peek = data.get_file_peek(dataset.get_file_name())
             if dataset.metadata.chains:
                 dataset.blurb = f"{commaify(str(dataset.metadata.chains))} chains"
             else:

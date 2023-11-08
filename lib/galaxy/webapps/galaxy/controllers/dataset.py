@@ -384,7 +384,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                         "This dataset is currently being used as input or output.  You cannot change datatype until the jobs have completed or you have canceled them.",
                     )
                 else:
-                    path = data.dataset.file_name
+                    path = data.dataset.get_file_name()
                     datatype = guess_ext(path, trans.app.datatypes_registry.sniff_order)
                     trans.app.datatypes_registry.change_datatype(data, datatype)
                     with transaction(trans.sa_session):
@@ -501,7 +501,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             or isinstance(dataset.datatype, datatypes.text.Html)
         ):
             trans.response.set_content_type(dataset.get_mime())
-            return open(dataset.file_name, "rb")
+            return open(dataset.get_file_name(), "rb")
         else:
             return trans.fill_template_mako(
                 "/dataset/display.mako",
@@ -674,7 +674,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
                                     ), f"Extra file content requested ({action_param_extra}), but allow_extra_files_access is False."
                                     file_name = os.path.join(value.extra_files_path, action_param_extra)
                                 else:
-                                    file_name = value.file_name
+                                    file_name = value.get_file_name()
                                 content_length = os.path.getsize(file_name)
                                 rval = open(file_name, "rb")
                             except OSError as e:

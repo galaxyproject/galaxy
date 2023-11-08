@@ -526,7 +526,7 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
             filepath = path_match.group(2)
             file = os.path.join(hda.extra_files_path, filepath)
         else:
-            file = dataset.file_name
+            file = dataset.get_file_name()
 
         with open(file, "rb") as f:
             image_data = f.read()

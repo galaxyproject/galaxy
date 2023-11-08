@@ -590,7 +590,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
                         dataset_instance.dataset, extra_dir=dir_name, alt_name=filename
                     )
                 else:
-                    file_path = dataset_instance.file_name
+                    file_path = dataset_instance.get_file_name()
                 rval = open(file_path, "rb")
             else:
                 if offset is not None:
@@ -648,7 +648,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         headers = {}
         headers["Content-Type"] = "application/octet-stream"
         headers["Content-Disposition"] = f'attachment; filename="Galaxy{hda.hid}-[{fname}].{file_ext}"'
-        file_path = hda.metadata.get(metadata_file).file_name
+        file_path = hda.metadata.get(metadata_file).get_file_name()
         if open_file:
             return open(file_path, "rb"), headers
         return file_path, headers

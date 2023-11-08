@@ -145,7 +145,7 @@ class DatasetManager(base.ModelManager[model.Dataset], secured.AccessibleManager
             extra_dir = dataset.extra_files_path_name
             file_path = self.app.object_store.get_filename(dataset, extra_dir=extra_dir, alt_name=extra_files_path)
         else:
-            file_path = dataset.file_name
+            file_path = dataset.get_file_name()
         hash_function = request.hash_function
         calculated_hash_value = memory_bound_hexdigest(hash_func_name=hash_function, path=file_path)
         extra_files_path = request.extra_files_path
@@ -275,7 +275,7 @@ class DatasetSerializer(base.ModelSerializer[DatasetManager], deletable.Purgable
         # expensive: allow config option due to cost of operation
         if is_admin or self.app.config.expose_dataset_path:
             if not dataset.purged:
-                return dataset.file_name
+                return dataset.get_file_name()
         self.skip()
 
     def serialize_extra_files_path(self, item, key, user=None, **context):
@@ -480,7 +480,7 @@ class DatasetAssociationManager(
         data = trans.sa_session.query(self.model_class).get(dataset_assoc.id)
         self.ensure_can_change_datatype(data)
         self.ensure_can_set_metadata(data)
-        path = data.dataset.file_name
+        path = data.dataset.get_file_name()
         datatype = sniff.guess_ext(path, trans.app.datatypes_registry.sniff_order)
         trans.app.datatypes_registry.change_datatype(data, datatype)
         with transaction(trans.sa_session):
@@ -671,7 +671,7 @@ class _UnflattenedMetadataDatasetAssociationSerializer(base.ModelSerializer[T], 
                 # only when explicitly set: fetching filepaths can be expensive
                 if not self.app.config.expose_dataset_path:
                     continue
-                val = val.file_name
+                val = val.get_file_name()
             # TODO:? possibly split this off?
             # If no value for metadata, look in datatype for metadata.
             elif val is None and hasattr(dataset_assoc.datatype, name):

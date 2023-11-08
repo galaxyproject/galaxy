@@ -94,7 +94,7 @@ class _SpalnDb(Data):
             f, e = os.path.splitext(fname)
             rval.append(f'<li><a href="{sfname}">{sfname}</a></li>')
         rval.append("</ul></body></html>")
-        with open(dataset.file_name, "w") as f:
+        with open(dataset.get_file_name(), "w") as f:
             f.write("\n".join(rval))
             f.write("\n")
 
@@ -154,7 +154,7 @@ class _SpalnDb(Data):
         msg = ""
         try:
             # Try to use any text recorded in the dummy index file:
-            with open(dataset.file_name, encoding="utf-8") as handle:
+            with open(dataset.get_file_name(), encoding="utf-8") as handle:
                 msg = handle.read().strip()
         except Exception:
             pass

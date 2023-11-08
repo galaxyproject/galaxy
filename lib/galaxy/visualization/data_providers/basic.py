@@ -144,7 +144,7 @@ class ColumnDataProvider(BaseDataProvider):
             return val
 
         returning_data = False
-        f = open(self.original_dataset.file_name)
+        f = open(self.original_dataset.get_file_name())
         # TODO: add f.seek if given fptr in kwargs
         for count, line in enumerate(f):
             # check line v. desired start, end

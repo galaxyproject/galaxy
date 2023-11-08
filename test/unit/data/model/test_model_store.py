@@ -828,9 +828,9 @@ def _assert_simple_cat_job_imported(imported_history, state="ok"):
     assert imported_job.input_datasets
     assert imported_job.input_datasets[0].dataset == datasets[0]
 
-    with open(datasets[0].file_name) as f:
+    with open(datasets[0].get_file_name()) as f:
         assert f.read().startswith("chr1    4225    19670")
-    with open(datasets[1].file_name) as f:
+    with open(datasets[1].get_file_name()) as f:
         assert f.read().startswith("chr1\t147962192\t147962580\tNM_005997_cds_0_0_chr1_147962193_r\t0\t-")
 
 

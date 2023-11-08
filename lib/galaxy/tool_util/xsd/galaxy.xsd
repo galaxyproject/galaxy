@@ -6286,7 +6286,7 @@ tool config.
       xrange = c(NULL, NULL)
       yrange = c(NULL, NULL)
       #for $i, $s in enumerate($series)
-          s${i} = read.table("${s.input.file_name}")
+          s${i} = read.table("${s.input.get_file_name()}")
           x${i} = s${i}[,${s.xcol}]
           y${i} = s${i}[,${s.ycol}]
           xrange = range(x${i}, xrange)

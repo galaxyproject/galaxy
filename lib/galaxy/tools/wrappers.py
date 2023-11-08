@@ -468,12 +468,12 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
         if self.false_path is not None:
             return self.false_path
         else:
-            return str(self.unsanitized.file_name)
+            return str(self.unsanitized.get_file_name())
 
     def __getattr__(self, key: Any) -> Any:
-        if self.false_path is not None and key == "file_name":
+        if self.false_path is not None and key == "get_file_name":
             # Path to dataset was rewritten for this job.
-            return self.false_path
+            return lambda *args, **kwargs: self.false_path
         elif key in ("extra_files_path", "files_path"):
             if not self.compute_environment:
                 # Only happens in WrappedParameters context, refactor!

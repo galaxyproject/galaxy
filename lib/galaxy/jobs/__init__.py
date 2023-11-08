@@ -1721,8 +1721,8 @@ class MinimalJobWrapper(HasResourceParameters):
             while trynum < self.app.config.retry_job_output_collection:
                 try:
                     # Attempt to short circuit NFS attribute caching
-                    os.stat(dataset.dataset.file_name)
-                    os.chown(dataset.dataset.file_name, os.getuid(), -1)
+                    os.stat(dataset.dataset.get_file_name())
+                    os.chown(dataset.dataset.get_file_name(), os.getuid(), -1)
                     trynum = self.app.config.retry_job_output_collection
                 except (OSError, ObjectNotFound) as e:
                     trynum += 1
@@ -1774,7 +1774,7 @@ class MinimalJobWrapper(HasResourceParameters):
                     # If Galaxy was expected to sniff type and didn't - do so.
                     if dataset.ext == "_sniff_":
                         extension = sniff.handle_uploaded_dataset_file(
-                            dataset.dataset.file_name, self.app.datatypes_registry
+                            dataset.dataset.get_file_name(), self.app.datatypes_registry
                         )
                         dataset.extension = extension
 

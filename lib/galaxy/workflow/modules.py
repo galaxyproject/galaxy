@@ -142,7 +142,7 @@ def to_cwl(value, hda_references, step):
                 )
             )
         if value.ext == "expression.json":
-            with open(value.file_name) as f:
+            with open(value.get_file_name()) as f:
                 # OUR safe_loads won't work, will not load numbers, etc...
                 return json.load(f)
         else:
@@ -2193,7 +2193,7 @@ class ToolModule(WorkflowModule):
                         elif isinstance(replacement, model.DatasetInstance):
                             dataset_instance = replacement
                         if dataset_instance and dataset_instance.extension == "expression.json":
-                            with open(dataset_instance.file_name) as f:
+                            with open(dataset_instance.get_file_name()) as f:
                                 replacement = json.load(f)
                     found_replacement_keys.add(prefixed_name)  # noqa: B023
 

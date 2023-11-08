@@ -125,7 +125,7 @@ class GenomeBuilds:
         if trans:
             db_dataset = trans.db_dataset_for(dbkey)
             if db_dataset:
-                chrom_info = db_dataset.file_name
+                chrom_info = db_dataset.get_file_name()
             else:
                 # Do Custom Build handling
                 if (
@@ -145,10 +145,12 @@ class GenomeBuilds:
                         build_fasta_dataset = trans.sa_session.get(
                             HistoryDatasetAssociation, custom_build_dict["fasta"]
                         )
-                        chrom_info = build_fasta_dataset.get_converted_dataset(trans, "len").file_name
+                        chrom_info = build_fasta_dataset.get_converted_dataset(trans, "len").get_file_name()
                     elif "len" in custom_build_dict:
                         # Build is defined by len file, so use it.
-                        chrom_info = trans.sa_session.get(HistoryDatasetAssociation, custom_build_dict["len"]).file_name
+                        chrom_info = trans.sa_session.get(
+                            HistoryDatasetAssociation, custom_build_dict["len"]
+                        ).get_file_name()
         # Check Data table
         if not chrom_info:
             dbkey_table = self._app.tool_data_tables.get(self._data_table_name, None)

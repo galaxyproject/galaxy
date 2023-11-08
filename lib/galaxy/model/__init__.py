@@ -2514,8 +2514,10 @@ class FakeDatasetAssociation:
 
     def __init__(self, dataset=None):
         self.dataset = dataset
-        self.file_name = dataset.file_name
         self.metadata = dict()
+
+    def get_file_name(self):
+        return self.dataset.get_file_name()
 
     def __eq__(self, other):
         return isinstance(other, FakeDatasetAssociation) and self.dataset == other.dataset
@@ -3960,8 +3962,6 @@ class Dataset(Base, StorableObject, Serializable):
         else:
             self.external_filename = filename
 
-    file_name = property(get_file_name, set_file_name)
-
     def _assert_object_store_set(self):
         assert self.object_store is not None, f"Object Store has not been initialized for dataset {self.id}"
         return self.object_store
@@ -4395,10 +4395,8 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
     def set_file_name(self, filename: str):
         return self.dataset.set_file_name(filename)
 
-    file_name = property(get_file_name, set_file_name)
-
     def link_to(self, path):
-        self.file_name = os.path.abspath(path)
+        self.dataset.set_file_name(os.path.abspath(path))
         # Since we are not copying the file into Galaxy's managed
         # default file location, the dataset should never be purgable.
         self.dataset.purgable = False
@@ -4450,7 +4448,7 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
             file_ext = metadata.spec[metadata_name].file_ext
             metadata_file = metadata[metadata_name]
             if metadata_file:
-                path = metadata_file.file_name
+                path = metadata_file.get_file_name()
                 metadata_files.append((file_ext, path))
         return metadata_files
 
@@ -4670,7 +4668,7 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
             if dataset_ext == "bai" and name == "bam_index" and isinstance(value, MetadataFile):
                 # HACK: MetadataFile objects cannot be used by tools, so return
                 # a fake HDA that points to metadata file.
-                fake_dataset = Dataset(state=Dataset.states.OK, external_filename=value.file_name)
+                fake_dataset = Dataset(state=Dataset.states.OK, external_filename=value.get_file_name())
                 fake_hda = HistoryDatasetAssociation(dataset=fake_dataset)
                 return fake_hda
 
@@ -5201,7 +5199,7 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
                 # only when explicitly set: fetching filepaths can be expensive
                 if not expose_dataset_path:
                     continue
-                val = val.file_name
+                val = val.get_file_name()
             # If no value for metadata, look in datatype for metadata.
             elif not hda.metadata.element_is_set(name) and hasattr(hda.datatype, name):
                 val = getattr(hda.datatype, name)
@@ -5636,7 +5634,7 @@ class LibraryDataset(Base, Serializable):
             model_class=self.__class__.__name__,
             state=ldda.state,
             name=ldda.name,
-            file_name=ldda.file_name,
+            file_name=ldda.get_file_name(),
             created_from_basename=ldda.created_from_basename,
             uploaded_by=ldda.user and ldda.user.email,
             message=ldda.message,
@@ -5657,7 +5655,7 @@ class LibraryDataset(Base, Serializable):
         for name in ldda.metadata.spec.keys():
             val = ldda.metadata.get(name)
             if isinstance(val, MetadataFile):
-                val = val.file_name
+                val = val.get_file_name()
             elif isinstance(val, list):
                 val = ", ".join(str(v) for v in val)
             rval[f"metadata_{name}"] = val
@@ -5784,7 +5782,7 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, Serializable):
             state=ldda.state,
             library_dataset_id=ldda.library_dataset_id,
             file_size=file_size,
-            file_name=ldda.file_name,
+            file_name=ldda.get_file_name(),
             update_time=ldda.update_time.isoformat(),
             file_ext=ldda.ext,
             data_type=f"{ldda.datatype.__class__.__module__}.{ldda.datatype.__class__.__name__}",
@@ -5803,7 +5801,7 @@ class LibraryDatasetDatasetAssociation(DatasetInstance, HasName, Serializable):
         for name in ldda.metadata.spec.keys():
             val = ldda.metadata.get(name)
             if isinstance(val, MetadataFile):
-                val = val.file_name
+                val = val.get_file_name()
             # If no value for metadata, look in datatype for metadata.
             elif val is None and hasattr(ldda.datatype, name):
                 val = getattr(ldda.datatype, name)
@@ -6039,9 +6037,9 @@ class ImplicitlyConvertedDatasetAssociation(Base, RepresentById):
         if purge and self.dataset.deleted:  # do something with purging
             self.purged = True
             try:
-                os.unlink(self.file_name)
+                os.unlink(self.get_file_name())
             except Exception as e:
-                log.error(f"Failed to purge associated file ({self.file_name}) from disk: {unicodify(e)}")
+                log.error(f"Failed to purge associated file ({self.get_file_name()}) from disk: {unicodify(e)}")
 
 
 DEFAULT_COLLECTION_NAME = "Unnamed Collection"
@@ -6253,7 +6251,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
         q = self._get_nested_collection_attributes(
             element_attributes=("element_identifier",), hda_attributes=("extension",), return_entities=(Dataset,)
         )
-        return [(row[:-2], row.extension, row.Dataset.file_name) for row in q]
+        return [(row[:-2], row.extension, row.Dataset.get_file_name()) for row in q]
 
     @property
     def element_identifiers_extensions_paths_and_metadata_files(
@@ -6268,7 +6266,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
             )
             # element_identifiers, extension, path
             for row in q:
-                result = [row[:-3], row.extension, row.Dataset.file_name]
+                result = [row[:-3], row.extension, row.Dataset.get_file_name()]
                 hda = row.HistoryDatasetAssociation
                 result.append(hda.get_metadata_file_paths_and_extensions())
                 results.append(result)
@@ -6280,7 +6278,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
                     [
                         dataset_element._identifiers,
                         dataset_element.hda.extension,
-                        dataset_element.hda.file_name,
+                        dataset_element.hda.get_file_name(),
                         dataset_element.hda.get_metadata_file_paths_and_extensions(),
                     ]
                 )
@@ -9167,11 +9165,10 @@ class MetadataFile(Base, StorableObject, Serializable):
             file_name=file_name,
             extra_dir="_metadata_files",
             extra_dir_at_root=True,
-            alt_name=os.path.basename(self.file_name),
+            alt_name=os.path.basename(self.get_file_name()),
         )
 
-    @property
-    def file_name(self):
+    def get_file_name(self):
         # Ensure the directory structure and the metadata file object exist
         try:
             da = self.history_dataset or self.library_dataset

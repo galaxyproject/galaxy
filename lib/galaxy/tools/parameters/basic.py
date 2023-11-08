@@ -2212,7 +2212,7 @@ class DataToolParameter(BaseDataToolParameter):
     def to_param_dict_string(self, value, other_values=None):
         if value is None:
             return "None"
-        return value.file_name
+        return value.get_file_name()
 
     def to_text(self, value):
         if value and not isinstance(value, list):
