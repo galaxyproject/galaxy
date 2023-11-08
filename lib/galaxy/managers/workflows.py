@@ -723,13 +723,23 @@ class WorkflowContentsManager(UsesAnnotations):
             stored_workflow.latest_workflow = workflow
             workflow.stored_workflow = stored_workflow
 
+        data = raw_workflow_description.as_dict
+        if isinstance(data, str):
+            data = json.loads(data)
+        if "tags" in data:
+            trans.tag_handler.set_tags_from_list(
+                trans.user,
+                stored_workflow,
+                data.get("tags", []),
+            )
+
         if workflow_update_options.update_stored_workflow_attributes:
             update_dict = raw_workflow_description.as_dict
             if "name" in update_dict:
                 sanitized_name = sanitize_html(update_dict["name"])
                 workflow.name = sanitized_name
                 stored_workflow.name = sanitized_name
-            if "annotation" in update_dict:
+            if update_dict.get("annotation") is not None:
                 newAnnotation = sanitize_html(update_dict["annotation"])
                 sa_session = None if dry_run else trans.sa_session
                 self.add_item_annotation(sa_session, stored_workflow.user, stored_workflow, newAnnotation)

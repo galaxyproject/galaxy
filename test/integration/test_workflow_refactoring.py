@@ -898,6 +898,7 @@ class MockTrans(ProvidesAppContext):
         self.user = user
         self.history = None
         self.workflow_building_mode = workflow_building_modes.ENABLED
+        self.tag_handler = app.tag_handler
 
     @property
     def galaxy_session(self):

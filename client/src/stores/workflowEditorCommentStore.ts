@@ -15,6 +15,7 @@ import {
 import { assertDefined } from "@/utils/assertions";
 import { hasKeys, match } from "@/utils/utils";
 
+import { useScopePointerStore } from "./scopePointerStore";
 import { useWorkflowStateStore } from "./workflowEditorStateStore";
 import { Step, useWorkflowStepStore } from "./workflowStepStore";
 
@@ -92,7 +93,9 @@ function assertCommentDataValid(
 export type WorkflowCommentStore = ReturnType<typeof useWorkflowCommentStore>;
 
 export const useWorkflowCommentStore = (workflowId: string) => {
-    return defineStore(`workflowCommentStore${workflowId}`, () => {
+    const { scope } = useScopePointerStore();
+
+    return defineStore(`workflowCommentStore${scope(workflowId)}`, () => {
         const commentsRecord = ref<Record<number, WorkflowComment>>({});
         const localCommentsMetadata = ref<Record<number, CommentsMetadata>>({});
 

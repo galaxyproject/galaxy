@@ -5,6 +5,8 @@ import type { CollectionTypeDescriptor } from "@/components/Workflow/Editor/modu
 import { type Connection, getConnectionId, useConnectionStore } from "@/stores/workflowConnectionStore";
 import { assertDefined } from "@/utils/assertions";
 
+import { useScopePointerStore } from "./scopePointerStore";
+
 interface State {
     steps: { [index: string]: Step };
     stepIndex: number;
@@ -145,7 +147,9 @@ interface StepInputMapOver {
 }
 
 export const useWorkflowStepStore = (workflowId: string) => {
-    return defineStore(`workflowStepStore${workflowId}`, {
+    const { scope } = useScopePointerStore();
+
+    return defineStore(`workflowStepStore${scope(workflowId)}`, {
         state: (): State => ({
             steps: {} as Steps,
             stepMapOver: {} as { [index: number]: CollectionTypeDescriptor },
