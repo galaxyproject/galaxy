@@ -71,7 +71,7 @@ if TYPE_CHECKING:
 
 XSS_VULNERABLE_MIME_TYPES = [
     "image/svg+xml",  # Unfiltered by Galaxy and may contain JS that would be executed by some browsers.
-    "application/xml",  # Some browsers will evalute SVG embedded JS in such XML documents.
+    "application/xml",  # Some browsers will evaluate SVG embedded JS in such XML documents.
 ]
 DEFAULT_MIME_TYPE = "text/plain"  # Vulnerable mime types will be replaced with this.
 
@@ -523,10 +523,10 @@ class Data(metaclass=DataMeta):
         """
         Displays data in central pane if preview is `True`, else handles download.
 
-        Datatypes should be very careful if overridding this method and this interface
+        Datatypes should be very careful if overriding this method and this interface
         between datatypes and Galaxy will likely change.
 
-        TOOD: Document alternatives to overridding this method (data
+        TODO: Document alternatives to overriding this method (data
         providers?).
         """
         headers = kwd.get("headers", {})
