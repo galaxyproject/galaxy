@@ -31,7 +31,7 @@ class TestVisualizationsApi(ApiTestCase, SharingApiTests):
     def test_index_ordering(self):
         ids = []
         for x in range(3):
-            v = self._new_viz(title="visualization-%i" % x, slug="slug-%i" % x).json()
+            v = self._new_viz(title=f"visualization-{x}", slug=f"slug-{x}").json()
             ids.append(v["id"])
         index_ids = self._index_ids()
         for x in range(3):
@@ -39,6 +39,26 @@ class TestVisualizationsApi(ApiTestCase, SharingApiTests):
         index_ids = self._index_ids(dict(sort_desc=False))
         for x in range(3):
             assert index_ids[x] == ids[x]
+
+    def test_index_filtering(self):
+        ids = []
+        for x in range(3):
+            v = self._new_viz(title=f"visualization-{x}", slug=f"slug-{x}").json()
+            ids.append(v["id"])
+        index_ids = self._index_ids(dict(show_own=False))
+        assert len(index_ids) == 0
+        self._publish_viz(ids[0])
+        index_ids = self._index_ids(dict(show_own=False))
+        assert len(index_ids) == 1
+        index_ids = self._index_ids(dict(show_own=False, show_published=False))
+        assert len(index_ids) == 3
+        index_ids = self._index_ids(dict(search="visualization-1"))
+        assert index_ids[0] == ids[1]
+        self._update_viz(ids[1], dict(deleted=True))
+        index_ids = self._index_ids(dict(search="visualization-1"))
+        assert len(index_ids) == 0
+        index_ids = self._index_ids(dict(search="is:deleted"))
+        assert index_ids[0] == ids[1]
 
     def test_create(self):
         viz_id, viz_request = self._create_viz()
@@ -110,6 +130,11 @@ class TestVisualizationsApi(ApiTestCase, SharingApiTests):
         response = self._post("visualizations", data=create_payload)
         return response
 
+    def _publish_viz(self, id):
+        sharing_response = self._put(f"visualizations/{id}/publish")
+        assert sharing_response.status_code == 200
+        return sharing_response.json()
+
     def _show_viz(self, viz_id, assert_ok=True):
         show_response = self._get(f"visualizations/{viz_id}")
         if assert_ok:
@@ -118,6 +143,11 @@ class TestVisualizationsApi(ApiTestCase, SharingApiTests):
         if assert_ok:
             self._verify_viz_object(viz, show=True)
         return viz
+
+    def _update_viz(self, viz_id, params=None):
+        response = self._put(f"visualizations/{viz_id}", params or {}, json=True)
+        self._assert_status_code_is(response, 200)
+        return response
 
     def _verify_viz_object(self, obj, show=False):
         assert_has_keys(obj, *(SHOW_KEYS if show else INDEX_KEYS))
