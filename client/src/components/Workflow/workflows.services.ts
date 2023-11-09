@@ -1,6 +1,6 @@
 import axios from "axios";
 
-import { fetcher } from "@/schema";
+import { fetcher } from "@/api/schema";
 import { useUserStore } from "@/stores/userStore";
 import { withPrefix } from "@/utils/redirect";
 
