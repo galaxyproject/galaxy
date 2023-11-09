@@ -17,6 +17,7 @@ import Filtering, { contains, equals, expandNameTag, toBool } from "@/utils/filt
 import FilterMenu from "@/components/Common/FilterMenu.vue";
 import Heading from "@/components/Common/Heading.vue";
 import ListHeader from "@/components/Common/ListHeader.vue";
+import LoginRequired from "@/components/Common/LoginRequired.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import WorkflowCard from "@/components/Workflow/WorkflowCard.vue";
 import WorkflowListActions from "@/components/Workflow/WorkflowListActions.vue";
@@ -181,11 +182,23 @@ onMounted(() => {
             </div>
 
             <BNav pills justified class="mb-2">
-                <BNavItem :active="activeList === 'my'" to="/workflows/list"> My workflows </BNavItem>
-                <BNavItem :active="sharedWithMe" to="/workflows/list_shared_with_me">
-                    Workflows shared with me
+                <BNavItem id="my" :active="activeList === 'my'" :disabled="userStore.isAnonymous" to="/workflows/list">
+                    My workflows
+                    <LoginRequired v-if="userStore.isAnonymous" target="my" title="Manage your workflows" />
                 </BNavItem>
-                <BNavItem :active="published" to="/workflows/list_published"> Public workflows </BNavItem>
+
+                <BNavItem
+                    id="shared-with-me"
+                    :active="sharedWithMe"
+                    :disabled="userStore.isAnonymous"
+                    to="/workflows/list_shared_with_me">
+                    Workflows shared with me
+                    <LoginRequired v-if="userStore.isAnonymous" target="shared-with-me" title="Manage your workflows" />
+                </BNavItem>
+
+                <BNavItem id="published" :active="published" to="/workflows/list_published">
+                    Public workflows
+                </BNavItem>
             </BNav>
 
             <FilterMenu
