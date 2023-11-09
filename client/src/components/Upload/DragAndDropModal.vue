@@ -2,8 +2,7 @@
 import { useFileDrop } from "composables/fileDrop";
 import { useGlobalUploadModal } from "composables/globalUploadModal";
 import { computed, ref } from "vue";
-
-import { Toast } from "@/composables/toast";
+import { useToast } from "@/composables/toast";
 
 const modalContentElement = ref(null);
 const { isFileOverDocument, isFileOverDropZone } = useFileDrop(modalContentElement, onDrop, onDropCancel, true);
@@ -18,6 +17,8 @@ const modalClass = computed(() => {
 
 const { openGlobalUploadModal } = useGlobalUploadModal();
 
+const toast = useToast();
+
 function onDrop(event) {
     console.debug(event.dataTransfer);
 
@@ -31,7 +32,7 @@ function onDrop(event) {
 
 function onDropCancel(event) {
     if (event.dataTransfer?.files?.length > 0) {
-        Toast.error("Please try again", "Upload cancelled");
+        toast.error("Please try again", "Upload cancelled");
     }
 }
 </script>
