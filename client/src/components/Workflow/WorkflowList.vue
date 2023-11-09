@@ -148,7 +148,7 @@ async function load(overlayLoading = false, silentLoading = false) {
 
 function onToggleDeleted() {
     if (!showDeleted.value) {
-        filterText.value = `${filterText.value} is:deleted`;
+        filterText.value = `${filterText.value} is:deleted`.trim();
     } else {
         filterText.value = filterText.value.replace("is:deleted", "").trim();
     }
@@ -189,6 +189,7 @@ onMounted(() => {
             </BNav>
 
             <FilterMenu
+                id="workflow-list-filter"
                 class="mb-2"
                 :filter-class="WorkflowFilters"
                 :filter-text.sync="filterText"
@@ -234,11 +235,11 @@ onMounted(() => {
             <LoadingSpan />
         </BAlert>
 
-        <BAlert v-else-if="!loading && !overlay && noItems" variant="info" show>
+        <BAlert v-else-if="!loading && !overlay && noItems" id="workflow-list-empty" variant="info" show>
             No workflows found. You may create or import new workflows using the buttons above.
         </BAlert>
 
-        <BAlert v-else-if="!loading && !overlay && noResults" variant="info" show>
+        <BAlert v-else-if="!loading && !overlay && noResults" id="no-workflow-found" variant="info" show>
             No workflows found matching: <span class="font-weight-bold">{{ filterText }}</span>
         </BAlert>
 
