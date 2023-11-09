@@ -21,19 +21,25 @@ const testGrid = {
             title: "id",
             type: "text",
         },
+        {
+            key: "link",
+            title: "link",
+            type: "link",
+        },
     ],
     filtering: new Filtering({}, undefined, false, false),
     getData: () => {
         const data = [
             {
-                id: "test-1",
+                id: "id-1",
+                link: "link-1",
             },
             {
-                id: "test-2",
+                id: "id-2",
+                link: "link-2",
             },
         ];
-        const totalMatches = 1000;
-        return [data, totalMatches];
+        return [data, data.length];
     },
     plural: "Tests",
     sortBy: "update_time",
@@ -63,7 +69,9 @@ describe("GridList", () => {
         const findAction = wrapper.find("[data-description='grid action test']");
         expect(findAction.text()).toBe("test");
         await wrapper.vm.$nextTick();
-        expect(wrapper.find("[data-description='grid text 0-0']").text()).toBe("test-1");
-        expect(wrapper.find("[data-description='grid text 1-0']").text()).toBe("test-2");
+        expect(wrapper.find("[data-description='grid cell 0-0']").text()).toBe("id-1");
+        expect(wrapper.find("[data-description='grid cell 1-0']").text()).toBe("id-2");
+        expect(wrapper.find("[data-description='grid cell 0-1'] > a").text()).toBe("link-1");
+        expect(wrapper.find("[data-description='grid cell 1-1'] > a").text()).toBe("link-2");
     });
 });

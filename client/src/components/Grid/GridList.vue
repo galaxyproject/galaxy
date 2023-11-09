@@ -215,16 +215,14 @@ watch(operationMessage, () => {
                     v-for="(fieldEntry, fieldIndex) in config.fields"
                     :key="fieldIndex"
                     class="px-2 py-3"
-                    :style="{ width: fieldEntry.width }">
+                    :style="{ width: fieldEntry.width }"
+                    :data-description="`grid cell ${rowIndex}-${fieldIndex}`">
                     <GridOperations
                         v-if="fieldEntry.type == 'operations'"
                         :operations="fieldEntry.operations"
                         :row-data="rowData"
                         @execute="onOperation($event, rowData)" />
-                    <GridText
-                        v-else-if="fieldEntry.type == 'text'"
-                        :data-description="`grid text ${rowIndex}-${fieldIndex}`"
-                        :text="rowData[fieldEntry.key]" />
+                    <GridText v-else-if="fieldEntry.type == 'text'" :text="rowData[fieldEntry.key]" />
                     <GridLink
                         v-else-if="fieldEntry.type == 'link'"
                         :text="rowData[fieldEntry.key]"
