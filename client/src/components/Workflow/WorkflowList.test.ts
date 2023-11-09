@@ -1,17 +1,17 @@
 import { createTestingPinia } from "@pinia/testing";
 import { getLocalVue } from "@tests/jest/helpers";
-import { mount, shallowMount } from "@vue/test-utils";
+import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 
-import { mockFetcher } from "@/schema/__mocks__";
+import { mockFetcher } from "@/api/schema/__mocks__";
 import { useUserStore } from "@/stores/userStore";
 
 import { generateRandomWorkflowList } from "./test-utils";
 
 import WorkflowList from "./WorkflowList.vue";
 
-jest.mock("@/schema");
+jest.mock("@/api/schema");
 
 const localVue = getLocalVue();
 
