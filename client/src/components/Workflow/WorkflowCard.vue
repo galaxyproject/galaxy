@@ -86,8 +86,10 @@ async function onTagsUpdate(tags: string[]) {
 </script>
 
 <template>
-    <div class="workflow-card">
-        <div class="workflow-card-container">
+    <div class="workflow-card" :data-workflow-id="workflow.id">
+        <div
+            class="workflow-card-container"
+            :class="{ 'workflow-shared-trs': !publishedView && (workflow.source_metadata || workflow.published) }">
             <div>
                 <div class="d-flex justify-content-between align-items-center mb-1">
                     <div>
@@ -287,6 +289,10 @@ async function onTagsUpdate(tags: string[]) {
                 justify-content: end;
             }
         }
+    }
+
+    .workflow-shared-trs {
+        border-left: 0.25rem solid $brand-primary;
     }
 
     @container (max-width: 768px) {
