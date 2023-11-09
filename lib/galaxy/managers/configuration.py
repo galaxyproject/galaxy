@@ -217,6 +217,7 @@ class ConfigSerializer(base.ModelSerializer):
             "instance_access_url": _use_config,
             "organization_name": _use_config,
             "organization_url": _use_config,
+            "fixed_delegated_auth": _defaults_to(False),
         }
 
 

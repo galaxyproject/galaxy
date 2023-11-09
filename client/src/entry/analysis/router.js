@@ -410,7 +410,7 @@ export function getRouter(Galaxy) {
                     {
                         path: "user/external_ids",
                         component: ExternalIdentities,
-                        redirect: redirectAnon(),
+                        redirect: redirectIf(Galaxy.config.fixed_delegated_auth, "/") || redirectAnon(),
                     },
                     {
                         path: "user/notifications",

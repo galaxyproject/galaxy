@@ -1719,7 +1719,7 @@ it may be inconvenient to upload the entiry file and this can be used instead.
         <xs:documentation xml:lang="en"><![CDATA[
 If this attribute is true then try to decompress files if needed. This applies to
 test assertions expressed with ``assert_contents`` or ``compare`` set to anything
-but ``sim_size``. 
+but ``sim_size``.
 This flag is useful for testing compressed outputs that are non-deterministic
 despite having deterministic decompressed contents. By default, only files compressed
 with bz2, gzip and zip will be automatically decompressed.
@@ -7389,7 +7389,7 @@ information according to a catalog.</xs:documentation>
       <xs:extension base="xs:string">
         <xs:attribute name="type" type="xrefType" use="required">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Type of reference - currently ``bio.tools`` and ``bioconductor`` are
+            <xs:documentation xml:lang="en">Type of reference - currently ``bio.tools``, ``bioconductor``, and ``biii`` are
 the only supported options.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
@@ -7403,6 +7403,7 @@ the only supported options.</xs:documentation>
     <xs:restriction base="xs:string">
       <xs:enumeration value="bio.tools"/>
       <xs:enumeration value="bioconductor"/>
+      <xs:enumeration value="biii"/>
       <!--xs:enumeration value="whatelse"/-->
     </xs:restriction>
   </xs:simpleType>
