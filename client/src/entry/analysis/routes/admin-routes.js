@@ -12,6 +12,9 @@ import DisplayApplications from "components/admin/DisplayApplications";
 import ErrorStack from "components/admin/ErrorStack";
 import Home from "components/admin/Home";
 import JobsList from "components/admin/JobsList";
+import BroadcastForm from "components/admin/Notifications/BroadcastForm";
+import NotificationForm from "components/admin/Notifications/NotificationForm";
+import NotificationsManagement from "components/admin/Notifications/NotificationsManagement";
 import ResetMetadata from "components/admin/ResetMetadata";
 import SanitizeAllow from "components/admin/SanitizeAllow";
 import FormGeneric from "components/Form/FormGeneric";
@@ -92,6 +95,31 @@ export default [
                         props: true,
                     },
                 ],
+            },
+
+            // notifications and broadcasts
+            {
+                path: "notifications",
+                component: NotificationsManagement,
+            },
+
+            {
+                path: "notifications/create_new_broadcast",
+                name: "NewBroadcast",
+                component: BroadcastForm,
+            },
+
+            {
+                path: "notifications/edit_broadcast/:id",
+                name: "EditBroadcast",
+                component: BroadcastForm,
+                props: true,
+            },
+
+            {
+                path: "notifications/create_new_notification",
+                name: "NewNotification",
+                component: NotificationForm,
             },
 
             // grids

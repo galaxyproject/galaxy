@@ -88,7 +88,7 @@ import { getAppRoot } from "onload/loadConfig";
 import { errorMessageAsString } from "utils/simple-error";
 import Vue, { ref, watch } from "vue";
 
-import { getFileSources } from "@/components/FilesDialog/services";
+import { getFileSources } from "@/api/remoteFiles";
 
 import ExternalLink from "./ExternalLink";
 

@@ -50,7 +50,6 @@ module.exports = (env = {}, argv = {}) => {
         entry: {
             analysis: ["polyfills", "bundleEntries", "entry/analysis"],
             generic: ["polyfills", "bundleEntries", "entry/generic"],
-            toolshed: ["polyfills", "bundleToolshed", "entry/generic"],
         },
         output: {
             path: path.join(__dirname, "dist"),
@@ -154,18 +153,6 @@ module.exports = (env = {}, argv = {}) => {
                             loader: "expose-loader",
                             options: {
                                 exposes: "bundleEntries",
-                            },
-                        },
-                    ],
-                },
-                // Attaches the bundleToolshed to the window object.
-                {
-                    test: `${scriptsBase}/bundleToolshed`,
-                    use: [
-                        {
-                            loader: "expose-loader",
-                            options: {
-                                exposes: "bundleToolshed",
                             },
                         },
                     ],

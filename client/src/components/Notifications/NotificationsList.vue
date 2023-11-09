@@ -6,7 +6,7 @@ import { BAlert, BButton, BButtonGroup, BCard, BCol, BCollapse, BFormCheckbox, B
 import { storeToRefs } from "pinia";
 import { computed, ref } from "vue";
 
-import type { UserNotification } from "@/components/Notifications";
+import type { UserNotification } from "@/api/notifications";
 import { useNotificationsStore } from "@/stores/notificationsStore";
 
 import LoadingSpan from "@/components/LoadingSpan.vue";

@@ -8,11 +8,11 @@ import { useUserStore } from "stores/userStore";
 import { getLocalVue } from "tests/jest/helpers";
 import Vue from "vue";
 
-import { mockFetcher } from "@/schema/__mocks__";
+import { mockFetcher } from "@/api/schema/__mocks__";
 
 import ToolForm from "./ToolForm";
 
-jest.mock("@/schema");
+jest.mock("@/api/schema");
 
 const localVue = getLocalVue();
 const pinia = createPinia();

@@ -1,10 +1,8 @@
 import logging
 import os
 
-from ..base.twilltestcase import (
-    common,
-    ShedTwillTestCase,
-)
+from ..base import common
+from ..base.twilltestcase import ShedTwillTestCase
 
 log = logging.getLogger(__name__)
 
@@ -46,27 +44,10 @@ class TestHgWebFeatures(ShedTwillTestCase):
             category=category,
             strings_displayed=[],
         )
-        self.upload_file(
+        self.commit_tar_to_repository(
             repository,
-            filename="filtering/filtering_1.1.0.tar",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=True,
-            remove_repo_files_not_in_tar=True,
+            "filtering/filtering_1.1.0.tar",
             commit_message="Uploaded filtering 1.1.0.",
-            strings_displayed=[],
-            strings_not_displayed=[],
-        )
-        self.upload_file(
-            repository,
-            filename="filtering/filtering_test_data.tar",
-            filepath=None,
-            valid_tools_only=True,
-            uncompress_file=True,
-            remove_repo_files_not_in_tar=False,
-            commit_message="Uploaded filtering test data.",
-            strings_displayed=[],
-            strings_not_displayed=[],
         )
 
     def test_0010_clone(self):

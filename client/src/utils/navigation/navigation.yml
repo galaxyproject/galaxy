@@ -122,8 +122,8 @@ change_user_address:
 
 sign_out:
   selectors:
-    cancel_button: '.modal-footer .buttons #button-0'
-    sign_out_button: '.modal-footer .buttons #button-1'
+    cancel_button: '.modal-footer .btn-secondary'
+    sign_out_button: '.modal-footer .btn-primary'
 
 dataset_details:
   selectors:
@@ -398,8 +398,8 @@ multi_history_panel:
 published_histories:
   selectors:
     histories: '#published-histories-table tbody tr'
-    search_input: '#published-histories-filter'
-    advanced_search_toggle: '#published-histories-advanced-filter-toggle'
+    search_input: '#published-histories input.search-query[data-description="filter text input"]'
+    advanced_search_toggle: '#published-histories [data-description="toggle advanced search"]'
     advanced_search_name_input: '#published-histories-advanced-filter-name'
     advanced_search_tag_input: '#published-histories-advanced-filter-tag'
     advanced_search_submit: '#published-histories-advanced-filter-submit'
@@ -438,7 +438,6 @@ histories:
       unshare_with_user_button: '.share_with_view [data-email="${email}"] .multiselect__tag-icon'
       user_email_input: '.user-email-input-form'
       submit_sharing_with: '.submit-sharing-with'
-      share_with_collapse: '.share-with-collapse'
       share_with_multiselect: '.share_with_view > .multiselect'
       share_with_input: '.share_with_view input'
       make_accessible: '.make-accessible label'
@@ -555,13 +554,10 @@ tool_form:
     parameter_checkbox: 'div.ui-form-element[id="form-element-${parameter}"] .ui-switch'
     parameter_input: 'div.ui-form-element[id="form-element-${parameter}"] .ui-input'
     parameter_textarea: 'div.ui-form-element[id="form-element-${parameter}"] textarea'
-    parameter_data_input_single:
-      type: xpath
-      selector: //div[@id='form-element-${parameter}']//i[contains(@class, 'fa-file-o')]/parent::label
-    parameter_batch_dataset_collection:
-      type: xpath
-      selector: //div[@id='form-element-${parameter}']//i[contains(@class, 'fa-folder-o')]/parent::label
-    data_option_value: option[value="${item_id}"]
+    parameter_data_input_single: 'div.ui-form-element[id="form-element-${parameter}"] button[title="Single dataset"]'
+    parameter_data_input_collection: 'div.ui-form-element[id="form-element-${parameter}"] button[title="Dataset collection"]'
+    parameter_data_label: 'div.ui-form-element[id="form-element-${parameter}"] [data-description="form data label"]'
+    parameter_data_select: 'div.ui-form-element[id="form-element-${parameter}"] .multiselect'
 
     repeat_insert: '[data-description="repeat insert"]'
     repeat_move_up: '#${parameter}_up'
@@ -581,7 +577,12 @@ workflows:
     new_button: '#workflow-create'
     import_button: '#workflow-import'
     save_button: '#workflow-save-button'
-    search_box: "#workflow-search"
+    search_box: '.workflows-list input.search-query[data-description="filter text input"]'
+    clear_filter: '.workflows-list [data-description="reset query"]'
+    advanced_search_toggle: '.workflows-list [data-description="toggle advanced search"]'
+    advanced_search_name_input: '#workflows-advanced-filter-name'
+    advanced_search_tag_input: '#workflows-advanced-filter-tag .stateless-tags'
+    advanced_search_submit: '#workflows-advanced-filter-submit'
     workflow_table: "#workflow-table"
     workflow_rows: "#workflow-table > tbody > tr:not(.b-table-empty-row, [style*='display: none'])"
     external_link: '.workflow-external-link'
@@ -646,9 +647,9 @@ trs_import:
 
 workflow_run:
   selectors:
-    warning: ".ui-form-composite .alert-warning"
+    warning: ".ui-form-composite-messages .alert-warning"
     input_div: "[step-label='${label}']"
-    input_data_div: "[step-label='${label}'] .select2-container"
+    input_data_div: "[step-label='${label}'] .multiselect"
     # TODO: put step labels in the DOM ideally
     subworkflow_step_icon: ".portlet-title-icon.fa-sitemap"
     run_workflow: "#run-workflow"
@@ -673,13 +674,38 @@ workflow_editor:
       clone: '${_} .node-clone'
       output_data_row:
         type: xpath
-        selector: '//div[contains(@class, "output-data-row") and contains(string(), "${output_name} (${extension})")]'
+        selector: '//div[@data-output-name="${output_name}"]//span[contains(text(), "(${extension})")]'
       output_terminal: "${_} [output-name='${name}']"
       input_terminal: "${_} [input-name='${name}']"
       input_mapping_icon: "${_} [input-name='${name}'].mapped-over"
       connector_destroy_callout: "${_} [input-name='${name}'] + .delete-terminal-button"
       workflow_output_toggle: "${_} [data-output-name='${name}'] .callout-terminal "
       workflow_output_toggle_active: "${_} [data-output-name='${name}'] .mark-terminal-active"
+  tool_bar:
+    selectors:
+      _: ".workflow-editor-toolbar"
+      tool: "[data-tool='${tool}']"
+      tool_active: ".active[data-tool='${tool}']"
+      snapping_distance: "[data-option='snapping-distance']"
+      toggle_bold: "[data-option='toggle-bold']"
+      toggle_italic: "[data-option='toggle-italic']"
+      color: ".color-selector [data-color='${color}']"
+      font_size: "[data-option='font-size']"
+      line_thickness: "[data-option='line-thickness']"
+      smoothing: "[data-option='smoothing']"
+      remove_freehand: "[data-option='remove-freehand']"
+  comment:
+    selectors:
+      _: ".workflow-editor-comment"
+      text_comment: ".text-workflow-comment"
+      text_inner: ".text-workflow-comment span"
+      markdown_comment: ".markdown-workflow-comment"
+      markdown_rendered: ".markdown-workflow-comment .rendered-markdown"
+      frame_comment: ".frame-workflow-comment"
+      frame_title: ".frame-workflow-comment .frame-comment-header"
+      freehand_comment: ".freehand-workflow-comment"
+      freehand_path: ".freehand-workflow-comment path"
+      delete: "button[title='Delete comment']"
   selectors:
     canvas_body: '#workflow-canvas'
     edit_annotation: '#workflow-annotation'
@@ -812,7 +838,7 @@ invocations:
     step_output_collection_toggle: '[data-step="${order_index}"] .invocation-step-output-collection-details .name'
     step_output_collection_element_identifier:
       type: xpath
-      selector: '//span[@class="content-title name"][text()="${element_identifier}"]'
+      selector: '//span[contains(@class, "content-title name")][text()="${element_identifier}"]'
     step_output_collection_element_datatype: '[data-step="${order_index}"] .invocation-step-output-collection-details .not-loading .datatype .value'
     step_job_details: '[data-step="${order_index}"] .invocation-step-job-details'
     step_job_table: '[data-step="${order_index}"] .invocation-step-job-details table'

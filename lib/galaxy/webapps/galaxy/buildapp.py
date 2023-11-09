@@ -194,6 +194,7 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/admin/invocations")
     webapp.add_client_route("/admin/toolbox_dependencies")
     webapp.add_client_route("/admin/data_manager{path_info:.*}")
+    webapp.add_client_route("/admin/notifications{path_info:.*}")
     webapp.add_client_route("/admin/error_stack")
     webapp.add_client_route("/admin/users")
     webapp.add_client_route("/admin/users/create")
@@ -365,6 +366,9 @@ def populate_api_routes(webapp, app):
     # =======================
     # ====== TOOLS API ======
     # =======================
+
+    webapp.mapper.connect("/api/tool_panels", action="panel_views", controller="tools")
+    webapp.mapper.connect("/api/tool_panels/{view}", action="panel_view", controller="tools")
 
     webapp.mapper.connect("/api/tools/all_requirements", action="all_requirements", controller="tools")
     webapp.mapper.connect("/api/tools/error_stack", action="error_stack", controller="tools")
@@ -581,8 +585,6 @@ def populate_api_routes(webapp, app):
         "/api/workflows/{id}/refactor", action="refactor", controller="workflows", conditions=dict(method=["PUT"])
     )
     webapp.mapper.resource("workflow", "workflows", path_prefix="/api")
-
-    webapp.mapper.resource("search", "search", path_prefix="/api")
 
     # ---- visualizations registry ---- generic template renderer
     # @deprecated: this route should be considered deprecated

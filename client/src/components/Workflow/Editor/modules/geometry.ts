@@ -98,6 +98,16 @@ export class AxisAlignedBoundingBox implements Rectangle {
             return false;
         }
     }
+
+    /** check if other rectangle fits into this one */
+    contains(other: Rectangle) {
+        return (
+            this.x <= other.x &&
+            this.y <= other.y &&
+            this.endX >= other.x + other.width &&
+            this.endY >= other.y + other.height
+        );
+    }
 }
 
 /* Format
@@ -199,4 +209,34 @@ export class Transform {
     get scaleY() {
         return this.matrix[3];
     }
+}
+
+/** returns a vector constructed of both vectors smaller coordinates */
+export function vecMin(a: Vector, b: Vector): Vector {
+    return [Math.min(a[0], b[0]), Math.min(a[1], b[1])];
+}
+
+/** returns a vector constructed of both vectors larger coordinates */
+export function vecMax(a: Vector, b: Vector): Vector {
+    return [Math.max(a[0], b[0]), Math.max(a[1], b[1])];
+}
+
+/** returns a vector snapped to the specified distance */
+export function vecSnap(a: Vector, snap: number): Vector {
+    return [Math.round(a[0] / snap) * snap, Math.round(a[1] / snap) * snap];
+}
+
+/** subtracts vector b from vector a */
+export function vecSubtract(a: Vector, b: Vector): Vector {
+    return [a[0] - b[0], a[1] - b[1]];
+}
+
+export function vecAdd(a: Vector, b: Vector): Vector {
+    return [a[0] + b[0], a[1] + b[1]];
+}
+
+export function vecReduceFigures(a: Vector, significantFigures = 1): Vector {
+    const factor = Math.pow(10, significantFigures);
+
+    return [Math.round(a[0] * factor) / factor, Math.round(a[1] * factor) / factor];
 }

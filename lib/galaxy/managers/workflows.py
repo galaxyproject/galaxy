@@ -96,6 +96,10 @@ from galaxy.workflow.refactor.schema import (
     RefactorActionExecution,
     RefactorActions,
 )
+from galaxy.workflow.render import (
+    STANDALONE_SVG_TEMPLATE,
+    WorkflowCanvas,
+)
 from galaxy.workflow.reports import generate_report
 from galaxy.workflow.resources import get_resource_mapper_function
 from galaxy.workflow.steps import (
@@ -339,7 +343,7 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
 
         # If given an invocation verify ownership of invocation
         if isinstance(has_workflow, model.WorkflowInvocation):
-            # We use the the owner of the history that is associated to the invocation as a proxy
+            # We use the owner of the history that is associated to the invocation as a proxy
             # for the owner of the invocation.
             if trans.user != has_workflow.history.user and not trans.user_is_admin:
                 raise exceptions.ItemOwnershipException()
@@ -366,6 +370,38 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
                 raise exceptions.ItemAccessibilityException()
 
         return True
+
+    def get_workflow_svg_from_id(self, trans, id, for_embed=False) -> bytes:
+        stored = self.get_stored_accessible_workflow(trans, id)
+        return self.get_workflow_svg(trans, stored.latest_workflow, for_embed=for_embed)
+
+    def get_workflow_svg(self, trans, workflow, for_embed=False) -> bytes:
+        try:
+            svg = self._workflow_to_svg_canvas(trans, workflow, for_embed=for_embed)
+            s = STANDALONE_SVG_TEMPLATE % svg.tostring()
+            return s.encode("utf-8")
+        except Exception:
+            message = (
+                "Galaxy is unable to create the SVG image. Please check your workflow, there might be missing tools."
+            )
+            raise exceptions.MessageException(message)
+
+    def _workflow_to_svg_canvas(self, trans, workflow, for_embed=False):
+        workflow_canvas = WorkflowCanvas()
+        for step in workflow.steps:
+            # Load from database representation
+            module = module_factory.from_workflow_step(trans, step)
+            module_name = module.get_name()
+            module_data_inputs = module.get_data_inputs()
+            module_data_outputs = module.get_data_outputs()
+            workflow_canvas.populate_data_for_step(
+                step,
+                module_name,
+                module_data_inputs,
+                module_data_outputs,
+            )
+        workflow_canvas.add_steps()
+        return workflow_canvas.finish(for_embed=for_embed)
 
     def get_invocation(self, trans, decoded_invocation_id, eager=False) -> model.WorkflowInvocation:
         q = trans.sa_session.query(model.WorkflowInvocation)
@@ -687,13 +723,23 @@ class WorkflowContentsManager(UsesAnnotations):
             stored_workflow.latest_workflow = workflow
             workflow.stored_workflow = stored_workflow
 
+        data = raw_workflow_description.as_dict
+        if isinstance(data, str):
+            data = json.loads(data)
+        if "tags" in data:
+            trans.tag_handler.set_tags_from_list(
+                trans.user,
+                stored_workflow,
+                data.get("tags", []),
+            )
+
         if workflow_update_options.update_stored_workflow_attributes:
             update_dict = raw_workflow_description.as_dict
             if "name" in update_dict:
                 sanitized_name = sanitize_html(update_dict["name"])
                 workflow.name = sanitized_name
                 stored_workflow.name = sanitized_name
-            if "annotation" in update_dict:
+            if update_dict.get("annotation") is not None:
                 newAnnotation = sanitize_html(update_dict["annotation"])
                 sa_session = None if dry_run else trans.sa_session
                 self.add_item_annotation(sa_session, stored_workflow.user, stored_workflow, newAnnotation)
@@ -796,6 +842,30 @@ class WorkflowContentsManager(UsesAnnotations):
 
         workflow.has_cycles = True
         workflow.steps = steps
+
+        comments: List[model.WorkflowComment] = []
+        comments_by_external_id: Dict[str, model.WorkflowComment] = {}
+        for comment_dict in data.get("comments", []):
+            comment = model.WorkflowComment.from_dict(comment_dict)
+            comments.append(comment)
+            external_id = comment_dict.get("id")
+            if external_id:
+                comments_by_external_id[external_id] = comment
+
+        workflow.comments = comments
+
+        # populate parent_comment
+        for comment, comment_dict in zip(comments, data.get("comments", [])):
+            for step_external_id in comment_dict.get("child_steps", []):
+                child_step = steps_by_external_id.get(step_external_id)
+                if child_step:
+                    child_step.parent_comment = comment
+
+            for comment_external_id in comment_dict.get("child_comments", []):
+                child_comment = comments_by_external_id.get(comment_external_id)
+                if child_comment:
+                    child_comment.parent_comment = comment
+
         # we can't reorder subworkflows, as step connections would become invalid
         if not is_subworkflow:
             # Order the steps if possible
@@ -945,7 +1015,7 @@ class WorkflowContentsManager(UsesAnnotations):
                     for pja in step.post_job_actions
                 ]
             else:
-                inputs = step.module.get_runtime_inputs(connections=step.output_connections)
+                inputs = step.module.get_runtime_inputs(step, connections=step.output_connections)
                 step_model = {"inputs": [input.to_dict(trans) for input in inputs.values()]}
             step_model["when"] = step.when_expression
             step_model["replacement_parameters"] = step.module.get_informal_replacement_parameters(step)
@@ -1057,7 +1127,15 @@ class WorkflowContentsManager(UsesAnnotations):
                     except KeyError:
                         continue
                 else:
-                    row_for_param(input_dict, input, values[input.name], other_values, prefix, step)
+                    row_for_param(
+                        input_dict,
+                        input,
+                        # Use values.get so that unspecified param values don't blow up the display
+                        values.get(input.name),
+                        other_values,
+                        prefix,
+                        step,
+                    )
                 input_dicts.append(input_dict)
             return input_dicts
 
@@ -1075,12 +1153,9 @@ class WorkflowContentsManager(UsesAnnotations):
                 step_dict["label"] = f"Unknown Tool with id '{e.tool_id}'"
                 step_dicts.append(step_dict)
                 continue
-            if step.type == "tool" or step.type is None:
-                tool = trans.app.toolbox.get_tool(step.tool_id)
-                if tool:
-                    step_dict["label"] = step.label or tool.name
-                else:
-                    step_dict["label"] = f"Unknown Tool with id '{step.tool_id}'"
+            if step.type == "tool":
+                tool = trans.app.toolbox.get_tool(step.tool_id, step.tool_version)
+                step_dict["label"] = step.label or tool.name
                 step_dict["inputs"] = do_inputs(tool.inputs, step.state.inputs, "", step)
             elif step.type == "subworkflow":
                 step_dict["label"] = step.label or (step.subworkflow.name if step.subworkflow else "Missing workflow.")
@@ -1092,7 +1167,7 @@ class WorkflowContentsManager(UsesAnnotations):
             else:
                 module = step.module
                 step_dict["label"] = module.name
-                step_dict["inputs"] = do_inputs(module.get_runtime_inputs(), step.state.inputs, "", step)
+                step_dict["inputs"] = do_inputs(module.get_runtime_inputs(step), step.state.inputs, "", step)
             step_dicts.append(step_dict)
         return {
             "name": workflow.name,
@@ -1114,6 +1189,7 @@ class WorkflowContentsManager(UsesAnnotations):
         data["creator"] = workflow.creator_metadata
         data["source_metadata"] = workflow.source_metadata
         data["annotation"] = self.get_item_annotation_str(trans.sa_session, trans.user, stored) or ""
+        data["comments"] = [comment.to_dict() for comment in workflow.comments]
 
         output_label_index = set()
         input_step_types = set(workflow.input_step_types)
@@ -1158,6 +1234,8 @@ class WorkflowContentsManager(UsesAnnotations):
             input_connections_type = {}
             multiple_input = {}  # Boolean value indicating if this can be multiple
             if isinstance(module, ToolModule) and module.tool:
+                # Serialize tool version
+                step_dict["tool_version"] = module.tool.version
                 # Determine full (prefixed) names of valid input datasets
                 data_input_names = {}
 
@@ -1328,9 +1406,16 @@ class WorkflowContentsManager(UsesAnnotations):
         """
         annotation_str = ""
         tag_str = ""
+        annotation_owner = None
         if stored is not None:
             if stored.id:
-                annotation_str = self.get_item_annotation_str(trans.sa_session, trans.user, stored) or ""
+                # if the active user doesn't have an annotation on the workflow, default to the owner's annotation.
+                annotation_owner = stored.user
+                annotation_str = (
+                    self.get_item_annotation_str(trans.sa_session, trans.user, stored)
+                    or self.get_item_annotation_str(trans.sa_session, annotation_owner, stored)
+                    or ""
+                )
                 tag_str = stored.make_tag_string_list()
             else:
                 # dry run with flushed workflow objects, just use the annotation
@@ -1349,6 +1434,7 @@ class WorkflowContentsManager(UsesAnnotations):
             data["uuid"] = str(workflow.uuid)
         steps: Dict[int, Dict[str, Any]] = {}
         data["steps"] = steps
+        data["comments"] = [comment.to_dict() for comment in workflow.comments]
         if workflow.reports_config:
             data["report"] = workflow.reports_config
         if workflow.creator_metadata:
@@ -1363,8 +1449,10 @@ class WorkflowContentsManager(UsesAnnotations):
             module = module_factory.from_workflow_step(trans, step)
             if not module:
                 raise exceptions.MessageException(f"Unrecognized step type: {step.type}")
-            # Get user annotation.
+            # Get user annotation if it exists, otherwise get owner annotation.
             annotation_str = self.get_item_annotation_str(trans.sa_session, trans.user, step) or ""
+            if not annotation_str and annotation_owner:
+                annotation_str = self.get_item_annotation_str(trans.sa_session, annotation_owner, step) or ""
             content_id = module.get_content_id() if allow_upgrade else step.content_id
             # Export differences for backward compatibility
             tool_state = module.get_export_state()
@@ -1428,13 +1516,12 @@ class WorkflowContentsManager(UsesAnnotations):
                 if name:
                     input_dicts.append({"name": name, "description": annotation_str})
             for name, val in step_state.items():
-                input_type = type(val)
-                if input_type == RuntimeValue:
+                if isinstance(val, RuntimeValue):
                     input_dicts.append({"name": name, "description": f"runtime parameter for tool {module.get_name()}"})
-                elif input_type == dict:
+                elif isinstance(val, dict):
                     # Input type is described by a dict, e.g. indexed parameters.
                     for partval in val.values():
-                        if type(partval) == RuntimeValue:
+                        if isinstance(partval, RuntimeValue):
                             input_dicts.append(
                                 {"name": name, "description": f"runtime parameter for tool {module.get_name()}"}
                             )
@@ -1729,6 +1816,11 @@ class WorkflowContentsManager(UsesAnnotations):
 
         if "in" in step_dict:
             for input_name, input_dict in step_dict["in"].items():
+                # This is just a bug in gxformat? I think the input
+                # defaults should be called input to match the input modules's
+                # input parameter name.
+                if input_name == "default":
+                    input_name = "input"
                 step_input = step.get_or_add_input(input_name)
                 NO_DEFAULT_DEFINED = object()
                 default = input_dict.get("default", NO_DEFAULT_DEFINED)

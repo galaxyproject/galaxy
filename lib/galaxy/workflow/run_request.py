@@ -14,6 +14,7 @@ from galaxy.model import (
     EffectiveOutput,
     History,
     HistoryDatasetAssociation,
+    HistoryDatasetCollectionAssociation,
     LibraryDataset,
     LibraryDatasetDatasetAssociation,
     WorkflowInvocation,
@@ -118,13 +119,16 @@ def _normalize_inputs(
         for possible_input_key in possible_input_keys:
             if possible_input_key in inputs:
                 inputs_key = possible_input_key
-        default_value = step.tool_inputs.get("default")
+
+        default_not_set = object()
+        has_default = step.get_input_default_value(default_not_set) is not default_not_set
         optional = step.input_optional
         # Need to be careful here to make sure 'default' has correct type - not sure how to do that
         # but asserting 'optional' is definitely a bool and not a String->Bool or something is a good
         # start to ensure tool state is being preserved and loaded in a type safe way.
         assert isinstance(optional, bool)
-        if not inputs_key and default_value is None and not optional:
+        assert isinstance(has_default, bool)
+        if not inputs_key and not has_default and not optional:
             message = f"Workflow cannot be run because an expected input step '{step.id}' ({step.label}) is not optional and no input."
             raise exceptions.MessageException(message)
         if inputs_key:
@@ -370,26 +374,22 @@ def build_workflow_run_configs(
             input_id = input_dict["id"]
             try:
                 if input_source == "ldda":
-                    ldda = trans.sa_session.query(LibraryDatasetDatasetAssociation).get(
-                        trans.security.decode_id(input_id)
-                    )
+                    ldda = trans.sa_session.get(LibraryDatasetDatasetAssociation, trans.security.decode_id(input_id))
                     assert trans.user_is_admin or trans.app.security_agent.can_access_dataset(
                         trans.get_current_user_roles(), ldda.dataset
                     )
                     content = ldda.to_history_dataset_association(history, add_to_history=add_to_history)
                 elif input_source == "ld":
-                    ldda = (
-                        trans.sa_session.query(LibraryDataset)
-                        .get(trans.security.decode_id(input_id))
-                        .library_dataset_dataset_association
-                    )
+                    ldda = trans.sa_session.get(
+                        LibraryDataset, trans.security.decode_id(input_id)
+                    ).library_dataset_dataset_association
                     assert trans.user_is_admin or trans.app.security_agent.can_access_dataset(
                         trans.get_current_user_roles(), ldda.dataset
                     )
                     content = ldda.to_history_dataset_association(history, add_to_history=add_to_history)
                 elif input_source == "hda":
                     # Get dataset handle, add to dict and history if necessary
-                    content = trans.sa_session.query(HistoryDatasetAssociation).get(trans.security.decode_id(input_id))
+                    content = trans.sa_session.get(HistoryDatasetAssociation, trans.security.decode_id(input_id))
                     assert trans.user_is_admin or trans.app.security_agent.can_access_dataset(
                         trans.get_current_user_roles(), content.dataset
                     )
@@ -400,7 +400,10 @@ def build_workflow_run_configs(
                         f"Unknown workflow input source '{input_source}' specified."
                     )
                 if add_to_history and content.history != history:
-                    content = content.copy(flush=False)
+                    if isinstance(content, HistoryDatasetCollectionAssociation):
+                        content = content.copy(element_destination=history, flush=False)
+                    else:
+                        content = content.copy(flush=False)
                     history.stage_addition(content)
                 input_dict["content"] = content
             except AssertionError:
@@ -495,7 +498,7 @@ def workflow_run_config_to_request(
     for step in workflow.steps:
         steps_by_id[step.id] = step
         assert step.module
-        serializable_runtime_state = step.module.encode_runtime_state(step.state)
+        serializable_runtime_state = step.module.encode_runtime_state(step, step.state)
 
         step_state = WorkflowRequestStepState()
         step_state.workflow_step = step

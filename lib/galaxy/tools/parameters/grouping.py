@@ -102,6 +102,7 @@ class Repeat(Group):
     def title_plural(self):
         return inflector.pluralize(self.title)
 
+    @property
     def label(self):
         return f"Repeat ({self.title})"
 
@@ -183,6 +184,7 @@ class Section(Group):
     def title_plural(self):
         return inflector.pluralize(self.title)
 
+    @property
     def label(self):
         return f"Section ({self.title})"
 

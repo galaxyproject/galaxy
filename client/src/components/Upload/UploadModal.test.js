@@ -6,14 +6,13 @@ import { useHistoryStore } from "stores/historyStore";
 import { useUserStore } from "stores/userStore";
 import { getLocalVue } from "tests/jest/helpers";
 
-import { getDatatypes, getDbKeys } from "./services";
+import { mockFetcher } from "@/api/schema/__mocks__";
 
 import UploadContainer from "./UploadContainer.vue";
 import UploadModal from "./UploadModal.vue";
 
 jest.mock("app");
-jest.mock("./services");
-jest.mock("@/schema");
+jest.mock("@/api/schema");
 
 jest.mock("@/composables/config", () => ({
     useConfig: jest.fn(() => ({
@@ -36,9 +35,6 @@ const genomesResponse = [
     ["Cat Sep. 2011 (ICGSC Felis_catus 6.2/felCat5) (felCat5)", "felCat5"],
 ];
 
-getDatatypes.mockReturnValue({ data: [fastaResponse] });
-getDbKeys.mockReturnValue({ data: genomesResponse });
-
 const propsData = {
     chunkUploadSize: 1024,
     fileSourcesConfigured: true,
@@ -51,6 +47,12 @@ describe("UploadModal.vue", () => {
     let historyStore;
 
     beforeEach(async () => {
+        mockFetcher
+            .path("/api/datatypes")
+            .method("get")
+            .mock({ data: [fastaResponse] });
+        mockFetcher.path("/api/genomes").method("get").mock({ data: genomesResponse });
+
         axiosMock = new MockAdapter(axios);
         axiosMock.onGet(`/api/histories/count`).reply(200, 0);
 

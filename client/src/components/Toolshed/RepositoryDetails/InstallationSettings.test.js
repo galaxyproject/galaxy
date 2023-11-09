@@ -21,6 +21,7 @@ describe("InstallationSettings", () => {
                 changesetRevision: "changesetRevision",
                 requiresPanel: true,
                 toolshedUrl: "toolshedUrl",
+                currentPanel: {},
             },
             localVue,
         });

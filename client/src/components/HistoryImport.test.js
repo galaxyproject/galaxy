@@ -5,7 +5,7 @@ import { waitOnJob } from "components/JobStates/wait";
 import flushPromises from "flush-promises";
 import { getLocalVue, wait } from "tests/jest/helpers";
 
-import { mockFetcher } from "@/schema/__mocks__";
+import { mockFetcher } from "@/api/schema/__mocks__";
 
 import HistoryImport from "./HistoryImport.vue";
 
@@ -15,7 +15,7 @@ const TEST_HISTORY_URI = "/api/histories";
 const TEST_SOURCE_URL = "http://galaxy.example/import";
 const TEST_PLUGINS_URL = "/api/remote_files/plugins";
 
-jest.mock("@/schema");
+jest.mock("@/api/schema");
 jest.mock("components/JobStates/wait");
 
 describe("HistoryImport.vue", () => {

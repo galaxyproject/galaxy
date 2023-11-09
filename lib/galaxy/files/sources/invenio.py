@@ -201,10 +201,7 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
     def create_draft_record(self, title: str, user_context: OptionalUserContext = None) -> RemoteDirectory:
         today = datetime.date.today().isoformat()
         creator = self._get_creator_from_user_context(user_context)
-        public = bool(self.get_user_preference_by_key("public_records", user_context))
-        access = "public" if public else "restricted"
         create_record_request = {
-            "access": {"record": access, "files": access},
             "files": {"enabled": True},
             "metadata": {
                 "title": title,
@@ -263,13 +260,23 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
         user_context: OptionalUserContext = None,
     ):
         download_file_content_url = self._get_download_file_url(record_id, filename, user_context)
-        headers = self._get_request_headers(user_context)
-        req = urllib.request.Request(download_file_content_url, headers=headers)
-        with urllib.request.urlopen(req, timeout=DEFAULT_SOCKET_TIMEOUT) as page:
-            f = open(file_path, "wb")
-            return stream_to_open_named_file(
-                page, f.fileno(), file_path, source_encoding=get_charset_from_http_headers(page.headers)
-            )
+        headers = {}
+        if self._is_api_url(download_file_content_url):
+            # pass the token as a header only when using the API
+            headers = self._get_request_headers(user_context)
+        try:
+            req = urllib.request.Request(download_file_content_url, headers=headers)
+            with urllib.request.urlopen(req, timeout=DEFAULT_SOCKET_TIMEOUT) as page:
+                f = open(file_path, "wb")
+                return stream_to_open_named_file(
+                    page, f.fileno(), file_path, source_encoding=get_charset_from_http_headers(page.headers)
+                )
+        except urllib.error.HTTPError as e:
+            # TODO: We can only download files from published records for now
+            if e.code in [401, 403, 404]:
+                raise Exception(
+                    f"Cannot download file '{filename}' from record '{record_id}'. Please make sure the record exists and it is public."
+                )
 
     def _get_download_file_url(self, record_id: str, filename: str, user_context: OptionalUserContext = None):
         """Get the URL to download a file from a record.
@@ -277,10 +284,29 @@ class InvenioRepositoryInteractor(RDMRepositoryInteractor):
         This method is used to download files from both published and draft records that are accessible by the user.
         """
         is_draft_record = self._is_draft_record(record_id, user_context)
-        download_file_content_url = f"{self.records_url}/{record_id}/files/{quote(filename)}/content"
+        file_details_url = f"{self.records_url}/{record_id}/files/{quote(filename)}"
+        download_file_content_url = f"{file_details_url}/content"
         if is_draft_record:
-            download_file_content_url = download_file_content_url.replace("/files/", "/draft/files/")
+            file_details_url = self._to_draft_url(file_details_url)
+            download_file_content_url = self._to_draft_url(download_file_content_url)
+        file_details = self._get_response(user_context, file_details_url)
+        if not self._can_download_from_api(file_details):
+            # TODO: This is a temporary workaround for the fact that the "content" API
+            # does not support downloading files from S3 or other remote storage classes.
+            # More info: https://inveniordm.docs.cern.ch/reference/file_storage/#remote-files-r
+            download_file_content_url = f"{file_details_url.replace('/api','')}?download=1"
         return download_file_content_url
+
+    def _is_api_url(self, url: str) -> bool:
+        return "/api/" in url
+
+    def _to_draft_url(self, url: str) -> str:
+        return url.replace("/files/", "/draft/files/")
+
+    def _can_download_from_api(self, file_details: dict) -> bool:
+        # Only files stored locally seems to be fully supported by the API for now
+        # More info: https://inveniordm.docs.cern.ch/reference/file_storage/
+        return file_details["storage_class"] == "L"
 
     def _is_draft_record(self, record_id: str, user_context: OptionalUserContext = None):
         request_url = self._get_draft_record_url(record_id)

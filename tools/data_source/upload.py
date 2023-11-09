@@ -283,7 +283,7 @@ def __read_paramfile(path):
     with open(path) as fh:
         obj = load(fh)
     # If there's a single dataset in an old-style paramfile it'll still parse, but it'll be a dict
-    assert type(obj) == list
+    assert isinstance(obj, list)
     return obj
 
 

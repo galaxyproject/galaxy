@@ -1,5 +1,5 @@
 <template>
-    <span class="align-self-start btn-group">
+    <span class="align-self-start btn-group align-items-baseline">
         <!-- Special case for collections -->
         <b-button
             v-if="isCollection && canShowCollectionDetails"
@@ -43,8 +43,21 @@
             title="Delete"
             size="sm"
             variant="link"
-            @click.stop="$emit('delete')">
-            <icon icon="trash" />
+            @click.stop="onDelete($event)">
+            <icon v-if="isDataset" icon="trash" />
+            <b-dropdown v-else ref="deleteCollectionMenu" size="sm" variant="link" no-caret toggle-class="p-0 m-0">
+                <template v-slot:button-content>
+                    <icon icon="trash" />
+                </template>
+                <b-dropdown-item title="Delete collection only" @click.prevent.stop="onDeleteItem">
+                    <icon icon="file" />
+                    Collection only
+                </b-dropdown-item>
+                <b-dropdown-item title="Delete collection and elements" @click.prevent.stop="onDeleteItemRecursively">
+                    <icon icon="copy" />
+                    Collection and elements
+                </b-dropdown-item>
+            </b-dropdown>
         </b-button>
         <b-button
             v-if="writable && isHistoryItem && isDeleted"
@@ -131,6 +144,26 @@ export default {
                 this.$emit("display");
             }
         },
+        onDelete() {
+            if (this.isCollection) {
+                this.$refs.deleteCollectionMenu.show();
+            } else {
+                this.onDeleteItem();
+            }
+        },
+        onDeleteItem() {
+            this.$emit("delete");
+        },
+        onDeleteItemRecursively() {
+            const recursive = true;
+            this.$emit("delete", recursive);
+        },
     },
 };
 </script>
+<style lang="css">
+.dropdown-menu .dropdown-item {
+    font-weight: normal;
+}
+</style>
+```

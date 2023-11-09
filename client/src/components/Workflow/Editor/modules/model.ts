@@ -1,3 +1,4 @@
+import { useWorkflowCommentStore, type WorkflowComment } from "@/stores/workflowEditorCommentStore";
 import { type ConnectionOutputLink, type Steps, useWorkflowStepStore } from "@/stores/workflowStepStore";
 
 interface Workflow {
@@ -8,6 +9,8 @@ interface Workflow {
     version: number;
     report: any;
     steps: Steps;
+    comments: WorkflowComment[];
+    tags: string[];
 }
 
 /**
@@ -25,11 +28,14 @@ export async function fromSimple(
     defaultPosition = { top: 0, left: 0 }
 ) {
     const stepStore = useWorkflowStepStore(id);
-    const stepIdOffset = stepStore.getStepIndex + 1;
-    Object.values(data.steps).forEach((step) => {
-        // If workflow being copied into another, wipe UUID and let
-        // Galaxy assign new ones.
-        if (appendData) {
+    const commentStore = useWorkflowCommentStore(id);
+
+    // If workflow being copied into another, wipe UUID and let
+    // Galaxy assign new ones.
+    if (appendData) {
+        const stepIdOffset = stepStore.getStepIndex + 1;
+
+        Object.values(data.steps).forEach((step) => {
             delete step.uuid;
             if (!step.position) {
                 // Should only happen for manually authored editor content,
@@ -54,19 +60,34 @@ export async function fromSimple(
                     });
                 }
             });
-        }
-    });
+        });
+
+        data.comments.forEach((comment, index) => {
+            comment.id = commentStore.highestCommentId + 1 + index;
+        });
+    }
+
     Object.values(data.steps).map((step) => {
         stepStore.addStep(step);
     });
+
+    commentStore.addComments(data.comments, [defaultPosition.left, defaultPosition.top]);
 }
 
-export function toSimple(workflow: Workflow) {
+export function toSimple(id: string, workflow: Workflow): Omit<Workflow, "version"> {
     const steps = workflow.steps;
     const report = workflow.report;
     const license = workflow.license;
     const creator = workflow.creator;
     const annotation = workflow.annotation;
     const name = workflow.name;
-    return { steps, report, license, creator, annotation, name };
+    const tags = workflow.tags;
+
+    const commentStore = useWorkflowCommentStore(id);
+    commentStore.resolveCommentsInFrames();
+    commentStore.resolveStepsInFrames();
+
+    const comments = workflow.comments.filter((comment) => !(comment.type === "text" && comment.data.text === ""));
+
+    return { steps, report, license, creator, annotation, name, comments, tags };
 }

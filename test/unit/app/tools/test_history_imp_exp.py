@@ -172,9 +172,9 @@ def test_export_dataset():
     dataset_source = datasets[0].dataset.sources[0]
     assert dataset_source.source_uri == "http://google.com/mycooldata.txt"
 
-    with open(datasets[0].file_name) as f:
+    with open(datasets[0].get_file_name()) as f:
         assert f.read().startswith("chr1    4225    19670")
-    with open(datasets[1].file_name) as f:
+    with open(datasets[1].get_file_name()) as f:
         assert f.read().startswith("chr1\t147962192\t147962580\tNM_005997_cds_0_0_chr1_147962193_r\t0\t-")
 
 
@@ -275,9 +275,9 @@ def test_multi_inputs():
     for hid in [1, 2]:
         assert hid in hids
 
-    with open(datasets[0].file_name) as f:
+    with open(datasets[0].get_file_name()) as f:
         assert f.read().startswith("chr1    4225    19670")
-    with open(datasets[1].file_name) as f:
+    with open(datasets[1].get_file_name()) as f:
         assert f.read().startswith("chr1\t147962192\t147962580\tNM_005997_cds_0_0_chr1_147962193_r\t0\t-")
 
 

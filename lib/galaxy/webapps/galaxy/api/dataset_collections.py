@@ -10,7 +10,6 @@ from fastapi import (
 from galaxy.managers.context import ProvidesHistoryContext
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
-    AnyHDCA,
     CreateNewCollectionPayload,
     DatasetCollectionInstanceType,
     DCESummary,
@@ -108,7 +107,7 @@ class FastAPIDatasetCollections:
         trans: ProvidesHistoryContext = DependsOnTrans,
         id: DecodedDatabaseIdField = DatasetCollectionIdPathParam,
         instance_type: DatasetCollectionInstanceType = InstanceTypeQueryParam,
-    ) -> AnyHDCA:
+    ) -> HDCADetailed:
         return self.service.show(trans, id, instance_type)
 
     @router.get(

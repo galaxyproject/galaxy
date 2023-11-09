@@ -362,7 +362,7 @@ def build_case_references(
                 filtered_test_references.append(test_reference)
         if log is not None:
             log.info(
-                f"Skipping {len(test_references)-len(filtered_test_references)} out of {len(test_references)} tests."
+                f"Skipping {len(test_references) - len(filtered_test_references)} out of {len(test_references)} tests."
             )
         test_references = filtered_test_references
 

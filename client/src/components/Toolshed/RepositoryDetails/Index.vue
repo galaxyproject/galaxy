@@ -44,18 +44,16 @@
                                 @onUninstall="uninstallRepository(row.item)" />
                         </template>
                     </b-table>
-                    <ToolPanelViewProvider v-slot="{ currentPanel }" :panel-view="`default`" :set-default="false">
-                        <InstallationSettings
-                            v-if="showSettings"
-                            :repo="repo"
-                            :toolshed-url="toolshedUrl"
-                            :changeset-revision="selectedChangeset"
-                            :requires-panel="selectedRequiresPanel"
-                            :current-panel="currentPanel"
-                            :tool-dynamic-configs="config.tool_dynamic_configs"
-                            @hide="onHide"
-                            @ok="onOk" />
-                    </ToolPanelViewProvider>
+                    <InstallationSettings
+                        v-if="showSettings"
+                        :repo="repo"
+                        :toolshed-url="toolshedUrl"
+                        :changeset-revision="selectedChangeset"
+                        :requires-panel="selectedRequiresPanel"
+                        :current-panel="panel['default']"
+                        :tool-dynamic-configs="config.tool_dynamic_configs"
+                        @hide="onHide"
+                        @ok="onOk" />
                 </div>
             </div>
         </div>
@@ -63,7 +61,8 @@
 </template>
 <script>
 import BootstrapVue from "bootstrap-vue";
-import ToolPanelViewProvider from "components/providers/ToolPanelViewProvider";
+import { mapActions, mapState } from "pinia";
+import { useToolStore } from "stores/toolStore";
 import Vue from "vue";
 
 import { useConfig } from "@/composables/config";
@@ -78,7 +77,6 @@ Vue.use(BootstrapVue);
 
 export default {
     components: {
-        ToolPanelViewProvider,
         InstallationSettings,
         InstallationActions,
         RepositoryTools,
@@ -118,14 +116,21 @@ export default {
             delay: 2000,
         };
     },
+    computed: {
+        ...mapState(useToolStore, ["panel"]),
+    },
     created() {
         this.services = new Services();
         this.load();
+        if (!this.panel["default"]) {
+            this.fetchPanel("default");
+        }
     },
     destroyed() {
         this.clearTimeout();
     },
     methods: {
+        ...mapActions(useToolStore, ["fetchPanel"]),
         clearTimeout() {
             if (this.timeout) {
                 clearTimeout(this.timeout);

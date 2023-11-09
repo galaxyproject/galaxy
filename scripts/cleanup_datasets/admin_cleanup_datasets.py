@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """
 Mark datasets as deleted that are older than specified cutoff
-and (optionaly) with a tool_id that matches the specified search
+and (optionally) with a tool_id that matches the specified search
 string.
 
 This script is useful for administrators to cleanup after users who
@@ -121,10 +121,10 @@ def main():
         default=False,
     )
     parser.add_argument(
-        "--smtp", default=None, help="SMTP Server to use to send email. " "Default: [read from galaxy ini file]"
+        "--smtp", default=None, help="SMTP Server to use to send email. " "Default: [read from galaxy config file]"
     )
     parser.add_argument(
-        "--fromaddr", default=None, help="From address to use to send email. " "Default: [read from galaxy ini file]"
+        "--fromaddr", default=None, help="From address to use to send email. " "Default: [read from galaxy config file]"
     )
     populate_config_args(parser)
 

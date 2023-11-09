@@ -139,7 +139,7 @@ release-bootstrap-history: ## bootstrap history for a new release
 update-lint-requirements:
 	./lib/galaxy/dependencies/update_lint_requirements.sh
 
-update-dependencies: update-lint-requirements ## update pinned and dev dependencies
+update-dependencies: update-lint-requirements ## update pinned, dev and typecheck dependencies
 	$(IN_VENV) ./lib/galaxy/dependencies/update.sh
 
 $(CWL_TARGETS):
@@ -182,17 +182,22 @@ endif
 
 build-api-schema:
 	$(IN_VENV) python scripts/dump_openapi_schema.py _schema.yaml
+	$(IN_VENV) python scripts/dump_openapi_schema.py --app shed _shed_schema.yaml
 
 remove-api-schema:
 	rm _schema.yaml
+	rm _shed_schema.yaml
 
 update-client-api-schema: client-node-deps build-api-schema
-	$(IN_VENV) cd client && node openapi_to_schema.mjs ../_schema.yaml > src/schema/schema.ts && npx prettier --write src/schema/schema.ts
+	$(IN_VENV) cd client && node openapi_to_schema.mjs ../_schema.yaml > src/api/schema/schema.ts && npx prettier --write src/api/schema/schema.ts
+	$(IN_VENV) cd client && node openapi_to_schema.mjs ../_shed_schema.yaml > ../lib/tool_shed/webapp/frontend/src/schema/schema.ts && npx prettier --write ../lib/tool_shed/webapp/frontend/src/schema/schema.ts
 	$(MAKE) remove-api-schema
 
 lint-api-schema: build-api-schema
 	$(IN_VENV) npx --yes @redocly/cli lint _schema.yaml
+	$(IN_VENV) npx --yes @redocly/cli lint _shed_schema.yaml
 	$(IN_VENV) codespell -I .ci/ignore-spelling.txt _schema.yaml
+	$(IN_VENV) codespell -I .ci/ignore-spelling.txt _shed_schema.yaml
 	$(MAKE) remove-api-schema
 
 update-navigation-schema: client-node-deps

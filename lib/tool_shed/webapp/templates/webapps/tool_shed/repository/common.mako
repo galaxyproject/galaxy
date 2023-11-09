@@ -35,10 +35,6 @@
                     var selKeys = $.map(selNodes, function(node) {
                         return node.data.key;
                     });
-                    // The following is used only in ~/templates/webapps/tool_shed/repository/upload.mako.
-                    if (document.forms["upload_form"]) {
-                        document.upload_form.upload_point.value = selKeys.slice(-1);
-                    }
                 },
                 onActivate: function(dtnode) {
                     var cell = $("#file_contents");

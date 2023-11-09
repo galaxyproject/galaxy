@@ -15,6 +15,9 @@ from queue import (
     Queue,
 )
 
+from sqlalchemy import select
+from sqlalchemy.orm import object_session
+
 import galaxy.jobs
 from galaxy import model
 from galaxy.exceptions import ConfigurationError
@@ -154,6 +157,10 @@ class BaseJobRunner:
                     name = method.__name__
                 except Exception:
                     name = UNKNOWN
+
+                # Ensure a Job object belongs to a session
+                self._ensure_db_session(arg)
+
                 try:
                     action_str = f"galaxy.jobs.runners.{self.__class__.__name__.lower()}.{name}"
                     action_timer = self.app.execution_timer_factory.get_timer(
@@ -170,6 +177,18 @@ class BaseJobRunner:
                     if method != self.fail_job:
                         # Prevent fail_job cycle in the work_queue
                         self.work_queue.put((self.fail_job, job_state))
+
+    def _ensure_db_session(self, arg: typing.Union["JobWrapper", "JobState"]) -> None:
+        """Ensure Job object belongs to current session."""
+        try:
+            job_wrapper = arg.job_wrapper  # type: ignore[union-attr]
+        except AttributeError:
+            job_wrapper = arg
+
+        if job_wrapper._job_io:
+            job = job_wrapper._job_io.job
+            if object_session(job) is None:
+                self.app.model.session().add(job)
 
     # Causes a runner's `queue_job` method to be called from a worker thread
     def put(self, job_wrapper: "MinimalJobWrapper"):
@@ -379,11 +398,12 @@ class BaseJobRunner:
                 dataset_assoc.dataset.dataset.history_associations + dataset_assoc.dataset.dataset.library_associations
             ):
                 if isinstance(dataset, self.app.model.HistoryDatasetAssociation):
-                    joda = (
-                        self.sa_session.query(self.app.model.JobToOutputDatasetAssociation)
+                    stmt = (
+                        select(self.app.model.JobToOutputDatasetAssociation)
                         .filter_by(job=job, dataset=dataset)
-                        .first()
+                        .limit(1)
                     )
+                    joda = self.sa_session.scalars(stmt).first()
                     yield (joda, dataset)
         # TODO: why is this not just something easy like:
         # for dataset_assoc in job.output_datasets + job.output_library_datasets:

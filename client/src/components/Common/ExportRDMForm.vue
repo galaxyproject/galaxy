@@ -2,7 +2,7 @@
 import { BButton, BCard, BFormGroup, BFormInput, BFormRadio, BFormRadioGroup } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
-import { CreatedEntry, createRemoteEntry, FilterFileSourcesOptions } from "@/components/FilesDialog/services";
+import { CreatedEntry, createRemoteEntry, FilterFileSourcesOptions } from "@/api/remoteFiles";
 import { useToast } from "@/composables/toast";
 import localize from "@/utils/localization";
 import { errorMessageAsString } from "@/utils/simple-error";

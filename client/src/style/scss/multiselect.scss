@@ -6,6 +6,10 @@
     }
     .multiselect__input {
         background: transparent;
+        padding-left: 0;
+        padding-top: 2px;
+        margin-bottom: 10px;
+        font-size: 14px;
     }
     .multiselect__option {
         white-space: normal;
@@ -21,6 +25,8 @@
     }
     .multiselect__tag {
         min-height: 0;
+        white-space: normal;
+        word-break: break-all;
     }
     .multiselect__tags {
         background: transparent;
@@ -31,8 +37,8 @@
             color: $text-color;
             font-size: $font-size-base;
             overflow: hidden;
-            text-overflow: ellipsis;
-            white-space: nowrap;
+            white-space: normal;
+            word-break: break-all;
         }
     }
 }

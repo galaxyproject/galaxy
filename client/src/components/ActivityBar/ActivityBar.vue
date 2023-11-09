@@ -17,7 +17,7 @@ import NotificationItem from "./Items/NotificationItem.vue";
 import UploadItem from "./Items/UploadItem.vue";
 import ContextMenu from "@/components/Common/ContextMenu.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
-import ToolBox from "@/components/Panels/ProviderAwareToolBox.vue";
+import ToolPanel from "@/components/Panels/ToolPanel.vue";
 import WorkflowBox from "@/components/Panels/WorkflowBox.vue";
 
 const { config, isConfigLoaded } = useConfig();
@@ -211,7 +211,7 @@ function toggleContextMenu(evt: MouseEvent) {
             </b-nav>
         </div>
         <FlexPanel v-if="isActiveSideBar('tools')" key="tools" side="left" :collapsible="false">
-            <ToolBox />
+            <ToolPanel />
         </FlexPanel>
         <FlexPanel v-else-if="isActiveSideBar('workflows')" key="workflows" side="left" :collapsible="false">
             <WorkflowBox />

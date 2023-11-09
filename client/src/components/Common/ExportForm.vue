@@ -2,7 +2,7 @@
 import { BButton, BCol, BFormGroup, BFormInput, BRow } from "bootstrap-vue";
 import { computed, ref } from "vue";
 
-import { FilterFileSourcesOptions } from "@/components/FilesDialog/services";
+import { FilterFileSourcesOptions } from "@/api/remoteFiles";
 import localize from "@/utils/localization";
 
 import FilesInput from "@/components/FilesDialog/FilesInput.vue";

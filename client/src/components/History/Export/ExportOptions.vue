@@ -3,7 +3,7 @@ import { BCard, BCollapse, BFormCheckbox, BFormGroup, BFormSelect, BLink } from 
 import { ExportParamsModel } from "components/Common/models/exportRecordModel";
 import { computed, reactive, ref } from "vue";
 
-import { AVAILABLE_EXPORT_FORMATS } from "./services";
+import { AVAILABLE_EXPORT_FORMATS } from "@/api/histories.export";
 
 const props = defineProps({
     exportParams: {

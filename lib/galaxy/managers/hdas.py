@@ -21,6 +21,8 @@ from sqlalchemy import (
     desc,
     false,
     func,
+    nulls_first,
+    nulls_last,
     select,
     true,
 )
@@ -309,11 +311,11 @@ class HDAManager(
         # For now, cannot get data from non-text datasets.
         if not isinstance(hda.datatype, datatypes.data.Text):
             return truncated, hda_data
-        if not os.path.exists(hda.file_name):
+        if not os.path.exists(hda.get_file_name()):
             return truncated, hda_data
 
-        truncated = preview and os.stat(hda.file_name).st_size > MAX_PEEK_SIZE
-        hda_data = open(hda.file_name).read(MAX_PEEK_SIZE)
+        truncated = preview and os.stat(hda.get_file_name()).st_size > MAX_PEEK_SIZE
+        hda_data = open(hda.get_file_name()).read(MAX_PEEK_SIZE)
         return truncated, hda_data
 
     # .... annotatable
@@ -348,8 +350,8 @@ class HDAStorageCleanerManager(base.StorageCleanerManager):
         self.sort_map = {
             StoredItemOrderBy.NAME_ASC: asc(model.HistoryDatasetAssociation.name),
             StoredItemOrderBy.NAME_DSC: desc(model.HistoryDatasetAssociation.name),
-            StoredItemOrderBy.SIZE_ASC: asc(model.Dataset.total_size),
-            StoredItemOrderBy.SIZE_DSC: desc(model.Dataset.total_size),
+            StoredItemOrderBy.SIZE_ASC: nulls_first(asc(model.Dataset.total_size)),
+            StoredItemOrderBy.SIZE_DSC: nulls_last(desc(model.Dataset.total_size)),
             StoredItemOrderBy.UPDATE_TIME_ASC: asc(model.HistoryDatasetAssociation.update_time),
             StoredItemOrderBy.UPDATE_TIME_DSC: desc(model.HistoryDatasetAssociation.update_time),
         }

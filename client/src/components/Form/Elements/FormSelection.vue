@@ -1,9 +1,9 @@
 <script setup>
 import { computed } from "vue";
 
-import FormCheck from "./FormCheck";
-import FormRadio from "./FormRadio";
-import FormSelect from "./FormSelect";
+import FormCheck from "./FormCheck.vue";
+import FormRadio from "./FormRadio.vue";
+import FormSelect from "./FormSelect.vue";
 
 const $emit = defineEmits(["input"]);
 const props = defineProps({
@@ -43,16 +43,21 @@ const currentValue = computed({
 
 /** Provides formatted select options. */
 const currentOptions = computed(() => {
+    let result = [];
     const data = props.data;
     const options = props.options;
     if (options && options.length > 0) {
-        return options;
+        result = options.map((option) => ({ label: option[0], value: option[1] }));
     } else if (data && data.length > 0) {
-        return data.map((option) => {
-            return [option.label, option.value];
+        result = data;
+    }
+    if (!props.display && !props.multiple && props.optional) {
+        result.unshift({
+            label: "Nothing selected",
+            value: null,
         });
     }
-    return [];
+    return result;
 });
 </script>
 

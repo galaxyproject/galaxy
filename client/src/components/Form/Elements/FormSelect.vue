@@ -5,8 +5,9 @@ import Multiselect from "vue-multiselect";
 import { useMultiselect } from "@/composables/useMultiselect";
 import { uid } from "@/utils/utils";
 
-type SelectValue = string | number | null;
 const { ariaExpanded, onOpen, onClose } = useMultiselect();
+
+type SelectValue = Record<string, unknown> | string | number | null;
 
 interface SelectOption {
     label: string;
@@ -16,15 +17,19 @@ interface SelectOption {
 const props = withDefaults(
     defineProps<{
         id?: string;
+        disabled?: boolean;
         multiple?: boolean;
         optional?: boolean;
-        options: Array<[string, SelectValue]>;
-        value?: Array<SelectValue> | string | number;
+        options: Array<SelectOption>;
+        placeholder?: string;
+        value?: Array<SelectValue> | Record<string, unknown> | string | number;
     }>(),
     {
         id: `form-select-${uid()}`,
+        disabled: false,
         multiple: false,
         optional: false,
+        placeholder: "Select value",
         value: null,
     }
 );
@@ -34,13 +39,6 @@ const emit = defineEmits<{
 }>();
 
 /**
- * Determine dom wrapper class
- */
-const cls: ComputedRef<string> = computed(() => {
-    return props.multiple ? "form-select-multiple" : "form-select-single";
-});
-
-/**
  * Configure deselect label
  */
 const deselectLabel: ComputedRef<string> = computed(() => {
@@ -48,28 +46,10 @@ const deselectLabel: ComputedRef<string> = computed(() => {
 });
 
 /**
- * Translates input options for consumption by the
- * select component into an array of objects
- */
-const formattedOptions: ComputedRef<Array<SelectOption>> = computed(() => {
-    const result: Array<SelectOption> = props.options.map((option) => ({
-        label: option[0],
-        value: option[1],
-    }));
-    if (props.optional && !props.multiple) {
-        result.unshift({
-            label: "Nothing selected",
-            value: null,
-        });
-    }
-    return result;
-});
-
-/**
  * Tracks if the select field has options
  */
 const hasOptions: ComputedRef<Boolean> = computed(() => {
-    return formattedOptions.value.length > 0;
+    return props.options.length > 0;
 });
 
 /**
@@ -77,7 +57,7 @@ const hasOptions: ComputedRef<Boolean> = computed(() => {
  */
 const initialValue: ComputedRef<SelectValue> = computed(() => {
     if (props.value === null && !props.optional && hasOptions.value) {
-        const v = formattedOptions.value[0];
+        const v = props.options[0];
         if (v) {
             return v.value;
         }
@@ -95,15 +75,13 @@ const selectedLabel: ComputedRef<string> = computed(() => {
 /**
  * Tracks selected values
  */
-const selectedValues: ComputedRef<Array<SelectValue>> = computed(() => {
-    return Array.isArray(props.value) ? props.value : [props.value];
-});
+const selectedValues = computed(() => (Array.isArray(props.value) ? props.value : [props.value]));
 
 /**
  * Tracks current value and emits changes
  */
 const currentValue = computed({
-    get: () => formattedOptions.value.filter((option: SelectOption) => selectedValues.value.includes(option.value)),
+    get: () => props.options.filter((option: SelectOption) => selectedValues.value.includes(option.value)),
     set: (val: Array<SelectOption> | SelectOption): void => {
         if (Array.isArray(val)) {
             if (val.length > 0) {
@@ -148,19 +126,19 @@ onMounted(() => {
         v-if="hasOptions"
         :id="id"
         v-model="currentValue"
-        :allow-empty="true"
-        :class="['form-select', cls]"
-        :close-on-select="!multiple"
-        :deselect-label="deselectLabel"
-        :options="formattedOptions"
-        :multiple="multiple"
-        :selected-label="selectedLabel"
+        :allow-empty="optional"
         :aria-expanded="ariaExpanded"
-        placeholder="Select value"
+        :close-on-select="!multiple"
+        :disabled="disabled"
+        :deselect-label="deselectLabel"
+        label="label"
+        :multiple="multiple"
+        :options="props.options"
+        :placeholder="placeholder"
+        :selected-label="selectedLabel"
         select-label="Click to select"
         track-by="value"
-        label="label"
         @open="onOpen"
         @close="onClose" />
-    <b-alert v-else v-localize variant="warning" show> No options available. </b-alert>
+    <b-alert v-else v-localize class="w-100" variant="warning" show> No options available. </b-alert>
 </template>

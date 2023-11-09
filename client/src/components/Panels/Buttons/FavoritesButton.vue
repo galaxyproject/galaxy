@@ -1,6 +1,6 @@
 <template>
     <b-button
-        v-b-tooltip.hover.noninteractive
+        v-b-tooltip.hover.top.noninteractive
         class="panel-header-button-toolbox"
         size="sm"
         variant="link"
@@ -23,6 +23,7 @@ export default {
     props: {
         query: {
             type: String,
+            required: true,
         },
     },
     data() {
@@ -56,7 +57,7 @@ export default {
             if (this.toggle) {
                 this.$emit("onFavorites", this.searchKey);
             } else {
-                this.$emit("onFavorites", null);
+                this.$emit("onFavorites", "");
             }
         },
     },

@@ -79,6 +79,9 @@ export default {
 </script>
 
 <style scoped>
+.toolTitle {
+    overflow-wrap: anywhere;
+}
 .logo {
     width: 2.5rem;
 }

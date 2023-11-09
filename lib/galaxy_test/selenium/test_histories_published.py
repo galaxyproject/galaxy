@@ -55,6 +55,29 @@ class TestPublishedHistories(SharedStateSeleniumTestCase):
         self.assert_histories_present([self.history3_name, self.history1_name])
 
     @selenium_test
+    def test_published_histories_username_click(self):
+        self._login()
+        self.navigate_to_published_histories()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        present_histories = self.get_present_histories()
+        clicked = False
+        for row in present_histories:
+            his = row.find_elements(By.TAG_NAME, "td")[0]
+            if self.history2_name in his.text:
+                row.find_elements(By.TAG_NAME, "td")[2].find_elements(
+                    By.CSS_SELECTOR, ".published-histories-username-link"
+                )[0].click()
+                clicked = True
+                break
+
+        assert clicked
+        text = self.components.published_histories.search_input.wait_for_value()
+        if "test2" not in text:
+            raise AssertionError("Failed to update search filter with username on username click")
+
+        self.assert_histories_present([self.history2_name])
+
+    @selenium_test
     def test_published_histories_search_standard(self):
         self._login()
         self.navigate_to_published_histories()

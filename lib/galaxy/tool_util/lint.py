@@ -83,10 +83,13 @@ class LintMessage:
     def __eq__(self, other) -> bool:
         """
         add equal operator to easy lookup of a message in a
-        List[LintMessage] which is usefull in tests
+        List[LintMessage] which is useful in tests.
+
+        If the other object is a string, it is loosely checked if the
+        string is contained in the message.
         """
         if isinstance(other, str):
-            return self.message == other
+            return other in self.message
         if isinstance(other, LintMessage):
             return self.message == other.message
         return False

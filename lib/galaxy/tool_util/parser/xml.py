@@ -5,7 +5,9 @@ import os
 import re
 import uuid
 from typing import (
+    Any,
     cast,
+    Dict,
     Iterable,
     List,
     Optional,
@@ -1273,6 +1275,56 @@ class XmlInputSource(InputSource):
             case_page_source = XmlPageSource(case_elem)
             sources.append((value, case_page_source))
         return sources
+
+    def parse_default(self) -> Optional[Dict[str, Any]]:
+        def file_default_from_elem(elem):
+            # TODO: hashes, created_from_basename, etc...
+            return {"class": "File", "location": elem.get("location")}
+
+        def read_elements(collection_elem):
+            element_dicts = []
+            elements = collection_elem.findall("element")
+            for element in elements:
+                identifier = element.get("name")
+                subcollection_elem = element.find("collection")
+                if subcollection_elem:
+                    collection_type = subcollection_elem.get("collection_type")
+                    element_dicts.append(
+                        {
+                            "class": "Collection",
+                            "identifier": identifier,
+                            "collection_type": collection_type,
+                            "elements": read_elements(subcollection_elem),
+                        }
+                    )
+                else:
+                    element_dict = file_default_from_elem(element)
+                    element_dict["identifier"] = identifier
+                    element_dicts.append(element_dict)
+            return element_dicts
+
+        elem = self.input_elem
+        element_type = self.input_elem.get("type")
+        if element_type == "data":
+            default_elem = elem.find("default")
+            if default_elem is not None:
+                return file_default_from_elem(default_elem)
+            else:
+                return None
+        else:
+            default_elem = elem.find("default")
+            if default_elem is not None:
+                default_elem = elem.find("default")
+                collection_type = default_elem.get("collection_type")
+                name = default_elem.get("name", elem.get("name"))
+                return {
+                    "class": "Collection",
+                    "name": name,
+                    "collection_type": collection_type,
+                    "elements": read_elements(default_elem),
+                }
+            else:
+                return None
 
 
 class ParallelismInfo:

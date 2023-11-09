@@ -196,7 +196,10 @@ async function onPermanentlyDeleteDataset(datasetId: string) {
                     </b-form-select>
                 </template>
                 <template v-slot:tooltip="{ data }">
-                    <RecoverableItemSizeTooltip :data="data" :is-recoverable="isRecoverableDataPoint(data)" />
+                    <RecoverableItemSizeTooltip
+                        v-if="data"
+                        :data="data"
+                        :is-recoverable="isRecoverableDataPoint(data)" />
                 </template>
                 <template v-slot:selection="{ data }">
                     <SelectedItemActions
@@ -221,7 +224,10 @@ async function onPermanentlyDeleteDataset(datasetId: string) {
                 :label-formatter="bytesLabelFormatter"
                 :value-formatter="bytesValueFormatter">
                 <template v-slot:tooltip="{ data }">
-                    <RecoverableItemSizeTooltip :data="data" :is-recoverable="isRecoverableDataPoint(data)" />
+                    <RecoverableItemSizeTooltip
+                        v-if="data"
+                        :data="data"
+                        :is-recoverable="isRecoverableDataPoint(data)" />
                 </template>
             </BarChart>
         </div>

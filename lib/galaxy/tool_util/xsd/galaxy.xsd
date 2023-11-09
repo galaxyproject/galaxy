@@ -1577,6 +1577,11 @@ non-optional composite inputs must be specified as part of the ``param``.
         <xs:documentation xml:lang="en">Type of collection to create.</xs:documentation>
       </xs:annotation>
     </xs:attribute>
+    <xs:attribute name="name" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">The identifier of the collection. Default is ``"Unnamed Collection"``</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
     <xs:attribute name="tags" type="xs:string">
       <xs:annotation>
         <xs:documentation xml:lang="en">Comma separated list of tags to apply to the dataset (only works for elements of collections - e.g. ``element`` XML tags).</xs:documentation>
@@ -1714,7 +1719,7 @@ it may be inconvenient to upload the entiry file and this can be used instead.
         <xs:documentation xml:lang="en"><![CDATA[
 If this attribute is true then try to decompress files if needed. This applies to
 test assertions expressed with ``assert_contents`` or ``compare`` set to anything
-but ``sim_size``. 
+but ``sim_size``.
 This flag is useful for testing compressed outputs that are non-deterministic
 despite having deterministic decompressed contents. By default, only files compressed
 with bz2, gzip and zip will be automatically decompressed.
@@ -3469,7 +3474,7 @@ Describes the parameter type - each different type as different semantics and
 the tool form widget is different. Currently valid parameter types are:
 ``text``,  ``integer``,  ``float``,  ``boolean``,  ``genomebuild``,  ``select``,
 ``color``,  ``data_column``,  ``hidden``,  ``hidden_data``,  ``baseurl``,
-``file``,  ``ftpfile``,  ``data``,  ``data_collection``,  ``library_data``,
+``file``,  ``ftpfile``,  ``data``,  ``data_collection``,
 ``drill_down``. The definition of supported parameter types as defined in the
 ``parameter_types`` dictionary in
 [/lib/galaxy/tools/parameters/basic.py](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/tools/parameters/basic.py).
@@ -3726,6 +3731,7 @@ allow access to Python code to generate options for a select list. See
       <xs:element name="options" type="ParamOptions"/>
       <xs:element name="validator" type="Validator" />
       <xs:element name="sanitizer" type="Sanitizer"/>
+      <xs:element name="default" type="ParamDefault" />
       <xs:element name="help" type="xs:string">
         <xs:annotation>
           <xs:documentation xml:lang="en">Documentation for help</xs:documentation>
@@ -3745,7 +3751,6 @@ allow access to Python code to generate options for a select list. See
       <xs:enumeration value="color"/>
       <xs:enumeration value="boolean"/>
       <xs:enumeration value="genomebuild"/>
-      <xs:enumeration value="library_data"/>
       <xs:enumeration value="select"/>
       <xs:enumeration value="data_column"/>
       <xs:enumeration value="hidden"/>
@@ -4107,6 +4112,73 @@ dataset for the contained input of the type specified using the ``type`` tag.
     <xs:attribute name="type" type="xs:string" use="required">
       <xs:annotation>
         <xs:documentation xml:lang="en">The short extension describing the datatype to convert to - Galaxy must have a datatype converter from the parent input's type to this.</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+  </xs:complexType>
+
+  <xs:complexType name="ParamDefault">
+    <xs:annotation>
+      <xs:documentation xml:lang="en"><![CDATA[
+]]>
+</xs:documentation>
+    </xs:annotation>
+    <xs:sequence>
+      <!-- can have zero or one collection elements -->
+      <xs:element name="element" type="ParamDefaultElement" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+    <xs:attribute name="collection_type" type="CollectionType" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"><![CDATA[
+Collection type for default collection (if param type is data_collection). Simple collection types are
+either ``list`` or ``paired``, nested collections are specified as colon separated list of simple
+collection types (the most common types are ``list``, ``paired``,
+``list:paired``, or ``list:list``).
+        ]]></xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+
+    <xs:attribute name="location" type="xs:anyURI" gxdocs:added="23.2" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"><![CDATA[
+Galaxy-aware URI for the default file. This should only be used with parameters of type "data".
+        ]]></xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+
+  </xs:complexType>
+
+  <xs:complexType name="ParamDefaultCollection">
+    <xs:sequence>
+      <xs:element name="element" type="ParamDefaultElement" minOccurs="0" maxOccurs="unbounded" />
+    </xs:sequence>
+
+    <xs:attribute name="collection_type" type="CollectionType" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"><![CDATA[
+Collection type for default collection (if param type is data_collection). Simple collection types are
+either ``list`` or ``paired``, nested collections are specified as colon separated list of simple
+collection types (the most common types are ``list``, ``paired``,
+``list:paired``, or ``list:list``).
+        ]]></xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+
+  </xs:complexType>
+
+  <xs:complexType name="ParamDefaultElement">
+    <xs:sequence>
+      <xs:element name="collection" type="ParamDefaultCollection" minOccurs="0" maxOccurs="1" />
+    </xs:sequence>
+    <xs:attribute name="name" type="xs:string">
+      <xs:annotation>
+        <xs:documentation xml:lang="en">Name (and element identifier) for this element</xs:documentation>
+      </xs:annotation>
+    </xs:attribute>
+    <xs:attribute name="location" type="xs:anyURI" gxdocs:added="23.2" use="optional">
+      <xs:annotation>
+        <xs:documentation xml:lang="en"><![CDATA[
+Galaxy-aware URI for the default file for collection element.
+        ]]></xs:documentation>
       </xs:annotation>
     </xs:attribute>
   </xs:complexType>
@@ -6214,7 +6286,7 @@ tool config.
       xrange = c(NULL, NULL)
       yrange = c(NULL, NULL)
       #for $i, $s in enumerate($series)
-          s${i} = read.table("${s.input.file_name}")
+          s${i} = read.table("${s.input.get_file_name()}")
           x${i} = s${i}[,${s.xcol}]
           y${i} = s${i}[,${s.ycol}]
           xrange = range(x${i}, xrange)
@@ -7317,7 +7389,7 @@ information according to a catalog.</xs:documentation>
       <xs:extension base="xs:string">
         <xs:attribute name="type" type="xrefType" use="required">
           <xs:annotation>
-            <xs:documentation xml:lang="en">Type of reference - currently ``bio.tools`` and ``bioconductor`` are
+            <xs:documentation xml:lang="en">Type of reference - currently ``bio.tools``, ``bioconductor``, and ``biii`` are
 the only supported options.</xs:documentation>
           </xs:annotation>
         </xs:attribute>
@@ -7331,6 +7403,7 @@ the only supported options.</xs:documentation>
     <xs:restriction base="xs:string">
       <xs:enumeration value="bio.tools"/>
       <xs:enumeration value="bioconductor"/>
+      <xs:enumeration value="biii"/>
       <!--xs:enumeration value="whatelse"/-->
     </xs:restriction>
   </xs:simpleType>

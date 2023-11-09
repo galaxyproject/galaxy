@@ -4,12 +4,13 @@ import flushPromises from "flush-promises";
 import { setActivePinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 
-import { mockFetcher } from "@/schema/__mocks__";
-import { type HistorySummary, useHistoryStore } from "@/stores/historyStore";
+import type { HistorySummary } from "@/api";
+import { mockFetcher } from "@/api/schema/__mocks__";
+import { useHistoryStore } from "@/stores/historyStore";
 
 import HistoryArchiveWizard from "./HistoryArchiveWizard.vue";
 
-jest.mock("@/schema");
+jest.mock("@/api/schema");
 
 jest.mock("@/composables/config", () => ({
     useConfig: jest.fn(() => ({

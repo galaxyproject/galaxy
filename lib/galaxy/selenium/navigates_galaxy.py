@@ -17,8 +17,10 @@ from typing import (
     Any,
     cast,
     Dict,
+    List,
     NamedTuple,
     Optional,
+    Tuple,
     Union,
 )
 
@@ -26,6 +28,7 @@ import requests
 import yaml
 from selenium.webdriver.common.by import By
 from selenium.webdriver.remote.webdriver import WebDriver
+from selenium.webdriver.remote.webelement import WebElement
 
 from galaxy.navigation.components import (
     Component,
@@ -718,9 +721,7 @@ class NavigatesGalaxy(HasDriver):
         except SeleniumTimeoutException as e:
             ui_logged_out = self.components.masthead.logged_out_only.is_displayed
             if ui_logged_out:
-                dom_message = (
-                    "Element a.loggedout-only is present in DOM, indicating Login or Register button still in masthead."
-                )
+                dom_message = "Element a.loggedout-only is present in DOM, indicating Log in or Register button still in masthead."
             else:
                 dom_message = "Element a.loggedout-only is *not* present in DOM."
             user_info = self.api_get("users/current")
@@ -1382,7 +1383,13 @@ class NavigatesGalaxy(HasDriver):
         return columns[column_index].text
 
     def workflow_index_click_search(self):
-        return self.wait_for_and_click_selector("#workflow-search")
+        return self.wait_for_and_click_selector(
+            '.workflows-list input.search-query[data-description="filter text input"]'
+        )
+
+    def workflow_index_get_current_filter(self):
+        filter_element = self.components.workflows.search_box.wait_for_and_click()
+        return filter_element.get_attribute("value")
 
     def workflow_index_search_for(self, search_term=None):
         return self._inline_search_for(
@@ -1486,12 +1493,13 @@ class NavigatesGalaxy(HasDriver):
         self.workflow_index_open()
         self.workflow_index_search_for(name)
         self.workflow_click_option(".workflow-run")
+        self.sleep_for(self.wait_types.UX_RENDER)
 
     def workflow_run_specify_inputs(self, inputs: Dict[str, Any]):
         workflow_run = self.components.workflow_run
         for label, value in inputs.items():
             input_div_element = workflow_run.input_data_div(label=label).wait_for_visible()
-            self.select2_set_value(input_div_element, "%d: " % value["hid"])
+            self.select_set_value(input_div_element, "%d: " % value["hid"])
 
     def workflow_run_submit(self):
         self.components.workflow_run.run_workflow.wait_for_and_click()
@@ -1508,13 +1516,17 @@ class NavigatesGalaxy(HasDriver):
         self.click_button_new_workflow()
         self.sleep_for(self.wait_types.UX_RENDER)
         name = self._get_random_name()
-        name_component = self.components.workflows.create.name
+        name_component = self.components.workflow_editor.edit_name
         if clear_placeholder:
             name_component.wait_for_visible().clear()
         name_component.wait_for_and_send_keys(name)
         annotation = annotation or self._get_random_name()
-        self.components.workflows.create.annotation.wait_for_and_send_keys(annotation)
-        self.components.workflows.create.submit.wait_for_and_click()
+        self.components.workflow_editor.edit_annotation.wait_for_and_send_keys(annotation)
+        save_button = self.components.workflow_editor.save_button
+        save_button.wait_for_visible()
+        assert not save_button.has_class("disabled")
+        save_button.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
         return name
 
     def invocation_index_table_elements(self):
@@ -1589,8 +1601,10 @@ class NavigatesGalaxy(HasDriver):
         div_element = self.tool_parameter_div(expanded_parameter_id)
         assert div_element
         if expected_type in ["select", "data", "data_collection"]:
-            div_selector = f"div.ui-form-element[id$='form-element-{expanded_parameter_id}']"
-            self.select2_set_value(div_selector, value)
+            select_field = self.components.tool_form.parameter_data_select(
+                parameter=expanded_parameter_id
+            ).wait_for_visible()
+            self.select_set_value(select_field, value)
         else:
             input_element = div_element.find_element(By.CSS_SELECTOR, "input")
             # Clear default value
@@ -1910,7 +1924,7 @@ class NavigatesGalaxy(HasDriver):
         try:
             self.components.masthead.logged_out_only.wait_for_visible()
         except SeleniumTimeoutException as e:
-            message = "Clicked logout button but waiting for 'Login or Registration' button failed, perhaps the logout button was clicked before the handler was setup?"
+            message = "Clicked logout button but waiting for 'Log in or Registration' button failed, perhaps the logout button was clicked before the handler was setup?"
             raise self.prepend_timeout_message(e, message)
         assert (
             not self.is_logged_in()
@@ -2027,7 +2041,7 @@ class NavigatesGalaxy(HasDriver):
 
     def assert_message(self, element, contains=None):
         if contains is not None:
-            if type(element) == list:
+            if isinstance(element, list):
                 assert any(
                     contains in el.text for el in element
                 ), f"{contains} was not found in {[el.text for el in element]}"
@@ -2197,10 +2211,6 @@ class NavigatesGalaxy(HasDriver):
         self.assert_absent_or_hidden(editor)
 
     def share_ensure_by_user_available(self, sharing_component):
-        collapse = sharing_component.share_with_collapse
-        collapse.wait_for_visible()
-        if collapse.has_class("collapsed"):
-            collapse.wait_for_and_click()
         sharing_component.share_with_multiselect.wait_for_visible()
 
     def share_unshare_with_user(self, sharing_component, email):
@@ -2238,6 +2248,27 @@ class NavigatesGalaxy(HasDriver):
         search_selector = "#gtn a"
         self.wait_for_and_click_selector(search_selector)
         self.wait_for_selector_visible("#gtn-screen")
+
+    def mouse_drag(
+        self,
+        from_element: WebElement,
+        to_element: Optional[WebElement] = None,
+        from_offset=(0, 0),
+        to_offset=(0, 0),
+        via_offsets: Optional[List[Tuple[int, int]]] = None,
+    ):
+        chain = self.action_chains().move_to_element(from_element).move_by_offset(*from_offset)
+        chain = chain.click_and_hold().pause(self.wait_length(self.wait_types.UX_RENDER))
+
+        if via_offsets is not None:
+            for offset in via_offsets:
+                chain = chain.move_by_offset(*offset).pause(self.wait_length(self.wait_types.UX_RENDER))
+
+        if to_element is not None:
+            chain = chain.move_to_element(to_element)
+
+        chain = chain.move_by_offset(*to_offset).pause(self.wait_length(self.wait_types.UX_RENDER)).release()
+        chain.perform()
 
 
 class NotLoggedInException(SeleniumTimeoutException):

@@ -504,6 +504,7 @@ class TagCollection(Model):
         default=...,
         title="Tags",
         description="The collection of tags associated with an item.",
+        example=["COVID-19", "#myFancyTag", "covid19.galaxyproject.org"],
     )
 
 
@@ -585,11 +586,6 @@ class HistoryItemBase(Model):
         title="HID",
         description="The index position of this item in the History.",
     )
-    history_content_type: HistoryContentType = Field(
-        ...,
-        title="Content Type",
-        description="The type of this item.",
-    )
     deleted: bool = Field(
         ...,
         title="Deleted",
@@ -625,7 +621,17 @@ class HistoryItemCommon(HistoryItemBase):
     tags: TagCollection
 
 
-class HDASummary(HistoryItemCommon):
+class HDACommon(HistoryItemCommon):
+    history_content_type: Annotated[
+        Literal["dataset"],
+        Field(
+            title="History Content Type",
+            description="This is always `dataset` for datasets.",
+        ),
+    ]
+
+
+class HDASummary(HDACommon):
     """History Dataset Association summary information."""
 
     dataset_id: DecodedDatabaseIdField = Field(
@@ -647,7 +653,7 @@ class HDASummary(HistoryItemCommon):
     )
 
 
-class HDAInaccessible(HistoryItemBase):
+class HDAInaccessible(HDACommon):
     """History Dataset Association information when the user can not access it."""
 
     accessible: bool = AccessibleField
@@ -974,7 +980,17 @@ class HDCJobStateSummary(Model):
     )
 
 
-class HDCASummary(HistoryItemCommon):
+class HDCACommon(HistoryItemCommon):
+    history_content_type: Annotated[
+        Literal["dataset_collection"],
+        Field(
+            title="History Content Type",
+            description="This is always `dataset_collection` for dataset collections.",
+        ),
+    ]
+
+
+class HDCASummary(HDCACommon):
     """History Dataset Collection Association summary information."""
 
     model_class: HDCA_MODEL_CLASS = ModelClassField(HDCA_MODEL_CLASS)
@@ -985,6 +1001,7 @@ class HDCASummary(HistoryItemCommon):
             description="This is always `collection` for dataset collections.",
         ),
     ] = "collection"
+
     collection_type: CollectionType = CollectionTypeField
     populated_state: DatasetCollectionPopulatedState = PopulatedStateField
     populated_state_message: Optional[str] = PopulatedStateMessageField
@@ -1509,7 +1526,7 @@ class CreateNewCollectionPayload(Model):
         description="Whether to mark the original HDAs as hidden.",
     )
     copy_elements: Optional[bool] = Field(
-        default=False,
+        default=True,
         title="Copy Elements",
         description="Whether to create a copy of the source HDAs for the new collection.",
     )
@@ -3477,7 +3494,7 @@ class MaterializeDatasetInstanceAPIRequest(Model):
         description=(
             "Depending on the `source` it can be:\n"
             "- The encoded id of the source library dataset\n"
-            "- The encoded id of the the HDA\n"
+            "- The encoded id of the HDA\n"
         ),
     )
 

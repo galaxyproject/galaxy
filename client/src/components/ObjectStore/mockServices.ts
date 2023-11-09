@@ -1,6 +1,6 @@
-import { getSelectableObjectStores } from "./services";
+import { getSelectableObjectStores } from "@/api/objectStores";
 
-jest.mock("./services");
+jest.mock("@/api/objectStores");
 
 const OBJECT_STORES = [
     { object_store_id: "object_store_1", badges: [], quota: { enabled: false }, private: false },

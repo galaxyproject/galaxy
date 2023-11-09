@@ -1,19 +1,25 @@
 /**
  * Unit test debugging utilities
  */
-import { timer, fromEventPattern } from "rxjs";
-import { take, debounceTime, takeUntil } from "rxjs/operators";
 import { createLocalVue, shallowMount } from "@vue/test-utils";
-import { localizationPlugin } from "components/plugins/localization";
-import { vueRxShortcutPlugin } from "components/plugins/vueRxShortcuts";
+import BootstrapVue from "bootstrap-vue";
 import { eventHubPlugin } from "components/plugins/eventHub";
 import { iconPlugin } from "components/plugins/icons";
-import BootstrapVue from "bootstrap-vue";
-import Vuex from "vuex";
-import _l from "utils/localization";
+import { localizationPlugin } from "components/plugins/localization";
+import { vueRxShortcutPlugin } from "components/plugins/vueRxShortcuts";
 import { PiniaVuePlugin } from "pinia";
+import { fromEventPattern, timer } from "rxjs";
+import { debounceTime, take, takeUntil } from "rxjs/operators";
+import _l from "utils/localization";
+import Vuex from "vuex";
 
 const defaultComparator = (a, b) => a == b;
+
+export function dispatchEvent(wrapper, type, props = {}) {
+    const event = new Event(type, { bubbles: true });
+    Object.assign(event, props);
+    wrapper.element.dispatchEvent(event);
+}
 
 export function findViaNavigation(wrapper, component) {
     return wrapper.find(component.selector);

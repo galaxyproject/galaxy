@@ -5,6 +5,8 @@ import Vue, { reactive } from "vue";
 
 import type { OutputTerminals } from "@/components/Workflow/Editor/modules/terminals";
 
+import { useScopePointerStore } from "./scopePointerStore";
+
 export interface InputTerminalPosition {
     endX: number;
     endY: number;
@@ -34,7 +36,9 @@ interface State {
 }
 
 export const useWorkflowStateStore = (workflowId: string) => {
-    return defineStore(`workflowStateStore${workflowId}`, {
+    const { scope } = useScopePointerStore();
+
+    return defineStore(`workflowStateStore${scope(workflowId)}`, {
         state: (): State => ({
             inputTerminals: {},
             outputTerminals: {},

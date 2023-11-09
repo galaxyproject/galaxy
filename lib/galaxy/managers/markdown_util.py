@@ -36,6 +36,7 @@ except Exception:
 from galaxy.config import GalaxyAppConfiguration
 from galaxy.exceptions import (
     MalformedContents,
+    ObjectNotFound,
     ServerNotConfiguredForRequest,
 )
 from galaxy.managers.hdcas import HDCASerializer
@@ -44,6 +45,7 @@ from galaxy.managers.jobs import (
     summarize_job_metrics,
     summarize_job_parameters,
 )
+from galaxy.managers.licenses import LicensesManager
 from galaxy.model.item_attrs import get_item_annotation_str
 from galaxy.model.orm.now import now
 from galaxy.schema import PdfDocumentType
@@ -67,6 +69,7 @@ OUTPUT_LABEL_PATTERN = re.compile(r"output=\s*%s\s*" % ARG_VAL_CAPTURED_REGEX)
 INPUT_LABEL_PATTERN = re.compile(r"input=\s*%s\s*" % ARG_VAL_CAPTURED_REGEX)
 STEP_LABEL_PATTERN = re.compile(r"step=\s*%s\s*" % ARG_VAL_CAPTURED_REGEX)
 PATH_LABEL_PATTERN = re.compile(r"path=\s*%s\s*" % ARG_VAL_CAPTURED_REGEX)
+SIZE_PATTERN = re.compile(r"size=\s*%s\s*" % ARG_VAL_CAPTURED_REGEX)
 # STEP_OUTPUT_LABEL_PATTERN = re.compile(r'step_output=([\w_\-]+)/([\w_\-]+)')
 UNENCODED_ID_PATTERN = re.compile(
     r"(history_id|workflow_id|history_dataset_id|history_dataset_collection_id|job_id|invocation_id)=([\d]+)"
@@ -154,6 +157,12 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
             elif container == "workflow_display":
                 stored_workflow = workflow_manager.get_stored_accessible_workflow(trans, encoded_id)
                 rval = self.handle_workflow_display(line, stored_workflow)
+            elif container == "workflow_image":
+                stored_workflow = workflow_manager.get_stored_accessible_workflow(trans, encoded_id)
+                rval = self.handle_workflow_image(line, stored_workflow)
+            elif container == "workflow_license":
+                stored_workflow = workflow_manager.get_stored_accessible_workflow(trans, encoded_id)
+                rval = self.handle_workflow_license(line, stored_workflow)
             elif container == "history_dataset_collection_display":
                 hdca = collection_manager.get_dataset_collection_instance(trans, "history", encoded_id)
                 rval = self.handle_dataset_collection_display(line, hdca)
@@ -174,6 +183,28 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
                 rval = self.handle_generate_galaxy_version(line, version)
             elif container == "generate_time":
                 rval = self.handle_generate_time(line, now())
+            elif container == "instance_access_link":
+                url = trans.app.config.instance_access_url
+                rval = self.handle_instance_access_link(line, url)
+            elif container == "instance_resources_link":
+                url = trans.app.config.instance_resource_url
+                rval = self.handle_instance_resources_link(line, url)
+            elif container == "instance_help_link":
+                url = trans.app.config.helpsite_url
+                rval = self.handle_instance_help_link(line, url)
+            elif container == "instance_support_link":
+                url = trans.app.config.support_url
+                rval = self.handle_instance_support_link(line, url)
+            elif container == "instance_citation_link":
+                url = trans.app.config.citation_url
+                rval = self.handle_instance_citation_link(line, url)
+            elif container == "instance_terms_link":
+                url = trans.app.config.terms_url
+                rval = self.handle_instance_terms_link(line, url)
+            elif container == "instance_organization_link":
+                title = trans.app.config.organization_name
+                url = trans.app.config.organization_url
+                rval = self.handle_instance_organization_link(line, title, url)
             elif container == "invocation_time":
                 invocation = workflow_manager.get_invocation(trans, object_id)
                 rval = self.handle_invocation_time(line, invocation)
@@ -243,6 +274,14 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
+    def handle_workflow_image(self, line, stored_workflow):
+        pass
+
+    @abc.abstractmethod
+    def handle_workflow_license(self, line, stored_workflow):
+        pass
+
+    @abc.abstractmethod
     def handle_dataset_collection_display(self, line, hdca):
         pass
 
@@ -268,6 +307,34 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
 
     @abc.abstractmethod
     def handle_generate_time(self, line, date):
+        pass
+
+    @abc.abstractmethod
+    def handle_instance_access_link(self, line, url):
+        pass
+
+    @abc.abstractmethod
+    def handle_instance_resources_link(self, line, url):
+        pass
+
+    @abc.abstractmethod
+    def handle_instance_help_link(self, line, url):
+        pass
+
+    @abc.abstractmethod
+    def handle_instance_support_link(self, line, url):
+        pass
+
+    @abc.abstractmethod
+    def handle_instance_citation_link(self, line, url):
+        pass
+
+    @abc.abstractmethod
+    def handle_instance_terms_link(self, line, url):
+        pass
+
+    @abc.abstractmethod
+    def handle_instance_organization_link(self, line, title, url):
         pass
 
     @abc.abstractmethod
@@ -313,6 +380,14 @@ class ReadyForExportMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHand
     def handle_workflow_display(self, line, stored_workflow):
         self.ensure_rendering_data_for("workflows", stored_workflow)["name"] = stored_workflow.name
 
+    def handle_workflow_image(self, line, stored_workflow):
+        pass
+
+    def handle_workflow_license(self, line, stored_workflow):
+        self.ensure_rendering_data_for("workflows", stored_workflow)[
+            "license"
+        ] = stored_workflow.latest_workflow.license
+
     def handle_dataset_collection_display(self, line, hdca):
         hdca_serializer = HDCASerializer(self.trans.app)
         hdca_view = hdca_serializer.serialize_to_view(hdca, user=self.trans.user, trans=self.trans, view="summary")
@@ -346,8 +421,31 @@ class ReadyForExportMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHand
     def handle_generate_time(self, line, generate_time):
         pass
 
+    def handle_instance_access_link(self, line, url):
+        pass
+
+    def handle_instance_resources_link(self, line, url):
+        pass
+
+    def handle_instance_help_link(self, line, url):
+        pass
+
+    def handle_instance_support_link(self, line, url):
+        pass
+
+    def handle_instance_citation_link(self, line, url):
+        pass
+
+    def handle_instance_terms_link(self, line, url):
+        pass
+
+    def handle_instance_organization_link(self, line, title, url):
+        pass
+
     def handle_invocation_time(self, line, invocation):
-        self.ensure_rendering_data_for("invocations", invocation)["create_time"] = invocation.create_time.isoformat()
+        self.ensure_rendering_data_for("invocations", invocation)["create_time"] = invocation.create_time.strftime(
+            "%Y-%m-%d, %H:%M:%S"
+        )
 
     def handle_dataset_type(self, line, hda):
         self.extend_history_dataset_rendering_data(hda, "ext", hda.ext, "*Unknown dataset type*")
@@ -428,12 +526,16 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
             filepath = path_match.group(2)
             file = os.path.join(hda.extra_files_path, filepath)
         else:
-            file = dataset.file_name
+            file = dataset.get_file_name()
 
         with open(file, "rb") as f:
-            base64_image_data = base64.b64encode(f.read()).decode("utf-8")
-        rval = (f"![{name}](data:image/png;base64,{base64_image_data})", True)
+            image_data = f.read()
+        rval = (self._embed_image(name, "png", image_data), True)
         return rval
+
+    def _embed_image(self, name: str, image_type: str, image_data: bytes):
+        base64_image_data = base64.b64encode(image_data).decode("utf-8")
+        return f"![{name}](data:image/{image_type};base64,{base64_image_data})"
 
     def handle_history_link(self, line, history):
         if history:
@@ -470,6 +572,25 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
             markdown += "|{}|{}|\n".format(step.label or "Step %d" % (order_index + 1), annotation)
         markdown += "\n---\n"
         return (markdown, True)
+
+    def handle_workflow_license(self, line, stored_workflow):
+        # workflow_manager = self.trans.app.workflow_manager
+        license_manager = LicensesManager()
+        license_id = stored_workflow.latest_workflow.license
+        markdown = "*No license specified.*"
+        if license_id:
+            try:
+                license_metadata = license_manager.get_license_by_id(license_id)
+                markdown = f"[{license_metadata.name}]({license_metadata.url})"
+            except ObjectNotFound:
+                markdown = f"Unknown license ({license_id})"
+        return (f"\n\n{markdown}\n\n", True)
+
+    def handle_workflow_image(self, line, stored_workflow):
+        workflow_manager = self.trans.app.workflow_manager
+        image_data = workflow_manager.get_workflow_svg(self.trans, stored_workflow.latest_workflow, for_embed=True)
+        rval = (self._embed_image("Workflow", "svg+xml", image_data), True)
+        return rval
 
     def handle_dataset_collection_display(self, line, hdca):
         name = hdca.name or ""
@@ -546,8 +667,37 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
         content = literal_via_fence(generate_time.isoformat())
         return (content, True)
 
+    def handle_instance_access_link(self, line, url):
+        return self._handle_link(url)
+
+    def handle_instance_resources_link(self, line, url):
+        return self._handle_link(url)
+
+    def handle_instance_help_link(self, line, url):
+        return self._handle_link(url)
+
+    def handle_instance_support_link(self, line, url):
+        return self._handle_link(url)
+
+    def handle_instance_citation_link(self, line, url):
+        return self._handle_link(url)
+
+    def handle_instance_terms_link(self, line, url):
+        return self._handle_link(url)
+
+    def handle_instance_organization_link(self, line, title, url):
+        return self._handle_link(url, title)
+
+    def _handle_link(self, url, title=None):
+        if not url:
+            content = "*Not configured, please contact Galaxy admin*"
+            return (content, True)
+        elif not title:
+            title = url
+        return (f"[{title}]({url})", True)
+
     def handle_invocation_time(self, line, invocation):
-        content = literal_via_fence(invocation.create_time.isoformat())
+        content = literal_via_fence(invocation.create_time.strftime("%Y-%m-%d, %H:%M:%S"))
         return (content, True)
 
     def handle_dataset_name(self, line, hda):
@@ -749,7 +899,8 @@ history_dataset_collection_display(input={})
             target_match = step_match
             name = find_non_empty_group(target_match)
             ref_object_type = "job"
-            ref_object = invocation.step_invocation_for_label(name).job
+            invocation_step = invocation.step_invocation_for_label(name)
+            ref_object = invocation_step and invocation_step.job
         else:
             target_match = None
             ref_object = None

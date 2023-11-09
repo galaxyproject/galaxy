@@ -6,12 +6,16 @@
  */
 
 import { getGalaxyInstance } from "app";
+import { storeToRefs } from "pinia";
 import defaultStore from "store/index";
-import { useHistoryItemsStore } from "stores/history/historyItemsStore";
+import { useHistoryItemsStore } from "stores/historyItemsStore";
 import { useHistoryStore } from "stores/historyStore";
 import { getCurrentHistoryFromServer } from "stores/services/history.services";
 import { loadSet } from "utils/setCache";
 import { urlData } from "utils/url";
+
+import { useCollectionElementsStore } from "@/stores/collectionElementsStore";
+import { useDatasetStore } from "@/stores/datasetStore";
 
 const limit = 1000;
 
@@ -41,12 +45,15 @@ function setVisibilityThrottle() {
 export async function watchHistoryOnce(store) {
     const historyStore = useHistoryStore();
     const historyItemsStore = useHistoryItemsStore();
+    const datasetStore = useDatasetStore();
+    const collectionElementsStore = useCollectionElementsStore();
     // "Reset" watchTimeout so we don't queue up watchHistory calls in rewatchHistory.
     watchTimeout = null;
     // get current history
     const checkForUpdate = new Date();
     const history = await getCurrentHistoryFromServer(lastUpdateTime);
-    historyItemsStore.setLastCheckedTime(checkForUpdate);
+    const { lastCheckedTime } = storeToRefs(historyItemsStore);
+    lastCheckedTime.value = checkForUpdate;
     if (!history || !history.id) {
         return;
     }
@@ -77,9 +84,9 @@ export async function watchHistoryOnce(store) {
         }
         // pass changed items to attached stores
         historyStore.setHistory(history);
-        store.commit("saveDatasets", { payload });
+        datasetStore.saveDatasets(payload);
         historyItemsStore.saveHistoryItems(historyId, payload);
-        store.commit("saveCollectionObjects", { payload });
+        collectionElementsStore.saveCollections(payload);
         // trigger changes in legacy handler
         const Galaxy = getGalaxyInstance();
         if (Galaxy) {
@@ -91,11 +98,11 @@ export async function watchHistoryOnce(store) {
 }
 
 export async function watchHistory(store = defaultStore) {
-    const historyItemsStore = useHistoryItemsStore();
+    const { isWatching } = storeToRefs(useHistoryItemsStore());
     // Only set up visibility listeners once, whenever a watch is first started
     if (watchingVisibility === false) {
         watchingVisibility = true;
-        historyItemsStore.setWatchingVisibility(watchingVisibility);
+        isWatching.value = watchingVisibility;
         document.addEventListener("visibilitychange", setVisibilityThrottle);
     }
     try {
@@ -104,7 +111,7 @@ export async function watchHistory(store = defaultStore) {
         // error alerting the user that watch history failed
         console.warn(error);
         watchingVisibility = false;
-        historyItemsStore.setWatchingVisibility(watchingVisibility);
+        isWatching.value = watchingVisibility;
     } finally {
         watchTimeout = setTimeout(() => {
             watchHistory(store);

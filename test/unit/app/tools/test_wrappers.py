@@ -207,7 +207,7 @@ def test_dataset_wrapper():
     dataset = cast(DatasetInstance, MockDataset())
     wrapper = DatasetFilenameWrapper(dataset)
     assert str(wrapper) == MOCK_DATASET_PATH
-    assert wrapper.file_name == MOCK_DATASET_PATH
+    assert wrapper.get_file_name() == MOCK_DATASET_PATH
 
     assert wrapper.ext == MOCK_DATASET_EXT
 
@@ -219,7 +219,7 @@ def test_dataset_wrapper_false_path():
         dataset, compute_environment=cast(ComputeEnvironment, MockComputeEnvironment(false_path=new_path))
     )
     assert str(wrapper) == new_path
-    assert wrapper.file_name == new_path
+    assert wrapper.get_file_name() == new_path
 
 
 class MockComputeEnvironment:
@@ -308,10 +308,12 @@ MOCK_DATASET_EXT = "bam"
 class MockDataset:
     def __init__(self):
         self.metadata = MetadataSpecCollection({})
-        self.file_name = MOCK_DATASET_PATH
         self.extra_files_path = MOCK_DATASET_EXTRA_FILES_PATH
         self.ext = MOCK_DATASET_EXT
         self.tags = []
+
+    def get_file_name(self):
+        return MOCK_DATASET_PATH
 
 
 class MockTool:

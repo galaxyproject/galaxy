@@ -1,19 +1,15 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 
-import type { UserNotification } from "@/components/Notifications";
-import type { components } from "@/schema";
+import type { NotificationChanges, UserNotification, UserNotificationsBatchUpdateRequest } from "@/api/notifications";
 import {
     loadNotificationsFromServer,
     loadNotificationsStatus,
     updateBatchNotificationsOnServer,
-} from "@/stores/services/notifications.service";
+} from "@/api/notifications";
 import { mergeObjectListsById } from "@/utils/utils";
 
 import { useBroadcastsStore } from "./broadcastsStore";
-
-type NotificationChanges = components["schemas"]["UserNotificationUpdateRequest"];
-type UserNotificationsBatchUpdateRequest = components["schemas"]["UserNotificationsBatchUpdateRequest"];
 
 const STATUS_POLLING_DELAY = 5000;
 
@@ -23,16 +19,15 @@ export const useNotificationsStore = defineStore("notificationsStore", () => {
     const totalUnreadCount = ref<number>(0);
     const notifications = ref<UserNotification[]>([]);
 
-    const pollId = ref<any>(null);
+    const pollId = ref<NodeJS.Timeout | undefined>(undefined);
     const loadingNotifications = ref<boolean>(false);
     const lastNotificationUpdate = ref<Date | null>(null);
 
     const unreadNotifications = computed(() => notifications.value.filter((n) => !n.seen_time));
 
     async function loadNotifications() {
-        await loadNotificationsFromServer().then((data) => {
-            notifications.value = mergeObjectListsById(data, [], "create_time", "desc");
-        });
+        const data = await loadNotificationsFromServer();
+        notifications.value = mergeObjectListsById(data, [], "create_time", "desc");
     }
 
     async function getNotificationStatus() {
@@ -43,16 +38,15 @@ export const useNotificationsStore = defineStore("notificationsStore", () => {
                 await broadcastsStore.loadBroadcasts();
                 await loadNotifications();
             } else {
-                await loadNotificationsStatus(lastNotificationUpdate.value).then((data) => {
-                    totalUnreadCount.value = data.total_unread_count;
-                    notifications.value = mergeObjectListsById(
-                        notifications.value,
-                        data.notifications,
-                        "create_time",
-                        "desc"
-                    );
-                    broadcastsStore.updateBroadcasts(data.broadcasts);
-                });
+                const data = await loadNotificationsStatus(lastNotificationUpdate.value);
+                totalUnreadCount.value = data.total_unread_count;
+                notifications.value = mergeObjectListsById(
+                    notifications.value,
+                    data.notifications as UserNotification[],
+                    "create_time",
+                    "desc"
+                );
+                broadcastsStore.updateBroadcasts(data.broadcasts);
             }
             lastNotificationUpdate.value = new Date();
         } catch (e) {
@@ -68,7 +62,8 @@ export const useNotificationsStore = defineStore("notificationsStore", () => {
     }
 
     function stopPollingNotifications() {
-        pollId.value = clearTimeout(pollId.value);
+        clearTimeout(pollId.value);
+        pollId.value = undefined;
     }
 
     async function updateBatchNotification(request: UserNotificationsBatchUpdateRequest) {

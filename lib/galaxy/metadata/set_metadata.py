@@ -16,6 +16,7 @@ import logging
 import os
 import sys
 import traceback
+from functools import partial
 from pathlib import Path
 from typing import Optional
 
@@ -42,6 +43,7 @@ from galaxy.job_execution.output_collect import (
 from galaxy.job_execution.setup import TOOL_PROVIDED_JOB_METADATA_KEYS
 from galaxy.model import (
     Dataset,
+    DatasetInstance,
     HistoryDatasetAssociation,
     Job,
     store,
@@ -75,6 +77,21 @@ log = logging.getLogger(__name__)
 MAX_STDIO_READ_BYTES = 100 * 10**6  # 100 MB
 
 
+def reset_external_filename(dataset_instance: DatasetInstance):
+    assert dataset_instance.dataset
+    dataset_instance.dataset.external_filename = None
+    dataset_instance.dataset.extra_files_path = None
+
+
+def push_if_necessary(object_store: ObjectStore, dataset: DatasetInstance, external_filename):
+    # Here we might be updating a disk based objectstore when outputs_to_working_directory is used,
+    # or a remote object store from its cache path.
+    # empty files could happen when outputs are discovered from working dir,
+    # empty file check needed for e.g. test/integration/test_extended_metadata_outputs_to_working_directory.py::test_tools[multi_output_assign_primary]
+    if os.path.getsize(external_filename):
+        object_store.update_from_file(dataset.dataset, file_name=external_filename, create=True)
+
+
 def set_validated_state(dataset_instance):
     datatype_validation = validate(dataset_instance)
 
@@ -101,9 +118,7 @@ def set_meta_with_tool_provided(
     extension = dataset_instance.extension
     if extension == "_sniff_":
         try:
-            extension = sniff.handle_uploaded_dataset_file(
-                dataset_instance.dataset.external_filename, datatypes_registry
-            )
+            extension = sniff.handle_uploaded_dataset_file(dataset_instance.dataset.get_file_name(), datatypes_registry)
             # We need to both set the extension so it is available to set_meta
             # and record it in the metadata so it can be reloaded on the server
             # side and the model updated (see MetadataCollection.{from,to}_JSON_dict)
@@ -247,7 +262,7 @@ def set_metadata_portable(
                 if not is_celery_task:
                     error_desc = "Failed to find tool_stdout or tool_stderr for this job, cannot collect metadata"
                     error_extra = f"Working dir contents [{wdc}], output directory contents [{odc}]"
-                    log.warn(f"{error_desc}. {error_extra}")
+                    log.warning(f"{error_desc}. {error_extra}")
                     raise Exception(error_desc)
                 else:
                     tool_stdout = tool_stderr = b""
@@ -371,6 +386,7 @@ def set_metadata_portable(
         set_meta_kwds = stringify_dictionary_keys(
             json.load(open(filename_kwds))
         )  # load kwds; need to ensure our keywords are not unicode
+        object_store_update_actions = []
         try:
             is_deferred = bool(unnamed_is_deferred.get(dataset_instance_id))
             dataset.metadata_deferred = is_deferred
@@ -423,25 +439,27 @@ def set_metadata_portable(
                 setattr(dataset.metadata, metadata_name, metadata_file_override)
             if output_dict.get("validate", False):
                 set_validated_state(dataset)
-            if dataset_instance_id not in unnamed_id_to_path:
-                # We're going to run through set_metadata in collect_dynamic_outputs with more contextual metadata,
-                # so skip set_meta here.
-                set_meta(dataset, file_dict)
-                if extended_metadata_collection:
-                    collect_extra_files(object_store, dataset, ".")
-                    dataset_state = "deferred" if (is_deferred and final_job_state == "ok") else final_job_state
-                    if not dataset.state == dataset.states.ERROR:
-                        # Don't overwrite failed state (for invalid content) here
-                        dataset.state = dataset.dataset.state = dataset_state
 
             if extended_metadata_collection:
                 if not object_store or not export_store:
                     # Can't happen, but type system doesn't know
                     raise Exception("object_store not built")
-                if not is_deferred and not link_data_only and os.path.getsize(external_filename):
-                    # Here we might be updating a disk based objectstore when outputs_to_working_directory is used,
-                    # or a remote object store from its cache path.
-                    object_store.update_from_file(dataset.dataset, file_name=external_filename, create=True)
+                if not is_deferred and not link_data_only:
+                    object_store_update_actions.append(
+                        partial(push_if_necessary, object_store, dataset, external_filename)
+                    )
+                    object_store_update_actions.append(partial(reset_external_filename, dataset))
+                object_store_update_actions.append(partial(dataset.set_total_size))
+                object_store_update_actions.append(partial(export_store.add_dataset, dataset))
+                if dataset_instance_id not in unnamed_id_to_path:
+                    object_store_update_actions.append(partial(collect_extra_files, object_store, dataset, "."))
+                    dataset_state = "deferred" if (is_deferred and final_job_state == "ok") else final_job_state
+                    if not dataset.state == dataset.states.ERROR:
+                        # Don't overwrite failed state (for invalid content) here
+                        dataset.state = dataset.dataset.state = dataset_state
+                    # We're going to run through set_metadata in collect_dynamic_outputs with more contextual metadata,
+                    # so only run set_meta for fixed outputs
+                    set_meta(dataset, file_dict)
                 # TODO: merge expression_context into tool_provided_metadata so we don't have to special case this (here and in _finish_dataset)
                 meta = tool_provided_metadata.get_dataset_meta(output_name, dataset.dataset.id, dataset.dataset.uuid)
                 if meta:
@@ -472,12 +490,11 @@ def set_metadata_portable(
                     if context_key in context:
                         context_value = context[context_key]
                         setattr(dataset, context_key, context_value)
-                # We only want to persist the external_filename if the dataset has been linked in.
-                if not is_deferred and not link_data_only:
-                    dataset.dataset.external_filename = None
-                    dataset.dataset.extra_files_path = None
-                export_store.add_dataset(dataset)
             else:
+                if dataset_instance_id not in unnamed_id_to_path:
+                    # We're going to run through set_metadata in collect_dynamic_outputs with more contextual metadata,
+                    # so only run set_meta for fixed outputs
+                    set_meta(dataset, file_dict)
                 dataset.metadata.to_JSON_dict(filename_out)  # write out results of set_meta
 
             with open(filename_results_code, "w+") as tf:
@@ -485,6 +502,9 @@ def set_metadata_portable(
         except Exception:
             with open(filename_results_code, "w+") as tf:
                 json.dump((False, traceback.format_exc()), tf)  # setting metadata has failed somehow
+        finally:
+            for action in object_store_update_actions:
+                action()
 
     if export_store:
         export_store.push_metadata_files()

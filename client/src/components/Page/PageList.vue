@@ -6,7 +6,19 @@
         <b-alert v-bind="alertAttrs">{{ message }}</b-alert>
         <b-row class="mb-3">
             <b-col cols="6">
-                <IndexFilter v-bind="filterAttrs" id="page-search" v-model="filter" />
+                <FilterMenu
+                    :name="title"
+                    :placeholder="titleSearch"
+                    :filter-class="filterClass"
+                    :filter-text.sync="filterText"
+                    :loading="loading"
+                    :show-advanced.sync="showAdvanced"
+                    has-help
+                    @on-backend-filter="onSearch">
+                    <template v-slot:menu-help-text>
+                        <div v-html="helpHtml"></div>
+                    </template>
+                </FilterMenu>
             </b-col>
             <b-col>
                 <PageIndexActions class="float-right" />
@@ -14,10 +26,10 @@
         </b-row>
         <b-table v-model="pageItemsModel" v-bind="{ ...defaultTableAttrs, ...indexTableAttrs }">
             <template v-slot:empty>
-                <loading-span v-if="loading" message="Loading pages" />
+                <LoadingSpan v-if="loading" message="Loading pages" />
                 <b-alert v-else id="no-pages" variant="info" show>
-                    <div v-if="isFiltered">
-                        No matching entries found for: <span class="font-weight-bold">{{ filter }}</span
+                    <div v-if="filterText !== ''">
+                        No matching entries found for: <span class="font-weight-bold">{{ filterText }}</span
                         >.
                     </div>
                     <div v-else>No pages found. You may create a new page.</div>
@@ -35,24 +47,25 @@
             </template>
             <template v-slot:cell(tags)="row">
                 <StatelessTags
+                    clickable
                     :value="row.item.tags"
                     :index="row.index"
                     :disabled="published"
                     @input="(tags) => onTags(tags, row.index)"
-                    @tag-click="onTagClick" />
+                    @tag-click="(tag) => applyFilter('tag', tag, true)" />
             </template>
             <template v-slot:cell(username)="row">
                 <a
                     class="page-filter-link-owner"
                     href="#"
                     :title="'Search more from ' + row.item.username"
-                    @click="appendTagFilter('user', row.item.username)">
+                    @click="applyFilter('user', row.item.username, true)">
                     {{ row.item.username }}
                 </a>
             </template>
             <template v-slot:cell(sharing)="row">
                 <span v-if="row.item.published || row.item.shared || row.item.importable">
-                    <SharingIndicators :object="row.item" @filter="(filter) => appendFilter(filter, true)" />
+                    <SharingIndicators :object="row.item" @filter="(filter) => applyFilter(filter, true)" />
                     <CopyToClipboard
                         :title="'Copy URL' | localize"
                         :text="copyUrl(row.item)"
@@ -79,23 +92,23 @@
 </template>
 <script>
 import { getGalaxyInstance } from "app";
+import FilterMenu from "components/Common/FilterMenu";
 import CopyToClipboard from "components/CopyToClipboard";
-import filtersMixin from "components/Indices/filtersMixin";
-import IndexFilter from "components/Indices/IndexFilter";
 import SharingIndicators from "components/Indices/SharingIndicators";
 import { pagesProvider } from "components/providers/PageProvider";
 import StatelessTags from "components/TagsMultiselect/StatelessTags";
 import UtcDate from "components/UtcDate";
 import paginationMixin from "components/Workflow/paginationMixin";
 import { getAppRoot } from "onload/loadConfig";
+import Filtering, { contains, equals, expandNameTag, toBool } from "utils/filtering";
 import _l from "utils/localization";
 import { useRouter } from "vue-router/composables";
 
+import { updateTags } from "@/api/tags";
 import { absPath } from "@/utils/redirect";
 
 import PageDropdown from "./PageDropdown";
 import PageIndexActions from "./PageIndexActions";
-import { updateTags } from "./services";
 
 const helpHtml = `<div>
 <p>This textbox can be used to filter the pages displayed.
@@ -136,6 +149,61 @@ const OWNER_FIELD = { key: "username", label: _l("Owner"), sortable: false, thSt
 const PERSONAL_FIELDS = [TITLE_FIELD, TAGS_FIELD, SHARING_FIELD, UPDATED_FIELD];
 const PUBLISHED_FIELDS = [TITLE_FIELD, TAGS_FIELD, OWNER_FIELD, UPDATED_FIELD];
 
+const validFilters = {
+    title: { placeholder: "title", type: String, handler: contains("title"), menuItem: true },
+    user: { placeholder: "owner", type: String, handler: contains("user"), menuItem: false },
+    tag: {
+        placeholder: "tag(s)",
+        type: "MultiTags",
+        handler: contains("tag", "tag", expandNameTag),
+        menuItem: true,
+    },
+    published: {
+        placeholder: "Filter on published pages",
+        type: Boolean,
+        boolType: "is",
+        handler: equals("published", "published", toBool),
+        menuItem: true,
+    },
+    importable: {
+        placeholder: "Filter on importable pages",
+        type: Boolean,
+        boolType: "is",
+        handler: equals("importable", "importable", toBool),
+        menuItem: true,
+    },
+    shared_with_me: {
+        placeholder: "Filter on pages shared with me",
+        type: Boolean,
+        boolType: "is",
+        handler: equals("shared_with_me", "shared_with_me", toBool),
+        menuItem: true,
+    },
+};
+const PageFilters = new Filtering(validFilters, undefined, false, false);
+
+const validPublishedFilters = {
+    ...validFilters,
+    published: {
+        ...validFilters.published,
+        default: true,
+        menuItem: false,
+    },
+    user: {
+        ...validFilters.user,
+        menuItem: true,
+    },
+    shared_with_me: {
+        ...validFilters.shared_with_me,
+        menuItem: false,
+    },
+    importable: {
+        ...validFilters.importable,
+        menuItem: false,
+    },
+};
+const PublishedPageFilters = new Filtering(validPublishedFilters, undefined, false, false);
+
 export default {
     components: {
         UtcDate,
@@ -143,10 +211,10 @@ export default {
         PageIndexActions,
         SharingIndicators,
         PageDropdown,
-        IndexFilter,
+        FilterMenu,
         CopyToClipboard,
     },
-    mixins: [paginationMixin, filtersMixin],
+    mixins: [paginationMixin],
     props: {
         published: {
             // Render the published pages version of this grid.
@@ -162,23 +230,26 @@ export default {
     },
     data() {
         const fields = this.published ? PUBLISHED_FIELDS : PERSONAL_FIELDS;
-        const implicitFilter = this.published ? "is:published" : null;
+        const filterClass = this.published ? PublishedPageFilters : PageFilters;
         return {
             tableId: "page-table",
             fields: fields,
+            filterText: "",
+            searchQuery: this.published ? "is:published" : "",
+            filterClass: filterClass,
+            showAdvanced: false,
             titleSearch: _l("search pages"),
             pageItemsModel: [],
             helpHtml: helpHtml,
             perPage: this.rowsPerPage(this.defaultPerPage || 20),
             dataProvider: pagesProvider,
-            implicitFilter: implicitFilter,
             defaultTableAttrs: { "sort-by": "update_time", "sort-desc": true, "no-sort-reset": "", fields: fields },
         };
     },
     computed: {
         dataProviderParameters() {
             const extraParams = {
-                search: this.effectiveFilter,
+                search: this.searchQuery,
                 show_published: false,
                 show_shared: true,
             };
@@ -192,15 +263,17 @@ export default {
             return this.published ? `Published Pages` : `Pages`;
         },
     },
-    watch: {
-        filter(val) {
-            this.refresh();
-        },
-    },
     created() {
         this.root = getAppRoot();
     },
     methods: {
+        applyFilter(filter, value, quoted = false) {
+            if (quoted) {
+                this.filterText = this.filterClass.setFilterValue(this.filterText, filter, `'${value}'`);
+            } else {
+                this.filterText = this.filterClass.setFilterValue(this.filterText, filter, value);
+            }
+        },
         copyUrl: function (item) {
             return absPath(`/u/${item.owner}/p/${item.slug}`);
         },
@@ -211,9 +284,6 @@ export default {
                 this.onError(error);
             });
         },
-        onTagClick: function (tag) {
-            this.appendTagFilter("tag", tag);
-        },
         onAdd: function (page) {
             if (this.currentPage == 1) {
                 this.refresh();
@@ -222,6 +292,10 @@ export default {
             }
         },
         onRemove: function (id) {
+            this.refresh();
+        },
+        onSearch(searchQuery) {
+            this.searchQuery = searchQuery;
             this.refresh();
         },
         onUpdate: function (id, data) {

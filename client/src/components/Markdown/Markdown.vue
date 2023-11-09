@@ -27,6 +27,9 @@
                     <h1 class="text-break align-middle">
                         Title: {{ markdownConfig.title || markdownConfig.model_class }}
                     </h1>
+                    <h2 v-if="workflowVersions" class="text-break align-middle">
+                        Workflow Checkpoint: {{ workflowVersions.version }}
+                    </h2>
                 </span>
             </div>
             <b-badge variant="info" class="w-100 rounded mb-3 white-space-normal">
@@ -67,8 +70,11 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import BootstrapVue from "bootstrap-vue";
 import MarkdownIt from "markdown-it";
 import markdownItRegexp from "markdown-it-regexp";
+import { mapActions } from "pinia";
 import store from "store";
 import Vue from "vue";
+
+import { useWorkflowStore } from "@/stores/workflowStore";
 
 import MarkdownContainer from "./MarkdownContainer.vue";
 import LoadingSpan from "components/LoadingSpan.vue";
@@ -131,6 +137,7 @@ export default {
             jobs: {},
             invocations: {},
             loading: true,
+            workflowID: "",
         };
     },
     computed: {
@@ -138,8 +145,13 @@ export default {
             return this.enable_beta_markdown_export ? this.exportLink : null;
         },
         time() {
-            const generateTime = this.markdownConfig.generate_time;
+            let generateTime = this.markdownConfig.generate_time;
             if (generateTime) {
+                if (!generateTime.endsWith("Z")) {
+                    // We don't have tzinfo, but this will always be UTC coming
+                    // from Galaxy so append Z to assert that prior to parsing
+                    generateTime += "Z";
+                }
                 const date = new Date(generateTime);
                 return date.toLocaleString("default", {
                     day: "numeric",
@@ -147,9 +159,14 @@ export default {
                     year: "numeric",
                     minute: "numeric",
                     hour: "numeric",
+                    timeZone: "UTC",
+                    timeZoneName: "short",
                 });
             }
             return "unavailable";
+        },
+        workflowVersions() {
+            return this.getStoredWorkflowByInstanceId(this.workflowID);
         },
         version() {
             return this.markdownConfig.generate_version || "Unknown Galaxy Version";
@@ -162,12 +179,14 @@ export default {
     },
     created() {
         this.initConfig();
+        this.fetchWorkflowForInstanceId(this.workflowID);
     },
     methods: {
+        ...mapActions(useWorkflowStore, ["getStoredWorkflowByInstanceId", "fetchWorkflowForInstanceId"]),
         initConfig() {
             if (Object.keys(this.markdownConfig).length) {
                 const config = this.markdownConfig;
-                const markdown = config.content || config.markdown;
+                const markdown = config.content || config.markdown || "";
                 this.markdownErrors = config.errors || [];
                 this.markdownObjects = this.splitMarkdown(markdown);
                 this.datasets = config.history_datasets || {};
@@ -177,6 +196,7 @@ export default {
                 this.jobs = config.jobs || {};
                 this.invocations = config.invocations || {};
                 this.loading = false;
+                this.workflowID = Object.keys(this.markdownConfig.workflows)[0];
             }
         },
         splitMarkdown(markdown) {

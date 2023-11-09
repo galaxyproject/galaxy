@@ -43,6 +43,7 @@
                         :id="toolId"
                         :inputs="formConfig.inputs"
                         :errors="formConfig.errors"
+                        :loading="loading"
                         :validation-scroll-to="validationScrollTo"
                         :warnings="formConfig.warnings"
                         @onChange="onChange"
@@ -106,7 +107,7 @@ import FormElement from "components/Form/FormElement";
 import LoadingSpan from "components/LoadingSpan";
 import ToolEntryPoints from "components/ToolEntryPoints/ToolEntryPoints";
 import { mapActions, mapState } from "pinia";
-import { useHistoryItemsStore } from "stores/history/historyItemsStore";
+import { useHistoryItemsStore } from "stores/historyItemsStore";
 import { useJobStore } from "stores/jobStore";
 import { refreshContentsWrapper } from "utils/data";
 
@@ -155,6 +156,7 @@ export default {
     data() {
         return {
             disabled: false,
+            loading: false,
             showLoading: true,
             showForm: false,
             showEntryPoints: false,
@@ -185,7 +187,7 @@ export default {
     computed: {
         ...mapState(useUserStore, ["currentUser"]),
         ...mapState(useHistoryStore, ["currentHistoryId"]),
-        ...mapState(useHistoryItemsStore, ["getLastUpdateTime"]),
+        ...mapState(useHistoryItemsStore, ["lastUpdateTime"]),
         toolName() {
             return this.formConfig.name;
         },
@@ -223,7 +225,7 @@ export default {
         currentHistoryId() {
             this.onHistoryChange();
         },
-        getLastUpdateTime() {
+        lastUpdateTime() {
             this.onHistoryChange();
         },
     },
@@ -271,6 +273,7 @@ export default {
         requestTool(newVersion) {
             this.currentVersion = newVersion || this.currentVersion;
             this.disabled = true;
+            this.loading = true;
             console.debug("ToolForm - Requesting tool.", this.id);
             return getToolFormData(this.id, this.currentVersion, this.job_id, this.history_id)
                 .then((data) => {
@@ -290,6 +293,7 @@ export default {
                 })
                 .finally(() => {
                     this.disabled = false;
+                    this.loading = false;
                     this.showLoading = false;
                 });
         },

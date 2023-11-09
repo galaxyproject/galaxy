@@ -18,7 +18,7 @@
             :scope-key="queryKey"
             :get-item-key="(item) => item.type_id"
             :filter-text="filterText"
-            :total-items-in-query="totalItemsInQuery"
+            :total-items-in-query="totalMatchesCount"
             @query-selection-break="querySelectionBreak = true">
             <section
                 class="history-layout d-flex flex-column w-100"
@@ -27,19 +27,23 @@
                 @dragover.prevent
                 @dragleave.prevent="onDragLeave">
                 <slot name="navigation" :history="history" />
-                <HistoryFilters
+                <FilterMenu
                     v-if="filterable"
                     class="content-operations-filters mx-3"
+                    name="History Items"
+                    placeholder="search datasets"
+                    :filter-class="filterClass"
                     :filter-text.sync="filterText"
-                    :show-advanced.sync="showAdvanced"
-                    :search-error="formattedSearchError" />
+                    :loading="loading"
+                    :search-error="searchError"
+                    :show-advanced.sync="showAdvanced" />
                 <section v-if="!showAdvanced">
                     <HistoryDetails :history="history" :writeable="writable" @update:history="updateHistory($event)" />
                     <HistoryMessages :history="history" />
                     <HistoryCounter
                         :history="history"
                         :is-watching="isWatching"
-                        :last-checked="lastChecked"
+                        :last-checked="lastCheckedTime"
                         :show-controls="showControls"
                         :filter-text.sync="filterText"
                         @reloadContents="reloadContents" />
@@ -59,7 +63,7 @@
                                 :content-selection="selectedItems"
                                 :selection-size="selectionSize"
                                 :is-query-selection="isQuerySelection"
-                                :total-items-in-query="totalItemsInQuery"
+                                :total-items-in-query="totalMatchesCount"
                                 :operation-running.sync="operationRunning"
                                 @update:show-selection="setShowSelection"
                                 @operation-error="onOperationError"
@@ -121,13 +125,13 @@
                                     :selected="isSelected(item)"
                                     :selectable="showSelection"
                                     :filterable="filterable"
-                                    @tag-click="onTagClick"
+                                    @tag-click="updateFilterVal('tag', $event)"
                                     @tag-change="onTagChange"
                                     @toggleHighlights="updateFilterVal('related', item.hid)"
                                     @update:expand-dataset="setExpanded(item, $event)"
                                     @update:selected="setSelected(item, $event)"
                                     @view-collection="$emit('view-collection', item, currentOffset)"
-                                    @delete="onDelete(item)"
+                                    @delete="onDelete"
                                     @undelete="onUndelete(item)"
                                     @unhide="onUnhide(item)" />
                             </template>
@@ -140,27 +144,28 @@
 </template>
 
 <script>
-import { copyDataset } from "components/Dataset/services";
+import FilterMenu from "components/Common/FilterMenu";
 import ContentItem from "components/History/Content/ContentItem";
 import ExpandedItems from "components/History/Content/ExpandedItems";
 import SelectedItems from "components/History/Content/SelectedItems";
-import { HistoryFilters as FilterClass } from "components/History/HistoryFilters";
+import { HistoryFilters } from "components/History/HistoryFilters";
 import ListingLayout from "components/History/Layout/ListingLayout";
 import { deleteContent, updateContentFields } from "components/History/model/queries";
 import LoadingSpan from "components/LoadingSpan";
 import { Toast } from "composables/toast";
 import { mapActions, mapState, storeToRefs } from "pinia";
 import { rewatchHistory } from "store/historyStore/model/watchHistory";
-import { useHistoryItemsStore } from "stores/history/historyItemsStore";
+import { useHistoryItemsStore } from "stores/historyItemsStore";
 import { useHistoryStore } from "stores/historyStore";
 import { getOperatorForAlias } from "utils/filtering";
 import Vue from "vue";
+
+import { copyDataset } from "@/api/datasets";
 
 import HistoryCounter from "./HistoryCounter";
 import HistoryDetails from "./HistoryDetails";
 import HistoryDropZone from "./HistoryDropZone";
 import HistoryEmpty from "./HistoryEmpty";
-import HistoryFilters from "./HistoryFilters/HistoryFilters";
 import HistoryMessages from "./HistoryMessages";
 import HistoryOperations from "./HistoryOperations/HistoryOperations";
 import OperationErrorDialog from "./HistoryOperations/OperationErrorDialog";
@@ -172,12 +177,12 @@ export default {
     components: {
         ContentItem,
         ExpandedItems,
+        FilterMenu,
         HistoryCounter,
         HistoryMessages,
         HistoryDetails,
         HistoryDropZone,
         HistoryEmpty,
-        HistoryFilters,
         HistoryOperations,
         HistorySelectionOperations,
         HistorySelectionStatus,
@@ -195,9 +200,15 @@ export default {
         showControls: { type: Boolean, default: true },
         filterable: { type: Boolean, default: false },
     },
+    setup() {
+        const { currentFilterText, currentHistoryId } = storeToRefs(useHistoryStore());
+        const { lastCheckedTime, totalMatchesCount, isWatching } = storeToRefs(useHistoryItemsStore());
+        return { currentFilterText, currentHistoryId, lastCheckedTime, totalMatchesCount, isWatching };
+    },
     data() {
         return {
             filterText: "",
+            filterClass: HistoryFilters,
             invisible: {},
             loading: false,
             offset: 0,
@@ -239,21 +250,6 @@ export default {
         itemsLoaded() {
             return this.getHistoryItems(this.historyId, this.filterText);
         },
-        /** @returns {Date} */
-        lastChecked() {
-            const { getLastCheckedTime } = storeToRefs(useHistoryItemsStore());
-            return getLastCheckedTime.value;
-        },
-        /** @returns {Number} */
-        totalItemsInQuery() {
-            const { getTotalMatchesCount } = storeToRefs(useHistoryItemsStore());
-            return getTotalMatchesCount.value;
-        },
-        /** @returns {Boolean} */
-        isWatching() {
-            const { getWatchingVisibility } = storeToRefs(useHistoryItemsStore());
-            return getWatchingVisibility.value;
-        },
         /** @returns {Object} */
         formattedSearchError() {
             if (this.searchError) {
@@ -273,9 +269,8 @@ export default {
         },
         /** @returns {String} */
         storeFilterText() {
-            const { currentFilterText, currentHistoryId } = storeToRefs(useHistoryStore());
-            if (this.historyId === currentHistoryId.value) {
-                return currentFilterText.value || "";
+            if (this.historyId === this.currentHistoryId) {
+                return this.currentFilterText || "";
             } else {
                 return "";
             }
@@ -308,8 +303,17 @@ export default {
         offset() {
             this.loadHistoryItems();
         },
-        historyUpdateTime() {
-            this.loadHistoryItems();
+        async historyUpdateTime() {
+            await this.loadHistoryItems();
+        },
+        itemsLoaded(newItems) {
+            if (this.invisible) {
+                newItems.forEach((item) => {
+                    if (this.invisible[item.hid]) {
+                        Vue.set(this.invisible, item.hid, false);
+                    }
+                });
+            }
         },
     },
     async mounted() {
@@ -323,14 +327,16 @@ export default {
         ...mapActions(useHistoryStore, ["loadHistoryById", "setFilterText", "updateHistory"]),
         ...mapActions(useHistoryItemsStore, ["fetchHistoryItems"]),
         getHighlight(item) {
-            const highlightsKey = FilterClass.getFilterValue(this.filterText, "related");
-            if (highlightsKey == item.hid) {
-                return "active";
-            } else if (highlightsKey) {
-                if (item.hid > highlightsKey) {
-                    return "output";
-                } else {
-                    return "input";
+            const highlightsKey = this.filterClass.getFilterValue(this.filterText, "related");
+            if (!this.loading) {
+                if (highlightsKey == item.hid) {
+                    return "active";
+                } else if (highlightsKey) {
+                    if (item.hid > highlightsKey) {
+                        return "output";
+                    } else {
+                        return "input";
+                    }
                 }
             } else {
                 return null;
@@ -347,7 +353,6 @@ export default {
             try {
                 await this.fetchHistoryItems(this.historyId, this.filterText, this.offset);
                 this.searchError = null;
-                this.loading = false;
             } catch (error) {
                 if (error.response && error.response.data && error.response.data.err_msg) {
                     console.debug("HistoryPanel - Load items error:", error.response.data.err_msg);
@@ -355,12 +360,15 @@ export default {
                 } else {
                     console.debug("HistoryPanel - Load items error.", error);
                 }
+            } finally {
                 this.loading = false;
             }
         },
-        onDelete(item) {
+        async onDelete(item, recursive = false) {
+            this.loading = true;
             this.setInvisible(item);
-            deleteContent(item);
+            await deleteContent(item, { recursive: recursive });
+            this.loading = false;
         },
         onHideSelection(selectedItems) {
             selectedItems.forEach((item) => {
@@ -370,13 +378,17 @@ export default {
         onScroll(offset) {
             this.offset = offset;
         },
-        onUndelete(item) {
+        async onUndelete(item) {
             this.setInvisible(item);
-            updateContentFields(item, { deleted: false });
+            this.loading = true;
+            await updateContentFields(item, { deleted: false });
+            this.loading = false;
         },
-        onUnhide(item) {
+        async onUnhide(item) {
             this.setInvisible(item);
-            updateContentFields(item, { visible: true });
+            this.loading = true;
+            await updateContentFields(item, { visible: true });
+            this.loading = false;
         },
         reloadContents() {
             rewatchHistory();
@@ -386,9 +398,6 @@ export default {
         },
         onTagChange(item, newTags) {
             item.tags = newTags;
-        },
-        onTagClick(tag) {
-            this.updateFilterVal("tag", tag);
         },
         onOperationError(error) {
             console.debug("HistoryPanel - Operation error.", error);
@@ -403,7 +412,7 @@ export default {
                 this.showDropZone = false;
             }
         },
-        onDrop(evt) {
+        async onDrop(evt) {
             this.showDropZone = false;
             let data;
             try {
@@ -414,18 +423,17 @@ export default {
             if (data) {
                 const dataSource = data.history_content_type === "dataset" ? "hda" : "hdca";
                 if (data.history_id != this.historyId) {
-                    copyDataset(data.id, this.historyId, data.history_content_type, dataSource)
-                        .then(() => {
-                            if (data.history_content_type === "dataset") {
-                                Toast.info("Dataset copied to history");
-                            } else {
-                                Toast.info("Collection copied to history");
-                            }
-                            this.loadHistoryById(this.historyId);
-                        })
-                        .catch((error) => {
-                            this.onError(error);
-                        });
+                    try {
+                        await copyDataset(data.id, this.historyId, data.history_content_type, dataSource);
+                        if (data.history_content_type === "dataset") {
+                            Toast.info("Dataset copied to history");
+                        } else {
+                            Toast.info("Collection copied to history");
+                        }
+                        this.loadHistoryById(this.historyId);
+                    } catch (error) {
+                        this.onError(error);
+                    }
                 }
             }
         },
@@ -433,7 +441,7 @@ export default {
             Toast.error(`${error}`);
         },
         updateFilterVal(newFilter, newVal) {
-            this.filterText = FilterClass.setFilterValue(this.filterText, newFilter, newVal);
+            this.filterText = this.filterClass.setFilterValue(this.filterText, newFilter, newVal);
         },
     },
 };

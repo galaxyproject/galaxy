@@ -16,6 +16,7 @@ from galaxy.files import (
     ConfiguredFileSourcesConfig,
     DictFileSourcesUserContext,
 )
+from galaxy.util.config_parsers import parse_allowlist_ips
 from galaxy.util.drs import (
     fetch_drs_to_file,
     RetryOptions,
@@ -32,7 +33,7 @@ CHECKSUM_TEST_SLEEP_TIME = 3.0
 
 
 def user_context_fixture():
-    file_sources_config = ConfiguredFileSourcesConfig()
+    file_sources_config = ConfiguredFileSourcesConfig(fetch_url_allowlist=parse_allowlist_ips(["127.0.0.0/24"]))
     file_sources = ConfiguredFileSources(file_sources_config, load_stock_plugins=True)
     user_context = DictFileSourcesUserContext(
         preferences={

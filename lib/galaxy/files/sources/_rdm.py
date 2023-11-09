@@ -195,7 +195,7 @@ class RDMFilesSource(BaseFilesSource):
         for key, val in self._props.items():
             effective_props[key] = self._evaluate_prop(val, user_context=user_context)
         effective_props["url"] = self._repository_url
-        effective_props["token"] = self.get_authorization_token(user_context)
+        effective_props["token"] = self.safe_get_authorization_token(user_context)
         return cast(RDMFilesSourceProperties, effective_props)
 
     def get_authorization_token(self, user_context: OptionalUserContext) -> str:
@@ -206,3 +206,9 @@ class RDMFilesSource(BaseFilesSource):
         if token is None:
             raise AuthenticationRequired(f"No authorization token provided in user's settings for '{self.label}'")
         return token
+
+    def safe_get_authorization_token(self, user_context: OptionalUserContext) -> Optional[str]:
+        try:
+            return self.get_authorization_token(user_context)
+        except AuthenticationRequired:
+            return None

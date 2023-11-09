@@ -81,7 +81,7 @@ def display(api_key, url, return_formatted=True):
         sys.exit(1)
     if not return_formatted:
         return r
-    elif type(r) == list:
+    elif isinstance(r, list):
         # Response is a collection as defined in the REST style.
         print("Collection Members")
         print("------------------")
@@ -103,7 +103,7 @@ def display(api_key, url, return_formatted=True):
                         print(item)
         print("")
         print("%d element(s) in collection" % len(r))
-    elif type(r) == dict:
+    elif isinstance(r, dict):
         # Response is an element as defined in the REST style.
         print("Member Information")
         print("------------------")
@@ -133,11 +133,11 @@ def submit(api_key, url, data, return_formatted=True):
         return r
     print("Response")
     print("--------")
-    if type(r) == list:
+    if isinstance(r, list):
         # Currently the only implemented responses are lists of dicts, because
         # submission creates some number of collection elements.
         for i in r:
-            if type(i) == dict:
+            if isinstance(i, dict):
                 if "url" in i:
                     print(i.pop("url"))
                 else:

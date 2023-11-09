@@ -252,7 +252,7 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
         rval["is_unrestricted"] = trans.app.security_agent.dataset_is_public(ldda.dataset)
         rval["tags"] = trans.tag_handler.get_tags_list(ldda.tags)
 
-        #  Manage dataset permission is always attached to the dataset itself, not the the ld or ldda to maintain consistency
+        #  Manage dataset permission is always attached to the dataset itself, not the ld or ldda to maintain consistency
         rval["can_user_manage"] = trans.user_is_admin or trans.app.security_agent.can_manage_dataset(
             current_user_roles, ldda.dataset
         )

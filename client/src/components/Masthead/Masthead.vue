@@ -6,7 +6,7 @@ import { withPrefix } from "utils/redirect";
 import { onBeforeMount, onMounted, reactive, ref, watch } from "vue";
 import { useRoute } from "vue-router/composables";
 
-import { isConfigLoaded, useConfig } from "@/composables/config";
+import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
 
 import { loadWebhookMenuItems } from "./_webhooks";
@@ -20,7 +20,7 @@ import NotificationsBell from "@/components/Notifications/NotificationsBell.vue"
 const { isAnonymous, showActivityBar } = storeToRefs(useUserStore());
 
 const route = useRoute();
-const { config } = useConfig();
+const { config, isConfigLoaded } = useConfig();
 
 const emit = defineEmits(["open-url"]);
 

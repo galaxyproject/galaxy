@@ -79,12 +79,12 @@ class WorkflowSchedulingManager(ConfiguresHandlers):
             log.info(
                 "(%s) Handler unassigned at startup, resubmitting workflow invocation for assignment", invocation_id
             )
-            workflow_invocation = sa_session.query(model.WorkflowInvocation).get(invocation_id)
+            workflow_invocation = sa_session.get(model.WorkflowInvocation, invocation_id)
             self._assign_handler(workflow_invocation)
 
     def _handle_setup_msg(self, workflow_invocation_id=None):
         sa_session = self.app.model.context
-        workflow_invocation = sa_session.query(model.WorkflowInvocation).get(workflow_invocation_id)
+        workflow_invocation = sa_session.get(model.WorkflowInvocation, workflow_invocation_id)
         if workflow_invocation.handler is None:
             workflow_invocation.handler = self.app.config.server_name
             sa_session.add(workflow_invocation)

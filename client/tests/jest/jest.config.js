@@ -5,6 +5,7 @@ const { defaults: tsjPreset } = require("ts-jest/presets");
 // https://jestjs.io/docs/en/configuration.html
 
 const modulesToTransform = [
+    "axios",
     "bootstrap-vue",
     "rxjs",
     "@hirez_io",
@@ -19,6 +20,7 @@ module.exports = {
     clearMocks: true,
     coverageDirectory: "coverage",
     globals: { __webpack_public_path__: "" },
+    injectGlobals: true,
     moduleFileExtensions: ["js", "ts", "json", "vue", "yml", "txt"],
     modulePaths: ["<rootDir>/src/", "<rootDir>/tests/", "<rootDir>/node_modules/", "./"],
     moduleNameMapper: {

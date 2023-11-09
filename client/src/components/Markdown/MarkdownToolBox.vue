@@ -19,6 +19,7 @@
                     :expanded="true"
                     @onClick="onClick" />
                 <ToolSection v-else :category="workflowSection" :expanded="true" @onClick="onClick" />
+                <ToolSection :category="linksSection" :expanded="false" @onClick="onClick" />
                 <ToolSection :category="otherSection" :expanded="true" @onClick="onClick" />
                 <ToolSection
                     v-if="hasVisualizations"
@@ -190,6 +191,16 @@ export default {
                         name: "Workflow Display",
                         emitter: "onWorkflowId",
                     },
+                    {
+                        id: "workflow_license",
+                        name: "Workflow License",
+                        emitter: "onWorkflowId",
+                    },
+                    {
+                        id: "workflow_image",
+                        name: "Workflow Image",
+                        emitter: "onWorkflowId",
+                    },
                 ],
             },
             workflowInEditorSection: {
@@ -214,6 +225,14 @@ export default {
                         name: "Current Workflow",
                         description: "containing all steps",
                     },
+                    {
+                        id: "workflow_image",
+                        name: "Current Workflow Image",
+                    },
+                    {
+                        id: "workflow_license",
+                        name: "Current Workflow License",
+                    },
                 ],
             },
             otherSection: {
@@ -232,6 +251,48 @@ export default {
                     },
                 ],
             },
+            linksSection: {
+                title: "Galaxy Instance Links",
+                name: "links",
+                elems: [
+                    {
+                        id: "instance_access_link",
+                        name: "Access",
+                        description: "(link used to access this Galaxy)",
+                    },
+                    {
+                        id: "instance_resources_link",
+                        name: "Resources",
+                        description: "(link for more information about this Galaxy)",
+                    },
+                    {
+                        id: "instance_help_link",
+                        name: "Help",
+                        description: "(link for finding help content for this Galaxy)",
+                    },
+                    {
+                        id: "instance_support_link",
+                        name: "Support",
+                        description: "(link for support for this Galaxy)",
+                    },
+                    {
+                        id: "instance_citation_link",
+                        name: "Citation",
+                        description: "(link describing how to cite this Galaxy instance)",
+                    },
+                    {
+                        id: "instance_terms_link",
+                        name: "Terms and Conditions",
+                        description: "(link describing terms and conditions for using this Galaxy instance)",
+                    },
+                    {
+                        id: "instance_organization_link",
+                        name: "Organization",
+                        description: "(link describing organization that runs this Galaxy instance)",
+                    },
+                ],
+            },
+
             visualizationSection: {
                 title: "Visualizations",
                 name: "visualizations",
@@ -255,8 +316,8 @@ export default {
             const steps = [];
             this.steps &&
                 Object.values(this.steps).forEach((step) => {
-                    if (step.label || step.content_id) {
-                        steps.push(step.label || step.content_id);
+                    if (step.label) {
+                        steps.push(step.label);
                     }
                 });
             return steps;

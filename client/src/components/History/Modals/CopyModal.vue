@@ -2,7 +2,7 @@
     <b-modal v-bind="$attrs" :title="title" title-tag="h2" v-on="$listeners">
         <transition name="fade">
             <b-alert v-localize :show="isAnonymous" variant="warning">
-                As an anonymous user, unless you login or register, you will lose your current history after copying
+                As an anonymous user, unless you log in or register, you will lose your current history after copying
                 this history. You can <a href="/user/login">log in here</a> or <a href="/user/create">register here</a>.
             </b-alert>
         </transition>
@@ -36,7 +36,7 @@
         <div slot="modal-footer" slot-scope="{ ok, cancel }">
             <div>
                 <b-button class="mr-3" @click="cancel()"> Cancel </b-button>
-                <b-button :variant="saveVariant" :disabled="!formValid" @click="copy(ok)">
+                <b-button :variant="saveVariant" :disabled="loading || !formValid" @click="copy(ok)">
                     {{ saveTitle | localize }}
                 </b-button>
             </div>
@@ -62,7 +62,7 @@ export default {
         };
     },
     computed: {
-        ...mapState(useUserStore, ["isAnonymous"]),
+        ...mapState(useUserStore, ["currentUser", "isAnonymous"]),
         title() {
             return `Copying History: ${this.history.name}`;
         },
@@ -72,9 +72,12 @@ export default {
         saveVariant() {
             return this.loading ? "info" : this.formValid ? "primary" : "secondary";
         },
+        userOwnsHistory() {
+            return this.currentUser.id == this.history.user_id;
+        },
         newNameValid() {
-            if (this.name == this.history.name) {
-                return null;
+            if (this.userOwnsHistory && this.name == this.history.name) {
+                return false;
             }
             return this.name.length > 0;
         },

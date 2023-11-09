@@ -3,7 +3,11 @@ import re
 from pydantic import Field
 from typing_extensions import get_args
 
-from galaxy.security.idencoding import IdEncodingHelper
+try:
+    from galaxy.security.idencoding import IdEncodingHelper
+except ImportError:
+    IdEncodingHelper = object  # type: ignore[assignment,misc]
+
 
 ENCODED_DATABASE_ID_PATTERN = re.compile("f?[0-9a-f]+")
 ENCODED_ID_LENGTH_MULTIPLE = 16

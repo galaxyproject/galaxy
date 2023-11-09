@@ -13,7 +13,10 @@ from galaxy.structured_app import (
     MinimalManagerApp,
     StructuredApp,
 )
-from galaxy.tool_util.data import BundleProcessingOptions
+from galaxy.tool_util.data import (
+    BundleProcessingOptions,
+    ToolDataTableManager,
+)
 from galaxy.tool_util.data._schema import (
     ToolDataDetails,
     ToolDataEntryList,
@@ -23,7 +26,6 @@ from galaxy.tools.data import (
     TabularToolDataField,
     TabularToolDataTable,
     ToolDataTable,
-    ToolDataTableManager,
 )
 
 

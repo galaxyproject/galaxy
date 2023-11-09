@@ -9,17 +9,13 @@ import Vuex from "vuex";
 import createCache from "vuex-cache";
 import VuexPersistence from "vuex-persist";
 
-import { collectionAttributesStore } from "./collectionAttributesStore";
 import { datasetExtFilesStore } from "./datasetExtFilesStore";
 import { datasetPathDestinationStore } from "./datasetPathDestinationStore";
 import { gridSearchStore } from "./gridSearchStore";
-import { collectionElementsStore, datasetStore } from "./historyStore";
 import { invocationStore } from "./invocationStore";
 import { jobDestinationParametersStore } from "./jobDestinationParametersStore";
-import { panelStore } from "./panelStore";
 import { syncVuextoGalaxy } from "./syncVuextoGalaxy";
 import { tagStore } from "./tagStore";
-import { toolStore } from "./toolStore";
 
 Vue.use(Vuex);
 
@@ -46,17 +42,12 @@ export function createStore() {
     const storeConfig = {
         plugins: [createCache(), panelsPersistence.plugin],
         modules: {
-            collectionAttributesStore: collectionAttributesStore,
-            collectionElements: collectionElementsStore,
             destinationParameters: jobDestinationParametersStore,
-            dataset: datasetStore,
             datasetExtFiles: datasetExtFilesStore,
             datasetPathDestination: datasetPathDestinationStore,
             invocations: invocationStore,
             gridSearch: gridSearchStore,
-            panels: panelStore,
             tags: tagStore,
-            tools: toolStore,
         },
     };
 

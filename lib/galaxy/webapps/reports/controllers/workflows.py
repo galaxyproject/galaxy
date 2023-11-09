@@ -491,4 +491,4 @@ class Workflows(BaseUIController, ReportQueryBuilder):
 
 
 def get_workflow(trans, id):
-    return trans.sa_session.query(trans.model.Workflow).get(trans.security.decode_id(id))
+    return trans.sa_session.get(model.Workflow, trans.security.decode_id(id))

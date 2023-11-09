@@ -29,7 +29,8 @@ export class UploadQueue {
     // Add new files to upload queue
     add(files) {
         if (files && files.length && !this.isRunning) {
-            files.forEach((file) => {
+            // files is a FileList which is not an array, convert to iterate.
+            Array.from(files).forEach((file) => {
                 const fileSetKey = file.name + file.size; // Concat name and size to create a "file signature".
                 if (file.mode === "new" || !this.fileSet.has(fileSetKey)) {
                     this.fileSet.add(fileSetKey);

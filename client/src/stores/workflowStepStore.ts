@@ -5,6 +5,8 @@ import type { CollectionTypeDescriptor } from "@/components/Workflow/Editor/modu
 import { type Connection, getConnectionId, useConnectionStore } from "@/stores/workflowConnectionStore";
 import { assertDefined } from "@/utils/assertions";
 
+import { useScopePointerStore } from "./scopePointerStore";
+
 interface State {
     steps: { [index: string]: Step };
     stepIndex: number;
@@ -107,6 +109,7 @@ export interface NewStep {
     position?: StepPosition;
     post_job_actions?: PostJobActions;
     tool_state: Record<string, unknown>;
+    tool_version?: string;
     tooltip?: string;
     type: "tool" | "data_input" | "data_collection_input" | "subworkflow" | "parameter_input" | "pause";
     uuid?: string;
@@ -144,7 +147,9 @@ interface StepInputMapOver {
 }
 
 export const useWorkflowStepStore = (workflowId: string) => {
-    return defineStore(`workflowStepStore${workflowId}`, {
+    const { scope } = useScopePointerStore();
+
+    return defineStore(`workflowStepStore${scope(workflowId)}`, {
         state: (): State => ({
             steps: {} as Steps,
             stepMapOver: {} as { [index: number]: CollectionTypeDescriptor },
@@ -159,7 +164,7 @@ export const useWorkflowStepStore = (workflowId: string) => {
                 };
             },
             getStepExtraInputs(state: State) {
-                return (stepId: number) => this.stepExtraInputs[stepId] || [];
+                return (stepId: number) => state.stepExtraInputs[stepId] || [];
             },
             getStepIndex(state: State) {
                 return Math.max(...Object.values(state.steps).map((step) => step.id), state.stepIndex);
@@ -182,6 +187,23 @@ export const useWorkflowStepStore = (workflowId: string) => {
                     }
                 });
                 return workflowOutputs;
+            },
+            duplicateLabels(state: State) {
+                const duplicateLabels: Set<string> = new Set();
+                const labels: Set<string> = new Set();
+                Object.values(state.steps).forEach((step) => {
+                    if (step.workflow_outputs?.length) {
+                        step.workflow_outputs.forEach((workflowOutput) => {
+                            if (workflowOutput.label) {
+                                if (labels.has(workflowOutput.label)) {
+                                    duplicateLabels.add(workflowOutput.label);
+                                }
+                                labels.add(workflowOutput.label);
+                            }
+                        });
+                    }
+                });
+                return duplicateLabels;
             },
         },
         actions: {

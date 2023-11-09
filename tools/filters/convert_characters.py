@@ -22,7 +22,7 @@ def __main__():
         from_ch += "+"
 
     skipped = 0
-    with open(args[0], "rU") as fin:
+    with open(args[0]) as fin:
         with open(args[2], "w") as fout:
             for line in fin:
                 if options.strip:

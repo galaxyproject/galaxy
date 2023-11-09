@@ -1,7 +1,9 @@
 import json
 from typing import (
+    Any,
     Dict,
     List,
+    Optional,
 )
 
 import packaging.version
@@ -357,6 +359,11 @@ class YamlInputSource(InputSource):
             selected = option.get("selected", False)
             static_options.append((label, value, selected))
         return static_options
+
+    def parse_default(self) -> Optional[Dict[str, Any]]:
+        input_dict = self.input_dict
+        default_def = input_dict.get("default", None)
+        return default_def
 
 
 def _ensure_has(dict, defaults):

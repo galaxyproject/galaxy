@@ -4,7 +4,7 @@
             ref="listing"
             class="listing"
             role="list"
-            data-key="id"
+            :data-key="dataKey"
             :offset="offset"
             :data-sources="items"
             :data-component="{}"
@@ -32,6 +32,7 @@ export default {
         VirtualList,
     },
     props: {
+        dataKey: { type: String, default: "id" },
         offset: { type: Number, default: 0 },
         loading: { type: Boolean, default: false },
         items: { type: Array, default: null },

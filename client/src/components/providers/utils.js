@@ -1,4 +1,4 @@
-import { snakeCase } from "snake-case";
+import { snakeCase } from "lodash";
 import JOB_STATES_MODEL from "utils/job-states-model";
 
 export function stateIsTerminal(result) {

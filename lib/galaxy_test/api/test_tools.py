@@ -2640,17 +2640,16 @@ class TestToolsApi(ApiTestCase, TestsTools):
         return self._run("cat1", history_id, inputs, assert_ok=assert_ok, **kwargs)
 
     def __tool_ids(self):
-        index = self._get("tools")
+        index = self._get("tool_panels/default")
         tools_index = index.json()
         # In panels by default, so flatten out sections...
-        tools = []
-        for tool_or_section in tools_index:
-            if "elems" in tool_or_section:
-                tools.extend(tool_or_section["elems"])
+        tool_ids = []
+        for id, tool_or_section in tools_index.items():
+            if "tools" in tool_or_section:
+                tool_ids.extend([t for t in tool_or_section["tools"] if isinstance(t, str)])
             else:
-                tools.append(tool_or_section)
+                tool_ids.append(id)
 
-        tool_ids = [_["id"] for _ in tools]
         return tool_ids
 
     @skip_without_tool("collection_cat_group_tag_multiple")

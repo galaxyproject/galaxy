@@ -12,10 +12,13 @@ import { copy as sendToClipboard } from "utils/clipboard";
 import { computed, onMounted, reactive, ref, watch } from "vue";
 import { RouterLink } from "vue-router";
 
+import {
+    exportHistoryToFileSource,
+    fetchHistoryExportRecords,
+    reimportHistoryFromRecord,
+} from "@/api/histories.export";
 import { useHistoryStore } from "@/stores/historyStore";
 import { absPath } from "@/utils/redirect";
-
-import { exportToFileSource, getExportRecords, reimportHistoryFromRecord } from "./services";
 
 import ExportOptions from "./ExportOptions.vue";
 import ExportToFileSourceForm from "@/components/Common/ExportForm.vue";
@@ -101,7 +104,7 @@ async function updateExports() {
     isLoadingRecords.value = true;
     try {
         errorMessage.value = null;
-        exportRecords.value = await getExportRecords(props.historyId);
+        exportRecords.value = await fetchHistoryExportRecords(props.historyId);
         const shouldWaitForTask =
             latestExportRecord.value?.isPreparing &&
             !isExportTaskRunning.value &&
@@ -124,7 +127,7 @@ async function updateExports() {
 }
 
 async function doExportToFileSource(exportDirectory, fileName) {
-    await exportToFileSource(props.historyId, exportDirectory, fileName, exportParams);
+    await exportHistoryToFileSource(props.historyId, exportDirectory, fileName, exportParams);
     updateExports();
 }
 

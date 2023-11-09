@@ -33,6 +33,7 @@ describe("Attributes", () => {
                 name: TEST_NAME,
                 tags: ["workflow_tag_0", "workflow_tag_1"],
                 parameters: untypedParameters,
+                version: 0,
                 versions: TEST_VERSIONS,
                 annotation: TEST_ANNOTATION,
             },

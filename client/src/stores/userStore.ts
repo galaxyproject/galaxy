@@ -1,6 +1,7 @@
 import { defineStore } from "pinia";
 import { computed, ref } from "vue";
 
+import type { components } from "@/api/schema";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import { useHistoryStore } from "@/stores/historyStore";
 import {
@@ -10,16 +11,21 @@ import {
     setCurrentThemeQuery,
 } from "@/stores/users/queries";
 
-interface User {
+type QuotaUsageResponse = components["schemas"]["UserQuotaUsage"];
+
+export interface User extends QuotaUsageResponse {
     id: string;
     email: string;
     tags_used: string[];
     isAnonymous: false;
+    is_admin?: boolean;
 }
 
-interface AnonymousUser {
+export interface AnonymousUser {
     isAnonymous: true;
 }
+
+export type GenericUser = User | AnonymousUser;
 
 interface Preferences {
     theme: string;
@@ -27,12 +33,20 @@ interface Preferences {
 }
 
 export const useUserStore = defineStore("userStore", () => {
-    const toggledSideBar = useUserLocalStorage("user-store-toggled-side-bar", "tools");
-    const showActivityBar = useUserLocalStorage("user-store-show-activity-bar", false);
     const currentUser = ref<User | AnonymousUser | null>(null);
     const currentPreferences = ref<Preferences | null>(null);
 
+    // explicitly pass current User, because userStore might not exist yet
+    const toggledSideBar = useUserLocalStorage("user-store-toggled-side-bar", "tools", currentUser);
+    const showActivityBar = useUserLocalStorage("user-store-show-activity-bar", false, currentUser);
+
     let loadPromise: Promise<void> | null = null;
+
+    function $reset() {
+        currentUser.value = null;
+        currentPreferences.value = null;
+        loadPromise = null;
+    }
 
     const isAnonymous = computed(() => {
         return !("email" in (currentUser.value || []));
@@ -54,20 +68,22 @@ export const useUserStore = defineStore("userStore", () => {
         currentUser.value = user;
     }
 
-    function loadUser() {
+    function loadUser(includeHistories = true) {
         if (!loadPromise) {
             loadPromise = getCurrentUser()
                 .then(async (user) => {
-                    const historyStore = useHistoryStore();
                     currentUser.value = { ...user, isAnonymous: !user.email };
                     currentPreferences.value = user?.preferences ?? null;
                     // TODO: This is a hack to get around the fact that the API returns a string
                     if (currentPreferences.value?.favorites) {
                         currentPreferences.value.favorites = JSON.parse(user?.preferences?.favorites ?? { tools: [] });
                     }
-                    await historyStore.loadCurrentHistory();
-                    // load first few histories for user to start pagination
-                    await historyStore.loadHistories();
+                    if (includeHistories) {
+                        const historyStore = useHistoryStore();
+                        await historyStore.loadCurrentHistory();
+                        // load first few histories for user to start pagination
+                        await historyStore.loadHistories();
+                    }
                 })
                 .catch((e) => {
                     console.error("Failed to load user", e);
@@ -112,6 +128,7 @@ export const useUserStore = defineStore("userStore", () => {
     function toggleActivityBar() {
         showActivityBar.value = !showActivityBar.value;
     }
+
     function toggleSideBar(currentOpen = "") {
         toggledSideBar.value = toggledSideBar.value === currentOpen ? "" : currentOpen;
     }
@@ -131,5 +148,6 @@ export const useUserStore = defineStore("userStore", () => {
         removeFavoriteTool,
         toggleActivityBar,
         toggleSideBar,
+        $reset,
     };
 });

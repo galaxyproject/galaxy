@@ -1,4 +1,4 @@
-import { getCompositeDatasetLink } from "components/Dataset/services";
+import { getCompositeDatasetLink } from "@/api/datasets";
 
 import store from "../../store/index";
 

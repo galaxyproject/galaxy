@@ -6,7 +6,7 @@ import { getLocalVue } from "tests/jest/helpers";
 
 import FormTool from "./FormTool";
 
-jest.mock("@/schema");
+jest.mock("@/api/schema");
 
 jest.mock("@/composables/config", () => ({
     useConfig: jest.fn(() => ({

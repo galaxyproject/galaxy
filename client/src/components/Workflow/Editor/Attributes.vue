@@ -6,9 +6,13 @@
         <div id="workflow-name-area">
             <b>Name</b>
             <meta itemprop="name" :content="name" />
-            <b-input id="workflow-name" v-model="nameCurrent" @keyup="$emit('update:nameCurrent', nameCurrent)" />
+            <b-input
+                id="workflow-name"
+                v-model="nameCurrent"
+                :state="!nameCurrent ? false : null"
+                @keyup="$emit('update:nameCurrent', nameCurrent)" />
         </div>
-        <div id="workflow-version-area" class="mt-2">
+        <div v-if="versionOptions.length > 0" id="workflow-version-area" class="mt-2">
             <b>Version</b>
             <b-form-select v-model="versionCurrent" @change="onVersion">
                 <b-form-select-option v-for="v in versionOptions" :key="v.version" :value="v.version">
@@ -184,7 +188,7 @@ export default {
         onTags(tags) {
             this.tagsCurrent = tags;
             this.onAttributes({ tags });
-            this.$emit("input", this.tagsCurrent);
+            this.$emit("onTags", this.tagsCurrent);
         },
         onVersion() {
             this.$emit("onVersion", this.versionCurrent);
@@ -200,9 +204,11 @@ export default {
             this.messageVariant = "danger";
         },
         onAttributes(data) {
-            this.services.updateWorkflow(this.id, data).catch((error) => {
-                this.onError(error);
-            });
+            if (!this.id.includes("workflow-editor")) {
+                this.services.updateWorkflow(this.id, data).catch((error) => {
+                    this.onError(error);
+                });
+            }
         },
     },
 };

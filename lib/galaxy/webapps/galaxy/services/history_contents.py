@@ -239,12 +239,11 @@ class CreateHistoryContentPayloadFromCollection(CreateHistoryContentPayloadFromC
         description="TODO",
     )
     copy_elements: Optional[bool] = Field(
-        default=False,
+        default=True,
         title="Copy Elements",
         description=(
             "If the source is a collection, whether to copy child HDAs into the target "
-            "history as well, defaults to False but this is less than ideal and may "
-            "be changed in future releases."
+            "history as well. Prior to the galaxy release 23.1 this defaulted to false."
         ),
     )
 
@@ -824,7 +823,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
             # ---- for composite files, we use id and name for a directory and, inside that, ...
             if self.hda_manager.is_composite(content):
                 # ...save the 'main' composite file (gen. html)
-                paths_and_files.append((content.file_name, os.path.join(archive_path, f"{content.name}.html")))
+                paths_and_files.append((content.get_file_name(), os.path.join(archive_path, f"{content.name}.html")))
                 for extra_file in self.hda_manager.extra_files(content):
                     extra_file_basename = os.path.basename(extra_file)
                     archive_extra_file_path = os.path.join(archive_path, extra_file_basename)
@@ -836,7 +835,7 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
                 # some dataset names can contain their original file extensions, don't repeat
                 if not archive_path.endswith(f".{content.extension}"):
                     archive_path += f".{content.extension}"
-                paths_and_files.append((content.file_name, archive_path))
+                paths_and_files.append((content.get_file_name(), archive_path))
 
         # filter the contents that contain datasets using any filters possible from index above and map the datasets
         filters = self.history_contents_filters.parse_query_filters(filter_query_params)
@@ -1270,9 +1269,9 @@ class HistoriesContentsService(ServiceBase, ServesExportStores, ConsumesModelSto
                 raise exceptions.RequestParameterMissingException("'content' id of target to copy is missing")
             dbkey = payload.dbkey
             copy_required = dbkey is not None
-            copy_elements = payload.copy_elements or copy_required
+            copy_elements = payload.copy_elements
             if copy_required and not copy_elements:
-                raise exceptions.RequestParameterMissingException(
+                raise exceptions.RequestParameterInvalidException(
                     "copy_elements passed as 'false' but it is required to change specified attributes"
                 )
             dataset_instance_attributes = {}
@@ -1387,7 +1386,7 @@ class HistoryItemOperator:
         self._operation_map: Dict[HistoryContentItemOperation, ItemOperation] = {
             HistoryContentItemOperation.hide: lambda item, params, trans: self._hide(item),
             HistoryContentItemOperation.unhide: lambda item, params, trans: self._unhide(item),
-            HistoryContentItemOperation.delete: lambda item, params, trans: self._delete(item),
+            HistoryContentItemOperation.delete: lambda item, params, trans: self._delete(item, trans),
             HistoryContentItemOperation.undelete: lambda item, params, trans: self._undelete(item),
             HistoryContentItemOperation.purge: lambda item, params, trans: self._purge(item, trans),
             HistoryContentItemOperation.change_datatype: lambda item, params, trans: self._change_datatype(
@@ -1418,9 +1417,10 @@ class HistoryItemOperator:
     def _unhide(self, item: HistoryItemModel):
         item.visible = True
 
-    def _delete(self, item: HistoryItemModel):
-        manager = self._get_item_manager(item)
-        manager.delete(item, flush=self.flush)
+    def _delete(self, item: HistoryItemModel, trans: ProvidesHistoryContext):
+        if isinstance(item, HistoryDatasetCollectionAssociation):
+            return self.dataset_collection_manager.delete(trans, "history", item.id, recursive=True, purge=False)
+        return self.hda_manager.delete(item, flush=self.flush)
 
     def _undelete(self, item: HistoryItemModel):
         if getattr(item, "purged", False):

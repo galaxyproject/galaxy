@@ -137,10 +137,10 @@ class ErrorReporter:
         if not isinstance(hda, model.HistoryDatasetAssociation):
             hda_id = hda
             try:
-                hda = sa_session.query(model.HistoryDatasetAssociation).get(hda_id)
+                hda = sa_session.get(model.HistoryDatasetAssociation, hda_id)
                 assert hda is not None, ValueError("No HDA yet")
             except Exception:
-                hda = sa_session.query(model.HistoryDatasetAssociation).get(app.security.decode_id(hda_id))
+                hda = sa_session.get(model.HistoryDatasetAssociation, app.security.decode_id(hda_id))
         assert isinstance(hda, model.HistoryDatasetAssociation), ValueError(f"Bad value provided for HDA ({hda}).")
         self.hda = hda
         # Get the associated job

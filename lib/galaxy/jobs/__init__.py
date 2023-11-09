@@ -25,6 +25,7 @@ from typing import (
 import yaml
 from packaging.version import Version
 from pulsar.client.staging import COMMAND_VERSION_FILENAME
+from sqlalchemy import select
 
 from galaxy import (
     model,
@@ -59,7 +60,11 @@ from galaxy.jobs.runners import (
     JobState,
 )
 from galaxy.metadata import get_metadata_compute_strategy
-from galaxy.model import store
+from galaxy.model import (
+    Job,
+    store,
+    Task,
+)
 from galaxy.model.base import transaction
 from galaxy.model.store.discover import MaxDiscoveredFilesExceededError
 from galaxy.objectstore import ObjectStorePopulator
@@ -74,6 +79,7 @@ from galaxy.tools.evaluation import (
     ToolEvaluator,
 )
 from galaxy.util import (
+    etree,
     parse_xml_string,
     RWXRWXRWX,
     safe_makedirs,
@@ -641,7 +647,7 @@ class JobConfiguration(ConfiguresHandlers):
                             field_name, self.resource_parameters
                         )
                         raise KeyError(message)
-                    fields.append(self.resource_parameters[field_name])
+                    fields.append(etree.fromstring(self.resource_parameters[field_name]))
 
                 if fields:
                     conditional_element = parse_xml_string(self.JOB_RESOURCE_CONDITIONAL_XML)
@@ -903,24 +909,24 @@ class JobConfiguration(ConfiguresHandlers):
         return rval
 
     def is_id(self, collection):
-        """Given a collection of handlers or destinations, indicate whether the collection represents a tag or a real ID
+        """Given a collection of handlers or destinations, indicate whether the collection represents a real ID
 
         :param collection: A representation of a destination or handler
         :type collection: tuple or list
 
         :returns: bool
         """
-        return type(collection) == tuple
+        return isinstance(collection, tuple)
 
     def is_tag(self, collection):
-        """Given a collection of handlers or destinations, indicate whether the collection represents a tag or a real ID
+        """Given a collection of handlers or destinations, indicate whether the collection represents a tag
 
         :param collection: A representation of a destination or handler
         :type collection: tuple or list
 
         :returns: bool
         """
-        return type(collection) == list
+        return isinstance(collection, list)
 
     def convert_legacy_destinations(self, job_runners):
         """Converts legacy (from a URL) destinations to contain the appropriate runner params defined in the URL.
@@ -1043,11 +1049,8 @@ class MinimalJobWrapper(HasResourceParameters):
     def remote_command_line(self):
         use_remote = self.get_destination_configuration("tool_evaluation_strategy") == "remote"
         # It wouldn't be hard to support history export, but we want to do this in task queue workers anyway ...
-        return (
-            use_remote
-            and self.external_output_metadata.extended
-            and not self.sa_session.query(model.JobExportHistoryArchive).filter_by(job=self.get_job()).first()
-        )
+        stmt = select(model.JobExportHistoryArchive).filter_by(job=self.get_job()).limit(1)
+        return use_remote and self.external_output_metadata.extended and not self.sa_session.scalars(stmt).first()
 
     def tool_directory(self):
         tool_dir = self.tool and self.tool.tool_dir
@@ -1182,7 +1185,7 @@ class MinimalJobWrapper(HasResourceParameters):
         return self.get_destination_configuration("galaxy_infrastructure_url")
 
     def get_job(self) -> model.Job:
-        return self.sa_session.query(model.Job).get(self.job_id)
+        return self.sa_session.get(Job, self.job_id)
 
     def get_id_tag(self):
         # For compatibility with drmaa, which uses job_id right now, and TaskWrapper
@@ -1233,10 +1236,12 @@ class MinimalJobWrapper(HasResourceParameters):
         job = self._load_job()
 
         def get_special():
-            jeha = self.sa_session.query(model.JobExportHistoryArchive).filter_by(job=job).first()
+            stmt = select(model.JobExportHistoryArchive).filter_by(job=job).limit(1)
+            jeha = self.sa_session.scalars(stmt).first()
             if jeha:
                 return jeha.fda
-            return self.sa_session.query(model.GenomeIndexToolData).filter_by(job=job).first()
+            stmt = select(model.GenomeIndexToolData).filter_by(job=job).limit(1)
+            return self.sa_session.scalars(stmt).first()
 
         # TODO: The upload tool actions that create the paramfile can probably be turned in to a configfile to remove this special casing
         if job.tool_id == "upload1":
@@ -1429,8 +1434,6 @@ class MinimalJobWrapper(HasResourceParameters):
                 dataset.state = dataset.states.ERROR
                 dataset.blurb = "tool error"
                 dataset.info = message
-                dataset.set_size()
-                dataset.dataset.set_total_size()
                 dataset.mark_unhidden()
                 if dataset.ext == "auto":
                     dataset.extension = "data"
@@ -1669,7 +1672,7 @@ class MinimalJobWrapper(HasResourceParameters):
                 # the outputs and set them accordingly
                 object_store_id_overrides = {o: preferred_outputs_object_store_id for o in output_names}
 
-                def split_object_stores(output_name):
+                def split_object_stores(output_name):  # noqa: F811 https://github.com/PyCQA/pyflakes/issues/783
                     if "|__part__|" in output_name:
                         output_name = output_name.split("|__part__|", 1)[0]
                     if output_name in output_names:
@@ -1718,8 +1721,8 @@ class MinimalJobWrapper(HasResourceParameters):
             while trynum < self.app.config.retry_job_output_collection:
                 try:
                     # Attempt to short circuit NFS attribute caching
-                    os.stat(dataset.dataset.file_name)
-                    os.chown(dataset.dataset.file_name, os.getuid(), -1)
+                    os.stat(dataset.dataset.get_file_name())
+                    os.chown(dataset.dataset.get_file_name(), os.getuid(), -1)
                     trynum = self.app.config.retry_job_output_collection
                 except (OSError, ObjectNotFound) as e:
                     trynum += 1
@@ -1737,7 +1740,6 @@ class MinimalJobWrapper(HasResourceParameters):
             # Ensure white space between entries
             dataset.info = f"{dataset.info.rstrip()}\n{context['stderr'].strip()}"
         dataset.tool_version = self.version_string
-        dataset.set_size()
         if "uuid" in context:
             dataset.dataset.uuid = context["uuid"]
         self.__update_output(job, dataset)
@@ -1765,18 +1767,21 @@ class MinimalJobWrapper(HasResourceParameters):
             metadata_set_successfully = self.external_output_metadata.external_metadata_set_successfully(
                 dataset, output_name, self.sa_session, working_directory=self.working_directory
             )
-            if retry_internally and not metadata_set_successfully:
-                # If Galaxy was expected to sniff type and didn't - do so.
-                if dataset.ext == "_sniff_":
-                    extension = sniff.handle_uploaded_dataset_file(
-                        dataset.dataset.file_name, self.app.datatypes_registry
-                    )
-                    dataset.extension = extension
+            if not metadata_set_successfully:
+                if self.tool.tool_type == "expression":
+                    dataset._state = model.Dataset.states.OK
+                elif retry_internally:
+                    # If Galaxy was expected to sniff type and didn't - do so.
+                    if dataset.ext == "_sniff_":
+                        extension = sniff.handle_uploaded_dataset_file(
+                            dataset.dataset.get_file_name(), self.app.datatypes_registry
+                        )
+                        dataset.extension = extension
 
-                # call datatype.set_meta directly for the initial set_meta call during dataset creation
-                dataset.datatype.set_meta(dataset, overwrite=False)
-            elif job.states.ERROR != final_job_state and not metadata_set_successfully:
-                dataset._state = model.Dataset.states.FAILED_METADATA
+                    # call datatype.set_meta directly for the initial set_meta call during dataset creation
+                    dataset.datatype.set_meta(dataset, overwrite=False)
+                else:
+                    dataset._state = model.Dataset.states.FAILED_METADATA
             else:
                 self.external_output_metadata.load_metadata(
                     dataset,
@@ -2419,6 +2424,7 @@ class MinimalJobWrapper(HasResourceParameters):
         cleaned up if the dataset has been purged.
         """
         dataset = hda.dataset
+        dataset.set_total_size()
         if dataset not in job.output_library_datasets:
             purged = dataset.purged
             if not purged and not clean_only:
@@ -2580,12 +2586,12 @@ class TaskWrapper(JobWrapper):
 
     def get_job(self):
         if self.job_id:
-            return self.sa_session.query(model.Job).get(self.job_id)
+            return self.sa_session.get(Job, self.job_id)
         else:
             return None
 
     def get_task(self):
-        return self.sa_session.query(model.Task).get(self.task_id)
+        return self.sa_session.get(Task, self.task_id)
 
     def get_id_tag(self):
         # For compatibility with drmaa job runner and TaskWrapper, instead of using job_id directly

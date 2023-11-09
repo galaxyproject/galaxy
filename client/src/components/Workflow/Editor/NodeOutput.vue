@@ -110,9 +110,9 @@ const visibleHint = computed(() => {
     }
 });
 const label = computed(() => {
-    const activeLabel = workflowOutput.value?.label || props.output.name;
-    return `${activeLabel} (${extensions.value.join(", ")})`;
+    return workflowOutput.value?.label || props.output.name;
 });
+
 const rowClass = computed(() => {
     const classes = ["form-row", "dataRow", "output-data-row"];
     if ("valid" in props.output && props.output?.valid === false) {
@@ -153,7 +153,7 @@ function onToggleActive() {
             (workflowOutput) => workflowOutput.output_name !== output.value.name
         );
     } else {
-        stepWorkflowOutputs.push({ output_name: output.value.name });
+        stepWorkflowOutputs.push({ output_name: output.value.name, label: output.value.name });
     }
     stepStore.updateStep({ ...step, workflow_outputs: stepWorkflowOutputs });
 }
@@ -290,6 +290,22 @@ const outputDetails = computed(() => {
     return outputType;
 });
 
+const isDuplicateLabel = computed(() => {
+    const duplicateLabels = stepStore.duplicateLabels;
+    return Boolean(label.value && duplicateLabels.has(label.value));
+});
+
+const labelClass = computed(() => {
+    if (isDuplicateLabel.value) {
+        return "alert-info";
+    }
+    return null;
+});
+
+const labelToolTipTitle = computed(() => {
+    return `Output label '${workflowOutput.value?.label}' is not unique`;
+});
+
 onBeforeUnmount(() => {
     stateStore.deleteOutputTerminalPosition(props.stepId, props.output.name);
 });
@@ -327,8 +343,16 @@ const removeTagsAction = computed(() => {
                     <FontAwesomeIcon v-if="isVisible" fixed-width icon="fa-eye" />
                     <FontAwesomeIcon v-else fixed-width icon="fa-eye-slash" />
                 </button>
-                <span class="ml-1">
-                    {{ label }}
+                <span>
+                    <span
+                        v-b-tooltip
+                        :title="labelToolTipTitle"
+                        class="d-inline-block rounded"
+                        :class="labelClass"
+                        :disabled="!isDuplicateLabel">
+                        {{ label }}
+                    </span>
+                    <span> ({{ extensions.join(", ") }}) </span>
                 </span>
             </div>
 
@@ -388,6 +412,9 @@ const removeTagsAction = computed(() => {
 @import "theme/blue.scss";
 @import "nodeTerminalStyle.scss";
 
+.node-output-buttons {
+    overflow-wrap: anywhere;
+}
 .node-output {
     display: flex;
     position: relative;

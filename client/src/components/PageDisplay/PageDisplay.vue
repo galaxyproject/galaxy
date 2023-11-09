@@ -8,25 +8,31 @@
                     :enable_beta_markdown_export="config.enable_beta_markdown_export"
                     :download-endpoint="stsUrl(config)"
                     :export-link="exportUrl"
+                    :read-only="!userOwnsPage"
                     @onEdit="onEdit" />
                 <PageHtml v-else :page="page" />
             </div>
-            <b-alert v-else variant="info" show>Unsupported page format.</b-alert>
+            <LoadingSpan v-else message="Loading Galaxy configuration" />
         </template>
     </PublishedItem>
 </template>
 
 <script>
+import { storeToRefs } from "pinia";
+
 import { useConfig } from "@/composables/config";
+import { useUserStore } from "@/stores/userStore";
 import { withPrefix } from "@/utils/redirect";
 import { urlData } from "@/utils/url";
 
 import PageHtml from "./PageHtml.vue";
 import PublishedItem from "@/components/Common/PublishedItem.vue";
+import LoadingSpan from "@/components/LoadingSpan.vue";
 import Markdown from "@/components/Markdown/Markdown.vue";
 
 export default {
     components: {
+        LoadingSpan,
         Markdown,
         PageHtml,
         PublishedItem,
@@ -39,7 +45,9 @@ export default {
     },
     setup() {
         const { config, isConfigLoaded } = useConfig(true);
-        return { config, isConfigLoaded };
+        const userStore = useUserStore();
+        const { currentUser } = storeToRefs(userStore);
+        return { config, currentUser, isConfigLoaded };
     },
     data() {
         return {
@@ -47,6 +55,9 @@ export default {
         };
     },
     computed: {
+        userOwnsPage() {
+            return this.currentUser.username === this.page.username;
+        },
         dataUrl() {
             return `/api/pages/${this.pageId}`;
         },
