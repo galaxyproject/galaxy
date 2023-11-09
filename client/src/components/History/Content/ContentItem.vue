@@ -47,7 +47,7 @@
                             fixed-width
                             :icon="contentState.icon"
                             :spin="contentState.spin"
-                            :title="contentState.text" />
+                            :title="item.populated_state_message || contentState.text" />
                     </span>
                     <span class="id hid">{{ id }}:</span>
                     <span class="content-title name font-weight-bold">{{ name }}</span>
