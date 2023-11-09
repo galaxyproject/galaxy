@@ -3,17 +3,21 @@ import { onMounted, onUnmounted, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { usePanels } from "@/composables/usePanels";
+import { useHelpModeStatusStore } from "@/stores/helpmode/helpModeStatusStore";
 
 import CenterFrame from "./CenterFrame.vue";
 import ActivityBar from "@/components/ActivityBar/ActivityBar.vue";
 import HistoryIndex from "@/components/History/Index.vue";
 import FlexPanel from "@/components/Panels/FlexPanel.vue";
+import HelpModeText from "@/components/Panels/HelpModeText.vue";
 import ToolBox from "@/components/Panels/ProviderAwareToolBox.vue";
 import DragAndDropModal from "@/components/Upload/DragAndDropModal.vue";
+
 
 const router = useRouter();
 const showCenter = ref(false);
 const { showActivityBar, showToolbox, showPanels } = usePanels();
+const status = useHelpModeStatusStore();
 
 // methods
 function hideCenter() {
@@ -50,5 +54,6 @@ onUnmounted(() => {
             <HistoryIndex />
         </FlexPanel>
         <DragAndDropModal />
+        <HelpModeText v-if="status.helpmodestatus" />
     </div>
 </template>
