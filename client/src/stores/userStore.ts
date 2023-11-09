@@ -19,12 +19,12 @@ export interface User extends QuotaUsageResponse {
     tags_used: string[];
     isAnonymous: false;
     is_admin?: boolean;
-    username: string;
+    username?: string;
 }
 
 export interface AnonymousUser {
     isAnonymous: true;
-    username: string;
+    username?: string;
     is_admin?: false;
 }
 
