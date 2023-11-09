@@ -548,7 +548,6 @@ export function getRouter(Galaxy) {
                     {
                         path: "workflows/list_published",
                         component: WorkflowList,
-                        redirect: redirectAnon(),
                         props: (route) => ({
                             activeList: "published",
                             query: { ...route.query },
