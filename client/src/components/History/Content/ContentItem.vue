@@ -173,8 +173,11 @@ export default {
         state() {
             if (this.isPlaceholder) {
                 return "placeholder";
-            } else if (this.item.element_count !== undefined && this.item.element_count === 0) {
-                return "emptyCollection";
+            } else if (
+                this.item.history_content_type === "dataset_collection" &&
+                this.item.populated_state === "failed"
+            ) {
+                return "failed_populated_state";
             }
             if (this.item.job_state_summary) {
                 for (const state of HIERARCHICAL_COLLECTION_JOB_STATES) {

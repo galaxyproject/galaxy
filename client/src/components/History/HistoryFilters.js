@@ -2,7 +2,7 @@ import { STATES } from "components/History/Content/model/states";
 import StatesInfo from "components/History/Content/model/StatesInfo";
 import Filtering, { compare, contains, equals, expandNameTag, toBool, toDate } from "utils/filtering";
 
-const excludeStates = ["empty", "failed", "upload", "placeholder", "emptyCollection"];
+const excludeStates = ["empty", "failed", "upload", "placeholder", "failed_populated_state"];
 const states = Object.keys(STATES).filter((state) => !excludeStates.includes(state));
 
 const validFilters = {

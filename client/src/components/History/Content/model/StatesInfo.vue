@@ -30,7 +30,12 @@ function onFilter(value: string) {
 <template>
     <div>
         <p>Here are all available item states in Galaxy:</p>
-        <p><i>(Note that the colors for each state correspond to content item state colors in the history)</i></p>
+        <p>
+            <i>
+                (Note that the colors for each state correspond to content item state colors in the history, and if it
+                exists, hovering over the icon on a history item will display the state message.)
+            </i>
+        </p>
         <dl v-for="(state, key, index) in states" :key="index">
             <div :class="['alert', 'content-item', 'alert-' + state.status]" :data-state="key">
                 <dt>

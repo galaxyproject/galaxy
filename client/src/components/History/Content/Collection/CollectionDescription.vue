@@ -1,7 +1,7 @@
 <template>
     <div>
         <span class="description mt-1 mb-1">
-            a {{ collectionLabel }} with {{ elementCount }}<b>{{ homogeneousDatatype }}</b> {{ pluralizedItem }}
+            a {{ collectionLabel }} with {{ elementCount || 0 }}<b>{{ homogeneousDatatype }}</b> {{ pluralizedItem }}
         </span>
         <CollectionProgress v-if="jobStateSummary.size != 0" :summary="jobStateSummary" />
     </div>

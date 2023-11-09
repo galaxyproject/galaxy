@@ -2,7 +2,7 @@ import type { components } from "@/api/schema";
 
 type DatasetState = components["schemas"]["DatasetState"];
 // The 'failed' state is for the collection job state summary, not a dataset state.
-type State = DatasetState | "failed" | "placeholder" | "emptyCollection";
+type State = DatasetState | "failed" | "placeholder" | "failed_populated_state";
 
 interface StateRepresentation {
     status: "success" | "warning" | "info" | "danger" | "secondary";
@@ -106,10 +106,10 @@ export const STATES: StateMap = {
         spin: true,
         nonDb: true,
     },
-    /** the collection is empty. This state is only visual and transitional, it does not exist in the database. */
-    emptyCollection: {
-        status: "secondary",
-        text: "This is an empty list/collection.",
+    /** the `populated_state: failed`. This state is only visual and transitional, it does not exist in the database. */
+    failed_populated_state: {
+        status: "danger",
+        text: "Failed to populate the list/collection.",
         icon: "exclamation-triangle",
         nonDb: true,
     },
