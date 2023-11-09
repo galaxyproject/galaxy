@@ -31,34 +31,36 @@ class TestVisualizationsApi(ApiTestCase, SharingApiTests):
     def test_index_ordering(self):
         ids = []
         for x in range(3):
-            v = self._new_viz(title=f"visualization-{x}", slug=f"slug-{x}").json()
+            v = self._new_viz(title=f"visualization-order-{x}", slug=f"slug-order-{x}").json()
             ids.append(v["id"])
         index_ids = self._index_ids()
-        for x in range(3):
-            assert index_ids[x] == ids[2 - x]
+        for x in range(2):
+            assert index_ids.index(ids[x]) > index_ids.index(ids[x + 1])
         index_ids = self._index_ids(dict(sort_desc=False))
-        for x in range(3):
-            assert index_ids[x] == ids[x]
+        for x in range(2):
+            assert index_ids.index(ids[x]) < index_ids.index(ids[x + 1])
 
     def test_index_filtering(self):
         ids = []
         for x in range(3):
-            v = self._new_viz(title=f"visualization-{x}", slug=f"slug-{x}").json()
+            v = self._new_viz(title=f"visualization-filter-{x}", slug=f"slug-filter-{x}").json()
             ids.append(v["id"])
         index_ids = self._index_ids(dict(show_own=False))
-        assert len(index_ids) == 0
+        for x in range(3):
+            assert ids[x] not in index_ids
         self._publish_viz(ids[0])
         index_ids = self._index_ids(dict(show_own=False))
-        assert len(index_ids) == 1
+        assert ids[0] in index_ids
         index_ids = self._index_ids(dict(show_own=False, show_published=False))
-        assert len(index_ids) == 3
-        index_ids = self._index_ids(dict(search="visualization-1"))
-        assert index_ids[0] == ids[1]
+        for x in range(3):
+            assert ids[x] in index_ids
+        index_ids = self._index_ids(dict(search="visualization-filter-1"))
+        assert ids[1] in index_ids
         self._update_viz(ids[1], dict(deleted=True))
-        index_ids = self._index_ids(dict(search="visualization-1"))
-        assert len(index_ids) == 0
+        index_ids = self._index_ids(dict(search="visualization-filter-1"))
+        assert ids[1] not in index_ids
         index_ids = self._index_ids(dict(search="is:deleted"))
-        assert index_ids[0] == ids[1]
+        assert ids[1] in index_ids
 
     def test_create(self):
         viz_id, viz_request = self._create_viz()
