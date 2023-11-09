@@ -6,20 +6,16 @@ import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import { formatDistanceToNow, parseISO } from "date-fns";
 import { getLocalVue } from "tests/jest/helpers";
-import VueRouter from "vue-router";
 
 import InvocationsList from "./InvocationsList";
 import mockInvocationData from "./test/json/invocation.json";
 
 const localVue = getLocalVue();
-localVue.use(VueRouter);
-const router = new VueRouter();
 
 const pinia = createTestingPinia();
 describe("InvocationsList.vue", () => {
     let axiosMock;
     let wrapper;
-    let $router;
 
     beforeEach(async () => {
         axiosMock = new MockAdapter(axios);
@@ -138,6 +134,9 @@ describe("InvocationsList.vue", () => {
             axiosMock
                 .onGet("/api/invocations", { params: { limit: 50, offset: 0, include_terminal: false } })
                 .reply(200, [mockInvocationData], { total_matches: "1" });
+            const mockRouter = {
+                push: jest.fn(),
+            };
             const propsData = {
                 ownerGrid: false,
                 loading: false,
@@ -164,9 +163,10 @@ describe("InvocationsList.vue", () => {
                 },
                 localVue,
                 pinia,
-                router,
+                mocks: {
+                    $router: mockRouter,
+                },
             });
-            $router = wrapper.vm.$router;
         });
 
         it("renders one row", async () => {
@@ -202,10 +202,9 @@ describe("InvocationsList.vue", () => {
         });
 
         it("calls executeWorkflow", async () => {
-            const mockMethod = jest.fn();
-            $router.push = mockMethod;
-            await wrapper.find(".workflow-run").trigger("click");
-            expect(mockMethod).toHaveBeenCalledWith("/workflows/run?id=workflowId");
+            await wrapper.find('[data-workflow-run="workflowId"').trigger("click");
+            expect(wrapper.vm.$router.push).toHaveBeenCalledTimes(1);
+            expect(wrapper.vm.$router.push).toHaveBeenCalledWith("/workflows/run?id=workflowId");
         });
 
         it("should not render pager", async () => {
