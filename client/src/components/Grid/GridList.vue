@@ -5,8 +5,7 @@ import { useRouter } from "vue-router/composables";
 
 import { timeout } from "@/utils/timeout";
 
-import { registry } from "./configs/registry";
-import { FieldKeyHandler, Operation, RowData } from "./configs/types";
+import { Config, FieldKeyHandler, Operation, RowData } from "./configs/types";
 
 import GridLink from "./GridElements/GridLink.vue";
 import GridOperations from "./GridElements/GridOperations.vue";
@@ -21,8 +20,8 @@ import UtcDate from "@/components/UtcDate.vue";
 const router = useRouter();
 
 interface Props {
-    // specifies the grid config identifier as specified in the registry
-    id: string;
+    // provide a grid configuration
+    config: Config;
     // rows per page to be shown
     limit?: number;
 }
@@ -46,17 +45,12 @@ const totalRows = ref(0);
 // loading indicator
 const loading = ref(true);
 
-// current grid configuration
-const gridConfig = computed(() => {
-    return registry[props.id];
-});
-
 // check if loading has completed and data rows are available
 const isAvailable = computed(() => !loading.value && totalRows.value > 0);
 
 // sort references
-const sortBy = ref(gridConfig.value ? gridConfig.value.sortBy : "");
-const sortDesc = ref(gridConfig.value ? gridConfig.value.sortDesc : false);
+const sortBy = ref(props.config ? props.config.sortBy : "");
+const sortDesc = ref(props.config ? props.config.sortDesc : false);
 
 // filtering refs and handlers
 const filterText = ref("");
@@ -67,7 +61,7 @@ const showAdvanced = ref(false);
  * Manually set filter value, used for tags and `SharingIndicators`
  */
 function applyFilter(filter: string, value: string | boolean, quoted = false) {
-    const filtering = gridConfig.value?.filtering;
+    const filtering = props.config?.filtering;
     const quotedValue = quoted ? `'${value}'` : value;
     if (filtering) {
         filterText.value = filtering.setFilterValue(filterText.value, filter, quotedValue.toString()) || "";
@@ -78,10 +72,10 @@ function applyFilter(filter: string, value: string | boolean, quoted = false) {
  * Request grid data
  */
 async function getGridData() {
-    if (gridConfig.value) {
+    if (props.config) {
         try {
             const offset = props.limit * (currentPage.value - 1);
-            const [responseData, responseTotal] = await gridConfig.value.getData(
+            const [responseData, responseTotal] = await props.config.getData(
                 offset,
                 props.limit,
                 searchTerm.value,
@@ -166,13 +160,13 @@ watch(operationMessage, () => {
         <div class="grid-header d-flex justify-content-between pb-2">
             <div>
                 <h1 class="m-0">
-                    {{ gridConfig.title }}
+                    {{ config.title }}
                 </h1>
                 <FilterMenu
                     class="py-2"
-                    :name="gridConfig.plural"
-                    :placeholder="`search ${gridConfig.plural.toLowerCase()}`"
-                    :filter-class="gridConfig.filtering"
+                    :name="config.plural"
+                    :placeholder="`search ${config.plural.toLowerCase()}`"
+                    :filter-class="config.filtering"
                     :filter-text.sync="filterText"
                     :loading="loading"
                     :show-advanced.sync="showAdvanced"
@@ -181,7 +175,7 @@ watch(operationMessage, () => {
             </div>
             <div v-if="!showAdvanced" class="py-3">
                 <BButton
-                    v-for="(action, actionIndex) in gridConfig.actions"
+                    v-for="(action, actionIndex) in config.actions"
                     :key="actionIndex"
                     class="m-1"
                     size="sm"
@@ -203,8 +197,8 @@ watch(operationMessage, () => {
         </BAlert>
         <table v-else class="grid-table">
             <thead>
-                <th v-for="(fieldEntry, fieldIndex) in gridConfig.fields" :key="fieldIndex" class="text-nowrap px-2">
-                    <span v-if="gridConfig.sortKeys.includes(fieldEntry.key)">
+                <th v-for="(fieldEntry, fieldIndex) in config.fields" :key="fieldIndex" class="text-nowrap px-2">
+                    <span v-if="config.sortKeys.includes(fieldEntry.key)">
                         <BLink @click="onSort(fieldEntry.key)">
                             <span>{{ fieldEntry.title || fieldEntry.key }}</span>
                             <span v-if="sortBy === fieldEntry.key">
@@ -218,7 +212,7 @@ watch(operationMessage, () => {
             </thead>
             <tr v-for="(rowData, rowIndex) in gridData" :key="rowIndex" :class="{ 'grid-dark-row': rowIndex % 2 }">
                 <td
-                    v-for="(fieldEntry, fieldIndex) in gridConfig.fields"
+                    v-for="(fieldEntry, fieldIndex) in config.fields"
                     :key="fieldIndex"
                     class="px-2 py-3"
                     :style="{ width: fieldEntry.width }">
@@ -227,7 +221,10 @@ watch(operationMessage, () => {
                         :operations="fieldEntry.operations"
                         :row-data="rowData"
                         @execute="onOperation($event, rowData)" />
-                    <GridText v-else-if="fieldEntry.type == 'text'" :text="rowData[fieldEntry.key]" />
+                    <GridText
+                        v-else-if="fieldEntry.type == 'text'"
+                        :data-description="`grid text ${rowIndex}-${fieldIndex}`"
+                        :text="rowData[fieldEntry.key]" />
                     <GridLink
                         v-else-if="fieldEntry.type == 'link'"
                         :text="rowData[fieldEntry.key]"

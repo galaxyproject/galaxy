@@ -232,7 +232,7 @@ const validFilters: Record<string, ValidFilter<string | boolean | undefined>> = 
 /**
  * Grid configuration
  */
-export const VisualizationsGrid = {
+export default {
     actions: actions,
     fields: fields,
     filtering: new Filtering(validFilters, undefined, false, false),

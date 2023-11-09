@@ -7,6 +7,8 @@ import DatasetAttributes from "components/DatasetInformation/DatasetAttributes";
 import DatasetDetails from "components/DatasetInformation/DatasetDetails";
 import DatasetError from "components/DatasetInformation/DatasetError";
 import FormGeneric from "components/Form/FormGeneric";
+import visualizationsGrid from "components/Grid/configs/visualizations";
+import visualizationsPublishedGrid from "components/Grid/configs/visualizationsPublished";
 import GridHistory from "components/Grid/GridHistory";
 import GridList from "components/Grid/GridList";
 import HistoryExportTasks from "components/History/Export/HistoryExport";
@@ -457,14 +459,14 @@ export function getRouter(Galaxy) {
                         path: "visualizations/list",
                         component: GridList,
                         props: {
-                            id: "visualizations",
+                            config: visualizationsGrid,
                         },
                     },
                     {
                         path: "visualizations/list_published",
                         component: GridList,
                         props: {
-                            id: "visualizations_published",
+                            config: visualizationsPublishedGrid,
                         },
                     },
                     {

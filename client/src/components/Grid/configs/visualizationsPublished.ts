@@ -84,7 +84,7 @@ const validFilters: Record<string, ValidFilter<string | boolean | undefined>> = 
 /**
  * Grid configuration
  */
-export const VisualizationsPublishedGrid = {
+export default {
     fields: fields,
     filtering: new Filtering(validFilters, undefined, false, false),
     getData: getData,

@@ -1,10 +1,10 @@
 <script setup lang="ts">
 interface Props {
-    text: string;
+    text?: string;
 }
 defineProps<Props>();
 </script>
 
 <template>
-    <span>{{ text }}</span>
+    <span>{{ text ?? "Not available." }}</span>
 </template>
