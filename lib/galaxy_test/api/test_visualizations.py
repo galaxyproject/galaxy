@@ -28,20 +28,32 @@ class TestVisualizationsApi(ApiTestCase, SharingApiTests):
         first_viz = index[0]
         self._show_viz(first_viz["id"])
 
+    def test_index_ordering(self):
+        ids = []
+        for x in range(3):
+            v = self._new_viz(title="visualization-%i" % x, slug="slug-%i" % x).json()
+            ids.append(v["id"])
+        index_ids = self._index_ids()
+        for x in range(3):
+            assert index_ids[x] == ids[2 - x]
+        index_ids = self._index_ids(dict(sort_desc=False))
+        for x in range(3):
+            assert index_ids[x] == ids[x]
+
     def test_create(self):
         viz_id, viz_request = self._create_viz()
         self._show_viz(viz_id, assert_ok=True)
 
     def test_create_fails_without_title(self):
-        response = self._raw_create_viz(title="")
+        response = self._new_viz(title="")
         self._assert_status_code_is(response, 400)
 
     def test_create_fails_with_bad_slug(self):
-        response = self._raw_create_viz(slug="123_()")
+        response = self._new_viz(slug="123_()")
         self._assert_status_code_is(response, 400)
 
     def test_create_fails_with_invalid_config(self):
-        response = self._raw_create_viz(config="3 = nime")
+        response = self._new_viz(config="3 = nime")
         self._assert_status_code_is(response, 400)
 
     def test_sharing(self):
@@ -60,21 +72,21 @@ class TestVisualizationsApi(ApiTestCase, SharingApiTests):
         updated_viz = self._show_viz(viz_id)
         assert updated_viz["title"] == "New Name"
 
-    def _show_viz(self, viz_id, assert_ok=True):
-        show_response = self._get(f"visualizations/{viz_id}")
-        if assert_ok:
-            self._assert_status_code_is(show_response, 200)
+    def _create_viz(self, **kwds):
+        response = self._new_viz(**kwds)
+        self._assert_status_code_is(response, 200)
+        viz = response.json()
+        return viz["id"], viz
 
-        viz = show_response.json()
+    def _index(self, params):
+        index_response = self._get("visualizations", data=params or {})
+        return index_response.json()
 
-        if assert_ok:
-            self._verify_viz_object(viz, show=True)
+    def _index_ids(self, params=None):
+        return [entry["id"] for entry in self._index(params)]
 
-        return viz
-
-    def _raw_create_viz(self, title=None, slug=None, config=None):
+    def _new_viz(self, title=None, slug=None, config=None):
         uuid_str = str(uuid.uuid4())
-
         title = title if title is not None else "Test Visualization"
         slug = slug if slug is not None else f"test-visualization-{uuid_str}"
         config = (
@@ -98,23 +110,23 @@ class TestVisualizationsApi(ApiTestCase, SharingApiTests):
         response = self._post("visualizations", data=create_payload)
         return response
 
-    def _create_viz(self, **kwds):
-        response = self._raw_create_viz(**kwds)
-        self._assert_status_code_is(response, 200)
-        viz = response.json()
-        return viz["id"], viz
+    def _show_viz(self, viz_id, assert_ok=True):
+        show_response = self._get(f"visualizations/{viz_id}")
+        if assert_ok:
+            self._assert_status_code_is(show_response, 200)
+        viz = show_response.json()
+        if assert_ok:
+            self._verify_viz_object(viz, show=True)
+        return viz
 
     def _verify_viz_object(self, obj, show=False):
         assert_has_keys(obj, *(SHOW_KEYS if show else INDEX_KEYS))
-
         if show:
             assert "revisions" in obj
             revisions = obj["revisions"]
             assert len(revisions) >= 1
-
             assert "latest_revision" in obj
             latest_revision = obj["latest_revision"]
             assert_has_keys(latest_revision, *REVISION_KEYS)
             assert latest_revision["model_class"] == "VisualizationRevision"
-
             assert latest_revision["id"] in revisions
