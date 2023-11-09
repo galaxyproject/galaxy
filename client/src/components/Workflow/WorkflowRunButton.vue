@@ -31,6 +31,6 @@ function ExecuteWorkflow() {
         size="sm"
         @click.stop="ExecuteWorkflow">
         <FontAwesomeIcon :icon="faPlay" />
-        <span v-if="full">Run</span>
+        <span v-if="full" v-localize>Run</span>
     </BButton>
 </template>
