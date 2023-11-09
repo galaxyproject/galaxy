@@ -7,6 +7,8 @@ import { isEmpty } from "@/utils/utils";
 
 import WorkflowTree from "./WorkflowTree.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
+import WorkflowStepIcon from "@/components/WorkflowInvocationState/WorkflowStepIcon.vue";
+import WorkflowStepTitle from "@/components/WorkflowInvocationState/WorkflowStepTitle.vue";
 
 interface WorkflowDisplayProps {
     workflowId: string;
@@ -102,7 +104,13 @@ onMounted(async () => {
                 </b-alert>
                 <div v-if="itemContent !== null">
                     <div v-for="step in itemContent?.steps" :key="step.order_index" class="mb-2">
-                        <div>Step {{ step.order_index + 1 }}: {{ step.label }}</div>
+                        <WorkflowStepIcon v-if="step.type" :step-type="step.type" />
+                        <WorkflowStepTitle
+                            :step-tool-id="step.tool_id"
+                            :step-subworkflow-id="step.subworkflow_id"
+                            :step-label="step.label"
+                            :step-type="step.type"
+                            :step-index="step.order_index" />
                         <WorkflowTree :input="step" :skip-head="true" />
                     </div>
                 </div>
