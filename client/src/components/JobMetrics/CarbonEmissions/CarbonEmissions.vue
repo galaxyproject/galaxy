@@ -274,7 +274,7 @@ function getEnergyNeededText(energyNeededInKiloWattHours: number) {
 
 <template v-if="carbonEmissions && carbonEmissionsComparisons">
     <div class="mt-4">
-        <Heading h2 separator size="md" inline collapsible :collapsed="toggled" @click="toggle()">
+        <Heading h2 separator size="md" inline :collapse="toggled ? 'closed' : 'open'" @click="toggle()">
             Carbon Footprint
         </Heading>
 

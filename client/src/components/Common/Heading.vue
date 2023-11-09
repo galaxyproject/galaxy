@@ -14,16 +14,25 @@ interface Props {
     inline?: boolean;
     size?: "xl" | "lg" | "md" | "sm" | "text";
     icon?: string | [string, string];
-    collapsible?: boolean;
-    collapsed?: boolean;
+    collapse?: "open" | "closed" | "none";
 }
 
-const props = defineProps<Props>();
+const props = withDefaults(defineProps<Props>(), {
+    collapse: "none",
+});
 
 defineEmits(["click"]);
 
 const sizeClass = computed(() => {
     return `h-${props.size ?? "lg"}`;
+});
+
+const collapsible = computed(() => {
+    return props.collapse !== "none";
+});
+
+const collapsed = computed(() => {
+    return props.collapse === "closed";
 });
 
 const element = computed(() => {
@@ -41,7 +50,7 @@ const element = computed(() => {
         <div class="stripe"></div>
         <component
             :is="element"
-            :class="[sizeClass, props.bold ? 'font-weight-bold' : '', props.collapsible ? 'collapsible' : '']"
+            :class="[sizeClass, props.bold ? 'font-weight-bold' : '', collapsible ? 'collapsible' : '']"
             @click="$emit('click')">
             <slot />
             <FontAwesomeIcon v-if="collapsible" :icon="collapsed ? 'chevron-down' : 'chevron-up'" />

@@ -56,7 +56,9 @@ const computedAwsEstimate = computed(() => {
 
 <template>
     <div v-if="computedAwsEstimate" id="aws-estimate" class="mt-4">
-        <Heading h2 size="md" separator collapsible :collapsed="toggled" @click="toggle()">AWS estimate</Heading>
+        <Heading h2 size="md" separator :collapse="toggled ? 'closed' : 'open'" @click="toggle()">
+            AWS estimate
+        </Heading>
 
         <template v-if="!toggled">
             <strong id="aws-cost">{{ computedAwsEstimate.price }} USD</strong>
