@@ -98,7 +98,12 @@ async function onToggleBookmark(checked: boolean) {
 }
 
 async function onDelete() {
-    const confirmed = await confirm("Are you sure you want to delete this workflow?", "Delete workflow");
+    const confirmed = await confirm("Are you sure you want to delete this workflow?", {
+        title: "Delete workflow",
+        okTitle: "Delete",
+        okVariant: "danger",
+    });
+
     if (confirmed) {
         await deleteWorkflow(props.workflow.id);
         emit("refreshList", true);
