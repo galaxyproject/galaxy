@@ -159,7 +159,7 @@ watch(operationMessage, () => {
         <BAlert v-if="!!operationMessage" :variant="operationStatus" fade show>{{ operationMessage }}</BAlert>
         <div class="grid-header d-flex justify-content-between pb-2">
             <div>
-                <h1 class="m-0">
+                <h1 class="m-0" data-description="grid title">
                     {{ config.title }}
                 </h1>
                 <FilterMenu
@@ -197,13 +197,17 @@ watch(operationMessage, () => {
         </BAlert>
         <table v-else class="grid-table">
             <thead>
-                <th v-for="(fieldEntry, fieldIndex) in config.fields" :key="fieldIndex" class="text-nowrap px-2">
+                <th
+                    v-for="(fieldEntry, fieldIndex) in config.fields"
+                    :key="fieldIndex"
+                    class="text-nowrap px-2"
+                    :data-description="`grid header ${fieldIndex}`">
                     <span v-if="config.sortKeys.includes(fieldEntry.key)">
                         <BLink @click="onSort(fieldEntry.key)">
                             <span>{{ fieldEntry.title || fieldEntry.key }}</span>
                             <span v-if="sortBy === fieldEntry.key">
-                                <Icon v-if="sortDesc" icon="caret-up" />
-                                <Icon v-else icon="caret-down" />
+                                <Icon v-if="sortDesc" icon="caret-up" data-description="grid sort asc" />
+                                <Icon v-else icon="caret-down" data-description="grid sort desc" />
                             </span>
                         </BLink>
                     </span>
