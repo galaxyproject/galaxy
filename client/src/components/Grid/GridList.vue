@@ -171,7 +171,7 @@ watch(operationMessage, () => {
                 <FilterMenu
                     class="py-2"
                     :name="gridConfig.plural"
-                    :placeholder="`search ${gridConfig.item}`"
+                    :placeholder="`search ${gridConfig.plural.toLowerCase()}`"
                     :filter-class="gridConfig.filtering"
                     :filter-text.sync="filterText"
                     :loading="loading"

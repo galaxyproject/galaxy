@@ -10,6 +10,7 @@ type Field = FieldKey | FieldOperations;
 
 interface FieldKey {
     key: string;
+    disabled?: boolean;
     type: string;
     handler?: FieldKeyHandler;
 }
@@ -32,7 +33,6 @@ export interface Config {
     fields: Array<Field>;
     filtering: Filtering<any>;
     getData: (offset: number, limit: number, search: string, sort_by: string, sort_desc: boolean) => Promise<any>;
-    item: string;
     plural: string;
     sortBy: string;
     sortKeys: Array<string>;

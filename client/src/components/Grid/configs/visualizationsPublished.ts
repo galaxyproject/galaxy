@@ -88,7 +88,6 @@ export const VisualizationsPublishedGrid = {
     fields: fields,
     filtering: new Filtering(validFilters, undefined, false, false),
     getData: getData,
-    item: "visualization",
     plural: "Visualizations",
     sortBy: "update_time",
     sortDesc: true,
