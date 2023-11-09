@@ -48,7 +48,7 @@
             description="Add or modify the configuration that grants Galaxy to access your cloud-based resources."
             to="/user/cloud_auth" />
         <UserPreferencesElement
-            v-if="isConfigLoaded && config.enable_oidc"
+            v-if="isConfigLoaded && config.enable_oidc && !config.fixed_delegated_auth"
             id="manage-third-party-identities"
             icon="fa-id-card-o"
             title="Manage Third-Party Identities"
