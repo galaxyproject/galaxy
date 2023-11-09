@@ -73,8 +73,6 @@
                 </div>
             </div>
         </div>
-        <span class="border-top"></span>
-        <HelpModeText v-if="status.helpmodestatus" />
     </div>
 </template>
 
@@ -85,13 +83,10 @@ import { useGlobalUploadModal } from "composables/globalUploadModal";
 import { getAppRoot } from "onload";
 import _l from "utils/localization";
 
-import { useHelpModeStatusStore } from "@/stores/helpmode/helpModeStatusStore";
-
 import FavoritesButton from "./Buttons/FavoritesButton";
 import PanelViewButton from "./Buttons/PanelViewButton";
 import ToolSearch from "./Common/ToolSearch";
 import ToolSection from "./Common/ToolSection";
-import HelpModeText from "./HelpModeText";
 import { filterTools, filterToolSections, hasResults, hideToolsSection } from "./utilities";
 
 export default {
@@ -101,7 +96,6 @@ export default {
         PanelViewButton,
         ToolSection,
         ToolSearch,
-        HelpModeText,
     },
     props: {
         toolbox: {
@@ -121,7 +115,6 @@ export default {
     },
     data() {
         return {
-            status: useHelpModeStatusStore(),
             closestTerm: null,
             query: null,
             results: null,
