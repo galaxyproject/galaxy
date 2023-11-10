@@ -4,6 +4,7 @@ from typing import Set
 from sqlalchemy import (
     false,
     func,
+    true,
 )
 from typing_extensions import TypedDict
 
@@ -19,12 +20,21 @@ from galaxy.exceptions import (
 from galaxy.managers.quotas import QuotaManager
 from galaxy.model import tool_shed_install as install_model
 from galaxy.model.base import transaction
+from galaxy.model.index_filter_util import (
+    raw_text_column_filter,
+    text_column_filter,
+)
 from galaxy.security.validate_user_input import validate_password
 from galaxy.structured_app import StructuredApp
 from galaxy.util import (
     nice_size,
     pretty_print_time_interval,
     sanitize_text,
+)
+from galaxy.util.search import (
+    FilteredTerm,
+    parse_filters_structured,
+    RawTextTerm,
 )
 from galaxy.web import url_for
 from galaxy.web.framework.helpers import (
@@ -142,8 +152,39 @@ class UserListGrid(grids.GridData):
         ExternalColumn("External", key="external"),
     ]
 
-    def get_current_item(self, trans, **kwargs):
-        return trans.user
+    def apply_query_filter(self, trans, query, **kwargs):
+        INDEX_SEARCH_FILTERS = {
+            "email": "email",
+            "username": "username",
+            "is": "is",
+        }
+        search_query = kwargs.get("search")
+        if search_query:
+            parsed_search = parse_filters_structured(search_query, INDEX_SEARCH_FILTERS)
+            for term in parsed_search.terms:
+                if isinstance(term, FilteredTerm):
+                    key = term.filter
+                    q = term.text
+                    if key == "email":
+                        query = query.filter(text_column_filter(self.model_class.email, term))
+                    elif key == "username":
+                        query = query.filter(text_column_filter(self.model_class.username, term))
+                    elif key == "is":
+                        if q == "deleted":
+                            query = query.filter(self.model_class.deleted == true())
+                        elif q == "purged":
+                            query = query.filter(self.model_class.purged == true())
+                elif isinstance(term, RawTextTerm):
+                    query = query.filter(
+                        raw_text_column_filter(
+                            [
+                                self.model_class.email,
+                                self.model_class.username,
+                            ],
+                            term,
+                        )
+                    )
+        return query
 
 
 class RoleListGrid(grids.Grid):
