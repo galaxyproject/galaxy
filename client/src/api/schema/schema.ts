@@ -167,6 +167,24 @@ export interface paths {
         /** For internal use, this endpoint may change without warning. */
         get: operations["show_inheritance_chain_api_datasets__dataset_id__inheritance_chain_get"];
     };
+    "/api/datasets/{dataset_id}/metrics": {
+        /** Return job metrics for specified job. */
+        get: operations["get_metrics_api_datasets__dataset_id__metrics_get"];
+    };
+    "/api/datasets/{dataset_id}/parameters_display": {
+        /**
+         * Resolve parameters as a list for nested display.
+         * @description Resolve parameters as a list for nested display. More client logic
+         * here than is ideal but it is hard to reason about tool parameter
+         * types on the client relative to the server. Job accessibility checks
+         * are slightly different than dataset checks, so both methods are
+         * available.
+         *
+         * This API endpoint is unstable and tied heavily to Galaxy's JS client code,
+         * this endpoint will change frequently.
+         */
+        get: operations["resolve_parameters_display_api_datasets__dataset_id__parameters_display_get"];
+    };
     "/api/datasets/{dataset_id}/permissions": {
         /**
          * Set permissions of the given history dataset to the given role ids.
@@ -195,25 +213,6 @@ export interface paths {
         get: operations["datasets__get_metadata_file"];
         /** Check if metadata file can be downloaded. */
         head: operations["get_metadata_file_datasets_api_datasets__history_content_id__metadata_file_head"];
-    };
-    "/api/datasets/{id}/metrics": {
-        /** Return job metrics for specified job. */
-        get: operations["get_metrics_api_datasets__id__metrics_get"];
-    };
-    "/api/datasets/{id}/parameters_display": {
-        /**
-         * Resolve parameters as a list for nested display.
-         * @description # TODO is this still true?
-         * Resolve parameters as a list for nested display. More client logic
-         * here than is ideal but it is hard to reason about tool parameter
-         * types on the client relative to the server. Job accessibility checks
-         * are slightly different than dataset checks, so both methods are
-         * available.
-         *
-         * This API endpoint is unstable and tied heavily to Galaxy's JS client code,
-         * this endpoint will change frequently.
-         */
-        get: operations["resolve_parameters_display_api_datasets__id__parameters_display_get"];
     };
     "/api/datatypes": {
         /**
@@ -921,12 +920,6 @@ export interface paths {
          */
         post: operations["search_jobs_api_jobs_search_post"];
     };
-    "/api/jobs/{id}": {
-        /** Return dictionary containing description of job data. */
-        get: operations["show_job_api_jobs__id__get"];
-        /** Cancels specified job */
-        delete: operations["cancel_job_api_jobs__id__delete"];
-    };
     "/api/jobs/{id}/common_problems": {
         /** Check inputs and job for common potential problems to aid in error reporting */
         get: operations["check_common_problems_api_jobs__id__common_problems_get"];
@@ -939,19 +932,39 @@ export interface paths {
         /** Returns input datasets created by a job. */
         get: operations["get_inputs_api_jobs__id__inputs_get"];
     };
-    "/api/jobs/{id}/metrics": {
-        /** Return job metrics for specified job. */
-        get: operations["get_metrics_api_jobs__id__metrics_get"];
-    };
     "/api/jobs/{id}/outputs": {
         /** Returns output datasets created by a job. */
         get: operations["get_outputs_api_jobs__id__outputs_get"];
     };
-    "/api/jobs/{id}/parameters_display": {
+    "/api/jobs/{id}/resume": {
+        /** Resumes a paused job. */
+        put: operations["resume_paused_job_api_jobs__id__resume_put"];
+    };
+    "/api/jobs/{job_id}": {
+        /** Return dictionary containing description of job data. */
+        get: operations["show_job_api_jobs__job_id__get"];
+        /** Cancels specified job */
+        delete: operations["cancel_job_api_jobs__job_id__delete"];
+    };
+    "/api/jobs/{job_id}/destination_params": {
+        /** Return destination parameters for specified job. */
+        get: operations["destination_params_job_api_jobs__job_id__destination_params_get"];
+    };
+    "/api/jobs/{job_id}/metrics": {
+        /** Return job metrics for specified job. */
+        get: operations["get_metrics_api_jobs__job_id__metrics_get"];
+    };
+    "/api/jobs/{job_id}/oidc-tokens": {
+        /**
+         * Get a fresh OIDC token
+         * @description Allows remote job running mechanisms to get a fresh OIDC token that can be used on remote side to authorize user. It is not meant to represent part of Galaxy's stable, user facing API
+         */
+        get: operations["get_token_api_jobs__job_id__oidc_tokens_get"];
+    };
+    "/api/jobs/{job_id}/parameters_display": {
         /**
          * Resolve parameters as a list for nested display.
-         * @description # TODO is this still true?
-         * Resolve parameters as a list for nested display. More client logic
+         * @description Resolve parameters as a list for nested display. More client logic
          * here than is ideal but it is hard to reason about tool parameter
          * types on the client relative to the server. Job accessibility checks
          * are slightly different than dataset checks, so both methods are
@@ -960,22 +973,7 @@ export interface paths {
          * This API endpoint is unstable and tied heavily to Galaxy's JS client code,
          * this endpoint will change frequently.
          */
-        get: operations["resolve_parameters_display_api_jobs__id__parameters_display_get"];
-    };
-    "/api/jobs/{id}/resume": {
-        /** Resumes a paused job. */
-        put: operations["resume_paused_job_api_jobs__id__resume_put"];
-    };
-    "/api/jobs/{job_id}/destination_params": {
-        /** Return destination parameters for specified job. */
-        get: operations["destination_params_job_api_jobs__job_id__destination_params_get"];
-    };
-    "/api/jobs/{job_id}/oidc-tokens": {
-        /**
-         * Get a fresh OIDC token
-         * @description Allows remote job running mechanisms to get a fresh OIDC token that can be used on remote side to authorize user. It is not meant to represent part of Galaxy's stable, user facing API
-         */
-        get: operations["get_token_api_jobs__job_id__oidc_tokens_get"];
+        get: operations["resolve_parameters_display_api_jobs__job_id__parameters_display_get"];
     };
     "/api/libraries": {
         /**
@@ -3447,6 +3445,12 @@ export interface components {
             )[];
         };
         /**
+         * DataItemSourceType
+         * @description An enumeration.
+         * @enum {string}
+         */
+        DataItemSourceType: "hda" | "ldda" | "hdca" | "dce" | "dc";
+        /**
          * DatasetAssociationRoles
          * @description Base model definition with common configuration used by all derived models.
          */
@@ -4151,6 +4155,23 @@ export interface components {
          */
         ElementsFromType: "archive" | "bagit" | "bagit_archive" | "directory";
         /**
+         * EncodedDataItemSourceId
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        EncodedDataItemSourceId: {
+            /**
+             * ID
+             * @description The encoded ID of this entity.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Source
+             * @description The source of this dataset, either `hda`, `ldda`, `hdca`, `dce` or `dc` depending of its origin.
+             */
+            src: components["schemas"]["DataItemSourceType"];
+        };
+        /**
          * EncodedDatasetJobInfo
          * @description Base model definition with common configuration used by all derived models.
          */
@@ -4163,15 +4184,16 @@ export interface components {
             id: string;
             /**
              * Source
-             * @description The source of this dataset, either `hda` or `ldda` depending of its origin.
+             * @description The source of this dataset, either `hda`, `ldda`, `hdca`, `dce` or `dc` depending of its origin.
              */
-            src: components["schemas"]["DatasetSourceType"];
+            src: components["schemas"]["DataItemSourceType"];
             /**
              * UUID
              * Format: uuid4
+             * @deprecated
              * @description Universal unique identifier for this dataset.
              */
-            uuid: string;
+            uuid?: string;
         };
         /**
          * EncodedDatasetSourceId
@@ -4189,6 +4211,23 @@ export interface components {
              * @description The source of this dataset, either `hda` or `ldda` depending of its origin.
              */
             src: components["schemas"]["DatasetSourceType"];
+        };
+        /**
+         * EncodedHdcaSourceId
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        EncodedHdcaSourceId: {
+            /**
+             * ID
+             * @description The encoded ID of this entity.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Source
+             * @description The source of this dataset, which in the case of the model can only be `hdca`.
+             */
+            src: components["schemas"]["Hdca"];
         };
         /**
          * EncodedHistoryContentItem
@@ -4224,7 +4263,7 @@ export interface components {
             command_version: string;
             /**
              * Copied from Job-ID
-             * @description ?
+             * @description Reference to cached job if job execution was cached.
              * @example 0123456789ABCDEF
              */
             copied_from_job_id?: string;
@@ -4264,7 +4303,7 @@ export interface components {
             id: string;
             /**
              * Inputs
-             * @description Dictionary mapping all the tool inputs (by name) with the corresponding dataset information.
+             * @description Dictionary mapping all the tool inputs (by name) to the corresponding data references.
              * @default {}
              */
             inputs?: {
@@ -4279,13 +4318,14 @@ export interface components {
             model_class: "Job";
             /**
              * Output collections
-             * @description ?
              * @default {}
              */
-            output_collections?: Record<string, never>;
+            output_collections?: {
+                [key: string]: components["schemas"]["EncodedHdcaSourceId"] | undefined;
+            };
             /**
              * Outputs
-             * @description Dictionary mapping all the tool outputs (by name) with the corresponding dataset information.
+             * @description Dictionary mapping all the tool outputs (by name) to the corresponding data references.
              * @default {}
              */
             outputs?: {
@@ -5688,6 +5728,12 @@ export interface components {
             type: "hdas";
         };
         /**
+         * Hdca
+         * @description An enumeration.
+         * @enum {string}
+         */
+        Hdca: "hdca";
+        /**
          * HdcaDataItemsFromTarget
          * @description Base model definition with common configuration used by all derived models.
          */
@@ -6324,12 +6370,12 @@ export interface components {
         JobAssociation: {
             /**
              * dataset
-             * @description The associated dataset.
+             * @description Reference to the associated item.
              */
-            dataset: components["schemas"]["EncodedDatasetSourceId"];
+            dataset: components["schemas"]["EncodedDataItemSourceId"];
             /**
              * name
-             * @description The name of the associated dataset.
+             * @description Name of the job parameter.
              */
             name: string;
         };
@@ -6340,17 +6386,17 @@ export interface components {
         JobDestinationParams: {
             /**
              * Handler
-             * @description ?
+             * @description Name of the process that handled the job.
              */
             Handler: string;
             /**
              * Runner
-             * @description ?
+             * @description Job runner class
              */
             Runner: string;
             /**
              * Runner Job ID
-             * @description ?
+             * @description ID assigned to submitted job by external job running system
              */
             "Runner Job ID": string;
         };
@@ -6603,10 +6649,10 @@ export interface components {
              */
             label: Record<string, never>;
             /**
-             * dataset
+             * Dataset
              * @description The associated dataset.
              */
-            value: components["schemas"]["EncodedDatasetSourceId"];
+            value: components["schemas"]["EncodedDataItemSourceId"];
         };
         /**
          * JobParameter
@@ -6619,7 +6665,7 @@ export interface components {
              */
             depth: number;
             /**
-             * notes
+             * Notes
              * @description Notes associated with the job parameter.
              */
             notes?: string;
@@ -6632,53 +6678,7 @@ export interface components {
              * Value
              * @description The values of the job parameter
              */
-            value:
-                | components["schemas"]["JobParameterValuesSimple"][]
-                | components["schemas"]["JobParameterValuesExtensive"]
-                | string;
-        };
-        /**
-         * JobParameterValuesExtensive
-         * @description Base model definition with common configuration used by all derived models.
-         */
-        JobParameterValuesExtensive: {
-            /**
-             * Check Content
-             * @description Flag to check content
-             */
-            check_content: boolean;
-            /**
-             * Targets
-             * @description List of job value targets
-             */
-            targets: components["schemas"]["JobTarget"][];
-        };
-        /**
-         * JobParameterValuesSimple
-         * @description Base model definition with common configuration used by all derived models.
-         */
-        JobParameterValuesSimple: {
-            /**
-             * HID
-             * @description The index position of this item in the History.
-             */
-            hid: number;
-            /**
-             * ID
-             * @description The encoded ID of this entity.
-             * @example 0123456789ABCDEF
-             */
-            id: string;
-            /**
-             * Name
-             * @description The name of the item.
-             */
-            name: string;
-            /**
-             * Source
-             * @description The source of this dataset, either `hda` or `ldda` depending of its origin.
-             */
-            src: components["schemas"]["DatasetSourceType"];
+            value: Record<string, never>;
         };
         /**
          * JobSourceType
@@ -6738,90 +6738,6 @@ export interface components {
             states?: {
                 [key: string]: number | undefined;
             };
-        };
-        /**
-         * JobTarget
-         * @description Base model definition with common configuration used by all derived models.
-         */
-        JobTarget: {
-            /**
-             * Destination
-             * @description Destination details
-             */
-            destination: components["schemas"]["JobTargetDestination"];
-            /**
-             * Elements
-             * @description List of job target elements
-             */
-            elements: components["schemas"]["JobTargetElement"][];
-        };
-        /**
-         * JobTargetDestination
-         * @description Base model definition with common configuration used by all derived models.
-         */
-        JobTargetDestination: {
-            /**
-             * Type
-             * @description Type of destination, either `hda` or `ldda` depending on the destination
-             */
-            type: string;
-        };
-        /**
-         * JobTargetElement
-         * @description Base model definition with common configuration used by all derived models.
-         */
-        JobTargetElement: {
-            /**
-             * Auto Decompress
-             * @description Flag indicating if to auto decompress
-             */
-            auto_decompress: boolean;
-            /**
-             * Database Key
-             * @description Database key
-             */
-            dbkey: string;
-            /**
-             * Extension
-             * @description Extension
-             */
-            ext: string;
-            /**
-             * Hashes
-             * @description List of hashes
-             */
-            hashes: string[];
-            /**
-             * Name
-             * @description Name of the element
-             */
-            name: string;
-            /**
-             * Object ID
-             * @description Object ID
-             * @example 0123456789ABCDEF
-             */
-            object_id: string;
-            /**
-             * Paste Content
-             * @description Content to paste
-             */
-            paste_content: string;
-            /**
-             * Purge Source
-             * @description Flag indicating if to purge the source
-             */
-            purge_source: boolean;
-            /**
-             * Source
-             * @description Source
-             */
-            src: string;
-            /**
-             * To POSIX Lines
-             * @description Flag indicating if to convert to POSIX lines
-             */
-            to_posix_lines: boolean;
         };
         /**
          * LabelValuePair
@@ -8629,12 +8545,15 @@ export interface components {
          */
         ReportJobErrorPayload: {
             /**
-             * Dataset ID
-             * @description The dataset ID related to the error.
+             * History Dataset Association ID
+             * @description The History Dataset Association ID related to the error.
              * @example 0123456789ABCDEF
              */
             dataset_id: string;
-            /** Email */
+            /**
+             * Email
+             * @description Email address for communication with the user. Only required for anonymous users.
+             */
             email?: string;
             /**
              * Message
@@ -8745,9 +8664,9 @@ export interface components {
             inputs: string;
             /**
              * State
-             * @description The state of the job.
+             * @description Current state of the job.
              */
-            state: string;
+            state: components["schemas"]["JobState"];
             /**
              * Tool ID
              * @description The tool ID related to the job.
@@ -11083,6 +11002,78 @@ export interface operations {
             };
         };
     };
+    get_metrics_api_datasets__dataset_id__metrics_get: {
+        /** Return job metrics for specified job. */
+        parameters: {
+            /** @description Whether this dataset belongs to a history (HDA) or a library (LDDA). */
+            query?: {
+                hda_ldda?: components["schemas"]["DatasetSourceType"];
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The ID of the dataset */
+            path: {
+                dataset_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["JobMetric"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resolve_parameters_display_api_datasets__dataset_id__parameters_display_get: {
+        /**
+         * Resolve parameters as a list for nested display.
+         * @description Resolve parameters as a list for nested display. More client logic
+         * here than is ideal but it is hard to reason about tool parameter
+         * types on the client relative to the server. Job accessibility checks
+         * are slightly different than dataset checks, so both methods are
+         * available.
+         *
+         * This API endpoint is unstable and tied heavily to Galaxy's JS client code,
+         * this endpoint will change frequently.
+         */
+        parameters: {
+            /** @description Whether this dataset belongs to a history (HDA) or a library (LDDA). */
+            query?: {
+                hda_ldda?: components["schemas"]["DatasetSourceType"];
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The ID of the dataset */
+            path: {
+                dataset_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["JobDisplayParametersSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     update_permissions_api_datasets__dataset_id__permissions_put: {
         /**
          * Set permissions of the given history dataset to the given role ids.
@@ -11289,79 +11280,6 @@ export interface operations {
             200: {
                 content: {
                     "application/json": Record<string, never>;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_metrics_api_datasets__id__metrics_get: {
-        /** Return job metrics for specified job. */
-        parameters: {
-            /** @description Whether this dataset belongs to a history (HDA) or a library (LDDA). */
-            query?: {
-                hda_ldda?: components["schemas"]["DatasetSourceType"];
-            };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string;
-            };
-            /** @description The ID of the dataset */
-            path: {
-                id: string;
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json": components["schemas"]["JobMetric"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    resolve_parameters_display_api_datasets__id__parameters_display_get: {
-        /**
-         * Resolve parameters as a list for nested display.
-         * @description # TODO is this still true?
-         * Resolve parameters as a list for nested display. More client logic
-         * here than is ideal but it is hard to reason about tool parameter
-         * types on the client relative to the server. Job accessibility checks
-         * are slightly different than dataset checks, so both methods are
-         * available.
-         *
-         * This API endpoint is unstable and tied heavily to Galaxy's JS client code,
-         * this endpoint will change frequently.
-         */
-        parameters: {
-            /** @description Whether this dataset belongs to a history (HDA) or a library (LDDA). */
-            query?: {
-                hda_ldda?: components["schemas"]["DatasetSourceType"];
-            };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string;
-            };
-            /** @description The ID of the dataset */
-            path: {
-                id: string;
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json": components["schemas"]["JobDisplayParametersSummary"];
                 };
             };
             /** @description Validation Error */
@@ -15321,69 +15239,6 @@ export interface operations {
             };
         };
     };
-    show_job_api_jobs__id__get: {
-        /** Return dictionary containing description of job data. */
-        parameters: {
-            /** @description Show extra information. */
-            query?: {
-                full?: boolean;
-            };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string;
-            };
-            /** @description The ID of the job */
-            path: {
-                id: string;
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json": Record<string, never>;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    cancel_job_api_jobs__id__delete: {
-        /** Cancels specified job */
-        parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string;
-            };
-            /** @description The ID of the job */
-            path: {
-                id: string;
-            };
-        };
-        requestBody?: {
-            content: {
-                "application/json": components["schemas"]["DeleteJobPayload"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json": boolean;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     check_common_problems_api_jobs__id__common_problems_get: {
         /** Check inputs and job for common potential problems to aid in error reporting */
         parameters: {
@@ -15470,37 +15325,6 @@ export interface operations {
             };
         };
     };
-    get_metrics_api_jobs__id__metrics_get: {
-        /** Return job metrics for specified job. */
-        parameters: {
-            /** @description Whether this dataset belongs to a history (HDA) or a library (LDDA). */
-            query?: {
-                hda_ldda?: components["schemas"]["DatasetSourceType"];
-            };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string;
-            };
-            /** @description The ID of the job */
-            path: {
-                id: string;
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json": components["schemas"]["JobMetric"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     get_outputs_api_jobs__id__outputs_get: {
         /** Returns output datasets created by a job. */
         parameters: {
@@ -15518,48 +15342,6 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["JobAssociation"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    resolve_parameters_display_api_jobs__id__parameters_display_get: {
-        /**
-         * Resolve parameters as a list for nested display.
-         * @description # TODO is this still true?
-         * Resolve parameters as a list for nested display. More client logic
-         * here than is ideal but it is hard to reason about tool parameter
-         * types on the client relative to the server. Job accessibility checks
-         * are slightly different than dataset checks, so both methods are
-         * available.
-         *
-         * This API endpoint is unstable and tied heavily to Galaxy's JS client code,
-         * this endpoint will change frequently.
-         */
-        parameters: {
-            /** @description Whether this dataset belongs to a history (HDA) or a library (LDDA). */
-            query?: {
-                hda_ldda?: components["schemas"]["DatasetSourceType"];
-            };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string;
-            };
-            /** @description The ID of the job */
-            path: {
-                id: string;
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json": components["schemas"]["JobDisplayParametersSummary"];
                 };
             };
             /** @description Validation Error */
@@ -15597,6 +15379,69 @@ export interface operations {
             };
         };
     };
+    show_job_api_jobs__job_id__get: {
+        /** Return dictionary containing description of job data. */
+        parameters: {
+            /** @description Show extra information. */
+            query?: {
+                full?: boolean;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The ID of the job */
+            path: {
+                job_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_job_api_jobs__job_id__delete: {
+        /** Cancels specified job */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The ID of the job */
+            path: {
+                job_id: string;
+            };
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["DeleteJobPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": boolean;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     destination_params_job_api_jobs__job_id__destination_params_get: {
         /** Return destination parameters for specified job. */
         parameters: {
@@ -15614,6 +15459,37 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["JobDestinationParams"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_metrics_api_jobs__job_id__metrics_get: {
+        /** Return job metrics for specified job. */
+        parameters: {
+            /** @description Whether this dataset belongs to a history (HDA) or a library (LDDA). */
+            query?: {
+                hda_ldda?: components["schemas"]["DatasetSourceType"];
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The ID of the job */
+            path: {
+                job_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["JobMetric"][];
                 };
             };
             /** @description Validation Error */
@@ -15649,6 +15525,47 @@ export interface operations {
             200: {
                 content: {
                     "text/plain": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resolve_parameters_display_api_jobs__job_id__parameters_display_get: {
+        /**
+         * Resolve parameters as a list for nested display.
+         * @description Resolve parameters as a list for nested display. More client logic
+         * here than is ideal but it is hard to reason about tool parameter
+         * types on the client relative to the server. Job accessibility checks
+         * are slightly different than dataset checks, so both methods are
+         * available.
+         *
+         * This API endpoint is unstable and tied heavily to Galaxy's JS client code,
+         * this endpoint will change frequently.
+         */
+        parameters: {
+            /** @description Whether this dataset belongs to a history (HDA) or a library (LDDA). */
+            query?: {
+                hda_ldda?: components["schemas"]["DatasetSourceType"];
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The ID of the job */
+            path: {
+                job_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["JobDisplayParametersSummary"];
                 };
             };
             /** @description Validation Error */
