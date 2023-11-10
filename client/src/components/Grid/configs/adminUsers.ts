@@ -11,7 +11,7 @@ type UserEntry = Record<string, unknown>;
  * Request and return data from server
  */
 async function getData(offset: number, limit: number, search: string, sort_by: string, sort_desc: boolean) {
-    const { data } = await axios.get(withPrefix("/admin/users_list"));
+    const { data } = await axios.get(withPrefix(`/admin/users_list?sort_by=${sort_by}&sort_desc=${sort_desc}`));
     return [data.rows, data.total_row_count];
 }
 

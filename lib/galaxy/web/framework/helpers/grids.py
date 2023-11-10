@@ -28,6 +28,7 @@ from galaxy.model.item_attrs import (
 from galaxy.util import (
     restore_text,
     sanitize_text,
+    string_as_bool,
     unicodify,
 )
 from galaxy.web.framework import (
@@ -1074,19 +1075,19 @@ class GridData:
             # default_filter is a dictionary that provides a default set of filters based on the grid's columns.
             base_filter = self.default_filter.copy()
         base_sort_key = self.default_sort_key
+
         # Build initial query
         query = self.build_initial_query(trans, **kwargs)
         query = self.apply_query_filter(trans, query, **kwargs)
-        # Maintain sort state in generated urls
-        extra_url_args = {}
+
         # Determine whether use_default_filter flag is set.
         use_default_filter_str = kwargs.get("use_default_filter")
         use_default_filter = False
         if use_default_filter_str:
             use_default_filter = use_default_filter_str.lower() == "true"
+
         # Process filtering arguments to (a) build a query that represents the filter and (b) build a
         # dictionary that denotes the current filter.
-        cur_filter_dict = {}
         for column in self.columns:
             if column.key:
                 # Get the filter criterion for the column. Precedence is (a) if using default filter, only look there; otherwise,
@@ -1147,49 +1148,14 @@ class GridData:
 
                     # Update query.
                     query = column.filter(trans, trans.user, query, column_filter)
-                    # Upate current filter dict.
-                    # Column filters are rendered in various places, sanitize them all here.
-                    cur_filter_dict[column.key] = sanitize_text(column_filter)
-                    # Carry filter along to newly generated urls; make sure filter is a string so
-                    # that we can encode to UTF-8 and thus handle user input to filters.
-                    if isinstance(column_filter, list):
-                        # Filter is a list; process each item.
-                        extra_url_args[f"f-{column.key}"] = dumps(column_filter)
-                    else:
-                        # Process singleton filter.
-                        extra_url_args[f"f-{column.key}"] = column_filter
+
         # Process sort arguments.
-        sort_key = None
-        if "sort" in kwargs:
-            sort_key = kwargs["sort"]
-        elif base_sort_key:
-            sort_key = base_sort_key
-        if sort_key:
-            ascending = not (sort_key.startswith("-"))
-            # Queries that include table joins cannot guarantee unique column names.  This problem is
-            # handled by setting the column_filter value to <TableName>.<ColumnName>.
-            table_name = None
-            if sort_key.find(".") > -1:
-                a_list = sort_key.split(".")
-                if ascending:
-                    table_name = a_list[0]
-                else:
-                    table_name = a_list[0][1:]
-                column_name = a_list[1]
-            elif ascending:
-                column_name = sort_key
-            else:
-                column_name = sort_key[1:]
-            # Sort key is a column key.
-            for column in self.columns:
-                if column.key and column.key.find(".") > -1:
-                    column_key = column.key.split(".")[1]
-                else:
-                    column_key = column.key
-                if (table_name is None or table_name == column.model_class.__name__) and column_key == column_name:
-                    query = column.sort(trans, query, ascending, column_name=column_name)
-                    break
-            extra_url_args["sort"] = sort_key
+        sort_by = kwargs.get("sort_by", base_sort_key)
+        sort_desc = string_as_bool(kwargs.get("sort_desc", True))
+        for column in self.columns:
+            if column.key == sort_by:
+                query = column.sort(trans, query, not sort_desc, column_name=sort_by)
+                break
 
         # Process limit and offset.
         total_row_count = query.count()
