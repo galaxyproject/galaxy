@@ -667,7 +667,6 @@ class FileParameter(MetadataParameter):
                 # directory. Correct.
                 file_name = path_rewriter(file_name)
             mf.update_from_file(file_name)
-            os.unlink(file_name)
             value = mf.id
         return value
 
