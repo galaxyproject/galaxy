@@ -10,6 +10,7 @@ library.add(faCaretDown);
 interface Props {
     rowData: RowData;
     operations: Array<Operation>;
+    title: string;
 }
 
 const props = defineProps<Props>();
@@ -35,7 +36,7 @@ function hasCondition(conditionHandler: (rowData: RowData) => Boolean) {
             aria-expanded="false"
             class="ui-link font-weight-bold">
             <FontAwesomeIcon icon="caret-down" class="fa-lg" />
-            <span class="font-weight-bold">{{ rowData.title }}</span>
+            <span class="font-weight-bold">{{ title }}</span>
         </button>
         <div v-if="operations" class="dropdown-menu" aria-labelledby="dataset-dropdown">
             <span v-for="(operation, operationIndex) in operations" :key="operationIndex">

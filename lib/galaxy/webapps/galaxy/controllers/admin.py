@@ -616,8 +616,6 @@ class AdminGalaxy(controller.JSAppLauncher):
     @web.json
     @web.require_admin
     def users_list(self, trans, **kwd):
-        message = kwd.get("message", "")
-        status = kwd.get("status", "")
         if "operation" in kwd:
             id = kwd.get("id")
             if not id:
@@ -638,23 +636,6 @@ class AdminGalaxy(controller.JSAppLauncher):
                 message, status = self._activate_user(trans, id)
             elif operation == "resend activation email":
                 message, status = self._resend_activation_email(trans, id)
-        if message and status:
-            kwd["message"] = util.sanitize_text(message)
-            kwd["status"] = status
-        if trans.app.config.allow_user_deletion:
-            if self.delete_operation not in self.user_list_grid.operations:
-                self.user_list_grid.operations.append(self.delete_operation)
-            if self.undelete_operation not in self.user_list_grid.operations:
-                self.user_list_grid.operations.append(self.undelete_operation)
-            if self.purge_operation not in self.user_list_grid.operations:
-                self.user_list_grid.operations.append(self.purge_operation)
-        if trans.app.config.allow_user_impersonation:
-            if self.impersonate_operation not in self.user_list_grid.operations:
-                self.user_list_grid.operations.append(self.impersonate_operation)
-        if trans.app.config.user_activation_on:
-            if self.activate_operation not in self.user_list_grid.operations:
-                self.user_list_grid.operations.append(self.activate_operation)
-                self.user_list_grid.operations.append(self.resend_activation_email)
         return self.user_list_grid(trans, **kwd)
 
     @web.legacy_expose_api

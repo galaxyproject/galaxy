@@ -1,7 +1,9 @@
 import axios from "axios";
+import type Router from "vue-router";
 
 import Filtering, { contains, equals, toBool, type ValidFilter } from "@/utils/filtering";
 import { withPrefix } from "@/utils/redirect";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 /**
  * Local types
@@ -29,13 +31,112 @@ async function getData(offset: number, limit: number, search: string, sort_by: s
  */
 const fields = [
     {
-        title: "Email",
         key: "email",
-        type: "text",
-        width: "30%",
-        handler: (data: UserEntry) => {
-            window.location.href = withPrefix(`/plugins/visualizations/${data.type}/saved?id=${data.id}`);
-        },
+        title: "Email",
+        type: "operations",
+        condition: (data: UserEntry) => !data.deleted,
+        operations: [
+            {
+                title: "Manage Information",
+                icon: "user",
+                condition: (data: UserEntry) => !data.deleted,
+                handler: (data: UserEntry, router: Router) => {
+                    router.push(`/user/information?id=${data.id}`);
+                },
+            },
+            {
+                title: "Manage Roles and Groups",
+                icon: "users",
+                condition: (data: UserEntry) => !data.deleted,
+                handler: (data: UserEntry, router: Router) => {
+                    router.push(`/admin/form/manage_roles_and_groups_for_user?id=${data.id}`);
+                },
+            },
+            {
+                title: "Reset Password",
+                icon: "unlock",
+                condition: (data: UserEntry) => !data.deleted,
+                handler: (data: UserEntry, router: Router) => {
+                    router.push(`/admin/form/reset_user_password?id=${data.id}`);
+                },
+            },
+            {
+                title: "Recalculate Disk Usage",
+                icon: "calculator",
+                condition: (data: UserEntry) => !data.deleted,
+                handler: async (data: UserEntry) => {
+                    try {
+                        await axios.put(`/api/visualizations/${data.id}`, { deleted: true });
+                        return {
+                            status: "success",
+                            message: `Disk usage of '${data.title}' has been recalculated.`,
+                        };
+                    } catch (e) {
+                        return {
+                            status: "danger",
+                            message: `Failed to recalculate disk usage of '${data.title}': ${errorMessageAsString(e)}.`,
+                        };
+                    }
+                },
+            },
+            {
+                title: "Generate New API Key",
+                icon: "key",
+                condition: (data: UserEntry) => !data.deleted,
+                handler: async (data: UserEntry) => {
+                    try {
+                        await axios.put(`/api/visualizations/${data.id}`, { deleted: true });
+                        return {
+                            status: "success",
+                            message: `New API Key for '${data.title}' has been generated.`,
+                        };
+                    } catch (e) {
+                        return {
+                            status: "danger",
+                            message: `Failed to generate new API Key for '${data.title}': ${errorMessageAsString(e)}.`,
+                        };
+                    }
+                },
+            },
+            {
+                title: "Delete",
+                icon: "trash",
+                condition: (data: UserEntry) => !data.deleted /* && config.allow_user_deletion */,
+                handler: async (data: UserEntry) => {
+                    try {
+                        await axios.delete(`/api/users/${data.id}`);
+                        return {
+                            status: "success",
+                            message: `'${data.username}' has been deleted.`,
+                        };
+                    } catch (e) {
+                        return {
+                            status: "danger",
+                            message: `Failed to delete '${data.username}': ${errorMessageAsString(e)}`,
+                        };
+                    }
+                },
+            },
+            {
+                title: "Restore",
+                icon: "trash-restore",
+                condition: (data: UserEntry) => data.deleted,
+                handler: async (data: UserEntry) => {
+                    try {
+                        await axios.post(`/api/users/deleted/${data.id}/undelete`);
+                        return {
+                            status: "success",
+                            message: `'${data.username}' has been restored.`,
+                        };
+                    } catch (e) {
+                        return {
+                            status: "danger",
+                            message: `Failed to restore '${data.username}': ${errorMessageAsString(e)}`,
+                        };
+                    }
+                },
+            },
+        ],
     },
     {
         key: "username",

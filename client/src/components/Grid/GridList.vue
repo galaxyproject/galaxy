@@ -254,6 +254,7 @@ watch(operationMessage, () => {
                         v-if="fieldEntry.type == 'operations' && fieldEntry.operations"
                         :operations="fieldEntry.operations"
                         :row-data="rowData"
+                        :title="rowData[fieldEntry.key]"
                         @execute="onOperation($event, rowData)" />
                     <GridText v-else-if="fieldEntry.type == 'text'" :text="rowData[fieldEntry.key]" />
                     <GridLink
