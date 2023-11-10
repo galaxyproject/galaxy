@@ -12,6 +12,11 @@ from typing_extensions import Annotated
 
 from galaxy.schema.schema import Model
 
+# Schema manually typed from https://docs.discourse.org/
+# Discourse has an OpenApi schema (https://docs.discourse.org/openapi.json)
+# but at the time of writing it is mostly untyped, which makes the manually
+# created types preferable.
+
 
 # TODO: remove this class once we have a proper model for all temp models
 class HelpTempBaseModel(Model):
