@@ -66,15 +66,34 @@ const fields = [
                 condition: (data: UserEntry) => !data.deleted,
                 handler: async (data: UserEntry) => {
                     try {
-                        await axios.put(`/api/visualizations/${data.id}`, { deleted: true });
+                        await axios.post(`/api/users/${data.id}/resend_activation_email`);
                         return {
                             status: "success",
-                            message: `Disk usage of '${data.title}' has been recalculated.`,
+                            message: `Disk usage of '${data.username}' has been recalculated.`,
                         };
                     } catch (e) {
                         return {
                             status: "danger",
-                            message: `Failed to recalculate disk usage of '${data.title}': ${errorMessageAsString(e)}.`,
+                            message: `Failed to recalculate disk usage of '${data.username}': ${errorMessageAsString(e)}.`,
+                        };
+                    }
+                },
+            },
+            {
+                title: "Send Activation Email",
+                icon: "calculator",
+                condition: (data: UserEntry) => !data.deleted,
+                handler: async (data: UserEntry) => {
+                    try {
+                        await axios.post(`/api/users/${data.id}/send_activation_email`);
+                        return {
+                            status: "success",
+                            message: `Activation email has been sent to '${data.username}'.`,
+                        };
+                    } catch (e) {
+                        return {
+                            status: "danger",
+                            message: `Failed to send activation email to '${data.username}': ${errorMessageAsString(e)}.`,
                         };
                     }
                 },
@@ -85,15 +104,15 @@ const fields = [
                 condition: (data: UserEntry) => !data.deleted,
                 handler: async (data: UserEntry) => {
                     try {
-                        await axios.put(`/api/visualizations/${data.id}`, { deleted: true });
+                        await axios.post(`/api/users/${data.id}/api_key`);
                         return {
                             status: "success",
-                            message: `New API Key for '${data.title}' has been generated.`,
+                            message: `New API Key for '${data.username}' has been generated.`,
                         };
                     } catch (e) {
                         return {
                             status: "danger",
-                            message: `Failed to generate new API Key for '${data.title}': ${errorMessageAsString(e)}.`,
+                            message: `Failed to generate new API Key for '${data.username}': ${errorMessageAsString(e)}.`,
                         };
                     }
                 },
