@@ -32,7 +32,6 @@ from galaxy.util import (
     string_as_bool,
     unicodify,
 )
-
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
 from .filters import FilterFactory
