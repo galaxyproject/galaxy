@@ -1,3 +1,4 @@
+from enum import Enum
 from typing import (
     Any,
     Dict,
@@ -110,12 +111,24 @@ class DeleteJobPayload(Model):
     )
 
 
+class EncodedHdcaSourceId(Model):
+    class Hdca(str, Enum):
+        hdca = "hdca"
+
+    id: EncodedDatabaseIdField = EntityIdField
+    src: Hdca = Field(
+        default=Required,
+        title="Source",
+        description="The source of this dataset, which in the case of the model can only be `hdca`.",
+    )
+
+
 class EncodedDatasetJobInfo(EncodedDataItemSourceId):
     uuid: Optional[UUID4] = Field(
         default=None,
         deprecated=True,
         title="UUID",
-        description="Universal unique identifier for this dataset. In this context the uuid is optional and marked as deprecated.",
+        description="Universal unique identifier for this dataset.",
     )
 
 
@@ -156,7 +169,7 @@ class EncodedJobDetails(JobSummary, EncodedJobIDs):
     copied_from_job_id: Optional[EncodedDatabaseIdField] = Field(
         default=None, title="Copied from Job-ID", description="Reference to cached job if job execution was cached."
     )
-    output_collections: Any = Field(default=None, title="Output collections", description="?")
+    output_collections: Dict[str, EncodedHdcaSourceId] = Field(default={}, title="Output collections", description="?")
 
 
 class JobDestinationParams(Model):
@@ -173,7 +186,7 @@ class JobDestinationParams(Model):
 
 class JobOutput(Model):
     label: Any = Field(default=Required, title="Output label", description="The output label")  # check if this is true
-    value: EncodedDataItemSourceId = Field(default=Required, title="dataset", description="The associated dataset.")
+    value: EncodedDataItemSourceId = Field(default=Required, title="Dataset", description="The associated dataset.")
 
 
 class JobParameter(Model):
@@ -188,7 +201,7 @@ class JobParameter(Model):
         description="The depth of the job parameter.",
     )
     value: Any = Field(default=Required, title="Value", description="The values of the job parameter")
-    notes: Optional[str] = Field(default=None, title="notes", description="Notes associated with the job parameter.")
+    notes: Optional[str] = Field(default=None, title="Notes", description="Notes associated with the job parameter.")
 
 
 class JobDisplayParametersSummary(Model):

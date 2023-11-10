@@ -1941,7 +1941,7 @@ class EncodedDataItemSourceId(Model):
     src: DataItemSourceType = Field(
         ...,
         title="Source",
-        description="The source of this dataset, either `hda` or `ldda` depending of its origin.",
+        description="The source of this dataset, either `hda`, `ldda`, `hdca`, `dce` or `dc` depending of its origin.",
     )
 
 
