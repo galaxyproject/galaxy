@@ -475,6 +475,14 @@ class DatasetSourceType(str, Enum):
     ldda = "ldda"
 
 
+class DataItemSourceType(str, Enum):
+    hda = "hda"
+    ldda = "ldda"
+    hdca = "hdca"
+    dce = "dce"
+    dc = "dc"
+
+
 class ColletionSourceType(str, Enum):
     hda = "hda"
     ldda = "ldda"
@@ -1926,6 +1934,15 @@ class DatasetSourceId(DatasetSourceIdBase):
 
 class EncodedDatasetSourceId(DatasetSourceIdBase):
     id: EncodedDatabaseIdField = EntityIdField
+
+
+class EncodedDataItemSourceId(Model):
+    id: EncodedDatabaseIdField = EntityIdField
+    src: DataItemSourceType = Field(
+        ...,
+        title="Source",
+        description="The source of this dataset, either `hda` or `ldda` depending of its origin.",
+    )
 
 
 class DatasetJobInfo(DatasetSourceId):

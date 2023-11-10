@@ -3,7 +3,6 @@ from typing import (
     Dict,
     List,
     Optional,
-    Union,
 )
 
 from pydantic import (
@@ -18,12 +17,11 @@ from galaxy.schema.fields import (
     EncodedDatabaseIdField,
 )
 from galaxy.schema.schema import (
-    DatasetSourceType,
-    EncodedDatasetSourceId,
+    EncodedDataItemSourceId,
     EntityIdField,
+    JobState,
     JobSummary,
     Model,
-    UuidField,
 )
 
 
@@ -56,7 +54,7 @@ class JobAssociation(Model):
         title="name",
         description="Name of the job parameter.",
     )
-    dataset: EncodedDatasetSourceId = Field(
+    dataset: EncodedDataItemSourceId = Field(
         default=Required,
         title="dataset",
         description="Reference to the associated item.",
@@ -94,10 +92,10 @@ class SearchJobsPayload(Model):
         title="Inputs",
         description="The inputs of the job as a JSON dump.",
     )
-    state: str = Field(
+    state: JobState = Field(
         default=Required,
         title="State",
-        description="The state of the job.",
+        description="Current state of the job.",
     )
 
     class Config:
@@ -112,8 +110,13 @@ class DeleteJobPayload(Model):
     )
 
 
-class EncodedDatasetJobInfo(EncodedDatasetSourceId):
-    uuid: UUID4 = UuidField
+class EncodedDatasetJobInfo(EncodedDataItemSourceId):
+    uuid: Optional[UUID4] = Field(
+        default=None,
+        deprecated=True,
+        title="UUID",
+        description="Universal unique identifier for this dataset. In this context the uuid is optional and marked as deprecated.",
+    )
 
 
 class EncodedJobIDs(Model):
@@ -153,7 +156,7 @@ class EncodedJobDetails(JobSummary, EncodedJobIDs):
     copied_from_job_id: Optional[EncodedDatabaseIdField] = Field(
         default=None, title="Copied from Job-ID", description="Reference to cached job if job execution was cached."
     )
-    output_collections: Any = Field(default={}, title="Output collections", description="?")
+    output_collections: Any = Field(default=None, title="Output collections", description="?")
 
 
 class JobDestinationParams(Model):
@@ -170,75 +173,7 @@ class JobDestinationParams(Model):
 
 class JobOutput(Model):
     label: Any = Field(default=Required, title="Output label", description="The output label")  # check if this is true
-    value: EncodedDatasetSourceId = Field(default=Required, title="dataset", description="The associated dataset.")
-
-
-class JobParameterValuesSimple(Model):
-    src: DatasetSourceType = Field(
-        default=Required,
-        title="Source",
-        description="The source of this dataset, either `hda` or `ldda` depending of its origin.",
-    )
-    id: EncodedDatabaseIdField = EntityIdField
-    name: str = Field(
-        default=Required,
-        title="Name",
-        description="The name of the item.",
-    )
-    hid: int = Field(
-        default=Required,
-        title="HID",
-        description="The index position of this item in the History.",
-    )
-
-
-class JobTargetElement(Model):  # TODO rename?
-    name: str = Field(default=Required, title="Name", description="Name of the element")  # TODO check correctness
-    dbkey: str = Field(default=Required, title="Database Key", description="Database key")  # TODO check correctness
-    ext: str = Field(default=Required, title="Extension", description="Extension")  # TODO check correctness
-    to_posix_lines: bool = Field(
-        default=Required, title="To POSIX Lines", description="Flag indicating if to convert to POSIX lines"
-    )  # TODO check correctness
-    auto_decompress: bool = Field(
-        default=Required, title="Auto Decompress", description="Flag indicating if to auto decompress"
-    )  # TODO check correctness
-    src: str = Field(default=Required, title="Source", description="Source")  # TODO check correctness
-    paste_content: str = Field(
-        default=Required, title="Paste Content", description="Content to paste"
-    )  # TODO check correctness
-    hashes: List[str] = Field(default=Required, title="Hashes", description="List of hashes")  # TODO check correctness
-    purge_source: bool = Field(
-        default=Required, title="Purge Source", description="Flag indicating if to purge the source"
-    )  # TODO check correctness
-    object_id: EncodedDatabaseIdField = Field(
-        default=Required, title="Object ID", description="Object ID"
-    )  # TODO check correctness
-
-
-class JobTargetDestination(Model):
-    type: str = Field(
-        default=Required,
-        title="Type",
-        description="Type of destination, either `hda` or `ldda` depending on the destination",
-    )  # TODO check correctness
-
-
-class JobTarget(Model):  # TODO rename?
-    destination: JobTargetDestination = Field(
-        default=Required, title="Destination", description="Destination details"
-    )  # TODO check correctness
-    elements: List[JobTargetElement] = Field(
-        default=Required, title="Elements", description="List of job target elements"
-    )  # TODO check correctness
-
-
-class JobParameterValuesExtensive(Model):  # TODO rename?
-    targets: List[JobTarget] = Field(
-        default=Required, title="Targets", description="List of job value targets"
-    )  # TODO check correctness
-    check_content: bool = Field(
-        default=Required, title="Check Content", description="Flag to check content"
-    )  # TODO check correctness
+    value: EncodedDataItemSourceId = Field(default=Required, title="dataset", description="The associated dataset.")
 
 
 class JobParameter(Model):
@@ -252,9 +187,7 @@ class JobParameter(Model):
         title="Depth",
         description="The depth of the job parameter.",
     )
-    value: Union[List[JobParameterValuesSimple], JobParameterValuesExtensive, str] = Field(
-        default=Required, title="Value", description="The values of the job parameter"
-    )
+    value: Any = Field(default=Required, title="Value", description="The values of the job parameter")
     notes: Optional[str] = Field(default=None, title="notes", description="Notes associated with the job parameter.")
 
 
