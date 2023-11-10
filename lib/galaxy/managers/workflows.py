@@ -361,9 +361,10 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
 
         return True
 
-    def get_workflow_svg_from_id(self, trans, id, for_embed=False) -> bytes:
+    def get_workflow_svg_from_id(self, trans, id, version=None, for_embed=False) -> bytes:
         stored = self.get_stored_accessible_workflow(trans, id)
-        return self.get_workflow_svg(trans, stored.latest_workflow, for_embed=for_embed)
+        workflow = stored.get_internal_version(version)
+        return self.get_workflow_svg(trans, workflow, for_embed=for_embed)
 
     def get_workflow_svg(self, trans, workflow, for_embed=False) -> bytes:
         try:

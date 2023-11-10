@@ -7358,6 +7358,12 @@ class StoredWorkflow(Base, HasTags, Dictifiable, RepresentById):
             raise Exception("Version does not exist")
         return list(reversed(self.workflows))[version]
 
+    def version_of(self, workflow):
+        for version, workflow_instance in enumerate(reversed(self.workflows)):
+            if workflow_instance.id == workflow.id:
+                return version
+        raise KeyError("Failed to find a version of target workflow instance in stored workflow.")
+
     def show_in_tool_panel(self, user_id):
         sa_session = object_session(self)
         stmt = (
@@ -7551,6 +7557,10 @@ class Workflow(Base, Dictifiable, RepresentById):
             old_step.copy_to(new_step, step_mapping, user=user)
         copied_workflow.steps = copied_steps
         return copied_workflow
+
+    @property
+    def version(self):
+        return self.stored_workflow.version_of(self)
 
     def log_str(self):
         extra = ""
