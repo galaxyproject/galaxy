@@ -22,6 +22,10 @@ if (props.excludeStates) {
     }
 }
 
+function dataState(state: string) {
+    return state === "new_populated_state" ? "new" : state;
+}
+
 function onFilter(value: string) {
     emit("set-filter", `state`, value);
 }
@@ -37,7 +41,7 @@ function onFilter(value: string) {
             </i>
         </p>
         <dl v-for="(state, key, index) in states" :key="index">
-            <div :class="['alert', 'content-item', 'alert-' + state.status]" :data-state="key">
+            <div :class="['alert', 'content-item', 'alert-' + state.status]" :data-state="dataState(key)">
                 <dt>
                     <a v-if="!state.nonDb" class="text-decoration-none" href="javascript:void(0)" @click="onFilter(key)"
                         ><code>{{ key }}</code></a

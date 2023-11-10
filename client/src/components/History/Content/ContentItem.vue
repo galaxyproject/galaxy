@@ -3,7 +3,7 @@
         :id="contentId"
         :class="['content-item m-1 p-0 rounded btn-transparent-background', contentCls, isBeingUsed]"
         :data-hid="id"
-        :data-state="state"
+        :data-state="dataState"
         tabindex="0"
         role="button"
         @keydown="onKeyDown">
@@ -173,11 +173,12 @@ export default {
         state() {
             if (this.isPlaceholder) {
                 return "placeholder";
-            } else if (
-                this.item.history_content_type === "dataset_collection" &&
-                this.item.populated_state === "failed"
-            ) {
+            }
+            if (this.item.populated_state === "failed") {
                 return "failed_populated_state";
+            }
+            if (this.item.populated_state === "new") {
+                return "new_populated_state";
             }
             if (this.item.job_state_summary) {
                 for (const state of HIERARCHICAL_COLLECTION_JOB_STATES) {
@@ -189,6 +190,9 @@ export default {
                 return this.item.state;
             }
             return "ok";
+        },
+        dataState() {
+            return this.state === "new_populated_state" ? "new" : this.state;
         },
         tags() {
             return this.item.tags;
