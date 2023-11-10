@@ -12,23 +12,7 @@ type UserEntry = Record<string, unknown>;
  */
 async function getData(offset: number, limit: number, search: string, sort_by: string, sort_desc: boolean) {
     const { data } = await axios.get(withPrefix("/admin/users_list"));
-    const results = [];
-    const columns: Record<string, string> = {};
-    for (const column of data.columns) {
-        columns[column.label] = column.key ?? column.label.toLowerCase();
-    }
-    for (const item of data.items) {
-        const dataEntry: Record<string, unknown> = {};
-        for (const columnKey in item.column_config) {
-            const formattedKey = columns[columnKey];
-            if (formattedKey) {
-                dataEntry[formattedKey] = item.column_config[columnKey].value;
-            }
-        }
-        results.push(dataEntry);
-    }
-    const totalMatches = parseInt(data.num_pages);
-    return [results, totalMatches];
+    return [data.rows, data.total_row_count];
 }
 
 /**
