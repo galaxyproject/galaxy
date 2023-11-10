@@ -232,7 +232,7 @@ class JobManager:
         return self.job_lock()
 
     def get_accessible_job(self, trans, decoded_job_id):
-        job = trans.sa_session.query(trans.app.model.Job).filter(trans.app.model.Job.id == decoded_job_id).first()
+        job = trans.sa_session.get(Job, decoded_job_id)
         if job is None:
             raise ObjectNotFound()
         belongs_to_user = (
@@ -588,8 +588,7 @@ class JobSearch:
                     )
             else:
                 job_parameter_conditions = [model.Job.id == job[0]]
-            query = self.sa_session.query(model.Job).filter(*job_parameter_conditions)
-            job = query.first()
+            job = get_job(self.sa_session, *job_parameter_conditions)
             if job is None:
                 continue
             n_parameters = 0
@@ -674,7 +673,7 @@ def fetch_job_states(sa_session, job_source_ids, job_source_types):
         elif job_source_type == "ImplicitCollectionJobs":
             implicit_collection_job_ids.add(job_source_id)
         elif job_source_type == "WorkflowInvocation":
-            invocation_state = sa_session.query(model.WorkflowInvocation).get(job_source_id).state
+            invocation_state = sa_session.get(model.WorkflowInvocation, job_source_id).state
             workflow_invocation_states[job_source_id] = invocation_state
             workflow_invocation_job_sources = []
             for (
@@ -697,10 +696,10 @@ def fetch_job_states(sa_session, job_source_ids, job_source_types):
     implicit_collection_jobs_summaries = {}
 
     for job_id in job_ids:
-        job_summaries[job_id] = summarize_jobs_to_dict(sa_session, sa_session.query(model.Job).get(job_id))
+        job_summaries[job_id] = summarize_jobs_to_dict(sa_session, sa_session.get(Job, job_id))
     for implicit_collection_jobs_id in implicit_collection_job_ids:
         implicit_collection_jobs_summaries[implicit_collection_jobs_id] = summarize_jobs_to_dict(
-            sa_session, sa_session.query(model.ImplicitCollectionJobs).get(implicit_collection_jobs_id)
+            sa_session, sa_session.get(model.ImplicitCollectionJobs, implicit_collection_jobs_id)
         )
 
     rval = []
@@ -1063,3 +1062,8 @@ def get_jobs_to_check_at_startup(session: Session, track_jobs_in_database: bool,
         stmt = stmt.outerjoin(User).filter(or_((Job.user_id == null()), (User.active == true())))
 
     return session.scalars(stmt)
+
+
+def get_job(session, *where_clauses):
+    stmt = select(Job).where(*where_clauses).limit(1)
+    return session.scalars(stmt).first()

@@ -415,19 +415,20 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         # get all the taggable model TagAssociations
         if not tag_models:
             tag_models = [v.tag_assoc_class for v in self.app.tag_handler.item_tag_assoc_info.values()]
-        # create a union of subqueries for each for this user - getting only the tname and user_value
-        all_tags_query = None
-        for tag_model in tag_models:
-            subq = self.session().query(tag_model.user_tname, tag_model.user_value).filter(tag_model.user == user)
-            all_tags_query = subq if all_tags_query is None else all_tags_query.union(subq)
 
-        # if nothing init'd the query, bail
-        if all_tags_query is None:
+        if not tag_models:
             return []
 
+        # create a union of select statements for each tag model for this user - getting only the tname and user_value
+        all_stmts = []
+        for tag_model in tag_models:
+            stmt = select(tag_model.user_tname, tag_model.user_value).where(tag_model.user == user)
+            all_stmts.append(stmt)
+        union_stmt = all_stmts[0].union(*all_stmts[1:])  # union the first select with the rest
+
         # boil the tag tuples down into a sorted list of DISTINCT name:val strings
-        tags = all_tags_query.distinct().all()
-        tags = [(f"{name}:{val}" if val else name) for name, val in tags]
+        tag_tuples = self.session().execute(union_stmt)  # no need for DISTINCT: union is a set operation.
+        tags = [(f"{name}:{val}" if val else name) for name, val in tag_tuples]
         # consider named tags while sorting
         return sorted(tags, key=lambda str: re.sub("^name:", "#", str))
 

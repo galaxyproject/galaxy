@@ -323,17 +323,6 @@ class ModelManager(Generic[U]):
         except sqlalchemy.orm.exc.MultipleResultsFound:
             raise exceptions.InconsistentDatabase(f"found more than one {self.model_class.__name__}")
 
-    def _one_or_none(self, query):
-        """
-        Return the object if found, None if it's not.
-
-        :raises exceptions.InconsistentDatabase: if more than one model is found
-        """
-        try:
-            return self._one_with_recast_errors(query)
-        except exceptions.ObjectNotFound:
-            return None
-
     # NOTE: at this layer, all ids are expected to be decoded and in int form
     def by_id(self, id: int) -> Query:
         """

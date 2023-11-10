@@ -1,11 +1,15 @@
 import logging
 import sqlite3
 
-from sqlalchemy import or_
+from sqlalchemy import (
+    or_,
+    select,
+)
 
-from galaxy import (
-    exceptions,
-    model,
+from galaxy import exceptions
+from galaxy.model import (
+    InteractiveToolEntryPoint,
+    Job,
 )
 from galaxy.model.base import transaction
 from galaxy.util.filelock import FileLock
@@ -217,30 +221,19 @@ class InteractiveToolManager:
         if trans.user is None and trans.get_galaxy_session() is None:
             return []
 
-        if trans.user:
-            jobs = trans.sa_session.query(trans.app.model.Job).filter(trans.app.model.Job.user == trans.user)
-        else:
-            jobs = trans.sa_session.query(trans.app.model.Job).filter(
-                trans.app.model.Job.session_id == trans.get_galaxy_session().id
-            )
+        def build_subquery():
+            if trans.user:
+                stmt = select(Job.id).where(Job.user == trans.user)
+            else:
+                stmt = select(Job.id).where(Job.session_id == trans.get_galaxy_session().id)
+            filters = []
+            for state in Job.non_ready_states:
+                filters.append(Job.state == state)
+            stmt = stmt.where(or_(*filters)).subquery()
+            return stmt
 
-        def build_and_apply_filters(query, objects, filter_func):
-            if objects is not None:
-                if isinstance(objects, str):
-                    query = query.filter(filter_func(objects))
-                elif isinstance(objects, list):
-                    t = []
-                    for obj in objects:
-                        t.append(filter_func(obj))
-                    query = query.filter(or_(*t))
-            return query
-
-        jobs = build_and_apply_filters(
-            jobs, trans.app.model.Job.non_ready_states, lambda s: trans.app.model.Job.state == s
-        )
-        return trans.sa_session.query(trans.app.model.InteractiveToolEntryPoint).filter(
-            trans.app.model.InteractiveToolEntryPoint.job_id.in_([job.id for job in jobs])
-        )
+        stmt = select(InteractiveToolEntryPoint).where(InteractiveToolEntryPoint.job_id.in_(build_subquery()))
+        return trans.sa_session.scalars(stmt)
 
     def can_access_job(self, trans, job):
         if job:
@@ -334,7 +327,7 @@ class InteractiveToolManager:
         return rval
 
     def access_entry_point_target(self, trans, entry_point_id):
-        entry_point = trans.sa_session.query(model.InteractiveToolEntryPoint).get(entry_point_id)
+        entry_point = trans.sa_session.get(InteractiveToolEntryPoint, entry_point_id)
         if self.app.interactivetool_manager.can_access_entry_point(trans, entry_point):
             if entry_point.active:
                 return self.target_if_active(trans, entry_point)
