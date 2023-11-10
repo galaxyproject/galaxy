@@ -1053,34 +1053,10 @@ class GridData:
     Specifies the content and format of a grid (data table).
     """
 
-    title = ""
     model_class: Optional[type] = None
-    show_item_checkboxes = False
-    use_hide_message = True
-    global_actions: List[GridAction] = []
     columns: List[GridColumn] = []
-    operations: List[GridOperation] = []
-    standard_filters: List[GridColumnFilter] = []
-    # Any columns that are filterable (either standard or advanced) should have a default value set in the default filter.
-    default_filter: Dict[str, str] = {}
-    default_sort_key: Optional[str] = None
-    use_paging = False
-    num_rows_per_page = 25
-    num_page_links = 10
-    # Set preference names.
-    cur_filter_pref_name = ".filter"
-    cur_sort_key_pref_name = ".sort_key"
-    legend = None
-    info_text: Optional[str] = None
 
     def __init__(self):
-        # Determine if any multiple row operations are defined
-        self.has_multiple_item_operations = False
-        for operation in self.operations:
-            if operation.allow_multiple:
-                self.has_multiple_item_operations = True
-                break
-
         # If a column does not have a model class, set the column's model class
         # to be the grid's model class.
         for column in self.columns:
@@ -1088,6 +1064,9 @@ class GridData:
                 column.model_class = self.model_class
 
     def __call__(self, trans, **kwargs):
+        limit = kwargs.get("limit", 1000)
+        offset = kwargs.get("offset", 0)
+
         # Build a base filter and sort key that is the combination of the saved state and defaults.
         # Saved state takes preference over defaults.
         base_filter = {}
@@ -1212,34 +1191,11 @@ class GridData:
                     break
             extra_url_args["sort"] = sort_key
 
-        # Process page number.
-        num_pages = None
-        total_row_count_query = query  # query without limit applied to get total number of rows.
-        if self.use_paging:
-            if "page" in kwargs:
-                if kwargs["page"] == "all":
-                    page_num = 0
-                else:
-                    page_num = int(kwargs["page"])
-            else:
-                page_num = 1
-            if page_num == 0:
-                num_pages = 1
-                page_num = 1
-            else:
-                query = query.limit(self.num_rows_per_page).offset((page_num - 1) * self.num_rows_per_page)
-        else:
-            # Defaults.
-            page_num = 1
-        # There are some places in grid templates where it's useful for a grid
-        # to have its current filter.
-        self.cur_filter_dict = cur_filter_dict
+        # Process limit and offset.
+        total_row_count = query.count()
+        query = query.limit(limit).offset(offset)
 
-        # Log grid view.
-        context = str(self.__class__.__name__)
-        params = cur_filter_dict.copy()
-        params["sort"] = sort_key
-
+        # Populate and return response
         grid_config = {
             "rows": [],
             "total_rows": 0,
@@ -1252,23 +1208,8 @@ class GridData:
                 value = unicodify(column.get_value(trans, self, row))
                 row_dict[column.key] = value
             grid_config["rows"].append(row_dict)
-        grid_config["total_row_count"] = total_row_count_query.count()
-        trans.log_action(trans.get_user(), "grid.view", context, params)
+        grid_config["total_row_count"] = total_row_count
         return grid_config
-
-    def get_ids(self, **kwargs):
-        id = []
-        if "id" in kwargs:
-            id = kwargs["id"]
-            # Coerce ids to list
-            if not isinstance(id, list):
-                id = id.split(",")
-            # Ensure ids are integers
-            try:
-                id = list(map(int, id))
-            except Exception:
-                decorators.error("Invalid id")
-        return id
 
     # ---- Override these ----------------------------------------------------
     def handle_operation(self, trans, operation, ids, **kwargs):
