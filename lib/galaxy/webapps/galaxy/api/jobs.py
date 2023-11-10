@@ -374,6 +374,7 @@ class FastAPIJobs:
         "/api/datasets/{dataset_id}/parameters_display",
         name="resolve_parameters_display",
         summary="Resolve parameters as a list for nested display.",
+        deprecated=True,
     )
     def parameters_display_by_dataset(
         self,
@@ -412,6 +413,7 @@ class FastAPIJobs:
         "/api/datasets/{dataset_id}/metrics",
         name="get_metrics",
         summary="Return job metrics for specified job.",
+        deprecated=True, 
     )
     def metrics_by_dataset(
         self,
