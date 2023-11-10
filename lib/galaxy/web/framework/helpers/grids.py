@@ -1088,10 +1088,6 @@ class GridData:
                 column.model_class = self.model_class
 
     def __call__(self, trans, **kwargs):
-        # Get basics.
-        # FIXME: pretty sure this is only here to pass along, can likely be eliminated
-        status = kwargs.get("status", None)
-        message = kwargs.get("message", None)
         # Build a base filter and sort key that is the combination of the saved state and defaults.
         # Saved state takes preference over defaults.
         base_filter = {}
@@ -1215,8 +1211,7 @@ class GridData:
                     query = column.sort(trans, query, ascending, column_name=column_name)
                     break
             extra_url_args["sort"] = sort_key
-        # There might be a current row
-        current_item = self.get_current_item(trans, **kwargs)
+
         # Process page number.
         num_pages = None
         total_row_count_query = query  # query without limit applied to get total number of rows.
@@ -1245,159 +1240,19 @@ class GridData:
         params = cur_filter_dict.copy()
         params["sort"] = sort_key
 
-        # Render grid.
-        def url(*args, **kwargs):
-            route_name = kwargs.pop("__route_name__", None)
-            # Only include sort/filter arguments if not linking to another
-            # page. This is a bit of a hack.
-            if "action" in kwargs:
-                new_kwargs = dict()
-            else:
-                new_kwargs = dict(extra_url_args)
-            # Extend new_kwargs with first argument if found
-            if len(args) > 0:
-                new_kwargs.update(args[0])
-            new_kwargs.update(kwargs)
-            # We need to encode item ids
-            if "id" in new_kwargs:
-                id = new_kwargs["id"]
-                if isinstance(id, list):
-                    new_kwargs["id"] = [trans.security.encode_id(i) for i in id]
-                else:
-                    new_kwargs["id"] = trans.security.encode_id(id)
-            # The url_for invocation *must* include a controller and action.
-            if "controller" not in new_kwargs:
-                new_kwargs["controller"] = trans.controller
-            if "action" not in new_kwargs:
-                new_kwargs["action"] = trans.action
-            if route_name:
-                return url_for(route_name, **new_kwargs)
-            return url_for(**new_kwargs)
-
-        self.use_panels = kwargs.get("use_panels", False) in [True, "True", "true"]
-        self.advanced_search = kwargs.get("advanced_search", False) in [True, "True", "true"]
-        # Currently, filling the template returns a str object; this requires decoding the string into a
-        # unicode object within mako templates. What probably should be done is to return the template as
-        # utf-8 unicode; however, this would require encoding the object as utf-8 before returning the grid
-        # results via a controller method, which is require substantial changes. Hence, for now, return grid
-        # as str.
         grid_config = {
-            "title": self.title,
-            "title_id": getattr(self, "title_id", None),
-            "url_base": trans.request.path_url,
-            "async_ops": [],
-            "categorical_filters": {},
-            "filters": cur_filter_dict,
-            "sort_key": sort_key,
-            "show_item_checkboxes": self.show_item_checkboxes
-            or kwargs.get("show_item_checkboxes", "") in ["True", "true"],
-            "cur_page_num": page_num,
-            "num_page_links": self.num_page_links,
-            "status": status,
-            "message": restore_text(message),
-            "global_actions": [],
-            "operations": [],
-            "items": [],
-            "columns": [],
-            "model_class": str(self.model_class),
-            "use_paging": self.use_paging,
-            "legend": self.legend,
-            "current_item_id": False,
-            "use_hide_message": self.use_hide_message,
-            "default_filter_dict": self.default_filter,
-            "advanced_search": self.advanced_search,
-            "info_text": self.info_text,
-            "url": url(dict()),
-            "refresh_frames": kwargs.get("refresh_frames", []),
+            "rows": [],
+            "total_rows": 0,
         }
-        if current_item:
-            grid_config["current_item_id"] = current_item.id
-        for column in self.columns:
-            extra = ""
-            if column.sortable:
-                if sort_key.endswith(column.key):
-                    if not sort_key.startswith("-"):
-                        extra = "&darr;"
-                    else:
-                        extra = "&uarr;"
-            grid_config["columns"].append(
-                {
-                    "key": column.key,
-                    "visible": column.visible,
-                    "nowrap": column.nowrap,
-                    "attach_popup": column.attach_popup,
-                    "label_id_prefix": column.label_id_prefix,
-                    "sortable": column.sortable,
-                    "label": column.label,
-                    "filterable": column.filterable,
-                    "delayed": column.delayed,
-                    "is_text": isinstance(column, TextColumn),
-                    "extra": extra,
-                }
-            )
-        for operation in self.operations:
-            grid_config["operations"].append(
-                {
-                    "allow_multiple": operation.allow_multiple,
-                    "allow_popup": operation.allow_popup,
-                    "target": operation.target,
-                    "label": operation.label,
-                    "confirm": operation.confirm,
-                    "href": url(**operation.url_args) if isinstance(operation.url_args, dict) else None,
-                    "global_operation": False,
-                }
-            )
-            if operation.allow_multiple:
-                grid_config["show_item_checkboxes"] = True
-            if operation.global_operation:
-                grid_config["global_operation"] = url(**(operation.global_operation()))
-        for action in self.global_actions:
-            grid_config["global_actions"].append(
-                {"url_args": url(**action.url_args), "label": action.label, "target": action.target}
-            )
-        for operation in [op for op in self.operations if op.async_compatible]:
-            grid_config["async_ops"].append(operation.label.lower())
-        for column in self.columns:
-            if column.filterable is not None and not isinstance(column, TextColumn):
-                grid_config["categorical_filters"][column.key] = {
-                    filter.label: filter.args for filter in column.get_accepted_filters()
-                }
-        for item in query:
-            item_dict = {
-                "id": item.id,
-                "encode_id": trans.security.encode_id(item.id),
-                "link": [],
-                "operation_config": {},
-                "column_config": {},
+        for row in query:
+            row_dict = {
+                "id": trans.security.encode_id(row.id),
             }
             for column in self.columns:
-                if column.visible:
-                    link = column.get_link(trans, self, item)
-                    if link:
-                        link = url(**link)
-                    else:
-                        link = None
-                    target = column.target
-                    value = unicodify(column.get_value(trans, self, item))
-                    if value:
-                        value = value.replace("/", "//")
-                    item_dict["column_config"][column.label] = {"link": link, "value": value, "target": target}
-            for operation in self.operations:
-                item_dict["operation_config"][operation.label] = {
-                    "allowed": operation.allowed(item),
-                    "url_args": url(**operation.get_url_args(item)),
-                    "target": operation.target,
-                }
-            grid_config["items"].append(item_dict)
-
-        if self.use_paging and num_pages is None:
-            # TODO: it would be better to just return this as None, render, and fire
-            # off a second request for this count I think.
-            total_num_rows = total_row_count_query.count()
-            num_pages = int(math.ceil(float(total_num_rows) / self.num_rows_per_page))
-
-        grid_config["num_pages"] = num_pages
-
+                value = unicodify(column.get_value(trans, self, row))
+                row_dict[column.key] = value
+            grid_config["rows"].append(row_dict)
+        grid_config["total_row_count"] = total_row_count_query.count()
         trans.log_action(trans.get_user(), "grid.view", context, params)
         return grid_config
 
