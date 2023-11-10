@@ -37,7 +37,7 @@ from tool_shed.util.web_util import escape
 log = logging.getLogger(__name__)
 
 
-class UserListGrid(grids.Grid):
+class UserListGrid(grids.GridData):
     class EmailColumn(grids.TextColumn):
         def get_value(self, trans, grid, user):
             return escape(user.email)
