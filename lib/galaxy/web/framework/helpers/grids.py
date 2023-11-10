@@ -1051,11 +1051,12 @@ class Grid:
 
 class GridData:
     """
-    Specifies the content and format of a grid (data table).
+    Specifies the content a grid (data table).
     """
 
     model_class: Optional[type] = None
     columns: List[GridColumn] = []
+    default_limit: int = 1000
 
     def __init__(self):
         # If a column does not have a model class, set the column's model class
@@ -1065,7 +1066,7 @@ class GridData:
                 column.model_class = self.model_class
 
     def __call__(self, trans, **kwargs):
-        limit = kwargs.get("limit", 1000)
+        limit = kwargs.get("limit", self.default_limit)
         offset = kwargs.get("offset", 0)
 
         # Build initial query
