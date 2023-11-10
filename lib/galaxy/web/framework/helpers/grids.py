@@ -1068,89 +1068,12 @@ class GridData:
         limit = kwargs.get("limit", 1000)
         offset = kwargs.get("offset", 0)
 
-        # Build a base filter and sort key that is the combination of the saved state and defaults.
-        # Saved state takes preference over defaults.
-        base_filter = {}
-        if self.default_filter:
-            # default_filter is a dictionary that provides a default set of filters based on the grid's columns.
-            base_filter = self.default_filter.copy()
-        base_sort_key = self.default_sort_key
-
         # Build initial query
         query = self.build_initial_query(trans, **kwargs)
         query = self.apply_query_filter(trans, query, **kwargs)
 
-        # Determine whether use_default_filter flag is set.
-        use_default_filter_str = kwargs.get("use_default_filter")
-        use_default_filter = False
-        if use_default_filter_str:
-            use_default_filter = use_default_filter_str.lower() == "true"
-
-        # Process filtering arguments to (a) build a query that represents the filter and (b) build a
-        # dictionary that denotes the current filter.
-        for column in self.columns:
-            if column.key:
-                # Get the filter criterion for the column. Precedence is (a) if using default filter, only look there; otherwise,
-                # (b) look in kwargs; and (c) look in base filter.
-                column_filter = None
-                if use_default_filter:
-                    if self.default_filter:
-                        column_filter = self.default_filter.get(column.key)
-                elif f"f-{column.model_class.__name__}.{column.key}" in kwargs:
-                    # Queries that include table joins cannot guarantee unique column names.  This problem is
-                    # handled by setting the column_filter value to <TableName>.<ColumnName>.
-                    column_filter = kwargs.get(f"f-{column.model_class.__name__}.{column.key}")
-                elif f"f-{column.key}" in kwargs:
-                    column_filter = kwargs.get(f"f-{column.key}")
-                elif column.key in base_filter:
-                    column_filter = base_filter.get(column.key)
-
-                # Method (1) combines a mix of strings and lists of strings into a single string and (2) attempts to de-jsonify all strings.
-                def loads_recurse(item):
-                    decoded_list = []
-                    if isinstance(item, str):
-                        try:
-                            # Not clear what we're decoding, so recurse to ensure that we catch everything.
-                            decoded_item = loads(item)
-                            if isinstance(decoded_item, list):
-                                decoded_list = loads_recurse(decoded_item)
-                            else:
-                                decoded_list = [str(decoded_item)]
-                        except ValueError:
-                            decoded_list = [str(item)]
-                    elif isinstance(item, list):
-                        for element in item:
-                            a_list = loads_recurse(element)
-                            decoded_list = decoded_list + a_list
-                    return decoded_list
-
-                # If column filter found, apply it.
-                if column_filter is not None:
-                    # TextColumns may have a mix of json and strings.
-                    if isinstance(column, TextColumn):
-                        column_filter = loads_recurse(column_filter)
-                        if len(column_filter) == 1:
-                            column_filter = column_filter[0]
-                    # Interpret ',' as a separator for multiple terms.
-                    if isinstance(column_filter, str) and column_filter.find(",") != -1:
-                        column_filter = column_filter.split(",")
-
-                    # Check if filter is empty
-                    if isinstance(column_filter, list):
-                        # Remove empty strings from filter list
-                        column_filter = [x for x in column_filter if x != ""]
-                        if len(column_filter) == 0:
-                            continue
-                    elif isinstance(column_filter, str):
-                        # If filter criterion is empty, do nothing.
-                        if column_filter == "":
-                            continue
-
-                    # Update query.
-                    query = column.filter(trans, trans.user, query, column_filter)
-
         # Process sort arguments.
-        sort_by = kwargs.get("sort_by", base_sort_key)
+        sort_by = kwargs.get("sort_by", self.default_sort_key)
         sort_desc = string_as_bool(kwargs.get("sort_desc", True))
         for column in self.columns:
             if column.key == sort_by:

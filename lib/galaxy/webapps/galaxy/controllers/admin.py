@@ -130,71 +130,17 @@ class UserListGrid(grids.GridData):
     model_class = model.User
     default_sort_key = "email"
     columns = [
-        EmailColumn(
-            "Email",
-            key="email",
-            link=(lambda item: dict(controller="user", action="information", id=item.id, webapp="galaxy")),
-            attach_popup=True,
-            filterable="advanced",
-            target="top",
-        ),
-        UserNameColumn("User Name", key="username", attach_popup=False, filterable="advanced"),
-        LastLoginColumn("Last Login", format=time_ago, key="last_login", sortable=True),
-        DiskUsageColumn("Disk Usage", key="disk_usage", attach_popup=False),
-        StatusColumn("Status", attach_popup=False, key="status"),
-        TimeCreatedColumn("Created", attach_popup=False, key="create_time"),
-        ActivatedColumn("Activated", attach_popup=False, key="active"),
-        GroupsColumn("Groups", attach_popup=False, key="groups"),
-        RolesColumn("Roles", attach_popup=False, key="roles"),
-        ExternalColumn("External", attach_popup=False, key="external"),
-        # Columns that are valid for filtering but are not visible.
-        grids.DeletedColumn("Deleted", key="deleted", visible=False, filterable="advanced"),
-        grids.PurgedColumn("Purged", key="purged", visible=False, filterable="advanced"),
+        EmailColumn("Email", key="email"),
+        UserNameColumn("User Name", key="username"),
+        LastLoginColumn("Last Login", key="last_login", format=time_ago),
+        DiskUsageColumn("Disk Usage", key="disk_usage"),
+        StatusColumn("Status", key="status"),
+        TimeCreatedColumn("Created", key="create_time"),
+        ActivatedColumn("Activated", key="active"),
+        GroupsColumn("Groups", key="groups"),
+        RolesColumn("Roles", key="roles"),
+        ExternalColumn("External", key="external"),
     ]
-    columns.append(
-        grids.MulticolFilterColumn(
-            "Search",
-            cols_to_filter=[columns[0], columns[1]],
-            key="free-text-search",
-            visible=False,
-            filterable="standard",
-        )
-    )
-    global_actions = [grids.GridAction("Create new user", url_args=dict(action="users/create"))]
-    operations = [
-        grids.GridOperation(
-            "Manage Information",
-            condition=(lambda item: not item.deleted),
-            allow_multiple=False,
-            url_args=dict(controller="user", action="information", webapp="galaxy"),
-        ),
-        grids.GridOperation(
-            "Manage Roles and Groups",
-            condition=(lambda item: not item.deleted),
-            allow_multiple=False,
-            url_args=dict(action="form/manage_roles_and_groups_for_user"),
-        ),
-        grids.GridOperation(
-            "Reset Password",
-            condition=(lambda item: not item.deleted),
-            allow_multiple=True,
-            url_args=dict(action="form/reset_user_password"),
-            target="top",
-        ),
-        grids.GridOperation("Recalculate Disk Usage", condition=(lambda item: not item.deleted), allow_multiple=False),
-        grids.GridOperation("Generate New API Key", allow_multiple=False, async_compatible=True),
-    ]
-
-    standard_filters = [
-        grids.GridColumnFilter("Active", args=dict(deleted=False)),
-        grids.GridColumnFilter("Deleted", args=dict(deleted=True, purged=False)),
-        grids.GridColumnFilter("Purged", args=dict(purged=True)),
-        grids.GridColumnFilter("All", args=dict(deleted="All")),
-    ]
-    num_rows_per_page = 50
-    use_paging = True
-    default_filter = dict(purged="False")
-    use_default_filter = True
 
     def get_current_item(self, trans, **kwargs):
         return trans.user
