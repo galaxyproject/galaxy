@@ -152,7 +152,7 @@ AnyUserModel = Union[DetailedUserModel, AnonUserModel]
 class FastAPIUsers:
     service: UsersService = depends(UsersService)
     user_serializer: users.UserSerializer = depends(users.UserSerializer)
-
+        
     @router.put(
         "/api/users/current/recalculate_disk_usage",
         summary=RecalculateDiskUsageSummary,
@@ -673,6 +673,22 @@ class FastAPIUsers:
             else:
                 raise exceptions.InsufficientPermissionsException("You may only delete your own account.")
         return self.service.user_to_detailed_model(user_to_update)
+
+    @router.post(
+        "/api/users/{user_id}/send_activation_email",
+        summary="Sends activation email to user.",
+    )
+    def send_activation_email(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
+    ):
+        user = trans.sa_session.query(trans.model.User).get(user_id)
+        raise exceptions.MessageError("Unable to send activation email.")
+        if not user:
+            raise exceptions.ObjectNotFound("User not found for given id.")
+        if not self.service.user_manager.send_activation_email(trans, user.email, user.username):
+            raise exceptions.MessageError("Unable to send activation email.")
 
 
 class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController, UsesFormDefinitionsMixin):
