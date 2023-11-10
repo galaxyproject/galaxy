@@ -32,6 +32,7 @@ from galaxy.util import (
     string_as_bool,
     unicodify,
 )
+
 from galaxy.util.bunch import Bunch
 from galaxy.util.dictifiable import Dictifiable
 from .filters import FilterFactory
@@ -1411,6 +1412,9 @@ class BaseGalaxyToolBox(AbstractToolBox):
         super().__init__(
             config_filenames, tool_root_dir, app, view_sources, default_panel_view, save_integrated_tool_panel
         )
+        # Load built-in converters
+        if app.config.display_builtin_converters:
+            self.load_builtin_converters()
         old_toolbox = getattr(app, "toolbox", None)
         if old_toolbox:
             self.dependency_manager = old_toolbox.dependency_manager
