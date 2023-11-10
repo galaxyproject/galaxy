@@ -347,18 +347,17 @@ class FastAPIJobs:
         return self.service.dictify_associations(trans, job.output_datasets, job.output_library_datasets)
 
     @router.get(
-        "/api/jobs/{id}/parameters_display",
+        "/api/jobs/{job_id}/parameters_display",
         name="resolve_parameters_display",
         summary="Resolve parameters as a list for nested display.",
     )
     def parameters_display_by_job(
         self,
-        id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
+        job_id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
         hda_ldda: Annotated[DatasetSourceType, HdaLddaQueryParam] = DatasetSourceType.hda,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> JobDisplayParametersSummary:
         """
-        # TODO is this still true?
         Resolve parameters as a list for nested display. More client logic
         here than is ideal but it is hard to reason about tool parameter
         types on the client relative to the server. Job accessibility checks
@@ -368,22 +367,21 @@ class FastAPIJobs:
         This API endpoint is unstable and tied heavily to Galaxy's JS client code,
         this endpoint will change frequently.
         """
-        job = self.service.get_job(trans, job_id=id, hda_ldda=hda_ldda)
+        job = self.service.get_job(trans, job_id=job_id, hda_ldda=hda_ldda)
         return summarize_job_parameters(trans, job)
 
     @router.get(
-        "/api/datasets/{id}/parameters_display",
+        "/api/datasets/{dataset_id}/parameters_display",
         name="resolve_parameters_display",
         summary="Resolve parameters as a list for nested display.",
     )
     def parameters_display_by_dataset(
         self,
-        id: Annotated[DecodedDatabaseIdField, DatasetIdPathParam],
+        dataset_id: Annotated[DecodedDatabaseIdField, DatasetIdPathParam],
         hda_ldda: Annotated[DatasetSourceType, HdaLddaQueryParam] = DatasetSourceType.hda,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> JobDisplayParametersSummary:
         """
-        # TODO is this still true?
         Resolve parameters as a list for nested display. More client logic
         here than is ideal but it is hard to reason about tool parameter
         types on the client relative to the server. Job accessibility checks
@@ -393,35 +391,35 @@ class FastAPIJobs:
         This API endpoint is unstable and tied heavily to Galaxy's JS client code,
         this endpoint will change frequently.
         """
-        job = self.service.get_job(trans, dataset_id=id, hda_ldda=hda_ldda)
+        job = self.service.get_job(trans, dataset_id=dataset_id, hda_ldda=hda_ldda)
         return summarize_job_parameters(trans, job)
 
     @router.get(
-        "/api/jobs/{id}/metrics",
+        "/api/jobs/{job_id}/metrics",
         name="get_metrics",
         summary="Return job metrics for specified job.",
     )
     def metrics_by_job(
         self,
-        id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
+        job_id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
         hda_ldda: Annotated[DatasetSourceType, HdaLddaQueryParam] = DatasetSourceType.hda,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> List[Optional[JobMetric]]:
-        job = self.service.get_job(trans, job_id=id, hda_ldda=hda_ldda)
+        job = self.service.get_job(trans, job_id=job_id, hda_ldda=hda_ldda)
         return [JobMetric(**metric) for metric in summarize_job_metrics(trans, job)]
 
     @router.get(
-        "/api/datasets/{id}/metrics",
+        "/api/datasets/{dataset_id}/metrics",
         name="get_metrics",
         summary="Return job metrics for specified job.",
     )
     def metrics_by_dataset(
         self,
-        id: Annotated[DecodedDatabaseIdField, DatasetIdPathParam],
+        dataset_id: Annotated[DecodedDatabaseIdField, DatasetIdPathParam],
         hda_ldda: Annotated[DatasetSourceType, HdaLddaQueryParam] = DatasetSourceType.hda,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> List[Optional[JobMetric]]:
-        job = self.service.get_job(trans, dataset_id=id, hda_ldda=hda_ldda)
+        job = self.service.get_job(trans, dataset_id=dataset_id, hda_ldda=hda_ldda)
         return [JobMetric(**metric) for metric in summarize_job_metrics(trans, job)]
 
     @router.get(
@@ -487,32 +485,32 @@ class FastAPIJobs:
         return [EncodedJobDetails(**single_job.to_dict("element")) for single_job in jobs]
 
     @router.get(
-        "/api/jobs/{id}",
+        "/api/jobs/{job_id}",
         name="show_job",
         summary="Return dictionary containing description of job data.",
     )
     def show(
         self,
-        id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
+        job_id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
         full: Annotated[Optional[bool], FullShowQueryParam] = False,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> Dict[str, Any]:
-        return self.service.show(trans, id, bool(full))
+        return self.service.show(trans, job_id, bool(full))
 
     # TODO find the mapping of the legacy route
     # TODO rename? --> function cancels/stops job (no deletion involved?)
     @router.delete(
-        "/api/jobs/{id}",
+        "/api/jobs/{job_id}",
         name="cancel_job",
         summary="Cancels specified job",
     )
     def delete(
         self,
-        id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
+        job_id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
         trans: ProvidesUserContext = DependsOnTrans,
         payload: Annotated[Optional[DeleteJobPayload], DeleteJobBody] = None,
     ) -> bool:
-        job = self.service.get_job(trans=trans, job_id=id)
+        job = self.service.get_job(trans=trans, job_id=job_id)
         if payload:
             message = payload.message
         else:

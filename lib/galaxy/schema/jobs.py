@@ -54,26 +54,25 @@ class JobAssociation(Model):
     name: str = Field(
         default=Required,
         title="name",
-        description="The name of the associated dataset.",
+        description="Name of the job parameter.",
     )
     dataset: EncodedDatasetSourceId = Field(
         default=Required,
         title="dataset",
-        description="The associated dataset.",
+        description="Reference to the associated item.",
     )
 
 
 class ReportJobErrorPayload(Model):
     dataset_id: DecodedDatabaseIdField = Field(
         default=Required,
-        title="Dataset ID",
-        description="The dataset ID related to the error.",
+        title="History Dataset Association ID",
+        description="The History Dataset Association ID related to the error.",
     )
-    # TODO add description
     email: Optional[str] = Field(
         default=None,
         title="Email",
-        description="",
+        description="Email address for communication with the user. Only required for anonymous users.",
     )
     message: Optional[str] = Field(
         default=None,
@@ -143,24 +142,29 @@ class EncodedJobDetails(JobSummary, EncodedJobIDs):
     inputs: Dict[str, EncodedDatasetJobInfo] = Field(
         {},
         title="Inputs",
-        description="Dictionary mapping all the tool inputs (by name) with the corresponding dataset information.",
+        description="Dictionary mapping all the tool inputs (by name) to the corresponding data references.",
     )
     outputs: Dict[str, EncodedDatasetJobInfo] = Field(
         {},
         title="Outputs",
-        description="Dictionary mapping all the tool outputs (by name) with the corresponding dataset information.",
+        description="Dictionary mapping all the tool outputs (by name) to the corresponding data references.",
     )
     # TODO add description, check type and add proper default
     copied_from_job_id: Optional[EncodedDatabaseIdField] = Field(
-        default=None, title="Copied from Job-ID", description="?"
+        default=None, title="Copied from Job-ID", description="Reference to cached job if job execution was cached."
     )
     output_collections: Any = Field(default={}, title="Output collections", description="?")
 
 
 class JobDestinationParams(Model):
     # TODO add description, check type and add proper default
-    runner: str = Field(default=Required, title="Runner", description="?", alias="Runner")
-    runner_job_id: str = Field(default=Required, title="Runner Job ID", description="?", alias="Runner Job ID")
+    runner: str = Field(default=Required, title="Runner", description="Job runner class", alias="Runner")
+    runner_job_id: str = Field(
+        default=Required,
+        title="Runner Job ID",
+        description="ID assigned to submitted job by external job running system",
+        alias="Runner Job ID",
+    )
     handler: str = Field(default=Required, title="Handler", description="?", alias="Handler")
 
 

@@ -985,7 +985,6 @@ steps:
         job_id = search_response.json()[0]["id"]
         destination_params_response = self._get(f"/api/jobs/{job_id}/destination_params", admin=True)
         self._assert_status_code_is(destination_params_response, 200)
-        # TODO maybe extend test?
 
     @pytest.mark.require_new_history
     def test_job_metrics(self, history_id):
@@ -997,7 +996,6 @@ steps:
         self._assert_status_code_is(metrics_by_job_response, 200)
         metrics_by_dataset_response = self._get(f"/api/datasets/{dataset_id}/metrics", data={"hda_ldda": "hda"})
         self._assert_status_code_is(metrics_by_dataset_response, 200)
-        # TODO maybe extend test?
 
     @pytest.mark.require_new_history
     def test_parameters_display(self, history_id):
@@ -1013,7 +1011,6 @@ steps:
             f"/api/datasets/{dataset_id}/parameters_display", data={"hda_ldda": "hda"}
         )
         self._assert_status_code_is(display_parameters_by_dataset_response, 200)
-        # TODO maybe extend test
 
     def _create_and_search_job(self, history_id, inputs, tool_id):
         # create a job
@@ -1095,4 +1092,5 @@ steps:
         self._assert_status_code_is(jobs_response, 200)
         jobs = jobs_response.json()
         assert isinstance(jobs, list)
+        return jobs
         return jobs
