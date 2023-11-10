@@ -165,15 +165,13 @@ class EncodedJobDetails(JobSummary, EncodedJobIDs):
         title="Outputs",
         description="Dictionary mapping all the tool outputs (by name) to the corresponding data references.",
     )
-    # TODO add description, check type and add proper default
     copied_from_job_id: Optional[EncodedDatabaseIdField] = Field(
         default=None, title="Copied from Job-ID", description="Reference to cached job if job execution was cached."
     )
-    output_collections: Dict[str, EncodedHdcaSourceId] = Field(default={}, title="Output collections", description="?")
+    output_collections: Dict[str, EncodedHdcaSourceId] = Field(default={}, title="Output collections", description="")
 
 
 class JobDestinationParams(Model):
-    # TODO add description, check type and add proper default
     runner: str = Field(default=Required, title="Runner", description="Job runner class", alias="Runner")
     runner_job_id: str = Field(
         default=Required,
@@ -181,7 +179,9 @@ class JobDestinationParams(Model):
         description="ID assigned to submitted job by external job running system",
         alias="Runner Job ID",
     )
-    handler: str = Field(default=Required, title="Handler", description="?", alias="Handler")
+    handler: str = Field(
+        default=Required, title="Handler", description="Name of the process that handled the job.", alias="Handler"
+    )
 
 
 class JobOutput(Model):
