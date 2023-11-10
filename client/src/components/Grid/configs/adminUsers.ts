@@ -13,11 +13,17 @@ type UserEntry = Record<string, unknown>;
 async function getData(offset: number, limit: number, search: string, sort_by: string, sort_desc: boolean) {
     const { data } = await axios.get(withPrefix("/admin/users_list"));
     const results = [];
+    const columns: Record<string, string> = {};
+    for (const column of data.columns) {
+        columns[column.label] = column.key ?? column.label.toLowerCase();
+    }
     for (const item of data.items) {
         const dataEntry: Record<string, unknown> = {};
         for (const columnKey in item.column_config) {
-            const formattedKey = columnKey.toLowerCase().replace(/\s/g, '');
-            dataEntry[formattedKey] = item.column_config[columnKey].value;
+            const formattedKey = columns[columnKey];
+            if (formattedKey) {
+                dataEntry[formattedKey] = item.column_config[columnKey].value;
+            }
         }
         results.push(dataEntry);
     }
@@ -44,12 +50,12 @@ const fields = [
         type: "text",
     },
     {
-        key: "lastlogin",
+        key: "last_login",
         title: "Last Login",
         type: "text",
     },
     {
-        key: "diskusage",
+        key: "disk_usage",
         title: "Disk Usage",
         type: "text",
     },
@@ -59,12 +65,12 @@ const fields = [
         type: "text",
     },
     {
-        key: "created",
+        key: "create_time",
         title: "Created",
-        type: "text",
+        type: "date",
     },
     {
-        key: "activated",
+        key: "active",
         title: "Activated",
         type: "text",
     },
@@ -95,6 +101,6 @@ export default {
     plural: "Users",
     sortBy: "email",
     sortDesc: true,
-    sortKeys: ["activated", "created", "diskusage", "email", "external", "lastlogin", "status", "username"],
+    sortKeys: ["activated", "create_time", "disk_usage", "email", "external", "last_login", "status", "username"],
     title: "Users",
 };

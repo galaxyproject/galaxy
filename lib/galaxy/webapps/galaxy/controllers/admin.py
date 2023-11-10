@@ -51,10 +51,10 @@ class UserListGrid(grids.Grid):
     class StatusColumn(grids.GridColumn):
         def get_value(self, trans, grid, user):
             if user.purged:
-                return "purged"
+                return "Purged"
             elif user.deleted:
-                return "deleted"
-            return ""
+                return "Deleted"
+            return "Available"
 
     class GroupsColumn(grids.GridColumn):
         def get_value(self, trans, grid, user):
@@ -99,7 +99,7 @@ class UserListGrid(grids.Grid):
 
     class TimeCreatedColumn(grids.GridColumn):
         def get_value(self, trans, grid, user):
-            return user.create_time.strftime("%x")
+            return user.create_time
 
     class ActivatedColumn(grids.GridColumn):
         def get_value(self, trans, grid, user):
@@ -141,11 +141,11 @@ class UserListGrid(grids.Grid):
         UserNameColumn("User Name", key="username", attach_popup=False, filterable="advanced"),
         LastLoginColumn("Last Login", format=time_ago, key="last_login", sortable=True),
         DiskUsageColumn("Disk Usage", key="disk_usage", attach_popup=False),
-        StatusColumn("Status", attach_popup=False, key="deleted"),
+        StatusColumn("Status", attach_popup=False, key="status"),
         TimeCreatedColumn("Created", attach_popup=False, key="create_time"),
         ActivatedColumn("Activated", attach_popup=False, key="active"),
-        GroupsColumn("Groups", attach_popup=False),
-        RolesColumn("Roles", attach_popup=False),
+        GroupsColumn("Groups", attach_popup=False, key="groups"),
+        RolesColumn("Roles", attach_popup=False, key="roles"),
         ExternalColumn("External", attach_popup=False, key="external"),
         # Columns that are valid for filtering but are not visible.
         grids.DeletedColumn("Deleted", key="deleted", visible=False, filterable="advanced"),
