@@ -65,7 +65,7 @@ const element = computed(() => {
             sizeClass,
             props.bold ? 'font-weight-bold' : '',
             props.inline ? 'inline' : '',
-            props.collapsible ? 'collapsible' : '',
+            collapsible ? 'collapsible' : '',
         ]"
         @click="$emit('click')">
         <FontAwesomeIcon v-if="props.icon" :icon="props.icon" />

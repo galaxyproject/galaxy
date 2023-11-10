@@ -1,4 +1,6 @@
-import { type Ref, ref, watch } from "vue";
+import { type Ref } from "vue";
+
+import { useUserLocalStorage } from "./userLocalStorage";
 
 interface ToggleStateInterface {
     toggled: Ref<boolean>;
@@ -7,14 +9,7 @@ interface ToggleStateInterface {
 
 export function usePersistentToggle(uniqueId: string): ToggleStateInterface {
     const localStorageKey = `toggle-state-${uniqueId}`;
-
-    // Retrieve the toggled state from localStorage if available, otherwise default to false
-    const toggled = ref<boolean>(localStorage.getItem(localStorageKey) === "true");
-
-    // Watch for changes in the toggled state and persist them to localStorage
-    watch(toggled, (newVal: boolean) => {
-        localStorage.setItem(localStorageKey, String(newVal));
-    });
+    const toggled = useUserLocalStorage(localStorageKey, true);
 
     // Expose a function for toggling state
     const toggle = () => {
