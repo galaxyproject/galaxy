@@ -52,7 +52,10 @@ const element = computed(() => {
             :is="element"
             :class="[sizeClass, props.bold ? 'font-weight-bold' : '', collapsible ? 'collapsible' : '']"
             @click="$emit('click')">
-            <FontAwesomeIcon v-if="collapsible" :icon="collapsed ? 'chevron-down' : 'chevron-up'" />
+            <b-button v-if="collapsible" variant="link" size="sm">
+                <icon v-if="collapsed" fixed-width icon="angle-double-down" />
+                <icon v-else fixed-width icon="angle-double-up" />
+            </b-button>
             <slot />
         </component>
         <div class="stripe"></div>
@@ -68,8 +71,11 @@ const element = computed(() => {
             collapsible ? 'collapsible' : '',
         ]"
         @click="$emit('click')">
+        <b-button v-if="collapsible" variant="link" size="sm">
+            <icon v-if="collapsed" fixed-width icon="angle-double-down" />
+            <icon v-else fixed-width icon="angle-double-up" />
+        </b-button>
         <FontAwesomeIcon v-if="props.icon" :icon="props.icon" />
-        <FontAwesomeIcon v-if="collapsible" :icon="collapsed ? 'chevron-down' : 'chevron-up'" />
         <slot />
     </component>
 </template>
