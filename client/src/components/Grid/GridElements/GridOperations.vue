@@ -4,8 +4,12 @@ import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 import type { Operation, RowData } from "@/components/Grid/configs/types";
+import { useConfig } from "@/composables/config";
+import type { ConfigType } from "@/composables/config";
 
 library.add(faCaretDown);
+
+const { config, isConfigLoaded } = useConfig();
 
 interface Props {
     rowData: RowData;
@@ -22,13 +26,13 @@ const emit = defineEmits<{
 /**
  * Availibility of operations might required certain conditions
  */
-function hasCondition(conditionHandler: (rowData: RowData) => Boolean) {
-    return conditionHandler ? conditionHandler(props.rowData) : true;
+function hasCondition(conditionHandler: (rowData: RowData, config: ConfigType) => Boolean) {
+    return conditionHandler ? conditionHandler(props.rowData, config) : true;
 }
 </script>
 
 <template>
-    <span>
+    <span v-if="isConfigLoaded">
         <button
             id="grid-operations"
             data-toggle="dropdown"

@@ -1,5 +1,6 @@
 import axios from "axios";
 import type Router from "vue-router";
+import type { ConfigType } from "@/composables/config";
 
 import Filtering, { contains, equals, toBool, type ValidFilter } from "@/utils/filtering";
 import { withPrefix } from "@/utils/redirect";
@@ -39,7 +40,7 @@ const fields = [
             {
                 title: "Manage Information",
                 icon: "user",
-                condition: (data: UserEntry) => !data.deleted,
+                condition: (data: UserEntry) => !data.deleted && !data.purged,
                 handler: (data: UserEntry, router: Router) => {
                     router.push(`/user/information?id=${data.id}`);
                 },
@@ -47,7 +48,7 @@ const fields = [
             {
                 title: "Manage Roles and Groups",
                 icon: "users",
-                condition: (data: UserEntry) => !data.deleted,
+                condition: (data: UserEntry) => !data.deleted && !data.purged,
                 handler: (data: UserEntry, router: Router) => {
                     router.push(`/admin/form/manage_roles_and_groups_for_user?id=${data.id}`);
                 },
@@ -55,7 +56,7 @@ const fields = [
             {
                 title: "Reset Password",
                 icon: "unlock",
-                condition: (data: UserEntry) => !data.deleted,
+                condition: (data: UserEntry) => !data.deleted && !data.purged,
                 handler: (data: UserEntry, router: Router) => {
                     router.push(`/admin/form/reset_user_password?id=${data.id}`);
                 },
@@ -63,7 +64,7 @@ const fields = [
             {
                 title: "Recalculate Disk Usage",
                 icon: "calculator",
-                condition: (data: UserEntry) => !data.deleted,
+                condition: (data: UserEntry) => !data.deleted && !data.purged,
                 handler: async (data: UserEntry) => {
                     try {
                         await axios.post(`/api/users/${data.id}/resend_activation_email`);
@@ -82,7 +83,9 @@ const fields = [
             {
                 title: "Send Activation Email",
                 icon: "calculator",
-                condition: (data: UserEntry) => !data.deleted,
+                condition: (data: UserEntry, config: ConfigType) => {
+                    return config.user_activation_on && !data.deleted && !data.purged;
+                },
                 handler: async (data: UserEntry) => {
                     try {
                         await axios.post(`/api/users/${data.id}/send_activation_email`);
@@ -101,7 +104,7 @@ const fields = [
             {
                 title: "Generate New API Key",
                 icon: "key",
-                condition: (data: UserEntry) => !data.deleted,
+                condition: (data: UserEntry) => !data.deleted && !data.purged,
                 handler: async (data: UserEntry) => {
                     try {
                         await axios.post(`/api/users/${data.id}/api_key`);
@@ -120,7 +123,9 @@ const fields = [
             {
                 title: "Delete",
                 icon: "trash",
-                condition: (data: UserEntry) => !data.deleted /* && config.allow_user_deletion */,
+                condition: (data: UserEntry, config: ConfigType) => {
+                    return config.allow_user_deletion && !data.deleted && !data.purged;
+                },
                 handler: async (data: UserEntry) => {
                     try {
                         await axios.delete(`/api/users/${data.id}`);
@@ -137,9 +142,32 @@ const fields = [
                 },
             },
             {
+                title: "Purge",
+                icon: "trash",
+                condition: (data: UserEntry, config: ConfigType) => {
+                    return config.allow_user_deletion && data.deleted && !data.purged;
+                },
+                handler: async (data: UserEntry) => {
+                    try {
+                        await axios.delete(`/api/users/${data.id}?purge=True`);
+                        return {
+                            status: "success",
+                            message: `'${data.username}' has been purged.`,
+                        };
+                    } catch (e) {
+                        return {
+                            status: "danger",
+                            message: `Failed to purge '${data.username}': ${errorMessageAsString(e)}`,
+                        };
+                    }
+                },
+            },
+            {
                 title: "Restore",
                 icon: "trash-restore",
-                condition: (data: UserEntry) => data.deleted,
+                condition: (data: UserEntry, config: ConfigType) => {
+                    return config.allow_user_deletion && data.deleted && !data.purged;
+                },
                 handler: async (data: UserEntry) => {
                     try {
                         await axios.post(`/api/users/deleted/${data.id}/undelete`);
