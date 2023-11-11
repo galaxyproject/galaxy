@@ -21,6 +21,7 @@ from typing import (
 from fastapi import (
     Body,
     Depends,
+    HTTPException,
     Path,
     Query,
 )
@@ -56,10 +57,7 @@ from galaxy.schema.schema import (
     JobMetric,
 )
 from galaxy.schema.types import OffsetNaiveDatetime
-from galaxy.web import (
-    expose_api,
-    expose_api_anonymous,
-)
+from galaxy.web import expose_api_anonymous
 from galaxy.webapps.base.controller import UsesVisualizationMixin
 from galaxy.webapps.galaxy.api import (
     BaseGalaxyAPIController,
@@ -181,7 +179,7 @@ SearchQueryParam: Optional[str] = search_query_param(
 )
 
 FullShowQueryParam: Optional[bool] = Query(title="Full show", description="Show extra information.")
-DeprecatedHdaLddaQueryParam: DatasetSourceType = Query(
+DeprecatedHdaLddaQueryParam: Optional[DatasetSourceType] = Query(
     deprecated=True,
     title="HDA or LDDA",
     description="Whether this dataset belongs to a history (HDA) or a library (LDDA).",
@@ -243,6 +241,19 @@ class FastAPIJobs:
             offset=offset,
         )
         return self.service.index(trans, payload)
+
+    @router.post(
+        "/api/jobs",
+        name="create_job",
+        summary="Not implemented.",
+    )
+    def create(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        **kwd,
+    ):
+        """See the create method in tools.py in order to submit a job."""
+        raise HTTPException(status_code=501, detail="Please POST to /api/tools instead.")
 
     @router.get(
         "/api/jobs/{id}/common_problems",
@@ -373,7 +384,8 @@ class FastAPIJobs:
         This API endpoint is unstable and tied heavily to Galaxy's JS client code,
         this endpoint will change frequently.
         """
-        job = self.service.get_job(trans, job_id=job_id, hda_ldda=hda_ldda)
+        hda_ldda_str = hda_ldda or "hda"
+        job = self.service.get_job(trans, job_id=job_id, hda_ldda=hda_ldda_str)
         return summarize_job_parameters(trans, job)
 
     @router.get(
@@ -412,7 +424,8 @@ class FastAPIJobs:
         hda_ldda: Annotated[Optional[DatasetSourceType], DeprecatedHdaLddaQueryParam] = DatasetSourceType.hda,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> List[Optional[JobMetric]]:
-        job = self.service.get_job(trans, job_id=job_id, hda_ldda=hda_ldda)
+        hda_ldda_str = hda_ldda or "hda"
+        job = self.service.get_job(trans, job_id=job_id, hda_ldda=hda_ldda_str)
         return [JobMetric(**metric) for metric in summarize_job_metrics(trans, job)]
 
     @router.get(
@@ -505,8 +518,6 @@ class FastAPIJobs:
     ) -> Dict[str, Any]:
         return self.service.show(trans, job_id, bool(full))
 
-    # TODO find the mapping of the legacy route
-    # TODO rename? --> function cancels/stops job (no deletion involved?)
     @router.delete(
         "/api/jobs/{job_id}",
         name="cancel_job",
@@ -563,8 +574,3 @@ class JobController(BaseGalaxyAPIController, UsesVisualizationMixin):
             # Following checks dataset accessible
             dataset_instance = self.get_hda_or_ldda(trans, hda_ldda=hda_ldda, dataset_id=dataset_id)
             return dataset_instance.creating_job
-
-    @expose_api
-    def create(self, trans: ProvidesUserContext, payload, **kwd):
-        """See the create method in tools.py in order to submit a job."""
-        raise exceptions.NotImplemented("Please POST to /api/tools instead.")
