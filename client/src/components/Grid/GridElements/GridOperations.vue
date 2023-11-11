@@ -4,8 +4,8 @@ import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 import type { Operation, RowData } from "@/components/Grid/configs/types";
-import { useConfig } from "@/composables/config";
 import type { ConfigType } from "@/composables/config";
+import { useConfig } from "@/composables/config";
 
 library.add(faCaretDown);
 

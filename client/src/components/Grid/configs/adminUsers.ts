@@ -1,10 +1,16 @@
 import axios from "axios";
 import type Router from "vue-router";
-import type { ConfigType } from "@/composables/config";
 
+import { fetcher } from "@/api/schema";
+import type { ConfigType } from "@/composables/config";
 import Filtering, { contains, equals, toBool, type ValidFilter } from "@/utils/filtering";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
+
+const createApiKey = fetcher.path("/api/users/{user_id}/api_key").method("post").create();
+const deleteUser = fetcher.path("/api/users/{user_id}").method("delete").create();
+const sendActivationEmail = fetcher.path("/api/users/{user_id}/send_activation_email").method("post").create();
+const undeleteUser = fetcher.path("/api/users/deleted/{user_id}/undelete").method("post").create();
 
 /**
  * Local types
@@ -67,7 +73,7 @@ const fields = [
                 condition: (data: UserEntry) => !data.deleted && !data.purged,
                 handler: async (data: UserEntry) => {
                     try {
-                        await axios.post(`/api/users/${data.id}/resend_activation_email`);
+                        await sendActivationEmail({ user_id: String(data.id) });
                         return {
                             status: "success",
                             message: `Disk usage of '${data.username}' has been recalculated.`,
@@ -75,7 +81,9 @@ const fields = [
                     } catch (e) {
                         return {
                             status: "danger",
-                            message: `Failed to recalculate disk usage of '${data.username}': ${errorMessageAsString(e)}.`,
+                            message: `Failed to recalculate disk usage of '${data.username}': ${errorMessageAsString(
+                                e
+                            )}.`,
                         };
                     }
                 },
@@ -88,7 +96,7 @@ const fields = [
                 },
                 handler: async (data: UserEntry) => {
                     try {
-                        await axios.post(`/api/users/${data.id}/send_activation_email`);
+                        await sendActivationEmail({ user_id: String(data.id) });
                         return {
                             status: "success",
                             message: `Activation email has been sent to '${data.username}'.`,
@@ -96,7 +104,9 @@ const fields = [
                     } catch (e) {
                         return {
                             status: "danger",
-                            message: `Failed to send activation email to '${data.username}': ${errorMessageAsString(e)}.`,
+                            message: `Failed to send activation email to '${data.username}': ${errorMessageAsString(
+                                e
+                            )}.`,
                         };
                     }
                 },
@@ -107,7 +117,7 @@ const fields = [
                 condition: (data: UserEntry) => !data.deleted && !data.purged,
                 handler: async (data: UserEntry) => {
                     try {
-                        await axios.post(`/api/users/${data.id}/api_key`);
+                        await createApiKey({ user_id: String(data.id) });
                         return {
                             status: "success",
                             message: `New API Key for '${data.username}' has been generated.`,
@@ -115,7 +125,9 @@ const fields = [
                     } catch (e) {
                         return {
                             status: "danger",
-                            message: `Failed to generate new API Key for '${data.username}': ${errorMessageAsString(e)}.`,
+                            message: `Failed to generate new API Key for '${data.username}': ${errorMessageAsString(
+                                e
+                            )}.`,
                         };
                     }
                 },
@@ -128,7 +140,7 @@ const fields = [
                 },
                 handler: async (data: UserEntry) => {
                     try {
-                        await axios.delete(`/api/users/${data.id}`);
+                        await deleteUser({ user_id: String(data.id), purge: false });
                         return {
                             status: "success",
                             message: `'${data.username}' has been deleted.`,
@@ -149,7 +161,7 @@ const fields = [
                 },
                 handler: async (data: UserEntry) => {
                     try {
-                        await axios.delete(`/api/users/${data.id}?purge=True`);
+                        await deleteUser({ user_id: String(data.id), purge: true });
                         return {
                             status: "success",
                             message: `'${data.username}' has been purged.`,
@@ -170,7 +182,7 @@ const fields = [
                 },
                 handler: async (data: UserEntry) => {
                     try {
-                        await axios.post(`/api/users/deleted/${data.id}/undelete`);
+                        await undeleteUser({ user_id: String(data.id) });
                         return {
                             status: "success",
                             message: `'${data.username}' has been restored.`,

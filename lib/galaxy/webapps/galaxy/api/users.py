@@ -152,7 +152,7 @@ AnyUserModel = Union[DetailedUserModel, AnonUserModel]
 class FastAPIUsers:
     service: UsersService = depends(UsersService)
     user_serializer: users.UserSerializer = depends(users.UserSerializer)
-        
+
     @router.put(
         "/api/users/current/recalculate_disk_usage",
         summary=RecalculateDiskUsageSummary,
