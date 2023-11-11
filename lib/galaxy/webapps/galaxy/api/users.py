@@ -204,7 +204,7 @@ class FastAPIUsers:
         user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
     ):
         user = self.service.get_user(trans=trans, user_id=user_id)
-        return self.service.user_manager.impersonate(user)
+        return self.service.user_manager.impersonate(trans, user)
 
     @router.get(
         "/api/users/deleted",
