@@ -122,7 +122,7 @@ const fields = [
                 condition: (data: VisualizationEntry) => !data.deleted,
                 handler: async (data: VisualizationEntry) => {
                     try {
-                        await axios.put(`/api/visualizations/${data.id}`, { deleted: true });
+                        await axios.put(withPrefix(`/api/visualizations/${data.id}`), { deleted: true });
                         return {
                             status: "success",
                             message: `'${data.title}' has been deleted.`,
@@ -141,7 +141,7 @@ const fields = [
                 condition: (data: VisualizationEntry) => data.deleted,
                 handler: async (data: VisualizationEntry) => {
                     try {
-                        await axios.put(`/api/visualizations/${data.id}`, { deleted: false });
+                        await axios.put(withPrefix(`/api/visualizations/${data.id}`), { deleted: false });
                         return {
                             status: "success",
                             message: `'${data.title}' has been restored.`,
