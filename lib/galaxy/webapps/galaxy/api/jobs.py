@@ -181,8 +181,14 @@ SearchQueryParam: Optional[str] = search_query_param(
 )
 
 FullShowQueryParam: Optional[bool] = Query(title="Full show", description="Show extra information.")
+DeprecatedHdaLddaQueryParam: DatasetSourceType = Query(
+    deprecated=True,
+    title="HDA or LDDA",
+    description="Whether this dataset belongs to a history (HDA) or a library (LDDA).",
+)
 HdaLddaQueryParam: DatasetSourceType = Query(
-    title="HDA or LDDA", description="Whether this dataset belongs to a history (HDA) or a library (LDDA)."
+    title="HDA or LDDA",
+    description="Whether this dataset belongs to a history (HDA) or a library (LDDA).",
 )
 
 
@@ -354,7 +360,7 @@ class FastAPIJobs:
     def parameters_display_by_job(
         self,
         job_id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
-        hda_ldda: Annotated[DatasetSourceType, HdaLddaQueryParam] = DatasetSourceType.hda,
+        hda_ldda: Annotated[Optional[DatasetSourceType], DeprecatedHdaLddaQueryParam] = DatasetSourceType.hda,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> JobDisplayParametersSummary:
         """
@@ -403,7 +409,7 @@ class FastAPIJobs:
     def metrics_by_job(
         self,
         job_id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
-        hda_ldda: Annotated[DatasetSourceType, HdaLddaQueryParam] = DatasetSourceType.hda,
+        hda_ldda: Annotated[Optional[DatasetSourceType], DeprecatedHdaLddaQueryParam] = DatasetSourceType.hda,
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> List[Optional[JobMetric]]:
         job = self.service.get_job(trans, job_id=job_id, hda_ldda=hda_ldda)
@@ -413,7 +419,7 @@ class FastAPIJobs:
         "/api/datasets/{dataset_id}/metrics",
         name="get_metrics",
         summary="Return job metrics for specified job.",
-        deprecated=True, 
+        deprecated=True,
     )
     def metrics_by_dataset(
         self,
