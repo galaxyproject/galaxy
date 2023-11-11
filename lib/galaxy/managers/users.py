@@ -493,6 +493,15 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         else:
             return "Failed to determine user, access denied."
 
+    def impersonate(self, trans, user):
+        if not trans.app.config.allow_user_impersonation:
+            raise exceptions.Message("User impersonation is not enabled in this instance of Galaxy.")
+        if user:
+            trans.handle_user_logout()
+            trans.handle_user_login(user)
+        else:
+            raise exceptions.Message("Please provide a valid user.")
+
     def send_activation_email(self, trans, email, username):
         """
         Send the verification email containing the activation link to the user's email.
