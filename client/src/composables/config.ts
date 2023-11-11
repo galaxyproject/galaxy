@@ -1,6 +1,6 @@
 import { computed, onMounted } from "vue";
 
-import { useConfigStore, GalaxyConfiguration } from "@/stores/configurationStore";
+import { GalaxyConfiguration, useConfigStore } from "@/stores/configurationStore";
 
 export type ConfigType = GalaxyConfiguration;
 
