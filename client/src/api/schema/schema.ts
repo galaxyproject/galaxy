@@ -168,12 +168,16 @@ export interface paths {
         get: operations["show_inheritance_chain_api_datasets__dataset_id__inheritance_chain_get"];
     };
     "/api/datasets/{dataset_id}/metrics": {
-        /** Return job metrics for specified job. */
+        /**
+         * Return job metrics for specified job.
+         * @deprecated
+         */
         get: operations["get_metrics_api_datasets__dataset_id__metrics_get"];
     };
     "/api/datasets/{dataset_id}/parameters_display": {
         /**
          * Resolve parameters as a list for nested display.
+         * @deprecated
          * @description Resolve parameters as a list for nested display. More client logic
          * here than is ideal but it is hard to reason about tool parameter
          * types on the client relative to the server. Job accessibility checks
@@ -910,6 +914,11 @@ export interface paths {
     "/api/jobs": {
         /** Index */
         get: operations["index_api_jobs_get"];
+        /**
+         * Not implemented.
+         * @description See the create method in tools.py in order to submit a job.
+         */
+        post: operations["create_job_api_jobs_post"];
     };
     "/api/jobs/search": {
         /**
@@ -11003,7 +11012,10 @@ export interface operations {
         };
     };
     get_metrics_api_datasets__dataset_id__metrics_get: {
-        /** Return job metrics for specified job. */
+        /**
+         * Return job metrics for specified job.
+         * @deprecated
+         */
         parameters: {
             /** @description Whether this dataset belongs to a history (HDA) or a library (LDDA). */
             query?: {
@@ -11036,6 +11048,7 @@ export interface operations {
     resolve_parameters_display_api_datasets__dataset_id__parameters_display_get: {
         /**
          * Resolve parameters as a list for nested display.
+         * @deprecated
          * @description Resolve parameters as a list for nested display. More client logic
          * here than is ideal but it is hard to reason about tool parameter
          * types on the client relative to the server. Job accessibility checks
@@ -15206,6 +15219,35 @@ export interface operations {
             };
         };
     };
+    create_job_api_jobs_post: {
+        /**
+         * Not implemented.
+         * @description See the create method in tools.py in order to submit a job.
+         */
+        parameters: {
+            query: {
+                kwd: Record<string, never>;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     search_jobs_api_jobs_search_post: {
         /**
          * Return jobs for current user
@@ -15472,7 +15514,10 @@ export interface operations {
     get_metrics_api_jobs__job_id__metrics_get: {
         /** Return job metrics for specified job. */
         parameters: {
-            /** @description Whether this dataset belongs to a history (HDA) or a library (LDDA). */
+            /**
+             * @deprecated
+             * @description Whether this dataset belongs to a history (HDA) or a library (LDDA).
+             */
             query?: {
                 hda_ldda?: components["schemas"]["DatasetSourceType"];
             };
@@ -15548,7 +15593,10 @@ export interface operations {
          * this endpoint will change frequently.
          */
         parameters: {
-            /** @description Whether this dataset belongs to a history (HDA) or a library (LDDA). */
+            /**
+             * @deprecated
+             * @description Whether this dataset belongs to a history (HDA) or a library (LDDA).
+             */
             query?: {
                 hda_ldda?: components["schemas"]["DatasetSourceType"];
             };
