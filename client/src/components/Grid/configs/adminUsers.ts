@@ -25,6 +25,13 @@ async function getData(offset: number, limit: number, search: string, sort_by: s
     };
     const queryString = new URLSearchParams(query).toString();
     const { data } = await axios.get(withPrefix(`/admin/users_list?${queryString}`));
+    data.rows = data.rows.map((d: any) => {
+        return {
+            ...d,
+            deleted: d.deleted === "True",
+            purged: d.purged === "True",
+        }
+    })
     return [data.rows, data.total_row_count];
 }
 
@@ -203,7 +210,7 @@ const fields = [
                     } catch (e) {
                         return {
                             status: "danger",
-                            message: `Failed to send activation email to '${data.username}': ${errorMessageAsString(
+                            message: `Failed to impersonate '${data.username}': ${errorMessageAsString(
                                 e
                             )}.`,
                         };
