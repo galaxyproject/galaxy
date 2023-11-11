@@ -1,16 +1,11 @@
 import axios from "axios";
 import type Router from "vue-router";
 
-import { fetcher } from "@/api/schema";
+import { createApiKey, deleteUser, impersonateUser, recalculateDiskUsageByUserId, sendActivationEmail, undeleteUser, updateUser } from "@/api/users";
 import type { ConfigType } from "@/composables/config";
 import Filtering, { contains, equals, toBool, type ValidFilter } from "@/utils/filtering";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
-
-const createApiKey = fetcher.path("/api/users/{user_id}/api_key").method("post").create();
-const deleteUser = fetcher.path("/api/users/{user_id}").method("delete").create();
-const sendActivationEmail = fetcher.path("/api/users/{user_id}/send_activation_email").method("post").create();
-const undeleteUser = fetcher.path("/api/users/deleted/{user_id}/undelete").method("post").create();
 
 /**
  * Local types
@@ -46,7 +41,7 @@ const fields = [
             {
                 title: "Manage Information",
                 icon: "user",
-                condition: (data: UserEntry) => !data.deleted && !data.purged,
+                condition: (data: UserEntry) => !data.deleted,
                 handler: (data: UserEntry, router: Router) => {
                     router.push(`/user/information?id=${data.id}`);
                 },
@@ -54,7 +49,7 @@ const fields = [
             {
                 title: "Manage Roles and Groups",
                 icon: "users",
-                condition: (data: UserEntry) => !data.deleted && !data.purged,
+                condition: (data: UserEntry) => !data.deleted,
                 handler: (data: UserEntry, router: Router) => {
                     router.push(`/admin/form/manage_roles_and_groups_for_user?id=${data.id}`);
                 },
@@ -62,7 +57,7 @@ const fields = [
             {
                 title: "Reset Password",
                 icon: "unlock",
-                condition: (data: UserEntry) => !data.deleted && !data.purged,
+                condition: (data: UserEntry) => !data.deleted,
                 handler: (data: UserEntry, router: Router) => {
                     router.push(`/admin/form/reset_user_password?id=${data.id}`);
                 },
@@ -70,10 +65,10 @@ const fields = [
             {
                 title: "Recalculate Disk Usage",
                 icon: "calculator",
-                condition: (data: UserEntry) => !data.deleted && !data.purged,
+                condition: (data: UserEntry) => !data.deleted,
                 handler: async (data: UserEntry) => {
                     try {
-                        await sendActivationEmail({ user_id: String(data.id) });
+                        await recalculateDiskUsageByUserId({ user_id: String(data.id) });
                         return {
                             status: "success",
                             message: `Disk usage of '${data.username}' has been recalculated.`,
@@ -92,7 +87,7 @@ const fields = [
                 title: "Send Activation Email",
                 icon: "calculator",
                 condition: (data: UserEntry, config: ConfigType) => {
-                    return config.user_activation_on && !data.deleted && !data.purged;
+                    return config.value.user_activation_on && !data.deleted;
                 },
                 handler: async (data: UserEntry) => {
                     try {
@@ -114,7 +109,7 @@ const fields = [
             {
                 title: "Generate New API Key",
                 icon: "key",
-                condition: (data: UserEntry) => !data.deleted && !data.purged,
+                condition: (data: UserEntry) => !data.deleted,
                 handler: async (data: UserEntry) => {
                     try {
                         await createApiKey({ user_id: String(data.id) });
@@ -136,7 +131,7 @@ const fields = [
                 title: "Delete",
                 icon: "trash",
                 condition: (data: UserEntry, config: ConfigType) => {
-                    return config.allow_user_deletion && !data.deleted && !data.purged;
+                    return config.value.allow_user_deletion && !data.deleted;
                 },
                 handler: async (data: UserEntry) => {
                     try {
@@ -157,7 +152,7 @@ const fields = [
                 title: "Purge",
                 icon: "trash",
                 condition: (data: UserEntry, config: ConfigType) => {
-                    return config.allow_user_deletion && data.deleted && !data.purged;
+                    return config.value.allow_user_deletion && data.deleted && !data.purged;
                 },
                 handler: async (data: UserEntry) => {
                     try {
@@ -178,7 +173,7 @@ const fields = [
                 title: "Restore",
                 icon: "trash-restore",
                 condition: (data: UserEntry, config: ConfigType) => {
-                    return config.allow_user_deletion && data.deleted && !data.purged;
+                    return config.value.allow_user_deletion && data.deleted && !data.purged;
                 },
                 handler: async (data: UserEntry) => {
                     try {
@@ -191,6 +186,49 @@ const fields = [
                         return {
                             status: "danger",
                             message: `Failed to restore '${data.username}': ${errorMessageAsString(e)}`,
+                        };
+                    }
+                },
+            },
+            {
+                title: "Impersonate User",
+                icon: "user",
+                condition: (data: UserEntry, config: ConfigType) => {
+                    return config.value.allow_user_impersonation && !data.deleted;
+                },
+                handler: async (data: UserEntry, router: Router) => {
+                    try {
+                        await impersonateUser({ user_id: String(data.id) });
+                        router.push("/");
+                    } catch (e) {
+                        return {
+                            status: "danger",
+                            message: `Failed to send activation email to '${data.username}': ${errorMessageAsString(
+                                e
+                            )}.`,
+                        };
+                    }
+                },
+            },
+            {
+                title: "Activate",
+                icon: "user",
+                condition: (data: UserEntry, config: ConfigType) => {
+                    return config.value.user_activation_on && !data.deleted;
+                },
+                handler: async (data: UserEntry) => {
+                    try {
+                        //await updateUser({ user_id: String(data.id), active: true });
+                        return {
+                            status: "success",
+                            message: `'${data.username}' has been activated.`,
+                        };
+                    } catch (e) {
+                        return {
+                            status: "danger",
+                            message: `Failed to activate '${data.username}': ${errorMessageAsString(
+                                e
+                            )}.`,
                         };
                     }
                 },
