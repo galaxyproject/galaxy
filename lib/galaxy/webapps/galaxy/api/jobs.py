@@ -43,11 +43,12 @@ from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.jobs import (
     DeleteJobPayload,
     EncodedJobDetails,
-    JobAssociation,
     JobDestinationParams,
     JobDisplayParametersSummary,
     JobErrorSummary,
+    JobInputAssociation,
     JobInputSummary,
+    JobOutputAssociation,
     ReportJobErrorPayload,
     SearchJobsPayload,
 )
@@ -294,7 +295,7 @@ class FastAPIJobs:
         self,
         id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
         trans: ProvidesUserContext = DependsOnTrans,
-    ) -> List[JobAssociation]:
+    ) -> List[JobOutputAssociation]:
         job = self.service.get_job(trans, job_id=id)
         if not job:
             raise exceptions.ObjectNotFound("Could not access job with the given id")
@@ -302,7 +303,11 @@ class FastAPIJobs:
             job.resume()
         else:
             exceptions.RequestParameterInvalidException(f"Job with id '{job.tool_id}' is not paused")
-        return self.service.dictify_associations(trans, job.output_datasets, job.output_library_datasets)
+        associations = self.service.dictify_associations(trans, job.output_datasets, job.output_library_datasets)
+        output_associations = []
+        for association in associations:
+            output_associations.append(JobOutputAssociation(name=association.name, dataset=association.dataset))
+        return output_associations
 
     @router.post(
         "/api/jobs/{id}/error",
@@ -346,9 +351,13 @@ class FastAPIJobs:
         self,
         id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
         trans: ProvidesUserContext = DependsOnTrans,
-    ) -> List[JobAssociation]:
+    ) -> List[JobInputAssociation]:
         job = self.service.get_job(trans=trans, job_id=id)
-        return self.service.dictify_associations(trans, job.input_datasets, job.input_library_datasets)
+        associations = self.service.dictify_associations(trans, job.input_datasets, job.input_library_datasets)
+        input_associations = []
+        for association in associations:
+            input_associations.append(JobInputAssociation(name=association.name, dataset=association.dataset))
+        return input_associations
 
     @router.get(
         "/api/jobs/{id}/outputs",
@@ -359,9 +368,13 @@ class FastAPIJobs:
         self,
         id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
         trans: ProvidesUserContext = DependsOnTrans,
-    ) -> List[JobAssociation]:
+    ) -> List[JobOutputAssociation]:
         job = self.service.get_job(trans=trans, job_id=id)
-        return self.service.dictify_associations(trans, job.output_datasets, job.output_library_datasets)
+        associations = self.service.dictify_associations(trans, job.output_datasets, job.output_library_datasets)
+        output_associations = []
+        for association in associations:
+            output_associations.append(JobOutputAssociation(name=association.name, dataset=association.dataset))
+        return output_associations
 
     @router.get(
         "/api/jobs/{job_id}/parameters_display",

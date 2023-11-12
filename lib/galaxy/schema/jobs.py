@@ -62,6 +62,22 @@ class JobAssociation(Model):
     )
 
 
+class JobInputAssociation(JobAssociation):
+    name: str = Field(
+        default=Required,
+        title="name",
+        description="Name of the job input parameter.",
+    )
+
+
+class JobOutputAssociation(JobAssociation):
+    name: str = Field(
+        default=Required,
+        title="name",
+        description="Name of the job output parameter.",
+    )
+
+
 class ReportJobErrorPayload(Model):
     dataset_id: DecodedDatabaseIdField = Field(
         default=Required,
