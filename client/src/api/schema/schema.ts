@@ -6373,22 +6373,6 @@ export interface components {
          */
         ItemsFromSrc: "url" | "files" | "path" | "ftp_import" | "server_dir";
         /**
-         * JobAssociation
-         * @description Base model definition with common configuration used by all derived models.
-         */
-        JobAssociation: {
-            /**
-             * dataset
-             * @description Reference to the associated item.
-             */
-            dataset: components["schemas"]["EncodedDataItemSourceId"];
-            /**
-             * name
-             * @description Name of the job parameter.
-             */
-            name: string;
-        };
-        /**
          * JobDestinationParams
          * @description Base model definition with common configuration used by all derived models.
          */
@@ -6586,6 +6570,22 @@ export interface components {
          */
         JobIndexViewEnum: "collection" | "admin_job_list";
         /**
+         * JobInputAssociation
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        JobInputAssociation: {
+            /**
+             * dataset
+             * @description Reference to the associated item.
+             */
+            dataset: components["schemas"]["EncodedDataItemSourceId"];
+            /**
+             * name
+             * @description Name of the job input parameter.
+             */
+            name: string;
+        };
+        /**
          * JobInputSummary
          * @description Base model definition with common configuration used by all derived models.
          */
@@ -6662,6 +6662,22 @@ export interface components {
              * @description The associated dataset.
              */
             value: components["schemas"]["EncodedDataItemSourceId"];
+        };
+        /**
+         * JobOutputAssociation
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        JobOutputAssociation: {
+            /**
+             * dataset
+             * @description Reference to the associated item.
+             */
+            dataset: components["schemas"]["EncodedDataItemSourceId"];
+            /**
+             * name
+             * @description Name of the job output parameter.
+             */
+            name: string;
         };
         /**
          * JobParameter
@@ -15356,7 +15372,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["JobAssociation"][];
+                    "application/json": components["schemas"]["JobInputAssociation"][];
                 };
             };
             /** @description Validation Error */
@@ -15383,7 +15399,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["JobAssociation"][];
+                    "application/json": components["schemas"]["JobOutputAssociation"][];
                 };
             };
             /** @description Validation Error */
@@ -15410,7 +15426,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["JobAssociation"][];
+                    "application/json": components["schemas"]["JobOutputAssociation"][];
                 };
             };
             /** @description Validation Error */
