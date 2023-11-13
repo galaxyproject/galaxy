@@ -166,7 +166,8 @@ class JobManager:
                 ImplicitCollectionJobsJobAssociation.implicit_collection_jobs_id
                 == wfi_step.c.implicit_collection_jobs_id,
             )
-            stmt = stmt1.union(stmt2)
+            # Ensure the result is models, not tuples
+            stmt = select(aliased(Job, stmt1.union(stmt2).subquery()))
 
         if search:
             search_filters = {
