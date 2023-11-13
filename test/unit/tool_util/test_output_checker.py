@@ -72,6 +72,28 @@ class TestOutputChecker(TestCase):
         self.stderr = "foobar"
         self.__assertNotSuccessful()
 
+    def test_stderr_regex_group_positive_match(self):
+        regex = ToolStdioRegex()
+        regex.stderr_match = True
+        regex.match = "ERROR: (.{3})bar"
+        regex.desc = r"\1"
+        self.__add_regex(regex)
+        self.stderr = "ERROR: foobar"
+        _, _, _, job_messages = self.__check_output()
+        assert job_messages[0]['desc'] == "Fatal error: foo"
+        self.__assertNotSuccessful()
+
+    def test_stderr_regex_namedgroup_positive_match(self):
+        regex = ToolStdioRegex()
+        regex.stderr_match = True
+        regex.match = "ERROR: (?P<q>.{3})bar"
+        regex.desc = "\g<q>"
+        self.__add_regex(regex)
+        self.stderr = "ERROR: foobar"
+        _, _, _, job_messages = self.__check_output()
+        assert job_messages[0]['desc'] == "Fatal error: foo"
+        self.__assertNotSuccessful()
+
     def test_stdout_ignored_for_stderr_regexes(self):
         regex = ToolStdioRegex()
         regex.stderr_match = True
