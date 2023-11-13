@@ -3,6 +3,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCaretDown, faCaretUp, faPlus, faTrashAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { defineAsyncComponent, nextTick, type PropType } from "vue";
+import { computed } from "vue";
 
 import { useKeyedObjects } from "@/composables/keyedObjects";
 
@@ -13,9 +14,14 @@ const FormNode = defineAsyncComponent(() => import("./FormInputs.vue"));
 interface Input {
     name: string;
     title: string;
+    max: number|string;
     help?: string;
     cache: Array<Record<string, unknown>>;
 }
+
+const maxRepeats = computed(() => {
+    return (typeof props.input.max === "number") ? props.input.cache?.length >= props.input.max : false;
+});
 
 const props = defineProps({
     input: {
@@ -102,7 +108,7 @@ const { keyObject } = useKeyedObjects();
             class="card"
             :title="getTitle(cacheId)">
             <template v-slot:operations>
-                <span v-if="!props.sustainRepeats" class="float-right">
+                                <span v-if="!props.sustainRepeats" class="float-right">
                     <b-button-group>
                         <b-button
                             :id="getButtonId(cacheId, 'up')"
@@ -147,12 +153,12 @@ const { keyObject } = useKeyedObjects();
             </template>
         </FormCard>
 
-        <b-button v-if="!props.sustainRepeats && props.input.cache.length < props.input.max" @click="onInsert">
+        <b-button v-if="!props.sustainRepeats && !maxRepeats" @click="onInsert">
             <FontAwesomeIcon icon="plus" class="mr-1" />
             <span data-description="repeat insert">Insert {{ props.input.title || "Repeat" }}</span>
         </b-button>
-        <div v-if="props.input.cache.length >= props.input.max">
-            Maximum of {{ props.input.cache.length }} {{ props.input.title || "Repeat" }} fields reached
+        <div v-if="maxRepeats">
+            Maximum number of {{ props.input.title || "Repeat" }} fields reached
         </div>
     </div>
 </template>
