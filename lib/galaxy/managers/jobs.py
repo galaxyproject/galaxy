@@ -108,6 +108,11 @@ class JobManager:
         is_admin = trans.user_is_admin
         user_details = payload.user_details
         decoded_user_id = payload.user_id
+        history_id = payload.history_id
+        workflow_id = payload.workflow_id
+        invocation_id = payload.invocation_id
+        search = payload.search
+        order_by = payload.order_by
 
         if not is_admin:
             if user_details:
@@ -142,9 +147,6 @@ class JobManager:
         query = build_and_apply_filters(query, payload.date_range_min, lambda dmin: Job.update_time >= dmin)
         query = build_and_apply_filters(query, payload.date_range_max, lambda dmax: Job.update_time <= dmax)
 
-        history_id = payload.history_id
-        workflow_id = payload.workflow_id
-        invocation_id = payload.invocation_id
         if history_id is not None:
             query = query.filter(Job.history_id == history_id)
         if workflow_id or invocation_id:
@@ -172,7 +174,6 @@ class JobManager:
             )
             query = query1.union(query2)
 
-        search = payload.search
         if search:
             search_filters = {
                 "tool": "tool",
@@ -216,11 +217,11 @@ class JobManager:
                         columns.append(Job.job_runner_name)
                     query = query.filter(raw_text_column_filter(columns, term))
 
-        if payload.order_by == JobIndexSortByEnum.create_time:
-            order_by = Job.create_time.desc()
+        if order_by == JobIndexSortByEnum.create_time:
+            _order_by = Job.create_time.desc()
         else:
-            order_by = Job.update_time.desc()
-        query = query.order_by(order_by)
+            _order_by = Job.update_time.desc()
+        query = query.order_by(_order_by)
 
         query = query.offset(payload.offset)
         query = query.limit(payload.limit)
