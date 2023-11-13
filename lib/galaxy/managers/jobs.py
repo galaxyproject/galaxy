@@ -41,9 +41,13 @@ from galaxy.managers.datasets import DatasetManager
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.lddas import LDDAManager
 from galaxy.model import (
+    ImplicitCollectionJobsJobAssociation,
     Job,
     JobParameter,
     User,
+    Workflow,
+    WorkflowInvocation,
+    WorkflowInvocationStep,
     YIELD_PER_ROWS,
 )
 from galaxy.model.base import transaction
@@ -113,13 +117,13 @@ class JobManager:
 
         if is_admin:
             if decoded_user_id is not None:
-                query = trans.sa_session.query(model.Job).filter(model.Job.user_id == decoded_user_id)
+                query = trans.sa_session.query(Job).filter(Job.user_id == decoded_user_id)
             else:
-                query = trans.sa_session.query(model.Job)
+                query = trans.sa_session.query(Job)
             if user_details:
-                query = query.outerjoin(model.Job.user)
+                query = query.outerjoin(Job.user)
         else:
-            query = trans.sa_session.query(model.Job).filter(model.Job.user_id == trans.user.id)
+            query = trans.sa_session.query(Job).filter(Job.user_id == trans.user.id)
 
         def build_and_apply_filters(query, objects, filter_func):
             if objects is not None:
@@ -132,38 +136,38 @@ class JobManager:
                     query = query.filter(or_(*t))
             return query
 
-        query = build_and_apply_filters(query, payload.states, lambda s: model.Job.state == s)
-        query = build_and_apply_filters(query, payload.tool_ids, lambda t: model.Job.tool_id == t)
-        query = build_and_apply_filters(query, payload.tool_ids_like, lambda t: model.Job.tool_id.like(t))
-        query = build_and_apply_filters(query, payload.date_range_min, lambda dmin: model.Job.update_time >= dmin)
-        query = build_and_apply_filters(query, payload.date_range_max, lambda dmax: model.Job.update_time <= dmax)
+        query = build_and_apply_filters(query, payload.states, lambda s: Job.state == s)
+        query = build_and_apply_filters(query, payload.tool_ids, lambda t: Job.tool_id == t)
+        query = build_and_apply_filters(query, payload.tool_ids_like, lambda t: Job.tool_id.like(t))
+        query = build_and_apply_filters(query, payload.date_range_min, lambda dmin: Job.update_time >= dmin)
+        query = build_and_apply_filters(query, payload.date_range_max, lambda dmax: Job.update_time <= dmax)
 
         history_id = payload.history_id
         workflow_id = payload.workflow_id
         invocation_id = payload.invocation_id
         if history_id is not None:
-            query = query.filter(model.Job.history_id == history_id)
+            query = query.filter(Job.history_id == history_id)
         if workflow_id or invocation_id:
             if workflow_id is not None:
                 wfi_step = (
-                    trans.sa_session.query(model.WorkflowInvocationStep)
-                    .join(model.WorkflowInvocation)
-                    .join(model.Workflow)
+                    trans.sa_session.query(WorkflowInvocationStep)
+                    .join(WorkflowInvocation)
+                    .join(Workflow)
                     .filter(
-                        model.Workflow.stored_workflow_id == workflow_id,
+                        Workflow.stored_workflow_id == workflow_id,
                     )
                     .subquery()
                 )
             elif invocation_id is not None:
                 wfi_step = (
-                    trans.sa_session.query(model.WorkflowInvocationStep)
-                    .filter(model.WorkflowInvocationStep.workflow_invocation_id == invocation_id)
+                    trans.sa_session.query(WorkflowInvocationStep)
+                    .filter(WorkflowInvocationStep.workflow_invocation_id == invocation_id)
                     .subquery()
                 )
             query1 = query.join(wfi_step)
-            query2 = query.join(model.ImplicitCollectionJobsJobAssociation).join(
+            query2 = query.join(ImplicitCollectionJobsJobAssociation).join(
                 wfi_step,
-                model.ImplicitCollectionJobsJobAssociation.implicit_collection_jobs_id
+                ImplicitCollectionJobsJobAssociation.implicit_collection_jobs_id
                 == wfi_step.c.implicit_collection_jobs_id,
             )
             query = query1.union(query2)
@@ -196,26 +200,26 @@ class JobManager:
                 if isinstance(term, FilteredTerm):
                     key = term.filter
                     if key == "user":
-                        query = query.filter(text_column_filter(model.User.email, term))
+                        query = query.filter(text_column_filter(User.email, term))
                     elif key == "tool":
-                        query = query.filter(text_column_filter(model.Job.tool_id, term))
+                        query = query.filter(text_column_filter(Job.tool_id, term))
                     elif key == "handler":
-                        query = query.filter(text_column_filter(model.Job.handler, term))
+                        query = query.filter(text_column_filter(Job.handler, term))
                     elif key == "runner":
-                        query = query.filter(text_column_filter(model.Job.job_runner_name, term))
+                        query = query.filter(text_column_filter(Job.job_runner_name, term))
                 elif isinstance(term, RawTextTerm):
-                    columns = [model.Job.tool_id]
+                    columns = [Job.tool_id]
                     if user_details:
-                        columns.append(model.User.email)
+                        columns.append(User.email)
                     if is_admin:
-                        columns.append(model.Job.handler)
-                        columns.append(model.Job.job_runner_name)
+                        columns.append(Job.handler)
+                        columns.append(Job.job_runner_name)
                     query = query.filter(raw_text_column_filter(columns, term))
 
         if payload.order_by == JobIndexSortByEnum.create_time:
-            order_by = model.Job.create_time.desc()
+            order_by = Job.create_time.desc()
         else:
-            order_by = model.Job.update_time.desc()
+            order_by = Job.update_time.desc()
         query = query.order_by(order_by)
 
         query = query.offset(payload.offset)
