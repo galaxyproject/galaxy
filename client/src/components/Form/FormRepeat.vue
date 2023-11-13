@@ -14,6 +14,8 @@ const FormNode = defineAsyncComponent(() => import("./FormInputs.vue"));
 interface Input {
     name: string;
     title: string;
+    min: number;
+    default: number;
     max: number|string;
     help?: string;
     cache: Array<Record<string, unknown>>;
@@ -108,7 +110,7 @@ const { keyObject } = useKeyedObjects();
             class="card"
             :title="getTitle(cacheId)">
             <template v-slot:operations>
-                                <span v-if="!props.sustainRepeats" class="float-right">
+                <span v-if="!props.sustainRepeats" class="float-right">
                     <b-button-group>
                         <b-button
                             :id="getButtonId(cacheId, 'up')"
