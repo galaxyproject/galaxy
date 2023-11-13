@@ -7009,6 +7009,27 @@ stderr are checked. If ``Branch A`` is at the beginning of stdout or stderr, the
 a warning will be registered and the source that contained ``Branch A`` will be
 prepended with the warning ``Warning: Branch A was taken in execution``.
 
+Since Galaxy 24.0 groups defines in the regular expression are expanded in the
+description (using the syntax of the [``expand`` function](https://docs.python.org/3/library/re.html#re.Match.expand)).
+For the first ``regex`` in the following example the ``\1`` will be replaced
+by the content of the text matching ``.*`` that follows on ``INFO: ``,
+i.e. the content of the first group.
+The second regular expression defines a named group ``error_message``
+which then replaces the corresponding placeholder ``\g<error_message>`` in the
+description. Notethe quoting of the ``<`` and ``>`` characters in XML.
+
+```xml
+<stdio>
+    <regex match="\(INFO\): (.*)"
+           source="stderr"
+           level="warning"
+           description="\1" />
+    <regex match="\(ERROR|WARNING\): (?P&lt;error_message&gt;.*)"
+           source="stderr"
+           level="fatal"
+           description="\g&lt;error_message&gt;" />
+</stdio>
+```
 ]]></xs:documentation>
     </xs:annotation>
     <xs:attribute name="source" type="SourceType">
