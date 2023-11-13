@@ -146,9 +146,12 @@ const { keyObject } = useKeyedObjects();
             </template>
         </FormCard>
 
-        <b-button v-if="!props.sustainRepeats" @click="onInsert">
+        <b-button v-if="!props.sustainRepeats && props.input.cache.length < props.input.max" @click="onInsert">
             <FontAwesomeIcon icon="plus" class="mr-1" />
             <span data-description="repeat insert">Insert {{ props.input.title || "Repeat" }}</span>
         </b-button>
+        <div v-if="props.input.cache.length >= props.input.max">
+            Maximum of {{ props.input.cache.length }} {{ props.input.title || "Repeat" }} fields reached
+        </div>
     </div>
 </template>
