@@ -47,6 +47,30 @@ const emit = defineEmits<{
 }>();
 
 /**
+ * When there are more options than this, push selected options to the end
+ */
+const optionReorderThreshold = 8;
+
+const reorderedOptions = computed(() => {
+    if (props.options.length <= optionReorderThreshold) {
+        return props.options;
+    } else {
+        const selectedOptions: SelectOption[] = [];
+        const unselectedOptions: SelectOption[] = [];
+
+        props.options.forEach((option) => {
+            if (selectedValues.value.includes(option.value)) {
+                selectedOptions.push(option);
+            } else {
+                unselectedOptions.push(option);
+            }
+        });
+
+        return [...unselectedOptions, ...selectedOptions];
+    }
+});
+
+/**
  * Configure deselect label
  */
 const deselectLabel: ComputedRef<string> = computed(() => {
@@ -141,7 +165,7 @@ onMounted(() => {
         :deselect-label="deselectLabel"
         label="label"
         :multiple="multiple"
-        :options="props.options"
+        :options="reorderedOptions"
         :placeholder="placeholder"
         :selected-label="selectedLabel"
         select-label="Click to select"
