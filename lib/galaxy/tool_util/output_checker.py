@@ -176,7 +176,6 @@ def __regex_err_msg(match, stream, regex):
 
     # If there's a description for the regular expression, then use it.
     # Otherwise, we'll take the first 256 characters of the match.
-    print(f"{regex.desc=}")
     if regex.desc is not None:
         desc += match.expand(regex.desc)
     else:
