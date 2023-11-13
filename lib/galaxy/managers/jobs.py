@@ -150,6 +150,7 @@ class JobManager:
         if history_id is not None:
             stmt = stmt.where(Job.history_id == history_id)
 
+        order_by_columns = Job
         if workflow_id or invocation_id:
             wfi_step = select(WorkflowInvocationStep)
             if workflow_id is not None:
@@ -167,7 +168,11 @@ class JobManager:
                 == wfi_step.c.implicit_collection_jobs_id,
             )
             # Ensure the result is models, not tuples
-            stmt = select(aliased(Job, stmt1.union(stmt2).subquery()))
+            sq = stmt1.union(stmt2).subquery()
+            # SQLite won't recognize Job.foo as a valid column for the ORDER BY clause due to the UNION clause, so we'll use the subquery `columns` collection.
+            # Ref: https://github.com/galaxyproject/galaxy/pull/16852#issuecomment-1804676322
+            order_by_columns = sq.c
+            stmt = select(aliased(Job, sq))
 
         if search:
             search_filters = {
@@ -213,9 +218,9 @@ class JobManager:
                     stmt = stmt.filter(raw_text_column_filter(columns, term))
 
         if order_by == JobIndexSortByEnum.create_time:
-            _order_by = Job.create_time.desc()
+            _order_by = order_by_columns.create_time.desc()
         else:
-            _order_by = Job.update_time.desc()
+            _order_by = order_by_columns.update_time.desc()
         stmt = stmt.order_by(_order_by)
 
         stmt = stmt.offset(payload.offset)
