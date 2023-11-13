@@ -1,6 +1,5 @@
-import { defineStore } from "pinia";
-
 import config from "./helpTextConfig.yml";
+import { defineStore } from "pinia";
 
 export const useHelpModeTextStore = defineStore("helpModeText", {
     state: () => {
@@ -12,9 +11,11 @@ export const useHelpModeTextStore = defineStore("helpModeText", {
     actions: {
         addHelpModeText(text) {
             const file_path = config[text];
-            fetch("https://raw.githubusercontent.com/assuntad23/galaxy-help-markdown/main/"+file_path).then((response) => response.text()).then((text) => {
-                this.helpmodetext = text;
-            });
+            fetch("https://raw.githubusercontent.com/assuntad23/galaxy-help-markdown/main/" + file_path)
+                .then((response) => response.text())
+                .then((text) => {
+                    this.helpmodetext = text;
+                });
         },
     },
 });

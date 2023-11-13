@@ -13,7 +13,6 @@ import HelpModeText from "@/components/Panels/HelpModeText.vue";
 import ToolPanel from "@/components/Panels/ToolPanel.vue";
 import DragAndDropModal from "@/components/Upload/DragAndDropModal.vue";
 
-
 const router = useRouter();
 const showCenter = ref(false);
 const { showActivityBar, showToolbox, showPanels } = usePanels();

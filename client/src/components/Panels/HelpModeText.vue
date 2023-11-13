@@ -20,7 +20,6 @@ const helpText = computed({
     </div>
 </template>
 
-
 <style>
 .helptext {
     position: fixed;
