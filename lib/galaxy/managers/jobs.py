@@ -103,8 +103,13 @@ class JobManager:
     def index_query(self, trans, payload: JobIndexQueryPayload):
         is_admin = trans.user_is_admin
         user_details = payload.user_details
-
         decoded_user_id = payload.user_id
+
+        if not is_admin:
+            if user_details:
+                raise AdminRequiredException("Only admins can index the jobs with user details enabled")
+            if decoded_user_id is not None and decoded_user_id != trans.user.id:
+                raise AdminRequiredException("Only admins can index the jobs of others")
 
         if is_admin:
             if decoded_user_id is not None:
@@ -113,12 +118,7 @@ class JobManager:
                 query = trans.sa_session.query(model.Job)
             if user_details:
                 query = query.outerjoin(model.Job.user)
-
         else:
-            if user_details:
-                raise AdminRequiredException("Only admins can index the jobs with user details enabled")
-            if decoded_user_id is not None and decoded_user_id != trans.user.id:
-                raise AdminRequiredException("Only admins can index the jobs of others")
             query = trans.sa_session.query(model.Job).filter(model.Job.user_id == trans.user.id)
 
         def build_and_apply_filters(query, objects, filter_func):
