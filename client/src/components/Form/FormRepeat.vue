@@ -129,6 +129,7 @@ const { keyObject } = useKeyedObjects();
                     </b-button-group>
 
                     <b-button
+                        v-if="cacheId >= props.input.min"
                         v-b-tooltip.hover.bottom
                         title="delete"
                         role="button"
