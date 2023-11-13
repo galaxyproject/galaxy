@@ -1635,9 +1635,9 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
             all_configured = ep.configured and all_configured
         return all_configured
 
-    def set_state(self, state):
+    def set_state(self, state: JobState) -> bool:
         """
-        Save state history. Returns True if stat has changed, else False
+        Save state history. Returns True if state has changed, else False.
         """
         if self.state == state:
             # Nothing changed, no action needed

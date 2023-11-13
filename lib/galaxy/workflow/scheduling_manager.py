@@ -333,7 +333,7 @@ class WorkflowRequestMonitor(Monitors):
             try:
                 if workflow_invocation.state == workflow_invocation.states.CANCELLING:
                     workflow_invocation.cancel_invocation_steps()
-                    workflow_invocation.state = workflow_invocation.states.CANCELLED
+                    workflow_invocation.mark_cancelled()
                     session.commit()
                     return False
 
