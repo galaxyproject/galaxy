@@ -169,6 +169,7 @@ class JobManager:
                         "h": "handler",
                     }
                 )
+            assert search
             parsed_search = parse_filters_structured(search, search_filters)
             for term in parsed_search.terms:
                 if isinstance(term, FilteredTerm):
