@@ -114,22 +114,6 @@ class JobManager:
         search = payload.search
         order_by = payload.order_by
 
-        if not is_admin:
-            if user_details:
-                raise AdminRequiredException("Only admins can index the jobs with user details enabled")
-            if decoded_user_id is not None and decoded_user_id != trans.user.id:
-                raise AdminRequiredException("Only admins can index the jobs of others")
-
-        stmt = select(Job)
-
-        if is_admin:
-            if decoded_user_id is not None:
-                stmt = stmt.where(Job.user_id == decoded_user_id)
-            if user_details:
-                stmt = stmt.outerjoin(Job.user)
-        else:
-            stmt = stmt.where(Job.user_id == trans.user.id)
-
         def build_and_apply_filters(stmt, objects, filter_func):
             if objects is not None:
                 if isinstance(objects, (str, date, datetime)):
@@ -141,17 +125,7 @@ class JobManager:
                     stmt = stmt.where(or_(*t))
             return stmt
 
-        stmt = build_and_apply_filters(stmt, payload.states, lambda s: model.Job.state == s)
-        stmt = build_and_apply_filters(stmt, payload.tool_ids, lambda t: model.Job.tool_id == t)
-        stmt = build_and_apply_filters(stmt, payload.tool_ids_like, lambda t: model.Job.tool_id.like(t))
-        stmt = build_and_apply_filters(stmt, payload.date_range_min, lambda dmin: model.Job.update_time >= dmin)
-        stmt = build_and_apply_filters(stmt, payload.date_range_max, lambda dmax: model.Job.update_time <= dmax)
-
-        if history_id is not None:
-            stmt = stmt.where(Job.history_id == history_id)
-
-        order_by_columns = Job
-        if workflow_id or invocation_id:
+        def add_workflow_jobs():
             wfi_step = select(WorkflowInvocationStep)
             if workflow_id is not None:
                 wfi_step = (
@@ -169,12 +143,11 @@ class JobManager:
             )
             # Ensure the result is models, not tuples
             sq = stmt1.union(stmt2).subquery()
-            # SQLite won't recognize Job.foo as a valid column for the ORDER BY clause due to the UNION clause, so we'll use the subquery `columns` collection.
+            # SQLite won't recognize Job.foo as a valid column for the ORDER BY clause due to the UNION clause, so we'll use the subquery `columns` collection (`sq.c`).
             # Ref: https://github.com/galaxyproject/galaxy/pull/16852#issuecomment-1804676322
-            order_by_columns = sq.c
-            stmt = select(aliased(Job, sq))
+            return select(aliased(Job, sq)), sq.c
 
-        if search:
+        def add_search_criteria(stmt):
             search_filters = {
                 "tool": "tool",
                 "t": "tool",
@@ -216,12 +189,44 @@ class JobManager:
                         columns.append(Job.handler)
                         columns.append(Job.job_runner_name)
                     stmt = stmt.filter(raw_text_column_filter(columns, term))
+            return stmt
+
+        if not is_admin:
+            if user_details:
+                raise AdminRequiredException("Only admins can index the jobs with user details enabled")
+            if decoded_user_id is not None and decoded_user_id != trans.user.id:
+                raise AdminRequiredException("Only admins can index the jobs of others")
+
+        stmt = select(Job)
+
+        if is_admin:
+            if decoded_user_id is not None:
+                stmt = stmt.where(Job.user_id == decoded_user_id)
+            if user_details:
+                stmt = stmt.outerjoin(Job.user)
+        else:
+            stmt = stmt.where(Job.user_id == trans.user.id)
+
+        stmt = build_and_apply_filters(stmt, payload.states, lambda s: model.Job.state == s)
+        stmt = build_and_apply_filters(stmt, payload.tool_ids, lambda t: model.Job.tool_id == t)
+        stmt = build_and_apply_filters(stmt, payload.tool_ids_like, lambda t: model.Job.tool_id.like(t))
+        stmt = build_and_apply_filters(stmt, payload.date_range_min, lambda dmin: model.Job.update_time >= dmin)
+        stmt = build_and_apply_filters(stmt, payload.date_range_max, lambda dmax: model.Job.update_time <= dmax)
+
+        if history_id is not None:
+            stmt = stmt.where(Job.history_id == history_id)
+
+        order_by_columns = Job
+        if workflow_id or invocation_id:
+            stmt, order_by_columns = add_workflow_jobs()
+
+        if search:
+            stmt = add_search_criteria(stmt)
 
         if order_by == JobIndexSortByEnum.create_time:
-            _order_by = order_by_columns.create_time.desc()
+            stmt = stmt.order_by(order_by_columns.create_time.desc())
         else:
-            _order_by = order_by_columns.update_time.desc()
-        stmt = stmt.order_by(_order_by)
+            stmt = stmt.order_by(order_by_columns.update_time.desc())
 
         stmt = stmt.offset(payload.offset)
         stmt = stmt.limit(payload.limit)
