@@ -1367,7 +1367,10 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
 
     states = JobState
 
-    terminal_states = [states.OK, states.ERROR, states.DELETED, states.DELETING]
+    # states that are not expected to change, except through admin action or re-scheduling
+    terminal_states = [states.OK, states.ERROR, states.DELETED]
+    # deleting state should not turn back into any of the non-ready states
+    finished_states = terminal_states + [states.DELETING]
     #: job states where the job hasn't finished and the model may still change
     non_ready_states = [
         states.NEW,
@@ -1392,13 +1395,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
 
     @property
     def finished(self):
-        states = self.states
-        return self.state in [
-            states.OK,
-            states.ERROR,
-            states.DELETING,
-            states.DELETED,
-        ]
+        return self.state in self.finished_states
 
     def io_dicts(self, exclude_implicit_outputs=False) -> IoDicts:
         inp_data: Dict[str, Optional[DatasetInstance]] = {da.name: da.dataset for da in self.input_datasets}
@@ -1643,7 +1640,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
             # Nothing changed, no action needed
             return False
         session = object_session(self)
-        if session and self.id and state not in Job.terminal_states:
+        if session and self.id and state not in Job.finished_states:
             # generate statement that will not revert DELETING or DELETED back to anything non-terminal
             rval = session.execute(
                 update(Job.table)
@@ -8233,7 +8230,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
             sa_session.query(Job.id)
             .join(WorkflowInvocationStep)
             .filter(WorkflowInvocationStep.workflow_invocation_id == self.id)
-            .filter(~Job.table.c.state.in_(Job.terminal_states))
+            .filter(~Job.table.c.state.in_(Job.finished_states))
             .with_for_update()
             .scalar_subquery()
         )
@@ -8247,7 +8244,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
                 WorkflowInvocationStep, WorkflowInvocationStep.implicit_collection_jobs_id == ImplicitCollectionJobs.id
             )
             .filter(WorkflowInvocationStep.workflow_invocation_id == self.id)
-            .filter(~Job.table.c.state.in_(Job.terminal_states))
+            .filter(~Job.table.c.state.in_(Job.finished_states))
             .with_for_update()
             .subquery()
         )
