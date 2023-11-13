@@ -7016,7 +7016,7 @@ by the content of the text matching ``.*`` that follows on ``INFO: ``,
 i.e. the content of the first group.
 The second regular expression defines a named group ``error_message``
 which then replaces the corresponding placeholder ``\g<error_message>`` in the
-description. Notethe quoting of the ``<`` and ``>`` characters in XML.
+description. Note the quoting of the ``<`` and ``>`` characters in XML.
 
 ```xml
 <stdio>
