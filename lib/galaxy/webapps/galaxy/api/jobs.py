@@ -4,7 +4,6 @@ API operations on a jobs.
 .. seealso:: :class:`galaxy.model.Jobs`
 """
 
-import json
 import logging
 from datetime import (
     date,
@@ -492,7 +491,7 @@ class FastAPIJobs:
             raise exceptions.ObjectNotFound("Requested tool not found")
         # TODO the inputs are actually a dict, but are passed as a JSON dump
         # maybe change it?
-        inputs = json.loads(payload.inputs)
+        inputs = payload.inputs
         # Find files coming in as multipart file data and add to inputs.
         for k, v in payload.__annotations__.items():
             if k.startswith("files_") or k.startswith("__files_"):

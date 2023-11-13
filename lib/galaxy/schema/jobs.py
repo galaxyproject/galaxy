@@ -1,3 +1,4 @@
+import json
 from enum import Enum
 from typing import (
     Any,
@@ -11,6 +12,7 @@ from pydantic import (
     Field,
     Required,
     UUID4,
+    validator,
 )
 
 from galaxy.schema.fields import (
@@ -104,16 +106,22 @@ class SearchJobsPayload(Model):
     )
     # TODO the inputs are actually a dict, but are passed as a JSON dump
     # maybe change it?
-    inputs: str = Field(
+    inputs: Dict[str, Any] = Field(
         default=Required,
         title="Inputs",
-        description="The inputs of the job as a JSON dump.",
+        description="The inputs of the job.",
     )
     state: JobState = Field(
         default=Required,
         title="State",
         description="Current state of the job.",
     )
+
+    @validator("inputs", pre=True)
+    def decode_json(cls, v):
+        if isinstance(v, str):
+            return json.loads(v)
+        return v
 
     class Config:
         extra = Extra.allow  # This is used for items named file_ and __file_
