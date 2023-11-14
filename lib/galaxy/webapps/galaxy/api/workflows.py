@@ -24,6 +24,7 @@ from gxformat2._yaml import ordered_dump
 from markupsafe import escape
 from pydantic import Extra
 from starlette.responses import StreamingResponse
+from typing_extensions import Annotated
 
 from galaxy import (
     exceptions,
@@ -1497,6 +1498,43 @@ class FastAPIInvocations:
                 "Content-Disposition": f'attachment; filename="bco_{trans.security.encode_id(invocation_id)}.json"',
                 "Access-Control-Expose-Headers": "Content-Disposition",
             },
+        )
+
+    @router.get(
+        "/api/invocations/{invocation_id}",
+        name="show_invocation",
+        summary="Get detailed description of workflow invocation",
+    )
+    def show_invocation(
+        self,
+        invocation_id: Annotated[DecodedDatabaseIdField, InvocationIDPathParam],
+        trans: GalaxyWebTransaction = DependsOnTrans,
+        **kwd,
+    ):
+        """
+        :param  step_details:       fetch details about individual invocation steps
+                                    and populate a steps attribute in the resulting
+                                    dictionary. Defaults to false.
+        :type   step_details:       bool
+
+        :param  legacy_job_state:   If step_details is true, and this is set to true
+                                    populate the invocation step state with the job state
+                                    instead of the invocation step state. This will also
+                                    produce one step per job in mapping jobs to mimic the
+                                    older behavior with respect to collections. Partially
+                                    scheduled steps may provide incomplete information
+                                    and the listed steps outputs are the mapped over
+                                    step outputs but the individual job outputs
+                                    when this is set - at least for now.
+        :type   legacy_job_state:   bool
+        """
+        workflow_invocation = self.invocations_service._workflows_manager.get_invocation(
+            trans, invocation_id, eager=True
+        )
+        if not workflow_invocation:
+            raise exceptions.ObjectNotFound()
+        return self.invocations_service.serialize_workflow_invocation(
+            workflow_invocation, InvocationSerializationParams(**kwd)
         )
 
     # TODO: remove this after 23.1 release
