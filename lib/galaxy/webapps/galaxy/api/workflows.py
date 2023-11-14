@@ -907,7 +907,9 @@ class WorkflowsAPIController(
         :raises: exceptions.MessageException, exceptions.ObjectNotFound
         """
         decoded_workflow_invocation_id = self.decode_id(invocation_id)
-        workflow_invocation = self.workflow_manager.cancel_invocation(trans, decoded_workflow_invocation_id)
+        workflow_invocation = self.workflow_manager.request_invocation_cancellation(
+            trans, decoded_workflow_invocation_id
+        )
         return self.__encode_invocation(workflow_invocation, **kwd)
 
     @expose_api
