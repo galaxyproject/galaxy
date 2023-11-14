@@ -2,6 +2,7 @@
 import { useFileDrop } from "composables/fileDrop";
 import { useGlobalUploadModal } from "composables/globalUploadModal";
 import { computed, ref } from "vue";
+
 import { useToast } from "@/composables/toast";
 
 const modalContentElement = ref(null);
