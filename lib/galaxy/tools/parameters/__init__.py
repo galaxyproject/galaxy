@@ -526,10 +526,10 @@ def _populate_state_legacy(
             del group_state[:]
             while True:
                 rep_prefix = "%s_%d" % (key, rep_index)
-                repeat_min_default = input.default if input.default > input.min else input.min
+                rep_min_default = input.default if input.default > input.min else input.min
                 if (
                     not any(incoming_key.startswith(rep_prefix) for incoming_key in incoming.keys())
-                    and rep_index >= repeat_min_default
+                    and rep_index >= rep_min_default
                 ):
                     break
                 if rep_index < input.max:
