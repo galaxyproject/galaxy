@@ -6,6 +6,7 @@ from datetime import (
     datetime,
 )
 
+import sqlalchemy
 from boltons.iterutils import remap
 from pydantic import (
     BaseModel,
@@ -27,7 +28,6 @@ from sqlalchemy.sql import select
 
 from galaxy import model
 from galaxy.exceptions import (
-    AdminRequiredException,
     ItemAccessibilityException,
     ObjectNotFound,
     RequestParameterInvalidException,
@@ -104,7 +104,7 @@ class JobManager:
         self.app = app
         self.dataset_manager = DatasetManager(app)
 
-    def index_query(self, trans, payload: JobIndexQueryPayload):
+    def index_query(self, trans, payload: JobIndexQueryPayload) -> sqlalchemy.engine.Result:
         is_admin = trans.user_is_admin
         user_details = payload.user_details
         decoded_user_id = payload.user_id
@@ -191,12 +191,6 @@ class JobManager:
                         columns.append(Job.job_runner_name)
                     stmt = stmt.filter(raw_text_column_filter(columns, term))
             return stmt
-
-        if not is_admin:
-            if user_details:
-                raise AdminRequiredException("Only admins can index the jobs with user details enabled")
-            if decoded_user_id is not None and decoded_user_id != trans.user.id:
-                raise AdminRequiredException("Only admins can index the jobs of others")
 
         stmt = select(Job)
 
