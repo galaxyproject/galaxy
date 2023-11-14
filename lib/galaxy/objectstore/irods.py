@@ -82,7 +82,7 @@ def parse_config_xml(config_xml):
             _config_xml_error("cache")
         cache_size = float(c_xml[0].get("size", -1))
         staging_path = c_xml[0].get("path", None)
-        cache_updated_data = string_as_bool(c_xml.get("cache_updated_data", "True"))
+        cache_updated_data = string_as_bool(c_xml[0].get("cache_updated_data", "True"))
 
         attrs = ("type", "path")
         e_xml = config_xml.findall("extra_dir")
