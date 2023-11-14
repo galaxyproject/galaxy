@@ -195,7 +195,6 @@ DatasetIdPathParam: DecodedDatabaseIdField = Path(title="Dataset ID", descriptio
 
 ReportErrorBody = Body(default=Required, title="Report error", description="The values to report an Error")
 SearchJobBody = Body(default=Required, title="Search job", description="The values to search an Job")
-# TODO The endpoint only stops/cancels a job, but is called delete settle for one name
 DeleteJobBody = Body(title="Delete/cancel job", description="The values to delete/cancel a job")
 
 
@@ -256,16 +255,16 @@ class FastAPIJobs:
         raise HTTPException(status_code=501, detail="Please POST to /api/tools instead.")
 
     @router.get(
-        "/api/jobs/{id}/common_problems",
+        "/api/jobs/{job_id}/common_problems",
         name="check_common_problems",
         summary="Check inputs and job for common potential problems to aid in error reporting",
     )
     def common_problems(
         self,
-        id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
+        job_id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> JobInputSummary:
-        job = self.service.get_job(trans=trans, job_id=id)
+        job = self.service.get_job(trans=trans, job_id=job_id)
         seen_ids = set()
         has_empty_inputs = False
         has_duplicate_inputs = False
@@ -286,16 +285,16 @@ class FastAPIJobs:
         return JobInputSummary(has_empty_inputs=has_empty_inputs, has_duplicate_inputs=has_duplicate_inputs)
 
     @router.put(
-        "/api/jobs/{id}/resume",
+        "/api/jobs/{job_id}/resume",
         name="resume_paused_job",
         summary="Resumes a paused job.",
     )
     def resume(
         self,
-        id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
+        job_id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> List[JobOutputAssociation]:
-        job = self.service.get_job(trans, job_id=id)
+        job = self.service.get_job(trans, job_id=job_id)
         if not job:
             raise exceptions.ObjectNotFound("Could not access job with the given id")
         if job.state == job.states.PAUSED:
@@ -309,21 +308,21 @@ class FastAPIJobs:
         return output_associations
 
     @router.post(
-        "/api/jobs/{id}/error",
+        "/api/jobs/{job_id}/error",
         name="report_error",
         summary="Submits a bug report via the API.",
     )
     def error(
         self,
         payload: Annotated[ReportJobErrorPayload, ReportErrorBody],
-        id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
+        job_id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> JobErrorSummary:
         # Get dataset on which this error was triggered
         dataset_id = payload.dataset_id
         dataset = self.service.hda_manager.get_accessible(id=dataset_id, user=trans.user)
         # Get job
-        job = self.service.get_job(trans, id)
+        job = self.service.get_job(trans, job_id)
         if dataset.creating_job.id != job.id:
             raise exceptions.RequestParameterInvalidException("dataset_id was not created by job_id")
         tool = trans.app.toolbox.get_tool(job.tool_id, tool_version=job.tool_version) or None
@@ -342,16 +341,16 @@ class FastAPIJobs:
         return JobErrorSummary(messages=messages)
 
     @router.get(
-        "/api/jobs/{id}/inputs",
+        "/api/jobs/{job_id}/inputs",
         name="get_inputs",
         summary="Returns input datasets created by a job.",
     )
     def inputs(
         self,
-        id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
+        job_id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> List[JobInputAssociation]:
-        job = self.service.get_job(trans=trans, job_id=id)
+        job = self.service.get_job(trans=trans, job_id=job_id)
         associations = self.service.dictify_associations(trans, job.input_datasets, job.input_library_datasets)
         input_associations = []
         for association in associations:
@@ -359,16 +358,16 @@ class FastAPIJobs:
         return input_associations
 
     @router.get(
-        "/api/jobs/{id}/outputs",
+        "/api/jobs/{job_id}/outputs",
         name="get_outputs",
         summary="Returns output datasets created by a job.",
     )
     def outputs(
         self,
-        id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
+        job_id: Annotated[DecodedDatabaseIdField, JobIdPathParam],
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> List[JobOutputAssociation]:
-        job = self.service.get_job(trans=trans, job_id=id)
+        job = self.service.get_job(trans=trans, job_id=job_id)
         associations = self.service.dictify_associations(trans, job.output_datasets, job.output_library_datasets)
         output_associations = []
         for association in associations:
@@ -489,8 +488,6 @@ class FastAPIJobs:
         tool = trans.app.toolbox.get_tool(tool_id)
         if tool is None:
             raise exceptions.ObjectNotFound("Requested tool not found")
-        # TODO the inputs are actually a dict, but are passed as a JSON dump
-        # maybe change it?
         inputs = payload.inputs
         # Find files coming in as multipart file data and add to inputs.
         for k, v in payload.__annotations__.items():
