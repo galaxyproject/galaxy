@@ -135,8 +135,10 @@ class DeleteJobPayload(Model):
         description="Stop message",
     )
 
+
 class SrcItem(Model):
     src: DataItemSourceType
+
 
 class EncodedHdcaSourceId(SrcItem):
     id: EncodedDatabaseIdField = EntityIdField
@@ -145,6 +147,7 @@ class EncodedHdcaSourceId(SrcItem):
         title="Source",
         description="The source of this dataset, which in the case of the model can only be `hdca`.",
     )
+
 
 class EncodedDatasetJobInfo(EncodedDataItemSourceId):
     uuid: Optional[UUID4] = Field(
