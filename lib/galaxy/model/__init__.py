@@ -8216,6 +8216,23 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         states = WorkflowInvocation.states
         return self.state in [states.NEW, states.READY]
 
+    def set_state(self, state: "WorkflowInvocation.states"):
+        session = object_session(self)
+        priority_states = (WorkflowInvocation.states.CANCELLING, WorkflowInvocation.states.CANCELLED)
+        if session and self.id and state not in priority_states:
+            # generate statement that will not revert CANCELLING or CANCELLED back to anything non-terminal
+            session.execute(
+                update(WorkflowInvocation.table)
+                .where(
+                    WorkflowInvocation.id == self.id,
+                    or_(~WorkflowInvocation.state.in_(priority_states), WorkflowInvocation.state.is_(None)),
+                )
+                .values(state=state)
+            )
+        else:
+            # Not bound to a session, or setting cancelling/cancelled
+            self.state = state
+
     def cancel(self):
         if self.state not in [WorkflowInvocation.states.CANCELLING, WorkflowInvocation.states.CANCELLED]:
             # No use cancelling workflow again, for all others we may still want to be able to cancel
