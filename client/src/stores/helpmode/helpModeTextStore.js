@@ -1,5 +1,6 @@
-import config from "./helpTextConfig.yml";
 import { defineStore } from "pinia";
+
+import config from "./helpTextConfig.yml";
 
 export const useHelpModeTextStore = defineStore("helpModeText", {
     state: () => {
