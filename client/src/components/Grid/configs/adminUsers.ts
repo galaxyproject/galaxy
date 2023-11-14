@@ -204,17 +204,7 @@ const fields = [
                     return config.value.allow_user_impersonation && !data.deleted;
                 },
                 handler: async (data: UserEntry, router: Router) => {
-                    try {
-                        await impersonateUser({ user_id: String(data.id) });
-                        router.push("/");
-                    } catch (e) {
-                        return {
-                            status: "danger",
-                            message: `Failed to impersonate '${data.username}': ${errorMessageAsString(
-                                e
-                            )}.`,
-                        };
-                    }
+                    window.location.href = withPrefix(`/admin/impersonate?id=${data.id}`);
                 },
             },
             {
