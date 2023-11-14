@@ -2,14 +2,17 @@
     <b-dropdown
         v-b-tooltip.hover.top.noninteractive
         right
+        block
+        no-caret
         title="Show panel options"
         variant="link"
+        toggle-class="text-decoration-none"
         role="menu"
         aria-label="View all tool panel configurations"
         class="tool-panel-dropdown"
         size="sm">
         <template v-slot:button-content>
-            <span class="sr-only">View all tool panel configurations</span>
+            <slot name="panel-view-selector"></slot><span class="sr-only">View all tool panel configurations</span>
         </template>
         <PanelViewMenuItem
             :current-panel-view="currentPanelView"

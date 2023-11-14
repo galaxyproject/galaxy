@@ -1,17 +1,21 @@
 <script setup lang="ts">
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import axios from "axios";
 import { storeToRefs } from "pinia";
-import { onMounted, ref, watch } from "vue";
+import { computed, onMounted, ref, watch } from "vue";
 
 import { getAppRoot } from "@/onload";
-import { useToolStore } from "@/stores/toolStore";
+import { type PanelView, useToolStore } from "@/stores/toolStore";
 import localize from "@/utils/localization";
 
 import LoadingSpan from "../LoadingSpan.vue";
-import FavoritesButton from "./Buttons/FavoritesButton.vue";
-import PanelViewButton from "./Buttons/PanelViewButton.vue";
+import PanelViewMenu from "./Menus/PanelViewMenu.vue";
 import ToolBox from "./ToolBox.vue";
 import Heading from "@/components/Common/Heading.vue";
+
+library.add(faCaretDown);
 
 const props = defineProps({
     workflow: { type: Boolean, default: false },
@@ -33,7 +37,7 @@ const toolStore = useToolStore();
 const { currentPanelView, isPanelPopulated } = storeToRefs(toolStore);
 
 const query = ref("");
-const panelViews = ref(null);
+const panelViews = ref<Record<string, PanelView> | null>(null);
 const showAdvanced = ref(false);
 
 onMounted(async () => {
@@ -70,6 +74,20 @@ watch(
     }
 );
 
+const toolPanelHeader = computed(() => {
+    if (showAdvanced.value) {
+        return localize("Advanced Tool Search");
+    } else if (
+        currentPanelView.value !== "default" &&
+        panelViews.value &&
+        panelViews.value[currentPanelView.value]?.name
+    ) {
+        return localize(panelViews.value[currentPanelView.value]?.name);
+    } else {
+        return localize("Tools");
+    }
+});
+
 async function initializeTools() {
     try {
         await toolStore.fetchTools();
@@ -103,25 +121,28 @@ function onInsertWorkflowSteps(workflowId: string, workflowStepCount: number | u
 <template>
     <div v-if="arePanelsFetched" class="unified-panel" aria-labelledby="toolbox-heading">
         <div unselectable="on">
-            <div class="unified-panel-header-inner">
-                <nav class="d-flex justify-content-between mx-3 my-2">
-                    <Heading v-if="!showAdvanced" id="toolbox-heading" h2 inline size="sm">{{
-                        localize("Tools")
-                    }}</Heading>
-                    <Heading v-else id="toolbox-heading" h2 inline size="sm">{{
-                        localize("Advanced Tool Search")
-                    }}</Heading>
-                    <div class="panel-header-buttons">
-                        <b-button-group>
-                            <FavoritesButton v-if="!showAdvanced" :query="query" @onFavorites="(q) => (query = q)" />
-                            <PanelViewButton
-                                v-if="panelViews && Object.keys(panelViews).length > 1"
-                                :panel-views="panelViews"
-                                :current-panel-view="currentPanelView"
-                                @updatePanelView="updatePanelView" />
-                        </b-button-group>
-                    </div>
-                </nav>
+            <div class="unified-panel-header-inner mx-3 my-2">
+                <PanelViewMenu
+                    v-if="panelViews && Object.keys(panelViews).length > 1"
+                    :panel-views="panelViews"
+                    :current-panel-view="currentPanelView"
+                    @updatePanelView="updatePanelView">
+                    <template v-slot:panel-view-selector>
+                        <div class="d-flex justify-content-between panel-view-selector">
+                            <Heading
+                                id="toolbox-heading"
+                                :class="!showAdvanced && toolPanelHeader !== 'Tools' && 'font-italic'"
+                                h2
+                                inline
+                                size="sm"
+                                >{{ toolPanelHeader }}
+                            </Heading>
+                            <div v-if="!showAdvanced" class="panel-header-buttons">
+                                <FontAwesomeIcon icon="caret-down" />
+                            </div>
+                        </div>
+                    </template>
+                </PanelViewMenu>
             </div>
         </div>
         <ToolBox
@@ -145,3 +166,11 @@ function onInsertWorkflowSteps(workflowId: string, workflowStepCount: number | u
         </div>
     </div>
 </template>
+
+<style lang="scss" scoped>
+@import "theme/blue.scss";
+
+.panel-view-selector {
+    color: $panel-header-text-color;
+}
+</style>

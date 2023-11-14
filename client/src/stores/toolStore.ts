@@ -62,6 +62,15 @@ export interface FilterSettings {
     help?: string;
 }
 
+export interface PanelView {
+    id: string;
+    model_class: string;
+    name: string;
+    description: string;
+    view_type: string;
+    searchable: boolean;
+}
+
 export const useToolStore = defineStore("toolStore", () => {
     const currentPanelView: Ref<string> = useUserLocalStorage("tool-store-view", "");
     const toolsById = ref<Record<string, Tool>>({});
@@ -168,7 +177,7 @@ export const useToolStore = defineStore("toolStore", () => {
         }
     }
 
-    // Directly related to the ToolPanel
+    // Used to initialize the ToolPanel with the default panel view for this site.
     async function initCurrentPanelView(siteDefaultPanelView: string) {
         if (!loading.value && !isPanelPopulated.value) {
             loading.value = true;
@@ -194,14 +203,22 @@ export const useToolStore = defineStore("toolStore", () => {
 
     async function setCurrentPanelView(panelView: string) {
         if (!loading.value) {
-            currentPanelView.value = panelView;
             if (panel.value[panelView]) {
+                currentPanelView.value = panelView;
                 return;
             }
             loading.value = true;
-            const { data } = await axios.get(`${getAppRoot()}api/tool_panels/${panelView}`);
-            savePanelView(panelView, data);
-            loading.value = false;
+            try {
+                await axios.get(`${getAppRoot()}api/tool_panels/${panelView}`);
+                const { data } = await axios.get(`${getAppRoot()}api/tool_panels/${panelView}`);
+                currentPanelView.value = panelView;
+                savePanelView(panelView, data);
+                loading.value = false;
+            } catch (e) {
+                const error = e as { response: { data: { err_msg: string } } };
+                console.error("Could not change panel view", error.response.data.err_msg ?? error.response);
+                loading.value = false;
+            }
         }
     }
 
