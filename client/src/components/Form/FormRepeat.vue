@@ -16,13 +16,13 @@ interface Input {
     title: string;
     min: number;
     default: number;
-    max: number|string;
+    max: number | string;
     help?: string;
     cache: Array<Record<string, unknown>>;
 }
 
 const maxRepeats = computed(() => {
-    return (typeof props.input.max === "number") ? props.input.cache?.length >= props.input.max : false;
+    return typeof props.input.max === "number" ? props.input.cache?.length >= props.input.max : false;
 });
 
 const props = defineProps({
@@ -159,8 +159,6 @@ const { keyObject } = useKeyedObjects();
             <FontAwesomeIcon icon="plus" class="mr-1" />
             <span data-description="repeat insert">Insert {{ props.input.title || "Repeat" }}</span>
         </b-button>
-        <div v-if="maxRepeats">
-            Maximum number of {{ props.input.title || "Repeat" }} fields reached
-        </div>
+        <div v-if="maxRepeats">Maximum number of {{ props.input.title || "Repeat" }} fields reached</div>
     </div>
 </template>
