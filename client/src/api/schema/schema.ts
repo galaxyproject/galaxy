@@ -4235,8 +4235,9 @@ export interface components {
             /**
              * Source
              * @description The source of this dataset, which in the case of the model can only be `hdca`.
+             * @enum {string}
              */
-            src: components["schemas"]["Hdca"];
+            src: "hdca";
         };
         /**
          * EncodedHistoryContentItem
@@ -5736,12 +5737,6 @@ export interface components {
              */
             type: "hdas";
         };
-        /**
-         * Hdca
-         * @description An enumeration.
-         * @enum {string}
-         */
-        Hdca: "hdca";
         /**
          * HdcaDataItemsFromTarget
          * @description Base model definition with common configuration used by all derived models.
@@ -8684,9 +8679,9 @@ export interface components {
         SearchJobsPayload: {
             /**
              * Inputs
-             * @description The inputs of the job as a JSON dump.
+             * @description The inputs of the job.
              */
-            inputs: string;
+            inputs: Record<string, never>;
             /**
              * State
              * @description Current state of the job.
