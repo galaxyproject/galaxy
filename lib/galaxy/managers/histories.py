@@ -18,6 +18,7 @@ from typing import (
 from sqlalchemy import (
     asc,
     desc,
+    exists,
     false,
     func,
     select,
@@ -340,13 +341,12 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         return extra
 
     def is_history_shared_with(self, history: model.History, user: model.User) -> bool:
-        stmt = (
-            select(HistoryUserShareAssociation.id)
+        stmt = select(
+            exists()
             .where(HistoryUserShareAssociation.user_id == user.id)
             .where(HistoryUserShareAssociation.history_id == history.id)
-            .limit(1)
         )
-        return bool(self.session().execute(stmt).first())
+        return self.session().scalar(stmt)
 
     def make_members_public(self, trans, item):
         """Make the non-purged datasets in history public.
