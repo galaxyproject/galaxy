@@ -87,7 +87,7 @@ class TestOutputChecker(TestCase):
         regex = ToolStdioRegex()
         regex.stderr_match = True
         regex.match = "ERROR: (?P<q>.{3})bar"
-        regex.desc = "\g<q>"
+        regex.desc = r"\g<q>"
         self.__add_regex(regex)
         self.stderr = "ERROR: foobar"
         _, _, _, job_messages = self.__check_output()
