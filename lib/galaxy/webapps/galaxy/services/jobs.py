@@ -2,6 +2,7 @@ from enum import Enum
 from typing import (
     Any,
     Dict,
+    Optional,
 )
 
 from galaxy import (
@@ -59,15 +60,18 @@ class JobsService:
     ):
         security = trans.security
         is_admin = trans.user_is_admin
-        if payload.view == JobIndexViewEnum.admin_job_list:
+        view = payload.view
+        if view == JobIndexViewEnum.admin_job_list:
             payload.user_details = True
         user_details = payload.user_details
-        if payload.view == JobIndexViewEnum.admin_job_list and not is_admin:
-            raise exceptions.AdminRequiredException("Only admins can use the admin_job_list view")
-        query = self.job_manager.index_query(trans, payload)
+        decoded_user_id = payload.user_id
+
+        if not is_admin:
+            self._check_nonadmin_access(view, user_details, decoded_user_id, trans.user.id)
+
+        jobs = self.job_manager.index_query(trans, payload)
         out = []
-        view = payload.view
-        for job in query.yield_per(model.YIELD_PER_ROWS):
+        for job in jobs.yield_per(model.YIELD_PER_ROWS):
             job_dict = job.to_dict(view, system_details=is_admin)
             j = security.encode_all_ids(job_dict, True)
             if view == JobIndexViewEnum.admin_job_list:
@@ -77,3 +81,14 @@ class JobsService:
             out.append(j)
 
         return out
+
+    def _check_nonadmin_access(
+        self, view: str, user_details: bool, decoded_user_id: Optional[DecodedDatabaseIdField], trans_user_id: int
+    ):
+        """Verify admin-only resources are not being accessed."""
+        if view == JobIndexViewEnum.admin_job_list:
+            raise exceptions.AdminRequiredException("Only admins can use the admin_job_list view")
+        if user_details:
+            raise exceptions.AdminRequiredException("Only admins can index the jobs with user details enabled")
+        if decoded_user_id is not None and decoded_user_id != trans_user_id:
+            raise exceptions.AdminRequiredException("Only admins can index the jobs of others")
