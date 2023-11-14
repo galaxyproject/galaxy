@@ -125,22 +125,20 @@ class ItemGrabber:
 
     def setup_query(self):
         if self.grab_model is model.Job:
-            grab_condition = self.grab_model.table.c.state == self.grab_model.states.NEW
+            grab_condition = self.grab_model.state == self.grab_model.states.NEW
         elif self.grab_model is model.WorkflowInvocation:
-            grab_condition = self.grab_model.table.c.state.in_(
-                (self.grab_model.states.NEW, self.grab_model.states.CANCELLING)
-            )
+            grab_condition = self.grab_model.state.in_((self.grab_model.states.NEW, self.grab_model.states.CANCELLING))
         else:
             raise NotImplementedError(f"Grabbing {self.grab_model.__name__} not implemented")
         subq = (
             select(self.grab_model.id)
             .where(
                 and_(
-                    self.grab_model.table.c.handler.in_(self.self_handler_tags),
+                    self.grab_model.handler.in_(self.self_handler_tags),
                     grab_condition,
                 )
             )
-            .order_by(self.grab_model.table.c.id)
+            .order_by(self.grab_model.id)
         )
         if self.max_grab:
             subq = subq.limit(self.max_grab)
@@ -148,11 +146,11 @@ class ItemGrabber:
             subq = subq.with_for_update(skip_locked=True)
         self._grab_query = (
             self.grab_model.table.update()
-            .where(self.grab_model.table.c.id.in_(subq))
+            .where(self.grab_model.id.in_(subq))
             .values(handler=self.app.config.server_name)
         )
         if self._supports_returning:
-            self._grab_query = self._grab_query.returning(self.grab_model.table.c.id)
+            self._grab_query = self._grab_query.returning(self.grab_model.id)
         if self.handler_assignment_method == HANDLER_ASSIGNMENT_METHODS.DB_TRANSACTION_ISOLATION:
             self._grab_conn_opts["isolation_level"] = "SERIALIZABLE"
         log.info(

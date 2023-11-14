@@ -1644,7 +1644,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
             # generate statement that will not revert DELETING or DELETED back to anything non-terminal
             rval = session.execute(
                 update(Job.table)
-                .where(Job.table.c.id == self.id, ~Job.table.c.state.in_((Job.states.DELETING, Job.states.DELETED)))
+                .where(Job.id == self.id, ~Job.state.in_((Job.states.DELETING, Job.states.DELETED)))
                 .values(state=state)
             )
             if rval.rowcount == 1:
@@ -8226,25 +8226,26 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
 
     def cancel_invocation_steps(self):
         sa_session = object_session(self)
+        assert sa_session
         job_subq = (
-            sa_session.query(Job.id)
+            select(Job.id)
             .join(WorkflowInvocationStep)
             .filter(WorkflowInvocationStep.workflow_invocation_id == self.id)
-            .filter(~Job.table.c.state.in_(Job.finished_states))
+            .filter(~Job.state.in_(Job.finished_states))
             .with_for_update()
             .scalar_subquery()
         )
         sa_session.execute(update(Job.table).where(Job.id == job_subq).values({"state": Job.states.DELETING}))
 
         job_collection_subq = (
-            sa_session.query(Job.id)
+            select(Job.id)
             .join(ImplicitCollectionJobsJobAssociation)
             .join(ImplicitCollectionJobs)
             .join(
                 WorkflowInvocationStep, WorkflowInvocationStep.implicit_collection_jobs_id == ImplicitCollectionJobs.id
             )
             .filter(WorkflowInvocationStep.workflow_invocation_id == self.id)
-            .filter(~Job.table.c.state.in_(Job.finished_states))
+            .filter(~Job.state.in_(Job.finished_states))
             .with_for_update()
             .subquery()
         )
