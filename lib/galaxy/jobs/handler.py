@@ -255,7 +255,7 @@ class JobHandlerQueue(BaseJobHandlerQueue):
         name = "JobHandlerQueue.monitor_thread"
         self._init_monitor_thread(name, target=self.__monitor, config=app.config)
         self.job_grabber = None
-        handler_assignment_method = ItemGrabber.get_grabbable_handler_assignment_method(
+        handler_assignment_method = JobGrabber.get_grabbable_handler_assignment_method(
             self.app.job_config.handler_assignment_methods
         )
         if handler_assignment_method:
