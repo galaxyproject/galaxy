@@ -1,5 +1,4 @@
 import json
-from enum import Enum
 from typing import (
     Any,
     Dict,
@@ -14,12 +13,14 @@ from pydantic import (
     UUID4,
     validator,
 )
+from typing_extensions import Literal
 
 from galaxy.schema.fields import (
     DecodedDatabaseIdField,
     EncodedDatabaseIdField,
 )
 from galaxy.schema.schema import (
+    DataItemSourceType,
     EncodedDataItemSourceId,
     EntityIdField,
     JobState,
@@ -134,18 +135,16 @@ class DeleteJobPayload(Model):
         description="Stop message",
     )
 
+class SrcItem(Model):
+    src: DataItemSourceType
 
-class EncodedHdcaSourceId(Model):
-    class Hdca(str, Enum):
-        hdca = "hdca"
-
+class EncodedHdcaSourceId(SrcItem):
     id: EncodedDatabaseIdField = EntityIdField
-    src: Hdca = Field(
+    src: Literal[DataItemSourceType.hdca] = Field(
         default=Required,
         title="Source",
         description="The source of this dataset, which in the case of the model can only be `hdca`.",
     )
-
 
 class EncodedDatasetJobInfo(EncodedDataItemSourceId):
     uuid: Optional[UUID4] = Field(
