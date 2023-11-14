@@ -882,6 +882,6 @@ class TestQcStdio(BaseLoaderTestCase):
     def test_tests(self):
         exit, regexes = self._tool_source.parse_stdio()
         assert len(exit) == 2
-        assert len(regexes) == 1
+        assert len(regexes) == 2
         regex = regexes[0]
         assert regex.error_level == 1.1
