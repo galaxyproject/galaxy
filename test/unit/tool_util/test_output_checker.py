@@ -80,7 +80,7 @@ class TestOutputChecker(TestCase):
         self.__add_regex(regex)
         self.stderr = "ERROR: foobar"
         _, _, _, job_messages = self.__check_output()
-        assert job_messages[0]['desc'] == "Fatal error: foo"
+        assert job_messages[0]["desc"] == "Fatal error: foo"
         self.__assertNotSuccessful()
 
     def test_stderr_regex_namedgroup_positive_match(self):
@@ -91,7 +91,7 @@ class TestOutputChecker(TestCase):
         self.__add_regex(regex)
         self.stderr = "ERROR: foobar"
         _, _, _, job_messages = self.__check_output()
-        assert job_messages[0]['desc'] == "Fatal error: foo"
+        assert job_messages[0]["desc"] == "Fatal error: foo"
         self.__assertNotSuccessful()
 
     def test_stdout_ignored_for_stderr_regexes(self):
