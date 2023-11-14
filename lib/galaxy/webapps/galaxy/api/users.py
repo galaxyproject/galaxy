@@ -192,20 +192,6 @@ class FastAPIUsers:
         result = self.service.recalculate_disk_usage(trans, user_id)
         return Response(status_code=status.HTTP_204_NO_CONTENT) if result is None else result
 
-    @router.post(
-        "/api/users/{user_id}/impersonate",
-        name="impersonate_user",
-        summary="Impersonates a user. Only admins can impersonate users.",
-        require_admin=True,
-    )
-    def impersonate(
-        self,
-        trans: ProvidesUserContext = DependsOnTrans,
-        user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
-    ):
-        user = self.service.get_user(trans=trans, user_id=user_id)
-        return self.service.user_manager.impersonate(trans, user)
-
     @router.get(
         "/api/users/deleted",
         name="get_deleted_users",
