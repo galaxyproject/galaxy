@@ -10,7 +10,10 @@ import { getAppRoot } from "@/onload";
 import { type PanelView, useToolStore } from "@/stores/toolStore";
 import localize from "@/utils/localization";
 
+import { types_to_icons } from "./utilities";
+
 import LoadingSpan from "../LoadingSpan.vue";
+import FavoritesButton from "./Buttons/FavoritesButton.vue";
 import PanelViewMenu from "./Menus/PanelViewMenu.vue";
 import ToolBox from "./ToolBox.vue";
 import Heading from "@/components/Common/Heading.vue";
@@ -88,6 +91,21 @@ const toolPanelHeader = computed(() => {
     }
 });
 
+const viewIcon = computed(() => {
+    if (showAdvanced.value) {
+        return "search";
+    } else if (
+        currentPanelView.value !== "default" &&
+        panelViews.value &&
+        typeof panelViews.value[currentPanelView.value]?.view_type === "string"
+    ) {
+        const viewType = panelViews.value[currentPanelView.value]?.view_type;
+        return viewType ? types_to_icons[viewType] : null;
+    } else {
+        return null;
+    }
+});
+
 async function initializeTools() {
     try {
         await toolStore.fetchTools();
@@ -121,7 +139,7 @@ function onInsertWorkflowSteps(workflowId: string, workflowStepCount: number | u
 <template>
     <div v-if="arePanelsFetched" class="unified-panel" aria-labelledby="toolbox-heading">
         <div unselectable="on">
-            <div class="unified-panel-header-inner mx-3 my-2">
+            <div class="unified-panel-header-inner mx-3 my-2 d-flex justify-content-between">
                 <PanelViewMenu
                     v-if="panelViews && Object.keys(panelViews).length > 1"
                     :panel-views="panelViews"
@@ -129,20 +147,26 @@ function onInsertWorkflowSteps(workflowId: string, workflowStepCount: number | u
                     @updatePanelView="updatePanelView">
                     <template v-slot:panel-view-selector>
                         <div class="d-flex justify-content-between panel-view-selector">
-                            <Heading
-                                id="toolbox-heading"
-                                :class="!showAdvanced && toolPanelHeader !== 'Tools' && 'font-italic'"
-                                h2
-                                inline
-                                size="sm"
-                                >{{ toolPanelHeader }}
-                            </Heading>
+                            <div>
+                                <span v-if="viewIcon" :class="['fas', `fa-${viewIcon}`, 'mr-1']" />
+                                <Heading
+                                    id="toolbox-heading"
+                                    :class="!showAdvanced && toolPanelHeader !== 'Tools' && 'font-italic'"
+                                    h2
+                                    inline
+                                    size="sm"
+                                    >{{ toolPanelHeader }}
+                                </Heading>
+                            </div>
                             <div v-if="!showAdvanced" class="panel-header-buttons">
                                 <FontAwesomeIcon icon="caret-down" />
                             </div>
                         </div>
                     </template>
                 </PanelViewMenu>
+                <div v-if="!showAdvanced" class="panel-header-buttons">
+                    <FavoritesButton :query="query" @onFavorites="(q) => (query = q)" />
+                </div>
             </div>
         </div>
         <ToolBox

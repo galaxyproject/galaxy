@@ -49,6 +49,16 @@ interface SearchMatch {
     order: number;
 }
 
+/** Returns icon for tool panel `view_type` */
+export const types_to_icons = {
+    default: "undo",
+    generic: "filter",
+    ontology: "sitemap",
+    activity: "project-diagram",
+    publication: "newspaper",
+    training: "graduation-cap",
+};
+
 // Converts filterSettings { key: value } to query = "key:value"
 export function createWorkflowQuery(filterSettings: Record<string, string | boolean>) {
     let query = "";

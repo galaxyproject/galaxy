@@ -9,7 +9,7 @@
         toggle-class="text-decoration-none"
         role="menu"
         aria-label="View all tool panel configurations"
-        class="tool-panel-dropdown"
+        class="tool-panel-dropdown w-100"
         size="sm">
         <template v-slot:button-content>
             <slot name="panel-view-selector"></slot><span class="sr-only">View all tool panel configurations</span>

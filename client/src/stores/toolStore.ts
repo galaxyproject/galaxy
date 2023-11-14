@@ -6,7 +6,7 @@ import axios from "axios";
 import { defineStore } from "pinia";
 import Vue, { computed, Ref, ref } from "vue";
 
-import { createWhooshQuery, filterTools } from "@/components/Panels/utilities";
+import { createWhooshQuery, filterTools, types_to_icons } from "@/components/Panels/utilities";
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 import { getAppRoot } from "@/onload/loadConfig";
 
@@ -67,7 +67,7 @@ export interface PanelView {
     model_class: string;
     name: string;
     description: string;
-    view_type: string;
+    view_type: keyof typeof types_to_icons;
     searchable: boolean;
 }
 
