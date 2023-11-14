@@ -121,5 +121,5 @@ class TestOutputChecker(TestCase):
 
     def __check_output(self):
         return check_output(
-            self.tool.stdio_regexes, self.tool.stdio_exit_codes, self.stdout, self.stderr, self.tool_exit_code, "job_id"
+            self.tool.stdio_regexes, self.tool.stdio_exit_codes, self.stdout, self.stderr, self.tool_exit_code
         )
