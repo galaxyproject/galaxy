@@ -17,7 +17,7 @@ class DETECTED_JOB_STATE(str, Enum):
 ERROR_PEEK_SIZE = 2000
 
 
-def check_output_regex(job_id_tag, regex, stream, stream_name, job_messages, max_error_level):
+def check_output_regex(regex, stream, stream_name, job_messages, max_error_level):
     """
     check a single regex against a stream
 
@@ -35,7 +35,7 @@ def check_output_regex(job_id_tag, regex, stream, stream_name, job_messages, max
     return max_error_level
 
 
-def check_output(stdio_regexes, stdio_exit_codes, stdout, stderr, tool_exit_code, job_id_tag):
+def check_output(stdio_regexes, stdio_exit_codes, stdout, stderr, tool_exit_code):
     """
     Check the output of a tool - given the stdout, stderr, and the tool's
     exit code, return DETECTED_JOB_STATE.OK if the tool exited succesfully or
@@ -118,16 +118,12 @@ def check_output(stdio_regexes, stdio_exit_codes, stdout, stderr, tool_exit_code
                     #   - If it matched, then determine the error level.
                     #       o If it was fatal, then we're done - break.
                     if regex.stderr_match:
-                        max_error_level = check_output_regex(
-                            job_id_tag, regex, stderr, "stderr", job_messages, max_error_level
-                        )
+                        max_error_level = check_output_regex(regex, stderr, "stderr", job_messages, max_error_level)
                         if max_error_level >= StdioErrorLevel.MAX:
                             break
 
                     if regex.stdout_match:
-                        max_error_level = check_output_regex(
-                            job_id_tag, regex, stdout, "stdout", job_messages, max_error_level
-                        )
+                        max_error_level = check_output_regex(regex, stdout, "stdout", job_messages, max_error_level)
                         if max_error_level >= StdioErrorLevel.MAX:
                             break
 
