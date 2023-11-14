@@ -43,7 +43,7 @@ class Dataset:
     def get_metadata(self):
         return self.metadata
 
-    def get_file_name(self, **_kwargs):
+    def get_file_name(self, _sync_cache=True):
         return self.file_name_
 
 
