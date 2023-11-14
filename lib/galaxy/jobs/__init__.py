@@ -2088,12 +2088,8 @@ class MinimalJobWrapper(HasResourceParameters):
         )
 
     def check_tool_output(self, tool_stdout, tool_stderr, tool_exit_code, job, job_stdout=None, job_stderr=None):
-        job_id_tag = "<unknown job id>"
-        if job is not None:
-            job_id_tag = job.get_id_tag()
-
         state, tool_stdout, tool_stderr, job_messages = check_output(
-            self.tool.stdio_regexes, self.tool.stdio_exit_codes, tool_stdout, tool_stderr, tool_exit_code, job_id_tag
+            self.tool.stdio_regexes, self.tool.stdio_exit_codes, tool_stdout, tool_stderr, tool_exit_code
         )
 
         # Store the modified stdout and stderr in the job:
