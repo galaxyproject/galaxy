@@ -1093,4 +1093,3 @@ steps:
         jobs = jobs_response.json()
         assert isinstance(jobs, list)
         return jobs
-        return jobs
