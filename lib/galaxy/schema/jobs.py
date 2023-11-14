@@ -156,16 +156,7 @@ class EncodedDatasetJobInfo(EncodedDataItemSourceId):
     )
 
 
-class EncodedJobIDs(Model):
-    id: EncodedDatabaseIdField = EntityIdField
-    history_id: Optional[EncodedDatabaseIdField] = Field(
-        None,
-        title="History ID",
-        description="The encoded ID of the history associated with this item.",
-    )
-
-
-class EncodedJobDetails(JobSummary, EncodedJobIDs):
+class EncodedJobDetails(JobSummary):
     command_version: str = Field(
         ...,
         title="Command Version",
