@@ -148,7 +148,10 @@ function onInsertWorkflowSteps(workflowId: string, workflowStepCount: number | u
                     <template v-slot:panel-view-selector>
                         <div class="d-flex justify-content-between panel-view-selector">
                             <div>
-                                <span v-if="viewIcon" :class="['fas', `fa-${viewIcon}`, 'mr-1']" />
+                                <span
+                                    v-if="viewIcon"
+                                    :class="['fas', `fa-${viewIcon}`, 'mr-1']"
+                                    data-description="panel view header icon" />
                                 <Heading
                                     id="toolbox-heading"
                                     :class="!showAdvanced && toolPanelHeader !== 'Tools' && 'font-italic'"
