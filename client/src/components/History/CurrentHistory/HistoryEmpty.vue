@@ -1,13 +1,15 @@
 <script setup lang="ts">
-import { useGlobalUploadModal } from "composables/globalUploadModal";
+import { useEventBus } from "@vueuse/core";
 
-import { eventHub } from "@/components/plugins/eventHub";
+import { useGlobalUploadModal } from "@/composables/globalUploadModal";
 import { localize } from "@/utils/localization";
+
+const { emit } = useEventBus("open-tool-section");
 
 const props = withDefaults(
     defineProps<{
-        message: string;
-        writable: boolean;
+        message?: string;
+        writable?: boolean;
     }>(),
     {
         message: "This history is empty.",
@@ -17,7 +19,7 @@ const props = withDefaults(
 
 const { openGlobalUploadModal } = useGlobalUploadModal();
 function clickDataLink() {
-    eventHub.$emit("openToolSection", "getext");
+    emit("openToolSection", "getext");
 }
 </script>
 
