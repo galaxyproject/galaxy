@@ -1592,13 +1592,9 @@ export interface paths {
         /** Remove the object from user's favorites */
         delete: operations["remove_favorite_api_users__user_id__favorites__object_type___object_id__delete"];
     };
-    "/api/users/{user_id}/impersonate": {
-        /** Impersonates a user. Only admins can impersonate users. */
-        post: operations["impersonate_user_api_users__user_id__impersonate_post"];
-    };
-    "/api/users/{user_id}/recalculate_disk_usage": {
+    "/api/users/{user_id}/recalculate": {
         /** Triggers a recalculation of the current user disk usage. */
-        put: operations["recalculate_disk_usage_by_user_id_api_users__user_id__recalculate_disk_usage_put"];
+        put: operations["recalculate_disk_usage_by_user_id_api_users__user_id__recalculate_put"];
     };
     "/api/users/{user_id}/send_activation_email": {
         /** Sends activation email to user. */
@@ -19000,34 +18996,7 @@ export interface operations {
             };
         };
     };
-    impersonate_user_api_users__user_id__impersonate_post: {
-        /** Impersonates a user. Only admins can impersonate users. */
-        parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string;
-            };
-            /** @description The ID of the user to get. */
-            path: {
-                user_id: string;
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json": Record<string, never>;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    recalculate_disk_usage_by_user_id_api_users__user_id__recalculate_disk_usage_put: {
+    recalculate_disk_usage_by_user_id_api_users__user_id__recalculate_put: {
         /** Triggers a recalculation of the current user disk usage. */
         parameters: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
