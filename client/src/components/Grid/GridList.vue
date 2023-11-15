@@ -243,6 +243,7 @@ watch(operationMessage, () => {
                         :disabled="fieldEntry.disabled"
                         @input="(tags) => onTagInput(rowData, tags, fieldEntry.handler)"
                         @tag-click="(t) => applyFilter('tag', t, true)" />
+                    <span v-else v-localize> Data not available. </span>
                 </td>
             </tr>
         </table>

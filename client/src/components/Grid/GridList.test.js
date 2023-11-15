@@ -1,11 +1,16 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
+import { useRouter } from "vue-router/composables";
 
 import Filtering from "@/utils/filtering";
 
 import MountTarget from "./GridList.vue";
 
 const localVue = getLocalVue();
+
+jest.mock("vue-router/composables");
+
+useRouter.mockImplementation(() => "router");
 
 const testGrid = {
     actions: [
@@ -26,6 +31,32 @@ const testGrid = {
             title: "link",
             type: "link",
         },
+        {
+            key: "operation",
+            title: "operation",
+            type: "operations",
+            condition: jest.fn(),
+            operations: [
+                {
+                    title: "operation-title-1",
+                    icon: "operation-icon-1",
+                    condition: () => true,
+                    handler: jest.fn(),
+                },
+                {
+                    title: "operation-title-2",
+                    icon: "operation-icon-2",
+                    condition: () => false,
+                    handler: jest.fn(),
+                },
+                {
+                    title: "operation-title-3",
+                    icon: "operation-icon-3",
+                    condition: () => true,
+                    handler: jest.fn(),
+                },
+            ],
+        },
     ],
     filtering: new Filtering({}, undefined, false, false),
     getData: jest.fn(() => {
@@ -33,10 +64,12 @@ const testGrid = {
             {
                 id: "id-1",
                 link: "link-1",
+                operation: "operation-1",
             },
             {
                 id: "id-2",
                 link: "link-2",
+                operation: "operation-2",
             },
         ];
         return [data, data.length];
@@ -89,5 +122,33 @@ describe("GridList", () => {
         const secondHeader = wrapper.find("[data-description='grid header 1']");
         expect(secondHeader.find("[data-description='grid sort asc']").exists()).toBeFalsy();
         expect(secondHeader.find("[data-description='grid sort desc']").exists()).toBeFalsy();
+    });
+
+    it("header rendering", async () => {
+        const wrapper = createTarget({
+            config: testGrid,
+        });
+        await wrapper.vm.$nextTick();
+        for (const [fieldIndex, field] of Object.entries(testGrid.fields)) {
+            expect(wrapper.find(`[data-description='grid header ${fieldIndex}']`).text()).toBe(field.title);
+        }
+    });
+
+    it("operation handling", async () => {
+        const wrapper = createTarget({
+            config: testGrid,
+        });
+        await wrapper.vm.$nextTick();
+        const dropdown = wrapper.find("[data-description='grid cell 0-2']");
+        const dropdownItems = dropdown.findAll(".dropdown-item");
+        expect(dropdownItems.at(0).text()).toBe("operation-title-1");
+        expect(dropdownItems.at(1).text()).toBe("operation-title-3");
+        await dropdownItems.at(0).trigger("click");
+        const clickHandler = testGrid.fields[2].operations[0].handler;
+        expect(clickHandler).toHaveBeenCalledTimes(1);
+        expect(clickHandler.mock.calls[0]).toEqual([
+            { id: "id-1", link: "link-1", operation: "operation-1" },
+            "router",
+        ]);
     });
 });
