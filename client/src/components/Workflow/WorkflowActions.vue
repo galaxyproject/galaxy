@@ -14,6 +14,7 @@ import { BButton } from "bootstrap-vue";
 import { computed, type ComputedRef } from "vue";
 import { useRouter } from "vue-router/composables";
 
+import { getGalaxyInstance } from "@/app";
 import { deleteWorkflow, updateWorkflow } from "@/components/Workflow/workflows.services";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { Toast } from "@/composables/toast";
@@ -95,6 +96,17 @@ async function onToggleBookmark(checked: boolean) {
     });
     emit("refreshList", true);
     Toast.info(`Workflow ${checked ? "added to" : "removed from"} bookmarks`);
+    if (checked) {
+        getGalaxyInstance().config.stored_workflow_menu_entries.push({
+            id: props.workflow.id,
+            name: props.workflow.name,
+        });
+    } else {
+        const indexToRemove = getGalaxyInstance().config.stored_workflow_menu_entries.findIndex(
+            (w: any) => w.id === props.workflow.id
+        );
+        getGalaxyInstance().config.stored_workflow_menu_entries.splice(indexToRemove, 1);
+    }
 }
 
 async function onDelete() {
@@ -115,7 +127,7 @@ const actions: ComputedRef<(AAction | BAction)[]> = computed(() => {
     return [
         {
             if: !shared.value && !props.workflow.show_in_tool_panel,
-            id: "add-bookmark-button",
+            id: "workflow-bookmark-button",
             component: "async",
             title: "Add bookmarks",
             tooltip: "Add to bookmarks. This workflow will appear in the left tool panel.",
@@ -126,7 +138,7 @@ const actions: ComputedRef<(AAction | BAction)[]> = computed(() => {
         },
         {
             if: !shared.value && props.workflow.show_in_tool_panel,
-            id: "remove-bookmark-button",
+            id: "workflow-bookmark-button",
             component: "async",
             title: "Remove bookmark",
             tooltip: "Remove bookmark",
@@ -229,6 +241,7 @@ const menuActions: ComputedRef<BAction[]> = computed(() => {
         <BDropdown
             id="workflow-actions-dropdown"
             v-b-tooltip.top
+            :data-workflow-actions-dropdown="workflow.id"
             right
             no-caret
             class="show-in-card"
