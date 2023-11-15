@@ -1,7 +1,19 @@
+import {
+    faBolt,
+    faCalculator,
+    faEnvelope,
+    faKey,
+    faMask,
+    faTrash,
+    faTrashRestore,
+    faUnlock,
+    faUser,
+    faUsers,
+} from "@fortawesome/free-solid-svg-icons";
 import axios from "axios";
 import type Router from "vue-router";
 
-import { createApiKey, deleteUser, recalculateDiskUsageByUserId, sendActivationEmail, undeleteUser, updateUser } from "@/api/users";
+import { createApiKey, deleteUser, recalculateDiskUsageByUserId, sendActivationEmail, undeleteUser } from "@/api/users";
 import type { ConfigType } from "@/composables/config";
 import Filtering, { contains, equals, toBool, type ValidFilter } from "@/utils/filtering";
 import { withPrefix } from "@/utils/redirect";
@@ -30,8 +42,8 @@ async function getData(offset: number, limit: number, search: string, sort_by: s
             ...d,
             deleted: d.deleted === "True",
             purged: d.purged === "True",
-        }
-    })
+        };
+    });
     return [data.rows, data.total_row_count];
 }
 
@@ -47,7 +59,7 @@ const fields = [
         operations: [
             {
                 title: "Manage Information",
-                icon: "user",
+                icon: faUser,
                 condition: (data: UserEntry) => !data.deleted,
                 handler: (data: UserEntry, router: Router) => {
                     router.push(`/user/information?id=${data.id}`);
@@ -55,7 +67,7 @@ const fields = [
             },
             {
                 title: "Manage Roles and Groups",
-                icon: "users",
+                icon: faUsers,
                 condition: (data: UserEntry) => !data.deleted,
                 handler: (data: UserEntry, router: Router) => {
                     router.push(`/admin/form/manage_roles_and_groups_for_user?id=${data.id}`);
@@ -63,7 +75,7 @@ const fields = [
             },
             {
                 title: "Reset Password",
-                icon: "unlock",
+                icon: faUnlock,
                 condition: (data: UserEntry) => !data.deleted,
                 handler: (data: UserEntry, router: Router) => {
                     router.push(`/admin/form/reset_user_password?id=${data.id}`);
@@ -71,7 +83,7 @@ const fields = [
             },
             {
                 title: "Recalculate Disk Usage",
-                icon: "calculator",
+                icon: faCalculator,
                 condition: (data: UserEntry) => !data.deleted,
                 handler: async (data: UserEntry) => {
                     try {
@@ -91,8 +103,29 @@ const fields = [
                 },
             },
             {
+                title: "Activate",
+                icon: faBolt,
+                condition: (data: UserEntry, config: ConfigType) => {
+                    return config.value.user_activation_on && !data.deleted;
+                },
+                handler: async (data: UserEntry) => {
+                    try {
+                        //await updateUser({ user_id: String(data.id), active });
+                        return {
+                            status: "success",
+                            message: `'${data.username}' has been activated.`,
+                        };
+                    } catch (e) {
+                        return {
+                            status: "danger",
+                            message: `Failed to activate '${data.username}': ${errorMessageAsString(e)}.`,
+                        };
+                    }
+                },
+            },
+            {
                 title: "Send Activation Email",
-                icon: "calculator",
+                icon: faEnvelope,
                 condition: (data: UserEntry, config: ConfigType) => {
                     return config.value.user_activation_on && !data.deleted;
                 },
@@ -115,7 +148,7 @@ const fields = [
             },
             {
                 title: "Generate New API Key",
-                icon: "key",
+                icon: faKey,
                 condition: (data: UserEntry) => !data.deleted,
                 handler: async (data: UserEntry) => {
                     try {
@@ -136,7 +169,7 @@ const fields = [
             },
             {
                 title: "Impersonate User",
-                icon: "user",
+                icon: faMask,
                 condition: (data: UserEntry, config: ConfigType) => {
                     return config.value.allow_user_impersonation && !data.deleted;
                 },
@@ -146,7 +179,7 @@ const fields = [
             },
             {
                 title: "Delete",
-                icon: "trash",
+                icon: faTrash,
                 condition: (data: UserEntry, config: ConfigType) => {
                     return config.value.allow_user_deletion && !data.deleted;
                 },
@@ -167,7 +200,7 @@ const fields = [
             },
             {
                 title: "Purge",
-                icon: "trash",
+                icon: faTrash,
                 condition: (data: UserEntry, config: ConfigType) => {
                     return config.value.allow_user_deletion && data.deleted && !data.purged;
                 },
@@ -188,7 +221,7 @@ const fields = [
             },
             {
                 title: "Restore",
-                icon: "trash-restore",
+                icon: faTrashRestore,
                 condition: (data: UserEntry, config: ConfigType) => {
                     return config.value.allow_user_deletion && data.deleted && !data.purged;
                 },
@@ -203,29 +236,6 @@ const fields = [
                         return {
                             status: "danger",
                             message: `Failed to restore '${data.username}': ${errorMessageAsString(e)}`,
-                        };
-                    }
-                },
-            },
-            {
-                title: "Activate",
-                icon: "user",
-                condition: (data: UserEntry, config: ConfigType) => {
-                    return config.value.user_activation_on && !data.deleted;
-                },
-                handler: async (data: UserEntry) => {
-                    try {
-                        //await updateUser({ user_id: String(data.id), active: true });
-                        return {
-                            status: "success",
-                            message: `'${data.username}' has been activated.`,
-                        };
-                    } catch (e) {
-                        return {
-                            status: "danger",
-                            message: `Failed to activate '${data.username}': ${errorMessageAsString(
-                                e
-                            )}.`,
                         };
                     }
                 },

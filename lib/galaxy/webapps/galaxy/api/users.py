@@ -706,7 +706,7 @@ class FastAPIUsers:
         if not user:
             raise exceptions.ObjectNotFound("User not found for given id.")
         if not self.service.user_manager.send_activation_email(trans, user.email, user.username):
-            raise exceptions.MessageError("Unable to send activation email.")
+            raise exceptions.MessageException("Unable to send activation email.")
 
 
 class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController, UsesFormDefinitionsMixin):

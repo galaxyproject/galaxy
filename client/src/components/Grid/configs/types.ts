@@ -1,7 +1,7 @@
 import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 
-import Filtering from "@/utils/filtering";
 import type { ConfigType } from "@/composables/config";
+import Filtering from "@/utils/filtering";
 
 export interface Action {
     title: string;
