@@ -582,6 +582,7 @@ tool_form:
 
 workflows:
   selectors:
+    shared_with_me_tab: '#shared-with-me'
     new_button: '#workflow-create'
     import_button: '#workflow-import'
     save_button: '#workflow-save-button'
@@ -591,8 +592,9 @@ workflows:
     advanced_search_name_input: '#workflows-advanced-filter-name'
     advanced_search_tag_input: '#workflows-advanced-filter-tag .stateless-tags'
     advanced_search_submit: '#workflows-advanced-filter-submit'
-    workflow_table: "#workflow-table"
     workflow_rows: "#workflow-table > tbody > tr:not(.b-table-empty-row, [style*='display: none'])"
+    workflow_card: '[data-workflow-id]'
+    workflow_cards: '#workflow-cards'
     external_link: '.workflow-external-link'
     trs_icon: '.workflow-trs-icon'
     pager: '.gx-workflows-grid-pager'
@@ -602,9 +604,12 @@ workflows:
     pager_page_last: '.gx-workflows-grid-pager .gx-grid-pager-last button'
     pager_page_previous: '.gx-workflows-grid-pager .gx-grid-pager-prev button'
     pager_page_active: '.gx-workflows-grid-pager .gx-grid-pager-page.active button'
-    dropdown: '[data-workflow-dropdown*="${id}"]'
-    run_button: '[data-workflow-run*="${id}"]'
-    bookmark_link: '.workflow-bookmark-link'
+    dropdown: '[data-workflow-actions-dropdown="${id}"]'
+    share_button: '#workflow-share-button'
+    download_button: '#workflow-download-button'
+    run_button: '[data-workflow-run]'
+    edit_button: '#workflow-edit-button'
+    bookmark_link: '#workflow-bookmark-button'
     import_file: '.workflow-import-file'
     import_trs_search: '.workflow-import-trs-search'
     import_trs_id: '.workflow-import-trs-id'
