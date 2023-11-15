@@ -120,7 +120,7 @@ class StaticToolPanelView(ToolPanelView):
                             f"Failed to find matching section for (id, name) = ({element.section}, {element.section})"
                         )
                         continue
-                    section = closest_section.copy()
+                    section = closest_section.copy(merge_tools=True)
                     apply_filter(element, section.elems)
                     new_panel.append_section(section.id, section)
                 elif element.content_type == "label":
@@ -151,7 +151,8 @@ class StaticToolPanelView(ToolPanelView):
                     if closest_section is None:
                         log.warning(f"Failed to find matching section for (id, name) = ({element.items_from}, None)")
                         continue
-                    elems = closest_section.elems.copy()
+                    section = closest_section.copy(merge_tools=True)
+                    elems = section.elems
                     apply_filter(element, elems)
                     for key, item in elems.items():
                         new_panel[key] = item
