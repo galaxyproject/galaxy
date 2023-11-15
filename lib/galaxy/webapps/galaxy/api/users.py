@@ -183,6 +183,7 @@ class FastAPIUsers:
         "/api/users/{user_id}/recalculate_disk_usage",
         summary=RecalculateDiskUsageSummary,
         responses=RecalculateDiskUsageResponseDescriptions,
+        require_admin=True,
     )
     def recalculate_disk_usage_by_user_id(
         self,
@@ -693,6 +694,7 @@ class FastAPIUsers:
 
     @router.post(
         "/api/users/{user_id}/send_activation_email",
+        name="send_activation_email",
         summary="Sends activation email to user.",
     )
     def send_activation_email(

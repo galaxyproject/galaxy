@@ -1,7 +1,7 @@
 import axios from "axios";
 import type Router from "vue-router";
 
-import { createApiKey, deleteUser, impersonateUser, recalculateDiskUsageByUserId, sendActivationEmail, undeleteUser, updateUser } from "@/api/users";
+import { createApiKey, deleteUser, recalculateDiskUsageByUserId, sendActivationEmail, undeleteUser, updateUser } from "@/api/users";
 import type { ConfigType } from "@/composables/config";
 import Filtering, { contains, equals, toBool, type ValidFilter } from "@/utils/filtering";
 import { withPrefix } from "@/utils/redirect";
@@ -135,6 +135,16 @@ const fields = [
                 },
             },
             {
+                title: "Impersonate User",
+                icon: "user",
+                condition: (data: UserEntry, config: ConfigType) => {
+                    return config.value.allow_user_impersonation && !data.deleted;
+                },
+                handler: async (data: UserEntry) => {
+                    window.location.href = withPrefix(`/admin/impersonate?id=${String(data.id)}`);
+                },
+            },
+            {
                 title: "Delete",
                 icon: "trash",
                 condition: (data: UserEntry, config: ConfigType) => {
@@ -195,16 +205,6 @@ const fields = [
                             message: `Failed to restore '${data.username}': ${errorMessageAsString(e)}`,
                         };
                     }
-                },
-            },
-            {
-                title: "Impersonate User",
-                icon: "user",
-                condition: (data: UserEntry, config: ConfigType) => {
-                    return config.value.allow_user_impersonation && !data.deleted;
-                },
-                handler: async (data: UserEntry, router: Router) => {
-                    window.location.href = withPrefix(`/admin/impersonate?id=${data.id}`);
                 },
             },
             {
@@ -308,6 +308,6 @@ export default {
     plural: "Users",
     sortBy: "email",
     sortDesc: true,
-    sortKeys: ["activated", "create_time", "disk_usage", "email", "external", "last_login", "status", "username"],
+    sortKeys: ["active", "create_time", "disk_usage", "email", "external", "last_login", "status", "username"],
     title: "Users",
 };

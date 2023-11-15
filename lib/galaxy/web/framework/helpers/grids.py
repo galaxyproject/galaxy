@@ -1071,7 +1071,7 @@ class GridData:
 
         # Build initial query
         query = self.build_initial_query(trans, **kwargs)
-        query = self.apply_query_filter(trans, query, **kwargs)
+        query = self.apply_query_filter(query, **kwargs)
 
         # Process sort arguments.
         sort_by = kwargs.get("sort_by", self.default_sort_key)

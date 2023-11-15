@@ -154,14 +154,16 @@ class UserListGrid(grids.GridData):
         grids.PurgedColumn("Purged", key="purged"),
     ]
 
-    def apply_query_filter(self, trans, query, **kwargs):
+    def apply_query_filter(self, query, **kwargs):
         INDEX_SEARCH_FILTERS = {
             "email": "email",
             "username": "username",
             "is": "is",
         }
         search_query = kwargs.get("search")
-        if search_query:
+        if search_query is None:
+            query = query.filter(self.model_class.deleted == false())
+        else:
             parsed_search = parse_filters_structured(search_query, INDEX_SEARCH_FILTERS)
             for term in parsed_search.terms:
                 if isinstance(term, FilteredTerm):
