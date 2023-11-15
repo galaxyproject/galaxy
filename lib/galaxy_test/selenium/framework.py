@@ -587,7 +587,8 @@ EXAMPLE_WORKFLOW_URL_1 = (
 class UsesWorkflowAssertions(NavigatesGalaxyMixin):
     @retry_assertion_during_transitions
     def _assert_showing_n_workflows(self, n):
-        if (actual_count := len(self.workflow_index_table_elements())) != n:
+        actual_count = len(self.workflow_cards())
+        if actual_count != n:
             message = f"Expected {n} workflows to be displayed, based on DOM found {actual_count} workflow rows."
             raise AssertionError(message)
 
