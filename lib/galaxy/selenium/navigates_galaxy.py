@@ -1397,10 +1397,17 @@ class NavigatesGalaxy(HasDriver):
         self.home()
         self.click_masthead_workflow()
 
+    def workflow_shared_with_me_open(self):
+        self.workflow_index_open()
+        self.components.workflows.shared_with_me_tab.wait_for_and_click()
+
     def workflow_index_table_elements(self):
         workflows = self.components.workflows
         workflows.workflow_table.wait_for_visible()
         return workflows.workflow_rows.all()
+
+    def workflow_cards(self):
+        return self.components.workflows.workflow_card.all()
 
     def workflow_index_table_row(self, workflow_index=0):
         self.components.workflows.workflow_rows.wait_for_element_count_of_at_least(workflow_index + 1)
@@ -1464,6 +1471,9 @@ class NavigatesGalaxy(HasDriver):
         if not self.select_dropdown_item(option_title):
             raise AssertionError(f"Failed to find workflow action option with title [{option_title}]")
 
+    def workflow_share_click(self):
+        self.components.workflows.share_button.wait_for_and_click()
+
     def workflow_index_click_tag_display(self, workflow_index=0):
         workflow_row_element = self.workflow_index_table_row(workflow_index)
         tag_display = workflow_row_element.find_element(By.CSS_SELECTOR, ".stateless-tags")
@@ -1522,7 +1532,7 @@ class NavigatesGalaxy(HasDriver):
     def workflow_run_with_name(self, name: str):
         self.workflow_index_open()
         self.workflow_index_search_for(name)
-        self.workflow_click_option(".workflow-run")
+        self.components.workflows.run_button.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
 
     def workflow_run_specify_inputs(self, inputs: Dict[str, Any]):
