@@ -42,6 +42,7 @@ BACKENDS = {
     "elixir": "social_core.backends.elixir.ElixirOpenIdConnect",
     "okta": "social_core.backends.okta_openidconnect.OktaOpenIdConnect",
     "azure": "social_core.backends.azuread_tenant.AzureADV2TenantOAuth2",
+    "wlcg": "social_core.backends.wlcg.WLCGOAuth2",
 }
 
 BACKENDS_NAME = {
@@ -50,6 +51,7 @@ BACKENDS_NAME = {
     "elixir": "elixir",
     "okta": "okta-openidconnect",
     "azure": "azuread-v2-tenant-oauth2",
+    "wlcg": "wlcg",
 }
 
 AUTH_PIPELINE = (
