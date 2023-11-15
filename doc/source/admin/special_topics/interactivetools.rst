@@ -102,6 +102,28 @@ The ``gx-it-proxy`` config relates to an important service in the InteractiveToo
 proxy. ``gx-it-proxy`` runs as a separate process listening at port 4002 (by default). HTTP requests are decoded based on
 the URL and headers, then somewhat massaged, and finally forwarded to the correct entry point port of the target InteractiveTool.
 
+.. note::
+
+    A previous config option ``interactivetools_shorten_url`` was removed in commit `#73100de <https://github.com/galaxyproject/galaxy/pull/16795/commits/73100de17149ca3486c83b8c6ded74987c68a836>`_
+    since similar functionality is now default behavior. Setting ``interactivetools_shorten_url`` to ``true`` shortened
+    long interactive tool URLs (then default) from e.g.
+
+        ``8c24e5aaae1db3a3-d0fc9f05229e40259142c4d8b5829797.interactivetoolentrypoint.interactivetool.mygalaxy.org``
+
+    down to
+
+        ``8c24e5aaae1db3a3-d0fc9f0522.interactivetool.mygalaxy.org``
+
+    Now, all interactive tool URLs are similarly short, e.g.
+
+        ``24q1dbzrknq1v-1a1p13jnahscj.ep.interactivetool.mygalaxy.org``
+
+    Note that the previous ``.interactivetoolentrypoint`` part has been shortened down to ``.ep``, but this is now always included.
+    For this reason, URLs are now up to ``3`` character longer than was previously the case when ``interactivetools_shorten_url``
+    was set to ``true``. For deployments that require URLs to be shorter than a specific limit (for example ``63`` characters for some kubernetes
+    setups), this slight ``3`` character increase could cause the URLs to break the limit. If so, please adjust the
+    ``interactivetools_prefix`` config (default value: ``interactivetool``) to counter this.
+
 You will also need to enable a docker destination in the job_conf.xml file.
 An example ``job_conf.yml`` file as seen in ``config/job_conf.yml.interactivetools``:
 
