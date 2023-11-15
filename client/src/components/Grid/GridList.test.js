@@ -151,4 +151,16 @@ describe("GridList", () => {
             "router",
         ]);
     });
+
+    it("filter handling", async () => {
+        const wrapper = createTarget({
+            config: testGrid,
+        });
+        await wrapper.vm.$nextTick();
+        const filterInput = wrapper.find("[data-description='filter text input']");
+        await filterInput.setValue("filter query");
+        await new Promise((r) => setTimeout(r, 500));
+        expect(testGrid.getData).toHaveBeenCalledTimes(2);
+        expect(testGrid.getData.mock.calls[1]).toEqual([0, 25, "filter query", "id", true]);
+    });
 });
