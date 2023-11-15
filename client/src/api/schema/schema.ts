@@ -1538,7 +1538,7 @@ export interface paths {
     };
     "/api/visualizations/{id}/sharing": {
         /**
-         * Get the current sharing status of the given Page.
+         * Get the current sharing status of the given Visualization.
          * @description Return the sharing status of the item.
          */
         get: operations["sharing_api_visualizations__id__sharing_get"];
@@ -17940,10 +17940,10 @@ export interface operations {
     index_api_visualizations_get: {
         /** Returns visualizations for the current user. */
         parameters?: {
-            /** @description Whether to include deleted pages in the result. */
+            /** @description Whether to include deleted visualizations in the result. */
             /** @description The maximum number of items to return. */
             /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
-            /** @description Sort page index by this specified attribute on the page model */
+            /** @description Sort visualization index by this specified attribute on the visualization model */
             /** @description Sort in descending order? */
             /**
              * @description A mix of free text and GitHub-style tags used to filter the index operation.
@@ -17965,16 +17965,16 @@ export interface operations {
              * ## GitHub-style Tags Available
              *
              * `title`
-             * : The page's title.
+             * : The visualization's title.
              *
              * `slug`
-             * : The page's slug. (The tag `s` can be used a short hand alias for this tag to filter on this attribute.)
+             * : The visualization's slug. (The tag `s` can be used a short hand alias for this tag to filter on this attribute.)
              *
              * `tag`
-             * : The page's tags. (The tag `t` can be used a short hand alias for this tag to filter on this attribute.)
+             * : The visualization's tags. (The tag `t` can be used a short hand alias for this tag to filter on this attribute.)
              *
              * `user`
-             * : The page's owner's username. (The tag `u` can be used a short hand alias for this tag to filter on this attribute.)
+             * : The visualization's owner's username. (The tag `u` can be used a short hand alias for this tag to filter on this attribute.)
              *
              * ## Free Text
              *
@@ -18140,7 +18140,7 @@ export interface operations {
     };
     sharing_api_visualizations__id__sharing_get: {
         /**
-         * Get the current sharing status of the given Page.
+         * Get the current sharing status of the given Visualization.
          * @description Return the sharing status of the item.
          */
         parameters: {

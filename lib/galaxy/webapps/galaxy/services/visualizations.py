@@ -57,7 +57,6 @@ class VisualizationsService(ServiceBase):
 
         entries, total_matches = self.manager.index_query(trans, payload, include_total_count)
         return (
-                VisualizationSummaryList(__root__=[entry.to_dict() for entry in entries])
-            ),
+            VisualizationSummaryList(__root__=[entry.to_dict() for entry in entries]),
             total_matches,
         )
