@@ -71,5 +71,5 @@ def walk_loaded_tools(tool_panel: ToolPanelElements, toolbox_registry: ToolBoxRe
             for section_key, section_item_type, section_val in val.panel_items_iter():
                 if section_item_type == panel_item_types.TOOL:
                     tool_id = section_key.replace("tool_", "", 1)
-                    if toolbox_registry.has_tool(tool_id):
+                    if toolbox_registry.has_tool(tool_id) and toolbox_registry.get_tool(tool_id).is_latest_version:
                         yield (tool_id, key, section_val, val.name)
