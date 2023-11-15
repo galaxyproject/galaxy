@@ -10,7 +10,7 @@ from pydantic import (
 )
 from typing_extensions import Literal
 
-from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import (
     CreateTimeField,
     Model,
