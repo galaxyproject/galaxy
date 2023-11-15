@@ -1592,9 +1592,9 @@ export interface paths {
         /** Remove the object from user's favorites */
         delete: operations["remove_favorite_api_users__user_id__favorites__object_type___object_id__delete"];
     };
-    "/api/users/{user_id}/recalculate": {
+    "/api/users/{user_id}/recalculate_disk_usage": {
         /** Triggers a recalculation of the current user disk usage. */
-        put: operations["recalculate_disk_usage_by_user_id_api_users__user_id__recalculate_put"];
+        put: operations["recalculate_disk_usage_by_user_id_api_users__user_id__recalculate_disk_usage_put"];
     };
     "/api/users/{user_id}/send_activation_email": {
         /** Sends activation email to user. */
@@ -18996,7 +18996,7 @@ export interface operations {
             };
         };
     };
-    recalculate_disk_usage_by_user_id_api_users__user_id__recalculate_put: {
+    recalculate_disk_usage_by_user_id_api_users__user_id__recalculate_disk_usage_put: {
         /** Triggers a recalculation of the current user disk usage. */
         parameters: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */

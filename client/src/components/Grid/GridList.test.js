@@ -1,14 +1,32 @@
+import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
+import { PiniaVuePlugin } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 
+import { useConfig } from "@/composables/config";
 import Filtering from "@/utils/filtering";
 
 import MountTarget from "./GridList.vue";
 
-const localVue = getLocalVue();
-
 jest.useFakeTimers();
+
+jest.mock("composables/config");
+useConfig.mockReturnValue({
+    config: {
+        value: {
+            disabled: false,
+            enabled: true,
+        },
+    },
+    isConfigLoaded: true,
+});
+
+jest.mock("vue-router/composables");
+useRouter.mockImplementation(() => "router");
+
+const localVue = getLocalVue();
+localVue.use(PiniaVuePlugin);
 
 const testGrid = {
     actions: [
@@ -38,19 +56,19 @@ const testGrid = {
                 {
                     title: "operation-title-1",
                     icon: "operation-icon-1",
-                    condition: () => true,
+                    condition: (_, config) => config.value.enabled,
                     handler: jest.fn(),
                 },
                 {
                     title: "operation-title-2",
                     icon: "operation-icon-2",
-                    condition: () => false,
+                    condition: (_, config) => config.value.disabled,
                     handler: jest.fn(),
                 },
                 {
                     title: "operation-title-3",
                     icon: "operation-icon-3",
-                    condition: () => true,
+                    condition: (_, config) => config.value.enabled,
                     handler: () => ({
                         status: "success",
                         message: "Operation-3 has been executed.",
@@ -79,9 +97,11 @@ const testGrid = {
 };
 
 function createTarget(propsData) {
+    const pinia = createTestingPinia({ stubActions: false });
     return mount(MountTarget, {
         localVue,
         propsData,
+        pinia,
         stubs: {
             Icon: true,
         },
