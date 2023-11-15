@@ -2,10 +2,11 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { computed, onMounted, onUnmounted, ref } from "vue";
+import { storeToRefs } from "pinia";
+import { computed, onMounted } from "vue";
 
-import { eventHub } from "@/components/plugins/eventHub.js";
 import { useGlobalUploadModal } from "@/composables/globalUploadModal";
+import { useUploadStore } from "@/stores/uploadStore";
 import localize from "@/utils/localization";
 import Query from "@/utils/query-string-parsing";
 
@@ -21,34 +22,17 @@ const props = withDefaults(
 );
 
 const { openGlobalUploadModal } = useGlobalUploadModal();
-
-const status = ref("");
-const percentage = ref(0);
+const { percentage, status } = storeToRefs(useUploadStore());
 
 onMounted(() => {
-    eventHub.$on("upload:status", setStatus);
-    eventHub.$on("upload:percentage", setPercentage);
     if (Query.get("tool_id") == "upload1") {
         openGlobalUploadModal();
     }
 });
 
-onUnmounted(() => {
-    eventHub.$off("upload:status", setStatus);
-    eventHub.$off("upload:percentage", setPercentage);
-});
-
 const localizedTitle = computed(() => {
     return localize(props.title);
 });
-function setStatus(val: string) {
-    status.value = val;
-}
-
-function setPercentage(val: number) {
-    percentage.value = val;
-}
-
 function showUploadDialog() {
     openGlobalUploadModal();
 }
