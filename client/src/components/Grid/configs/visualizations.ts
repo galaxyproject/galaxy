@@ -7,6 +7,7 @@ import { getGalaxyInstance } from "@/app";
 import Filtering, { contains, equals, expandNameTag, toBool, type ValidFilter } from "@/utils/filtering";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
+
 import { type Config } from "./types";
 
 /**

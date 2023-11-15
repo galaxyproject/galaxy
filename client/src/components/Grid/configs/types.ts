@@ -1,9 +1,11 @@
+import type Router from "vue-router";
+
 import Filtering from "@/utils/filtering";
 
 interface Action {
     title: string;
     icon?: string;
-    handler: (router: any) => void;
+    handler: (router: Router) => void;
 }
 
 type Field = FieldKey | FieldOperations;
@@ -55,5 +57,5 @@ export interface Operation {
     title: string;
     icon: string;
     condition?: (data: RowData) => boolean;
-    handler: (data: RowData, router: any) => OperationHandlerReturn;
+    handler: (data: RowData, router: Router) => OperationHandlerReturn;
 }
