@@ -2,6 +2,9 @@ name: Update dependencies
 on:
   schedule:
     - cron: '0 3 * * 6'  # Run every saturday at 3 am.
+permissions:
+  contents: read
+
 jobs:
   update_dependencies:
     name: Update dependencies

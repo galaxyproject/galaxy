@@ -16,6 +16,9 @@ concurrency:
 defaults:
   run:
     working-directory: 'galaxy root'
+permissions:
+  contents: read
+
 jobs:
   check:
     name: Check database indexes
