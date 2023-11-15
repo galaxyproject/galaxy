@@ -37,7 +37,7 @@ class VisualizationIndexQueryPayload(Model):
 
 
 class VisualizationSummary(Model):
-    id: DecodedDatabaseIdField = Field(
+    id: EncodedDatabaseIdField = Field(
         ...,
         title="ID",
         description="Encoded ID of the Visualization.",
