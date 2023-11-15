@@ -14,7 +14,6 @@ import FilterMenu from "@/components/Common/FilterMenu.vue";
 import SharingIndicators from "@/components/Indices/SharingIndicators.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
-//@ts-ignore
 import UtcDate from "@/components/UtcDate.vue";
 
 const router = useRouter();
