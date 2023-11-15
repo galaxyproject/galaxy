@@ -258,6 +258,7 @@ onMounted(() => {
 
         <BOverlay
             v-else
+            id="workflow-cards"
             :show="overlay"
             rounded="sm"
             class="cards-list mt-2"

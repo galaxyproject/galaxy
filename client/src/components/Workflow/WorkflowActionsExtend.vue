@@ -84,7 +84,7 @@ async function onRestore() {
         <BButtonGroup>
             <BButton
                 v-if="!isAnonymous && !shared && !workflow.deleted"
-                id="copy-button"
+                id="workflow-copy-button"
                 v-b-tooltip.hover
                 :size="buttonSize"
                 title="Copy"
@@ -96,7 +96,7 @@ async function onRestore() {
 
             <BButton
                 v-if="!workflow.deleted"
-                id="download-button"
+                id="workflow-download-button"
                 v-b-tooltip.hover
                 :size="buttonSize"
                 title="Download workflow in .ga format"
@@ -108,7 +108,7 @@ async function onRestore() {
 
             <BButton
                 v-if="!shared && !workflow.deleted"
-                id="share-button"
+                id="workflow-share-button"
                 v-b-tooltip.hover
                 :size="buttonSize"
                 title="Share"

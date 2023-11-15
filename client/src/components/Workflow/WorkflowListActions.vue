@@ -19,7 +19,7 @@ function navigateToImport() {
 }
 
 function navigateToOldCreate() {
-    router.push("/workflows/create_old");
+    router.push("/workflows/edit");
 }
 </script>
 
@@ -27,6 +27,7 @@ function navigateToOldCreate() {
     <div id="workflow-list-actions" class="d-flex justify-content-between">
         <div>
             <BButton
+                id="workflow-create"
                 v-b-tooltip.hover
                 size="sm"
                 title="Create new workflow"
@@ -38,6 +39,7 @@ function navigateToOldCreate() {
             </BButton>
 
             <BButton
+                id="workflow-import"
                 v-b-tooltip.hover
                 size="sm"
                 title="Import workflow from URL or file"
