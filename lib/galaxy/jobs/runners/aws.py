@@ -9,6 +9,8 @@ import re
 import time
 from queue import Empty
 from typing import (
+    Any,
+    Optional,
     Set,
     TYPE_CHECKING,
 )
@@ -102,6 +104,7 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
     MAX_JOBS_PER_QUERY = 100
     # Higher minimum interval as jobs are queried in batches.
     MIN_QUERY_INTERVAL = 10
+    OOM_ERROR = "OutOfMemoryError:"
 
     # fmt: off
     RUNNER_PARAM_SPEC = {
@@ -132,7 +135,7 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         },
         "job_queue": {
             "default": "",
-            "map": str,
+            "map": list,
             "required": True,
         },
         "job_role_arn": {
@@ -142,12 +145,12 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         },
         "efs_filesystem_id": {
             "default": "",
-            "map": str,
+            "map": list,
             "required": True,
         },
         "efs_mount_point": {
             "default": "",
-            "map": str,
+            "map": list,
             "required": True,
         },
         "execute_role_arn": {
@@ -164,7 +167,7 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         },
         "ec2_host_volumes": {
             "default": "",
-            "map": str,
+            "map": list,
         },
         "privileged": {
             "default": False,
@@ -258,31 +261,39 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
 
     def _get_mount_volumes(self, destination_params):
         volumes, mount_points = [], []
-        volumes.append(
-            {
-                "name": "efs_whole",
-                "efsVolumeConfiguration": {
-                    "fileSystemId": destination_params.get("efs_filesystem_id"),
-                    "rootDirectory": "/",
-                    "transitEncryption": "ENABLED",
-                    "authorizationConfig": {"iam": "ENABLED"},
+
+        efs_filesystem_id = destination_params.get("efs_filesystem_id")
+        efs_mount_point = destination_params.get("efs_mount_point")
+        for efs_id, mnt_point in zip(efs_filesystem_id, efs_mount_point):
+            efs_id, mnt_point = efs_id.strip(), mnt_point.strip()
+            volumes.append(
+                {
+                    "name": efs_id,
+                    "efsVolumeConfiguration": {
+                        "fileSystemId": efs_id,
+                        "rootDirectory": "/",
+                        "transitEncryption": "ENABLED",
+                        "authorizationConfig": {"iam": "ENABLED"},
+                    },
                 },
-            },
-        )
-        mount_points.append(
-            {
-                "containerPath": destination_params.get("efs_mount_point"),
-                "readOnly": False,
-                "sourceVolume": "efs_whole",
-            },
-        )
+            )
+            mount_points.append(
+                {
+                    "containerPath": mnt_point,
+                    "readOnly": False,
+                    "sourceVolume": efs_id,
+                },
+            )
+
         if destination_params.get("platform") == 'Fargate':   # Fargate doesn't support host volumes
             return volumes, mount_points
 
         ec2_host_volumes = destination_params.get("ec2_host_volumes")
         if ec2_host_volumes:
-            for ix, vol in enumerate(ec2_host_volumes.split(",")):
+            for ix, vol in enumerate(ec2_host_volumes):
                 vol = vol.strip()
+                if not vol:
+                    continue
                 vol_name = "host_vol_" + str(ix)
                 volumes.append(
                     {
@@ -352,7 +363,6 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
                 {
                     "networkConfiguration": {"assignPublicIp": "ENABLED"},
                     "fargatePlatformConfiguration": {"platformVersion": destination_params.get("fargate_version")},
-                    "logConfiguration": {"logDriver": "awslogs"},
                 }
             )
         other_kwargs = {}
@@ -476,12 +486,14 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
             gotten.add(job_id)
             job_state = jobs_dict[job_id]
 
-            if status == "SUCCEEDED":
-                self._mark_as_successful(job_state)
-                done.add(job_id)
-            elif status == "FAILED":
-                reason = job["statusReason"]
-                self._mark_as_failed(job_state, reason)
+            if status in ("SUCCEEDED", "FAILED"):
+                container_exit_code = job["container"].get("exitCode", 0)
+                container_reason = job["container"].get("reason", "")
+                if status == "FAILED" or container_exit_code or container_reason:
+                    reason = job["statusReason"]
+                    self._mark_as_failed(job_state, f"{container_reason}\n{reason}")
+                else:
+                    self._mark_as_successful(job_state)
                 done.add(job_id)
             elif status in ("STARTING", "RUNNING"):
                 self._mark_as_active(job_state)
@@ -505,8 +517,9 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         self.mark_as_finished(job_state)
 
     def _mark_as_active(self, job_state):
-        job_state.running = True
-        job_state.job_wrapper.change_state(model.Job.states.RUNNING)
+        if not job_state.running:
+            job_state.running = True
+            job_state.job_wrapper.change_state(model.Job.states.RUNNING)
 
     def _mark_as_failed(self, job_state, reason):
         _write_logfile(job_state.error_file, reason)
@@ -514,6 +527,8 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         job_state.stop_job = False
         job_state.job_wrapper.change_state(model.Job.states.ERROR)
         job_state.fail_message = reason
+        if reason.startswith(self.OOM_ERROR):
+            job_state.runner_state = JobState.runner_states.MEMORY_LIMIT_REACHED
         self.mark_as_failed(job_state)
 
     def parse_destination_params(self, params):
@@ -523,11 +538,16 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         check_required = []
         parsed_params = {}
         for k, spec in self.DESTINATION_PARAMS_SPEC.items():
-            value = params.get(k, spec.get("default"))  # type: ignore[attr-defined]
-            if spec.get("required") and not value:  # type: ignore[attr-defined]
+            value: Optional[Any] = params.get(k, spec.get("default"))
+            if spec.get("required") and not value:
                 check_required.append(k)
-            mapper = spec.get("map")    # type: ignore[attr-defined]
-            parsed_params[k] = mapper(value)  # type: ignore[operator]
+            mapper = spec.get("map")
+            if isinstance(value, mapper):  # type: ignore[arg-type]
+                parsed_params[k] = value
+            elif isinstance(value, str) and mapper == list:
+                parsed_params[k] = [value]
+            else:
+                parsed_params[k] = mapper(value)  # type: ignore[operator]
         if check_required:
             raise AWSBatchRunnerException(
                 "AWSBatchJobRunner requires the following params to be provided: %s." % (", ".join(check_required))
@@ -540,6 +560,7 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         vcpu = parsed_params.get("vcpu")
         memory = parsed_params.get("memory")
         gpu = parsed_params.get("gpu")
+        job_queue = parsed_params.get("job_queue")
 
         if auto_platform and not fargate_version:
             raise AWSBatchRunnerException("AWSBatchJobRunner needs 'farget_version' to be set to enable auto platform!")
@@ -568,13 +589,15 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
                         break
                     c_ix += 1
             # parse JOB QUEUE
-            job_queues = parsed_params.get("job_queue").split(",")  # type: ignore[union-attr]
-            if len(job_queues) < 2:
+            if len(job_queue) != 2:  # type: ignore[arg-type]
                 raise AWSBatchRunnerException(
-                    "AWSBatchJobRunner needs to set TWO job queues ('Farget Queue, EC2 Qeueue')"
+                    "AWSBatchJobRunner needs to set TWO job queues ('- Farget Queue, - EC2 Qeueue')"
                     " when 'auto_platform' is enabled!"
                 )
-            parsed_params["job_queue"] = job_queues[platform == "EC2"].strip()
+            parsed_params["job_queue"] = job_queue[platform == "EC2"].strip()  # type: ignore[index]
+
+        if isinstance(job_queue, list):
+            parsed_params["job_queue"] = str(job_queue[0])
 
         if platform == "Fargate" and parsed_params.get("ec2_host_volumes") and not auto_platform:
             raise AWSBatchRunnerException(
@@ -583,6 +606,16 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
             )
 
         parsed_params["platform"] = platform
+
+        efs_filesystem_id = parsed_params.get("efs_filesystem_id")
+        efs_mount_point = parsed_params.get("efs_mount_point")
+
+        if len(efs_filesystem_id) != len(efs_mount_point):  # type: ignore[arg-type]
+            raise AWSBatchRunnerException(
+                "AWSBatchJobRunner: the number of EFS file systems provided (`efs_filesystem_id`) doesn't "
+                "match the number of mounting points (`efs_mount_point`)!"
+            )
+
         return parsed_params
 
     def write_command(self, job_wrapper: "MinimalJobWrapper") -> str:
