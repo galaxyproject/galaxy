@@ -1,7 +1,10 @@
 import json
 import logging
 import sqlite3
-from urllib.parse import urlsplit, urlunsplit
+from urllib.parse import (
+    urlsplit,
+    urlunsplit,
+)
 
 from sqlalchemy import (
     or_,
