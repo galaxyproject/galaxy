@@ -167,6 +167,7 @@ async function onTagsUpdate(tags: string[]) {
                     <div class="workflow-edit-run-buttons">
                         <BButton
                             v-if="!shared"
+                            id="workflow-edit-button"
                             v-b-tooltip.hover
                             :disabled="workflow.deleted"
                             size="sm"
