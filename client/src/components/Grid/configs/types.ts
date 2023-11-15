@@ -8,7 +8,7 @@ interface Action {
     handler: (router: Router) => void;
 }
 
-type Field = FieldKey | FieldOperations;
+export type FieldArray = Array<FieldKey | FieldOperations>;
 
 interface FieldKey {
     key: string;
@@ -25,14 +25,14 @@ interface OperationHandlerMessage {
     status: string;
 }
 
-type OperationHandlerReturn = OperationHandlerMessage | void;
+type OperationHandlerReturn = Promise<OperationHandlerMessage> | void;
 
 /**
  * Exported Type declarations
  */
 export interface Config {
     actions?: Array<Action>;
-    fields: Array<Field>;
+    fields: FieldArray;
     filtering: Filtering<any>;
     getData: (offset: number, limit: number, search: string, sort_by: string, sort_desc: boolean) => Promise<any>;
     plural: string;
@@ -45,6 +45,7 @@ export interface Config {
 export interface FieldOperations {
     key: string;
     title: string;
+    condition?: (data: RowData) => boolean;
     operations: Array<Operation>;
     width?: number;
 }
@@ -55,7 +56,7 @@ export type RowData = Record<string, unknown>;
 
 export interface Operation {
     title: string;
-    icon: string;
+    icon: any;
     condition?: (data: RowData) => boolean;
     handler: (data: RowData, router: Router) => OperationHandlerReturn;
 }

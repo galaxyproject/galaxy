@@ -8,7 +8,7 @@ import Filtering, { contains, equals, expandNameTag, toBool, type ValidFilter } 
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
 
-import { type Config } from "./types";
+import { type Config, type FieldArray } from "./types";
 
 /**
  * Api endpoint handlers
@@ -61,12 +61,12 @@ const actions = [
 /**
  * Declare columns to be displayed
  */
-const fields = [
+const fields: FieldArray = [
     {
         title: "Title",
         key: "title",
         type: "operations",
-        width: "40%",
+        width: 40,
         condition: (data: VisualizationEntry) => !data.deleted,
         operations: [
             {
@@ -141,7 +141,7 @@ const fields = [
             {
                 title: "Restore",
                 icon: faTrashRestore,
-                condition: (data: VisualizationEntry) => data.deleted,
+                condition: (data: VisualizationEntry) => !!data.deleted,
                 handler: async (data: VisualizationEntry) => {
                     try {
                         await axios.put(withPrefix(`/api/visualizations/${data.id}`), { deleted: false });
