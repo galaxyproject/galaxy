@@ -140,7 +140,8 @@ class StaticToolPanelView(ToolPanelView):
                         )
                         continue
                     tool = toolbox_registry.get_tool(tool_id)
-                    toolbox_registry.add_tool_to_tool_panel_view(tool, new_panel)
+                    if tool and tool.is_latest_version:
+                        toolbox_registry.add_tool_to_tool_panel_view(tool, new_panel)
                 elif element.content_type == "workflow":
                     workflow_def: Workflow = element
                     workflow = toolbox_registry.get_workflow(element.id)
