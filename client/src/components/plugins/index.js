@@ -1,4 +1,3 @@
-export { eventHubMixin, eventHubPlugin } from "./eventHub";
 export { iconMixin, iconPlugin } from "./icons";
 export { localizationPlugin } from "./localization";
 export { vueRxShortcutPlugin, vueRxShortcuts } from "./vueRxShortcuts";

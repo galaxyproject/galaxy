@@ -15,7 +15,7 @@ const emit = defineEmits<{
     (e: "onOperation", tool: any, evt: Event): void;
 }>();
 
-const eventHub = useEventBus<string>("open-tool-section");
+const eventBus = useEventBus<string>("open-tool-section");
 
 const props = defineProps({
     category: {
@@ -134,11 +134,11 @@ watch(
 );
 
 onMounted(() => {
-    eventHub.on(openToolSection);
+    eventBus.on(openToolSection);
 });
 
 onUnmounted(() => {
-    eventHub.off(openToolSection);
+    eventBus.off(openToolSection);
 });
 
 function openToolSection(sectionId: string) {
