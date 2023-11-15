@@ -7,6 +7,7 @@ import { getGalaxyInstance } from "@/app";
 import Filtering, { contains, equals, expandNameTag, toBool, type ValidFilter } from "@/utils/filtering";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
+import { type Config } from "./types";
 
 /**
  * Api endpoint handlers
@@ -233,7 +234,7 @@ const validFilters: Record<string, ValidFilter<string | boolean | undefined>> = 
 /**
  * Grid configuration
  */
-export default {
+const config: Config = {
     actions: actions,
     fields: fields,
     filtering: new Filtering(validFilters, undefined, false, false),
@@ -244,3 +245,4 @@ export default {
     sortKeys: ["create_time", "title", "update_time"],
     title: "Saved Visualizations",
 };
+export default config;

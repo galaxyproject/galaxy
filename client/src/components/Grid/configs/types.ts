@@ -53,7 +53,7 @@ export type RowData = Record<string, unknown>;
 
 export interface Operation {
     title: string;
-    icon?: string;
+    icon: string;
     condition?: (data: RowData) => boolean;
     handler: (data: RowData, router: any) => OperationHandlerReturn;
 }
