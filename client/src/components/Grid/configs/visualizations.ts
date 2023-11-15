@@ -1,3 +1,4 @@
+import { faCopy, faEdit, faEye, faShareAlt, faTrash, faTrashRestore } from "@fortawesome/free-solid-svg-icons";
 import axios from "axios";
 import type Router from "vue-router";
 
@@ -68,7 +69,7 @@ const fields = [
         operations: [
             {
                 title: "Open",
-                icon: "eye",
+                icon: faEye,
                 condition: (data: VisualizationEntry) => !data.deleted,
                 handler: (data: VisualizationEntry) => {
                     window.location.href = withPrefix(`/plugins/visualizations/${data.type}/saved?id=${data.id}`);
@@ -76,7 +77,7 @@ const fields = [
             },
             {
                 title: "Edit Attributes",
-                icon: "edit",
+                icon: faEdit,
                 condition: (data: VisualizationEntry) => !data.deleted,
                 handler: (data: VisualizationEntry, router: Router) => {
                     router.push(`/visualizations/edit?id=${data.id}`);
@@ -84,7 +85,7 @@ const fields = [
             },
             {
                 title: "Copy",
-                icon: "copy",
+                icon: faCopy,
                 condition: (data: VisualizationEntry) => !data.deleted,
                 handler: async (data: VisualizationEntry) => {
                     try {
@@ -110,7 +111,7 @@ const fields = [
             },
             {
                 title: "Share and Publish",
-                icon: "share-alt",
+                icon: faShareAlt,
                 condition: (data: VisualizationEntry) => !data.deleted,
                 handler: (data: VisualizationEntry, router: Router) => {
                     router.push(`/visualizations/sharing?id=${data.id}`);
@@ -118,7 +119,7 @@ const fields = [
             },
             {
                 title: "Delete",
-                icon: "trash",
+                icon: faTrash,
                 condition: (data: VisualizationEntry) => !data.deleted,
                 handler: async (data: VisualizationEntry) => {
                     try {
@@ -137,7 +138,7 @@ const fields = [
             },
             {
                 title: "Restore",
-                icon: "trash-restore",
+                icon: faTrashRestore,
                 condition: (data: VisualizationEntry) => data.deleted,
                 handler: async (data: VisualizationEntry) => {
                     try {
