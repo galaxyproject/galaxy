@@ -59,7 +59,7 @@ log = logging.getLogger(__name__)
 router = Router(tags=["visualizations"])
 
 DeletedQueryParam: bool = Query(
-    default=False, title="Display deleted", description="Whether to include deleted pages in the result."
+    default=False, title="Display deleted", description="Whether to include deleted visualizations in the result."
 )
 
 UserIdQueryParam: Optional[DecodedDatabaseIdField] = Query(
@@ -68,10 +68,10 @@ UserIdQueryParam: Optional[DecodedDatabaseIdField] = Query(
 )
 
 query_tags = [
-    IndexQueryTag("title", "The page's title."),
-    IndexQueryTag("slug", "The page's slug.", "s"),
-    IndexQueryTag("tag", "The page's tags.", "t"),
-    IndexQueryTag("user", "The page's owner's username.", "u"),
+    IndexQueryTag("title", "The visualization's title."),
+    IndexQueryTag("slug", "The visualization's slug.", "s"),
+    IndexQueryTag("tag", "The visualization's tags.", "t"),
+    IndexQueryTag("user", "The visualization's owner's username.", "u"),
 ]
 
 SearchQueryParam: Optional[str] = search_query_param(
@@ -95,7 +95,7 @@ ShowSharedQueryParam: bool = Query(
 SortByQueryParam: VisualizationSortByEnum = Query(
     default="update_time",
     title="Sort attribute",
-    description="Sort page index by this specified attribute on the page model",
+    description="Sort visualization index by this specified attribute on the visualization model",
 )
 
 SortDescQueryParam: bool = Query(
@@ -150,7 +150,7 @@ class FastAPIVisualizations:
 
     @router.get(
         "/api/visualizations/{id}/sharing",
-        summary="Get the current sharing status of the given Page.",
+        summary="Get the current sharing status of the given Visualization.",
     )
     def sharing(
         self,
