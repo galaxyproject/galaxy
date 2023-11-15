@@ -10,7 +10,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton } from "bootstrap-vue";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 
 import { type components } from "@/api/schema";
 import { useMarkdown } from "@/composables/markdown";
@@ -49,20 +49,24 @@ const multiple = computed(() => {
 });
 
 const page = ref(0);
+
 const currentPage = computed({
     get: () => {
         return page.value;
     },
     set: (newPage) => {
-        if (newPage < 0) {
-            page.value = sortedBroadcasts.value.length - 1;
-        } else if (newPage >= sortedBroadcasts.value.length) {
-            page.value = 0;
-        } else if (multiple.value) {
-            page.value = newPage;
-        }
+        page.value = newPage;
+        checkPageInBounds();
     },
 });
+
+function checkPageInBounds() {
+    if (page.value < 0) {
+        page.value = sortedBroadcasts.value.length - 1;
+    } else if (page.value >= sortedBroadcasts.value.length) {
+        page.value = 0;
+    }
+}
 
 const displayedBroadcast = computed(
     () => ensureDefined(sortedBroadcasts.value[currentPage.value]) as BroadcastNotification
@@ -82,6 +86,13 @@ const sortedBroadcasts = computed(() => {
         return sorted;
     }
 });
+
+watch(
+    () => sortedBroadcasts.value,
+    () => {
+        checkPageInBounds();
+    }
+);
 
 function actionLinkBind(link: string) {
     if (link.startsWith("/")) {
