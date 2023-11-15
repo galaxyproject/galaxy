@@ -77,7 +77,7 @@ async function onSave() {
             @click="$emit('onAttributes')">
             <span class="fa fa-pencil-alt" />
         </BButton>
-        <b-button-group v-b-tooltip class="editor-button-save-group" :title="saveHover">
+        <b-button-group v-b-tooltip.hover.noninteractive class="editor-button-save-group" :title="saveHover">
             <BButton
                 id="workflow-save-button"
                 role="button"
