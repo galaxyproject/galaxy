@@ -6,5 +6,5 @@ defineProps<Props>();
 </script>
 
 <template>
-    <span>{{ text ?? "Not available." }}</span>
+    <span v-localize>{{ text ?? "Not available." }}</span>
 </template>

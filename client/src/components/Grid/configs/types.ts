@@ -44,7 +44,7 @@ export interface FieldOperations {
     key: string;
     title: string;
     operations: Array<Operation>;
-    width?: string;
+    width?: number;
 }
 
 export type FieldKeyHandler = (data: RowData) => void;

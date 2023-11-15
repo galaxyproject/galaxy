@@ -222,7 +222,7 @@ watch(operationMessage, () => {
                     v-for="(fieldEntry, fieldIndex) in config.fields"
                     :key="fieldIndex"
                     class="px-2 py-3"
-                    :style="{ width: fieldEntry.width }"
+                    :style="{ width: `${fieldEntry.width}%` }"
                     :data-description="`grid cell ${rowIndex}-${fieldIndex}`">
                     <GridOperations
                         v-if="fieldEntry.type == 'operations'"
