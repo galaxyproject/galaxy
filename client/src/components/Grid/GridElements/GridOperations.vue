@@ -1,7 +1,11 @@
 <script setup lang="ts">
-import { BLink } from "bootstrap-vue";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 import type { FieldOperations, Operation, RowData } from "@/components/Grid/configs/types";
+
+library.add(faCaretDown);
 
 interface Props {
     rowData: RowData;
@@ -24,19 +28,24 @@ function hasCondition(conditionHandler: (rowData: RowData) => Boolean) {
 
 <template>
     <span>
-        <BLink id="grid-operations" data-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
-            <icon icon="caret-down" class="fa-lg" />
+        <button
+            id="grid-operations"
+            data-toggle="dropdown"
+            aria-haspopup="true"
+            aria-expanded="false"
+            class="ui-link font-weight-bold">
+            <FontAwesomeIcon icon="caret-down" class="fa-lg" />
             <span class="font-weight-bold">{{ rowData.title }}</span>
-        </BLink>
+        </button>
         <div class="dropdown-menu" aria-labelledby="dataset-dropdown">
             <span v-for="(operation, operationIndex) in operations" :key="operationIndex">
-                <a
+                <button
                     v-if="hasCondition(operation.condition)"
                     class="dropdown-item"
-                    @click.prevent="$emit('execute', operation)">
+                    @click.prevent="emit('execute', operation)">
                     <icon :icon="operation.icon" />
                     <span v-localize>{{ operation.title }}</span>
-                </a>
+                </button>
             </span>
         </div>
     </span>

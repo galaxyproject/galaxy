@@ -1,4 +1,7 @@
 <script setup lang="ts">
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { faCaretDown, faCaretUp } from "@fortawesome/free-solid-svg-icons";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BLink, BPagination } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
@@ -16,6 +19,7 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 import UtcDate from "@/components/UtcDate.vue";
 
+library.add(faCaretDown, faCaretUp);
 const router = useRouter();
 
 interface Props {
@@ -205,8 +209,8 @@ watch(operationMessage, () => {
                         <BLink @click="onSort(fieldEntry.key)">
                             <span>{{ fieldEntry.title || fieldEntry.key }}</span>
                             <span v-if="sortBy === fieldEntry.key">
-                                <Icon v-if="sortDesc" icon="caret-up" data-description="grid sort asc" />
-                                <Icon v-else icon="caret-down" data-description="grid sort desc" />
+                                <FontAwesomeIcon v-if="sortDesc" icon="caret-up" data-description="grid sort asc" />
+                                <FontAwesomeIcon v-else icon="caret-down" data-description="grid sort desc" />
                             </span>
                         </BLink>
                     </span>

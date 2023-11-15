@@ -9,5 +9,5 @@ const emit = defineEmits<{
 </script>
 
 <template>
-    <a class="font-weight-bold" href="#" @click.prevent="$emit('click')">{{ text }}</a>
+    <button class="ui-link font-weight-bold" @click="emit('click')">{{ text }}</button>
 </template>
