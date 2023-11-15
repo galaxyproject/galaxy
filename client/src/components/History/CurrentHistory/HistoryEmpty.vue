@@ -4,7 +4,7 @@ import { useEventBus } from "@vueuse/core";
 import { useGlobalUploadModal } from "@/composables/globalUploadModal";
 import { localize } from "@/utils/localization";
 
-const { emit } = useEventBus("open-tool-section");
+const { emit } = useEventBus<string>("open-tool-section");
 
 const props = withDefaults(
     defineProps<{
@@ -19,7 +19,7 @@ const props = withDefaults(
 
 const { openGlobalUploadModal } = useGlobalUploadModal();
 function clickDataLink() {
-    emit("openToolSection", "getext");
+    emit("getext");
 }
 </script>
 
