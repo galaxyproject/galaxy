@@ -3,6 +3,9 @@ interface Props {
     text: string;
 }
 defineProps<Props>();
+const emit = defineEmits<{
+    (e: "click"): void;
+}>();
 </script>
 
 <template>

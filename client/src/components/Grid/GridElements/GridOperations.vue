@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { BLink } from "bootstrap-vue";
 
-import type { FieldOperations, RowData } from "@/components/Grid/configs/types";
+import type { FieldOperations, Operation, RowData } from "@/components/Grid/configs/types";
 
 interface Props {
     rowData: RowData;
@@ -9,6 +9,10 @@ interface Props {
 }
 
 const props = defineProps<Props>();
+
+const emit = defineEmits<{
+    (e: "execute", operation: Operation): void;
+}>();
 
 /**
  * Availibility of operations might required certain conditions
