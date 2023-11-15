@@ -59,20 +59,16 @@ const testGrid = {
         },
     ],
     filtering: new Filtering({}, undefined, false, false),
-    getData: jest.fn(() => {
-        const data = [
-            {
-                id: "id-1",
-                link: "link-1",
-                operation: "operation-1",
-            },
-            {
-                id: "id-2",
-                link: "link-2",
-                operation: "operation-2",
-            },
-        ];
-        return [data, data.length];
+    getData: jest.fn((offset, limit) => {
+        const data = [];
+        for (let i = offset; i < offset + limit; i++) {
+            data.push({
+                id: `id-${i + 1}`,
+                link: `link-${i + 1}`,
+                operation: `operation-${i + 1}`,
+            });
+        }
+        return [data, 100];
     }),
     plural: "Tests",
     sortBy: "id",
@@ -162,5 +158,17 @@ describe("GridList", () => {
         await new Promise((r) => setTimeout(r, 500));
         expect(testGrid.getData).toHaveBeenCalledTimes(2);
         expect(testGrid.getData.mock.calls[1]).toEqual([0, 25, "filter query", "id", true]);
+    });
+
+    it("pagination", async () => {
+        const wrapper = createTarget({
+            config: testGrid,
+            limit: 2,
+        });
+        await wrapper.vm.$nextTick();
+        const pageLinks = wrapper.findAll(".page-link");
+        await pageLinks.at(4).trigger("click");
+        expect(wrapper.find("[data-description='grid cell 0-0']").text()).toBe("id-5");
+        expect(wrapper.find("[data-description='grid cell 1-0']").text()).toBe("id-6");
     });
 });
