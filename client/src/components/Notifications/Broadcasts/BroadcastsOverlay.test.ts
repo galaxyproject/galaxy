@@ -58,6 +58,8 @@ async function mountBroadcastsOverlayWith(broadcasts: BroadcastNotification[] = 
     return wrapper;
 }
 
+const messageCssSelector = ".broadcast-container .message";
+
 describe("BroadcastsOverlay.vue", () => {
     it("should not render anything when there is no broadcast", async () => {
         const wrapper = await mountBroadcastsOverlayWith();
@@ -68,19 +70,19 @@ describe("BroadcastsOverlay.vue", () => {
 
     it("should render only one broadcast at a time", async () => {
         const wrapper = await mountBroadcastsOverlayWith(FAKE_BROADCASTS);
-        expect(wrapper.findAll(".broadcast-message")).toHaveLength(1);
-        expect(wrapper.find(".broadcast-message").text()).toContain("Test message 1");
+        expect(wrapper.findAll(messageCssSelector)).toHaveLength(1);
+        expect(wrapper.find(messageCssSelector).text()).toContain("Test message 1");
     });
 
     it("should render the next broadcast when the current one is dismissed", async () => {
         const wrapper = await mountBroadcastsOverlayWith(FAKE_BROADCASTS);
-        expect(wrapper.findAll(".broadcast-message")).toHaveLength(1);
-        expect(wrapper.find(".broadcast-message").text()).toContain("Test message 1");
+        expect(wrapper.findAll(messageCssSelector)).toHaveLength(1);
+        expect(wrapper.find(messageCssSelector).text()).toContain("Test message 1");
 
-        const dismissButton = wrapper.find("#dismiss-button");
+        const dismissButton = wrapper.find(".dismiss-button");
         await dismissButton.trigger("click");
 
-        expect(wrapper.findAll(".broadcast-message")).toHaveLength(1);
-        expect(wrapper.find(".broadcast-message").text()).toContain("Test message 2");
+        expect(wrapper.findAll(messageCssSelector)).toHaveLength(1);
+        expect(wrapper.find(messageCssSelector).text()).toContain("Test message 2");
     });
 });

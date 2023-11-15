@@ -152,7 +152,7 @@ function dismiss() {
             <FontAwesomeIcon fixed-width icon="fa-chevron-right" />
         </BButton>
 
-        <BButton class="cross inline-icon-button area-x" title="Dismiss" @click="dismiss">
+        <BButton class="dismiss-button inline-icon-button area-x" title="Dismiss" @click="dismiss">
             <FontAwesomeIcon fixed-width icon="fa-times" />
         </BButton>
     </div>
@@ -227,7 +227,7 @@ $margin: 1rem;
         }
     }
 
-    .cross {
+    .dismiss-button {
         font-size: 1.5rem;
         color: $border-color;
 
