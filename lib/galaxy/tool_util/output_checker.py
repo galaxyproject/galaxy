@@ -1,11 +1,42 @@
 import re
 from enum import Enum
 from logging import getLogger
+from typing import (
+    Any,
+    Dict,
+    List,
+    Tuple,
+    TYPE_CHECKING,
+    Union
+)
 
 from galaxy.tool_util.parser.stdio import StdioErrorLevel
-from galaxy.util import unicodify
+
+if TYPE_CHECKING:
+    from galaxy.tool_util.parser.stdio import ToolStdioRegex, ToolStdioExitCode
 
 log = getLogger(__name__)
+
+
+class JobErrorMessage:
+    def __init__(self, type, desc, code_desc, error_level):
+        self.type = type
+        self.desc = desc
+        self.code_desc = code_desc
+        self.error_level = error_level
+
+
+class ExitCodeJobErrorMessage(JobErrorMessage):
+    def __init__(self, desc, code_desc, error_level, tool_exit_code):
+        super().__init__("exit_code", desc, code_desc, error_level)
+        self.exit_code = tool_exit_code
+
+
+class RegexJobErrorMessage(JobErrorMessage):
+    def __init__(self, desc, code_desc, error_level, stream, match):
+        super().__init__("regex", desc, code_desc, error_level)
+        self.stream = stream
+        self.match = match
 
 
 class DETECTED_JOB_STATE(str, Enum):
@@ -17,7 +48,7 @@ class DETECTED_JOB_STATE(str, Enum):
 ERROR_PEEK_SIZE = 2000
 
 
-def check_output_regex(regex, stream, stream_name, job_messages, max_error_level):
+def check_output_regex(regex: "ToolStdioRegex", stream: str, stream_name: str, job_messages: List[Dict[str, Any]], max_error_level: int) -> int:
     """
     check a single regex against a stream
 
@@ -35,7 +66,7 @@ def check_output_regex(regex, stream, stream_name, job_messages, max_error_level
     return max_error_level
 
 
-def check_output(stdio_regexes, stdio_exit_codes, stdout, stderr, tool_exit_code):
+def check_output(stdio_regexes: List["ToolStdioRegex"], stdio_exit_codes: List["ToolStdioExitCode"], stdout: str, stderr: str, tool_exit_code: int) -> Tuple[str, str, str, List[Dict[str, Any]]]:
     """
     Check the output of a tool - given the stdout, stderr, and the tool's
     exit code, return DETECTED_JOB_STATE.OK if the tool exited succesfully or
@@ -50,9 +81,6 @@ def check_output(stdio_regexes, stdio_exit_codes, stdout, stderr, tool_exit_code
     # By default, the tool succeeded. This covers the case where the code
     # has a bug but the tool was ok, and it lets a workflow continue.
     state = DETECTED_JOB_STATE.OK
-
-    stdout = unicodify(stdout, strip_null=True)
-    stderr = unicodify(stderr, strip_null=True)
 
     # messages (descriptions of the detected exit_code and regexes)
     # to be prepended to the stdout/stderr after all exit code and regex tests
@@ -132,10 +160,10 @@ def check_output(stdio_regexes, stdio_exit_codes, stdout, stderr, tool_exit_code
             if max_error_level == StdioErrorLevel.FATAL_OOM:
                 state = DETECTED_JOB_STATE.OUT_OF_MEMORY_ERROR
             elif max_error_level >= StdioErrorLevel.FATAL:
-                reason = ""
+                error_reason = ""
                 if job_messages:
-                    reason = f" Reasons are {job_messages}"
-                log.info(f"Job error detected, failing job.{reason}")
+                    error_reason = f" Reasons are {job_messages}"
+                log.info(f"Job error detected, failing job.{error_reason}")
                 state = DETECTED_JOB_STATE.GENERIC_ERROR
 
         # When there are no regular expressions and no exit codes to check,
@@ -154,8 +182,7 @@ def check_output(stdio_regexes, stdio_exit_codes, stdout, stderr, tool_exit_code
 
     return state, stdout, stderr, job_messages
 
-
-def __regex_err_msg(match, stream, regex):
+def __regex_err_msg(match: re.Match, stream: str, regex: "ToolStdioRegex"):
     """
     Return a message about the match on tool output using the given
     ToolStdioRegex regex object. The regex_match is a MatchObject
