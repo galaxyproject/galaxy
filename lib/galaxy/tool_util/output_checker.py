@@ -7,7 +7,6 @@ from typing import (
     List,
     Tuple,
     TYPE_CHECKING,
-    Union
 )
 
 from galaxy.tool_util.parser.stdio import StdioErrorLevel

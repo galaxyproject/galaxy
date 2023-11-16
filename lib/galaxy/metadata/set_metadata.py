@@ -259,11 +259,11 @@ def set_metadata_portable(
                     with open(path / "outputs" / "tool_stdout", "rb") as f:
                         task_stdout = unicodify(f.read(MAX_STDIO_READ_BYTES), strip_null=True)
                         if task_stdout:
-                            tool_stdout = "%s[%s stdout]\n%s\n" % (tool_stdout, path.name, task_stdout)
+                            tool_stdout = f"{tool_stdout}[{path.name} stdout]\n{task_stdout}\n"
                     with open(path / "outputs" / "tool_stderr", "rb") as f:
                         task_stderr = unicodify(f.read(MAX_STDIO_READ_BYTES), strip_null=True)
                         if task_stderr:
-                            tool_stderr = "%s[%s stderr]\n%s\n" % (tool_stderr, path.name, task_stderr)
+                            tool_stderr = f"{tool_stderr}[{path.name} stderr]\n{task_stderr}\n"
             else:
                 wdc = os.listdir(tool_job_working_directory)
                 odc = os.listdir(outputs_directory)
@@ -346,7 +346,7 @@ def set_metadata_portable(
                 input_ext=input_ext,
             )
             collect_dynamic_outputs(job_context, output_collections)
-        except MaxDiscoveredFilesExceededError as e:
+        except MaxDiscoveredFilesExceededError:
             final_job_state = Job.states.ERROR
             job_messages.append(
                 {
