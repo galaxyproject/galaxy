@@ -56,11 +56,13 @@ from galaxy.objectstore import (
     build_object_store_from_config,
     ObjectStore,
 )
+
 from galaxy.tool_util.output_checker import (
     check_output,
     DETECTED_JOB_STATE,
 )
 from galaxy.tool_util.parser.stdio import (
+    StdioErrorLevel,
     ToolStdioExitCode,
     ToolStdioRegex,
 )
@@ -75,7 +77,7 @@ logging.basicConfig()
 log = logging.getLogger(__name__)
 
 
-MAX_STDIO_READ_BYTES = 100 * 10**6  # 100 MB
+MAX_STDIO_READ_BYTES = 100 * 10 ** 6  # 100 MB
 
 
 def reset_external_filename(dataset_instance: DatasetInstance):
@@ -340,7 +342,15 @@ def set_metadata_portable(
             collect_dynamic_outputs(job_context, output_collections)
         except MaxDiscoveredFilesExceededError as e:
             final_job_state = Job.states.ERROR
-            job_messages.append(str(e))
+            job_messages.append(
+                {
+                    "type": "max_discovered_files",
+                    "desc": str(e),
+                    "code_desc": str(e),
+                    "error_level": StdioErrorLevel.FATAL,
+                }
+            )
+
         if job:
             job.set_streams(tool_stdout=tool_stdout, tool_stderr=tool_stderr, job_messages=job_messages)
             job.state = final_job_state
