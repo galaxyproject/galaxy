@@ -2,12 +2,10 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import axios from "axios";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref, watch } from "vue";
 
-import { getAppRoot } from "@/onload";
-import { type PanelView, useToolStore } from "@/stores/toolStore";
+import { useToolStore } from "@/stores/toolStore";
 import localize from "@/utils/localization";
 
 import { types_to_icons } from "./utilities";
@@ -35,21 +33,16 @@ const emit = defineEmits<{
 }>();
 
 const arePanelsFetched = ref(false);
-const defaultPanelView = ref("");
 const toolStore = useToolStore();
-const { currentPanelView, isPanelPopulated } = storeToRefs(toolStore);
+const { currentPanelView, defaultPanelView, isPanelPopulated, panelViews } = storeToRefs(toolStore);
 
 const query = ref("");
-const panelViews = ref<Record<string, PanelView> | null>(null);
 const showAdvanced = ref(false);
 
 onMounted(async () => {
-    await axios
-        .get(`${getAppRoot()}api/tool_panels`)
-        .then(async ({ data }) => {
-            const { default_panel_view, views } = data;
-            defaultPanelView.value = default_panel_view;
-            panelViews.value = views;
+    await toolStore
+        .fetchPanelViews()
+        .then(async () => {
             await initializeTools();
         })
         .catch((error) => {
