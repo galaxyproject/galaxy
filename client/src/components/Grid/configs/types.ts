@@ -1,37 +1,18 @@
+import { IconProp } from "@fortawesome/fontawesome-svg-core";
 import type Router from "vue-router";
 
 import Filtering from "@/utils/filtering";
 
-interface Action {
+export interface Action {
     title: string;
-    icon?: string;
+    icon?: IconProp;
     handler: (router: Router) => void;
 }
 
-export type FieldArray = Array<FieldKey | FieldOperations>;
+export type ActionArray = Array<Action>;
 
-interface FieldKey {
-    key: string;
-    disabled?: boolean;
-    type: string;
-    handler?: FieldKeyHandler;
-}
-
-// TODO: Apply strict literals
-// type FieldType = "date" | "operations" | "sharing" | "tags" | "text" | undefined;
-
-interface OperationHandlerMessage {
-    message: string;
-    status: string;
-}
-
-type OperationHandlerReturn = Promise<OperationHandlerMessage> | void;
-
-/**
- * Exported Type declarations
- */
 export interface Config {
-    actions?: Array<Action>;
+    actions?: ActionArray;
     fields: FieldArray;
     filtering: Filtering<any>;
     getData: (offset: number, limit: number, search: string, sort_by: string, sort_desc: boolean) => Promise<any>;
@@ -42,21 +23,39 @@ export interface Config {
     title: string;
 }
 
+export type FieldArray = Array<FieldKey | FieldOperations>;
+
+interface FieldKey {
+    key: string;
+    title: string;
+    disabled?: boolean;
+    type: string;
+    handler?: (data: RowData) => void;
+}
+
+export type FieldHandler = (data: RowData) => void;
+
 export interface FieldOperations {
     key: string;
     title: string;
+    type: string;
     condition?: (data: RowData) => boolean;
     operations: Array<Operation>;
     width?: number;
 }
 
-export type FieldKeyHandler = (data: RowData) => void;
-
-export type RowData = Record<string, unknown>;
-
 export interface Operation {
     title: string;
-    icon: any;
+    icon: IconProp;
     condition?: (data: RowData) => boolean;
     handler: (data: RowData, router: Router) => OperationHandlerReturn;
 }
+
+interface OperationHandlerMessage {
+    message: string;
+    status: string;
+}
+
+type OperationHandlerReturn = Promise<OperationHandlerMessage> | void;
+
+export type RowData = Record<string, unknown>;

@@ -1,4 +1,4 @@
-import { faCopy, faEdit, faEye, faShareAlt, faTrash, faTrashRestore } from "@fortawesome/free-solid-svg-icons";
+import { faCopy, faEdit, faEye, faPlus, faShareAlt, faTrash, faTrashRestore } from "@fortawesome/free-solid-svg-icons";
 import axios from "axios";
 import type Router from "vue-router";
 
@@ -8,7 +8,7 @@ import Filtering, { contains, equals, expandNameTag, toBool, type ValidFilter } 
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
 
-import { type Config, type FieldArray } from "./types";
+import type { ActionArray, Config, FieldArray } from "./types";
 
 /**
  * Api endpoint handlers
@@ -48,10 +48,10 @@ async function getData(offset: number, limit: number, search: string, sort_by: s
 /**
  * Actions are grid-wide operations
  */
-const actions = [
+const actions: ActionArray = [
     {
         title: "Create",
-        icon: "plus",
+        icon: faPlus,
         handler: (router: Router) => {
             router.push(`/visualizations`);
         },

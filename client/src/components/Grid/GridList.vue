@@ -8,7 +8,7 @@ import { useRouter } from "vue-router/composables";
 
 import { timeout } from "@/utils/timeout";
 
-import { Config, FieldKeyHandler, Operation, RowData } from "./configs/types";
+import { Config, FieldHandler, Operation, RowData } from "./configs/types";
 
 import GridLink from "./GridElements/GridLink.vue";
 import GridOperations from "./GridElements/GridOperations.vue";
@@ -129,7 +129,7 @@ function onSort(sortKey: string) {
 /**
  * Process tag inputs
  */
-async function onTagInput(data: RowData, tags: Array<string>, tagsHandler: FieldKeyHandler) {
+async function onTagInput(data: RowData, tags: Array<string>, tagsHandler: FieldHandler) {
     await tagsHandler({ ...data, tags: tags });
     data.tags = tags;
 }
