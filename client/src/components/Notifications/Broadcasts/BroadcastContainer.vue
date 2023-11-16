@@ -72,9 +72,14 @@ const displayedBroadcast = computed(
     () => ensureDefined(sortedBroadcasts.value[currentPage.value]) as BroadcastNotification
 );
 
-// newest first
-function sortByPublicationTime(a: BroadcastNotification, b: BroadcastNotification) {
-    return new Date(b.publication_time).getTime() - new Date(a.publication_time).getTime();
+function sortByImportanceAndPublicationTime(a: BroadcastNotification, b: BroadcastNotification) {
+    if (a.variant === "urgent" && b.variant !== "urgent") {
+        return -1;
+    } else if (a.variant === "warning" && b.variant === "info") {
+        return -1;
+    } else {
+        return new Date(b.publication_time).getTime() - new Date(a.publication_time).getTime();
+    }
 }
 
 const sortedBroadcasts = computed(() => {
@@ -82,7 +87,7 @@ const sortedBroadcasts = computed(() => {
         return [props.options.broadcast];
     } else {
         const sorted = [...props.options.broadcasts];
-        sorted.sort(sortByPublicationTime);
+        sorted.sort(sortByImportanceAndPublicationTime);
         return sorted;
     }
 });
@@ -148,8 +153,8 @@ function dismiss() {
                 <div class="action-links">
                     <BButton
                         v-for="(actionLink, index) in displayedBroadcast.content.action_links"
-                        :key="index"
-                        variant="primary"
+                        :key="`${displayedBroadcast.id}-${index}`"
+                        :variant="displayedBroadcast.variant === 'urgent' ? 'danger' : 'primary'"
                         v-bind="actionLinkBind(actionLink.link)">
                         {{ actionLink.action_name }}
                     </BButton>
@@ -220,8 +225,8 @@ $margin: 1rem;
     }
 
     &.urgent {
-        border-color: $brand-info;
-        background: linear-gradient(to top, lighten($brand-info, 50%), $white 120px);
+        border-color: $brand-danger;
+        background: linear-gradient(to top, lighten($brand-warning, 35%), $white 120px);
     }
 
     .arrow {
@@ -258,7 +263,7 @@ $margin: 1rem;
         font-size: 1.5rem;
 
         .urgent {
-            color: $brand-info;
+            color: $brand-danger;
         }
 
         .warning {
@@ -283,6 +288,7 @@ $margin: 1rem;
 
             .action-links {
                 display: flex;
+                flex-wrap: wrap;
                 gap: 0.5rem;
             }
 
