@@ -346,12 +346,12 @@ def set_metadata_portable(
                 input_ext=input_ext,
             )
             collect_dynamic_outputs(job_context, output_collections)
-        except MaxDiscoveredFilesExceededError:
+        except MaxDiscoveredFilesExceededError as e:
             final_job_state = Job.states.ERROR
             job_messages.append(
                 {
                     "type": "max_discovered_files",
-                    "desc": "Too many output files were discovered for a single job.",
+                    "desc": str(e),
                     "code_desc": None,
                     "error_level": StdioErrorLevel.FATAL,
                 }
