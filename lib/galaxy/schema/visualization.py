@@ -10,7 +10,10 @@ from pydantic import (
 )
 from typing_extensions import Literal
 
-from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.schema.fields import (
+    DecodedDatabaseIdField,
+    EncodedDatabaseIdField,
+)
 from galaxy.schema.schema import (
     CreateTimeField,
     Model,
@@ -26,7 +29,7 @@ class VisualizationIndexQueryPayload(Model):
     show_own: Optional[bool] = None
     show_published: Optional[bool] = None
     show_shared: Optional[bool] = None
-    user_id: Optional[EncodedDatabaseIdField] = None
+    user_id: Optional[DecodedDatabaseIdField] = None
     sort_by: VisualizationSortByEnum = Field(
         "update_time", title="Sort By", description="Sort pages by this attribute."
     )
