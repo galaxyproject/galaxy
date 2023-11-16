@@ -6207,7 +6207,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
             .add_columns(*attribute_columns(DatasetPermissions, dataset_permission_attributes))
         )
         for entity in return_entities:
-            q = q.add_entity(entity)
+            q = q.add_columns(entity)
             if entity == DatasetCollectionElement:
                 q = q.filter(entity.id == dce.c.id)
         return q.distinct().order_by(*order_by_columns)
