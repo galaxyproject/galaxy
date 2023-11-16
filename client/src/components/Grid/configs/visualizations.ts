@@ -96,7 +96,7 @@ const fields: FieldArray = [
                         const newViz = {
                             title: `Copy of '${copyViz.title}'`,
                             type: copyViz.type,
-                            config: copyViz.config,
+                            config: copyViz.latest_revision.config,
                         };
                         await axios.post(withPrefix(`/api/visualizations`), newViz);
                         return {
