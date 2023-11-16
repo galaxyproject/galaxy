@@ -18,11 +18,6 @@ export default {
     directives: {
         VBTooltip,
     },
-    data() {
-        return{
-            clicked: false,
-        }
-    },
     props: {
         id: {
             type: String,
@@ -32,6 +27,11 @@ export default {
             type: String,
             required: true,
         },
+    },
+    data() {
+        return{
+            clicked: false,
+        }
     },
     computed: {
         title() {
