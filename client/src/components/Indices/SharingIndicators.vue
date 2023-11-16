@@ -44,15 +44,5 @@ const props = defineProps<SharingIndicatorsProps>();
             @click.prevent="$emit('filter', 'shared_with_me')">
             <FontAwesomeIcon icon="share-alt" />
         </BButton>
-        <!-- this can later be changed to an active button, currently, no such filter -->
-        <BButton
-            v-if="props.object.users_shared_with && props.object.users_shared_with.length"
-            v-b-tooltip.hover.noninteractive
-            size="sm"
-            variant="link"
-            disabled
-            :title="`Shared with ${props.object.users_shared_with.length} user(s)` | localize">
-            <FontAwesomeIcon icon="users" />
-        </BButton>
     </span>
 </template>
