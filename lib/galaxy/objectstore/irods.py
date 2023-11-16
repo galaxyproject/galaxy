@@ -445,7 +445,7 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
 
         collection_path = f"{self.home}/{subcollection_name}"
         data_object_path = f"{collection_path}/{data_object_name}"
-        options = {kw.DEST_RESC_NAME_KW: self.resource}
+        options = {kw.FORCE_FLAG_KW: "", kw.DEST_RESC_NAME_KW: self.resource}
 
         try:
             cache_path = self._get_cache_path(rel_path)
