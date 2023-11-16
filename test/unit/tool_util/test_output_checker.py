@@ -19,7 +19,7 @@ class TestOutputChecker(TestCase):
         )
         self.stdout = ""
         self.stderr = ""
-        self.tool_exit_code = None
+        self.tool_exit_code = 0
 
     def test_default_no_stderr_success(self):
         self.__assertSuccessful()
