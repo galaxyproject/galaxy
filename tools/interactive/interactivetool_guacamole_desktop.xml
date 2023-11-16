@@ -3,7 +3,7 @@
         <container type="docker">quay.io/bgruening/guacamole-desktop</container>
     </requirements>
     <entry_points>
-        <entry_point name="Remote Desktop" requires_domain="True">
+        <entry_point name="Remote Desktop" requires_domain="False" requires_path_in_url="False">
             <port>8080</port>
             <url><![CDATA[?username=user&password=password]]></url>
         </entry_point>

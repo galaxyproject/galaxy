@@ -62,6 +62,8 @@ log = logging.getLogger(__name__)
 def inject_validates(inject):
     if inject == "api_key":
         return True
+    elif inject == "entry_point_path_for_label":
+        return True
     p = re.compile("^oidc_(id|access|refresh)_token_(.*)$")
     match = p.match(inject)
     return match is not None
@@ -231,10 +233,13 @@ class XmlToolSource(ToolSource):
             template = environment_variable_el.text
             inject = environment_variable_el.get("inject")
             if inject:
-                assert not template, "Cannot specify inject and environment variable template."
                 assert inject_validates(inject)
-            if template:
-                assert not inject, "Cannot specify inject and environment variable template."
+            if inject == "entry_point_path_for_label":
+                assert (
+                    template
+                ), 'Environment variable value must contain entry point label when inject="entry_point_path_for_label".'
+            else:
+                assert not (template and inject), "Cannot specify inject and environment variable template."
             definition = {
                 "name": environment_variable_el.get("name"),
                 "template": template,
@@ -305,8 +310,25 @@ class XmlToolSource(ToolSource):
             name = ep_el.get("name", None)
             if name:
                 name = name.strip()
+            label = ep_el.get("label", None)
+            if label:
+                label = label.strip()
             requires_domain = string_as_bool(ep_el.attrib.get("requires_domain", False))
-            rtt.append(dict(port=port, url=url, name=name, requires_domain=requires_domain))
+            requires_path_in_url = string_as_bool(ep_el.attrib.get("requires_path_in_url", False))
+            requires_path_in_header_named = ep_el.get("requires_path_in_header_named", None)
+            if requires_path_in_header_named:
+                requires_path_in_header_named = requires_path_in_header_named.strip()
+            rtt.append(
+                dict(
+                    port=port,
+                    url=url,
+                    name=name,
+                    label=label,
+                    requires_domain=requires_domain,
+                    requires_path_in_url=requires_path_in_url,
+                    requires_path_in_header_named=requires_path_in_header_named,
+                )
+            )
         return rtt
 
     def parse_hidden(self):

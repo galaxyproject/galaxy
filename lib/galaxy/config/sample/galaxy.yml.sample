@@ -333,9 +333,15 @@ gravity:
     # names.
     # environment: {}
 
-  # Configure dynamic handlers in this section.
+  # Configure dynamic handlers in this section. Below is a simple example
   # See https://docs.galaxyproject.org/en/latest/admin/scaling.html#dynamically-defined-handlers for details.
-  # handlers: {}
+  #handlers:
+  #  handler:
+  #    processes: 3
+  #    pools:
+  #      - job-handlers
+  #      - workflow-schedulers
+
 galaxy:
 
   # The directory that will be prepended to relative paths in options
@@ -1288,15 +1294,13 @@ galaxy:
   # The value of this option will be resolved with respect to
   # <data_dir>.
   #interactivetools_map: interactivetools_map.sqlite
+  # Note: the following config should still be used due to lack of
+  # support of data_dir resolution in gx-it-proxy and gravity:
+  #interactivetools_map: database/interactivetools_map.sqlite
 
   # Prefix to use in the formation of the subdomain or path for
   # interactive tools
   #interactivetools_prefix: interactivetool
-
-  # Shorten the uuid portion of the subdomain or path for interactive
-  # tools. Especially useful for avoiding the need for wildcard
-  # certificates by keeping subdomain under 63 chars
-  #interactivetools_shorten_url: false
 
   # Galaxy Interactive Tools (GxITs) can be stopped from within the
   # Galaxy interface, killing the GxIT job without completing its
