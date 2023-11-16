@@ -8,7 +8,6 @@ from typing import (
 )
 
 from pydantic import (
-    AnyUrl,
     Field,
     Required,
 )
@@ -22,6 +21,7 @@ from galaxy.schema.fields import (
     EncodedDatabaseIdField,
 )
 from galaxy.schema.schema import Model
+from galaxy.schema.types import AbsoluteOrRelativeUrl
 
 
 class NotificationVariant(str, Enum):
@@ -72,7 +72,9 @@ class ActionLink(Model):
     action_name: str = Field(
         Required, title="Action name", description="The name of the action, will be the button title."
     )
-    link: AnyUrl = Field(Required, title="Link", description="The link to be opened when the button is clicked.")
+    link: AbsoluteOrRelativeUrl = Field(
+        Required, title="Link", description="The link to be opened when the button is clicked."
+    )
 
 
 # Create the corresponding model for the registered category below and

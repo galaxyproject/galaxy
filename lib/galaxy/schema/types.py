@@ -1,11 +1,15 @@
 from datetime import datetime
+from typing import Union
 
+from pydantic import AnyUrl
 from pydantic.datetime_parse import parse_datetime
 from typing_extensions import Literal
 
 # Relative URLs cannot be validated with AnyUrl, they need a scheme.
 # Making them an alias of `str` for now
 RelativeUrl = str
+
+AbsoluteOrRelativeUrl = Union[AnyUrl, RelativeUrl]
 
 LatestLiteral = Literal["latest"]
 
