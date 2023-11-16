@@ -3,8 +3,9 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faLongArrowAltLeft, faLongArrowAltRight } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BFormInput, BInputGroup } from "bootstrap-vue";
-import { type PropType, ref } from "vue";
+import { computed, type PropType, ref } from "vue";
 
+import { useFilterObjectArray } from "@/composables/filter";
 import { useUid } from "@/composables/utils/uid";
 
 library.add(faLongArrowAltLeft, faLongArrowAltRight);
@@ -41,17 +42,61 @@ const props = defineProps({
 });
 
 const _emit = defineEmits<{
-    (e: "input", value: SelectValue | Array<SelectValue>): void;
+    (e: "input", value: Array<SelectValue>): void;
 }>();
 
 const searchValue = ref("");
 const useRegex = ref(false);
+
+const searchRegex = computed(() => {
+    if (useRegex.value) {
+        try {
+            const regex = new RegExp(searchValue.value);
+            return regex;
+        } catch (e) {
+            return null;
+        }
+    } else {
+        return null;
+    }
+});
+
+const regexInvalid = computed(() => useRegex.value && searchRegex.value === null);
+const asRegex = computed(() => searchRegex.value !== null);
+const filteredOptions = useFilterObjectArray(props.options, searchValue, ["label"], asRegex);
+
+const highlightedUnselected = ref([]);
+const highlightedSelected = ref([]);
+
+const selectText = computed(() => {
+    if (highlightedUnselected.value.length > 0) {
+        return "Select highlighted";
+    } else if (searchValue.value === "") {
+        return "Select all";
+    } else {
+        return "Select filtered";
+    }
+});
+
+const deselectText = computed(() => {
+    if (highlightedSelected.value.length > 0) {
+        return "Deselect highlighted";
+    } else if (searchValue.value === "") {
+        return "Deselect all";
+    } else {
+        return "Deselect filtered";
+    }
+});
 </script>
 
 <template>
     <section :id="props.id" class="form-select-many">
         <BInputGroup>
-            <BFormInput v-model="searchValue" :debounce="300" :placeholder="props.placeholder"></BFormInput>
+            <BFormInput
+                v-model="searchValue"
+                :state="regexInvalid ? false : undefined"
+                :debounce="300"
+                :placeholder="props.placeholder"></BFormInput>
 
             <template v-slot:append>
                 <BButton
@@ -68,15 +113,21 @@ const useRegex = ref(false);
         <div class="options-box border rounded p-2 mt-2">
             <div class="selection-heading border-right px-2">
                 <span>Unselected</span>
-                <BButton class="selection-button" title="Select all shown" variant="primary">
+                <BButton class="selection-button" :title="selectText" variant="primary">
+                    {{ selectText }}
                     <FontAwesomeIcon icon="fa-long-arrow-alt-right" />
                 </BButton>
             </div>
-            <div class="options-list border-right"></div>
+            <div class="options-list border-right">
+                <div v-for="option in filteredOptions" :key="option.label">
+                    {{ option.label }}
+                </div>
+            </div>
             <div class="selection-heading px-2">
                 <span>Selected</span>
-                <BButton class="selection-button" title="Deselect all shown" variant="primary">
+                <BButton class="selection-button" :title="deselectText" variant="primary">
                     <FontAwesomeIcon icon="fa-long-arrow-alt-left" />
+                    {{ deselectText }}
                 </BButton>
             </div>
             <div class="options-list"></div>
@@ -100,14 +151,12 @@ const useRegex = ref(false);
         color: $gray-600;
         font-weight: bold;
         display: flex;
+        flex-wrap: wrap;
         justify-content: space-between;
 
         .selection-button {
             height: 20px;
-            width: 40px;
-            padding: 0;
-            display: grid;
-            place-items: center;
+            padding: 0 0.5rem;
         }
     }
 }
