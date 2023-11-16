@@ -1,11 +1,11 @@
-import { IconProp } from "@fortawesome/fontawesome-svg-core";
+import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 import type Router from "vue-router";
 
 import Filtering from "@/utils/filtering";
 
 export interface Action {
     title: string;
-    icon?: IconProp;
+    icon?: IconDefinition;
     handler: (router: Router) => void;
 }
 
@@ -46,7 +46,7 @@ export interface FieldOperations {
 
 export interface Operation {
     title: string;
-    icon: IconProp;
+    icon: IconDefinition;
     condition?: (data: RowData) => boolean;
     handler: (data: RowData, router: Router) => OperationHandlerReturn;
 }
