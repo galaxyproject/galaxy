@@ -40,17 +40,14 @@ const query = ref("");
 const showAdvanced = ref(false);
 
 onMounted(async () => {
-    await toolStore
-        .fetchPanelViews()
-        .then(async () => {
-            await initializeTools();
-        })
-        .catch((error) => {
-            console.error(error);
-        })
-        .finally(() => {
-            arePanelsFetched.value = true;
-        });
+    try {
+        await toolStore.fetchPanelViews();
+        await initializeTools();
+    } catch (error) {
+        console.error(error);
+    } finally {
+        arePanelsFetched.value = true;
+    }
 });
 
 watch(
