@@ -17,27 +17,6 @@ if TYPE_CHECKING:
 log = getLogger(__name__)
 
 
-class JobErrorMessage:
-    def __init__(self, type, desc, code_desc, error_level):
-        self.type = type
-        self.desc = desc
-        self.code_desc = code_desc
-        self.error_level = error_level
-
-
-class ExitCodeJobErrorMessage(JobErrorMessage):
-    def __init__(self, desc, code_desc, error_level, tool_exit_code):
-        super().__init__("exit_code", desc, code_desc, error_level)
-        self.exit_code = tool_exit_code
-
-
-class RegexJobErrorMessage(JobErrorMessage):
-    def __init__(self, desc, code_desc, error_level, stream, match):
-        super().__init__("regex", desc, code_desc, error_level)
-        self.stream = stream
-        self.match = match
-
-
 class DETECTED_JOB_STATE(str, Enum):
     OK = "ok"
     OUT_OF_MEMORY_ERROR = "oom_error"
@@ -180,6 +159,7 @@ def check_output(stdio_regexes: List["ToolStdioRegex"], stdio_exit_codes: List["
         log.exception("Job state check encountered unexpected exception; assuming execution successful")
 
     return state, stdout, stderr, job_messages
+
 
 def __regex_err_msg(match: re.Match, stream: str, regex: "ToolStdioRegex"):
     """
