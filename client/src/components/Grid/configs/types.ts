@@ -23,26 +23,20 @@ export interface Config {
     title: string;
 }
 
-export type FieldArray = Array<FieldKey | FieldOperations>;
+export type FieldArray = Array<FieldEntry>;
 
-interface FieldKey {
+export interface FieldEntry {
     key: string;
     title: string;
+    condition?: (data: RowData) => boolean;
     disabled?: boolean;
     type: string;
-    handler?: (data: RowData) => void;
-}
-
-export type FieldHandler = (data: RowData) => void;
-
-export interface FieldOperations {
-    key: string;
-    title: string;
-    type: string;
-    condition?: (data: RowData) => boolean;
-    operations: Array<Operation>;
+    operations?: Array<Operation>;
+    handler?: FieldHandler;
     width?: number;
 }
+
+export type FieldHandler = (data: RowData, router?: Router) => void;
 
 export interface Operation {
     title: string;

@@ -3,13 +3,13 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
-import type { FieldOperations, Operation, RowData } from "@/components/Grid/configs/types";
+import type { Operation, RowData } from "@/components/Grid/configs/types";
 
 library.add(faCaretDown);
 
 interface Props {
     rowData: RowData;
-    operations: FieldOperations;
+    operations: Array<Operation>;
 }
 
 const props = defineProps<Props>();
@@ -37,10 +37,10 @@ function hasCondition(conditionHandler: (rowData: RowData) => Boolean) {
             <FontAwesomeIcon icon="caret-down" class="fa-lg" />
             <span class="font-weight-bold">{{ rowData.title }}</span>
         </button>
-        <div class="dropdown-menu" aria-labelledby="dataset-dropdown">
+        <div v-if="operations" class="dropdown-menu" aria-labelledby="dataset-dropdown">
             <span v-for="(operation, operationIndex) in operations" :key="operationIndex">
                 <button
-                    v-if="hasCondition(operation.condition)"
+                    v-if="operation && operation.condition && hasCondition(operation.condition)"
                     class="dropdown-item"
                     @click.prevent="emit('execute', operation)">
                     <icon :icon="operation.icon" />

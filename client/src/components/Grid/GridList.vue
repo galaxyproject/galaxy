@@ -129,11 +129,17 @@ function onSort(sortKey: string) {
 /**
  * Process tag inputs
  */
-async function onTagInput(data: RowData, tags: Array<string>, tagsHandler: FieldHandler) {
-    await tagsHandler({ ...data, tags: tags });
-    data.tags = tags;
+function onTagInput(data: RowData, tags: Array<string>, tagsHandler?: FieldHandler) {
+    if (tagsHandler) {
+        tagsHandler({ ...data, tags: tags });
+        data.tags = tags;
+    }
 }
-
+function onFilter(filter?: string) {
+    if (filter) {
+        applyFilter(filter, true);
+    }
+}
 /**
  * Initialize grid data
  */
@@ -233,19 +239,19 @@ watch(operationMessage, () => {
                     <GridLink
                         v-else-if="fieldEntry.type == 'link'"
                         :text="rowData[fieldEntry.key]"
-                        @click="fieldEntry.handler(rowData, router)" />
+                        @click="fieldEntry.handler && fieldEntry.handler(rowData, router)" />
                     <SharingIndicators
                         v-else-if="fieldEntry.type == 'sharing'"
                         :object="rowData"
-                        @filter="(filter) => applyFilter(filter, true)" />
+                        @filter="onFilter($event)" />
                     <UtcDate v-else-if="fieldEntry.type == 'date'" :date="rowData[fieldEntry.key]" mode="elapsed" />
                     <StatelessTags
                         v-else-if="fieldEntry.type == 'tags'"
                         clickable
                         :value="rowData[fieldEntry.key]"
                         :disabled="fieldEntry.disabled"
-                        @input="(tags) => onTagInput(rowData, tags, fieldEntry.handler)"
-                        @tag-click="(t) => applyFilter('tag', t, true)" />
+                        @input="onTagInput(rowData, $event, fieldEntry.handler)"
+                        @tag-click="applyFilter('tag', $event, true)" />
                     <span v-else v-localize> Data not available. </span>
                 </td>
             </tr>
