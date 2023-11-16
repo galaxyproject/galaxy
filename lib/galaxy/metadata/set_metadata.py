@@ -351,8 +351,8 @@ def set_metadata_portable(
             job_messages.append(
                 {
                     "type": "max_discovered_files",
-                    "desc": str(e),
-                    "code_desc": str(e),
+                    "desc": "Too many output files were discovered for a single job.",
+                    "code_desc": None,
                     "error_level": StdioErrorLevel.FATAL,
                 }
             )
