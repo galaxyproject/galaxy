@@ -102,7 +102,7 @@ class BaseSwiftObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCase
                         "port": OBJECT_STORE_PORT,
                         "access_key": OBJECT_STORE_ACCESS_KEY,
                         "secret_key": OBJECT_STORE_SECRET_KEY,
-                        "cache_updated_data": False,
+                        "cache_updated_data": cls.updateCacheData(),
                     }
                 )
             )
@@ -111,3 +111,7 @@ class BaseSwiftObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCase
     def setUp(self):
         super().setUp()
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
+
+    @classmethod
+    def updateCacheData(cls):
+        return True
