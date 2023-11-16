@@ -110,6 +110,18 @@ class TestPanelViewsFromDirectoryIntegration(integration_util.IntegrationTestCas
         tools = section["elems"]
         assert len(tools) == 2, len(tools)
 
+    def test_only_latest_version_in_panel(self):
+        index = self.galaxy_interactor.get("tools", data=dict(in_panel=True, view="custom_13"))
+        index.raise_for_status()
+        index_as_list = index.json()
+        sections = [x for x in index_as_list if x["model_class"] == "ToolSection"]
+        assert len(sections) == 1
+        section = sections[0]
+        assert section["id"] == "test_section_multi"
+        tools = section["elems"]
+        assert len(tools) == 1, len(tools)
+        assert tools[0]["version"] == "0.2"
+
 
 class TestPanelViewsFromConfigIntegration(integration_util.IntegrationTestCase):
     framework_tool_and_types = True
