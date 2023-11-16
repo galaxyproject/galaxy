@@ -3,6 +3,7 @@
         v-b-tooltip.hover.bottom
         :title="title | localize"
         :data-workflow-run="id"
+        :disabled="clicked"
         class="workflow-run btn-sm btn-primary fa fa-play"
         @click.stop="executeWorkflow" />
 </template>
@@ -16,6 +17,11 @@ export default {
     },
     directives: {
         VBTooltip,
+    },
+    data() {
+        return{
+            clicked: false,
+        }
     },
     props: {
         id: {
@@ -34,6 +40,7 @@ export default {
     },
     methods: {
         executeWorkflow() {
+            this.clicked = true;
             this.$router.push(`/workflows/run?id=${this.id}`);
         },
     },
