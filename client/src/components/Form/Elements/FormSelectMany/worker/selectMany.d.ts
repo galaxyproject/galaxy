@@ -10,7 +10,6 @@ export interface SelectOption {
 export interface UseSelectManyOptions {
     optionsArray: Ref<SelectOption[]>;
     filter: Ref<string>;
-    unselected: Ref<SelectValue[]>;
     selected: Ref<SelectValue[]>;
     unselectedDisplayCount: Ref<number>;
     selectedDisplayCount: Ref<number>;

@@ -2,21 +2,27 @@ import { main } from "./selectManyMain";
 
 // glue code to run `main` in a thread
 
-const options = {
+const createOptions = () => ({
     optionsArray: [],
     filter: [],
-    unselected: [],
     selected: [],
     unselectedDisplayCount: 1000,
     selectedDisplayCount: 1000,
     asRegex: false,
     caseSensitive: false,
-};
+});
 
-let timer;
+const optionsById = {};
+const timerById = {};
 
 self.addEventListener("message", (e) => {
     const message = e.data;
+
+    if (!(message.id in optionsById)) {
+        optionsById[message.id] = createOptions();
+    }
+
+    const options = optionsById[message.id];
 
     switch (message.type) {
         case "setArray":
@@ -25,10 +31,6 @@ self.addEventListener("message", (e) => {
 
         case "setFilter":
             options.filter = message.filter;
-            break;
-
-        case "setUnselected":
-            options.unselected = message.unselected;
             break;
 
         case "setSelected":
@@ -46,9 +48,12 @@ self.addEventListener("message", (e) => {
             break;
     }
 
-    clearTimeout(timer);
-    timer = setTimeout(() => {
+    if (message.id in timerById) {
+        clearTimeout(timerById[message.id]);
+    }
+
+    timerById[message.id] = setTimeout(() => {
         const result = main(options);
-        self.postMessage({ type: "result", ...result });
+        self.postMessage({ id: message.id, type: "result", ...result });
     }, 10);
 });

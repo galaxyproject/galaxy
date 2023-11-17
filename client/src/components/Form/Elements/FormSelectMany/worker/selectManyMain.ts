@@ -1,6 +1,6 @@
 import type { UnwrapNestedRefs } from "vue";
 
-import type { SelectOption, UseSelectManyOptions, UseSelectManyReturn } from "./selectMany";
+import type { SelectOption, SelectValue, UseSelectManyOptions, UseSelectManyReturn } from "./selectMany";
 
 export function main(options: UnwrapNestedRefs<UseSelectManyOptions>): UnwrapNestedRefs<UseSelectManyReturn> {
     const unselectedOptionsFiltered: SelectOption[] = [];
@@ -26,27 +26,40 @@ export function main(options: UnwrapNestedRefs<UseSelectManyOptions>): UnwrapNes
         filteredSelectOptions = options.optionsArray.filter((option) => option.label.toLowerCase().includes(filter));
     }
 
-    const selectedValues = options.selected.map((value) => (typeof value === "object" ? JSON.stringify(value) : value));
+    const selectedValues = options.selected.map(stringifyObject);
 
-    filteredSelectOptions.forEach((option) => {
-        const value = typeof option.value === "object" ? JSON.stringify(option.value) : option.value;
+    for (let index = 0; index < filteredSelectOptions.length; index++) {
+        const option = filteredSelectOptions[index]!;
+
+        const value = stringifyObject(option.value);
+
+        const isSelected = selectedValues.includes(value);
+
+        if (isSelected && selectedOptionsFiltered.length < options.selectedDisplayCount) {
+            selectedOptionsFiltered.push(option);
+        } else if (unselectedOptionsFiltered.length < options.unselectedDisplayCount) {
+            unselectedOptionsFiltered.push(option);
+        }
 
         if (
-            unselectedOptionsFiltered.length < options.unselectedDisplayCount ||
+            unselectedOptionsFiltered.length < options.unselectedDisplayCount &&
             selectedOptionsFiltered.length < options.selectedDisplayCount
         ) {
-            const isSelected = selectedValues.includes(value);
-
-            if (isSelected && selectedOptionsFiltered.length < options.selectedDisplayCount) {
-                selectedOptionsFiltered.push(option);
-            } else if (unselectedOptionsFiltered.length < options.unselectedDisplayCount) {
-                unselectedOptionsFiltered.push(option);
-            }
+            break;
         }
-    });
+    }
 
     return {
         unselectedOptionsFiltered,
         selectedOptionsFiltered,
     };
+}
+
+/**
+ * Convert object to strings, leaving every other value unchanged
+ * @param value
+ * @returns
+ */
+function stringifyObject(value: SelectValue) {
+    return typeof value === "object" && value !== null ? JSON.stringify(value) : value;
 }

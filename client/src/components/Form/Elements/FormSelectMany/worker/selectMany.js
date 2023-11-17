@@ -2,24 +2,31 @@ import { onScopeDispose, ref, watchEffect } from "vue";
 
 // glue code together with the .worker.js file, to run `main` in a thread
 
+let worker;
+let idCounter = 0;
+
 export function useSelectMany({
     optionsArray,
     filter,
-    unselected,
     selected,
     unselectedDisplayCount,
     selectedDisplayCount,
     asRegex,
     caseSensitive,
 }) {
-    const worker = new Worker(new URL("./selectMany.worker.js", import.meta.url));
+    // only start a single worker
+    if (!worker) {
+        worker = new Worker(new URL("./selectMany.worker.js", import.meta.url));
+    }
+
+    const id = idCounter++;
 
     const unselectedOptionsFiltered = ref([]);
     const selectedOptionsFiltered = ref([]);
     const running = ref(false);
 
     const post = (message) => {
-        worker.postMessage(message);
+        worker.postMessage({ id, ...message });
         running.value = true;
     };
 
@@ -33,10 +40,6 @@ export function useSelectMany({
 
     watchEffect(() => {
         post({ type: "setFilter", filter: filter.value });
-    });
-
-    watchEffect(() => {
-        post({ type: "setUnselected", unselected: unselected.value });
     });
 
     watchEffect(() => {
@@ -55,6 +58,10 @@ export function useSelectMany({
 
     worker.onmessage = (e) => {
         const message = e.data;
+
+        if (message.id !== id) {
+            return;
+        }
 
         if (message.type === "result") {
             unselectedOptionsFiltered.value = message.unselectedOptionsFiltered;

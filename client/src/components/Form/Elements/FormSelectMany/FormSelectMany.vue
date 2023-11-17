@@ -42,7 +42,7 @@ const props = defineProps({
     },
 });
 
-const _emit = defineEmits<{
+const emit = defineEmits<{
     (e: "input", value: Array<SelectValue>): void;
 }>();
 
@@ -62,13 +62,21 @@ const searchRegex = computed(() => {
     }
 });
 
+const selected = computed({
+    get() {
+        return Array.isArray(props.value) ? props.value : [props.value];
+    },
+    set(value) {
+        emit("input", value);
+    },
+});
+
 const regexInvalid = computed(() => useRegex.value && searchRegex.value === null);
 const asRegex = computed(() => searchRegex.value !== null);
 const { unselectedOptionsFiltered } = useSelectMany({
     optionsArray: computed(() => props.options),
     filter: searchValue,
-    selected: ref([]),
-    unselected: ref([]),
+    selected,
     selectedDisplayCount: ref(1000),
     unselectedDisplayCount: ref(1000),
     asRegex,
