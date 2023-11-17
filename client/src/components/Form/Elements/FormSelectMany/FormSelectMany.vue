@@ -5,8 +5,9 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, BFormInput, BInputGroup } from "bootstrap-vue";
 import { computed, type PropType, ref } from "vue";
 
-import { useFilterObjectArray } from "@/composables/filter";
 import { useUid } from "@/composables/utils/uid";
+
+import { useSelectMany } from "./worker/selectMany";
 
 library.add(faLongArrowAltLeft, faLongArrowAltRight);
 
@@ -36,7 +37,7 @@ const props = defineProps({
         default: "Search for options",
     },
     value: {
-        type: String as PropType<SelectValue | SelectValue[]>,
+        type: Array as PropType<SelectValue | SelectValue[]>,
         default: null,
     },
 });
@@ -63,7 +64,16 @@ const searchRegex = computed(() => {
 
 const regexInvalid = computed(() => useRegex.value && searchRegex.value === null);
 const asRegex = computed(() => searchRegex.value !== null);
-const filteredOptions = useFilterObjectArray(props.options, searchValue, ["label"], asRegex);
+const { unselectedOptionsFiltered } = useSelectMany({
+    optionsArray: computed(() => props.options),
+    filter: searchValue,
+    selected: ref([]),
+    unselected: ref([]),
+    selectedDisplayCount: ref(1000),
+    unselectedDisplayCount: ref(1000),
+    asRegex,
+    caseSensitive: ref(false),
+});
 
 const highlightedUnselected = ref([]);
 const highlightedSelected = ref([]);
@@ -119,7 +129,7 @@ const deselectText = computed(() => {
                 </BButton>
             </div>
             <div class="options-list border-right">
-                <div v-for="option in filteredOptions" :key="option.label">
+                <div v-for="option in unselectedOptionsFiltered" :key="option.label">
                     {{ option.label }}
                 </div>
             </div>
