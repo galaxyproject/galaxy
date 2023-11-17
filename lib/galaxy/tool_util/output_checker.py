@@ -12,7 +12,10 @@ from typing import (
 from galaxy.tool_util.parser.stdio import StdioErrorLevel
 
 if TYPE_CHECKING:
-    from galaxy.tool_util.parser.stdio import ToolStdioExitCode, ToolStdioRegex
+    from galaxy.tool_util.parser.stdio import (
+        ToolStdioExitCode,
+        ToolStdioRegex,
+    )
 
 log = getLogger(__name__)
 

@@ -19,7 +19,12 @@ import sys
 import traceback
 from functools import partial
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import (
+    Any,
+    Dict,
+    List,
+    Optional,
+)
 
 try:
     from pulsar.client.staging import COMMAND_VERSION_FILENAME
