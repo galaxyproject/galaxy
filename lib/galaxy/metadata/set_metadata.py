@@ -19,12 +19,7 @@ import sys
 import traceback
 from functools import partial
 from pathlib import Path
-from typing import (
-    Any,
-    Dict,
-    List,
-    Optional
-)
+from typing import Any, Dict, List, Optional
 
 try:
     from pulsar.client.staging import COMMAND_VERSION_FILENAME
@@ -83,7 +78,7 @@ logging.basicConfig()
 log = logging.getLogger(__name__)
 
 
-MAX_STDIO_READ_BYTES = 100 * 10 ** 6  # 100 MB
+MAX_STDIO_READ_BYTES = 100 * 10**6  # 100 MB
 
 
 def reset_external_filename(dataset_instance: DatasetInstance):
