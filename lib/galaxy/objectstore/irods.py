@@ -445,6 +445,9 @@ class IRODSObjectStore(DiskObjectStore, CloudConfigMixin):
 
         collection_path = f"{self.home}/{subcollection_name}"
         data_object_path = f"{collection_path}/{data_object_name}"
+        # we need to allow irods to override already existing zero-size output files created
+        # in object store cache during job setup (see also https://github.com/galaxyproject/galaxy/pull/17025#discussion_r1394517033)
+        # TODO: get rid of this flag when Galaxy stops pre-creating those output files in cache
         options = {kw.FORCE_FLAG_KW: "", kw.DEST_RESC_NAME_KW: self.resource}
 
         try:
