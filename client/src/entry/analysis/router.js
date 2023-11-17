@@ -68,6 +68,7 @@ import HistoryArchive from "@/components/History/Archiving/HistoryArchive.vue";
 import HistoryArchiveWizard from "@/components/History/Archiving/HistoryArchiveWizard.vue";
 import NotificationsList from "@/components/Notifications/NotificationsList.vue";
 import Sharing from "@/components/Sharing/SharingPage.vue";
+import HistoryStorageOverview from "@/components/User/DiskUsage/Visualizations/HistoryStorageOverview.vue";
 import WorkflowPublished from "@/components/Workflow/Published/WorkflowPublished.vue";
 
 Vue.use(VueRouter);
@@ -365,6 +366,12 @@ export function getRouter(Galaxy) {
                         props: (route) => ({
                             published: route.params.actionId == "list_published" ? true : false,
                         }),
+                    },
+                    {
+                        path: "storage/history/:historyId",
+                        name: "HistoryOverviewInAnalysis",
+                        component: HistoryStorageOverview,
+                        props: true,
                     },
                     {
                         path: "tours",

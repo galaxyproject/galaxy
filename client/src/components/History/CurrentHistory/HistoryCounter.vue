@@ -57,7 +57,7 @@ onMounted(() => {
 });
 
 function onDashboard() {
-    router.push({ name: "HistoryOverview", params: { historyId: props.history.id } });
+    router.push({ name: "HistoryOverviewInAnalysis", params: { historyId: props.history.id } });
 }
 
 function setFilter(filter: string) {
