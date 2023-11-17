@@ -14,6 +14,7 @@
         variant="primary"
         class="d-flex flex-nowrap align-items-center text-nowrap"
         :title="tooltip"
+        :disabled="disabled"
         @click="$emit('onClick')">
         <font-awesome-icon icon="play" class="mr-2" />{{ title }}
     </b-button>
@@ -42,6 +43,10 @@ export default {
         tooltip: {
             type: String,
             default: null,
+        },
+        disabled: {
+            type: Boolean,
+            default: false,
         },
     },
 };

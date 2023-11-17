@@ -127,7 +127,7 @@ def _normalize_inputs(
         assert isinstance(optional, bool)
         has_input_value = inputs_key and inputs[inputs_key] is not None
         if not has_input_value and default_value is None and not optional:
-            message = f"Workflow cannot be run because an expected input step '{step.id}' ({step.label}) is not optional and no input."
+            message = f"Workflow cannot be run because input step '{step.id}' ({step.label}) is not optional and no input provided."
             raise exceptions.MessageException(message)
         if inputs_key:
             normalized_inputs[step.id] = inputs[inputs_key]

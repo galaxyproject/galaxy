@@ -1,56 +1,58 @@
 <template>
-    <ConfigProvider v-slot="{ config }">
-        <div>
-            <div class="h4 clearfix mb-3">
-                <b>Workflow: {{ model.name }}</b>
-                <ButtonSpinner id="run-workflow" class="float-right" title="Run Workflow" @onClick="onExecute" />
-                <b-dropdown
-                    v-if="showRuntimeSettings(currentUser)"
-                    id="dropdown-form"
-                    ref="dropdown"
-                    class="workflow-run-settings float-right"
-                    style="margin-right: 10px"
-                    title="Workflow Run Settings"
-                    no-caret>
-                    <template v-slot:button-content>
-                        <span class="fa fa-cog" />
-                    </template>
-                    <b-dropdown-form>
-                        <b-form-checkbox v-model="sendToNewHistory" class="workflow-run-settings-target"
-                            >Send results to a new history</b-form-checkbox
-                        >
-                        <b-form-checkbox
-                            v-if="reuseAllowed(currentUser)"
-                            v-model="useCachedJobs"
-                            title="This may skip executing jobs that you have already run."
-                            >Attempt to re-use jobs with identical parameters?</b-form-checkbox
-                        >
-                        <b-form-checkbox v-if="config.object_store_allows_id_selection" v-model="splitObjectStore"
-                            >Send outputs and intermediate to different object stores?</b-form-checkbox
-                        >
-                        <WorkflowStorageConfiguration
-                            v-if="config.object_store_allows_id_selection"
-                            :split-object-store="splitObjectStore"
-                            :invocation-preferred-object-store-id="preferredObjectStoreId"
-                            :invocation-intermediate-preferred-object-store-id="preferredIntermediateObjectStoreId"
-                            @updated="onStorageUpdate">
-                        </WorkflowStorageConfiguration>
-                    </b-dropdown-form>
-                </b-dropdown>
-            </div>
-            <FormDisplay :inputs="formInputs" @onChange="onChange" />
-            <!-- Options to default one way or the other, disable if admins want, etc.. -->
-            <a href="#" class="workflow-expand-form-link" @click="$emit('showAdvanced')"
-                >Expand to full workflow form.</a
-            >
+    <div>
+        <div v-if="configIsLoaded" class="h4 clearfix mb-3">
+            <b>Workflow: {{ model.name }}</b>
+            <ButtonSpinner
+                id="run-workflow"
+                :wait="waitingForRequest"
+                :disabled="hasValidationErrors"
+                class="float-right"
+                title="Run Workflow"
+                @onClick="onExecute" />
+            <b-dropdown
+                v-if="showRuntimeSettings(currentUser)"
+                id="dropdown-form"
+                ref="dropdown"
+                class="workflow-run-settings float-right"
+                style="margin-right: 10px"
+                title="Workflow Run Settings"
+                no-caret>
+                <template v-slot:button-content>
+                    <span class="fa fa-cog" />
+                </template>
+                <b-dropdown-form>
+                    <b-form-checkbox v-model="sendToNewHistory" class="workflow-run-settings-target"
+                        >Send results to a new history</b-form-checkbox
+                    >
+                    <b-form-checkbox
+                        v-if="reuseAllowed(currentUser)"
+                        v-model="useCachedJobs"
+                        title="This may skip executing jobs that you have already run."
+                        >Attempt to re-use jobs with identical parameters?</b-form-checkbox
+                    >
+                    <b-form-checkbox v-if="config.object_store_allows_id_selection" v-model="splitObjectStore"
+                        >Send outputs and intermediate to different object stores?</b-form-checkbox
+                    >
+                    <WorkflowStorageConfiguration
+                        v-if="config.object_store_allows_id_selection"
+                        :split-object-store="splitObjectStore"
+                        :invocation-preferred-object-store-id="preferredObjectStoreId"
+                        :invocation-intermediate-preferred-object-store-id="preferredIntermediateObjectStoreId"
+                        @updated="onStorageUpdate">
+                    </WorkflowStorageConfiguration>
+                </b-dropdown-form>
+            </b-dropdown>
         </div>
-    </ConfigProvider>
+        <FormDisplay :inputs="formInputs" @onChange="onChange" @onValidation="onValidation" />
+        <!-- Options to default one way or the other, disable if admins want, etc.. -->
+        <a href="#" class="workflow-expand-form-link" @click="$emit('showAdvanced')">Expand to full workflow form.</a>
+    </div>
 </template>
 
 <script>
-import ConfigProvider from "components/providers/ConfigProvider";
-import { mapState } from "pinia";
+import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
+import { storeToRefs } from "pinia";
 import FormDisplay from "components/Form/FormDisplay";
 import ButtonSpinner from "components/Common/ButtonSpinner";
 import { invokeWorkflow } from "./services";
@@ -58,11 +60,11 @@ import { isWorkflowInput } from "components/Workflow/constants";
 import { errorMessageAsString } from "utils/simple-error";
 import { allowCachedJobs } from "components/Tool/utilities";
 import WorkflowStorageConfiguration from "./WorkflowStorageConfiguration";
+import Vue from "vue";
 
 export default {
     components: {
         ButtonSpinner,
-        ConfigProvider,
         FormDisplay,
         WorkflowStorageConfiguration,
     },
@@ -80,20 +82,26 @@ export default {
             default: false,
         },
     },
+    setup() {
+        const { config, isLoaded: configIsLoaded } = useConfig(true);
+        const { currentUser } = storeToRefs(useUserStore());
+        return { config, configIsLoaded, currentUser };
+    },
     data() {
         const newHistory = this.targetHistory == "new" || this.targetHistory == "prefer_new";
         return {
             formData: {},
             inputTypes: {},
+            stepValidations: {},
             sendToNewHistory: newHistory,
             useCachedJobs: this.useJobCache, // TODO:
             splitObjectStore: false,
             preferredObjectStoreId: null,
             preferredIntermediateObjectStoreId: null,
+            waitingForRequest: false,
         };
     },
     computed: {
-        ...mapState(useUserStore, ["currentUser"]),
         formInputs() {
             const inputs = [];
             // Add workflow parameters.
@@ -121,13 +129,21 @@ export default {
             });
             return inputs;
         },
+        hasValidationErrors() {
+            return Boolean(Object.values(this.stepValidations).find((value) => value !== null && value !== undefined));
+        },
     },
     methods: {
+        onValidation(validation) {
+            if (validation) {
+                Vue.set(this.stepValidations, validation[0], validation[1]);
+            }
+        },
         reuseAllowed(user) {
-            return allowCachedJobs(user.preferences);
+            return user && allowCachedJobs(user.preferences);
         },
         showRuntimeSettings(user) {
-            return this.targetHistory.indexOf("prefer") >= 0 || this.reuseAllowed(user);
+            return this.targetHistory.indexOf("prefer") >= 0 || (user && this.reuseAllowed(user));
         },
         onChange(data) {
             this.formData = data;
@@ -176,13 +192,15 @@ export default {
                     data.preferred_object_store_id = this.preferredObjectStoreId;
                 }
             }
+            this.waitingForRequest = true;
             invokeWorkflow(this.model.workflowId, data)
                 .then((invocations) => {
                     this.$emit("submissionSuccess", invocations);
                 })
                 .catch((error) => {
                     this.$emit("submissionError", errorMessageAsString(error));
-                });
+                })
+                .finally(() => (this.waitingForRequest = false));
         },
     },
 };
