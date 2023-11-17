@@ -203,6 +203,8 @@ OPTION_ACTIONS: Dict[str, _OptionAction] = {
     "legacy_eager_objectstore_initialization": _DeprecatedAndDroppedAction(),
     "enable_openid": _DeprecatedAndDroppedAction(),
     "openid_consumer_cache_path": _DeprecatedAndDroppedAction(),
+    "ga4gh_service_organization_name": _RenameAction("organization_name"),
+    "ga4gh_service_organization_url": _RenameAction("organization_url"),
 }
 
 

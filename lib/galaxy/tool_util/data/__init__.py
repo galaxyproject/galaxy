@@ -888,9 +888,11 @@ class DirectoryAsExtraFiles(HasExtraFiles):
         return True
 
 
-class OutputDataset(HasExtraFiles):
+class OutputDataset(HasExtraFiles, Protocol):
     ext: str
-    file_name: str
+
+    def get_file_name(self) -> str:
+        ...
 
 
 class ToolDataTableManager(Dictifiable):
@@ -1219,7 +1221,7 @@ def _data_manager_dict(out_data: Dict[str, OutputDataset], ensure_single_output:
         found_output = True
 
         try:
-            output_dict = json.loads(open(output_dataset.file_name).read())
+            output_dict = json.loads(open(output_dataset.get_file_name()).read())
         except Exception as e:
             log.warning(f'Error reading DataManagerTool json for "{output_name}": {e}')
             continue

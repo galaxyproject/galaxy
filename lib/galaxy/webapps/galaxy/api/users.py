@@ -468,7 +468,7 @@ class FastAPIUsers:
                     trans.sa_session.commit()
                 counter = 0
                 lines_skipped = 0
-                with open(new_len.file_name, "w") as f:
+                with open(new_len.get_file_name(), "w") as f:
                     # LEN files have format:
                     #   <chrom_name><tab><chrom_length>
                     for line in len_value.split("\n"):
@@ -528,7 +528,7 @@ class FastAPIUsers:
                     and not chrom_count_dataset.deleted
                     and chrom_count_dataset.state == trans.app.model.HistoryDatasetAssociation.states.OK
                 ):
-                    chrom_count = int(open(chrom_count_dataset.file_name).readline())
+                    chrom_count = int(open(chrom_count_dataset.get_file_name()).readline())
                     dbkey["count"] = chrom_count
                     valid_dbkeys[key] = dbkey
                     update = True

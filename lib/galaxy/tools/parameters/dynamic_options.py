@@ -714,10 +714,10 @@ class DynamicOptions:
                     if getattr(dataset, "purged", False) or getattr(dataset, "deleted", False):
                         log.warning(f"The metadata file inferred from key `{meta_file_key}` was deleted!")
                         continue
-                if not hasattr(dataset, "file_name"):
+                if not hasattr(dataset, "get_file_name"):
                     continue
                 # Ensure parsing dynamic options does not consume more than a megabyte worth memory.
-                path = dataset.file_name
+                path = dataset.get_file_name()
                 if os.path.getsize(path) < 1048576:
                     with open(path) as fh:
                         options += self.parse_file_fields(fh)

@@ -24,6 +24,7 @@ interface WorkflowInformation {
 
 const props = defineProps<{
     workflowInfo: WorkflowInformation;
+    embedded?: boolean;
 }>();
 
 const gravatarSource = computed(
@@ -51,7 +52,9 @@ const publishedByUser = computed(() => `/workflows/list_published?f-username=${p
 
             <img alt="User Avatar" :src="gravatarSource" class="mb-2" />
 
-            <router-link :to="publishedByUser"> All published Workflows by {{ workflowInfo.owner }} </router-link>
+            <router-link :to="publishedByUser" :target="props.embedded ? '_blank' : ''">
+                All published Workflows by {{ workflowInfo.owner }}
+            </router-link>
         </div>
 
         <div v-if="workflowInfo?.creator" class="workflow-info-box">

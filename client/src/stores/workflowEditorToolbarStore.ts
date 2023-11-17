@@ -4,6 +4,7 @@ import { computed, onScopeDispose, reactive, ref, watch } from "vue";
 
 import { useUserLocalStorage } from "@/composables/userLocalStorage";
 
+import { useScopePointerStore } from "./scopePointerStore";
 import { WorkflowCommentColor } from "./workflowEditorCommentStore";
 
 export type CommentTool = "textComment" | "markdownComment" | "frameComment" | "freehandComment" | "freehandEraser";
@@ -28,7 +29,9 @@ export interface InputCatcherEvent {
 export type WorkflowEditorToolbarStore = ReturnType<typeof useWorkflowEditorToolbarStore>;
 
 export const useWorkflowEditorToolbarStore = (workflowId: string) => {
-    return defineStore(`workflowEditorToolbarStore${workflowId}`, () => {
+    const { scope } = useScopePointerStore();
+
+    return defineStore(`workflowEditorToolbarStore${scope(workflowId)}`, () => {
         const snapActive = useUserLocalStorage("workflow-editor-toolbar-snap-active", false);
         const currentTool = ref<EditorTool>("pointer");
         const inputCatcherActive = ref<boolean>(false);

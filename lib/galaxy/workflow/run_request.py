@@ -119,13 +119,16 @@ def _normalize_inputs(
         for possible_input_key in possible_input_keys:
             if possible_input_key in inputs:
                 inputs_key = possible_input_key
-        default_value = step.tool_inputs.get("default")
+
+        default_not_set = object()
+        has_default = step.get_input_default_value(default_not_set) is not default_not_set
         optional = step.input_optional
         # Need to be careful here to make sure 'default' has correct type - not sure how to do that
         # but asserting 'optional' is definitely a bool and not a String->Bool or something is a good
         # start to ensure tool state is being preserved and loaded in a type safe way.
         assert isinstance(optional, bool)
-        if not inputs_key and default_value is None and not optional:
+        assert isinstance(has_default, bool)
+        if not inputs_key and not has_default and not optional:
             message = f"Workflow cannot be run because an expected input step '{step.id}' ({step.label}) is not optional and no input."
             raise exceptions.MessageException(message)
         if inputs_key:
@@ -495,7 +498,7 @@ def workflow_run_config_to_request(
     for step in workflow.steps:
         steps_by_id[step.id] = step
         assert step.module
-        serializable_runtime_state = step.module.encode_runtime_state(step.state)
+        serializable_runtime_state = step.module.encode_runtime_state(step, step.state)
 
         step_state = WorkflowRequestStepState()
         step_state.workflow_step = step

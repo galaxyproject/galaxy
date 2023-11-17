@@ -32,7 +32,15 @@ from galaxy.managers import (
     users,
     workflows,
 )
-from galaxy.managers.sharable import SlugBuilder
+from galaxy.managers.forms import (
+    get_filtered_form_definitions_current,
+    get_form_definitions,
+    get_form_definitions_current,
+)
+from galaxy.managers.sharable import (
+    slug_exists,
+    SlugBuilder,
+)
 from galaxy.model import (
     ExtendedMetadata,
     ExtendedMetadataIndex,
@@ -1066,10 +1074,7 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
             title_err = "visualization name is required"
         elif slug and not managers_base.is_valid_slug(slug):
             slug_err = "visualization identifier must consist of only lowercase letters, numbers, and the '-' character"
-        elif (
-            slug
-            and trans.sa_session.query(trans.model.Visualization).filter_by(user=user, slug=slug, deleted=False).first()
-        ):
+        elif slug and slug_exists(trans.sa_session, trans.model.Visualization, user, slug, ignore_deleted=True):
             slug_err = "visualization identifier must be unique"
 
         if title_err or slug_err:
@@ -1233,11 +1238,11 @@ class UsesFormDefinitionsMixin:
         of all the forms from the form_definition table.
         """
         if all_versions:
-            return trans.sa_session.query(trans.app.model.FormDefinition)
+            return get_form_definitions(trans.sa_session)
         if filter:
-            fdc_list = trans.sa_session.query(trans.app.model.FormDefinitionCurrent).filter_by(**filter)
+            fdc_list = get_filtered_form_definitions_current(trans.sa_session, filter)
         else:
-            fdc_list = trans.sa_session.query(trans.app.model.FormDefinitionCurrent)
+            fdc_list = get_form_definitions_current(trans.sa_session)
         if form_type == "All":
             return [fdc.latest_form for fdc in fdc_list]
         else:
@@ -1311,7 +1316,7 @@ class SharableMixin:
         item = self.get_item(trans, id)
         if item:
             # Only update slug if slug is not already in use.
-            if trans.sa_session.query(item.__class__).filter_by(user=item.user, slug=new_slug).count() == 0:
+            if not slug_exists(trans.sa_session, item.__class__, item.user, new_slug):
                 item.slug = new_slug
                 with transaction(trans.sa_session):
                     trans.sa_session.commit()

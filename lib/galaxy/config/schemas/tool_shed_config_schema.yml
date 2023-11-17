@@ -353,7 +353,8 @@ mapping:
         type: str
         required: false
         desc: |
-          Service ID for GA4GH services (exposed via the service-info endpoint for the Galaxy DRS API).
+          Service ID for GA4GH services.
+
           If unset, one will be generated using the URL the target API requests are made against.
 
           For more information on GA4GH service definitions - check out
@@ -366,23 +367,31 @@ mapping:
           service "id" (available via the DRS API) for the above configuration value would be
           org.usegalaxy.drs.
 
-      ga4gh_service_organization_name:
+      organization_name:
         type: str
         required: false
         desc: |
-          Service name for host organization (exposed via the service-info endpoint for the Galaxy DRS API).
-          If unset, one will be generated using ga4gh_service_id.
+          The name of the organization that operates this Galaxy instance. Serves as the
+          default for the GA4GH service organization name and can be exposed through Galaxy
+          markdown for reports and such. For instance, "Not Evil Corporation".
+
+          For GA4GH APIs, this is exposed via the service-info endpoint for the Galaxy DRS API.
+          If unset, one will be generated using ga4gh_service_id (but only in the context
+          of GA4GH APIs).
 
           For more information on GA4GH service definitions - check out
           https://github.com/ga4gh-discovery/ga4gh-service-registry
           and https://editor.swagger.io/?url=https://raw.githubusercontent.com/ga4gh-discovery/ga4gh-service-registry/develop/service-registry.yaml
 
-      ga4gh_service_organization_url:
+      organization_url:
         type: str
-        required: False
+        required: false
         desc: |
-          Organization URL for host organization (exposed via the service-info endpoint for the Galaxy DRS API).
-          If unset, one will be generated using the URL the target API requests are made against.
+          The URL of the organization that operates this Galaxy instance. Serves as the
+          default for the GA4GH service organization name and can be exposed through Galaxy
+          markdown for reports and such. For instance, "notevilcorp.com".
+
+          For GA4GH APIs, this is exposed via the service-info endpoint.
 
           For more information on GA4GH service definitions - check out
           https://github.com/ga4gh-discovery/ga4gh-service-registry

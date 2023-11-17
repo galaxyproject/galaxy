@@ -159,7 +159,7 @@ class JobFilesAPIController(BaseGalaxyAPIController):
                 dataset = job_dataset_association.dataset
                 if not dataset:
                     continue
-                if os.path.abspath(dataset.file_name) == os.path.abspath(path):
+                if os.path.abspath(dataset.get_file_name()) == os.path.abspath(path):
                     return True
                 elif util.in_directory(path, dataset.extra_files_path):
                     return True

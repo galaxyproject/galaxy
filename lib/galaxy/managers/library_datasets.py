@@ -1,6 +1,8 @@
 """Manager and Serializer for library datasets."""
 import logging
 
+from sqlalchemy import select
+
 from galaxy import (
     model,
     util,
@@ -13,6 +15,10 @@ from galaxy.exceptions import (
 )
 from galaxy.managers import datasets
 from galaxy.managers.context import ProvidesUserContext
+from galaxy.model import (
+    LibraryDataset,
+    LibraryFolder,
+)
 from galaxy.model.base import transaction
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.util import validation
@@ -41,11 +47,7 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
         :rtype:     galaxy.model.LibraryDataset
         """
         try:
-            ld = (
-                trans.sa_session.query(trans.app.model.LibraryDataset)
-                .filter(trans.app.model.LibraryDataset.table.c.id == decoded_library_dataset_id)
-                .one()
-            )
+            ld = get_library_dataset(trans.sa_session, decoded_library_dataset_id)
         except Exception as e:
             raise InternalServerError(f"Error loading from the database.{util.unicodify(e)}")
         ld = self.secure(trans, ld, check_accessible)
@@ -276,6 +278,11 @@ class LibraryDatasetsManager(datasets.DatasetAssociationManager):
         else:
             # We add the current folder and traverse up one folder.
             path_to_root.append((f"F{trans.security.encode_id(folder.id)}", folder.name))
-            upper_folder = trans.sa_session.query(trans.app.model.LibraryFolder).get(folder.parent_id)
+            upper_folder = trans.sa_session.get(LibraryFolder, folder.parent_id)
             path_to_root.extend(self._build_path(trans, upper_folder))
         return path_to_root
+
+
+def get_library_dataset(session, library_dataset_id):
+    stmt = select(LibraryDataset).where(LibraryDataset.id == library_dataset_id)
+    return session.scalars(stmt).one()

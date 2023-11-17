@@ -8,6 +8,7 @@ import logging
 import os
 import os.path
 import re
+import urllib.parse
 from typing import (
     Any,
     Dict,
@@ -26,12 +27,16 @@ from galaxy.managers.dbkeys import read_dbnames
 from galaxy.model import (
     cached_id,
     Dataset,
+    DatasetCollection,
     DatasetCollectionElement,
+    DatasetHash,
     DatasetInstance,
+    DatasetSource,
     HistoryDatasetAssociation,
     HistoryDatasetCollectionAssociation,
     LibraryDatasetDatasetAssociation,
 )
+from galaxy.model.dataset_collections import builder
 from galaxy.schema.fetch_data import FilesPayload
 from galaxy.tool_util.parser import get_input_source as ensure_input_source
 from galaxy.util import (
@@ -43,6 +48,7 @@ from galaxy.util import (
 )
 from galaxy.util.dictifiable import Dictifiable
 from galaxy.util.expressions import ExpressionContext
+from galaxy.util.hash_util import HASH_NAMES
 from galaxy.util.rules_dsl import RuleSet
 from . import (
     dynamic_options,
@@ -2090,6 +2096,11 @@ class DataToolParameter(BaseDataToolParameter):
         self._parse_options(input_source)
         # Load conversions required for the dataset input
         self.conversions = []
+        self.default_object = input_source.parse_default()
+        if self.optional and self.default_object is not None:
+            raise ParameterValueError(
+                "Cannot specify a Galaxy tool data parameter to be both optional and have a default value.", self.name
+            )
         for name, conv_extension in input_source.parse_conversion_tuples():
             assert None not in [
                 name,
@@ -2110,9 +2121,11 @@ class DataToolParameter(BaseDataToolParameter):
         other_values = other_values or {}
         if trans.workflow_building_mode is workflow_building_modes.ENABLED or is_runtime_value(value):
             return None
-        if not value and not self.optional:
+        if not value and not self.optional and not self.default_object:
             raise ParameterValueError("specify a dataset of the required format / build for parameter", self.name)
         if value in [None, "None", ""]:
+            if self.default_object:
+                return raw_to_galaxy(trans, self.default_object)
             return None
         if isinstance(value, dict) and "values" in value:
             value = self.to_python(value, trans.app)
@@ -2199,7 +2212,7 @@ class DataToolParameter(BaseDataToolParameter):
     def to_param_dict_string(self, value, other_values=None):
         if value is None:
             return "None"
-        return value.file_name
+        return value.get_file_name()
 
     def to_text(self, value):
         if value and not isinstance(value, list):
@@ -2407,6 +2420,11 @@ class DataCollectionToolParameter(BaseDataToolParameter):
         self.multiple = False  # Accessed on DataToolParameter a lot, may want in future
         self.is_dynamic = True
         self._parse_options(input_source)  # TODO: Review and test.
+        self.default_object = input_source.parse_default()
+        if self.optional and self.default_object is not None:
+            raise ParameterValueError(
+                "Cannot specify a Galaxy tool data parameter to be both optional and have a default value.", self.name
+            )
 
     @property
     def collection_types(self):
@@ -2443,9 +2461,11 @@ class DataCollectionToolParameter(BaseDataToolParameter):
         rval: Optional[Union[DatasetCollectionElement, HistoryDatasetCollectionAssociation]] = None
         if trans.workflow_building_mode is workflow_building_modes.ENABLED:
             return None
-        if not value and not self.optional:
+        if not value and not self.optional and not self.default_object:
             raise ParameterValueError("specify a dataset collection of the correct type", self.name)
         if value in [None, "None"]:
+            if self.default_object:
+                return raw_to_galaxy(trans, self.default_object)
             return None
         if isinstance(value, dict) and "values" in value:
             value = self.to_python(value, trans.app)
@@ -2658,6 +2678,91 @@ class RulesListToolParameter(BaseJsonToolParameter):
             return rule_set.display
         else:
             return ""
+
+
+# Code from CWL branch to massage in order to be shared across tools and workflows,
+# and for CWL artifacts as well as Galaxy ones.
+def raw_to_galaxy(trans, as_dict_value):
+    app = trans.app
+    history = trans.history
+
+    object_class = as_dict_value["class"]
+    if object_class == "File":
+        # TODO: relative_to = "/"
+        location = as_dict_value.get("location")
+        name = (
+            as_dict_value.get("identifier")
+            or as_dict_value.get("basename")
+            or os.path.basename(urllib.parse.urlparse(location).path)
+        )
+        extension = as_dict_value.get("format") or "data"
+        dataset = Dataset()
+        source = DatasetSource()
+        source.source_uri = location
+        # TODO: validate this...
+        source.transform = as_dict_value.get("transform")
+        dataset.sources.append(source)
+
+        for hash_name in HASH_NAMES:
+            # TODO: Convert md5 -> MD5 during tool parsing.
+            if hash_name in as_dict_value:
+                hash_object = DatasetHash()
+                hash_object.hash_function = hash_name
+                hash_object.hash_value = as_dict_value[hash_name]
+                dataset.hashes.append(hash_object)
+
+        if "created_from_basename" in as_dict_value:
+            dataset.created_from_basename = as_dict_value["created_from_basename"]
+
+        dataset.state = Dataset.states.DEFERRED
+        primary_data = HistoryDatasetAssociation(
+            name=name,
+            extension=extension,
+            metadata_deferred=True,
+            designation=None,
+            visible=True,
+            dbkey="?",
+            dataset=dataset,
+            flush=False,
+            sa_session=trans.sa_session,
+        )
+        primary_data.state = Dataset.states.DEFERRED
+        permissions = app.security_agent.history_get_default_permissions(history)
+        app.security_agent.set_all_dataset_permissions(primary_data.dataset, permissions, new=True, flush=False)
+        trans.sa_session.add(primary_data)
+        history.stage_addition(primary_data)
+        history.add_pending_items()
+        trans.sa_session.flush()
+        return primary_data
+    else:
+        name = as_dict_value.get("name")
+        collection_type = as_dict_value.get("collection_type")
+        collection = DatasetCollection(
+            collection_type=collection_type,
+        )
+        hdca = HistoryDatasetCollectionAssociation(
+            name=name,
+            collection=collection,
+        )
+
+        def write_elements_to_collection(has_elements, collection_builder):
+            element_dicts = has_elements.get("elements")
+            for element_dict in element_dicts:
+                element_class = element_dict["class"]
+                identifier = element_dict["identifier"]
+                if element_class == "File":
+                    hda = raw_to_galaxy(trans, element_dict)
+                    collection_builder.add_dataset(identifier, hda)
+                else:
+                    subcollection_builder = collection_builder.get_level(identifier)
+                    write_elements_to_collection(element_dict, subcollection_builder)
+
+        collection_builder = builder.BoundCollectionBuilder(collection)
+        write_elements_to_collection(as_dict_value, collection_builder)
+        collection_builder.populate()
+        trans.sa_session.add(hdca)
+        trans.sa_session.flush()
+        return hdca
 
 
 parameter_types = dict(

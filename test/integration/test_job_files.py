@@ -61,7 +61,7 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
     def test_read_by_state(self):
         job, _, _ = self.create_static_job_with_state("running")
         job_id, job_key = self._api_job_keys(job)
-        data = {"path": self.input_hda.file_name, "job_key": job_key}
+        data = {"path": self.input_hda.get_file_name(), "job_key": job_key}
         get_url = self._api_url(f"jobs/{job_id}/files", use_key=True)
         response = requests.get(get_url, params=data)
         api_asserts.assert_status_code_is_ok(response)
