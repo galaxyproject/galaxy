@@ -16,6 +16,7 @@ import { type components } from "@/api/schema";
 import { useMarkdown } from "@/composables/markdown";
 import { type BroadcastNotification, useBroadcastsStore } from "@/stores/broadcastsStore";
 import { ensureDefined } from "@/utils/assertions";
+import { match } from "@/utils/utils";
 
 import Heading from "@/components/Common/Heading.vue";
 
@@ -72,11 +73,21 @@ const displayedBroadcast = computed(
     () => ensureDefined(sortedBroadcasts.value[currentPage.value]) as BroadcastNotification
 );
 
+type Variant = BroadcastNotification["variant"];
+
 function sortByImportanceAndPublicationTime(a: BroadcastNotification, b: BroadcastNotification) {
-    if (a.variant === "urgent" && b.variant !== "urgent") {
-        return -1;
-    } else if (a.variant === "warning" && b.variant === "info") {
-        return -1;
+    const priority = (v: Variant) =>
+        match(v, {
+            info: () => 0,
+            warning: () => 1,
+            urgent: () => 2,
+        });
+
+    const priorityA = priority(a.variant);
+    const priorityB = priority(b.variant);
+
+    if (priorityA !== priorityB) {
+        return priorityB - priorityA;
     } else {
         return new Date(b.publication_time).getTime() - new Date(a.publication_time).getTime();
     }
