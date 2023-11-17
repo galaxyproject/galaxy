@@ -9,15 +9,26 @@ import { type BroadcastNotification, useBroadcastsStore } from "@/stores/broadca
 const localVue = getLocalVue(true);
 
 const now = new Date();
-const inTwoMonths = new Date(now.setMonth(now.getMonth() + 2));
+const inTwoMonths = new Date(new Date(now).setMonth(now.getMonth() + 2));
 
-function generateBroadcastNotification(id: string): BroadcastNotification {
+/** API date-time does not have timezone indicator and it's always UTC. */
+function toApiDate(date: Date): string {
+    return date.toISOString().replace("Z", "");
+}
+
+function generateBroadcastNotification(
+    id: string,
+    publicationTime?: Date,
+    expirationTime?: Date
+): BroadcastNotification {
+    const publication_time = publicationTime ? toApiDate(publicationTime) : toApiDate(now);
+    const expiration_time = expirationTime ? toApiDate(expirationTime) : toApiDate(inTwoMonths);
     return {
         id: id,
-        create_time: now.toISOString(),
-        update_time: now.toISOString(),
-        publication_time: now.toISOString(),
-        expiration_time: inTwoMonths.toISOString(),
+        create_time: toApiDate(now),
+        update_time: toApiDate(now),
+        publication_time,
+        expiration_time,
         source: "testing",
         variant: "info",
         content: {
@@ -77,5 +88,21 @@ describe("BroadcastsOverlay.vue", () => {
 
         expect(wrapper.findAll(".broadcast-message")).toHaveLength(1);
         expect(wrapper.find(".broadcast-message").text()).toContain("Test message 2");
+    });
+
+    it("should not render the broadcast when it has expired", async () => {
+        const expiredBroadcast = generateBroadcastNotification("expired", undefined, new Date(now));
+        const wrapper = await mountBroadcastsOverlayWith([expiredBroadcast]);
+
+        expect(wrapper.exists()).toBe(true);
+        expect(wrapper.html()).toBe("");
+    });
+
+    it("should not render the broadcast when it has not been published yet", async () => {
+        const unpublishedBroadcast = generateBroadcastNotification("unpublished", new Date(inTwoMonths));
+        const wrapper = await mountBroadcastsOverlayWith([unpublishedBroadcast]);
+
+        expect(wrapper.exists()).toBe(true);
+        expect(wrapper.html()).toBe("");
     });
 });
