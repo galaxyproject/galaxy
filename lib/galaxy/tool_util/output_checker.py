@@ -26,7 +26,9 @@ class DETECTED_JOB_STATE(str, Enum):
 ERROR_PEEK_SIZE = 2000
 
 
-def check_output_regex(regex: "ToolStdioRegex", stream: str, stream_name: str, job_messages: List[Dict[str, Any]], max_error_level: int) -> int:
+def check_output_regex(
+    regex: "ToolStdioRegex", stream: str, stream_name: str, job_messages: List[Dict[str, Any]], max_error_level: int
+) -> int:
     """
     check a single regex against a stream
 
@@ -44,7 +46,13 @@ def check_output_regex(regex: "ToolStdioRegex", stream: str, stream_name: str, j
     return max_error_level
 
 
-def check_output(stdio_regexes: List["ToolStdioRegex"], stdio_exit_codes: List["ToolStdioExitCode"], stdout: str, stderr: str, tool_exit_code: int) -> Tuple[str, str, str, List[Dict[str, Any]]]:
+def check_output(
+    stdio_regexes: List["ToolStdioRegex"],
+    stdio_exit_codes: List["ToolStdioExitCode"],
+    stdout: str,
+    stderr: str,
+    tool_exit_code: int,
+) -> Tuple[str, str, str, List[Dict[str, Any]]]:
     """
     Check the output of a tool - given the stdout, stderr, and the tool's
     exit code, return DETECTED_JOB_STATE.OK if the tool exited succesfully or
