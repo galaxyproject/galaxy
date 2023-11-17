@@ -56,7 +56,6 @@ from galaxy.objectstore import (
     build_object_store_from_config,
     ObjectStore,
 )
-
 from galaxy.tool_util.output_checker import (
     check_output,
     DETECTED_JOB_STATE,
