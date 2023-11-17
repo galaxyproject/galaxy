@@ -712,6 +712,8 @@ class WorkflowContentsManager(UsesAnnotations):
             update_dict = raw_workflow_description.as_dict
             if "name" in update_dict:
                 sanitized_name = sanitize_html(update_dict["name"])
+                if not sanitized_name:
+                    raise exceptions.RequestParameterInvalidException("Workflow must have a valid name")
                 workflow.name = sanitized_name
                 stored_workflow.name = sanitized_name
             if update_dict.get("annotation") is not None:

@@ -849,6 +849,24 @@ class TestWorkflowsApi(BaseWorkflowsApiTestCase, ChangeDatatypeTests):
         workflow_dict = self.workflow_populator.download_workflow(workflow_id)
         assert workflow_dict["license"] == "AAL"
 
+    def test_update_name_empty(self):
+        # Update doesn't allow empty names.
+
+        # Load a workflow with a given name.
+        original_name = "test update name"
+        workflow_object = self.workflow_populator.load_workflow(name=original_name)
+        upload_response = self.__test_upload(workflow=workflow_object, name=original_name)
+        workflow = upload_response.json()
+        assert workflow["name"] == original_name
+
+        # Try to update the name to an empty string (also change steps to force an update).
+        data = {"name": "", "steps": {}}
+        update_response = self._update_workflow(workflow["id"], data)
+        assert update_response.json()["err_msg"] == "Workflow must have a valid name"
+        self._assert_status_code_is(update_response, 400)
+        workflow_dict = self.workflow_populator.download_workflow(workflow["id"])
+        assert workflow_dict["name"] == original_name
+
     def test_refactor(self):
         workflow_id = self.workflow_populator.upload_yaml_workflow(
             """
