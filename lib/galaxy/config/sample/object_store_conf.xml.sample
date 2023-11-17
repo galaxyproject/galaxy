@@ -7,6 +7,19 @@
     backends to the distributed and hierarchical object stores (including
     distributed and hierarchical themselves).
 -->
+<!--
+    Most of the Object Stores have <cache> option like:
+    <cache path="database/object_store_cache" size="1000" cache_updated_data="True" />
+
+    Here
+    "path" - local path to store cached data,
+    "size" - size of the cache in gigabytes.
+    "cache_updated_data" - optional parameter that allows to control data
+       is being sent directly
+       to an object store without storing it in the cache.
+       By default data is also copied to the cache (cache_updated_data="True").
+-->
+
 
 <!--
     Sample Disk Object Store
