@@ -873,11 +873,18 @@ history_dataset_collection_display(input={})
         return section_markdown, True
 
     def _remap(container, line):
-        if container == "workflow_display":
+        for workflow_instance_directive in ["workflow_display", "workflow_image"]:
+            if container == workflow_instance_directive:
+                stored_workflow_id = invocation.workflow.stored_workflow.id
+                workflow_version = invocation.workflow.version
+                return (
+                    f"{workflow_instance_directive}(workflow_id={stored_workflow_id},workflow_checkpoint={workflow_version})\n",
+                    False,
+                )
+        if container == "workflow_license":
             stored_workflow_id = invocation.workflow.stored_workflow.id
-            workflow_version = invocation.workflow.version
             return (
-                f"workflow_display(workflow_id={stored_workflow_id},workflow_checkpoint={workflow_version})\n",
+                f"workflow_license(workflow_id={stored_workflow_id})\n",
                 False,
             )
         if container == "history_link":
