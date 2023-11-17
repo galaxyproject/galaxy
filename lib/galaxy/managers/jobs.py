@@ -76,6 +76,7 @@ log = logging.getLogger(__name__)
 STDOUT_LOCATION = "outputs/tool_stdout"
 STDERR_LOCATION = "outputs/tool_stderr"
 
+
 class JobLock(BaseModel):
     active: bool = Field(title="Job lock status", description="If active, jobs will not dispatch")
 
@@ -235,7 +236,9 @@ class JobManager:
         )
         return self.job_lock()
 
-    def get_accessible_job(self, trans, decoded_job_id, stdout_position=-1, stdout_length=0, stderr_position=-1, stderr_length=0):
+    def get_accessible_job(
+        self, trans, decoded_job_id, stdout_position=-1, stdout_length=0, stderr_position=-1, stderr_length=0
+    ):
         job = trans.sa_session.query(trans.app.model.Job).filter(trans.app.model.Job.id == decoded_job_id).first()
         if job is None:
             raise ObjectNotFound()
@@ -261,7 +264,7 @@ class JobManager:
             if stdout_length > 0 and stdout_position > -1:
                 try:
                     stdout_path = Path(working_directory) / STDOUT_LOCATION
-                    stdout_file = open(stdout_path, "r")
+                    stdout_file = open(stdout_path)
                     stdout_file.seek(stdout_position)
                     job.job_stdout = stdout_file.read(stdout_length)
                     job.tool_stdout = job.job_stdout
@@ -270,7 +273,7 @@ class JobManager:
             if stderr_length > 0 and stderr_position > -1:
                 try:
                     stderr_path = Path(working_directory) / STDERR_LOCATION
-                    stderr_file = open(stderr_path, "r")
+                    stderr_file = open(stderr_path)
                     stderr_file.seek(stderr_position)
                     job.job_stderr = stderr_file.read(stderr_length)
                     job.tool_stderr = job.job_stderr
