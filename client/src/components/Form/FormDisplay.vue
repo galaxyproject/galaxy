@@ -79,6 +79,10 @@ export default {
             type: Boolean,
             default: false,
         },
+        allowEmptyValueOnRequiredInput: {
+            type: Boolean,
+            default: false,
+        },
     },
     data() {
         return {
@@ -89,7 +93,7 @@ export default {
     },
     computed: {
         validation() {
-            return validateInputs(this.formIndex, this.formData);
+            return validateInputs(this.formIndex, this.formData, this.allowEmptyValueOnRequiredInput);
         },
     },
     watch: {

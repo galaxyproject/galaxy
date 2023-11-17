@@ -43,7 +43,11 @@
                 </b-dropdown-form>
             </b-dropdown>
         </div>
-        <FormDisplay :inputs="formInputs" @onChange="onChange" @onValidation="onValidation" />
+        <FormDisplay
+            :inputs="formInputs"
+            :allowEmptyValueOnRequiredInput="true"
+            @onChange="onChange"
+            @onValidation="onValidation" />
         <!-- Options to default one way or the other, disable if admins want, etc.. -->
         <a href="#" class="workflow-expand-form-link" @click="$emit('showAdvanced')">Expand to full workflow form.</a>
     </div>
@@ -137,6 +141,8 @@ export default {
         onValidation(validation) {
             if (validation) {
                 Vue.set(this.stepValidations, validation[0], validation[1]);
+            } else {
+                this.stepValidations = {};
             }
         },
         reuseAllowed(user) {
