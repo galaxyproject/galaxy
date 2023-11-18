@@ -105,8 +105,6 @@ class SearchJobsPayload(Model):
         title="Tool ID",
         description="The tool ID related to the job.",
     )
-    # TODO the inputs are actually a dict, but are passed as a JSON dump
-    # maybe change it?
     inputs: Dict[str, Any] = Field(
         default=Required,
         title="Inputs",
