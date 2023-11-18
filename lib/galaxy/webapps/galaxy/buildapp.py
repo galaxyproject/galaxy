@@ -340,7 +340,6 @@ def populate_api_routes(webapp, app):
         controller="page_revisions",
         parent_resources=dict(member_name="page", collection_name="pages"),
     )
-    webapp.mapper.resource("group", "groups", path_prefix="/api")
 
     webapp.mapper.connect("/api/cloud/authz/", action="index", controller="cloudauthz", conditions=dict(method=["GET"]))
     webapp.mapper.connect(

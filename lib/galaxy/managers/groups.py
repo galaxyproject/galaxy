@@ -1,8 +1,4 @@
-from typing import (
-    Any,
-    Dict,
-    List,
-)
+from typing import List
 
 from sqlalchemy import (
     false,
@@ -29,6 +25,7 @@ from galaxy.schema.fields import (
     DecodedDatabaseIdField,
     EncodedDatabaseIdField,
 )
+from galaxy.schema.groups import GroupCreatePayload
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.web import url_for
 
@@ -51,21 +48,21 @@ class GroupsManager:
             rval.append(item)
         return rval
 
-    def create(self, trans: ProvidesAppContext, payload: Dict[str, Any]):
+    def create(self, trans: ProvidesAppContext, payload: GroupCreatePayload):
         """
         Creates a new group.
         """
         sa_session = trans.sa_session
-        name = payload.get("name", None)
+        name = payload.name
         if name is None:
             raise ObjectAttributeMissingException("Missing required name")
         self._check_duplicated_group_name(sa_session, name)
 
         group = model.Group(name=name)
         sa_session.add(group)
-        encoded_user_ids = payload.get("user_ids", [])
+        encoded_user_ids = getattr(payload, "user_ids", [])
         users = self._get_users_by_encoded_ids(sa_session, encoded_user_ids)
-        encoded_role_ids = payload.get("role_ids", [])
+        encoded_role_ids = getattr(payload, "role_ids", [])
         roles = self._get_roles_by_encoded_ids(sa_session, encoded_role_ids)
         trans.app.security_agent.set_entity_group_associations(groups=[group], roles=roles, users=users)
         with transaction(sa_session):
@@ -88,20 +85,20 @@ class GroupsManager:
         item["roles_url"] = url_for("group_roles", group_id=encoded_id)
         return item
 
-    def update(self, trans: ProvidesAppContext, group_id: int, payload: Dict[str, Any]):
+    def update(self, trans: ProvidesAppContext, group_id: int, payload: GroupCreatePayload):
         """
         Modifies a group.
         """
         sa_session = trans.sa_session
         group = self._get_group(sa_session, group_id)
-        name = payload.get("name", None)
+        name = payload.name
         if name:
             self._check_duplicated_group_name(sa_session, name)
             group.name = name
             sa_session.add(group)
-        encoded_user_ids = payload.get("user_ids", [])
+        encoded_user_ids = getattr(payload, "user_ids", [])
         users = self._get_users_by_encoded_ids(sa_session, encoded_user_ids)
-        encoded_role_ids = payload.get("role_ids", [])
+        encoded_role_ids = getattr(payload, "role_ids", [])
         roles = self._get_roles_by_encoded_ids(sa_session, encoded_role_ids)
         self._app.security_agent.set_entity_group_associations(
             groups=[group], roles=roles, users=users, delete_existing_assocs=False
