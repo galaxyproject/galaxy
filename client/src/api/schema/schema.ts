@@ -929,35 +929,27 @@ export interface paths {
          */
         post: operations["search_jobs_api_jobs_search_post"];
     };
-    "/api/jobs/{id}/common_problems": {
-        /** Check inputs and job for common potential problems to aid in error reporting */
-        get: operations["check_common_problems_api_jobs__id__common_problems_get"];
-    };
-    "/api/jobs/{id}/error": {
-        /** Submits a bug report via the API. */
-        post: operations["report_error_api_jobs__id__error_post"];
-    };
-    "/api/jobs/{id}/inputs": {
-        /** Returns input datasets created by a job. */
-        get: operations["get_inputs_api_jobs__id__inputs_get"];
-    };
-    "/api/jobs/{id}/outputs": {
-        /** Returns output datasets created by a job. */
-        get: operations["get_outputs_api_jobs__id__outputs_get"];
-    };
-    "/api/jobs/{id}/resume": {
-        /** Resumes a paused job. */
-        put: operations["resume_paused_job_api_jobs__id__resume_put"];
-    };
     "/api/jobs/{job_id}": {
         /** Return dictionary containing description of job data. */
         get: operations["show_job_api_jobs__job_id__get"];
         /** Cancels specified job */
         delete: operations["cancel_job_api_jobs__job_id__delete"];
     };
+    "/api/jobs/{job_id}/common_problems": {
+        /** Check inputs and job for common potential problems to aid in error reporting */
+        get: operations["check_common_problems_api_jobs__job_id__common_problems_get"];
+    };
     "/api/jobs/{job_id}/destination_params": {
         /** Return destination parameters for specified job. */
         get: operations["destination_params_job_api_jobs__job_id__destination_params_get"];
+    };
+    "/api/jobs/{job_id}/error": {
+        /** Submits a bug report via the API. */
+        post: operations["report_error_api_jobs__job_id__error_post"];
+    };
+    "/api/jobs/{job_id}/inputs": {
+        /** Returns input datasets created by a job. */
+        get: operations["get_inputs_api_jobs__job_id__inputs_get"];
     };
     "/api/jobs/{job_id}/metrics": {
         /** Return job metrics for specified job. */
@@ -969,6 +961,10 @@ export interface paths {
          * @description Allows remote job running mechanisms to get a fresh OIDC token that can be used on remote side to authorize user. It is not meant to represent part of Galaxy's stable, user facing API
          */
         get: operations["get_token_api_jobs__job_id__oidc_tokens_get"];
+    };
+    "/api/jobs/{job_id}/outputs": {
+        /** Returns output datasets created by a job. */
+        get: operations["get_outputs_api_jobs__job_id__outputs_get"];
     };
     "/api/jobs/{job_id}/parameters_display": {
         /**
@@ -983,6 +979,10 @@ export interface paths {
          * this endpoint will change frequently.
          */
         get: operations["resolve_parameters_display_api_jobs__job_id__parameters_display_get"];
+    };
+    "/api/jobs/{job_id}/resume": {
+        /** Resumes a paused job. */
+        put: operations["resume_paused_job_api_jobs__job_id__resume_put"];
     };
     "/api/libraries": {
         /**
@@ -15292,146 +15292,6 @@ export interface operations {
             };
         };
     };
-    check_common_problems_api_jobs__id__common_problems_get: {
-        /** Check inputs and job for common potential problems to aid in error reporting */
-        parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string;
-            };
-            /** @description The ID of the job */
-            path: {
-                id: string;
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json": components["schemas"]["JobInputSummary"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    report_error_api_jobs__id__error_post: {
-        /** Submits a bug report via the API. */
-        parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string;
-            };
-            /** @description The ID of the job */
-            path: {
-                id: string;
-            };
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ReportJobErrorPayload"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json": components["schemas"]["JobErrorSummary"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_inputs_api_jobs__id__inputs_get: {
-        /** Returns input datasets created by a job. */
-        parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string;
-            };
-            /** @description The ID of the job */
-            path: {
-                id: string;
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json": components["schemas"]["JobInputAssociation"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    get_outputs_api_jobs__id__outputs_get: {
-        /** Returns output datasets created by a job. */
-        parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string;
-            };
-            /** @description The ID of the job */
-            path: {
-                id: string;
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json": components["schemas"]["JobOutputAssociation"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    resume_paused_job_api_jobs__id__resume_put: {
-        /** Resumes a paused job. */
-        parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string;
-            };
-            /** @description The ID of the job */
-            path: {
-                id: string;
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json": components["schemas"]["JobOutputAssociation"][];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     show_job_api_jobs__job_id__get: {
         /** Return dictionary containing description of job data. */
         parameters: {
@@ -15495,6 +15355,33 @@ export interface operations {
             };
         };
     };
+    check_common_problems_api_jobs__job_id__common_problems_get: {
+        /** Check inputs and job for common potential problems to aid in error reporting */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The ID of the job */
+            path: {
+                job_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["JobInputSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     destination_params_job_api_jobs__job_id__destination_params_get: {
         /** Return destination parameters for specified job. */
         parameters: {
@@ -15512,6 +15399,65 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["JobDestinationParams"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    report_error_api_jobs__job_id__error_post: {
+        /** Submits a bug report via the API. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The ID of the job */
+            path: {
+                job_id: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReportJobErrorPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["JobErrorSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_inputs_api_jobs__job_id__inputs_get: {
+        /** Returns input datasets created by a job. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The ID of the job */
+            path: {
+                job_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["JobInputAssociation"][];
                 };
             };
             /** @description Validation Error */
@@ -15591,6 +15537,33 @@ export interface operations {
             };
         };
     };
+    get_outputs_api_jobs__job_id__outputs_get: {
+        /** Returns output datasets created by a job. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The ID of the job */
+            path: {
+                job_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["JobOutputAssociation"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     resolve_parameters_display_api_jobs__job_id__parameters_display_get: {
         /**
          * Resolve parameters as a list for nested display.
@@ -15625,6 +15598,33 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["JobDisplayParametersSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resume_paused_job_api_jobs__job_id__resume_put: {
+        /** Resumes a paused job. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The ID of the job */
+            path: {
+                job_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["JobOutputAssociation"][];
                 };
             };
             /** @description Validation Error */
