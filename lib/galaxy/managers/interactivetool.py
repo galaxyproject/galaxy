@@ -1,5 +1,10 @@
+import json
 import logging
 import sqlite3
+from urllib.parse import (
+    urlsplit,
+    urlunsplit,
+)
 
 from sqlalchemy import (
     or_,
@@ -12,6 +17,7 @@ from galaxy.model import (
     Job,
 )
 from galaxy.model.base import transaction
+from galaxy.security.idencoding import IdAsLowercaseAlphanumEncodingHelper
 from galaxy.util.filelock import FileLock
 
 log = logging.getLogger(__name__)
@@ -138,7 +144,12 @@ class InteractiveToolSqlite:
             entry_point.token,
             entry_point.host,
             entry_point.port,
-            None,
+            json.dumps(
+                {
+                    "requires_path_in_url": entry_point.requires_path_in_url,
+                    "requires_path_in_header_named": entry_point.requires_path_in_header_named,
+                }
+            ),
         )
 
     def remove_entry_point(self, entry_point):
@@ -157,7 +168,8 @@ class InteractiveToolManager:
         self.security = app.security
         self.sa_session = app.model.context
         self.job_manager = app.job_manager
-        self.propagator = InteractiveToolSqlite(app.config.interactivetools_map, app.security.encode_id)
+        self.encoder = IdAsLowercaseAlphanumEncodingHelper(app.security)
+        self.propagator = InteractiveToolSqlite(app.config.interactivetools_map, self.encoder.encode_id)
 
     def create_entry_points(self, job, tool, entry_points=None, flush=True):
         entry_points = entry_points or tool.ports
@@ -167,8 +179,10 @@ class InteractiveToolManager:
                 tool_port=entry["port"],
                 entry_url=entry["url"],
                 name=entry["name"],
+                label=entry["label"],
                 requires_domain=entry["requires_domain"],
-                short_token=self.app.config.interactivetools_shorten_url,
+                requires_path_in_url=entry["requires_path_in_url"],
+                requires_path_in_header_named=entry["requires_path_in_header_named"],
             )
             self.sa_session.add(ep)
         if flush:
@@ -287,44 +301,55 @@ class InteractiveToolManager:
 
     def target_if_active(self, trans, entry_point):
         if entry_point.active and not entry_point.deleted:
-            request_host = trans.request.host
-            if not self.app.config.interactivetools_upstream_proxy and self.app.config.interactivetools_proxy_host:
-                request_host = self.app.config.interactivetools_proxy_host
-            protocol = trans.request.host_url.split("//", 1)[0]
+            use_it_proxy_host_cfg = (
+                not self.app.config.interactivetools_upstream_proxy and self.app.config.interactivetools_proxy_host
+            )
+
+            url_parts = urlsplit(trans.request.host_url)
+            url_host = self.app.config.interactivetools_proxy_host if use_it_proxy_host_cfg else trans.request.host
+            url_path = url_parts.path
+
             if entry_point.requires_domain:
-                rval = f"{protocol}//{self.get_entry_point_subdomain(trans, entry_point)}.{request_host}/"
+                url_host = f"{self.get_entry_point_subdomain(trans, entry_point)}.{url_host}"
                 if entry_point.entry_url:
-                    rval = "{}/{}".format(rval.rstrip("/"), entry_point.entry_url.lstrip("/"))
+                    url_path = f"{url_path.rstrip('/')}/{entry_point.entry_url.lstrip('/')}"
             else:
-                rval = self.get_entry_point_path(trans, entry_point)
-                if not self.app.config.interactivetools_upstream_proxy and self.app.config.interactivetools_proxy_host:
-                    rval = f"{protocol}//{request_host}{rval}"
-            return rval
+                url_path = self.get_entry_point_path(trans, entry_point)
+                if not use_it_proxy_host_cfg:
+                    return url_path
+
+            return urlunsplit((url_parts.scheme, url_host, url_path, "", ""))
+
+    def _get_entry_point_url_elements(self, trans, entry_point):
+        encoder = IdAsLowercaseAlphanumEncodingHelper(trans.security)
+        ep_encoded_id = encoder.encode_id(entry_point.id)
+        ep_class_id = entry_point.class_id
+        ep_prefix = self.app.config.interactivetools_prefix
+        ep_token = entry_point.token
+        return ep_encoded_id, ep_class_id, ep_prefix, ep_token
 
     def get_entry_point_subdomain(self, trans, entry_point):
-        entry_point_encoded_id = trans.security.encode_id(entry_point.id)
-        entry_point_class = entry_point.__class__.__name__.lower()
-        entry_point_prefix = self.app.config.interactivetools_prefix
-        entry_point_token = entry_point.token
-        if self.app.config.interactivetools_shorten_url:
-            return f"{entry_point_encoded_id}-{entry_point_token[:10]}.{entry_point_prefix}"
-        return f"{entry_point_encoded_id}-{entry_point_token}.{entry_point_class}.{entry_point_prefix}"
+        ep_encoded_id, ep_class_id, ep_prefix, ep_token = self._get_entry_point_url_elements(trans, entry_point)
+        return f"{ep_encoded_id}-{ep_token}.{ep_class_id}.{ep_prefix}"
 
     def get_entry_point_path(self, trans, entry_point):
-        entry_point_encoded_id = trans.security.encode_id(entry_point.id)
-        entry_point_class = entry_point.__class__.__name__.lower()
-        entry_point_prefix = self.app.config.interactivetools_prefix
-        rval = "/"
+        url_path = "/"
         if not entry_point.requires_domain:
-            rval = str(self.app.config.interactivetools_base_path).rstrip("/").lstrip("/")
-            if self.app.config.interactivetools_shorten_url:
-                rval = f"/{rval}/{entry_point_prefix}/{entry_point_encoded_id}/{entry_point.token[:10]}/"
-            else:
-                rval = f"/{rval}/{entry_point_prefix}/access/{entry_point_class}/{entry_point_encoded_id}/{entry_point.token}/"
+            ep_encoded_id, ep_class_id, ep_prefix, ep_token = self._get_entry_point_url_elements(trans, entry_point)
+            path_parts = [
+                part.strip("/")
+                for part in (
+                    str(self.app.config.interactivetools_base_path),
+                    ep_prefix,
+                    ep_class_id,
+                    ep_encoded_id,
+                    ep_token,
+                )
+            ]
+            url_path += "/".join(part for part in path_parts if part) + "/"
         if entry_point.entry_url:
-            rval = f"{rval.rstrip('/')}/{entry_point.entry_url.lstrip('/')}"
-        rval = "/" + rval.lstrip("/")
-        return rval
+            url_path += entry_point.entry_url.lstrip("/")
+        return url_path
 
     def access_entry_point_target(self, trans, entry_point_id):
         entry_point = trans.sa_session.get(InteractiveToolEntryPoint, entry_point_id)

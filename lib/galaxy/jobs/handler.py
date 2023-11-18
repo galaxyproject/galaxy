@@ -13,6 +13,8 @@ from typing import (
     Dict,
     List,
     Tuple,
+    Type,
+    Union,
 )
 
 from sqlalchemy.exc import OperationalError
@@ -101,10 +103,11 @@ class JobHandler(JobHandlerI):
 
 
 class ItemGrabber:
+    grab_model: Union[Type[model.Job], Type[model.WorkflowInvocation]]
+
     def __init__(
         self,
         app,
-        grab_type="Job",
         handler_assignment_method=None,
         max_grab=None,
         self_handler_tags=None,
@@ -112,8 +115,6 @@ class ItemGrabber:
     ):
         self.app = app
         self.sa_session = app.model.context
-        self.grab_this = getattr(model, grab_type)
-        self.grab_type = grab_type
         self.handler_assignment_method = handler_assignment_method
         self.self_handler_tags = self_handler_tags
         self.max_grab = max_grab
@@ -123,27 +124,33 @@ class ItemGrabber:
         self._supports_returning = self.app.application_stack.supports_returning()
 
     def setup_query(self):
+        if self.grab_model is model.Job:
+            grab_condition = self.grab_model.state == self.grab_model.states.NEW
+        elif self.grab_model is model.WorkflowInvocation:
+            grab_condition = self.grab_model.state.in_((self.grab_model.states.NEW, self.grab_model.states.CANCELLING))
+        else:
+            raise NotImplementedError(f"Grabbing {self.grab_model.__name__} not implemented")
         subq = (
-            select(self.grab_this.id)
+            select(self.grab_model.id)
             .where(
                 and_(
-                    self.grab_this.table.c.handler.in_(self.self_handler_tags),
-                    self.grab_this.table.c.state == self.grab_this.states.NEW,
+                    self.grab_model.handler.in_(self.self_handler_tags),
+                    grab_condition,
                 )
             )
-            .order_by(self.grab_this.table.c.id)
+            .order_by(self.grab_model.id)
         )
         if self.max_grab:
             subq = subq.limit(self.max_grab)
         if self.handler_assignment_method == HANDLER_ASSIGNMENT_METHODS.DB_SKIP_LOCKED:
             subq = subq.with_for_update(skip_locked=True)
         self._grab_query = (
-            self.grab_this.table.update()
-            .where(self.grab_this.table.c.id.in_(subq))
+            self.grab_model.table.update()
+            .where(self.grab_model.id.in_(subq))
             .values(handler=self.app.config.server_name)
         )
         if self._supports_returning:
-            self._grab_query = self._grab_query.returning(self.grab_this.table.c.id)
+            self._grab_query = self._grab_query.returning(self.grab_model.id)
         if self.handler_assignment_method == HANDLER_ASSIGNMENT_METHODS.DB_TRANSACTION_ISOLATION:
             self._grab_conn_opts["isolation_level"] = "SERIALIZABLE"
         log.info(
@@ -183,7 +190,9 @@ class ItemGrabber:
                     if self._supports_returning:
                         rows = proxy.fetchall()
                         if rows:
-                            log.debug(f"Grabbed {self.grab_type}(s): {', '.join(str(row[0]) for row in rows)}")
+                            log.debug(
+                                f"Grabbed {self.grab_model.__name__}(s): {', '.join(str(row[0]) for row in rows)}"
+                            )
                         else:
                             trans.rollback()
                 except OperationalError as e:
@@ -191,9 +200,19 @@ class ItemGrabber:
                     # and should have attribute `code`. Other engines should just report the message and move on.
                     if int(getattr(e.orig, "pgcode", -1)) != 40001:
                         log.debug(
-                            "Grabbing %s failed (serialization failures are ok): %s", self.grab_type, unicodify(e)
+                            "Grabbing %s failed (serialization failures are ok): %s",
+                            self.grab_model.__name__,
+                            unicodify(e),
                         )
                     trans.rollback()
+
+
+class InvocationGrabber(ItemGrabber):
+    grab_model = model.WorkflowInvocation
+
+
+class JobGrabber(ItemGrabber):
+    grab_model = model.Job
 
 
 class StopSignalException(Exception):
@@ -236,13 +255,12 @@ class JobHandlerQueue(BaseJobHandlerQueue):
         name = "JobHandlerQueue.monitor_thread"
         self._init_monitor_thread(name, target=self.__monitor, config=app.config)
         self.job_grabber = None
-        handler_assignment_method = ItemGrabber.get_grabbable_handler_assignment_method(
+        handler_assignment_method = JobGrabber.get_grabbable_handler_assignment_method(
             self.app.job_config.handler_assignment_methods
         )
         if handler_assignment_method:
-            self.job_grabber = ItemGrabber(
+            self.job_grabber = JobGrabber(
                 app=app,
-                grab_type="Job",
                 handler_assignment_method=handler_assignment_method,
                 max_grab=self.app.job_config.handler_max_grab,
                 self_handler_tags=self.app.job_config.self_handler_tags,

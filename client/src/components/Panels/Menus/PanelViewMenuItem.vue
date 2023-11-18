@@ -6,14 +6,7 @@
 </template>
 
 <script>
-const types_to_icons = {
-    default: "undo",
-    generic: "filter",
-    ontology: "sitemap",
-    activity: "project-diagram",
-    publication: "newspaper",
-    training: "graduation-cap",
-};
+import { types_to_icons } from "../utilities";
 
 export default {
     props: {

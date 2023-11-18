@@ -165,6 +165,7 @@
 
 <script>
 import axios from "axios";
+import { Toast } from "composables/toast";
 import { storeToRefs } from "pinia";
 import Vue, { computed, onUnmounted, ref, unref } from "vue";
 
@@ -315,7 +316,7 @@ export default {
             license: null,
             creator: null,
             annotation: null,
-            name: null,
+            name: "Unnamed Workflow",
             tags: this.workflowTags,
             stateMessages: [],
             insertedStateMessages: [],
@@ -591,14 +592,7 @@ export default {
             this.$router.replace({ query: { id } });
         },
         async onCreate() {
-            if (!this.name) {
-                const response = "Please provide a name for your workflow.";
-                this.onWorkflowError("Creating workflow failed", response, {
-                    Ok: () => {
-                        this.hideModal();
-                    },
-                });
-                this.onAttributes();
+            if (!this.nameValidate()) {
                 return;
             }
             try {
@@ -610,12 +604,17 @@ export default {
                         workflow_tags: this.tags,
                     };
                     const { data } = await axios.put(`${getAppRoot()}workflow/create`, payload);
-                    const { id } = data;
+                    const { id, message } = data;
 
                     await this.routeToWorkflow(id);
+                    Toast.success(message);
                 } else {
                     // otherwise, use `save_as` endpoint to include steps, etc.
                     await this.doSaveAs(true);
+                    const stepCount = Object.keys(this.steps).length;
+                    Toast.success(
+                        `Created workflow ${this.name} with ${stepCount} ${stepCount === 1 ? "step" : "steps"}.`
+                    );
                 }
             } catch (e) {
                 this.onWorkflowError("Creating workflow failed"),
@@ -626,6 +625,14 @@ export default {
                         },
                     };
             }
+        },
+        nameValidate() {
+            if (!this.name) {
+                Toast.error("Please provide a name for your workflow.");
+                this.onAttributes();
+                return false;
+            }
+            return true;
         },
         onSetData(stepId, newData) {
             this.lastQueue
@@ -688,6 +695,9 @@ export default {
             });
         },
         onSave(hideProgress = false) {
+            if (!this.nameValidate()) {
+                return;
+            }
             !hideProgress && this.onWorkflowMessage("Saving workflow...", "progress");
             return saveWorkflow(this)
                 .then((data) => {

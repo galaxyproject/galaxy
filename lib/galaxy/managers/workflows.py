@@ -421,18 +421,16 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
             target_format=target_format,
         )
 
-    def cancel_invocation(self, trans, decoded_invocation_id):
+    def request_invocation_cancellation(self, trans, decoded_invocation_id: int):
         workflow_invocation = self.get_invocation(trans, decoded_invocation_id)
         cancelled = workflow_invocation.cancel()
 
         if cancelled:
             workflow_invocation.add_message(InvocationCancellationUserRequest(reason="user_request"))
             trans.sa_session.add(workflow_invocation)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
-        else:
-            # TODO: More specific exception?
-            raise exceptions.MessageException("Cannot cancel an inactive workflow invocation.")
+
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
 
         return workflow_invocation
 
@@ -714,6 +712,8 @@ class WorkflowContentsManager(UsesAnnotations):
             update_dict = raw_workflow_description.as_dict
             if "name" in update_dict:
                 sanitized_name = sanitize_html(update_dict["name"])
+                if not sanitized_name:
+                    raise exceptions.RequestParameterInvalidException("Workflow must have a valid name")
                 workflow.name = sanitized_name
                 stored_workflow.name = sanitized_name
             if update_dict.get("annotation") is not None:

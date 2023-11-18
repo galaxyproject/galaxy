@@ -193,7 +193,7 @@ class WorkflowInvoker:
             log.debug(
                 f"Workflow invocation [{workflow_invocation.id}] exceeded maximum number of seconds allowed for scheduling [{maximum_duration}], failing."
             )
-            workflow_invocation.state = model.WorkflowInvocation.states.FAILED
+            workflow_invocation.set_state(model.WorkflowInvocation.states.FAILED)
             # All jobs ran successfully, so we can save now
             self.trans.sa_session.add(workflow_invocation)
 
@@ -264,7 +264,7 @@ class WorkflowInvoker:
             state = model.WorkflowInvocation.states.READY
         else:
             state = model.WorkflowInvocation.states.SCHEDULED
-        workflow_invocation.state = state
+        workflow_invocation.set_state(state)
 
         # All jobs ran successfully, so we can save now
         self.trans.sa_session.add(workflow_invocation)
@@ -640,6 +640,8 @@ class WorkflowProgress:
         when_values=None,
     ) -> WorkflowInvoker:
         subworkflow_invocation = self._subworkflow_invocation(step)
+        subworkflow_invocation.handler = self.workflow_invocation.handler
+        subworkflow_invocation.scheduler = self.workflow_invocation.scheduler
         workflow_run_config = workflow_request_to_run_config(subworkflow_invocation, use_cached_job)
         subworkflow_progress = self.subworkflow_progress(
             subworkflow_invocation,

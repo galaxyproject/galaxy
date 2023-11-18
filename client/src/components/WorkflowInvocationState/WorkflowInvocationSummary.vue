@@ -15,7 +15,7 @@
                 </b-button>
             </span>
         </div>
-        <div v-else-if="!invocationSchedulingTerminal">
+        <div v-else-if="!invocationAndJobTerminal">
             <b-alert variant="info" show>
                 <LoadingSpan :message="`Waiting to complete invocation ${indexStr}`" />
             </b-alert>
