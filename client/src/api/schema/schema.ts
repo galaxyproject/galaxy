@@ -823,6 +823,27 @@ export interface paths {
         /** Prepare history for export-style download and write to supplied URI. */
         post: operations["write_store_api_histories__history_id__write_store_post"];
     };
+    "/api/invocations/{invocation_id}": {
+        /**
+         * Get detailed description of workflow invocation
+         * @description :param  step_details:       fetch details about individual invocation steps
+         *                             and populate a steps attribute in the resulting
+         *                             dictionary. Defaults to false.
+         * :type   step_details:       bool
+         *
+         * :param  legacy_job_state:   If step_details is true, and this is set to true
+         *                             populate the invocation step state with the job state
+         *                             instead of the invocation step state. This will also
+         *                             produce one step per job in mapping jobs to mimic the
+         *                             older behavior with respect to collections. Partially
+         *                             scheduled steps may provide incomplete information
+         *                             and the listed steps outputs are the mapped over
+         *                             step outputs but the individual job outputs
+         *                             when this is set - at least for now.
+         * :type   legacy_job_state:   bool
+         */
+        get: operations["show_invocation_api_invocations__invocation_id__get"];
+    };
     "/api/invocations/{invocation_id}/biocompute": {
         /**
          * Return a BioCompute Object for the workflow invocation.
@@ -14273,6 +14294,59 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["AsyncTaskResultSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    show_invocation_api_invocations__invocation_id__get: {
+        /**
+         * Get detailed description of workflow invocation
+         * @description :param  step_details:       fetch details about individual invocation steps
+         *                             and populate a steps attribute in the resulting
+         *                             dictionary. Defaults to false.
+         * :type   step_details:       bool
+         *
+         * :param  legacy_job_state:   If step_details is true, and this is set to true
+         *                             populate the invocation step state with the job state
+         *                             instead of the invocation step state. This will also
+         *                             produce one step per job in mapping jobs to mimic the
+         *                             older behavior with respect to collections. Partially
+         *                             scheduled steps may provide incomplete information
+         *                             and the listed steps outputs are the mapped over
+         *                             step outputs but the individual job outputs
+         *                             when this is set - at least for now.
+         * :type   legacy_job_state:   bool
+         */
+        parameters: {
+            /** @description Include details for individual invocation steps. */
+            /**
+             * @deprecated
+             * @description TODO
+             */
+            query?: {
+                step_details?: boolean;
+                legacy_job_state?: boolean;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The encoded database identifier of the Invocation. */
+            path: {
+                invocation_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": Record<string, never>;
                 };
             };
             /** @description Validation Error */
