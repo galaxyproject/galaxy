@@ -10,7 +10,8 @@ from galaxy.schema.schema import Model
 
 
 class GroupIndexResponse(Model):
-    '''Response schema for a group.'''
+    """Response schema for a group."""
+
     model_class: str = Field(
         Required,
         title="model class",
@@ -34,12 +35,14 @@ class GroupIndexResponse(Model):
 
 
 class GroupIndexListResponse(Model):
-    '''Response schema for listing groups.'''
+    """Response schema for listing groups."""
+
     __root__: List[GroupIndexResponse]
 
 
 class GroupShowResponse(Model):
-    '''Response schema for showing a group.'''
+    """Response schema for showing a group."""
+
     model_class: str = Field(
         Required,
         title="model class",
@@ -73,7 +76,8 @@ class GroupShowResponse(Model):
 
 
 class GroupCreatePayload(Model):
-    '''Payload schema for creating a group.'''
+    """Payload schema for creating a group."""
+
     name: str = Field(
         Required,
         title="name of the group",
