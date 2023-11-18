@@ -1,7 +1,10 @@
+from datetime import datetime
 from enum import Enum
 from typing import (
     Any,
+    Dict,
     Generic,
+    List,
     Optional,
     TypeVar,
     Union,
@@ -10,6 +13,7 @@ from typing import (
 from pydantic import (
     BaseModel,
     Field,
+    Required,
 )
 from pydantic.generics import GenericModel
 from pydantic.utils import GetterDict
@@ -19,6 +23,12 @@ from typing_extensions import (
 )
 
 from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.schema.schema import (
+    CreateTimeField,
+    EntityIdField,
+    UpdateTimeField,
+    WorkflowIdField,
+)
 
 
 class WarningReason(str, Enum):
@@ -150,6 +160,47 @@ class GenericInvocationEvaluationWarningWorkflowOutputNotFound(
     workflow_step_id: int = Field(..., title="Workflow step id of step that caused a warning.")
     output_name: str = Field(
         ..., description="Output that was designated as workflow output but that has not been found"
+    )
+
+
+# TODO - This already exists in the WorkflowInvocation(lib/galaxy/model/__init__.py).
+# How can I access it to use it here?
+class InvocationState(str, Enum):
+    NEW = "new"  # Brand new workflow invocation... maybe this should be same as READY
+    READY = "ready"  # Workflow ready for another iteration of scheduling.
+    SCHEDULED = "scheduled"  # Workflow has been scheduled.
+    CANCELLED = "cancelled"
+    CANCELLING = "cancelling"  # invocation scheduler will cancel job in next iteration
+    FAILED = "failed"
+
+
+class EncodedInvocation(BaseModel):
+    id: EncodedDatabaseIdField = EntityIdField
+    create_time: datetime = CreateTimeField
+    update_time: datetime = UpdateTimeField
+    workflow_id: EncodedDatabaseIdField = WorkflowIdField
+    # history_id: EncodedDatabaseIdField = HistoryIdField # TODO - fix HistoryIdField?
+    history_id: EncodedDatabaseIdField = Field(
+        default=Required, title="History ID", description="The encoded ID of the history associated with this item."
+    )
+    # TODO this fails weirdly ... try to understand and fix it
+    # uuid: UUID4 = UuidField
+    uuid: Any = Field(..., title="UUID", description="Universal unique identifier for this dataset.")
+    state: InvocationState = Field(
+        default=Required, title="Invocation state", description="State of workflow invocation."
+    )
+    # TODO - is there a class which classifies these models
+    model_class: str = Field(default=Required, title="Model class", description="Model class name.")
+    # TODO - Add proper models
+    steps: Optional[List[Dict[str, Optional[str]]]] = None
+    inputs: Optional[Dict[str, Dict[str, Optional[str]]]] = None
+    input_step_parameters: Optional[Dict[str, Dict[str, Optional[str]]]] = None
+    outputs: Optional[Dict[str, Dict[str, Optional[str]]]] = None
+    output_collections: Optional[Dict[str, Dict[str, Optional[str]]]] = None
+    output_values: Optional[Dict[str, Optional[str]]] = None
+    # TODO understand where this comes from
+    message: Optional[str] = Field(
+        default=None, title="Message", description="Message associated with this invocation."
     )
 
 
