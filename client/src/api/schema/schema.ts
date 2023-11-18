@@ -381,6 +381,30 @@ export interface paths {
         /** Return raw sequence data */
         get: operations["sequences_api_genomes__id__sequences_get"];
     };
+    "/api/groups": {
+        /**
+         * Displays a collection (list) of groups.
+         * @description GET /api/groups - Displays a collection (list) of groups.
+         */
+        get: operations["index_api_groups_get"];
+        /**
+         * Creates a new group.
+         * @description POST /api/groups - Creates a new group.
+         */
+        post: operations["create_api_groups_post"];
+    };
+    "/api/groups/{encoded_group_id}": {
+        /**
+         * Displays information about a group.
+         * @description GET /api/groups/{encoded_group_id} - Displays information about a group.
+         */
+        get: operations["show_api_groups__encoded_group_id__get"];
+        /**
+         * Modifies a group.
+         * @description PUT /api/groups/{encoded_group_id} - Modifies a group.
+         */
+        put: operations["update_api_groups__encoded_group_id__put"];
+    };
     "/api/groups/{group_id}/roles": {
         /** Displays a collection (list) of groups. */
         get: operations["index_api_groups__group_id__roles_get"];
@@ -4627,6 +4651,61 @@ export interface components {
             tags?: string[];
         };
         /**
+         * GroupCreatePayload
+         * @description Payload schema for creating a group.
+         */
+        GroupCreatePayload: {
+            /**
+             * name of the group
+             * @description name of the group
+             */
+            name: string;
+            /**
+             * role IDs
+             * @description Encoded role IDs
+             * @default []
+             */
+            role_ids?: string[];
+            /**
+             * user IDs
+             * @description Encoded user IDs
+             * @default []
+             */
+            user_ids?: string[];
+        };
+        /**
+         * GroupIndexListResponse
+         * @description Response schema for listing groups.
+         */
+        GroupIndexListResponse: components["schemas"]["GroupIndexResponse"][];
+        /**
+         * GroupIndexResponse
+         * @description Response schema for a group.
+         */
+        GroupIndexResponse: {
+            /**
+             * group ID
+             * @description Encoded group ID
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * model class
+             * @description model class
+             */
+            model_class: string;
+            /**
+             * name of the group
+             * @description name of the group
+             */
+            name: string;
+            /**
+             * URL for the group
+             * @description URL for the group
+             */
+            url: string;
+        };
+        /**
          * GroupModel
          * @description User group model
          */
@@ -4686,6 +4765,42 @@ export interface components {
              * @description The relative URL to access this item.
              */
             url: string;
+        };
+        /**
+         * GroupShowResponse
+         * @description Response schema for showing a group.
+         */
+        GroupShowResponse: {
+            /**
+             * group ID
+             * @description Encoded group ID
+             */
+            id: string;
+            /**
+             * model class
+             * @description model class
+             */
+            model_class: string;
+            /**
+             * name of the group
+             * @description name of the group
+             */
+            name: string;
+            /**
+             * URL for the roles of the group
+             * @description URL for the roles of the group
+             */
+            roles_url: string;
+            /**
+             * URL for the group
+             * @description URL for the group
+             */
+            url: string;
+            /**
+             * URL for the users of the group
+             * @description URL for the users of the group
+             */
+            users_url: string;
         };
         /** GroupUserListResponse */
         GroupUserListResponse: components["schemas"]["GroupUserResponse"][];
@@ -11525,6 +11640,126 @@ export interface operations {
         };
         responses: {
             /** @description Raw sequence data */
+            200: {
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    index_api_groups_get: {
+        /**
+         * Displays a collection (list) of groups.
+         * @description GET /api/groups - Displays a collection (list) of groups.
+         */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["GroupIndexListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_api_groups_post: {
+        /**
+         * Creates a new group.
+         * @description POST /api/groups - Creates a new group.
+         */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GroupCreatePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["GroupIndexListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    show_api_groups__encoded_group_id__get: {
+        /**
+         * Displays information about a group.
+         * @description GET /api/groups/{encoded_group_id} - Displays information about a group.
+         */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                encoded_group_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["GroupShowResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_api_groups__encoded_group_id__put: {
+        /**
+         * Modifies a group.
+         * @description PUT /api/groups/{encoded_group_id} - Modifies a group.
+         */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                encoded_group_id: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["GroupCreatePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
             200: {
                 content: {
                     "application/json": Record<string, never>;
