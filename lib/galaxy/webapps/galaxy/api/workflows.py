@@ -50,7 +50,10 @@ from galaxy.model.base import transaction
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.model.store import BcoExportOptions
 from galaxy.schema.fields import DecodedDatabaseIdField
-from galaxy.schema.invocation import InvocationMessageResponseModel
+from galaxy.schema.invocation import (
+    EncodedInvocation,
+    InvocationMessageResponseModel,
+)
 from galaxy.schema.schema import (
     AsyncFile,
     AsyncTaskResultSummary,
@@ -1545,10 +1548,11 @@ class FastAPIInvocations:
         )
         if not workflow_invocation:
             raise exceptions.ObjectNotFound()
-        return self.invocations_service.serialize_workflow_invocation(
+        serialized_invocation = self.invocations_service.serialize_workflow_invocation(
             workflow_invocation,
             InvocationSerializationParams(step_details=step_details, legacy_job_state=legacy_job_state),
         )
+        return EncodedInvocation(**serialized_invocation)
 
     # TODO: remove this after 23.1 release
     def _deprecated_generate_bco(
