@@ -1199,6 +1199,12 @@ SkipStepCountsQueryParam: bool = Query(
     description="Set this to true to skip joining workflow step counts and optimize the resulting index query. Response objects will not contain step counts.",
 )
 
+StepDetailsQueryParam: bool = Query(
+    title="Include step details", description="Include details for individual invocation steps."
+)
+
+LegacyJobStateQueryParam: bool = Query(title="TODO", description="TODO", deprecated=True)
+
 
 @router.cbv
 class FastAPIWorkflows:
@@ -1512,8 +1518,10 @@ class FastAPIInvocations:
     def show_invocation(
         self,
         invocation_id: Annotated[DecodedDatabaseIdField, InvocationIDPathParam],
-        trans: GalaxyWebTransaction = DependsOnTrans,
-        **kwd,
+        # view: Annotated[Optional[InvocationSerializationView], Query()] = None,
+        step_details: Annotated[bool, StepDetailsQueryParam] = False,
+        legacy_job_state: Annotated[bool, LegacyJobStateQueryParam] = False,
+        trans: ProvidesUserContext = DependsOnTrans,
     ):
         """
         :param  step_details:       fetch details about individual invocation steps
@@ -1538,7 +1546,8 @@ class FastAPIInvocations:
         if not workflow_invocation:
             raise exceptions.ObjectNotFound()
         return self.invocations_service.serialize_workflow_invocation(
-            workflow_invocation, InvocationSerializationParams(**kwd)
+            workflow_invocation,
+            InvocationSerializationParams(step_details=step_details, legacy_job_state=legacy_job_state),
         )
 
     # TODO: remove this after 23.1 release
