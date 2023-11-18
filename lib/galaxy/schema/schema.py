@@ -143,6 +143,10 @@ EntityIdField = Field(
     description="The encoded ID of this entity.",
 )
 
+WorkflowIdField = Field(
+    ..., title="Workflow ID", description="The encoded ID of the workflow that will be run on this step."
+)
+
 DatasetStateField: DatasetState = Field(
     ...,
     title="State",
