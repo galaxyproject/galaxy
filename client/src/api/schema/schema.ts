@@ -6376,17 +6376,17 @@ export interface components {
              * Handler
              * @description Name of the process that handled the job.
              */
-            Handler: string;
+            Handler?: string;
             /**
              * Runner
              * @description Job runner class
              */
-            Runner: string;
+            Runner?: string;
             /**
              * Runner Job ID
              * @description ID assigned to submitted job by external job running system
              */
-            "Runner Job ID": string;
+            "Runner Job ID"?: string;
         };
         /**
          * JobDisplayParametersSummary
