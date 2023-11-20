@@ -1504,6 +1504,10 @@ export interface paths {
          */
         get: operations["version_api_version_get"];
     };
+    "/api/visualizations": {
+        /** Returns visualizations for the current user. */
+        get: operations["index_api_visualizations_get"];
+    };
     "/api/visualizations/{id}/disable_link_access": {
         /**
          * Makes this item inaccessible by a URL link.
@@ -1534,7 +1538,7 @@ export interface paths {
     };
     "/api/visualizations/{id}/sharing": {
         /**
-         * Get the current sharing status of the given Page.
+         * Get the current sharing status of the given Visualization.
          * @description Return the sharing status of the item.
          */
         get: operations["sharing_api_visualizations__id__sharing_get"];
@@ -9446,6 +9450,81 @@ export interface components {
          * @description Base model definition with common configuration used by all derived models.
          */
         Visualization: Record<string, never>;
+        /**
+         * VisualizationSummary
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        VisualizationSummary: {
+            /**
+             * Annotation
+             * @description The annotation of this Visualization.
+             */
+            annotation?: string;
+            /**
+             * Create Time
+             * Format: date-time
+             * @description The time and date this item was created.
+             */
+            create_time?: string;
+            /**
+             * DbKey
+             * @description The database key of the visualization.
+             */
+            dbkey?: string;
+            /**
+             * Deleted
+             * @description Whether this Visualization has been deleted.
+             */
+            deleted: boolean;
+            /**
+             * ID
+             * @description Encoded ID of the Visualization.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Importable
+             * @description Whether this Visualization can be imported.
+             */
+            importable: boolean;
+            /**
+             * Published
+             * @description Whether this Visualization has been published.
+             */
+            published: boolean;
+            /**
+             * Tags
+             * @description A list of tags to add to this item.
+             */
+            tags: components["schemas"]["TagCollection"];
+            /**
+             * Title
+             * @description The name of the visualization.
+             */
+            title: string;
+            /**
+             * Type
+             * @description The type of the visualization.
+             */
+            type: string;
+            /**
+             * Update Time
+             * Format: date-time
+             * @description The last time and date this item was updated.
+             */
+            update_time?: string;
+            /**
+             * Username
+             * @description The name of the user owning this Visualization.
+             */
+            username: string;
+        };
+        /**
+         * VisualizationSummaryList
+         * @description Base model definition with common configuration used by all derived models.
+         * @default []
+         */
+        VisualizationSummaryList: components["schemas"]["VisualizationSummary"][];
         /**
          * WorkflowInvocationStateSummary
          * @description Base model definition with common configuration used by all derived models.
@@ -17858,6 +17937,82 @@ export interface operations {
             };
         };
     };
+    index_api_visualizations_get: {
+        /** Returns visualizations for the current user. */
+        parameters?: {
+            /** @description Whether to include deleted visualizations in the result. */
+            /** @description The maximum number of items to return. */
+            /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
+            /** @description Sort visualization index by this specified attribute on the visualization model */
+            /** @description Sort in descending order? */
+            /**
+             * @description A mix of free text and GitHub-style tags used to filter the index operation.
+             *
+             * ## Query Structure
+             *
+             * GitHub-style filter tags (not be confused with Galaxy tags) are tags of the form
+             * `<tag_name>:<text_no_spaces>` or `<tag_name>:'<text with potential spaces>'`. The tag name
+             * *generally* (but not exclusively) corresponds to the name of an attribute on the model
+             * being indexed (i.e. a column in the database).
+             *
+             * If the tag is quoted, the attribute will be filtered exactly. If the tag is unquoted,
+             * generally a partial match will be used to filter the query (i.e. in terms of the implementation
+             * this means the database operation `ILIKE` will typically be used).
+             *
+             * Once the tagged filters are extracted from the search query, the remaining text is just
+             * used to search various documented attributes of the object.
+             *
+             * ## GitHub-style Tags Available
+             *
+             * `title`
+             * : The visualization's title.
+             *
+             * `slug`
+             * : The visualization's slug. (The tag `s` can be used a short hand alias for this tag to filter on this attribute.)
+             *
+             * `tag`
+             * : The visualization's tags. (The tag `t` can be used a short hand alias for this tag to filter on this attribute.)
+             *
+             * `user`
+             * : The visualization's owner's username. (The tag `u` can be used a short hand alias for this tag to filter on this attribute.)
+             *
+             * ## Free Text
+             *
+             * Free text search terms will be searched against the following attributes of the
+             * Visualizations: `title`, `slug`, `tag`, `type`.
+             */
+            query?: {
+                deleted?: boolean;
+                limit?: number;
+                offset?: number;
+                user_id?: string;
+                show_own?: boolean;
+                show_published?: boolean;
+                show_shared?: boolean;
+                sort_by?: "create_time" | "title" | "update_time" | "username";
+                sort_desc?: boolean;
+                search?: string;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["VisualizationSummaryList"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     disable_link_access_api_visualizations__id__disable_link_access_put: {
         /**
          * Makes this item inaccessible by a URL link.
@@ -17985,7 +18140,7 @@ export interface operations {
     };
     sharing_api_visualizations__id__sharing_get: {
         /**
-         * Get the current sharing status of the given Page.
+         * Get the current sharing status of the given Visualization.
          * @description Return the sharing status of the item.
          */
         parameters: {

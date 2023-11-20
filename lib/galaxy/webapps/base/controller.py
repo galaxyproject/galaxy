@@ -8,10 +8,6 @@ from typing import (
     Optional,
 )
 
-from sqlalchemy import (
-    select,
-    true,
-)
 from webob.exc import (
     HTTPBadRequest,
     HTTPInternalServerError,
@@ -630,48 +626,6 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
             error("Visualization not found")
         else:
             return self.security_check(trans, visualization, check_ownership, check_accessible)
-
-    def get_visualizations_by_user(self, trans, user):
-        """Return query results of visualizations filtered by a user."""
-        stmt = select(model.Visualization).filter(model.Visualization.user == user).order_by(model.Visualization.title)
-        return trans.sa_session.scalars(stmt).all()
-
-    def get_visualizations_shared_with_user(self, trans, user):
-        """Return query results for visualizations shared with the given user."""
-        # The second `where` clause removes duplicates when a user shares with themselves.
-        stmt = (
-            select(model.Visualization)
-            .join(model.VisualizationUserShareAssociation)
-            .where(model.VisualizationUserShareAssociation.user_id == user.id)
-            .where(model.Visualization.user_id != user.id)
-            .order_by(model.Visualization.title)
-        )
-        return trans.sa_session.scalars(stmt).all()
-
-    def get_published_visualizations(self, trans, exclude_user=None):
-        """
-        Return query results for published visualizations optionally excluding the user in `exclude_user`.
-        """
-        stmt = select(model.Visualization).filter(model.Visualization.published == true())
-        if exclude_user:
-            stmt = stmt.filter(model.Visualization.user != exclude_user)
-        stmt = stmt.order_by(model.Visualization.title)
-        return trans.sa_session.scalars(stmt).all()
-
-    # TODO: move into model (to_dict)
-    def get_visualization_summary_dict(self, visualization):
-        """
-        Return a set of summary attributes for a visualization in dictionary form.
-        NOTE: that encoding ids isn't done here should happen at the caller level.
-        """
-        # TODO: deleted
-        # TODO: importable
-        return {
-            "id": visualization.id,
-            "title": visualization.title,
-            "type": visualization.type,
-            "dbkey": visualization.dbkey,
-        }
 
     def get_visualization_dict(self, visualization):
         """

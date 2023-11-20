@@ -64,8 +64,6 @@ class PagesService(ServiceBase):
     ) -> Tuple[PageSummaryList, int]:
         """Return a list of Pages viewable by the user
 
-        :param deleted: Display deleted pages
-
         :rtype:     list
         :returns:   dictionaries containing summary or detailed Page information
         """

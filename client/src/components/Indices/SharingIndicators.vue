@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faGlobe, faLink, faShareAlt } from "@fortawesome/free-solid-svg-icons";
+import { faGlobe, faLink, faShareAlt, faUsers } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BButton, VBTooltip } from "bootstrap-vue";
 
-library.add(faGlobe, faShareAlt, faLink);
+library.add(faGlobe, faShareAlt, faLink, faUsers);
 
 interface SharingIndicatorsProps {
     object: Object;
