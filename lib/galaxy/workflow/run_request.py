@@ -125,8 +125,9 @@ def _normalize_inputs(
         # but asserting 'optional' is definitely a bool and not a String->Bool or something is a good
         # start to ensure tool state is being preserved and loaded in a type safe way.
         assert isinstance(optional, bool)
-        if not inputs_key and default_value is None and not optional:
-            message = f"Workflow cannot be run because an expected input step '{step.id}' ({step.label}) is not optional and no input."
+        has_input_value = inputs_key and inputs[inputs_key] is not None
+        if not has_input_value and default_value is None and not optional:
+            message = f"Workflow cannot be run because input step '{step.id}' ({step.label}) is not optional and no input provided."
             raise exceptions.MessageException(message)
         if inputs_key:
             normalized_inputs[step.id] = inputs[inputs_key]
