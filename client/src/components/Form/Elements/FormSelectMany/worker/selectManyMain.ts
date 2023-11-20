@@ -1,12 +1,12 @@
 import type { UnwrapNestedRefs } from "vue";
 
+import { filterOptions } from "./filterOptions";
 import type { SelectOption, SelectValue, UseSelectManyOptions, UseSelectManyReturn } from "./selectMany";
 
 export function main(options: UnwrapNestedRefs<UseSelectManyOptions>): UnwrapNestedRefs<UseSelectManyReturn> {
     const unselectedOptionsFiltered: SelectOption[] = [];
     const selectedOptionsFiltered: SelectOption[] = [];
 
-    let filteredSelectOptions: SelectOption[];
     let filterRegex: RegExp | undefined;
 
     if (options.asRegex) {
@@ -17,14 +17,13 @@ export function main(options: UnwrapNestedRefs<UseSelectManyOptions>): UnwrapNes
         }
     }
 
-    if (options.asRegex && filterRegex) {
-        filteredSelectOptions = options.optionsArray.filter((option) => option.label.match(filterRegex!));
-    } else if (options.caseSensitive) {
-        filteredSelectOptions = options.optionsArray.filter((option) => option.label.includes(options.filter));
-    } else {
-        const filter = options.filter.toLowerCase();
-        filteredSelectOptions = options.optionsArray.filter((option) => option.label.toLowerCase().includes(filter));
-    }
+    const filteredSelectOptions = filterOptions(
+        options.optionsArray,
+        options.filter,
+        options.asRegex,
+        options.caseSensitive,
+        filterRegex
+    );
 
     const selectedValues = options.selected.map(stringifyObject);
 

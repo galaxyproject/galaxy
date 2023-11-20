@@ -37,7 +37,7 @@ self.addEventListener("message", (e) => {
             options.selected = message.selected;
             break;
 
-        case "setSetting":
+        case "setSettings":
             options.unselectedDisplayCount = message.unselectedDisplayCount;
             options.selectedDisplayCount = message.selectedDisplayCount;
             options.asRegex = message.asRegex;

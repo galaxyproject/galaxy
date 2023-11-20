@@ -7,6 +7,7 @@ import { computed, type PropType, ref } from "vue";
 
 import { useUid } from "@/composables/utils/uid";
 
+import { filterOptions } from "./worker/filterOptions";
 import { useSelectMany } from "./worker/selectMany";
 
 library.add(faLongArrowAltLeft, faLongArrowAltRight);
@@ -48,11 +49,12 @@ const emit = defineEmits<{
 
 const searchValue = ref("");
 const useRegex = ref(false);
+const caseSensitive = ref(false);
 
 const searchRegex = computed(() => {
     if (useRegex.value) {
         try {
-            const regex = new RegExp(searchValue.value);
+            const regex = new RegExp(searchValue.value, caseSensitive.value ? undefined : "i");
             return regex;
         } catch (e) {
             return null;
@@ -74,9 +76,7 @@ const selected = computed({
 const regexInvalid = computed(() => useRegex.value && searchRegex.value === null);
 const asRegex = computed(() => searchRegex.value !== null);
 
-const caseSensitive = ref(false);
-
-const { unselectedOptionsFiltered } = useSelectMany({
+const { unselectedOptionsFiltered, selectedOptionsFiltered } = useSelectMany({
     optionsArray: computed(() => props.options),
     filter: searchValue,
     selected,
@@ -85,6 +85,77 @@ const { unselectedOptionsFiltered } = useSelectMany({
     asRegex,
     caseSensitive,
 });
+
+function selectOption(index: number) {
+    const [option] = unselectedOptionsFiltered.value.splice(index, 1);
+
+    if (option) {
+        selected.value.push(option.value);
+    }
+}
+
+function deselectOption(index: number) {
+    const [option] = selectedOptionsFiltered.value.splice(index, 1);
+
+    if (option) {
+        const i = selected.value.indexOf(option.value);
+        selected.value.splice(i, 1);
+    }
+}
+
+function selectAll() {
+    if (searchValue.value === "") {
+        selected.value = props.options.map((o) => o.value);
+    } else if (highlightedUnselected.value.length > 0) {
+        // todo
+    } else {
+        const filteredValues = filterOptions(
+            props.options,
+            searchValue.value,
+            asRegex.value,
+            caseSensitive.value,
+            searchRegex.value
+        ).map((o) => o.value);
+
+        const selectedSet = new Set([...selected.value, ...filteredValues]);
+        selected.value = Array.from(selectedSet);
+    }
+
+    unselectedOptionsFiltered.value = [];
+}
+
+function deselectAll() {
+    if (searchValue.value === "") {
+        selected.value = [];
+    } else if (highlightedSelected.value.length > 0) {
+        // todo
+    } else {
+        const selectedSet = new Set(selected.value);
+        const filteredValues = filterOptions(
+            props.options,
+            searchValue.value,
+            asRegex.value,
+            caseSensitive.value,
+            searchRegex.value
+        ).map((o) => o.value);
+
+        filteredValues.forEach((v) => selectedSet.delete(v));
+        selected.value = Array.from(selectedSet);
+    }
+
+    selectedOptionsFiltered.value = [];
+}
+
+function optionOnKey(selected: "selected" | "unselected", event: KeyboardEvent, index: number) {
+    if (!["ArrowUp", "ArrowDown"].includes(event.key)) {
+        return;
+    }
+
+    event.preventDefault();
+
+    const nextIndex = event.key === "ArrowUp" ? index - 1 : index + 1;
+    document.getElementById(`select-many-${props.id}-${selected}-${nextIndex}`)?.focus();
+}
 
 const highlightedUnselected = ref([]);
 const highlightedSelected = ref([]);
@@ -144,24 +215,40 @@ const deselectText = computed(() => {
         <div class="options-box border rounded p-2 mt-2">
             <div class="selection-heading border-right px-2">
                 <span>Unselected</span>
-                <BButton class="selection-button" :title="selectText" variant="primary">
+                <BButton class="selection-button" :title="selectText" variant="primary" @click="selectAll">
                     {{ selectText }}
                     <FontAwesomeIcon icon="fa-long-arrow-alt-right" />
                 </BButton>
             </div>
-            <div class="options-list border-right">
-                <div v-for="option in unselectedOptionsFiltered" :key="option.label">
+            <div class="options-list unselected border-right" tabindex="-1" @keydown.up.down.prevent>
+                <button
+                    v-for="(option, i) in unselectedOptionsFiltered"
+                    :id="`select-many-${props.id}-unselected-${i}`"
+                    :key="option.label"
+                    :tabindex="i === 0 ? 0 : -1"
+                    @click="selectOption(i)"
+                    @keyup="(e) => optionOnKey('unselected', e, i)">
                     {{ option.label }}
-                </div>
+                </button>
             </div>
             <div class="selection-heading px-2">
                 <span>Selected</span>
-                <BButton class="selection-button" :title="deselectText" variant="primary">
+                <BButton class="selection-button" :title="deselectText" variant="primary" @click="deselectAll">
                     <FontAwesomeIcon icon="fa-long-arrow-alt-left" />
                     {{ deselectText }}
                 </BButton>
             </div>
-            <div class="options-list"></div>
+            <div class="options-list selected" tabindex="-1" @keydown.up.down.prevent>
+                <button
+                    v-for="(option, i) in selectedOptionsFiltered"
+                    :id="`select-many-${props.id}-selected-${i}`"
+                    :key="option.label"
+                    :tabindex="i === 0 ? 0 : -1"
+                    @click="deselectOption(i)"
+                    @keyup="(e) => optionOnKey('selected', e, i)">
+                    {{ option.label }}
+                </button>
+            </div>
         </div>
     </section>
 </template>
@@ -181,6 +268,7 @@ const deselectText = computed(() => {
     resize: vertical;
     overflow: hidden;
     min-height: 200px;
+    height: 200px;
     display: grid;
     grid-template-columns: 1fr 1fr;
     grid-template-rows: auto 1fr;
@@ -196,6 +284,54 @@ const deselectText = computed(() => {
         .selection-button {
             height: 20px;
             padding: 0 0.5rem;
+        }
+    }
+}
+
+.options-list {
+    overflow: scroll;
+    display: flex;
+    flex-direction: column;
+
+    button {
+        text-align: start;
+        border: none;
+        padding: 0 0.5rem;
+        background: none;
+        transition: none;
+        display: flex;
+        justify-content: space-between;
+
+        &:hover {
+            background-color: $brand-secondary;
+        }
+
+        &:focus-visible {
+            outline-color: $brand-primary;
+            outline-width: 2px;
+            outline-offset: -2px;
+            outline-style: solid;
+            box-shadow: none;
+        }
+
+        &:hover,
+        &:focus {
+            &::after {
+                content: "click to select";
+                color: darken($brand-secondary, 40%);
+                font-weight: bold;
+            }
+        }
+    }
+}
+
+.options-list.selected {
+    button {
+        &:hover,
+        &:focus {
+            &::after {
+                content: "click to deselect";
+            }
         }
     }
 }
