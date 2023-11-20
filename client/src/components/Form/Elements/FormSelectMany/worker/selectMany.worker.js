@@ -44,6 +44,10 @@ self.addEventListener("message", (e) => {
             options.caseSensitive = message.caseSensitive;
             break;
 
+        case "clear":
+            delete optionsById[message.id];
+            return;
+
         default:
             break;
     }

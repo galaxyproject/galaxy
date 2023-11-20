@@ -4,6 +4,7 @@ import { onScopeDispose, ref, watchEffect } from "vue";
 
 let worker;
 let idCounter = 0;
+let workerReferenceCount = 0;
 
 export function useSelectMany({
     optionsArray,
@@ -19,6 +20,8 @@ export function useSelectMany({
         worker = new Worker(new URL("./selectMany.worker.js", import.meta.url));
     }
 
+    workerReferenceCount += 1;
+
     const id = idCounter++;
 
     const unselectedOptionsFiltered = ref([]);
@@ -31,7 +34,14 @@ export function useSelectMany({
     };
 
     onScopeDispose(() => {
-        worker.terminate();
+        workerReferenceCount -= 1;
+
+        if (workerReferenceCount === 0) {
+            worker.terminate();
+            worker = null;
+        } else {
+            post({ type: "clear" });
+        }
     });
 
     watchEffect(() => {
