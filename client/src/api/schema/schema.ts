@@ -382,28 +382,16 @@ export interface paths {
         get: operations["sequences_api_genomes__id__sequences_get"];
     };
     "/api/groups": {
-        /**
-         * Displays a collection (list) of groups.
-         * @description GET /api/groups - Displays a collection (list) of groups.
-         */
+        /** Displays a collection (list) of groups. */
         get: operations["index_api_groups_get"];
-        /**
-         * Creates a new group.
-         * @description POST /api/groups - Creates a new group.
-         */
+        /** Creates a new group. */
         post: operations["create_api_groups_post"];
     };
-    "/api/groups/{encoded_group_id}": {
-        /**
-         * Displays information about a group.
-         * @description GET /api/groups/{encoded_group_id} - Displays information about a group.
-         */
-        get: operations["show_api_groups__encoded_group_id__get"];
-        /**
-         * Modifies a group.
-         * @description PUT /api/groups/{encoded_group_id} - Modifies a group.
-         */
-        put: operations["update_api_groups__encoded_group_id__put"];
+    "/api/groups/{group_id}": {
+        /** Displays information about a group. */
+        get: operations["show_api_groups__group_id__get"];
+        /** Modifies a group. */
+        put: operations["update_api_groups__group_id__put"];
     };
     "/api/groups/{group_id}/roles": {
         /** Displays a collection (list) of groups. */
@@ -4690,10 +4678,12 @@ export interface components {
              */
             id: string;
             /**
-             * model class
-             * @description model class
+             * Model class
+             * @description The name of the database model class.
+             * @default Group
+             * @enum {string}
              */
-            model_class: string;
+            model_class: "Group";
             /**
              * name of the group
              * @description name of the group
@@ -4777,10 +4767,12 @@ export interface components {
              */
             id: string;
             /**
-             * model class
-             * @description model class
+             * Model class
+             * @description The name of the database model class.
+             * @default Group
+             * @enum {string}
              */
-            model_class: string;
+            model_class: "Group";
             /**
              * name of the group
              * @description name of the group
@@ -11654,10 +11646,7 @@ export interface operations {
         };
     };
     index_api_groups_get: {
-        /**
-         * Displays a collection (list) of groups.
-         * @description GET /api/groups - Displays a collection (list) of groups.
-         */
+        /** Displays a collection (list) of groups. */
         parameters?: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
@@ -11680,10 +11669,7 @@ export interface operations {
         };
     };
     create_api_groups_post: {
-        /**
-         * Creates a new group.
-         * @description POST /api/groups - Creates a new group.
-         */
+        /** Creates a new group. */
         parameters?: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
@@ -11710,18 +11696,15 @@ export interface operations {
             };
         };
     };
-    show_api_groups__encoded_group_id__get: {
-        /**
-         * Displays information about a group.
-         * @description GET /api/groups/{encoded_group_id} - Displays information about a group.
-         */
+    show_api_groups__group_id__get: {
+        /** Displays information about a group. */
         parameters: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
                 "run-as"?: string;
             };
             path: {
-                encoded_group_id: string;
+                group_id: string;
             };
         };
         responses: {
@@ -11739,18 +11722,15 @@ export interface operations {
             };
         };
     };
-    update_api_groups__encoded_group_id__put: {
-        /**
-         * Modifies a group.
-         * @description PUT /api/groups/{encoded_group_id} - Modifies a group.
-         */
+    update_api_groups__group_id__put: {
+        /** Modifies a group. */
         parameters: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
                 "run-as"?: string;
             };
             path: {
-                encoded_group_id: string;
+                group_id: string;
             };
         };
         requestBody: {
