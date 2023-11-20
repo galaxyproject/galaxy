@@ -2,8 +2,9 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faLongArrowAltLeft, faLongArrowAltRight } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { refDebounced } from "@vueuse/core";
 import { BButton, BFormInput, BInputGroup } from "bootstrap-vue";
-import { computed, type PropType, ref } from "vue";
+import { computed, nextTick, type PropType, ref } from "vue";
 
 import { useUid } from "@/composables/utils/uid";
 
@@ -20,7 +21,7 @@ interface SelectOption {
 }
 
 const props = defineProps({
-    id: { type: String, default: useUid("form-select-many-").value },
+    id: { type: String, default: () => useUid("form-select-many-").value },
     disabled: {
         type: Boolean,
         default: false,
@@ -76,7 +77,7 @@ const selected = computed({
 const regexInvalid = computed(() => useRegex.value && searchRegex.value === null);
 const asRegex = computed(() => searchRegex.value !== null);
 
-const { unselectedOptionsFiltered, selectedOptionsFiltered } = useSelectMany({
+const { unselectedOptionsFiltered, selectedOptionsFiltered, running } = useSelectMany({
     optionsArray: computed(() => props.options),
     filter: searchValue,
     selected,
@@ -86,20 +87,42 @@ const { unselectedOptionsFiltered, selectedOptionsFiltered } = useSelectMany({
     caseSensitive,
 });
 
-function selectOption(index: number) {
+const workerRunning = refDebounced(running, 1000);
+
+async function selectOption(index: number) {
     const [option] = unselectedOptionsFiltered.value.splice(index, 1);
 
     if (option) {
         selected.value.push(option.value);
     }
+
+    // select the element which now is where the removed element just was
+    // to improve keyboard navigation
+    await nextTick();
+
+    const el = document.getElementById(`${props.id}-unselected-${index}`);
+    if (el) {
+        el.focus();
+    } else {
+        document.getElementById(`${props.id}-unselected-${index - 1}`)?.focus();
+    }
 }
 
-function deselectOption(index: number) {
+async function deselectOption(index: number) {
     const [option] = selectedOptionsFiltered.value.splice(index, 1);
 
     if (option) {
         const i = selected.value.indexOf(option.value);
         selected.value.splice(i, 1);
+    }
+
+    await nextTick();
+
+    const el = document.getElementById(`${props.id}-selected-${index}`);
+    if (el) {
+        el.focus();
+    } else {
+        document.getElementById(`${props.id}-selected-${index - 1}`)?.focus();
     }
 }
 
@@ -154,7 +177,7 @@ function optionOnKey(selected: "selected" | "unselected", event: KeyboardEvent, 
     event.preventDefault();
 
     const nextIndex = event.key === "ArrowUp" ? index - 1 : index + 1;
-    document.getElementById(`select-many-${props.id}-${selected}-${nextIndex}`)?.focus();
+    document.getElementById(`${props.id}-${selected}-${nextIndex}`)?.focus();
 }
 
 const highlightedUnselected = ref([]);
@@ -212,7 +235,7 @@ const deselectText = computed(() => {
             </template>
         </BInputGroup>
 
-        <div class="options-box border rounded p-2 mt-2">
+        <div class="options-box border rounded mt-2">
             <div class="selection-heading border-right px-2">
                 <span>Unselected</span>
                 <BButton class="selection-button" :title="selectText" variant="primary" @click="selectAll">
@@ -223,11 +246,11 @@ const deselectText = computed(() => {
             <div class="options-list unselected border-right" tabindex="-1" @keydown.up.down.prevent>
                 <button
                     v-for="(option, i) in unselectedOptionsFiltered"
-                    :id="`select-many-${props.id}-unselected-${i}`"
+                    :id="`${props.id}-unselected-${i}`"
                     :key="option.label"
                     :tabindex="i === 0 ? 0 : -1"
                     @click="selectOption(i)"
-                    @keyup="(e) => optionOnKey('unselected', e, i)">
+                    @keydown="(e) => optionOnKey('unselected', e, i)">
                     {{ option.label }}
                 </button>
             </div>
@@ -241,14 +264,18 @@ const deselectText = computed(() => {
             <div class="options-list selected" tabindex="-1" @keydown.up.down.prevent>
                 <button
                     v-for="(option, i) in selectedOptionsFiltered"
-                    :id="`select-many-${props.id}-selected-${i}`"
+                    :id="`${props.id}-selected-${i}`"
                     :key="option.label"
                     :tabindex="i === 0 ? 0 : -1"
                     @click="deselectOption(i)"
-                    @keyup="(e) => optionOnKey('selected', e, i)">
+                    @keydown="(e) => optionOnKey('selected', e, i)">
                     {{ option.label }}
                 </button>
             </div>
+        </div>
+        <div class="bottom-row-info">
+            <span> Shift to highlight range. Ctrl to highlight multiple </span>
+            <span v-if="workerRunning"> Processing... </span>
         </div>
     </section>
 </template>
@@ -273,6 +300,7 @@ const deselectText = computed(() => {
     grid-template-columns: 1fr 1fr;
     grid-template-rows: auto 1fr;
     grid-auto-flow: column;
+    padding: 0.5rem;
 
     .selection-heading {
         color: $gray-600;
@@ -302,10 +330,6 @@ const deselectText = computed(() => {
         display: flex;
         justify-content: space-between;
 
-        &:hover {
-            background-color: $brand-secondary;
-        }
-
         &:focus-visible {
             outline-color: $brand-primary;
             outline-width: 2px;
@@ -316,11 +340,17 @@ const deselectText = computed(() => {
 
         &:hover,
         &:focus {
+            background-color: $brand-secondary;
+
             &::after {
                 content: "click to select";
                 color: darken($brand-secondary, 40%);
                 font-weight: bold;
             }
+        }
+
+        &:focus-visible::after {
+            content: "enter to select";
         }
     }
 }
@@ -333,6 +363,20 @@ const deselectText = computed(() => {
                 content: "click to deselect";
             }
         }
+
+        &:focus-visible::after {
+            content: "enter to deselect";
+        }
     }
+}
+
+.bottom-row-info {
+    font-style: italic;
+    color: darken($gray-400, 10%);
+    font-size: 0.75rem;
+    padding: 0 0.25rem;
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
 }
 </style>
