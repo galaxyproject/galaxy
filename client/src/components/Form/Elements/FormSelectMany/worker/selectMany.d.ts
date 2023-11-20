@@ -20,6 +20,8 @@ export interface UseSelectManyOptions {
 export interface UseSelectManyReturn {
     unselectedOptionsFiltered: Ref<SelectOption[]>;
     selectedOptionsFiltered: Ref<SelectOption[]>;
+    moreUnselected: Ref<boolean>;
+    moreSelected: Ref<boolean>;
 }
 
 /**

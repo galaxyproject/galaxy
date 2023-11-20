@@ -77,12 +77,15 @@ const selected = computed({
 const regexInvalid = computed(() => useRegex.value && searchRegex.value === null);
 const asRegex = computed(() => searchRegex.value !== null);
 
-const { unselectedOptionsFiltered, selectedOptionsFiltered, running } = useSelectMany({
+const selectedDisplayCount = ref(500);
+const unselectedDisplayCount = ref(500);
+
+const { unselectedOptionsFiltered, selectedOptionsFiltered, running, moreUnselected, moreSelected } = useSelectMany({
     optionsArray: computed(() => props.options),
     filter: searchValue,
     selected,
-    selectedDisplayCount: ref(1000),
-    unselectedDisplayCount: ref(1000),
+    selectedDisplayCount,
+    unselectedDisplayCount,
     asRegex,
     caseSensitive,
 });
@@ -253,6 +256,11 @@ const deselectText = computed(() => {
                     @keydown="(e) => optionOnKey('unselected', e, i)">
                     {{ option.label }}
                 </button>
+
+                <span v-if="moreUnselected" class="show-more-indicator">
+                    Limited to {{ unselectedDisplayCount }} options.
+                    <button @click="unselectedDisplayCount += 500">Show more</button>
+                </span>
             </div>
             <div class="selection-heading px-2">
                 <span>Selected</span>
@@ -271,6 +279,11 @@ const deselectText = computed(() => {
                     @keydown="(e) => optionOnKey('selected', e, i)">
                     {{ option.label }}
                 </button>
+
+                <span v-if="moreSelected" class="show-more-indicator">
+                    Limited to {{ selectedDisplayCount }} options.
+                    <button @click="selectedDisplayCount += 500">Show more</button>
+                </span>
             </div>
         </div>
         <div class="bottom-row-info">
@@ -351,6 +364,22 @@ const deselectText = computed(() => {
 
         &:focus-visible::after {
             content: "enter to select";
+        }
+    }
+
+    .show-more-indicator {
+        display: flex;
+        font-style: italic;
+        padding-left: 0.5rem;
+        color: darken($gray-400, 20%);
+
+        button::after {
+            content: none;
+        }
+
+        button {
+            color: $brand-info;
+            text-decoration: underline;
         }
     }
 }

@@ -26,6 +26,8 @@ export function useSelectMany({
 
     const unselectedOptionsFiltered = ref([]);
     const selectedOptionsFiltered = ref([]);
+    const moreSelected = ref(false);
+    const moreUnselected = ref(false);
     const running = ref(false);
 
     const post = (message) => {
@@ -76,6 +78,8 @@ export function useSelectMany({
         if (message.type === "result") {
             unselectedOptionsFiltered.value = message.unselectedOptionsFiltered;
             selectedOptionsFiltered.value = message.selectedOptionsFiltered;
+            moreSelected.value = message.moreSelected;
+            moreUnselected.value = message.moreUnselected;
             running.value = false;
         }
     });
@@ -83,6 +87,8 @@ export function useSelectMany({
     return {
         unselectedOptionsFiltered,
         selectedOptionsFiltered,
+        moreSelected,
+        moreUnselected,
         running,
     };
 }

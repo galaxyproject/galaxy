@@ -27,6 +27,9 @@ export function main(options: UnwrapNestedRefs<UseSelectManyOptions>): UnwrapNes
 
     const selectedValues = options.selected.map(stringifyObject);
 
+    let moreUnselected = false;
+    let moreSelected = false;
+
     for (let index = 0; index < filteredSelectOptions.length; index++) {
         const option = filteredSelectOptions[index]!;
 
@@ -34,23 +37,33 @@ export function main(options: UnwrapNestedRefs<UseSelectManyOptions>): UnwrapNes
 
         const isSelected = selectedValues.includes(value);
 
-        if (isSelected && selectedOptionsFiltered.length < options.selectedDisplayCount) {
-            selectedOptionsFiltered.push(option);
-        } else if (unselectedOptionsFiltered.length < options.unselectedDisplayCount) {
-            unselectedOptionsFiltered.push(option);
-        }
-
         if (
             unselectedOptionsFiltered.length > options.unselectedDisplayCount &&
             selectedOptionsFiltered.length > options.selectedDisplayCount
         ) {
             break;
         }
+
+        if (isSelected) {
+            if (selectedOptionsFiltered.length < options.selectedDisplayCount) {
+                selectedOptionsFiltered.push(option);
+            } else {
+                moreSelected = true;
+            }
+        } else {
+            if (unselectedOptionsFiltered.length < options.unselectedDisplayCount) {
+                unselectedOptionsFiltered.push(option);
+            } else {
+                moreUnselected = true;
+            }
+        }
     }
 
     return {
         unselectedOptionsFiltered,
         selectedOptionsFiltered,
+        moreUnselected,
+        moreSelected,
     };
 }
 
