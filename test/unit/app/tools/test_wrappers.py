@@ -312,7 +312,7 @@ class MockDataset:
         self.ext = MOCK_DATASET_EXT
         self.tags = []
 
-    def get_file_name(self):
+    def get_file_name(self, sync_cache=True):
         return MOCK_DATASET_PATH
 
 

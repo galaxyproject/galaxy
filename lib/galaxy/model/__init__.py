@@ -2536,8 +2536,8 @@ class FakeDatasetAssociation:
         self.dataset = dataset
         self.metadata = dict()
 
-    def get_file_name(self):
-        return self.dataset.get_file_name()
+    def get_file_name(self, sync_cache=True):
+        return self.dataset.get_file_name(sync_cache)
 
     def __eq__(self, other):
         return isinstance(other, FakeDatasetAssociation) and self.dataset == other.dataset
@@ -3960,14 +3960,14 @@ class Dataset(Base, StorableObject, Serializable):
         if not self.shareable:
             raise Exception(CANNOT_SHARE_PRIVATE_DATASET_MESSAGE)
 
-    def get_file_name(self):
+    def get_file_name(self, sync_cache=True):
         if self.purged:
             log.warning(f"Attempt to get file name of purged dataset {self.id}")
             return ""
         if not self.external_filename:
             object_store = self._assert_object_store_set()
             if object_store.exists(self):
-                file_name = object_store.get_filename(self)
+                file_name = object_store.get_filename(self, sync_cache=sync_cache)
             else:
                 file_name = ""
             if not file_name and self.state not in (self.states.NEW, self.states.QUEUED):
@@ -4421,10 +4421,10 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
 
     state = property(get_dataset_state, set_dataset_state)
 
-    def get_file_name(self) -> str:
+    def get_file_name(self, sync_cache=True) -> str:
         if self.dataset.purged:
             return ""
-        return self.dataset.get_file_name()
+        return self.dataset.get_file_name(sync_cache=sync_cache)
 
     def set_file_name(self, filename: str):
         return self.dataset.set_file_name(filename)
@@ -9265,7 +9265,7 @@ class MetadataFile(Base, StorableObject, Serializable):
             alt_name=os.path.basename(self.get_file_name()),
         )
 
-    def get_file_name(self):
+    def get_file_name(self, sync_cache=True):
         # Ensure the directory structure and the metadata file object exist
         try:
             da = self.history_dataset or self.library_dataset
@@ -9280,7 +9280,7 @@ class MetadataFile(Base, StorableObject, Serializable):
             if not object_store.exists(self, extra_dir="_metadata_files", extra_dir_at_root=True, alt_name=alt_name):
                 object_store.create(self, extra_dir="_metadata_files", extra_dir_at_root=True, alt_name=alt_name)
             path = object_store.get_filename(
-                self, extra_dir="_metadata_files", extra_dir_at_root=True, alt_name=alt_name
+                self, extra_dir="_metadata_files", extra_dir_at_root=True, alt_name=alt_name, sync_cache=sync_cache
             )
             return path
         except AttributeError:

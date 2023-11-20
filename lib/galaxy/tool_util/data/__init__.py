@@ -891,7 +891,7 @@ class DirectoryAsExtraFiles(HasExtraFiles):
 class OutputDataset(HasExtraFiles, Protocol):
     ext: str
 
-    def get_file_name(self) -> str:
+    def get_file_name(self, sync_cache=True) -> str:
         ...
 
 
