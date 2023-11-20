@@ -4,10 +4,11 @@ import { faLongArrowAltLeft, faLongArrowAltRight } from "@fortawesome/free-solid
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { refDebounced } from "@vueuse/core";
 import { BButton, BFormInput, BInputGroup } from "bootstrap-vue";
-import { computed, nextTick, type PropType, ref } from "vue";
+import { computed, nextTick, type PropType, reactive, ref } from "vue";
 
 import { useUid } from "@/composables/utils/uid";
 
+import { useHighlight } from "./useHighlight";
 import { filterOptions } from "./worker/filterOptions";
 import { useSelectMany } from "./worker/selectMany";
 
@@ -130,10 +131,12 @@ async function deselectOption(index: number) {
 }
 
 function selectAll() {
-    if (searchValue.value === "") {
+    if (highlightUnselected.highlightedIndexes.length > 0) {
+        const highlightedValues = highlightUnselected.highlightedOptions.map((o) => o.value);
+        const selectedSet = new Set([...selected.value, ...highlightedValues]);
+        selected.value = Array.from(selectedSet);
+    } else if (searchValue.value === "") {
         selected.value = props.options.map((o) => o.value);
-    } else if (highlightedUnselected.value.length > 0) {
-        // todo
     } else {
         const filteredValues = filterOptions(
             props.options,
@@ -153,7 +156,7 @@ function selectAll() {
 function deselectAll() {
     if (searchValue.value === "") {
         selected.value = [];
-    } else if (highlightedSelected.value.length > 0) {
+        //} else if (highlightedSelected.value.length > 0) {
         // todo
     } else {
         const selectedSet = new Set(selected.value);
@@ -183,11 +186,10 @@ function optionOnKey(selected: "selected" | "unselected", event: KeyboardEvent, 
     document.getElementById(`${props.id}-${selected}-${nextIndex}`)?.focus();
 }
 
-const highlightedUnselected = ref([]);
-const highlightedSelected = ref([]);
+const highlightUnselected = reactive(useHighlight(unselectedOptionsFiltered));
 
 const selectText = computed(() => {
-    if (highlightedUnselected.value.length > 0) {
+    if (highlightUnselected.highlightedIndexes.length > 0) {
         return "Select highlighted";
     } else if (searchValue.value === "") {
         return "Select all";
@@ -197,9 +199,9 @@ const selectText = computed(() => {
 });
 
 const deselectText = computed(() => {
-    if (highlightedSelected.value.length > 0) {
+    /*if (highlightedSelected.value.length > 0) {
         return "Deselect highlighted";
-    } else if (searchValue.value === "") {
+    } else*/ if (searchValue.value === "") {
         return "Deselect all";
     } else {
         return "Deselect filtered";
@@ -246,13 +248,23 @@ const deselectText = computed(() => {
                     <FontAwesomeIcon icon="fa-long-arrow-alt-right" />
                 </BButton>
             </div>
-            <div class="options-list unselected border-right" tabindex="-1" @keydown.up.down.prevent>
+
+            <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
+            <div
+                class="options-list unselected border-right"
+                tabindex="-1"
+                @keydown.up.down.prevent
+                @keyup.shift="highlightUnselected.abortHighlight()">
                 <button
                     v-for="(option, i) in unselectedOptionsFiltered"
                     :id="`${props.id}-unselected-${i}`"
                     :key="option.label"
                     :tabindex="i === 0 ? 0 : -1"
-                    @click="selectOption(i)"
+                    :class="{ highlighted: highlightUnselected.highlightedIndexes.includes(i) }"
+                    @click.shift.exact="highlightUnselected.onRangeHighlight(i)"
+                    @click.shift.ctrl.exact="highlightUnselected.onRangeRemoveHighlight(i)"
+                    @click.ctrl.exact="highlightUnselected.toggleHighlight(i)"
+                    @click.exact="selectOption(i)"
                     @keydown="(e) => optionOnKey('unselected', e, i)">
                     {{ option.label }}
                 </button>
@@ -342,6 +354,21 @@ const deselectText = computed(() => {
         transition: none;
         display: flex;
         justify-content: space-between;
+
+        &.highlighted {
+            background-color: $brand-info;
+            border-radius: 0;
+            color: $white;
+
+            &:hover,
+            &:focus {
+                background-color: $brand-primary;
+
+                &::after {
+                    color: $white;
+                }
+            }
+        }
 
         &:focus-visible {
             outline-color: $brand-primary;
