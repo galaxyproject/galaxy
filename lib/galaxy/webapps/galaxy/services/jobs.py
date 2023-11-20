@@ -117,8 +117,10 @@ class JobsService(ServiceBase):
                 dataset_instance = self.hda_manager.get_accessible(id=dataset_id, user=trans.user)
             else:
                 dataset_instance = self.hda_manager.ldda_manager.get(trans, id=dataset_id)
-        # TODO Raise error if no ID passed? Never happens when called from Job API endpoints
-        return dataset_instance.creating_job
+            return dataset_instance.creating_job
+        else:
+            # Raise an exception if neither job_id nor dataset_id is provided
+            raise ValueError("Either job_id or dataset_id must be provided.")
 
     def dictify_associations(self, trans, *association_lists) -> List[JobAssociation]:
         rval: List[JobAssociation] = []
