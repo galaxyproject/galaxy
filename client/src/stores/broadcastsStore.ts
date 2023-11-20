@@ -16,7 +16,7 @@ export const useBroadcastsStore = defineStore(
         const dismissedBroadcasts = ref<{ [key: string]: Expirable }>({});
 
         const activeBroadcasts = computed(() => {
-            return broadcasts.value.filter((b) => !dismissedBroadcasts.value[b.id]);
+            return broadcasts.value.filter(isActive);
         });
 
         async function loadBroadcasts() {
@@ -40,6 +40,14 @@ export const useBroadcastsStore = defineStore(
             Vue.set(dismissedBroadcasts.value, broadcast.id, { expiration_time: broadcast.expiration_time });
         }
 
+        function isActive(broadcast: BroadcastNotification) {
+            return (
+                !dismissedBroadcasts.value[broadcast.id] &&
+                !hasExpired(broadcast.expiration_time) &&
+                hasBeenPublished(broadcast)
+            );
+        }
+
         function hasExpired(expirationTimeStr?: string) {
             if (!expirationTimeStr) {
                 return false;
@@ -47,6 +55,12 @@ export const useBroadcastsStore = defineStore(
             const expirationTime = new Date(`${expirationTimeStr}Z`);
             const now = new Date();
             return now > expirationTime;
+        }
+
+        function hasBeenPublished(broadcast: BroadcastNotification) {
+            const publicationTime = new Date(`${broadcast.publication_time}Z`);
+            const now = new Date();
+            return now >= publicationTime;
         }
 
         function clearExpiredDismissedBroadcasts() {
