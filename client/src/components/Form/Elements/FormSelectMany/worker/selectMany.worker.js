@@ -4,7 +4,7 @@ import { main } from "./selectManyMain";
 
 const createOptions = () => ({
     optionsArray: [],
-    filter: [],
+    filter: "",
     selected: [],
     unselectedDisplayCount: 1000,
     selectedDisplayCount: 1000,

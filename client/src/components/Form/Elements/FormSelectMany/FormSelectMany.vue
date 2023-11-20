@@ -73,6 +73,9 @@ const selected = computed({
 
 const regexInvalid = computed(() => useRegex.value && searchRegex.value === null);
 const asRegex = computed(() => searchRegex.value !== null);
+
+const caseSensitive = ref(false);
+
 const { unselectedOptionsFiltered } = useSelectMany({
     optionsArray: computed(() => props.options),
     filter: searchValue,
@@ -80,7 +83,7 @@ const { unselectedOptionsFiltered } = useSelectMany({
     selectedDisplayCount: ref(1000),
     unselectedDisplayCount: ref(1000),
     asRegex,
-    caseSensitive: ref(false),
+    caseSensitive,
 });
 
 const highlightedUnselected = ref([]);
@@ -118,6 +121,16 @@ const deselectText = computed(() => {
 
             <template v-slot:append>
                 <BButton
+                    class="toggle-button"
+                    :variant="caseSensitive ? 'primary' : 'outline-primary'"
+                    role="switch"
+                    :aria-checked="caseSensitive"
+                    title="case sensitive"
+                    @click="caseSensitive = !caseSensitive">
+                    Aa
+                </BButton>
+                <BButton
+                    class="toggle-button"
                     :variant="useRegex ? 'primary' : 'outline-primary'"
                     role="switch"
                     :aria-checked="useRegex"
@@ -155,6 +168,14 @@ const deselectText = computed(() => {
 
 <style scoped lang="scss">
 @import "theme/blue.scss";
+
+.form-select-many {
+    .toggle-button {
+        padding-left: 0;
+        padding-right: 0;
+        width: 2rem;
+    }
+}
 
 .options-box {
     resize: vertical;

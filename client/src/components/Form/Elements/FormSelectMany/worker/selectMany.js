@@ -66,7 +66,7 @@ export function useSelectMany({
         });
     });
 
-    worker.onmessage = (e) => {
+    worker.addEventListener("message", (e) => {
         const message = e.data;
 
         if (message.id !== id) {
@@ -78,7 +78,7 @@ export function useSelectMany({
             selectedOptionsFiltered.value = message.selectedOptionsFiltered;
             running.value = false;
         }
-    };
+    });
 
     return {
         unselectedOptionsFiltered,

@@ -42,8 +42,8 @@ export function main(options: UnwrapNestedRefs<UseSelectManyOptions>): UnwrapNes
         }
 
         if (
-            unselectedOptionsFiltered.length < options.unselectedDisplayCount &&
-            selectedOptionsFiltered.length < options.selectedDisplayCount
+            unselectedOptionsFiltered.length > options.unselectedDisplayCount &&
+            selectedOptionsFiltered.length > options.selectedDisplayCount
         ) {
             break;
         }
