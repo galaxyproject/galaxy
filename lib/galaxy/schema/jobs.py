@@ -187,15 +187,15 @@ class EncodedJobDetails(JobSummary):
 
 
 class JobDestinationParams(Model):
-    runner: str = Field(default=Required, title="Runner", description="Job runner class", alias="Runner")
-    runner_job_id: str = Field(
-        default=Required,
+    runner: Optional[str] = Field(None, title="Runner", description="Job runner class", alias="Runner")
+    runner_job_id: Optional[str] = Field(
+        None,
         title="Runner Job ID",
         description="ID assigned to submitted job by external job running system",
         alias="Runner Job ID",
     )
-    handler: str = Field(
-        default=Required, title="Handler", description="Name of the process that handled the job.", alias="Handler"
+    handler: Optional[str] = Field(
+        None, title="Handler", description="Name of the process that handled the job.", alias="Handler"
     )
 
 
