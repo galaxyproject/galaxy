@@ -12,7 +12,6 @@ from galaxy.exceptions import (
     ObjectAttributeMissingException,
     ObjectNotFound,
 )
-from galaxy.managers.base import decode_id
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.managers.users import get_users_by_ids
 from galaxy.model import (
@@ -21,10 +20,7 @@ from galaxy.model import (
 )
 from galaxy.model.base import transaction
 from galaxy.model.scoped_session import galaxy_scoped_session
-from galaxy.schema.fields import (
-    DecodedDatabaseIdField,
-    EncodedDatabaseIdField,
-)
+from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.groups import GroupCreatePayload
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.web import url_for
@@ -60,10 +56,10 @@ class GroupsManager:
 
         group = model.Group(name=name)
         sa_session.add(group)
-        encoded_user_ids = payload.user_ids
-        users = self._get_users_by_encoded_ids(sa_session, encoded_user_ids)
-        encoded_role_ids = payload.role_ids
-        roles = self._get_roles_by_encoded_ids(sa_session, encoded_role_ids)
+        user_ids = payload.user_ids
+        users = self._get_users_by_ids(sa_session, user_ids)
+        role_ids = payload.role_ids
+        roles = self._get_roles_by_ids(sa_session, role_ids)
         trans.app.security_agent.set_entity_group_associations(groups=[group], roles=roles, users=users)
         with transaction(sa_session):
             sa_session.commit()
@@ -96,10 +92,10 @@ class GroupsManager:
             self._check_duplicated_group_name(sa_session, name)
             group.name = name
             sa_session.add(group)
-        encoded_user_ids = payload.user_ids
-        users = self._get_users_by_encoded_ids(sa_session, encoded_user_ids)
-        encoded_role_ids = payload.role_ids
-        roles = self._get_roles_by_encoded_ids(sa_session, encoded_role_ids)
+        user_ids = payload.user_ids
+        users = self._get_users_by_ids(sa_session, user_ids)
+        role_ids = payload.role_ids
+        roles = self._get_roles_by_ids(sa_session, role_ids)
         self._app.security_agent.set_entity_group_associations(
             groups=[group], roles=roles, users=users, delete_existing_assocs=False
         )
@@ -116,24 +112,16 @@ class GroupsManager:
             raise ObjectNotFound("Group with the provided id was not found.")
         return group
 
-    def _get_users_by_encoded_ids(
-        self, sa_session: galaxy_scoped_session, encoded_user_ids: List[EncodedDatabaseIdField]
+    def _get_users_by_ids(
+        self, sa_session: galaxy_scoped_session, user_ids: List[DecodedDatabaseIdField]
     ) -> List[model.User]:
-        user_ids = self._decode_ids(encoded_user_ids)
         return get_users_by_ids(sa_session, user_ids)
 
-    def _get_roles_by_encoded_ids(
-        self, sa_session: galaxy_scoped_session, encoded_role_ids: List[EncodedDatabaseIdField]
+    def _get_roles_by_ids(
+        self, sa_session: galaxy_scoped_session, role_ids: List[DecodedDatabaseIdField]
     ) -> List[model.Role]:
-        role_ids = self._decode_ids(encoded_role_ids)
         stmt = select(Role).where(Role.id.in_(role_ids))
         return sa_session.scalars(stmt).all()
-
-    def _decode_id(self, encoded_id: EncodedDatabaseIdField) -> int:
-        return decode_id(self._app, encoded_id)
-
-    def _decode_ids(self, encoded_ids: List[EncodedDatabaseIdField]) -> List[int]:
-        return [self._decode_id(encoded_id) for encoded_id in encoded_ids]
 
 
 def get_group_by_name(session: Session, name: str):

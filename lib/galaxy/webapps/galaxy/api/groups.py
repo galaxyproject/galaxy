@@ -40,7 +40,6 @@ class FastAPIGroups:
         self,
         trans: ProvidesAppContext = DependsOnTrans,
     ) -> GroupIndexListResponse:
-        """ """
         return self.manager.index(trans)
 
     @router.post(
@@ -51,9 +50,8 @@ class FastAPIGroups:
     def create(
         self,
         trans: ProvidesAppContext = DependsOnTrans,
-        payload: GroupCreatePayload = Body(),
+        payload: GroupCreatePayload = Body(...),
     ) -> GroupIndexListResponse:
-        """ """
         return self.manager.create(trans, payload)
 
     @router.get(
@@ -64,9 +62,8 @@ class FastAPIGroups:
     def show(
         self,
         trans: ProvidesAppContext = DependsOnTrans,
-        group_id: DecodedDatabaseIdField = Path(),
+        group_id: DecodedDatabaseIdField = Path(...),
     ) -> GroupShowResponse:
-        """ """
         return self.manager.show(trans, group_id)
 
     @router.put(
@@ -77,8 +74,7 @@ class FastAPIGroups:
     def update(
         self,
         trans: ProvidesAppContext = DependsOnTrans,
-        group_id: DecodedDatabaseIdField = Path(),
-        payload: GroupCreatePayload = Body(),
+        group_id: DecodedDatabaseIdField = Path(...),
+        payload: GroupCreatePayload = Body(...),
     ):
-        """ """
         self.manager.update(trans, group_id, payload)

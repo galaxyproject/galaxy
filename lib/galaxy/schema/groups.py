@@ -19,17 +19,14 @@ class GroupIndexResponse(Model):
     id: DecodedDatabaseIdField = Field(
         ...,
         title="group ID",
-        description="Encoded group ID",
     )
     url: str = Field(
         ...,
         title="URL for the group",
-        description="URL for the group",
     )
     name: str = Field(
         ...,
         title="name of the group",
-        description="name of the group",
     )
 
 
@@ -46,27 +43,22 @@ class GroupShowResponse(Model):
     id: str = Field(
         ...,
         title="group ID",
-        description="Encoded group ID",
     )
     url: str = Field(
         ...,
         title="URL for the group",
-        description="URL for the group",
     )
     name: str = Field(
         ...,
         title="name of the group",
-        description="name of the group",
     )
     roles_url: str = Field(
         ...,
         title="URL for the roles of the group",
-        description="URL for the roles of the group",
     )
     users_url: str = Field(
         ...,
         title="URL for the users of the group",
-        description="URL for the users of the group",
     )
 
 
@@ -81,10 +73,8 @@ class GroupCreatePayload(Model):
     user_ids: List[DecodedDatabaseIdField] = Field(
         [],
         title="user IDs",
-        description="Encoded user IDs",
     )
     role_ids: List[DecodedDatabaseIdField] = Field(
         [],
         title="role IDs",
-        description="Encoded role IDs",
     )

@@ -4650,13 +4650,11 @@ export interface components {
             name: string;
             /**
              * role IDs
-             * @description Encoded role IDs
              * @default []
              */
             role_ids?: string[];
             /**
              * user IDs
-             * @description Encoded user IDs
              * @default []
              */
             user_ids?: string[];
@@ -4673,7 +4671,6 @@ export interface components {
         GroupIndexResponse: {
             /**
              * group ID
-             * @description Encoded group ID
              * @example 0123456789ABCDEF
              */
             id: string;
@@ -4684,15 +4681,9 @@ export interface components {
              * @enum {string}
              */
             model_class: "Group";
-            /**
-             * name of the group
-             * @description name of the group
-             */
+            /** name of the group */
             name: string;
-            /**
-             * URL for the group
-             * @description URL for the group
-             */
+            /** URL for the group */
             url: string;
         };
         /**
@@ -4761,10 +4752,7 @@ export interface components {
          * @description Response schema for showing a group.
          */
         GroupShowResponse: {
-            /**
-             * group ID
-             * @description Encoded group ID
-             */
+            /** group ID */
             id: string;
             /**
              * Model class
@@ -4773,25 +4761,13 @@ export interface components {
              * @enum {string}
              */
             model_class: "Group";
-            /**
-             * name of the group
-             * @description name of the group
-             */
+            /** name of the group */
             name: string;
-            /**
-             * URL for the roles of the group
-             * @description URL for the roles of the group
-             */
+            /** URL for the roles of the group */
             roles_url: string;
-            /**
-             * URL for the group
-             * @description URL for the group
-             */
+            /** URL for the group */
             url: string;
-            /**
-             * URL for the users of the group
-             * @description URL for the users of the group
-             */
+            /** URL for the users of the group */
             users_url: string;
         };
         /** GroupUserListResponse */
