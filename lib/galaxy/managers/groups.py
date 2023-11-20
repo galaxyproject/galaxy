@@ -60,9 +60,9 @@ class GroupsManager:
 
         group = model.Group(name=name)
         sa_session.add(group)
-        encoded_user_ids = getattr(payload, "user_ids", [])
+        encoded_user_ids = payload.user_ids
         users = self._get_users_by_encoded_ids(sa_session, encoded_user_ids)
-        encoded_role_ids = getattr(payload, "role_ids", [])
+        encoded_role_ids = payload.role_ids
         roles = self._get_roles_by_encoded_ids(sa_session, encoded_role_ids)
         trans.app.security_agent.set_entity_group_associations(groups=[group], roles=roles, users=users)
         with transaction(sa_session):
@@ -96,9 +96,9 @@ class GroupsManager:
             self._check_duplicated_group_name(sa_session, name)
             group.name = name
             sa_session.add(group)
-        encoded_user_ids = getattr(payload, "user_ids", [])
+        encoded_user_ids = payload.user_ids
         users = self._get_users_by_encoded_ids(sa_session, encoded_user_ids)
-        encoded_role_ids = getattr(payload, "role_ids", [])
+        encoded_role_ids = payload.role_ids
         roles = self._get_roles_by_encoded_ids(sa_session, encoded_role_ids)
         self._app.security_agent.set_entity_group_associations(
             groups=[group], roles=roles, users=users, delete_existing_assocs=False

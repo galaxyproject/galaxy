@@ -1,34 +1,33 @@
 from typing import List
 
-from pydantic import (
-    Field,
-    Required,
-)
+from pydantic import Field
+from typing_extensions import Literal
 
-from galaxy.schema.fields import EncodedDatabaseIdField
+from galaxy.schema.fields import (
+    DecodedDatabaseIdField,
+    ModelClassField,
+)
 from galaxy.schema.schema import Model
+
+GROUP_MODEL_CLASS = Literal["Group"]
 
 
 class GroupIndexResponse(Model):
     """Response schema for a group."""
 
-    model_class: str = Field(
-        Required,
-        title="model class",
-        description="model class",
-    )
-    id: EncodedDatabaseIdField = Field(
-        Required,
+    model_class: GROUP_MODEL_CLASS = ModelClassField(GROUP_MODEL_CLASS)
+    id: DecodedDatabaseIdField = Field(
+        ...,
         title="group ID",
         description="Encoded group ID",
     )
     url: str = Field(
-        Required,
+        ...,
         title="URL for the group",
         description="URL for the group",
     )
     name: str = Field(
-        Required,
+        ...,
         title="name of the group",
         description="name of the group",
     )
@@ -43,33 +42,29 @@ class GroupIndexListResponse(Model):
 class GroupShowResponse(Model):
     """Response schema for showing a group."""
 
-    model_class: str = Field(
-        Required,
-        title="model class",
-        description="model class",
-    )
+    model_class: GROUP_MODEL_CLASS = ModelClassField(GROUP_MODEL_CLASS)
     id: str = Field(
-        Required,
+        ...,
         title="group ID",
         description="Encoded group ID",
     )
     url: str = Field(
-        Required,
+        ...,
         title="URL for the group",
         description="URL for the group",
     )
     name: str = Field(
-        Required,
+        ...,
         title="name of the group",
         description="name of the group",
     )
     roles_url: str = Field(
-        Required,
+        ...,
         title="URL for the roles of the group",
         description="URL for the roles of the group",
     )
     users_url: str = Field(
-        Required,
+        ...,
         title="URL for the users of the group",
         description="URL for the users of the group",
     )
@@ -79,16 +74,16 @@ class GroupCreatePayload(Model):
     """Payload schema for creating a group."""
 
     name: str = Field(
-        Required,
+        ...,
         title="name of the group",
         description="name of the group",
     )
-    user_ids: List[EncodedDatabaseIdField] = Field(
+    user_ids: List[DecodedDatabaseIdField] = Field(
         [],
         title="user IDs",
         description="Encoded user IDs",
     )
-    role_ids: List[EncodedDatabaseIdField] = Field(
+    role_ids: List[DecodedDatabaseIdField] = Field(
         [],
         title="role IDs",
         description="Encoded role IDs",
