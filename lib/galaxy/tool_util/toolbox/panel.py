@@ -63,14 +63,38 @@ class ToolSection(Dictifiable, HasPanelItems):
         self.links = item.get("links") or None
         self.elems = ToolPanelElements()
 
-    def copy(self):
+    def copy(self, merge_tools=False):
         copy = ToolSection()
         copy.name = self.name
         copy.id = self.id
         copy.version = self.version
         copy.description = self.description
         copy.links = self.links
-        copy.elems.update(self.elems)
+
+        for key, panel_type, value in self.panel_items_iter():
+            if panel_type == panel_item_types.TOOL and merge_tools:
+                tool = value
+                tool_lineage = tool.lineage
+
+                tool_copied = False
+                if tool_lineage is not None:
+                    version_ids = tool_lineage.get_version_ids(reverse=True)
+
+                    for version_id in version_ids:
+                        if copy.elems.has_tool_with_id(version_id):
+                            tool_copied = True
+                            break
+
+                        if self.elems.has_tool_with_id(version_id):
+                            copy.elems.append_tool(self.elems.get_tool_with_id(version_id))
+                            tool_copied = True
+                            break
+
+                if not tool_copied:
+                    copy.elems[key] = value
+            else:
+                copy.elems[key] = value
+
         return copy
 
     def to_dict(self, trans, link_details=False, tool_help=False, toolbox=None, only_ids=False):

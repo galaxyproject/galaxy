@@ -34,15 +34,28 @@ class UsesShedApi:
         )
 
     def repository_operation(
-        self, operation: OperationT, owner: str, name: str, changeset: str, tool_shed_url: str = DEFAULT_TOOL_SHED_URL
+        self,
+        operation: OperationT,
+        owner: str,
+        name: str,
+        changeset: str,
+        tool_shed_url: str = DEFAULT_TOOL_SHED_URL,
+        tool_panel_section_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         payload = {"tool_shed_url": tool_shed_url, "name": name, "owner": owner, "changeset_revision": changeset}
+        if tool_panel_section_id:
+            payload["tool_panel_section_id"] = tool_panel_section_id
         create_response = operation(payload)
         assert_status_code_is(create_response, 200)
         return create_response.json()
 
     def install_repository(
-        self, owner: str, name: str, changeset: str, tool_shed_url: str = DEFAULT_TOOL_SHED_URL
+        self,
+        owner: str,
+        name: str,
+        changeset: str,
+        tool_shed_url: str = DEFAULT_TOOL_SHED_URL,
+        tool_panel_section_id: Optional[str] = None,
     ) -> Dict[str, Any]:
         try:
             return self.repository_operation(
@@ -51,6 +64,7 @@ class UsesShedApi:
                 name=name,
                 changeset=changeset,
                 tool_shed_url=tool_shed_url,
+                tool_panel_section_id=tool_panel_section_id,
             )
         except AssertionError as e:
             if "Error attempting to retrieve installation information from tool shed" in unicodify(e):

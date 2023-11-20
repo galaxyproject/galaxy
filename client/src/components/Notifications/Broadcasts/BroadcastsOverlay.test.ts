@@ -11,7 +11,12 @@ import BroadcastsOverlay from "./BroadcastsOverlay.vue";
 const localVue = getLocalVue(true);
 
 const now = new Date();
-const inTwoMonths = new Date(now.setMonth(now.getMonth() + 2));
+const inTwoMonths = new Date(new Date(now).setMonth(now.getMonth() + 2));
+
+/** API date-time does not have timezone indicator and it's always UTC. */
+function toApiDate(date: Date): string {
+    return date.toISOString().replace("Z", "");
+}
 
 let idCounter = 0;
 
@@ -20,10 +25,10 @@ function generateBroadcastNotification(overwrites: Partial<BroadcastNotification
 
     return {
         id: id,
-        create_time: now.toISOString(),
-        update_time: now.toISOString(),
-        publication_time: now.toISOString(),
-        expiration_time: inTwoMonths.toISOString(),
+        create_time: toApiDate(now),
+        update_time: toApiDate(now),
+        publication_time: toApiDate(now),
+        expiration_time: toApiDate(inTwoMonths),
         source: "testing",
         variant: "info",
         content: {
@@ -136,5 +141,24 @@ describe("BroadcastsOverlay.vue", () => {
 
         await leftButton.trigger("click");
         expect(wrapper.find(messageCssSelector).text()).toContain("Test message 2");
+    });
+
+    it("should not render the broadcast when it has expired", async () => {
+        const expiredBroadcast = generateBroadcastNotification({ id: "expired", expiration_time: toApiDate(now) });
+        const wrapper = await mountBroadcastsOverlayWith([expiredBroadcast]);
+
+        expect(wrapper.exists()).toBe(true);
+        expect(wrapper.html()).toBe("");
+    });
+
+    it("should not render the broadcast when it has not been published yet", async () => {
+        const unpublishedBroadcast = generateBroadcastNotification({
+            id: "unpublished",
+            publication_time: toApiDate(inTwoMonths),
+        });
+        const wrapper = await mountBroadcastsOverlayWith([unpublishedBroadcast]);
+
+        expect(wrapper.exists()).toBe(true);
+        expect(wrapper.html()).toBe("");
     });
 });

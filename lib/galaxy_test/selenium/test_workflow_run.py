@@ -277,6 +277,37 @@ steps:
         )
         self.workflow_populator.wait_for_history_workflows(history_id, expected_invocation_count=1)
 
+    @selenium_test
+    @managed_history
+    def test_workflow_run_button_disabled_when_required_input_missing(self):
+        self.workflow_run_open_workflow(
+            """
+class: GalaxyWorkflow
+inputs:
+  text_param:
+    type: text
+    optional: false
+  data_param:
+    type: data
+  collection_param:
+    type: data_collection
+steps: {}
+"""
+        )
+        workflow_run = self.components.workflow_run
+        # None of the required parameters are present
+        workflow_run.run_workflow_disabled.wait_for_present()
+        # upload datasets and collections
+        history_id = self.current_history_id()
+        self.dataset_populator.new_dataset(history_id, wait=True)
+        self.dataset_collection_populator.create_list_in_history(history_id, wait=True)
+        input_element = workflow_run.simplified_input(label="text_param").wait_for_and_click()
+        input_element.send_keys("3")
+        # Everything is set, workflow is runnable, disabled class should be removed
+        workflow_run.run_workflow_disabled.wait_for_absent()
+        input_element.clear()
+        workflow_run.run_workflow_disabled.wait_for_present()
+
     def _assert_has_3_lines_after_run(self, hid):
         self.workflow_run_wait_for_ok(hid=hid)
         history_id = self.current_history_id()

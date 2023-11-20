@@ -225,6 +225,12 @@
   <tool file="multiple_versions_v01.xml" />
   <tool file="multiple_versions_v01galaxy6.xml" />
   <tool file="multiple_versions_v02.xml" />
+  <section id="test_section_multi" name="Test Section with Multiple Versions">
+    <tool file="multiple_versions_v01.xml" />
+    <tool file="multiple_versions_v01galaxy6.xml" />
+    <tool file="multiple_versions_v02.xml" />
+  </section>
+
   <tool file="multiple_versions_changes_v01.xml" />
   <tool file="multiple_versions_changes_v02.xml" />
 
