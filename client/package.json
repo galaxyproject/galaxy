@@ -43,7 +43,7 @@
     "@types/jest": "^29.5.6",
     "@vueuse/core": "^10.5.0",
     "assert": "^2.1.0",
-    "axios": "^1.5.1",
+    "axios": "^1.6.2",
     "babel-runtime": "^6.26.0",
     "backbone": "1.5.0",
     "bootstrap": "4.6",
