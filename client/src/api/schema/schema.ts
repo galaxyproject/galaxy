@@ -914,11 +914,6 @@ export interface paths {
     "/api/jobs": {
         /** Index */
         get: operations["index_api_jobs_get"];
-        /**
-         * Not implemented.
-         * @description See the create method in tools.py in order to submit a job.
-         */
-        post: operations["create_job_api_jobs_post"];
     };
     "/api/jobs/search": {
         /**
@@ -15220,35 +15215,6 @@ export interface operations {
             200: {
                 content: {
                     "application/json": Record<string, never>[];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    create_job_api_jobs_post: {
-        /**
-         * Not implemented.
-         * @description See the create method in tools.py in order to submit a job.
-         */
-        parameters: {
-            query: {
-                kwd: Record<string, never>;
-            };
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string;
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json": Record<string, never>;
                 };
             };
             /** @description Validation Error */

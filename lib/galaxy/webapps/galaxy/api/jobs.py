@@ -20,7 +20,6 @@ from typing import (
 from fastapi import (
     Body,
     Depends,
-    HTTPException,
     Path,
     Query,
 )
@@ -240,19 +239,6 @@ class FastAPIJobs:
             offset=offset,
         )
         return self.service.index(trans, payload)
-
-    @router.post(
-        "/api/jobs",
-        name="create_job",
-        summary="Not implemented.",
-    )
-    def create(
-        self,
-        trans: ProvidesUserContext = DependsOnTrans,
-        **kwd,
-    ):
-        """See the create method in tools.py in order to submit a job."""
-        raise HTTPException(status_code=501, detail="Please POST to /api/tools instead.")
 
     @router.get(
         "/api/jobs/{job_id}/common_problems",
