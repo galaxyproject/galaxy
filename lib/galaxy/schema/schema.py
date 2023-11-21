@@ -257,8 +257,6 @@ FlexibleUserIdType = Union[DecodedDatabaseIdField, Literal["current"]]
 
 
 class Model(BaseModel):
-    """Base model definition with common configuration used by all derived models."""
-
     class Config:
         use_enum_values = True  # when using .dict()
         allow_population_by_field_name = True
