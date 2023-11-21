@@ -1,11 +1,10 @@
 <script setup>
 import Heading from "components/Common/Heading";
-import FormMessage from "components/Form/FormMessage";
 import ToolFooter from "components/Tool/ToolFooter";
 import ToolHelp from "components/Tool/ToolHelp";
 import { getAppRoot } from "onload/loadConfig";
 import { storeToRefs } from "pinia";
-import { computed, ref, watch } from "vue";
+import { computed, ref } from "vue";
 
 import { useUserStore } from "@/stores/userStore";
 
@@ -40,14 +39,6 @@ const props = defineProps({
         type: Object,
         required: true,
     },
-    messageText: {
-        type: String,
-        required: true,
-    },
-    messageVariant: {
-        type: String,
-        default: "info",
-    },
     disabled: {
         type: Boolean,
         default: false,
@@ -62,23 +53,14 @@ const props = defineProps({
     },
 });
 
-const emit = defineEmits(["onChangeVersion", "updatePreferredObjectStoreId"]);
+const emit = defineEmits(["onChangeVersion", "onSetError", "updatePreferredObjectStoreId"]);
 
-function onChangeVersion(v) {
-    emit("onChangeVersion", v);
+function onChangeVersion(newVersion) {
+    emit("onChangeVersion", newVersion);
 }
 
-const errorText = ref(null);
-
-watch(
-    () => props.id,
-    () => {
-        errorText.value = null;
-    }
-);
-
-function onSetError(e) {
-    errorText.value = e;
+function onSetError(errorObj) {
+    emit("onSetError", errorObj);
 }
 
 const { currentUser, isAnonymous } = storeToRefs(useUserStore());
@@ -102,7 +84,7 @@ function onUpdatePreferredObjectStoreId(selectedToolPreferredObjectStoreId) {
 </script>
 
 <template>
-    <div class="position-relative">
+    <div class="position-relative" itemscope="itemscope" itemtype="https://schema.org/CreativeWork">
         <div class="underlay sticky-top" />
         <div class="tool-header sticky-top bg-secondary px-2 py-1 rounded">
             <div class="d-flex justify-content-between">
@@ -125,7 +107,11 @@ function onUpdatePreferredObjectStoreId(selectedToolPreferredObjectStoreId) {
                         <ToolOptionsButton
                             :id="props.id"
                             :sharable-url="props.options.sharable_url"
-                            :options="props.options" />
+                            :options="props.options">
+                            <template v-slot:extra-tool-options-items>
+                                <slot name="extra-tool-options-items" />
+                            </template>
+                        </ToolOptionsButton>
                         <b-button
                             v-if="allowObjectStoreSelection"
                             id="tool-storage"
@@ -160,8 +146,6 @@ function onUpdatePreferredObjectStoreId(selectedToolPreferredObjectStoreId) {
         </div>
 
         <div id="tool-card-body">
-            <FormMessage variant="danger" :message="errorText" :persistent="true" />
-            <FormMessage :variant="props.messageVariant" :message="props.messageText" />
             <slot name="body" />
             <div v-if="props.disabled" class="portlet-backdrop" />
         </div>

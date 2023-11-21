@@ -43,7 +43,7 @@ onUnmounted(() => {
             <ToolPanel />
         </FlexPanel>
         <div id="center" class="overflow-auto p-3 w-100">
-            <CenterFrame v-show="showCenter" id="galaxy_main" @load="onLoad" />
+            <CenterFrame v-show="showCenter" id="galaxy_main" src="/welcome" @load="onLoad" />
             <router-view v-show="!showCenter" :key="$route.fullPath" class="h-100" />
         </div>
         <FlexPanel v-if="showPanels" side="right">

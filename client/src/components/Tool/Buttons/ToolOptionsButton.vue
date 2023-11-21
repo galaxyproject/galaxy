@@ -104,6 +104,8 @@ function onLink() {
             <FontAwesomeIcon icon="fa-external-link-alt" /><span v-localize>See in Tool Shed</span>
         </b-dropdown-item>
 
+        <slot name="extra-tool-options-items" />
+
         <b-dropdown-item v-for="w of webhookDetails" :key="w.title" @click="w.onclick">
             <span :class="w.icon" />{{ l(w.title) }}
         </b-dropdown-item>

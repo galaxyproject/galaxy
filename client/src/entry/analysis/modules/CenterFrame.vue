@@ -6,8 +6,9 @@
         class="center-frame"
         frameborder="0"
         title="galaxy frame"
-        width="100%"
-        height="100%"
+        :width="width"
+        :height="height"
+        sandbox="allow-scripts allow-same-origin allow-forms"
         @load="onLoad" />
 </template>
 <script>
@@ -23,6 +24,14 @@ export default {
             type: String,
             default: "",
         },
+        width: {
+            type: String,
+            default: "100%",
+        },
+        height: {
+            type: String,
+            default: "100%",
+        },
     },
     computed: {
         srcWithRoot() {
@@ -34,7 +43,7 @@ export default {
             const iframe = ev.currentTarget;
             const location = iframe.contentWindow && iframe.contentWindow.location;
             try {
-                if (location && location.host && location.pathname != "/") {
+                if (location && location.pathname !== "/") {
                     this.$emit("load");
                 }
             } catch (err) {

@@ -1,25 +1,11 @@
 <template>
-    <div v-if="currentUser && currentHistoryId">
-        <b-alert :show="messageShow" :variant="messageVariant">
-            {{ messageText }}
-        </b-alert>
-        <LoadingSpan v-if="showLoading" message="Loading Tool" />
+    <div>
         <div v-if="showEntryPoints">
             <ToolEntryPoints v-for="job in entryPoints" :key="job.id" :job-id="job.id" />
         </div>
-        <b-modal v-model="showError" size="sm" :title="errorTitle | l" scrollable ok-only>
-            <b-alert v-if="errorMessage" show variant="danger">
-                {{ errorMessage }}
-            </b-alert>
-            <b-alert show variant="warning">
-                The server could not complete this request. Please verify your parameter settings, retry submission and
-                contact the Galaxy Team if this error persists. A transcript of the submitted data is shown below.
-            </b-alert>
-            <small class="text-muted">
-                <pre>{{ errorContentPretty }}</pre>
-            </small>
-        </b-modal>
+
         <ToolRecommendation v-if="showRecommendation" :tool-id="formConfig.id" />
+
         <ToolCard
             v-if="showForm"
             :id="formConfig.id"
@@ -27,16 +13,14 @@
             :title="formConfig.name"
             :description="formConfig.description"
             :options="formConfig"
-            :message-text="messageText"
-            :message-variant="messageVariant"
             :disabled="disabled || showExecuting"
             :allow-object-store-selection="config.object_store_allows_id_selection"
             :preferred-object-store-id="preferredObjectStoreId"
-            itemscope="itemscope"
-            itemtype="https://schema.org/CreativeWork"
-            @updatePreferredObjectStoreId="onUpdatePreferredObjectStoreId"
-            @onChangeVersion="onChangeVersion">
+            @onChangeVersion="onChangeVersion"
+            @onSetError="onSetError"
+            @updatePreferredObjectStoreId="onUpdatePreferredObjectStoreId">
             <template v-slot:body>
+                <slot name="tool-messages" />
                 <div class="mt-2 mb-4">
                     <Heading h2 separator bold size="sm"> Tool Parameters </Heading>
                     <FormDisplay
@@ -77,6 +61,7 @@
                         type="boolean" />
                 </div>
             </template>
+
             <template v-slot:header-buttons>
                 <ButtonSpinner
                     id="execute"
@@ -86,6 +71,7 @@
                     :tooltip="tooltip"
                     @onClick="onExecute(config, currentHistoryId)" />
             </template>
+
             <template v-slot:buttons>
                 <ButtonSpinner
                     title="Run Tool"
@@ -104,49 +90,47 @@ import ButtonSpinner from "components/Common/ButtonSpinner";
 import Heading from "components/Common/Heading";
 import FormDisplay from "components/Form/FormDisplay";
 import FormElement from "components/Form/FormElement";
-import LoadingSpan from "components/LoadingSpan";
 import ToolEntryPoints from "components/ToolEntryPoints/ToolEntryPoints";
+import { useConfig } from "composables/config";
 import { mapActions, mapState } from "pinia";
 import { useHistoryItemsStore } from "stores/historyItemsStore";
+import { useHistoryStore } from "stores/historyStore";
 import { useJobStore } from "stores/jobStore";
+import { useUserStore } from "stores/userStore";
 import { refreshContentsWrapper } from "utils/data";
 
-import { useConfig } from "@/composables/config";
-import { useHistoryStore } from "@/stores/historyStore";
-import { useUserStore } from "@/stores/userStore";
-
 import ToolRecommendation from "../ToolRecommendation";
-import { getToolFormData, submitJob, updateToolFormData } from "./services";
-import ToolCard from "./ToolCard";
+import { submitJob, updateToolFormData } from "./services";
 import { allowCachedJobs } from "./utilities";
+
+import ToolCard from "./ToolCard.vue";
 
 export default {
     components: {
-        ButtonSpinner,
-        LoadingSpan,
-        FormDisplay,
         ToolCard,
-        FormElement,
-        ToolEntryPoints,
         ToolRecommendation,
+        ToolEntryPoints,
+        ButtonSpinner,
+        FormDisplay,
+        FormElement,
         Heading,
     },
     props: {
-        id: {
-            type: String,
-            default: null,
+        toolConfig: {
+            type: Object,
+            required: true,
         },
-        version: {
-            type: String,
-            default: null,
+        showTool: {
+            type: Boolean,
+            required: true,
         },
-        job_id: {
-            type: String,
-            default: null,
+        disableTool: {
+            type: Boolean,
+            default: false,
         },
-        history_id: {
-            type: String,
-            default: null,
+        loading: {
+            type: Boolean,
+            default: false,
         },
     },
     setup() {
@@ -155,32 +139,19 @@ export default {
     },
     data() {
         return {
-            disabled: false,
-            loading: false,
-            showLoading: true,
-            showForm: false,
+            showForm: this.showTool,
+            disabled: this.disableTool,
             showEntryPoints: false,
             showRecommendation: false,
-            showError: false,
             showExecuting: false,
-            formConfig: {},
+            formConfig: this.toolConfig,
             formData: undefined,
-            remapAllowed: false,
-            errorTitle: null,
-            errorContent: null,
-            errorMessage: "",
-            messageShow: false,
-            messageVariant: "",
-            messageText: "",
             useCachedJobs: false,
             useEmail: false,
             useJobRemapping: false,
             entryPoints: [],
-            jobDef: {},
-            jobResponse: {},
             validationInternal: null,
             validationScrollTo: null,
-            currentVersion: this.version,
             preferredObjectStoreId: null,
         };
     },
@@ -188,6 +159,9 @@ export default {
         ...mapState(useUserStore, ["currentUser"]),
         ...mapState(useHistoryStore, ["currentHistoryId"]),
         ...mapState(useHistoryItemsStore, ["lastUpdateTime"]),
+        remapAllowed() {
+            return this.formConfig.job_remap === true;
+        },
         toolName() {
             return this.formConfig.name;
         },
@@ -199,9 +173,6 @@ export default {
         },
         tooltip() {
             return `Run tool: ${this.formConfig.name} (${this.formConfig.version})`;
-        },
-        errorContentPretty() {
-            return JSON.stringify(this.errorContent, null, 4);
         },
         remapTitle() {
             if (this.remapAllowed === "job_produced_collection_elements") {
@@ -222,15 +193,21 @@ export default {
         },
     },
     watch: {
+        toolConfig(newToolConfig) {
+            this.formConfig = newToolConfig;
+        },
+        showTool(newShowTool) {
+            this.showForm = newShowTool;
+        },
+        disableTool(newDisableTool) {
+            this.disabled = newDisableTool;
+        },
         currentHistoryId() {
             this.onHistoryChange();
         },
         lastUpdateTime() {
             this.onHistoryChange();
         },
-    },
-    created() {
-        this.requestTool();
     },
     methods: {
         ...mapActions(useJobStore, ["saveLatestResponse"]),
@@ -259,7 +236,7 @@ export default {
         onUpdate() {
             this.disabled = true;
             console.debug("ToolForm - Updating input parameters.", this.formData);
-            updateToolFormData(this.formConfig.id, this.currentVersion, this.history_id, this.formData)
+            updateToolFormData(this.formConfig.id, this.formConfig.version, this.history_id, this.formData)
                 .then((data) => {
                     this.formConfig = data;
                 })
@@ -268,34 +245,10 @@ export default {
                 });
         },
         onChangeVersion(newVersion) {
-            this.requestTool(newVersion);
+            this.$emit("onChangeVersion", newVersion);
         },
-        requestTool(newVersion) {
-            this.currentVersion = newVersion || this.currentVersion;
-            this.disabled = true;
-            this.loading = true;
-            console.debug("ToolForm - Requesting tool.", this.id);
-            return getToolFormData(this.id, this.currentVersion, this.job_id, this.history_id)
-                .then((data) => {
-                    this.formConfig = data;
-                    this.remapAllowed = this.job_id && data.job_remap;
-                    this.showForm = true;
-                    this.messageShow = false;
-                    if (newVersion) {
-                        this.messageVariant = "success";
-                        this.messageText = `Now you are using '${data.name}' version ${data.version}, id '${data.id}'.`;
-                    }
-                })
-                .catch((error) => {
-                    this.messageVariant = "danger";
-                    this.messageText = `Loading tool ${this.id} failed: ${error}`;
-                    this.messageShow = true;
-                })
-                .finally(() => {
-                    this.disabled = false;
-                    this.loading = false;
-                    this.showLoading = false;
-                });
+        onSetError(errorObj) {
+            this.$emit("onSetError", errorObj);
         },
         onUpdatePreferredObjectStoreId(preferredObjectStoreId) {
             this.preferredObjectStoreId = preferredObjectStoreId;
@@ -348,10 +301,13 @@ export default {
                         });
                         changeRoute = prevRoute === this.$route.fullPath;
                     } else {
-                        this.showError = true;
                         this.showForm = true;
-                        this.errorTitle = "Job submission rejected.";
-                        this.errorContent = jobResponse;
+                        this.$emit("onSetError", {
+                            dialog: true,
+                            message: "",
+                            title: "Job submission rejected.",
+                            content: jobResponse,
+                        });
                     }
                     if (changeRoute) {
                         this.$router.push(`/jobs/submission/success`);
@@ -363,7 +319,6 @@ export default {
                     }
                 },
                 (e) => {
-                    this.errorMessage = e?.response?.data?.err_msg;
                     this.showExecuting = false;
                     let genericError = true;
                     const errorData = e && e.response && e.response.data && e.response.data.err_data;
@@ -375,9 +330,12 @@ export default {
                         }
                     }
                     if (genericError) {
-                        this.showError = true;
-                        this.errorTitle = "Job submission failed.";
-                        this.errorContent = jobDef;
+                        this.$emit("onSetError", {
+                            dialog: true,
+                            message: e?.response?.data?.err_msg,
+                            title: "Job submission failed.",
+                            content: jobDef,
+                        });
                     }
                 }
             );
