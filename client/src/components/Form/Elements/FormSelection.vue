@@ -115,7 +115,7 @@ watch(
         <div class="d-flex">
             <button v-if="showManyButton" class="ui-link ml-1" @click="useMany = true">switch to column select</button>
             <button v-else-if="showMultiButton" class="ui-link ml-1" @click="useMany = false">
-                switch to tag select
+                switch to simple select
             </button>
 
             <BDropdown toggle-class="inline-icon-button d-block px-1" variant="link" no-caret>
@@ -131,7 +131,7 @@ watch(
                 <BDropdownItemButton
                     :active="preferredFormSelectElement === 'multi'"
                     @click="preferredFormSelectElement = 'multi'">
-                    Default to tag select
+                    Default to simple select
                 </BDropdownItemButton>
                 <BDropdownItemButton
                     :active="preferredFormSelectElement === 'many'"
