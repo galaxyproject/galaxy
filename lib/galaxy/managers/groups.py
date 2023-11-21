@@ -62,7 +62,7 @@ class GroupsManager:
         encoded_id = DecodedDatabaseIdField.encode(group.id)
         item = group.to_dict(view="element", value_mapper={"id": DecodedDatabaseIdField.encode})
         item["url"] = self._url_for(trans, "create", group_id=encoded_id)
-        return item
+        return [item]
 
     def show(self, trans: ProvidesAppContext, group_id: int):
         """

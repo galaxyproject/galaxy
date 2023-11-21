@@ -53,7 +53,7 @@ class FastAPIGroups:
         self,
         trans: ProvidesAppContext = DependsOnTrans,
         payload: GroupCreatePayload = Body(...),
-    ) -> GroupResponse:
+    ) -> GroupListResponse:
         return self.manager.create(trans, payload)
 
     @router.get(
