@@ -178,12 +178,7 @@ export interface paths {
         /**
          * Resolve parameters as a list for nested display.
          * @deprecated
-         * @description Resolve parameters as a list for nested display. More client logic
-         * here than is ideal but it is hard to reason about tool parameter
-         * types on the client relative to the server. Job accessibility checks
-         * are slightly different than dataset checks, so both methods are
-         * available.
-         *
+         * @description Resolve parameters as a list for nested display.
          * This API endpoint is unstable and tied heavily to Galaxy's JS client code,
          * this endpoint will change frequently.
          */
@@ -964,12 +959,7 @@ export interface paths {
     "/api/jobs/{job_id}/parameters_display": {
         /**
          * Resolve parameters as a list for nested display.
-         * @description Resolve parameters as a list for nested display. More client logic
-         * here than is ideal but it is hard to reason about tool parameter
-         * types on the client relative to the server. Job accessibility checks
-         * are slightly different than dataset checks, so both methods are
-         * available.
-         *
+         * @description Resolve parameters as a list for nested display.
          * This API endpoint is unstable and tied heavily to Galaxy's JS client code,
          * this endpoint will change frequently.
          */
@@ -11055,12 +11045,7 @@ export interface operations {
         /**
          * Resolve parameters as a list for nested display.
          * @deprecated
-         * @description Resolve parameters as a list for nested display. More client logic
-         * here than is ideal but it is hard to reason about tool parameter
-         * types on the client relative to the server. Job accessibility checks
-         * are slightly different than dataset checks, so both methods are
-         * available.
-         *
+         * @description Resolve parameters as a list for nested display.
          * This API endpoint is unstable and tied heavily to Galaxy's JS client code,
          * this endpoint will change frequently.
          */
@@ -15533,12 +15518,7 @@ export interface operations {
     resolve_parameters_display_api_jobs__job_id__parameters_display_get: {
         /**
          * Resolve parameters as a list for nested display.
-         * @description Resolve parameters as a list for nested display. More client logic
-         * here than is ideal but it is hard to reason about tool parameter
-         * types on the client relative to the server. Job accessibility checks
-         * are slightly different than dataset checks, so both methods are
-         * available.
-         *
+         * @description Resolve parameters as a list for nested display.
          * This API endpoint is unstable and tied heavily to Galaxy's JS client code,
          * this endpoint will change frequently.
          */

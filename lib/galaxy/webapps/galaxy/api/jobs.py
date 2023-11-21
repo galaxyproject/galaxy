@@ -372,12 +372,7 @@ class FastAPIJobs:
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> JobDisplayParametersSummary:
         """
-        Resolve parameters as a list for nested display. More client logic
-        here than is ideal but it is hard to reason about tool parameter
-        types on the client relative to the server. Job accessibility checks
-        are slightly different than dataset checks, so both methods are
-        available.
-
+        Resolve parameters as a list for nested display.
         This API endpoint is unstable and tied heavily to Galaxy's JS client code,
         this endpoint will change frequently.
         """
@@ -398,12 +393,7 @@ class FastAPIJobs:
         trans: ProvidesUserContext = DependsOnTrans,
     ) -> JobDisplayParametersSummary:
         """
-        Resolve parameters as a list for nested display. More client logic
-        here than is ideal but it is hard to reason about tool parameter
-        types on the client relative to the server. Job accessibility checks
-        are slightly different than dataset checks, so both methods are
-        available.
-
+        Resolve parameters as a list for nested display.
         This API endpoint is unstable and tied heavily to Galaxy's JS client code,
         this endpoint will change frequently.
         """

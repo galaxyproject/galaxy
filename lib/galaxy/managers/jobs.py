@@ -880,6 +880,8 @@ def summarize_job_parameters(trans, job):
     Precondition: the caller has verified the job is accessible to the user
     represented by the trans parameter.
     """
+    # More client logic here than is ideal but it is hard to reason about
+    # tool parameter types on the client relative to the server.
 
     def inputs_recursive(input_params, param_values, depth=1, upgrade_messages=None):
         if upgrade_messages is None:
