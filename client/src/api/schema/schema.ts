@@ -4643,10 +4643,7 @@ export interface components {
          * @description Payload schema for creating a group.
          */
         GroupCreatePayload: {
-            /**
-             * name of the group
-             * @description name of the group
-             */
+            /** name of the group */
             name: string;
             /**
              * role IDs
@@ -4660,32 +4657,10 @@ export interface components {
             user_ids?: string[];
         };
         /**
-         * GroupIndexListResponse
+         * GroupListResponse
          * @description Response schema for listing groups.
          */
-        GroupIndexListResponse: components["schemas"]["GroupIndexResponse"][];
-        /**
-         * GroupIndexResponse
-         * @description Response schema for a group.
-         */
-        GroupIndexResponse: {
-            /**
-             * group ID
-             * @example 0123456789ABCDEF
-             */
-            id: string;
-            /**
-             * Model class
-             * @description The name of the database model class.
-             * @default Group
-             * @enum {string}
-             */
-            model_class: "Group";
-            /** name of the group */
-            name: string;
-            /** URL for the group */
-            url: string;
-        };
+        GroupListResponse: components["schemas"]["GroupResponse"][];
         /**
          * GroupModel
          * @description User group model
@@ -4725,6 +4700,32 @@ export interface components {
              */
             model_class: "GroupQuotaAssociation";
         };
+        /**
+         * GroupResponse
+         * @description Response schema for a group.
+         */
+        GroupResponse: {
+            /**
+             * group ID
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Model class
+             * @description The name of the database model class.
+             * @default Group
+             * @enum {string}
+             */
+            model_class: "Group";
+            /** name of the group */
+            name: string;
+            /** URL for the roles of the group */
+            roles_url?: string[];
+            /** URL for the group */
+            url: string;
+            /** URL for the users of the group */
+            users_url?: string[];
+        };
         /** GroupRoleListResponse */
         GroupRoleListResponse: components["schemas"]["GroupRoleResponse"][];
         /** GroupRoleResponse */
@@ -4746,29 +4747,6 @@ export interface components {
              * @description The relative URL to access this item.
              */
             url: string;
-        };
-        /**
-         * GroupShowResponse
-         * @description Response schema for showing a group.
-         */
-        GroupShowResponse: {
-            /** group ID */
-            id: string;
-            /**
-             * Model class
-             * @description The name of the database model class.
-             * @default Group
-             * @enum {string}
-             */
-            model_class: "Group";
-            /** name of the group */
-            name: string;
-            /** URL for the roles of the group */
-            roles_url: string;
-            /** URL for the group */
-            url: string;
-            /** URL for the users of the group */
-            users_url: string;
         };
         /** GroupUserListResponse */
         GroupUserListResponse: components["schemas"]["GroupUserResponse"][];
@@ -11633,7 +11611,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["GroupIndexListResponse"];
+                    "application/json": components["schemas"]["GroupListResponse"];
                 };
             };
             /** @description Validation Error */
@@ -11661,7 +11639,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["GroupIndexListResponse"];
+                    "application/json": components["schemas"]["GroupResponse"];
                 };
             };
             /** @description Validation Error */
@@ -11687,7 +11665,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["GroupShowResponse"];
+                    "application/json": components["schemas"]["GroupResponse"];
                 };
             };
             /** @description Validation Error */
@@ -11718,7 +11696,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["GroupResponse"];
                 };
             };
             /** @description Validation Error */

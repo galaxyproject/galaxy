@@ -13,17 +13,14 @@ from galaxy.exceptions import (
     ObjectNotFound,
 )
 from galaxy.managers.context import ProvidesAppContext
+from galaxy.managers.roles import get_roles_by_ids
 from galaxy.managers.users import get_users_by_ids
-from galaxy.model import (
-    Group,
-    Role,
-)
+from galaxy.model import Group
 from galaxy.model.base import transaction
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.groups import GroupCreatePayload
 from galaxy.structured_app import MinimalManagerApp
-from galaxy.web import url_for
 
 
 class GroupsManager:
@@ -40,7 +37,7 @@ class GroupsManager:
         for group in get_not_deleted_groups(trans.sa_session):
             item = group.to_dict(value_mapper={"id": DecodedDatabaseIdField.encode})
             encoded_id = DecodedDatabaseIdField.encode(group.id)
-            item["url"] = url_for("group", id=encoded_id)
+            item["url"] = self._url_for(trans, "index", group_id=encoded_id)
             rval.append(item)
         return rval
 
@@ -57,17 +54,17 @@ class GroupsManager:
         group = model.Group(name=name)
         sa_session.add(group)
         user_ids = payload.user_ids
-        users = self._get_users_by_ids(sa_session, user_ids)
+        users = get_users_by_ids(sa_session, user_ids)
         role_ids = payload.role_ids
-        roles = self._get_roles_by_ids(sa_session, role_ids)
+        roles = get_roles_by_ids(sa_session, role_ids)
         trans.app.security_agent.set_entity_group_associations(groups=[group], roles=roles, users=users)
         with transaction(sa_session):
             sa_session.commit()
 
         encoded_id = DecodedDatabaseIdField.encode(group.id)
         item = group.to_dict(view="element", value_mapper={"id": DecodedDatabaseIdField.encode})
-        item["url"] = url_for("group", id=encoded_id)
-        return [item]
+        item["url"] = self._url_for(trans, "create", group_id=encoded_id)
+        return item
 
     def show(self, trans: ProvidesAppContext, group_id: int):
         """
@@ -76,9 +73,17 @@ class GroupsManager:
         encoded_id = DecodedDatabaseIdField.encode(group_id)
         group = self._get_group(trans.sa_session, group_id)
         item = group.to_dict(view="element", value_mapper={"id": DecodedDatabaseIdField.encode})
-        item["url"] = url_for("group", id=encoded_id)
-        item["users_url"] = url_for("group_users", group_id=encoded_id)
-        item["roles_url"] = url_for("group_roles", group_id=encoded_id)
+        item["url"] = self._url_for(trans, "show", group_id=encoded_id)
+        encoded_user_id = [DecodedDatabaseIdField.encode(gu.user.id) for gu in group.users]
+        encoded_role_id = [DecodedDatabaseIdField.encode(gr.role.id) for gr in group.roles]
+        item["users_url"] = [
+            self._url_for(trans, "group_user", group_id=encoded_id, user_id=group_user)
+            for group_user in encoded_user_id
+        ]
+        item["roles_url"] = [
+            self._url_for(trans, "group_role", group_id=encoded_id, role_id=group_role)
+            for group_role in encoded_role_id
+        ]
         return item
 
     def update(self, trans: ProvidesAppContext, group_id: int, payload: GroupCreatePayload):
@@ -93,14 +98,22 @@ class GroupsManager:
             group.name = name
             sa_session.add(group)
         user_ids = payload.user_ids
-        users = self._get_users_by_ids(sa_session, user_ids)
+        users = get_users_by_ids(sa_session, user_ids)
         role_ids = payload.role_ids
-        roles = self._get_roles_by_ids(sa_session, role_ids)
+        roles = get_roles_by_ids(sa_session, role_ids)
         self._app.security_agent.set_entity_group_associations(
             groups=[group], roles=roles, users=users, delete_existing_assocs=False
         )
         with transaction(sa_session):
             sa_session.commit()
+
+        encoded_id = DecodedDatabaseIdField.encode(group.id)
+        item = group.to_dict(view="element", value_mapper={"id": DecodedDatabaseIdField.encode})
+        item["url"] = self._url_for(trans, "update", group_id=encoded_id)
+        return item
+
+    def _url_for(self, trans, name, **kwargs):
+        return trans.url_builder(name, **kwargs)
 
     def _check_duplicated_group_name(self, sa_session: galaxy_scoped_session, group_name: str) -> None:
         if get_group_by_name(sa_session, group_name):
@@ -111,17 +124,6 @@ class GroupsManager:
         if group is None:
             raise ObjectNotFound("Group with the provided id was not found.")
         return group
-
-    def _get_users_by_ids(
-        self, sa_session: galaxy_scoped_session, user_ids: List[DecodedDatabaseIdField]
-    ) -> List[model.User]:
-        return get_users_by_ids(sa_session, user_ids)
-
-    def _get_roles_by_ids(
-        self, sa_session: galaxy_scoped_session, role_ids: List[DecodedDatabaseIdField]
-    ) -> List[model.Role]:
-        stmt = select(Role).where(Role.id.in_(role_ids))
-        return sa_session.scalars(stmt).all()
 
 
 def get_group_by_name(session: Session, name: str):

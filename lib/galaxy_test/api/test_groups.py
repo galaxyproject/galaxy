@@ -15,7 +15,7 @@ class TestGroupsApi(ApiTestCase):
         payload = self._build_valid_group_payload(group_name)
         response = self._post("groups", payload, admin=True, json=True)
         self._assert_status_code_is(response, 200)
-        group = response.json()[0]  # POST /api/groups returns a list
+        group = response.json()
         self._assert_valid_group(group)
         return group
 
