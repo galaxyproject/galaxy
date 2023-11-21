@@ -7,11 +7,9 @@ import type { Ref } from "vue";
  * @param array array of objects to filter
  * @param filter string to filter by
  * @param objectFields string array of fields to filter by on each object
- * @param asRegex when true, treats the filter as an regex. defaults to false
  */
 export declare function useFilterObjectArray<O extends object, K extends keyof O>(
     array: MaybeRefOrGetter<Array<O>>,
     filter: MaybeRefOrGetter<string>,
-    objectFields: MaybeRefOrGetter<Array<K>>,
-    asRegex: MaybeRefOrGetter<boolean> = false
+    objectFields: MaybeRefOrGetter<Array<K>>
 ): Ref<O[]>;

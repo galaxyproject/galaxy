@@ -41,16 +41,6 @@ export function useFilterObjectArray(array, filter, objectFields, asRegex = fals
         }
     );
 
-    watch(
-        () => toValue(asRegex),
-        (r) => {
-            post({ type: "setAsRegex", asRegex: r });
-        },
-        {
-            immediate: true,
-        }
-    );
-
     worker.onmessage = (e) => {
         const message = e.data;
 
