@@ -19,11 +19,9 @@ from starlette_context.middleware import RawContextMiddleware
 from starlette_context.plugins import RequestIdPlugin
 
 from galaxy.exceptions import MessageException
+from galaxy.exceptions.utils import api_error_to_dict
 from galaxy.web.framework.base import walk_controller_modules
-from galaxy.web.framework.decorators import (
-    api_error_message,
-    validation_error_to_message_exception,
-)
+from galaxy.web.framework.decorators import validation_error_to_message_exception
 
 if typing.TYPE_CHECKING:
     from starlette.background import BackgroundTask
@@ -159,7 +157,7 @@ def add_sentry_middleware(app: FastAPI) -> None:
 
 
 def get_error_response_for_request(request: Request, exc: MessageException) -> JSONResponse:
-    error_dict = api_error_message(None, exception=exc)
+    error_dict = api_error_to_dict(None, exception=exc)
     status_code = exc.status_code
     if "ga4gh" in (path := request.url.path):
         # When serving GA4GH APIs use limited exceptions to conform their expected
