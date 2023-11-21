@@ -14,7 +14,6 @@ from babel import default_locale
 from babel.dates import format_timedelta
 from routes import url_for
 
-from galaxy.util import unicodify
 from galaxy.util.json import safe_dumps as dumps  # noqa: F401
 from .tags import (
     javascript_link,
@@ -96,15 +95,6 @@ def dist_js(*args):
     string of script tags.
     """
     return js_helper("static/dist/", *args)
-
-
-# Unicode help
-def to_unicode(a_string):
-    """
-    Convert a string to unicode in utf-8 format; if string is already unicode,
-    does nothing because string's encoding cannot be determined by introspection.
-    """
-    return unicodify(a_string, "utf-8")
 
 
 def is_true(val):

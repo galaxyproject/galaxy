@@ -94,7 +94,7 @@
                     %>
                     <div class="form-row">
                         <input type="checkbox" name="source_content_ids" id="${input_id}" value="${input_id}"${checked}/>
-                        <label for="${input_id}" style="display: inline;font-weight:normal;"> ${data.hid}: ${h.to_unicode(data.name) | h}</label>
+                        <label for="${input_id}" style="display: inline;font-weight:normal;"> ${data.hid}: ${util.unicodify(data.name) | h}</label>
                     </div>
                 %endfor
                 %if not has_source_contents:
