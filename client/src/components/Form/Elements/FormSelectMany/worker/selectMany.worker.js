@@ -2,15 +2,17 @@ import { main } from "./selectManyMain";
 
 // glue code to run `main` in a thread
 
-const createOptions = () => ({
-    optionsArray: [],
-    filter: "",
-    selected: [],
-    unselectedDisplayCount: 1000,
-    selectedDisplayCount: 1000,
-    asRegex: false,
-    caseSensitive: false,
-});
+const createOptions = () => {
+    return {
+        optionsArray: [],
+        filter: "",
+        selected: [],
+        unselectedDisplayCount: 1000,
+        selectedDisplayCount: 1000,
+        asRegex: false,
+        caseSensitive: false,
+    };
+};
 
 const optionsById = {};
 const timerById = {};
