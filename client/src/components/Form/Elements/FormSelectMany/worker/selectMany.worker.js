@@ -14,17 +14,17 @@ const createOptions = () => {
     };
 };
 
-const optionsById = {};
+const optionsById = new Map();
 const timerById = {};
 
 self.addEventListener("message", (e) => {
     const message = e.data;
 
-    if (!(message.id in optionsById)) {
-        optionsById[message.id] = createOptions();
+    if (optionsById.has(message.id)) {
+        optionsById.set(message.id, createOptions());
     }
 
-    const options = optionsById[message.id];
+    const options = optionsById.get(message.id);
 
     switch (message.type) {
         case "setArray":
@@ -47,7 +47,7 @@ self.addEventListener("message", (e) => {
             break;
 
         case "clear":
-            delete optionsById[message.id];
+            optionsById.delete(message.id);
             return;
 
         default:
