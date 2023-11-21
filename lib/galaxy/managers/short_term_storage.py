@@ -24,13 +24,13 @@ from galaxy.exceptions import (
     ObjectNotFound,
 )
 from galaxy.exceptions.error_codes import error_codes_by_int_code
+from galaxy.exceptions.utils import api_error_to_dict
 from galaxy.schema.schema import OptionalNumberT
 from galaxy.util import (
     directory_hash_id,
     is_uuid,
     safe_makedirs,
 )
-from galaxy.web.framework.decorators import api_error_message
 
 now = datetime.utcnow
 DEFAULT_STORAGE_DURATION = 24 * 60 * 60  # store for a day by default
@@ -220,7 +220,7 @@ class ShortTermStorageManager(ShortTermStorageAllocator, ShortTermStorageMonitor
         if exception:
             exception_json = {
                 "status_code": exception.status_code,
-                "exception": api_error_message(None, exception=exception),
+                "exception": api_error_to_dict(None, exception=exception),
             }
         else:
             exception_json = {"status_code": 204, "exception": None}  # NO CONTENT
