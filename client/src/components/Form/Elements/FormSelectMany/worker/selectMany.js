@@ -12,7 +12,6 @@ export function useSelectMany({
     selected,
     unselectedDisplayCount,
     selectedDisplayCount,
-    asRegex,
     caseSensitive,
 }) {
     // only start a single worker
@@ -63,7 +62,6 @@ export function useSelectMany({
             type: "setSettings",
             unselectedDisplayCount: unselectedDisplayCount.value,
             selectedDisplayCount: selectedDisplayCount.value,
-            asRegex: asRegex.value,
             caseSensitive: caseSensitive.value,
         });
     });

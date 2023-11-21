@@ -9,11 +9,10 @@ export interface SelectOption {
 
 export interface UseSelectManyOptions {
     optionsArray: Ref<SelectOption[]>;
-    filter: Ref<string>;
+    filter: Ref<string | RegExp>;
     selected: Ref<SelectValue[]>;
     unselectedDisplayCount: Ref<number>;
     selectedDisplayCount: Ref<number>;
-    asRegex: Ref<boolean>;
     caseSensitive: Ref<boolean>;
 }
 

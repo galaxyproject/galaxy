@@ -73,21 +73,20 @@ const selected = computed({
 });
 
 const regexInvalid = computed(() => useRegex.value && searchRegex.value === null);
-/** Tells the worker thread if the search value should be treated as a regex */
-const asRegex = computed(() => searchRegex.value !== null);
 
 // Limits amount of displayed options
 const selectedDisplayCount = ref(1000);
 const unselectedDisplayCount = ref(1000);
 
+const filter = computed(() => searchRegex.value ?? searchValue.value);
+
 // binding to worker thread
 const { unselectedOptionsFiltered, selectedOptionsFiltered, running, moreUnselected, moreSelected } = useSelectMany({
     optionsArray: computed(() => props.options),
-    filter: searchValue,
+    filter,
     selected,
     selectedDisplayCount,
     unselectedDisplayCount,
-    asRegex,
     caseSensitive,
 });
 
@@ -166,13 +165,7 @@ function selectAll() {
 
         unselectedOptionsFiltered.value = [];
     } else {
-        const filteredValues = filterOptions(
-            props.options,
-            searchValue.value,
-            asRegex.value,
-            caseSensitive.value,
-            searchRegex.value
-        ).map((o) => o.value);
+        const filteredValues = filterOptions(props.options, filter.value, caseSensitive.value).map((o) => o.value);
 
         const selectedSet = new Set([...selected.value, ...filteredValues]);
         selected.value = Array.from(selectedSet);
@@ -195,13 +188,7 @@ function deselectAll() {
         selectedOptionsFiltered.value = [];
     } else {
         const selectedSet = new Set(selected.value);
-        const filteredValues = filterOptions(
-            props.options,
-            searchValue.value,
-            asRegex.value,
-            caseSensitive.value,
-            searchRegex.value
-        ).map((o) => o.value);
+        const filteredValues = filterOptions(props.options, filter.value, caseSensitive.value).map((o) => o.value);
 
         filteredValues.forEach((v) => selectedSet.delete(v));
         selected.value = Array.from(selectedSet);

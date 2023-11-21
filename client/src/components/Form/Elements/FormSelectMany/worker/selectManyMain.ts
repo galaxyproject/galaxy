@@ -7,23 +7,7 @@ export function main(options: UnwrapNestedRefs<UseSelectManyOptions>): UnwrapNes
     const unselectedOptionsFiltered: SelectOption[] = [];
     const selectedOptionsFiltered: SelectOption[] = [];
 
-    let filterRegex: RegExp | undefined;
-
-    if (options.asRegex) {
-        try {
-            filterRegex = new RegExp(options.filter, options.caseSensitive ? undefined : "i");
-        } catch (e) {
-            // ignore
-        }
-    }
-
-    const filteredSelectOptions = filterOptions(
-        options.optionsArray,
-        options.filter,
-        options.asRegex,
-        options.caseSensitive,
-        filterRegex
-    );
+    const filteredSelectOptions = filterOptions(options.optionsArray, options.filter, options.caseSensitive);
 
     const selectedValues = options.selected.map(stringifyObject);
 

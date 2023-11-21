@@ -9,7 +9,6 @@ const createOptions = () => {
         selected: [],
         unselectedDisplayCount: 1000,
         selectedDisplayCount: 1000,
-        asRegex: false,
         caseSensitive: false,
     };
 };
@@ -20,7 +19,7 @@ const timerById = {};
 self.addEventListener("message", (e) => {
     const message = e.data;
 
-    if (optionsById.has(message.id)) {
+    if (!optionsById.has(message.id)) {
         optionsById.set(message.id, createOptions());
     }
 
@@ -42,7 +41,6 @@ self.addEventListener("message", (e) => {
         case "setSettings":
             options.unselectedDisplayCount = message.unselectedDisplayCount;
             options.selectedDisplayCount = message.selectedDisplayCount;
-            options.asRegex = message.asRegex;
             options.caseSensitive = message.caseSensitive;
             break;
 
