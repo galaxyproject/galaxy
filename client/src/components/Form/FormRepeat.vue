@@ -6,6 +6,7 @@ import { defineAsyncComponent, nextTick, type PropType } from "vue";
 import { computed } from "vue";
 
 import { useKeyedObjects } from "@/composables/keyedObjects";
+import localize from "@/utils/localization";
 
 import FormCard from "./FormCard.vue";
 
@@ -31,14 +32,14 @@ const minRepeats = computed(() => {
 
 const buttonTooltip = computed(() => {
     return maxRepeats.value
-        ? `Maximum number of ${props.input.title || "Repeat"} fields reached`
-        : `Click to add ${props.input.title || "Repeat"} fields`;
+        ? localize(`Maximum number of ${props.input.title || "Repeat"} fields reached`)
+        : localize(`Click to add ${props.input.title || "Repeat"} fields`);
 });
 
 const deleteTooltip = computed(() => {
     return !minRepeats.value
-        ? `Minimum number of ${props.input.title || "Repeat"} not reached`
-        : `Click to delete ${props.input.title || "Repeat"} fields`;
+        ? localize(`Minimum number of ${props.input.title || "Repeat"} not reached`)
+        : localize(`Click to delete ${props.input.title || "Repeat"} fields`);
 });
 
 const props = defineProps({
