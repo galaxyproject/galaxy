@@ -158,14 +158,6 @@ async function deselectOption(event: MouseEvent, index: number) {
     }
 }
 
-function onOptionListKeyup(selected: "selected" | "unselected", event: KeyboardEvent) {
-    // reset highlight range mode when shift is released
-    if (event.key === "Shift") {
-        const highlightHandler = selected === "selected" ? highlightSelected : highlightUnselected;
-        highlightHandler.abortHighlight();
-    }
-}
-
 function selectAll() {
     if (highlightUnselected.highlightedIndexes.length > 0) {
         const highlightedValues = highlightUnselected.highlightedOptions.map((o) => o.value);
@@ -306,12 +298,11 @@ const deselectText = computed(() => {
                 </BButton>
             </div>
 
-            <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
             <div
                 class="options-list unselected border-right"
                 tabindex="-1"
                 @keydown.up.down.prevent
-                @keyup="(e) => onOptionListKeyup('unselected', e)">
+                @blur="highlightUnselected.abortHighlight">
                 <button
                     v-for="(option, i) in unselectedOptionsFiltered"
                     :id="`${props.id}-unselected-${i}`"
@@ -336,12 +327,11 @@ const deselectText = computed(() => {
                 </BButton>
             </div>
 
-            <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
             <div
                 class="options-list selected"
                 tabindex="-1"
                 @keydown.up.down.prevent
-                @keyup="(e) => onOptionListKeyup('selected', e)">
+                @blur="highlightSelected.abortHighlight">
                 <button
                     v-for="(option, i) in selectedOptionsFiltered"
                     :id="`${props.id}-selected-${i}`"
