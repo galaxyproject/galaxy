@@ -11,7 +11,7 @@ import { Toast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
 
 import TextSummary from "@/components/Common/TextSummary.vue";
-import StatelessTags from "@/components/Tags/StatelessTags.vue";
+import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 import WorkflowActions from "@/components/Workflow/WorkflowActions.vue";
 import WorkflowActionsExtend from "@/components/Workflow/WorkflowActionsExtend.vue";
 import WorkflowIndicators from "@/components/Workflow/WorkflowIndicators.vue";
@@ -35,7 +35,7 @@ const props = withDefaults(defineProps<Props>(), {
 
 const emit = defineEmits<{
     (e: "refreshList", a?: boolean, b?: boolean): void;
-    (e: "tagClick", a: { text: string }): void;
+    (e: "tagClick", a: string): void;
 }>();
 
 const router = useRouter();
@@ -83,6 +83,10 @@ async function onTagsUpdate(tags: string[]) {
     await updateWorkflow(workflow.value.id, { tags });
     emit("refreshList", false, true);
 }
+
+async function onTagClick(tag: string) {
+    emit("tagClick", tag);
+}
 </script>
 
 <template>
@@ -95,12 +99,12 @@ async function onTagsUpdate(tags: string[]) {
                     <div>
                         <WorkflowIndicators :workflow="workflow" :published-view="publishedView" />
 
-                        <span class="workflow-name hide-in-card font-weight-bold">
+                        <span class="workflow-name font-weight-bold">
                             {{ workflow.name }}
                             <BButton
                                 v-if="!shared && !workflow.deleted"
-                                id="rename-button"
-                                v-b-tooltip.top
+                                v-b-tooltip.hover
+                                :data-workflow-rename="workflow.id"
                                 class="inline-icon-button workflow-rename"
                                 variant="link"
                                 size="sm"
@@ -122,23 +126,6 @@ async function onTagsUpdate(tags: string[]) {
                     </div>
                 </div>
 
-                <div>
-                    <span class="workflow-name show-in-card">
-                        {{ workflow.name }}
-                        <BButton
-                            v-if="!shared && !workflow.deleted"
-                            id="rename-button"
-                            v-b-tooltip.top
-                            variant="link"
-                            size="sm"
-                            class="inline-icon-button workflow-rename"
-                            title="Rename"
-                            @click="showRename = !showRename">
-                            <FontAwesomeIcon :icon="faPen" fixed-width />
-                        </BButton>
-                    </span>
-                </div>
-
                 <TextSummary
                     v-if="description"
                     class="my-1"
@@ -153,8 +140,8 @@ async function onTagsUpdate(tags: string[]) {
                         :value="workflow.tags"
                         :disabled="workflow.deleted"
                         :max-visible-tags="gridView ? 2 : 8"
-                        @input="(tags) => onTagsUpdate(tags)"
-                        @tag-click="emit('tagClick', $event)" />
+                        @input="onTagsUpdate($event)"
+                        @tag-click="onTagClick($event)" />
                 </div>
 
                 <div class="workflow-card-actions">
