@@ -135,8 +135,12 @@ function selectAll() {
         const highlightedValues = highlightUnselected.highlightedOptions.map((o) => o.value);
         const selectedSet = new Set([...selected.value, ...highlightedValues]);
         selected.value = Array.from(selectedSet);
+
+        unselectedOptionsFiltered.value.filter((o) => highlightedValues.includes(o.value));
     } else if (searchValue.value === "") {
         selected.value = props.options.map((o) => o.value);
+
+        unselectedOptionsFiltered.value = [];
     } else {
         const filteredValues = filterOptions(
             props.options,
@@ -148,16 +152,23 @@ function selectAll() {
 
         const selectedSet = new Set([...selected.value, ...filteredValues]);
         selected.value = Array.from(selectedSet);
-    }
 
-    unselectedOptionsFiltered.value = [];
+        unselectedOptionsFiltered.value = [];
+    }
 }
 
 function deselectAll() {
-    if (searchValue.value === "") {
+    if (highlightSelected.highlightedIndexes.length > 0) {
+        const selectedSet = new Set(selected.value);
+        const highlightedValues = highlightSelected.highlightedOptions.map((o) => o.value);
+
+        highlightedValues.forEach((v) => selectedSet.delete(v));
+        selected.value = Array.from(selectedSet);
+
+        selectedOptionsFiltered.value.filter((o) => highlightedValues.includes(o.value));
+    } else if (searchValue.value === "") {
         selected.value = [];
-        //} else if (highlightedSelected.value.length > 0) {
-        // todo
+        selectedOptionsFiltered.value = [];
     } else {
         const selectedSet = new Set(selected.value);
         const filteredValues = filterOptions(
@@ -170,9 +181,9 @@ function deselectAll() {
 
         filteredValues.forEach((v) => selectedSet.delete(v));
         selected.value = Array.from(selectedSet);
-    }
 
-    selectedOptionsFiltered.value = [];
+        selectedOptionsFiltered.value = [];
+    }
 }
 
 function optionOnKey(selected: "selected" | "unselected", event: KeyboardEvent, index: number) {
@@ -187,6 +198,7 @@ function optionOnKey(selected: "selected" | "unselected", event: KeyboardEvent, 
 }
 
 const highlightUnselected = reactive(useHighlight(unselectedOptionsFiltered));
+const highlightSelected = reactive(useHighlight(selectedOptionsFiltered));
 
 const selectText = computed(() => {
     if (highlightUnselected.highlightedIndexes.length > 0) {
@@ -199,9 +211,9 @@ const selectText = computed(() => {
 });
 
 const deselectText = computed(() => {
-    /*if (highlightedSelected.value.length > 0) {
+    if (highlightSelected.highlightedIndexes.length > 0) {
         return "Deselect highlighted";
-    } else*/ if (searchValue.value === "") {
+    } else if (searchValue.value === "") {
         return "Deselect all";
     } else {
         return "Deselect filtered";
@@ -287,7 +299,11 @@ const deselectText = computed(() => {
                     :id="`${props.id}-selected-${i}`"
                     :key="option.label"
                     :tabindex="i === 0 ? 0 : -1"
-                    @click="deselectOption(i)"
+                    :class="{ highlighted: highlightSelected.highlightedIndexes.includes(i) }"
+                    @click.shift.exact="highlightSelected.onRangeHighlight(i)"
+                    @click.shift.ctrl.exact="highlightSelected.onRangeRemoveHighlight(i)"
+                    @click.ctrl.exact="highlightSelected.toggleHighlight(i)"
+                    @click.exact="deselectOption(i)"
                     @keydown="(e) => optionOnKey('selected', e, i)">
                     {{ option.label }}
                 </button>
