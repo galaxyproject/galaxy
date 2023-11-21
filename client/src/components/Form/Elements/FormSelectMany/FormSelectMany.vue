@@ -96,7 +96,7 @@ const { unselectedOptionsFiltered, selectedOptionsFiltered, running, moreUnselec
 });
 
 // debounced to it doesn't blink, and only appears when relevant
-const workerRunning = refDebounced(running, 800);
+const workerRunning = refDebounced(running, 400);
 
 /** generic event handler to handle highlighting of options */
 function handleHighlight(
@@ -316,7 +316,7 @@ const deselectText = computed(() => {
 
                 <span v-if="moreUnselected" class="show-more-indicator">
                     Limited to {{ unselectedDisplayCount }} options.
-                    <button @click="unselectedDisplayCount += 500">Show more</button>
+                    <button class="show-more-button" @click="unselectedDisplayCount += 500">Show more</button>
                 </span>
             </div>
             <div class="selection-heading px-2">
@@ -345,13 +345,13 @@ const deselectText = computed(() => {
 
                 <span v-if="moreSelected" class="show-more-indicator">
                     Limited to {{ selectedDisplayCount }} options.
-                    <button @click="selectedDisplayCount += 500">Show more</button>
+                    <button class="show-more-button" @click="selectedDisplayCount += 500">Show more</button>
                 </span>
             </div>
         </div>
         <div class="bottom-row-info">
             <span> Shift to highlight range. Ctrl to highlight multiple </span>
-            <span v-if="workerRunning"> Processing... </span>
+            <span v-if="workerRunning" class="working-indicator"> Processing... </span>
         </div>
     </section>
 </template>
@@ -451,11 +451,12 @@ const deselectText = computed(() => {
         padding-left: 0.5rem;
         color: darken($gray-400, 20%);
 
-        button::after {
+        .show-more-button:hover::after,
+        .show-more-button:focus::after {
             content: none;
         }
 
-        button {
+        .show-more-button {
             color: $brand-info;
             text-decoration: underline;
         }
@@ -485,5 +486,9 @@ const deselectText = computed(() => {
     width: 100%;
     display: flex;
     justify-content: space-between;
+
+    .working-indicator {
+        color: $brand-primary;
+    }
 }
 </style>
