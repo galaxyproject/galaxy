@@ -304,7 +304,7 @@ WORKFLOW_SAFE_TOOL_VERSION_UPDATES = {
     "Filter1": safe_update(parse_version("1.1.0"), parse_version("1.1.1")),
     "__BUILD_LIST__": safe_update(parse_version("1.0.0"), parse_version("1.1.0")),
     "__APPLY_RULES__": safe_update(parse_version("1.0.0"), parse_version("1.1.0")),
-    "__EXTRACT_DATASET__": safe_update(parse_version("1.0.0"), parse_version("1.0.1")),
+    "__EXTRACT_DATASET__": safe_update(parse_version("1.0.0"), parse_version("1.0.2")),
     "Grep1": safe_update(parse_version("1.0.1"), parse_version("1.0.4")),
     "Show beginning1": safe_update(parse_version("1.0.0"), parse_version("1.0.2")),
     "Show tail1": safe_update(parse_version("1.0.0"), parse_version("1.0.1")),
@@ -3350,7 +3350,7 @@ class ExtractDatasetCollectionTool(DatabaseOperationTool):
         elif how == "by_identifier":
             extracted_element = collection[incoming["which"]["identifier"]]
         elif how == "by_index":
-            extracted_element = collection[int(incoming["which"]["index"])]
+            extracted_element = collection[int(incoming["which"]["index"]) - 1]
         else:
             raise exceptions.MessageException("Invalid tool parameters.")
         extracted = extracted_element.element_object

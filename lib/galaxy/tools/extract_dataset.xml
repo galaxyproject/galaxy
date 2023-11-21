@@ -1,6 +1,6 @@
 <tool id="__EXTRACT_DATASET__"
       name="Extract dataset"
-      version="1.0.1"
+      version="1.0.2"
       tool_type="extract_element">
   <description></description>
   <type class="ExtractDatasetCollectionTool" module="galaxy.tools" />
@@ -30,7 +30,7 @@
         </param>
       </when>
       <when value="by_index">
-        <param name="index" label="Element index:" type="integer" value="0" help="Starting from 0">
+        <param name="index" label="Element index:" type="integer" min="1" value="1" help="Starting from 1">
         </param>
       </when>
     </conditional>
