@@ -1,5 +1,3 @@
-from typing import List
-
 from sqlalchemy import (
     false,
     select,
