@@ -1406,8 +1406,11 @@ class NavigatesGalaxy(HasDriver):
         workflows.workflow_table.wait_for_visible()
         return workflows.workflow_rows.all()
 
-    def workflow_cards(self):
+    def workflow_card_elements(self):
         return self.components.workflows.workflow_card.all()
+
+    def workflow_card_element(self, workflow_index=0):
+        return self.workflow_card_elements()[workflow_index]
 
     def workflow_index_table_row(self, workflow_index=0):
         self.components.workflows.workflow_rows.wait_for_element_count_of_at_least(workflow_index + 1)
@@ -1445,12 +1448,23 @@ class NavigatesGalaxy(HasDriver):
         alert.accept()
         self.components.workflows.workflow_with_name(workflow_name=new_name).wait_for_visible()
 
+    def workflow_rename(self, new_name):
+        self.components.workflows.rename_button.wait_for_and_click()
+        self.components.workflows.rename_input.wait_for_visible().clear()
+        self.components.workflows.rename_input.wait_for_and_send_keys(new_name)
+        self.components.workflows.rename_input.wait_for_and_send_keys(self.keys.ENTER)
+
+    def workflow_delete_by_name(self, name):
+        self.workflow_index_search_for(name)
+        self.components.workflows.workflow_drop_down.wait_for_and_click()
+        self.components.workflows.delete_button.wait_for_and_click()
+        self.sleep_for(self.wait_types.UX_RENDER)
+        self.components._.confirm_button(name="Delete").wait_for_and_click()
+
     @retry_during_transitions
     def workflow_index_name(self, workflow_index=0):
-        """Get workflow name for workflow_index'th row."""
-        row_element = self.workflow_index_table_row(workflow_index=workflow_index)
-        workflow_button = row_element.find_element(By.CSS_SELECTOR, ".workflow-dropdown")
-        return workflow_button.text
+        workflow = self.workflow_card_element(workflow_index=workflow_index)
+        return workflow.find_element(By.CSS_SELECTOR, ".workflow-name").text
 
     @retry_during_transitions
     def workflow_click_option(self, workflow_selector, workflow_index=0):
@@ -1474,10 +1488,13 @@ class NavigatesGalaxy(HasDriver):
     def workflow_share_click(self):
         self.components.workflows.share_button.wait_for_and_click()
 
+    def workflow_index_view_external_link(self, workflow_index=0):
+        self.components.workflows.workflow_drop_down.wait_for_and_click()
+        self.components.workflows.view_external_link.wait_for_and_click()
+
     def workflow_index_click_tag_display(self, workflow_index=0):
-        workflow_row_element = self.workflow_index_table_row(workflow_index)
-        tag_display = workflow_row_element.find_element(By.CSS_SELECTOR, ".stateless-tags")
-        tag_display.click()
+        workflow_element = self.workflow_card_element(workflow_index=workflow_index)
+        workflow_element.find_element(By.CSS_SELECTOR, ".stateless-tags").click()
 
     def workflow_index_add_tag(self, tag: str, workflow_index: int = 0):
         self.workflow_index_click_tag_display(workflow_index=workflow_index)
@@ -1528,6 +1545,7 @@ class NavigatesGalaxy(HasDriver):
 
             tag_area.send_keys(tag)
             self.send_enter(tag_area)
+        self.send_escape(tag_area)
 
     def workflow_run_with_name(self, name: str):
         self.workflow_index_open()
