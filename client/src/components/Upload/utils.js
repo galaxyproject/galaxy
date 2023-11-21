@@ -144,17 +144,12 @@ export default {
     getUploadDbKeys,
 };
 
-export function interactEvent() {
-    const setPointer = (elements, option = "auto") => {
-        let element;
-        elements.forEach((e) => {
-            element = document.querySelector(e);
-            if (element) {
-                element.style.pointerEvents = option;
-            }
-        });
-    };
-    return {
-        setPointer,
-    };
+export function setIframeEvents(elements, disableEvents) {
+    let element;
+    elements.forEach((e) => {
+        element = document.querySelector(`iframe#${e}`);
+        if (element) {
+            element.style.pointerEvents = disableEvents ? "none" : "auto";
+        }
+    });
 }

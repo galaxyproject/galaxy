@@ -7,6 +7,8 @@ import { ref, watch } from "vue";
 import { useUserStore } from "@/stores/userStore";
 import { wait } from "@/utils/utils";
 
+import { setIframeEvents } from "../components/Upload/utils";
+
 import UploadContainer from "./UploadContainer.vue";
 
 const { currentUser } = storeToRefs(useUserStore());
@@ -59,16 +61,10 @@ async function open(overrideOptions) {
     }
 }
 
-function setIframeEvents(disableEvents) {
-    const element = document.getElementById("galaxy_main");
-    if (element) {
-        element.style["pointer-events"] = disableEvents ? "none" : "auto";
-    }
-}
 
 watch(
     () => showModal.value,
-    (modalShown) => setIframeEvents(modalShown)
+    (modalShown) => setIframeEvents(["galaxy_main"], modalShown)
 );
 
 defineExpose({
