@@ -279,7 +279,7 @@ const selectedCount = computed(() => {
                     class="toggle-button"
                     :variant="caseSensitive ? 'primary' : 'outline-primary'"
                     role="switch"
-                    :aria-checked="caseSensitive"
+                    :aria-checked="`${caseSensitive}`"
                     title="case sensitive"
                     @click="caseSensitive = !caseSensitive">
                     Aa
@@ -288,7 +288,7 @@ const selectedCount = computed(() => {
                     class="toggle-button"
                     :variant="useRegex ? 'primary' : 'outline-primary'"
                     role="switch"
-                    :aria-checked="useRegex"
+                    :aria-checked="`${useRegex}`"
                     title="use regex"
                     @click="useRegex = !useRegex">
                     .*
