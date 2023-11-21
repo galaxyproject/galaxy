@@ -1642,7 +1642,7 @@ export interface components {
              * Link
              * @description The link to be opened when the button is clicked.
              */
-            link: string | string;
+            link: string;
         };
         /**
          * ArchiveHistoryRequestPayload

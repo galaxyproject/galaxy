@@ -1,7 +1,5 @@
 from datetime import datetime
-from typing import Union
 
-from pydantic import AnyUrl
 from pydantic.datetime_parse import parse_datetime
 from typing_extensions import Literal
 
@@ -9,7 +7,8 @@ from typing_extensions import Literal
 # Making them an alias of `str` for now
 RelativeUrl = str
 
-AbsoluteOrRelativeUrl = Union[AnyUrl, RelativeUrl]
+# TODO: we may want to add a custom validator for this and for RelativeUrl
+AbsoluteOrRelativeUrl = RelativeUrl
 
 LatestLiteral = Literal["latest"]
 
