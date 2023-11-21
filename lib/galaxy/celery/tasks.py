@@ -32,6 +32,7 @@ from galaxy.managers.lddas import LDDAManager
 from galaxy.managers.markdown_util import generate_branded_pdf
 from galaxy.managers.model_stores import ModelStoreManager
 from galaxy.managers.notification import NotificationManager
+from galaxy.managers.short_term_storage import ShortTermStorageMonitor
 from galaxy.managers.tool_data import ToolDataImportManager
 from galaxy.metadata.set_metadata import set_metadata_portable
 from galaxy.model import (
@@ -63,7 +64,6 @@ from galaxy.tools import create_tool_from_representation
 from galaxy.tools.data_fetch import do_fetch
 from galaxy.util import galaxy_directory
 from galaxy.util.custom_logging import get_logger
-from galaxy.web.short_term_storage import ShortTermStorageMonitor
 
 log = get_logger(__name__)
 

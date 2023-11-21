@@ -23,6 +23,7 @@ from galaxy.exceptions import (
     ObjectNotFound,
 )
 from galaxy.managers.histories import HistoryManager
+from galaxy.managers.short_term_storage import ShortTermStorageAllocator
 from galaxy.managers.workflows import WorkflowsManager
 from galaxy.model import WorkflowInvocation
 from galaxy.model.store import (
@@ -44,7 +45,6 @@ from galaxy.schema.tasks import (
     WriteInvocationTo,
 )
 from galaxy.security.idencoding import IdEncodingHelper
-from galaxy.web.short_term_storage import ShortTermStorageAllocator
 from galaxy.webapps.galaxy.services.base import (
     async_task_summary,
     ensure_celery_tasks_enabled,

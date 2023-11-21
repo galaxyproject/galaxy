@@ -8,11 +8,11 @@ from galaxy.celery.tasks import (
     prepare_pdf_download,
     purge_hda,
 )
+from galaxy.managers.short_term_storage import ShortTermStorageAllocator
 from galaxy.model import HistoryDatasetAssociation
 from galaxy.schema import PdfDocumentType
 from galaxy.schema.schema import CreatePagePayload
 from galaxy.schema.tasks import GeneratePdfDownload
-from galaxy.web.short_term_storage import ShortTermStorageAllocator
 from galaxy_test.base.populators import (
     DatasetPopulator,
     wait_on,
