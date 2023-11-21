@@ -41,37 +41,23 @@ class TestWorkflowManagement(SeleniumTestCase, TestsGalaxyPagers, UsesWorkflowAs
     def test_view(self):
         self.workflow_index_open()
         self._workflow_import_from_url()
-        self.workflow_index_click_option("View external link")
+        self.workflow_index_view_external_link()
         self.driver.switch_to.window(self.driver.window_handles[1])
         assert self.driver.current_url == EXAMPLE_WORKFLOW_URL_1
         self.driver.close()
         self.driver.switch_to.window(self.driver.window_handles[0])
         self.components.workflows.external_link.wait_for_visible()
-        # font-awesome title handling broken... https://github.com/FortAwesome/vue-fontawesome/issues/63
-        # title_element = external_link_icon.find_element(By.TAG_NAME, "title")
-        # assert EXAMPLE_WORKFLOW_URL_1 in title_element.text
-        self.workflow_index_click_option("View")
-        workflow_show = self.components.workflow_show
 
-        @retry_assertion_during_transitions
-        def check_title():
-            title_item = self.components.workflow_show.title.wait_for_visible()
-            assert "TestWorkflow1" in title_item.text
+        self.components.workflows.view_button.wait_for_and_click()
 
-        check_title()
-        # Since the workflow view now uses the workflow editor, axe violations need to be fixed there first
-        # TODO: fix axe violations in workflow editor
-        # workflow_show._.assert_no_axe_violations_with_impact_of_at_least("moderate")
-        import_link = workflow_show.import_link.wait_for_visible()
-        assert "Import Workflow" in import_link.get_attribute("title")
-        self.screenshot("workflow_manage_view")
-        # TODO: Test display of steps...
+        workflow_preview = self.components.workflows.workflow_preview_container.wait_for_visible()
+        assert "TestWorkflow1" in workflow_preview.text
 
     @selenium_test
     def test_rename(self):
         self.workflow_index_open()
         self._workflow_import_from_url()
-        self.workflow_index_rename("CoolNewName")
+        self.workflow_rename("CoolNewName")
 
         @retry_assertion_during_transitions
         def check_name():
@@ -83,7 +69,7 @@ class TestWorkflowManagement(SeleniumTestCase, TestsGalaxyPagers, UsesWorkflowAs
     @selenium_test
     def test_workflow_index_accessibility(self):
         self.workflow_index_open()
-        index_table = self.components.workflows.workflow_table
+        index_table = self.components.workflows.workflows_list
         # The selenium_test decorator will check for critical axe violations,
         # this test will be more rigorous but test only a specific component.
         index_table.assert_no_axe_violations_with_impact_of_at_least("critical")
@@ -142,7 +128,7 @@ class TestWorkflowManagement(SeleniumTestCase, TestsGalaxyPagers, UsesWorkflowAs
     def test_index_search(self):
         self.workflow_index_open()
         self._workflow_import_from_url()
-        self.workflow_index_rename("searchforthis")
+        self.workflow_rename("searchforthis")
         self._assert_showing_n_workflows(1)
         self.screenshot("workflow_manage_search")
 
@@ -159,7 +145,7 @@ class TestWorkflowManagement(SeleniumTestCase, TestsGalaxyPagers, UsesWorkflowAs
     def test_index_search_filters(self):
         self.workflow_index_open()
         self._workflow_import_from_url()
-        self.workflow_index_rename("searchforthis")
+        self.workflow_rename("searchforthis")
         self._assert_showing_n_workflows(1)
 
         self.workflow_index_search_for("name:doesnotmatch")
@@ -185,7 +171,7 @@ class TestWorkflowManagement(SeleniumTestCase, TestsGalaxyPagers, UsesWorkflowAs
     def test_index_advanced_search(self):
         self.workflow_index_open()
         self._workflow_import_from_url()
-        self.workflow_index_rename("searchforthis")
+        self.workflow_rename("searchforthis")
         self._assert_showing_n_workflows(1)
 
         self.workflow_index_add_tag("mytag")
@@ -217,9 +203,9 @@ class TestWorkflowManagement(SeleniumTestCase, TestsGalaxyPagers, UsesWorkflowAs
     def test_workflow_delete(self):
         self.workflow_index_open()
         self._workflow_import_from_url()
-        self.workflow_index_rename("fordelete")
+        self.workflow_rename("fordelete")
         self._assert_showing_n_workflows(1)
-        self.workflow_index_click_option("Delete")
+        self.workflow_delete_by_name("fordelete")
         self._assert_showing_n_workflows(0)
 
         self.workflow_index_open()

@@ -908,7 +908,7 @@ steps:
 
         self.components.tool_panel.search.wait_for_and_send_keys(new_workflow_name)
         self.sleep_for(self.wait_types.UX_RENDER)
-        self.components.workflows.bookmark_link.wait_for_and_click()
+        self.components.workflows.bookmark_link(action="add").wait_for_and_click()
         self.components.masthead.workflow.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_TRANSITION)
 
