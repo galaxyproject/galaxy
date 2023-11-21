@@ -653,12 +653,16 @@ workflow_run:
     # TODO: put step labels in the DOM ideally
     subworkflow_step_icon: ".portlet-title-icon.fa-sitemap"
     run_workflow: "#run-workflow"
+    run_workflow_disabled: "#run-workflow.disabled"
     validation_error: ".validation-error"
     expand_form_link: '.workflow-expand-form-link'
     expanded_form: '.workflow-expanded-form'
     new_history_target_link: '.workflow-new-history-target-link'
     runtime_setting_button: '.workflow-run-settings'
     runtime_setting_target: '.workflow-run-settings-target'
+    simplified_input:
+      type: xpath
+      selector: //div[@data-label="${label}"]//input
     input_select_field:
       type: xpath
       selector: '//div[@data-label="${label}"]//div[contains(@class, "multiselect")]'
