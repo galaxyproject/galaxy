@@ -4,6 +4,10 @@ import { assertDefined } from "@/utils/assertions";
 
 import type { SelectOption } from "./worker/selectMany";
 
+/**
+ * Handles logic required for highlighting options
+ * @param options Array of select options to handle highlighting for
+ */
 export function useHighlight(options: Ref<SelectOption[]>) {
     const highlightedOptions = ref<SelectOption[]>([]);
     const highlightedIndexes = ref<number[]>([]);

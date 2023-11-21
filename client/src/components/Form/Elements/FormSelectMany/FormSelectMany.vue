@@ -66,6 +66,7 @@ const searchRegex = computed(() => {
     }
 });
 
+/** Wraps value prop so it can be set, and always returns an array */
 const selected = computed({
     get() {
         return Array.isArray(props.value) ? props.value : [props.value];
@@ -76,11 +77,14 @@ const selected = computed({
 });
 
 const regexInvalid = computed(() => useRegex.value && searchRegex.value === null);
+/** Tells the worker thread if the search value should be treated as a regex */
 const asRegex = computed(() => searchRegex.value !== null);
 
+// Limits amount of displayed options
 const selectedDisplayCount = ref(500);
 const unselectedDisplayCount = ref(500);
 
+// binding to worker thread
 const { unselectedOptionsFiltered, selectedOptionsFiltered, running, moreUnselected, moreSelected } = useSelectMany({
     optionsArray: computed(() => props.options),
     filter: searchValue,
@@ -91,8 +95,10 @@ const { unselectedOptionsFiltered, selectedOptionsFiltered, running, moreUnselec
     caseSensitive,
 });
 
-const workerRunning = refDebounced(running, 1000);
+// debounced to it doesn't blink, and only appears when relevant
+const workerRunning = refDebounced(running, 800);
 
+/** generic event handler to handle highlighting of options */
 function handleHighlight(
     event: MouseEvent | KeyboardEvent,
     index: number,
@@ -153,6 +159,7 @@ async function deselectOption(event: MouseEvent, index: number) {
 }
 
 function onOptionListKeyup(selected: "selected" | "unselected", event: KeyboardEvent) {
+    // reset highlight range mode when shift is released
     if (event.key === "Shift") {
         const highlightHandler = selected === "selected" ? highlightSelected : highlightUnselected;
         highlightHandler.abortHighlight();
@@ -216,6 +223,7 @@ function deselectAll() {
 }
 
 function optionOnKey(selected: "selected" | "unselected", event: KeyboardEvent, index: number) {
+    // handle highlighting
     if ([" ", "Enter"].includes(event.key) && (event.shiftKey || event.ctrlKey)) {
         const highlightHandler = selected === "selected" ? highlightSelected : highlightUnselected;
         handleHighlight(event, index, highlightHandler);
@@ -229,6 +237,7 @@ function optionOnKey(selected: "selected" | "unselected", event: KeyboardEvent, 
 
     event.preventDefault();
 
+    // handle arrow navigation
     const nextIndex = event.key === "ArrowUp" ? index - 1 : index + 1;
     document.getElementById(`${props.id}-${selected}-${nextIndex}`)?.focus();
 }
