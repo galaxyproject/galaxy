@@ -21,7 +21,7 @@ export function useHighlight(options: Ref<SelectOption[]>) {
 
     let highlightIndexStart = -1;
 
-    const onRangeHighlight = (index: number) => {
+    const rangeHighlight = (index: number) => {
         if (highlightIndexStart === -1) {
             highlightIndexStart = index;
             addHighlight(index);
@@ -38,7 +38,7 @@ export function useHighlight(options: Ref<SelectOption[]>) {
         highlightIndexStart = -1;
     };
 
-    const onRangeRemoveHighlight = (index: number) => {
+    const rangeRemoveHighlight = (index: number) => {
         if (highlightIndexStart === -1) {
             highlightIndexStart = index;
             removeHighlight(index);
@@ -97,8 +97,8 @@ export function useHighlight(options: Ref<SelectOption[]>) {
         highlightedOptions,
         highlightedIndexes,
         reset,
-        onRangeHighlight,
-        onRangeRemoveHighlight,
+        rangeHighlight,
+        rangeRemoveHighlight,
         toggleHighlight,
         abortHighlight,
         addHighlight,

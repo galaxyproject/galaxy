@@ -4,7 +4,7 @@ import { faLongArrowAltLeft, faLongArrowAltRight } from "@fortawesome/free-solid
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { refDebounced } from "@vueuse/core";
 import { BButton, BFormInput, BInputGroup } from "bootstrap-vue";
-import { computed, nextTick, type PropType, reactive, ref } from "vue";
+import { computed, nextTick, type PropType, reactive, ref, type UnwrapRef } from "vue";
 
 import { useUid } from "@/composables/utils/uid";
 
@@ -93,40 +93,69 @@ const { unselectedOptionsFiltered, selectedOptionsFiltered, running, moreUnselec
 
 const workerRunning = refDebounced(running, 1000);
 
-async function selectOption(index: number) {
-    const [option] = unselectedOptionsFiltered.value.splice(index, 1);
-
-    if (option) {
-        selected.value.push(option.value);
-    }
-
-    // select the element which now is where the removed element just was
-    // to improve keyboard navigation
-    await nextTick();
-
-    const el = document.getElementById(`${props.id}-unselected-${index}`);
-    if (el) {
-        el.focus();
-    } else {
-        document.getElementById(`${props.id}-unselected-${index - 1}`)?.focus();
+function handleHighlight(
+    event: MouseEvent | KeyboardEvent,
+    index: number,
+    highlightHandler: UnwrapRef<ReturnType<typeof useHighlight>>
+) {
+    if (event.shiftKey && event.ctrlKey) {
+        highlightHandler.rangeRemoveHighlight(index);
+    } else if (event.shiftKey) {
+        highlightHandler.rangeHighlight(index);
+    } else if (event.ctrlKey) {
+        highlightHandler.toggleHighlight(index);
     }
 }
 
-async function deselectOption(index: number) {
-    const [option] = selectedOptionsFiltered.value.splice(index, 1);
-
-    if (option) {
-        const i = selected.value.indexOf(option.value);
-        selected.value.splice(i, 1);
-    }
-
-    await nextTick();
-
-    const el = document.getElementById(`${props.id}-selected-${index}`);
-    if (el) {
-        el.focus();
+async function selectOption(event: MouseEvent, index: number): Promise<void> {
+    if (event.shiftKey || event.ctrlKey) {
+        handleHighlight(event, index, highlightUnselected);
     } else {
-        document.getElementById(`${props.id}-selected-${index - 1}`)?.focus();
+        const [option] = unselectedOptionsFiltered.value.splice(index, 1);
+
+        if (option) {
+            selected.value.push(option.value);
+        }
+
+        // select the element which now is where the removed element just was
+        // to improve keyboard navigation
+        await nextTick();
+
+        const el = document.getElementById(`${props.id}-unselected-${index}`);
+        if (el) {
+            el.focus();
+        } else {
+            document.getElementById(`${props.id}-unselected-${index - 1}`)?.focus();
+        }
+    }
+}
+
+async function deselectOption(event: MouseEvent, index: number) {
+    if (event.shiftKey || event.ctrlKey) {
+        handleHighlight(event, index, highlightSelected);
+    } else {
+        const [option] = selectedOptionsFiltered.value.splice(index, 1);
+
+        if (option) {
+            const i = selected.value.indexOf(option.value);
+            selected.value.splice(i, 1);
+        }
+
+        await nextTick();
+
+        const el = document.getElementById(`${props.id}-selected-${index}`);
+        if (el) {
+            el.focus();
+        } else {
+            document.getElementById(`${props.id}-selected-${index - 1}`)?.focus();
+        }
+    }
+}
+
+function onOptionListKeyup(selected: "selected" | "unselected", event: KeyboardEvent) {
+    if (event.key === "Shift") {
+        const highlightHandler = selected === "selected" ? highlightSelected : highlightUnselected;
+        highlightHandler.abortHighlight();
     }
 }
 
@@ -187,6 +216,13 @@ function deselectAll() {
 }
 
 function optionOnKey(selected: "selected" | "unselected", event: KeyboardEvent, index: number) {
+    if ([" ", "Enter"].includes(event.key) && (event.shiftKey || event.ctrlKey)) {
+        const highlightHandler = selected === "selected" ? highlightSelected : highlightUnselected;
+        handleHighlight(event, index, highlightHandler);
+        event.preventDefault();
+        return;
+    }
+
     if (!["ArrowUp", "ArrowDown"].includes(event.key)) {
         return;
     }
@@ -266,17 +302,14 @@ const deselectText = computed(() => {
                 class="options-list unselected border-right"
                 tabindex="-1"
                 @keydown.up.down.prevent
-                @keyup.shift="highlightUnselected.abortHighlight()">
+                @keyup="(e) => onOptionListKeyup('unselected', e)">
                 <button
                     v-for="(option, i) in unselectedOptionsFiltered"
                     :id="`${props.id}-unselected-${i}`"
                     :key="option.label"
                     :tabindex="i === 0 ? 0 : -1"
                     :class="{ highlighted: highlightUnselected.highlightedIndexes.includes(i) }"
-                    @click.shift.exact="highlightUnselected.onRangeHighlight(i)"
-                    @click.shift.ctrl.exact="highlightUnselected.onRangeRemoveHighlight(i)"
-                    @click.ctrl.exact="highlightUnselected.toggleHighlight(i)"
-                    @click.exact="selectOption(i)"
+                    @click="(e) => selectOption(e, i)"
                     @keydown="(e) => optionOnKey('unselected', e, i)">
                     {{ option.label }}
                 </button>
@@ -293,17 +326,20 @@ const deselectText = computed(() => {
                     {{ deselectText }}
                 </BButton>
             </div>
-            <div class="options-list selected" tabindex="-1" @keydown.up.down.prevent>
+
+            <!-- eslint-disable-next-line vuejs-accessibility/no-static-element-interactions -->
+            <div
+                class="options-list selected"
+                tabindex="-1"
+                @keydown.up.down.prevent
+                @keyup="(e) => onOptionListKeyup('selected', e)">
                 <button
                     v-for="(option, i) in selectedOptionsFiltered"
                     :id="`${props.id}-selected-${i}`"
                     :key="option.label"
                     :tabindex="i === 0 ? 0 : -1"
                     :class="{ highlighted: highlightSelected.highlightedIndexes.includes(i) }"
-                    @click.shift.exact="highlightSelected.onRangeHighlight(i)"
-                    @click.shift.ctrl.exact="highlightSelected.onRangeRemoveHighlight(i)"
-                    @click.ctrl.exact="highlightSelected.toggleHighlight(i)"
-                    @click.exact="deselectOption(i)"
+                    @click="(e) => deselectOption(e, i)"
                     @keydown="(e) => optionOnKey('selected', e, i)">
                     {{ option.label }}
                 </button>
