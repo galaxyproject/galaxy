@@ -34,6 +34,10 @@ from galaxy.managers.hdas import (
 from galaxy.managers.hdcas import write_dataset_collection
 from galaxy.managers.histories import HistoryManager
 from galaxy.managers.lddas import LDDAManager
+from galaxy.managers.short_term_storage import (
+    ShortTermStorageMonitor,
+    storage_context,
+)
 from galaxy.model.base import transaction
 from galaxy.model.dataset_collections import builder
 from galaxy.model.dataset_collections.matching import MatchingCollections
@@ -44,10 +48,6 @@ from galaxy.schema.schema import DatasetCollectionInstanceType
 from galaxy.schema.tasks import PrepareDatasetCollectionDownload
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util import validation
-from galaxy.web.short_term_storage import (
-    ShortTermStorageMonitor,
-    storage_context,
-)
 
 log = logging.getLogger(__name__)
 

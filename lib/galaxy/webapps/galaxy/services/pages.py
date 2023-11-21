@@ -13,6 +13,7 @@ from galaxy.managers.pages import (
     PageManager,
     PageSerializer,
 )
+from galaxy.managers.short_term_storage import ShortTermStorageAllocator
 from galaxy.model.base import transaction
 from galaxy.schema import PdfDocumentType
 from galaxy.schema.fields import DecodedDatabaseIdField
@@ -27,7 +28,6 @@ from galaxy.schema.schema import (
 )
 from galaxy.schema.tasks import GeneratePdfDownload
 from galaxy.security.idencoding import IdEncodingHelper
-from galaxy.web.short_term_storage import ShortTermStorageAllocator
 from galaxy.webapps.galaxy.services.base import (
     async_task_summary,
     ensure_celery_tasks_enabled,

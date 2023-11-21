@@ -41,6 +41,7 @@ from galaxy.managers.histories import (
     HistorySerializer,
 )
 from galaxy.managers.notification import NotificationManager
+from galaxy.managers.short_term_storage import ShortTermStorageAllocator
 from galaxy.managers.users import UserManager
 from galaxy.model import HistoryDatasetAssociation
 from galaxy.model.base import transaction
@@ -77,7 +78,6 @@ from galaxy.schema.tasks import (
 from galaxy.schema.types import LatestLiteral
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.util import restore_text
-from galaxy.web.short_term_storage import ShortTermStorageAllocator
 from galaxy.webapps.galaxy.services.base import (
     async_task_summary,
     ConsumesModelStores,

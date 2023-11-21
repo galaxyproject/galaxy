@@ -7,7 +7,7 @@ from galaxy.exceptions import (
     MessageException,
     ObjectNotFound,
 )
-from galaxy.web.short_term_storage import (
+from galaxy.managers.short_term_storage import (
     ShortTermStorageConfiguration,
     ShortTermStorageManager,
     ShortTermStorageServeCancelledInformation,
