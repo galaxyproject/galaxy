@@ -1,4 +1,5 @@
 import { mount } from "@vue/test-utils";
+import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 import { useRouter } from "vue-router/composables";
 
@@ -8,6 +9,7 @@ import MountTarget from "./GridList.vue";
 
 const localVue = getLocalVue();
 
+jest.useFakeTimers();
 jest.mock("vue-router/composables");
 
 useRouter.mockImplementation(() => "router");
@@ -53,7 +55,10 @@ const testGrid = {
                     title: "operation-title-3",
                     icon: "operation-icon-3",
                     condition: () => true,
-                    handler: jest.fn(),
+                    handler: () => ({
+                        status: "success",
+                        message: "Operation-3 has been executed.",
+                    }),
                 },
             ],
         },
@@ -146,6 +151,13 @@ describe("GridList", () => {
             { id: "id-1", link: "link-1", operation: "operation-1" },
             "router",
         ]);
+        await dropdownItems.at(1).trigger("click");
+        await flushPromises();
+        const alert = wrapper.find(".alert");
+        expect(alert.text()).toBe("Operation-3 has been executed.");
+        jest.runAllTimers();
+        await wrapper.vm.$nextTick();
+        expect(wrapper.find(".alert").exists()).toBeFalsy();
     });
 
     it("filter handling", async () => {
@@ -155,7 +167,8 @@ describe("GridList", () => {
         await wrapper.vm.$nextTick();
         const filterInput = wrapper.find("[data-description='filter text input']");
         await filterInput.setValue("filter query");
-        await new Promise((r) => setTimeout(r, 500));
+        jest.runAllTimers();
+        await flushPromises();
         expect(testGrid.getData).toHaveBeenCalledTimes(2);
         expect(testGrid.getData.mock.calls[1]).toEqual([0, 25, "filter query", "id", true]);
     });
