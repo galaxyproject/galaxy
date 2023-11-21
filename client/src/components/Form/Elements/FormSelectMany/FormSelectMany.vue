@@ -81,8 +81,8 @@ const regexInvalid = computed(() => useRegex.value && searchRegex.value === null
 const asRegex = computed(() => searchRegex.value !== null);
 
 // Limits amount of displayed options
-const selectedDisplayCount = ref(500);
-const unselectedDisplayCount = ref(500);
+const selectedDisplayCount = ref(1000);
+const unselectedDisplayCount = ref(1000);
 
 // binding to worker thread
 const { unselectedOptionsFiltered, selectedOptionsFiltered, running, moreUnselected, moreSelected } = useSelectMany({
@@ -256,6 +256,30 @@ const deselectText = computed(() => {
         return "Deselect filtered";
     }
 });
+
+const unselectedCount = computed(() => {
+    if (searchValue.value === "") {
+        return `${props.options.length - selected.value.length}`;
+    } else {
+        let countString = `${unselectedOptionsFiltered.value.length}`;
+        if (moreUnselected.value) {
+            countString += "+";
+        }
+        return countString;
+    }
+});
+
+const selectedCount = computed(() => {
+    if (searchValue.value === "") {
+        return `${selected.value.length}`;
+    } else {
+        let countString = `${selectedOptionsFiltered.value.length}`;
+        if (moreSelected.value) {
+            countString += "+";
+        }
+        return countString;
+    }
+});
 </script>
 
 <template>
@@ -291,7 +315,10 @@ const deselectText = computed(() => {
 
         <div class="options-box border rounded mt-2">
             <div class="selection-heading border-right px-2">
-                <span>Unselected</span>
+                <span>
+                    Unselected
+                    <span class="font-weight-normal"> ({{ unselectedCount }}) </span>
+                </span>
                 <BButton class="selection-button" :title="selectText" variant="primary" @click="selectAll">
                     {{ selectText }}
                     <FontAwesomeIcon icon="fa-long-arrow-alt-right" />
@@ -320,7 +347,10 @@ const deselectText = computed(() => {
                 </span>
             </div>
             <div class="selection-heading px-2">
-                <span>Selected</span>
+                <span>
+                    Selected
+                    <span class="font-weight-normal"> ({{ selectedCount }}) </span>
+                </span>
                 <BButton class="selection-button" :title="deselectText" variant="primary" @click="deselectAll">
                     <FontAwesomeIcon icon="fa-long-arrow-alt-left" />
                     {{ deselectText }}
