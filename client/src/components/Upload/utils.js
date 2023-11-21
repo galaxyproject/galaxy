@@ -143,3 +143,18 @@ export default {
     getUploadDatatypes,
     getUploadDbKeys,
 };
+
+export function interactEvent() {
+    const setPointer = (elements, option = "auto") => {
+        let element;
+        elements.forEach((e) => {
+            element = document.querySelector(e);
+            if (element) {
+                element.style.pointerEvents = option;
+            }
+        });
+    };
+    return {
+        setPointer,
+    };
+}
