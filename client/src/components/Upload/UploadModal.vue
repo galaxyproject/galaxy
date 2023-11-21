@@ -7,7 +7,7 @@ import { ref, watch } from "vue";
 import { useUserStore } from "@/stores/userStore";
 import { wait } from "@/utils/utils";
 
-import { setIframeEvents } from "../components/Upload/utils";
+import { setIframeEvents } from "components/Upload/utils";
 
 import UploadContainer from "./UploadContainer.vue";
 
