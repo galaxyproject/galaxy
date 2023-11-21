@@ -9,7 +9,7 @@ export function main(options: UnwrapNestedRefs<UseSelectManyOptions>): UnwrapNes
 
     const filteredSelectOptions = filterOptions(options.optionsArray, options.filter, options.caseSensitive);
 
-    const selectedValues = options.selected.map(stringifyObject);
+    const selectedValues = new Set(options.selected.map(stringifyObject));
 
     let moreUnselected = false;
     let moreSelected = false;
@@ -19,7 +19,7 @@ export function main(options: UnwrapNestedRefs<UseSelectManyOptions>): UnwrapNes
 
         const value = stringifyObject(option.value);
 
-        const isSelected = selectedValues.includes(value);
+        const isSelected = selectedValues.has(value);
 
         if (
             unselectedOptionsFiltered.length > options.unselectedDisplayCount &&
