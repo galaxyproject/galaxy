@@ -2,11 +2,10 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCaretDown, faCaretUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { useDebounceFn } from "@vueuse/core";
 import { BAlert, BButton, BLink, BPagination } from "bootstrap-vue";
 import { computed, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
-
-import { timeout } from "@/utils/timeout";
 
 import { Config, FieldHandler, Operation, RowData } from "./configs/types";
 
@@ -25,11 +24,14 @@ const router = useRouter();
 interface Props {
     // provide a grid configuration
     config: Config;
+    // debounce delay
+    delay?: number;
     // rows per page to be shown
     limit?: number;
 }
 
 const props = withDefaults(defineProps<Props>(), {
+    delay: 5000,
     limit: 25,
 });
 
@@ -59,6 +61,11 @@ const sortDesc = ref(props.config ? props.config.sortDesc : false);
 const filterText = ref("");
 const searchTerm = ref("");
 const showAdvanced = ref(false);
+
+// hide message helper
+const hideMessage = useDebounceFn(() => {
+    operationMessage.value = "";
+}, props.delay);
 
 /**
  * Manually set filter value, used for tags and `SharingIndicators`
@@ -156,9 +163,7 @@ watch([currentPage, searchTerm, sortDesc, sortBy], () => getGridData());
  * Operation message timeout handler
  */
 watch(operationMessage, () => {
-    timeout(() => {
-        operationMessage.value = "";
-    });
+    hideMessage();
 });
 </script>
 
