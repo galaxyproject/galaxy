@@ -57,13 +57,23 @@ from whoosh.scoring import (
 from whoosh.writing import AsyncWriter
 
 from galaxy.config import GalaxyAppConfiguration
-from galaxy.util import ExecutionTimer
-from galaxy.web.framework.helpers import to_unicode
+from galaxy.util import (
+    ExecutionTimer,
+    unicodify,
+)
 
 log = logging.getLogger(__name__)
 
 CanConvertToFloat = Union[str, int, float]
 CanConvertToInt = Union[str, int, float]
+
+
+def to_unicode(a_string):
+    """
+    Convert a string to unicode in utf-8 format; if string is already unicode,
+    does nothing because string's encoding cannot be determined by introspection.
+    """
+    return unicodify(a_string, "utf-8")
 
 
 def get_or_create_index(index_dir, schema):
