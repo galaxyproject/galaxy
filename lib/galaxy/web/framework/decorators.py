@@ -396,7 +396,7 @@ def validation_error_to_message_exception(e: ValidationError) -> MessageExceptio
 
 
 def __api_error_dict(trans, **kwds):
-    error_dict = api_error_to_dict(trans, **kwds)
+    error_dict = api_error_to_dict(debug=trans.debug, **kwds)
     exception = kwds.get("exception", None)
     # If we are given an status code directly - use it - otherwise check
     # the exception for a status_code attribute.

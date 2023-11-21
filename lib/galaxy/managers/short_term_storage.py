@@ -220,7 +220,7 @@ class ShortTermStorageManager(ShortTermStorageAllocator, ShortTermStorageMonitor
         if exception:
             exception_json = {
                 "status_code": exception.status_code,
-                "exception": api_error_to_dict(None, exception=exception),
+                "exception": api_error_to_dict(exception=exception),
             }
         else:
             exception_json = {"status_code": 204, "exception": None}  # NO CONTENT

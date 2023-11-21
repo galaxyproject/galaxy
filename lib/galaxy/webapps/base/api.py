@@ -157,7 +157,7 @@ def add_sentry_middleware(app: FastAPI) -> None:
 
 
 def get_error_response_for_request(request: Request, exc: MessageException) -> JSONResponse:
-    error_dict = api_error_to_dict(None, exception=exc)
+    error_dict = api_error_to_dict(exception=exc)
     status_code = exc.status_code
     if "ga4gh" in (path := request.url.path):
         # When serving GA4GH APIs use limited exceptions to conform their expected
