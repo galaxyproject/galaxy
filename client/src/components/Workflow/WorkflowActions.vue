@@ -33,7 +33,7 @@ interface Props {
 
 type BaseAction = {
     if?: boolean;
-    id: string;
+    class?: string;
     title: string;
     tooltip?: string;
     icon: any;
@@ -127,7 +127,7 @@ const actions: ComputedRef<(AAction | BAction)[]> = computed(() => {
     return [
         {
             if: !shared.value && !props.workflow.show_in_tool_panel,
-            id: "workflow-bookmark-button",
+            class: "workflow-bookmark-button-add",
             component: "async",
             title: "Add bookmarks",
             tooltip: "Add to bookmarks. This workflow will appear in the left tool panel.",
@@ -138,7 +138,7 @@ const actions: ComputedRef<(AAction | BAction)[]> = computed(() => {
         },
         {
             if: !shared.value && props.workflow.show_in_tool_panel,
-            id: "workflow-bookmark-button",
+            class: "workflow-bookmark-button-remove",
             component: "async",
             title: "Remove bookmark",
             tooltip: "Remove bookmark",
@@ -149,7 +149,7 @@ const actions: ComputedRef<(AAction | BAction)[]> = computed(() => {
         },
         {
             if: true,
-            id: "view-button",
+            class: "workflow-view-button",
             component: "button",
             title: "View workflow",
             tooltip: "View workflow",
@@ -165,7 +165,7 @@ const menuActions: ComputedRef<BAction[]> = computed(() => {
     return [
         {
             if: !shared.value && !props.workflow.deleted,
-            id: "delete-button",
+            class: "workflow-delete-button",
             component: "button",
             title: "Delete workflow",
             tooltip: "Delete workflow",
@@ -176,7 +176,7 @@ const menuActions: ComputedRef<BAction[]> = computed(() => {
         },
         {
             if: sourceType.value.includes("trs"),
-            id: "source-trs-button",
+            class: "source-trs-button",
             component: "button",
             title: `View on ${props.workflow.source_metadata?.trs_server}`,
             href: `https://dockstore.org/workflows${props.workflow?.source_metadata?.trs_tool_id?.slice(9)}`,
@@ -187,7 +187,7 @@ const menuActions: ComputedRef<BAction[]> = computed(() => {
         },
         {
             if: sourceType.value == "url",
-            id: "source-url-button",
+            class: "workflow-view-external-link-button",
             component: "button",
             title: "View external link",
             href: props.workflow.source_metadata?.url,
@@ -198,7 +198,7 @@ const menuActions: ComputedRef<BAction[]> = computed(() => {
         },
         {
             if: !props.workflow.deleted,
-            id: "export-button",
+            class: "workflow-export-button",
             component: "button",
             title: "Export",
             icon: faFileExport,
@@ -212,11 +212,11 @@ const menuActions: ComputedRef<BAction[]> = computed(() => {
 
 <template>
     <div class="workflow-actions flex-gapx-1">
-        <div v-for="action in actions" :key="action.id">
+        <div v-for="action in actions" :key="action.class">
             <AsyncButton
                 v-if="action.if && action.component === 'async'"
-                :id="action.id"
                 v-b-tooltip.hover
+                :class="action.class"
                 class="inline-icon-button"
                 :variant="action.variant"
                 :size="action.size"
@@ -226,8 +226,8 @@ const menuActions: ComputedRef<BAction[]> = computed(() => {
 
             <BButton
                 v-if="action.if && action.component === 'button'"
-                :id="action.id"
                 v-b-tooltip.hover
+                :class="action.class"
                 class="inline-icon-button"
                 :variant="action.variant"
                 :size="action.size"
@@ -239,12 +239,11 @@ const menuActions: ComputedRef<BAction[]> = computed(() => {
         </div>
 
         <BDropdown
-            id="workflow-actions-dropdown"
             v-b-tooltip.top
             :data-workflow-actions-dropdown="workflow.id"
             right
             no-caret
-            class="show-in-card"
+            class="workflow-actions-dropdown show-in-card"
             toggle-class="inline-icon-button"
             title="Workflow actions"
             variant="link">
@@ -254,8 +253,8 @@ const menuActions: ComputedRef<BAction[]> = computed(() => {
 
             <BDropdownItem
                 v-for="action in menuActions.filter((a) => a.if).reverse()"
-                :id="action.id"
-                :key="action.id"
+                :key="action.class"
+                :class="action.class"
                 :href="action.href ?? undefined"
                 :title="action.title"
                 :target="action.target"

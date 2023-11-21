@@ -117,10 +117,9 @@ function onViewUserPublished() {
 
         <BButton
             v-if="sourceType == 'url'"
-            id="source-indicator-url"
             v-b-tooltip
             size="sm"
-            class="inline-icon-button"
+            class="workflow-external-link inline-icon-button"
             :title="sourceTitle">
             <FontAwesomeIcon :icon="faLink" fixed-width @click="onCopyLink" />
         </BButton>
