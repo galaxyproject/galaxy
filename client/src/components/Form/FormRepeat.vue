@@ -25,6 +25,22 @@ const maxRepeats = computed(() => {
     return typeof props.input.max === "number" ? props.input.cache?.length >= props.input.max : false;
 });
 
+const minRepeats = computed(() => {
+    return typeof props.input.min === "number" ? props.input.cache?.length > props.input.min : true;
+});
+
+const buttonTooltip = computed(() => {
+    return maxRepeats.value
+        ? `Maximum number of ${props.input.title || "Repeat"} fields reached`
+        : `Click to add ${props.input.title || "Repeat"} fields`;
+});
+
+const deleteTooltip = computed(() => {
+    return !minRepeats.value
+        ? `Minimum number of ${props.input.title || "Repeat"} not reached`
+        : `Click to delete ${props.input.title || "Repeat"} fields`;
+});
+
 const props = defineProps({
     input: {
         type: Object as PropType<Input>,
@@ -136,17 +152,18 @@ const { keyObject } = useKeyedObjects();
                         </b-button>
                     </b-button-group>
 
-                    <b-button
-                        v-if="cacheId >= props.input.min"
-                        v-b-tooltip.hover.bottom
-                        title="delete"
-                        role="button"
-                        variant="link"
-                        size="sm"
-                        class="ml-0"
-                        @click="() => onDelete(cacheId)">
-                        <FontAwesomeIcon icon="trash-alt" />
-                    </b-button>
+                    <span v-b-tooltip.hover.bottom :title="deleteTooltip">
+                        <b-button
+                            :disabled="!minRepeats"
+                            title="delete"
+                            role="button"
+                            variant="link"
+                            size="sm"
+                            class="ml-0"
+                            @click="() => onDelete(cacheId)">
+                            <FontAwesomeIcon icon="trash-alt" />
+                        </b-button>
+                    </span>
                 </span>
             </template>
 
@@ -155,10 +172,11 @@ const { keyObject } = useKeyedObjects();
             </template>
         </FormCard>
 
-        <b-button v-if="!props.sustainRepeats && !maxRepeats" @click="onInsert">
-            <FontAwesomeIcon icon="plus" class="mr-1" />
-            <span data-description="repeat insert">Insert {{ props.input.title || "Repeat" }}</span>
-        </b-button>
-        <div v-if="maxRepeats">Maximum number of {{ props.input.title || "Repeat" }} fields reached</div>
+        <span v-b-tooltip.hover :title="buttonTooltip">
+            <b-button v-if="!props.sustainRepeats" :disabled="maxRepeats" @click="onInsert">
+                <FontAwesomeIcon icon="plus" class="mr-1" />
+                <span data-description="repeat insert">Insert {{ props.input.title || "Repeat" }}</span>
+            </b-button>
+        </span>
     </div>
 </template>
