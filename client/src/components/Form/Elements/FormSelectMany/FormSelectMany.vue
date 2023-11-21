@@ -27,10 +27,6 @@ const props = defineProps({
         type: Boolean,
         default: false,
     },
-    optional: {
-        type: Boolean,
-        default: false,
-    },
     options: {
         type: Array as PropType<Array<SelectOption>>,
         required: true,
