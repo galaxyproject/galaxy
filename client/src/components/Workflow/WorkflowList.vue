@@ -4,7 +4,7 @@ import { faStar, faTrash } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BNav, BNavItem, BOverlay } from "bootstrap-vue";
 import { filter } from "underscore";
-import { computed, onMounted, type Ref, ref, watch } from "vue";
+import { computed, type ComputedRef, onMounted, type Ref, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { loadWorkflows } from "@/components/Workflow/workflows.services";
@@ -12,7 +12,7 @@ import { useAnimationFrameResizeObserver } from "@/composables/sensors/animation
 import { useAnimationFrameScroll } from "@/composables/sensors/animationFrameScroll";
 import { Toast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
-import Filtering, { contains, equals, expandNameTag, toBool } from "@/utils/filtering";
+import Filtering, { contains, equals, expandNameTag, toBool, type ValidFilter } from "@/utils/filtering";
 
 import FilterMenu from "@/components/Common/FilterMenu.vue";
 import Heading from "@/components/Common/Heading.vue";
@@ -38,10 +38,15 @@ const props = withDefaults(defineProps<Props>(), {
 const router = useRouter();
 const userStore = useUserStore();
 
-const validFilters = computed(() => {
+const validFilters: ComputedRef<Record<string, ValidFilter<string | boolean | undefined>>> = computed(() => {
     return {
         name: { placeholder: "name", type: String, handler: contains("name"), menuItem: true },
-        tag: { placeholder: "tag", type: String, handler: contains("tags", "tag", expandNameTag), menuItem: true },
+        tag: {
+            placeholder: "tag",
+            type: "MultiTags",
+            handler: contains("tags", "tag", expandNameTag),
+            menuItem: true,
+        },
         deleted: {
             placeholder: "Filter on deleted workflows",
             type: Boolean,
@@ -98,8 +103,8 @@ function updateFilter(newVal: string) {
     advancedFiltering.value.updateFilter(newVal.trim());
 }
 
-function onTagClick(tag: { text: string }) {
-    filterText.value = WorkflowFilters.setFilterValue(filterText.value, "tag", tag.text);
+function onTagClick(tag: string) {
+    filterText.value = WorkflowFilters.setFilterValue(filterText.value, "tag", tag);
 }
 
 async function load(overlayLoading = false, silentLoading = false) {
@@ -203,6 +208,7 @@ onMounted(() => {
 
             <FilterMenu
                 id="workflow-list-filter"
+                name="workflows"
                 class="mb-2"
                 :filter-class="WorkflowFilters"
                 :filter-text.sync="filterText"
