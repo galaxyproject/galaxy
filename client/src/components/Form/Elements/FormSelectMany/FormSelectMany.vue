@@ -418,6 +418,9 @@ const selectedCount = computed(() => {
         .selection-button {
             height: 20px;
             padding: 0 0.5rem;
+            display: flex;
+            align-items: center;
+            gap: 0.25rem;
         }
     }
 }
