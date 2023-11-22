@@ -656,6 +656,20 @@ export interface paths {
          */
         put: operations["validate_api_histories__history_id__contents__id__validate_put"];
     };
+    "/api/histories/{history_id}/contents/{tagged_item_id}/tags": {
+        /** Index */
+        get: operations["index_api_histories__history_id__contents__tagged_item_id__tags_get"];
+    };
+    "/api/histories/{history_id}/contents/{tagged_item_id}/tags/{tag_name}": {
+        /** Show */
+        get: operations["show_api_histories__history_id__contents__tagged_item_id__tags__tag_name__get"];
+        /** Update */
+        put: operations["update_api_histories__history_id__contents__tagged_item_id__tags__tag_name__put"];
+        /** Create */
+        post: operations["create_api_histories__history_id__contents__tagged_item_id__tags__tag_name__post"];
+        /** Delete */
+        delete: operations["delete_api_histories__history_id__contents__tagged_item_id__tags__tag_name__delete"];
+    };
     "/api/histories/{history_id}/contents/{type}s": {
         /**
          * Returns the contents of the given history filtered by type.
@@ -839,6 +853,20 @@ export interface paths {
     "/api/histories/{history_id}/write_store": {
         /** Prepare history for export-style download and write to supplied URI. */
         post: operations["write_store_api_histories__history_id__write_store_post"];
+    };
+    "/api/histories/{tagged_item_id}/tags": {
+        /** Index */
+        get: operations["index_api_histories__tagged_item_id__tags_get"];
+    };
+    "/api/histories/{tagged_item_id}/tags/{tag_name}": {
+        /** Show */
+        get: operations["show_api_histories__tagged_item_id__tags__tag_name__get"];
+        /** Update */
+        put: operations["update_api_histories__tagged_item_id__tags__tag_name__put"];
+        /** Create */
+        post: operations["create_api_histories__tagged_item_id__tags__tag_name__post"];
+        /** Delete */
+        delete: operations["delete_api_histories__tagged_item_id__tags__tag_name__delete"];
     };
     "/api/invocations/{invocation_id}/biocompute": {
         /**
@@ -1681,6 +1709,20 @@ export interface paths {
          * @description Removes this item from the published list and return the current sharing status.
          */
         put: operations["unpublish_api_workflows__id__unpublish_put"];
+    };
+    "/api/workflows/{tagged_item_id}/tags": {
+        /** Index */
+        get: operations["index_api_workflows__tagged_item_id__tags_get"];
+    };
+    "/api/workflows/{tagged_item_id}/tags/{tag_name}": {
+        /** Show */
+        get: operations["show_api_workflows__tagged_item_id__tags__tag_name__get"];
+        /** Update */
+        put: operations["update_api_workflows__tagged_item_id__tags__tag_name__put"];
+        /** Create */
+        post: operations["create_api_workflows__tagged_item_id__tags__tag_name__post"];
+        /** Delete */
+        delete: operations["delete_api_workflows__tagged_item_id__tags__tag_name__delete"];
     };
     "/api/workflows/{workflow_id}": {
         /** Add the deleted flag to a workflow. */
@@ -6046,6 +6088,19 @@ export interface components {
             /** Uninstalled */
             uninstalled: boolean;
         };
+        /**
+         * ItemTagsCreatePayload
+         * @description Payload schema for creating an item tag.
+         */
+        ItemTagsCreatePayload: {
+            /** value of the item tag */
+            value: string;
+        };
+        /**
+         * ItemTagsListResponse
+         * @description Response schema for listing item tags.
+         */
+        ItemTagsListResponse: components["schemas"]["ItemTagsResponse"][];
         /** ItemTagsPayload */
         ItemTagsPayload: {
             /**
@@ -6064,6 +6119,23 @@ export interface components {
              * @description The list of tags that will replace the current tags associated with the item.
              */
             item_tags?: components["schemas"]["TagCollection"];
+        };
+        /**
+         * ItemTagsResponse
+         * @description Response schema for showing an item tag.
+         */
+        ItemTagsResponse: {
+            /**
+             * item tag ID
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /** model class */
+            model_class: string;
+            /** name of the item tag */
+            user_tname: string;
+            /** value of the item tag */
+            user_value?: string;
         };
         /**
          * ItemsFromSrc
@@ -13389,6 +13461,150 @@ export interface operations {
             };
         };
     };
+    index_api_histories__history_id__contents__tagged_item_id__tags_get: {
+        /** Index */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                tagged_item_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["ItemTagsListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    show_api_histories__history_id__contents__tagged_item_id__tags__tag_name__get: {
+        /** Show */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                tagged_item_id: string;
+                tag_name: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["ItemTagsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_api_histories__history_id__contents__tagged_item_id__tags__tag_name__put: {
+        /** Update */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                tagged_item_id: string;
+                tag_name: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ItemTagsCreatePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["ItemTagsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_api_histories__history_id__contents__tagged_item_id__tags__tag_name__post: {
+        /** Create */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                tagged_item_id: string;
+                tag_name: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ItemTagsCreatePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["ItemTagsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_api_histories__history_id__contents__tagged_item_id__tags__tag_name__delete: {
+        /** Delete */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                tagged_item_id: string;
+                tag_name: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": boolean;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     history_contents__index_typed: {
         /**
          * Returns the contents of the given history filtered by type.
@@ -14393,6 +14609,150 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["AsyncTaskResultSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    index_api_histories__tagged_item_id__tags_get: {
+        /** Index */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                tagged_item_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["ItemTagsListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    show_api_histories__tagged_item_id__tags__tag_name__get: {
+        /** Show */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                tagged_item_id: string;
+                tag_name: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["ItemTagsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_api_histories__tagged_item_id__tags__tag_name__put: {
+        /** Update */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                tagged_item_id: string;
+                tag_name: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ItemTagsCreatePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["ItemTagsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_api_histories__tagged_item_id__tags__tag_name__post: {
+        /** Create */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                tagged_item_id: string;
+                tag_name: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ItemTagsCreatePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["ItemTagsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_api_histories__tagged_item_id__tags__tag_name__delete: {
+        /** Delete */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                tagged_item_id: string;
+                tag_name: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": boolean;
                 };
             };
             /** @description Validation Error */
@@ -18919,6 +19279,150 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["SharingStatus"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    index_api_workflows__tagged_item_id__tags_get: {
+        /** Index */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                tagged_item_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["ItemTagsListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    show_api_workflows__tagged_item_id__tags__tag_name__get: {
+        /** Show */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                tagged_item_id: string;
+                tag_name: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["ItemTagsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_api_workflows__tagged_item_id__tags__tag_name__put: {
+        /** Update */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                tagged_item_id: string;
+                tag_name: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ItemTagsCreatePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["ItemTagsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_api_workflows__tagged_item_id__tags__tag_name__post: {
+        /** Create */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                tagged_item_id: string;
+                tag_name: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ItemTagsCreatePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["ItemTagsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_api_workflows__tagged_item_id__tags__tag_name__delete: {
+        /** Delete */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                tagged_item_id: string;
+                tag_name: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": boolean;
                 };
             };
             /** @description Validation Error */
