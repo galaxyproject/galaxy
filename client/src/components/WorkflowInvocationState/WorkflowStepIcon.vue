@@ -1,4 +1,5 @@
 <script lang="ts" setup>
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { computed } from "vue";
 
 import WorkflowIcons from "@/components/Workflow/icons";
@@ -12,11 +13,8 @@ const props = defineProps<WorkflowStepIconProps>();
 const stepIcon = computed(() => {
     return WorkflowIcons[props.stepType];
 });
-const cssClasses = computed(() => {
-    return ["fa", "mr-1", stepIcon.value];
-});
 </script>
 
 <template>
-    <i :class="cssClasses"></i>
+    <FontAwesomeIcon class="mr-1" :icon="stepIcon" />
 </template>
