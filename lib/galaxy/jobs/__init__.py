@@ -1740,7 +1740,7 @@ class MinimalJobWrapper(HasResourceParameters):
             dataset.dataset.uuid = context["uuid"]
         self.__update_output(job, dataset)
         if not purged:
-            collect_extra_files(self.object_store, dataset, self.working_directory)
+            collect_extra_files(self.object_store, dataset, self.working_directory, self.outputs_to_working_directory)
         if job.states.ERROR == final_job_state:
             dataset.blurb = "error"
             if not implicit_collection_jobs:
