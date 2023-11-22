@@ -1,5 +1,5 @@
 """
-API operations around galaxy.managers.short_term_storage infrastructure.
+API operations around galaxy.short_term_storage infrastructure.
 """
 from uuid import UUID
 
