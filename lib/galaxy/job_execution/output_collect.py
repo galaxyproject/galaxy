@@ -718,9 +718,13 @@ def default_exit_code_file(files_dir, id_tag):
     return os.path.join(files_dir, f"galaxy_{id_tag}.ec")
 
 
-def collect_extra_files(object_store, dataset, job_working_directory):
+def collect_extra_files(object_store, dataset, job_working_directory, outputs_to_working_directory=False):
     # TODO: should this use compute_environment to determine the extra files path ?
-    file_name = dataset.dataset.extra_files_path_name_from(object_store)
+    real_file_name = file_name = dataset.dataset.extra_files_path_name_from(object_store)
+    if outputs_to_working_directory:
+        # OutputsToWorkingDirectoryPathRewriter always rewrites extra files to uuid path,
+        # so we have to collect from that path even if the real extra files path is dataset_N_files
+        file_name = f"dataset_{dataset.dataset.uuid}_files"
     output_location = "outputs"
     temp_file_path = os.path.join(job_working_directory, output_location, file_name)
     if not os.path.exists(temp_file_path):
@@ -739,7 +743,7 @@ def collect_extra_files(object_store, dataset, job_working_directory):
             for f in files:
                 object_store.update_from_file(
                     dataset.dataset,
-                    extra_dir=os.path.normpath(os.path.join(file_name, os.path.relpath(root, temp_file_path))),
+                    extra_dir=os.path.normpath(os.path.join(real_file_name, os.path.relpath(root, temp_file_path))),
                     alt_name=f,
                     file_name=os.path.join(root, f),
                     create=True,
