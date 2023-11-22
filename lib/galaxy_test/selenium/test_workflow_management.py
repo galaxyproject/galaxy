@@ -18,11 +18,11 @@ class TestWorkflowManagement(SeleniumTestCase, TestsGalaxyPagers, UsesWorkflowAs
         self.workflow_index_open()
         self._workflow_import_from_url()
 
-        table_elements = self.workflow_index_table_elements()
-        assert len(table_elements) == 1
+        workflow_cards = self.workflow_card_elements()
+        assert len(workflow_cards) == 1
 
-        new_workflow = table_elements[0].find_element(By.CSS_SELECTOR, ".workflow-dropdown")
-        assert "TestWorkflow1 (imported from URL)" in new_workflow.text, new_workflow.text
+        first_workflow_card = workflow_cards[0].find_element(By.CSS_SELECTOR, ".workflow-name")
+        assert "TestWorkflow1 (imported from URL)" in first_workflow_card.text, first_workflow_card.text
 
     @selenium_test
     def test_import_accessibility(self):
@@ -102,16 +102,19 @@ class TestWorkflowManagement(SeleniumTestCase, TestsGalaxyPagers, UsesWorkflowAs
         self._workflow_import_from_url()
         self.workflow_index_add_tag("mytag")
         self._workflow_import_from_url()
+        self.workflow_index_open()
         self.workflow_index_add_tag("mytag")
         self._workflow_import_from_url()
+        self.workflow_index_open()
         self.workflow_index_add_tag("mytaglonger")
         self._workflow_import_from_url()
+        self.workflow_index_open()
 
         self.workflow_index_search_for("mytag")
         self._assert_showing_n_workflows(3)
         self.screenshot("workflow_manage_search_by_tag_freetext")
         self.workflow_index_search_for("thisisnotatag")
-        self._assert_showing_n_workflows(0)
+        self.components.workflows.workflow_not_found_message.wait_for_visible()
 
         self.workflow_index_search_for()
         self._assert_showing_n_workflows(4)

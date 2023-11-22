@@ -104,7 +104,7 @@ function updateFilter(newVal: string) {
 }
 
 function onTagClick(tag: string) {
-    filterText.value = WorkflowFilters.setFilterValue(filterText.value, "tag", tag);
+    filterText.value = WorkflowFilters.setFilterValue(filterText.value, "tag", `'${tag}'`);
 }
 
 async function load(overlayLoading = false, silentLoading = false) {
