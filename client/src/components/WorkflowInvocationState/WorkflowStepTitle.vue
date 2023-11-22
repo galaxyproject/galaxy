@@ -65,10 +65,13 @@ function initStores() {
     }
 }
 
-watch(props, () => {
-    initStores();
-});
-initStores();
+watch(
+    props,
+    () => {
+        initStores();
+    },
+    { immediate: true }
+);
 </script>
 
 <template>
