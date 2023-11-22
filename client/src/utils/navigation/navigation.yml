@@ -598,7 +598,8 @@ workflows:
     advanced_search_submit: '#workflows-advanced-filter-submit'
     workflow_rows: "#workflow-table > tbody > tr:not(.b-table-empty-row, [style*='display: none'])"
     workflows_list: '#workflows-list'
-    workflow_card: '[data-workflow-id]'
+    workflow_not_found_message: '#no-workflow-found'
+    workflow_card: '.workflow-card'
     workflow_cards: '#workflow-cards'
     external_link: '.workflow-external-link'
     trs_icon: '.workflow-trs-icon'

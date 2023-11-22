@@ -1401,24 +1401,16 @@ class NavigatesGalaxy(HasDriver):
         self.workflow_index_open()
         self.components.workflows.shared_with_me_tab.wait_for_and_click()
 
-    def workflow_index_table_elements(self):
-        workflows = self.components.workflows
-        workflows.workflow_table.wait_for_visible()
-        return workflows.workflow_rows.all()
-
     def workflow_card_elements(self):
+        self.components.workflows.workflow_cards.wait_for_visible()
         return self.components.workflows.workflow_card.all()
 
     def workflow_card_element(self, workflow_index=0):
         return self.workflow_card_elements()[workflow_index]
 
-    def workflow_index_table_row(self, workflow_index=0):
-        self.components.workflows.workflow_rows.wait_for_element_count_of_at_least(workflow_index + 1)
-        return self.workflow_index_table_elements()[workflow_index]
-
     @retry_during_transitions
     def workflow_index_column_text(self, column_index, workflow_index=0):
-        row_element = self.workflow_index_table_row(workflow_index=workflow_index)
+        row_element = self.workflow_card_element(workflow_index=workflow_index)
         columns = row_element.find_elements(By.CSS_SELECTOR, "td")
         return columns[column_index].text
 
@@ -1468,7 +1460,7 @@ class NavigatesGalaxy(HasDriver):
 
     @retry_during_transitions
     def workflow_click_option(self, workflow_selector, workflow_index=0):
-        workflow_row = self.workflow_index_table_row(workflow_index=workflow_index)
+        workflow_row = self.workflow_card_element(workflow_index=workflow_index)
         workflow_button = workflow_row.find_element(By.CSS_SELECTOR, workflow_selector)
         workflow_button.click()
 
@@ -1510,7 +1502,7 @@ class NavigatesGalaxy(HasDriver):
 
     @retry_during_transitions
     def workflow_index_tag_elements(self, workflow_index=0):
-        workflow_row_element = self.workflow_index_table_row(workflow_index)
+        workflow_row_element = self.workflow_card_element(workflow_index)
         tag_display = workflow_row_element.find_element(By.CSS_SELECTOR, ".stateless-tags")
         tag_spans = tag_display.find_elements(By.CSS_SELECTOR, ".tag")
         return tag_spans
