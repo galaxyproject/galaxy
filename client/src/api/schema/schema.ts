@@ -11639,7 +11639,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["GroupResponse"];
+                    "application/json": components["schemas"]["GroupListResponse"];
                 };
             };
             /** @description Validation Error */
