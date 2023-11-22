@@ -72,14 +72,6 @@ const currentOptions = computed(() => {
 
 const useMany = ref(false);
 
-const showManyButton = computed(
-    () => props.multiple && props.display !== "checkboxes" && props.display !== "radio" && !useMany.value
-);
-
-const showMultiButton = computed(
-    () => props.multiple && props.display !== "checkboxes" && props.display !== "radio" && useMany.value
-);
-
 const { preferredFormSelectElement } = storeToRefs(useUserFlagsStore());
 
 watch(
@@ -103,13 +95,23 @@ watch(
     },
     { immediate: true }
 );
+
+const displayMany = computed(
+    () => props.multiple && props.display !== "checkboxes" && props.display !== "radio" && useMany.value
+);
+
+const showManyButton = computed(
+    () => props.multiple && props.display !== "checkboxes" && props.display !== "radio" && !useMany.value
+);
+
+const showMultiButton = computed(() => displayMany.value);
 </script>
 
 <template>
     <div>
         <FormCheck v-if="display === 'checkboxes'" v-model="currentValue" :options="currentOptions" />
         <FormRadio v-else-if="display === 'radio'" v-model="currentValue" :options="currentOptions" />
-        <FormSelectMany v-else-if="useMany" v-model="currentValue" :options="currentOptions" />
+        <FormSelectMany v-else-if="displayMany" v-model="currentValue" :options="currentOptions" />
         <FormSelect v-else v-model="currentValue" :multiple="multiple" :optional="optional" :options="currentOptions" />
 
         <div class="d-flex">
