@@ -42,6 +42,7 @@ export function useSelectMany({
             worker = null;
         } else {
             post({ type: "clear" });
+            worker.removeEventListener("message", onMessage);
         }
     });
 
@@ -66,7 +67,7 @@ export function useSelectMany({
         });
     });
 
-    worker.addEventListener("message", (e) => {
+    const onMessage = (e) => {
         const message = e.data;
 
         if (message.id !== id) {
@@ -80,7 +81,9 @@ export function useSelectMany({
             moreUnselected.value = message.moreUnselected;
             running.value = false;
         }
-    });
+    };
+
+    worker.addEventListener("message", onMessage);
 
     return {
         unselectedOptionsFiltered,
