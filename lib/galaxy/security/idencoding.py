@@ -35,9 +35,11 @@ class IdEncodingHelper:
         per_kind_id_secret_base = config.get("per_kind_id_secret_base", self.id_secret)
         self.id_ciphers_for_kind = _cipher_cache(per_kind_id_secret_base)
 
-    def encode_id(self, obj_id, kind=None):
+    def encode_id(self, obj_id, kind=None, strict_integer=False):
         if obj_id is None:
             raise galaxy.exceptions.MalformedId("Attempted to encode None id")
+        if strict_integer and not isinstance(obj_id, int):
+            raise galaxy.exceptions.MalformedId("Attempted to encode id that is not an integer")
         id_cipher = self.__id_cipher(kind)
         # Convert to bytes
         s = smart_str(obj_id)

@@ -167,6 +167,23 @@ export interface paths {
         /** For internal use, this endpoint may change without warning. */
         get: operations["show_inheritance_chain_api_datasets__dataset_id__inheritance_chain_get"];
     };
+    "/api/datasets/{dataset_id}/metrics": {
+        /**
+         * Return job metrics for specified job.
+         * @deprecated
+         */
+        get: operations["get_metrics_api_datasets__dataset_id__metrics_get"];
+    };
+    "/api/datasets/{dataset_id}/parameters_display": {
+        /**
+         * Resolve parameters as a list for nested display.
+         * @deprecated
+         * @description Resolve parameters as a list for nested display.
+         * This API endpoint is unstable and tied heavily to Galaxy's JS client code,
+         * this endpoint will change frequently.
+         */
+        get: operations["resolve_parameters_display_api_datasets__dataset_id__parameters_display_get"];
+    };
     "/api/datasets/{dataset_id}/permissions": {
         /**
          * Set permissions of the given history dataset to the given role ids.
@@ -893,16 +910,40 @@ export interface paths {
         /** Index */
         get: operations["index_api_jobs_get"];
     };
-    "/api/jobs/{id}": {
+    "/api/jobs/search": {
         /**
-         * Show
-         * @description Return dictionary containing description of job data
-         *
-         * Parameters
-         * - id: ID of job to return
-         * - full: Return extra information ?
+         * Return jobs for current user
+         * @description This method is designed to scan the list of previously run jobs and find records of jobs that had
+         * the exact some input parameters and datasets. This can be used to minimize the amount of repeated work, and simply
+         * recycle the old results.
          */
-        get: operations["show_api_jobs__id__get"];
+        post: operations["search_jobs_api_jobs_search_post"];
+    };
+    "/api/jobs/{job_id}": {
+        /** Return dictionary containing description of job data. */
+        get: operations["show_job_api_jobs__job_id__get"];
+        /** Cancels specified job */
+        delete: operations["cancel_job_api_jobs__job_id__delete"];
+    };
+    "/api/jobs/{job_id}/common_problems": {
+        /** Check inputs and job for common potential problems to aid in error reporting */
+        get: operations["check_common_problems_api_jobs__job_id__common_problems_get"];
+    };
+    "/api/jobs/{job_id}/destination_params": {
+        /** Return destination parameters for specified job. */
+        get: operations["destination_params_job_api_jobs__job_id__destination_params_get"];
+    };
+    "/api/jobs/{job_id}/error": {
+        /** Submits a bug report via the API. */
+        post: operations["report_error_api_jobs__job_id__error_post"];
+    };
+    "/api/jobs/{job_id}/inputs": {
+        /** Returns input datasets created by a job. */
+        get: operations["get_inputs_api_jobs__job_id__inputs_get"];
+    };
+    "/api/jobs/{job_id}/metrics": {
+        /** Return job metrics for specified job. */
+        get: operations["get_metrics_api_jobs__job_id__metrics_get"];
     };
     "/api/jobs/{job_id}/oidc-tokens": {
         /**
@@ -910,6 +951,23 @@ export interface paths {
          * @description Allows remote job running mechanisms to get a fresh OIDC token that can be used on remote side to authorize user. It is not meant to represent part of Galaxy's stable, user facing API
          */
         get: operations["get_token_api_jobs__job_id__oidc_tokens_get"];
+    };
+    "/api/jobs/{job_id}/outputs": {
+        /** Returns output datasets created by a job. */
+        get: operations["get_outputs_api_jobs__job_id__outputs_get"];
+    };
+    "/api/jobs/{job_id}/parameters_display": {
+        /**
+         * Resolve parameters as a list for nested display.
+         * @description Resolve parameters as a list for nested display.
+         * This API endpoint is unstable and tied heavily to Galaxy's JS client code,
+         * this endpoint will change frequently.
+         */
+        get: operations["resolve_parameters_display_api_jobs__job_id__parameters_display_get"];
+    };
+    "/api/jobs/{job_id}/resume": {
+        /** Resumes a paused job. */
+        put: operations["resume_paused_job_api_jobs__job_id__resume_put"];
     };
     "/api/libraries": {
         /**
@@ -1729,10 +1787,7 @@ export interface components {
              */
             link: string;
         };
-        /**
-         * AnonUserModel
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** AnonUserModel */
         AnonUserModel: {
             /**
              * Nice total disc usage
@@ -1750,10 +1805,7 @@ export interface components {
              */
             total_disk_usage: number;
         };
-        /**
-         * ArchiveHistoryRequestPayload
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** ArchiveHistoryRequestPayload */
         ArchiveHistoryRequestPayload: {
             /**
              * Export Record ID
@@ -1984,10 +2036,7 @@ export interface components {
              */
             url: string;
         };
-        /**
-         * AsyncFile
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** AsyncFile */
         AsyncFile: {
             /**
              * Storage Request Id
@@ -1996,10 +2045,7 @@ export interface components {
             storage_request_id: string;
             task: components["schemas"]["AsyncTaskResultSummary"];
         };
-        /**
-         * AsyncTaskResultSummary
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** AsyncTaskResultSummary */
         AsyncTaskResultSummary: {
             /**
              * ID
@@ -2040,10 +2086,7 @@ export interface components {
                   )
                 | ("cloud" | "quota" | "no_quota" | "restricted");
         };
-        /**
-         * BasicRoleModel
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** BasicRoleModel */
         BasicRoleModel: {
             /**
              * ID
@@ -2092,10 +2135,7 @@ export interface components {
             /** Targets */
             targets: Record<string, never>;
         };
-        /**
-         * BroadcastNotificationContent
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** BroadcastNotificationContent */
         BroadcastNotificationContent: {
             /**
              * Action links
@@ -2216,10 +2256,7 @@ export interface components {
              */
             variant: components["schemas"]["NotificationVariant"];
         };
-        /**
-         * BrowsableFilesSourcePlugin
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** BrowsableFilesSourcePlugin */
         BrowsableFilesSourcePlugin: {
             /**
              * Browsable
@@ -2273,19 +2310,13 @@ export interface components {
              */
             writable: boolean;
         };
-        /**
-         * BulkOperationItemError
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** BulkOperationItemError */
         BulkOperationItemError: {
             /** Error */
             error: string;
             item: components["schemas"]["EncodedHistoryContentItem"];
         };
-        /**
-         * ChangeDatatypeOperationParams
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** ChangeDatatypeOperationParams */
         ChangeDatatypeOperationParams: {
             /** Datatype */
             datatype: string;
@@ -2295,10 +2326,7 @@ export interface components {
              */
             type: "change_datatype";
         };
-        /**
-         * ChangeDbkeyOperationParams
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** ChangeDbkeyOperationParams */
         ChangeDbkeyOperationParams: {
             /** Dbkey */
             dbkey: string;
@@ -2308,10 +2336,7 @@ export interface components {
              */
             type: "change_dbkey";
         };
-        /**
-         * CheckForUpdatesResponse
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** CheckForUpdatesResponse */
         CheckForUpdatesResponse: {
             /**
              * Message
@@ -2341,10 +2366,7 @@ export interface components {
              */
             type: string;
         };
-        /**
-         * CleanableItemsSummary
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** CleanableItemsSummary */
         CleanableItemsSummary: {
             /**
              * Total Items
@@ -2357,18 +2379,12 @@ export interface components {
              */
             total_size: number;
         };
-        /**
-         * CleanupStorageItemsRequest
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** CleanupStorageItemsRequest */
         CleanupStorageItemsRequest: {
             /** Item Ids */
             item_ids: string[];
         };
-        /**
-         * CloudDatasets
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** CloudDatasets */
         CloudDatasets: {
             /**
              * Authentication ID
@@ -2399,10 +2415,7 @@ export interface components {
              */
             overwrite_existing?: boolean;
         };
-        /**
-         * CloudDatasetsResponse
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** CloudDatasetsResponse */
         CloudDatasetsResponse: {
             /**
              * Bucket
@@ -2420,10 +2433,7 @@ export interface components {
              */
             sent_dataset_labels: string[];
         };
-        /**
-         * CloudObjects
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** CloudObjects */
         CloudObjects: {
             /**
              * Authentication ID
@@ -2453,10 +2463,7 @@ export interface components {
              */
             objects: string[];
         };
-        /**
-         * CollectionElementIdentifier
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** CollectionElementIdentifier */
         CollectionElementIdentifier: {
             /**
              * Collection Type
@@ -2496,10 +2503,7 @@ export interface components {
          * @enum {string}
          */
         ColletionSourceType: "hda" | "ldda" | "hdca" | "new_collection";
-        /**
-         * CompositeDataElement
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** CompositeDataElement */
         CompositeDataElement: {
             /** Md5 */
             MD5?: string;
@@ -2584,10 +2588,7 @@ export interface components {
             /** To posix lines */
             to_posix_lines: boolean;
         };
-        /**
-         * CompositeItems
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** CompositeItems */
         CompositeItems: {
             /** Elements */
             elements: (
@@ -2599,10 +2600,7 @@ export interface components {
                 | components["schemas"]["FtpImportElement"]
             )[];
         };
-        /**
-         * ComputeDatasetHashPayload
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** ComputeDatasetHashPayload */
         ComputeDatasetHashPayload: {
             /**
              * Extra Files Path
@@ -2663,10 +2661,7 @@ export interface components {
         ConvertedDatasetsMap: {
             [key: string]: string | undefined;
         };
-        /**
-         * CreateEntryPayload
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** CreateEntryPayload */
         CreateEntryPayload: {
             /**
              * Name
@@ -2680,10 +2675,7 @@ export interface components {
              */
             target: string;
         };
-        /**
-         * CreateHistoryContentFromStore
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** CreateHistoryContentFromStore */
         CreateHistoryContentFromStore: {
             model_store_format?: components["schemas"]["ModelStoreFormat"];
             /** Store Content Uri */
@@ -2691,10 +2683,7 @@ export interface components {
             /** Store Dict */
             store_dict?: Record<string, never>;
         };
-        /**
-         * CreateHistoryContentPayload
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** CreateHistoryContentPayload */
         CreateHistoryContentPayload: {
             /**
              * Collection Type
@@ -2768,10 +2757,7 @@ export interface components {
              */
             type?: components["schemas"]["HistoryContentType"];
         };
-        /**
-         * CreateHistoryFromStore
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** CreateHistoryFromStore */
         CreateHistoryFromStore: {
             model_store_format?: components["schemas"]["ModelStoreFormat"];
             /** Store Content Uri */
@@ -2779,10 +2765,7 @@ export interface components {
             /** Store Dict */
             store_dict?: Record<string, never>;
         };
-        /**
-         * CreateLibrariesFromStore
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** CreateLibrariesFromStore */
         CreateLibrariesFromStore: {
             model_store_format?: components["schemas"]["ModelStoreFormat"];
             /** Store Content Uri */
@@ -2790,10 +2773,7 @@ export interface components {
             /** Store Dict */
             store_dict?: Record<string, never>;
         };
-        /**
-         * CreateLibraryFilePayload
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** CreateLibraryFilePayload */
         CreateLibraryFilePayload: {
             /**
              * From HDA ID
@@ -2814,10 +2794,7 @@ export interface components {
              */
             ldda_message?: string;
         };
-        /**
-         * CreateLibraryFolderPayload
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** CreateLibraryFolderPayload */
         CreateLibraryFolderPayload: {
             /**
              * Description
@@ -2831,10 +2808,7 @@ export interface components {
              */
             name: string;
         };
-        /**
-         * CreateLibraryPayload
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** CreateLibraryPayload */
         CreateLibraryPayload: {
             /**
              * Description
@@ -2870,10 +2844,7 @@ export interface components {
              */
             metrics?: components["schemas"]["Metric"][];
         };
-        /**
-         * CreateNewCollectionPayload
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** CreateNewCollectionPayload */
         CreateNewCollectionPayload: {
             /**
              * Collection Type
@@ -2922,10 +2893,7 @@ export interface components {
              */
             name?: string;
         };
-        /**
-         * CreatePagePayload
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** CreatePagePayload */
         CreatePagePayload: {
             /**
              * Annotation
@@ -2961,10 +2929,7 @@ export interface components {
              */
             title: string;
         };
-        /**
-         * CreateQuotaParams
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** CreateQuotaParams */
         CreateQuotaParams: {
             /**
              * Amount
@@ -3051,10 +3016,7 @@ export interface components {
              */
             url: string;
         };
-        /**
-         * CreatedEntryResponse
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** CreatedEntryResponse */
         CreatedEntryResponse: {
             /**
              * External link
@@ -3133,10 +3095,7 @@ export interface components {
              */
             username: string;
         };
-        /**
-         * CustomBuildCreationPayload
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** CustomBuildCreationPayload */
         CustomBuildCreationPayload: {
             /**
              * Length type
@@ -3160,10 +3119,7 @@ export interface components {
          * @enum {string}
          */
         CustomBuildLenType: "file" | "fasta" | "text";
-        /**
-         * CustomBuildModel
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** CustomBuildModel */
         CustomBuildModel: {
             /**
              * Count
@@ -3204,10 +3160,7 @@ export interface components {
          * @description The custom builds associated with the user.
          */
         CustomBuildsCollection: components["schemas"]["CustomBuildModel"][];
-        /**
-         * CustomBuildsMetadataResponse
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** CustomBuildsMetadataResponse */
         CustomBuildsMetadataResponse: {
             /**
              * Fasta HDAs
@@ -3323,10 +3276,7 @@ export interface components {
              */
             populated?: boolean;
         };
-        /**
-         * DataElementsFromTarget
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** DataElementsFromTarget */
         DataElementsFromTarget: {
             /**
              * Auto Decompress
@@ -3350,10 +3300,7 @@ export interface components {
             /** Url */
             url?: string;
         };
-        /**
-         * DataElementsTarget
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** DataElementsTarget */
         DataElementsTarget: {
             /**
              * Auto Decompress
@@ -3381,9 +3328,12 @@ export interface components {
             )[];
         };
         /**
-         * DatasetAssociationRoles
-         * @description Base model definition with common configuration used by all derived models.
+         * DataItemSourceType
+         * @description An enumeration.
+         * @enum {string}
          */
+        DataItemSourceType: "hda" | "ldda" | "hdca" | "dce" | "dc";
+        /** DatasetAssociationRoles */
         DatasetAssociationRoles: {
             /**
              * Access Roles
@@ -3404,10 +3354,7 @@ export interface components {
              */
             modify_item_roles?: string[][];
         };
-        /**
-         * DatasetCollectionAttributesResult
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** DatasetCollectionAttributesResult */
         DatasetCollectionAttributesResult: {
             /**
              * Dbkey
@@ -3450,10 +3397,7 @@ export interface components {
          * @enum {string}
          */
         DatasetContentType: "meta" | "attr" | "stats" | "data";
-        /**
-         * DatasetErrorMessage
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** DatasetErrorMessage */
         DatasetErrorMessage: {
             /**
              * Dataset
@@ -3468,14 +3412,10 @@ export interface components {
         };
         /**
          * DatasetInheritanceChain
-         * @description Base model definition with common configuration used by all derived models.
          * @default []
          */
         DatasetInheritanceChain: components["schemas"]["DatasetInheritanceChainEntry"][];
-        /**
-         * DatasetInheritanceChainEntry
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** DatasetInheritanceChainEntry */
         DatasetInheritanceChainEntry: {
             /**
              * Dep
@@ -3506,10 +3446,7 @@ export interface components {
              */
             manage?: string[];
         };
-        /**
-         * DatasetSourceId
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** DatasetSourceId */
         DatasetSourceId: {
             /**
              * ID
@@ -3547,10 +3484,7 @@ export interface components {
             | "failed_metadata"
             | "deferred"
             | "discarded";
-        /**
-         * DatasetStorageDetails
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** DatasetStorageDetails */
         DatasetStorageDetails: {
             /**
              * Badges
@@ -3603,10 +3537,7 @@ export interface components {
              */
             sources: Record<string, never>[];
         };
-        /**
-         * DatasetSummary
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** DatasetSummary */
         DatasetSummary: {
             /**
              * Create Time
@@ -3648,15 +3579,9 @@ export interface components {
              */
             uuid: string;
         };
-        /**
-         * DatasetSummaryList
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** DatasetSummaryList */
         DatasetSummaryList: components["schemas"]["DatasetSummary"][];
-        /**
-         * DatasetTextContentDetails
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** DatasetTextContentDetails */
         DatasetTextContentDetails: {
             /**
              * Item Data
@@ -3805,10 +3730,7 @@ export interface components {
                 [key: string]: string | undefined;
             };
         };
-        /**
-         * DefaultQuota
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** DefaultQuota */
         DefaultQuota: {
             /**
              * Model class
@@ -3837,10 +3759,7 @@ export interface components {
          * @enum {string}
          */
         DefaultQuotaValues: "unregistered" | "registered" | "no";
-        /**
-         * DeleteDatasetBatchPayload
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** DeleteDatasetBatchPayload */
         DeleteDatasetBatchPayload: {
             /**
              * Datasets
@@ -3854,10 +3773,7 @@ export interface components {
              */
             purge?: boolean;
         };
-        /**
-         * DeleteDatasetBatchResult
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** DeleteDatasetBatchResult */
         DeleteDatasetBatchResult: {
             /**
              * Errors
@@ -3870,10 +3786,7 @@ export interface components {
              */
             success_count: number;
         };
-        /**
-         * DeleteHistoryContentPayload
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** DeleteHistoryContentPayload */
         DeleteHistoryContentPayload: {
             /**
              * Purge
@@ -3927,10 +3840,15 @@ export interface components {
              */
             purge?: boolean;
         };
-        /**
-         * DeleteLibraryPayload
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** DeleteJobPayload */
+        DeleteJobPayload: {
+            /**
+             * Job message
+             * @description Stop message
+             */
+            message?: string;
+        };
+        /** DeleteLibraryPayload */
         DeleteLibraryPayload: {
             /**
              * Undelete
@@ -3938,10 +3856,7 @@ export interface components {
              */
             undelete: boolean;
         };
-        /**
-         * DeleteQuotaPayload
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** DeleteQuotaPayload */
         DeleteQuotaPayload: {
             /**
              * Purge
@@ -3950,10 +3865,7 @@ export interface components {
              */
             purge?: boolean;
         };
-        /**
-         * DeletedCustomBuild
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** DeletedCustomBuild */
         DeletedCustomBuild: {
             /**
              * Deletion message
@@ -3961,10 +3873,7 @@ export interface components {
              */
             message: string;
         };
-        /**
-         * DetailedUserModel
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** DetailedUserModel */
         DetailedUserModel: {
             /**
              * Deleted
@@ -4073,10 +3982,42 @@ export interface components {
          * @enum {string}
          */
         ElementsFromType: "archive" | "bagit" | "bagit_archive" | "directory";
-        /**
-         * EncodedDatasetSourceId
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** EncodedDataItemSourceId */
+        EncodedDataItemSourceId: {
+            /**
+             * ID
+             * @description The encoded ID of this entity.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Source
+             * @description The source of this dataset, either `hda`, `ldda`, `hdca`, `dce` or `dc` depending of its origin.
+             */
+            src: components["schemas"]["DataItemSourceType"];
+        };
+        /** EncodedDatasetJobInfo */
+        EncodedDatasetJobInfo: {
+            /**
+             * ID
+             * @description The encoded ID of this entity.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Source
+             * @description The source of this dataset, either `hda`, `ldda`, `hdca`, `dce` or `dc` depending of its origin.
+             */
+            src: components["schemas"]["DataItemSourceType"];
+            /**
+             * UUID
+             * Format: uuid4
+             * @deprecated
+             * @description Universal unique identifier for this dataset.
+             */
+            uuid?: string;
+        };
+        /** EncodedDatasetSourceId */
         EncodedDatasetSourceId: {
             /**
              * ID
@@ -4089,6 +4030,21 @@ export interface components {
              * @description The source of this dataset, either `hda` or `ldda` depending of its origin.
              */
             src: components["schemas"]["DatasetSourceType"];
+        };
+        /** EncodedHdcaSourceId */
+        EncodedHdcaSourceId: {
+            /**
+             * ID
+             * @description The encoded ID of this entity.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Source
+             * @description The source of this dataset, which in the case of the model can only be `hdca`.
+             * @enum {string}
+             */
+            src: "hdca";
         };
         /**
          * EncodedHistoryContentItem
@@ -4108,9 +4064,118 @@ export interface components {
             id: string;
         };
         /**
-         * ExportHistoryArchivePayload
-         * @description Base model definition with common configuration used by all derived models.
+         * EncodedJobDetails
+         * @description Basic information about a job.
          */
+        EncodedJobDetails: {
+            /**
+             * Command Line
+             * @description The command line produced by the job. Users can see this value if allowed in the configuration, administrator can always see this value.
+             */
+            command_line?: string;
+            /**
+             * Command Version
+             * @description Tool version indicated during job execution.
+             */
+            command_version: string;
+            /**
+             * Copied from Job-ID
+             * @description Reference to cached job if job execution was cached.
+             * @example 0123456789ABCDEF
+             */
+            copied_from_job_id?: string;
+            /**
+             * Create Time
+             * Format: date-time
+             * @description The time and date this item was created.
+             */
+            create_time: string;
+            /**
+             * Exit Code
+             * @description The exit code returned by the tool. Can be unset if the job is not completed yet.
+             */
+            exit_code?: number;
+            /**
+             * External ID
+             * @description The job id used by the external job runner (Condor, Pulsar, etc.)Only administrator can see this value.
+             */
+            external_id?: string;
+            /**
+             * Galaxy Version
+             * @description The (major) version of Galaxy used to create this job.
+             * @example 21.05
+             */
+            galaxy_version: string;
+            /**
+             * History ID
+             * @description The encoded ID of the history associated with this item.
+             * @example 0123456789ABCDEF
+             */
+            history_id?: string;
+            /**
+             * ID
+             * @description The encoded ID of this entity.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Inputs
+             * @description Dictionary mapping all the tool inputs (by name) to the corresponding data references.
+             * @default {}
+             */
+            inputs?: {
+                [key: string]: components["schemas"]["EncodedDatasetJobInfo"] | undefined;
+            };
+            /**
+             * Model class
+             * @description The name of the database model class.
+             * @default Job
+             * @enum {string}
+             */
+            model_class: "Job";
+            /**
+             * Output collections
+             * @default {}
+             */
+            output_collections?: {
+                [key: string]: components["schemas"]["EncodedHdcaSourceId"] | undefined;
+            };
+            /**
+             * Outputs
+             * @description Dictionary mapping all the tool outputs (by name) to the corresponding data references.
+             * @default {}
+             */
+            outputs?: {
+                [key: string]: components["schemas"]["EncodedDatasetJobInfo"] | undefined;
+            };
+            /**
+             * Parameters
+             * @description Object containing all the parameters of the tool associated with this job. The specific parameters depend on the tool itself.
+             */
+            params: Record<string, never>;
+            /**
+             * State
+             * @description Current state of the job.
+             */
+            state: components["schemas"]["JobState"];
+            /**
+             * Tool ID
+             * @description Identifier of the tool that generated this job.
+             */
+            tool_id: string;
+            /**
+             * Update Time
+             * Format: date-time
+             * @description The last time and date this item was updated.
+             */
+            update_time: string;
+            /**
+             * User Email
+             * @description The email of the user that owns this job. Only the owner of the job and administrators can see this value.
+             */
+            user_email?: string;
+        };
+        /** ExportHistoryArchivePayload */
         ExportHistoryArchivePayload: {
             /**
              * Directory URI
@@ -4141,18 +4206,12 @@ export interface components {
              */
             include_hidden?: boolean;
         };
-        /**
-         * ExportObjectMetadata
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** ExportObjectMetadata */
         ExportObjectMetadata: {
             request_data: components["schemas"]["ExportObjectRequestMetadata"];
             result_data?: components["schemas"]["ExportObjectResultMetadata"];
         };
-        /**
-         * ExportObjectRequestMetadata
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** ExportObjectRequestMetadata */
         ExportObjectRequestMetadata: {
             /**
              * Object Id
@@ -4170,10 +4229,7 @@ export interface components {
              */
             user_id?: string;
         };
-        /**
-         * ExportObjectResultMetadata
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** ExportObjectResultMetadata */
         ExportObjectResultMetadata: {
             /** Error */
             error?: string;
@@ -4220,15 +4276,9 @@ export interface components {
              */
             target_uri: string;
         };
-        /**
-         * ExportTaskListResponse
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** ExportTaskListResponse */
         ExportTaskListResponse: components["schemas"]["ObjectExportTaskResponse"][];
-        /**
-         * ExtraFiles
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** ExtraFiles */
         ExtraFiles: {
             /**
              * Fuzzy Root
@@ -4240,10 +4290,7 @@ export interface components {
             items_from?: string;
             src: components["schemas"]["Src"];
         };
-        /**
-         * FavoriteObject
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** FavoriteObject */
         FavoriteObject: {
             /**
              * Object ID
@@ -4257,10 +4304,7 @@ export interface components {
          * @enum {string}
          */
         FavoriteObjectType: "tools";
-        /**
-         * FavoriteObjectsSummary
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** FavoriteObjectsSummary */
         FavoriteObjectsSummary: {
             /**
              * Favorite tools
@@ -4268,10 +4312,7 @@ export interface components {
              */
             tools: string[];
         };
-        /**
-         * FetchDataPayload
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** FetchDataPayload */
         FetchDataPayload: {
             /**
              * History ID
@@ -4288,10 +4329,7 @@ export interface components {
                 | components["schemas"]["FtpImportTarget"]
             )[];
         };
-        /**
-         * FileDataElement
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** FileDataElement */
         FileDataElement: {
             /** Md5 */
             MD5?: string;
@@ -4344,10 +4382,7 @@ export interface components {
              */
             to_posix_lines?: boolean;
         };
-        /**
-         * FileLibraryFolderItem
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** FileLibraryFolderItem */
         FileLibraryFolderItem: {
             /** Can Manage */
             can_manage: boolean;
@@ -4406,10 +4441,7 @@ export interface components {
              */
             update_time: string;
         };
-        /**
-         * FilesSourcePlugin
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** FilesSourcePlugin */
         FilesSourcePlugin: {
             /**
              * Browsable
@@ -4459,7 +4491,6 @@ export interface components {
         };
         /**
          * FilesSourcePluginList
-         * @description Base model definition with common configuration used by all derived models.
          * @default []
          * @example [
          *   {
@@ -4477,10 +4508,7 @@ export interface components {
             | components["schemas"]["BrowsableFilesSourcePlugin"]
             | components["schemas"]["FilesSourcePlugin"]
         )[];
-        /**
-         * FolderLibraryFolderItem
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** FolderLibraryFolderItem */
         FolderLibraryFolderItem: {
             /** Can Manage */
             can_manage: boolean;
@@ -4519,10 +4547,7 @@ export interface components {
              */
             update_time: string;
         };
-        /**
-         * FtpImportElement
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** FtpImportElement */
         FtpImportElement: {
             /** Md5 */
             MD5?: string;
@@ -4577,10 +4602,7 @@ export interface components {
              */
             to_posix_lines?: boolean;
         };
-        /**
-         * FtpImportTarget
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** FtpImportTarget */
         FtpImportTarget: {
             /**
              * Auto Decompress
@@ -4628,10 +4650,7 @@ export interface components {
              */
             name: string;
         };
-        /**
-         * GroupQuota
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** GroupQuota */
         GroupQuota: {
             /**
              * Group
@@ -4646,15 +4665,9 @@ export interface components {
              */
             model_class: "GroupQuotaAssociation";
         };
-        /**
-         * GroupRoleListResponse
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** GroupRoleListResponse */
         GroupRoleListResponse: components["schemas"]["GroupRoleResponse"][];
-        /**
-         * GroupRoleResponse
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** GroupRoleResponse */
         GroupRoleResponse: {
             /**
              * ID
@@ -4674,15 +4687,9 @@ export interface components {
              */
             url: string;
         };
-        /**
-         * GroupUserListResponse
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** GroupUserListResponse */
         GroupUserListResponse: components["schemas"]["GroupUserResponse"][];
-        /**
-         * GroupUserResponse
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** GroupUserResponse */
         GroupUserResponse: {
             /**
              * Email
@@ -5465,10 +5472,7 @@ export interface components {
          * @enum {string}
          */
         HashFunctionNameEnum: "MD5" | "SHA-1" | "SHA-256" | "SHA-512";
-        /**
-         * HdaDestination
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** HdaDestination */
         HdaDestination: {
             /**
              * Type
@@ -5476,10 +5480,7 @@ export interface components {
              */
             type: "hdas";
         };
-        /**
-         * HdcaDataItemsFromTarget
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** HdcaDataItemsFromTarget */
         HdcaDataItemsFromTarget: {
             /**
              * Auto Decompress
@@ -5505,10 +5506,7 @@ export interface components {
             /** Url */
             url?: string;
         };
-        /**
-         * HdcaDataItemsTarget
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** HdcaDataItemsTarget */
         HdcaDataItemsTarget: {
             /**
              * Auto Decompress
@@ -5537,10 +5535,7 @@ export interface components {
             /** Tags */
             tags?: string[];
         };
-        /**
-         * HdcaDestination
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** HdcaDestination */
         HdcaDestination: {
             /**
              * Type
@@ -5548,10 +5543,7 @@ export interface components {
              */
             type: "hdca";
         };
-        /**
-         * HistoryContentBulkOperationPayload
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** HistoryContentBulkOperationPayload */
         HistoryContentBulkOperationPayload: {
             /** Items */
             items?: components["schemas"]["HistoryContentItem"][];
@@ -5562,10 +5554,7 @@ export interface components {
                 | components["schemas"]["ChangeDbkeyOperationParams"]
                 | components["schemas"]["TagOperationParams"];
         };
-        /**
-         * HistoryContentBulkOperationResult
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** HistoryContentBulkOperationResult */
         HistoryContentBulkOperationResult: {
             /** Errors */
             errors: components["schemas"]["BulkOperationItemError"][];
@@ -5610,10 +5599,7 @@ export interface components {
          * @enum {string}
          */
         HistoryContentSource: "hda" | "hdca" | "library" | "library_folder" | "new_collection";
-        /**
-         * HistoryContentStats
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** HistoryContentStats */
         HistoryContentStats: {
             /**
              * Total Matches
@@ -5890,10 +5876,7 @@ export interface components {
              */
             text: string;
         };
-        /**
-         * ImplicitCollectionJobsStateSummary
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** ImplicitCollectionJobsStateSummary */
         ImplicitCollectionJobsStateSummary: {
             /**
              * ID
@@ -5929,10 +5912,7 @@ export interface components {
                 | components["schemas"]["ImportToolDataBundleDatasetSource"]
                 | components["schemas"]["ImportToolDataBundleUriSource"];
         };
-        /**
-         * ImportToolDataBundleDatasetSource
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** ImportToolDataBundleDatasetSource */
         ImportToolDataBundleDatasetSource: {
             /**
              * ID
@@ -5947,10 +5927,7 @@ export interface components {
              */
             src: "hda" | "ldda";
         };
-        /**
-         * ImportToolDataBundleUriSource
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** ImportToolDataBundleUriSource */
         ImportToolDataBundleUriSource: {
             /**
              * src
@@ -5964,10 +5941,7 @@ export interface components {
              */
             uri: string;
         };
-        /**
-         * InputArguments
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** InputArguments */
         InputArguments: {
             /**
              * Database Key
@@ -5994,10 +5968,7 @@ export interface components {
              */
             to_posix_lines?: "Yes" | boolean;
         };
-        /**
-         * InstalledRepositoryToolShedStatus
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** InstalledRepositoryToolShedStatus */
         InstalledRepositoryToolShedStatus: {
             /**
              * Latest installed revision
@@ -6014,10 +5985,7 @@ export interface components {
             /** Revision Upgrade */
             revision_upgrade?: string;
         };
-        /**
-         * InstalledToolShedRepository
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** InstalledToolShedRepository */
         InstalledToolShedRepository: {
             /**
              * Changeset revision
@@ -6078,10 +6046,7 @@ export interface components {
             /** Uninstalled */
             uninstalled: boolean;
         };
-        /**
-         * ItemTagsPayload
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** ItemTagsPayload */
         ItemTagsPayload: {
             /**
              * Item class
@@ -6106,15 +6071,55 @@ export interface components {
          * @enum {string}
          */
         ItemsFromSrc: "url" | "files" | "path" | "ftp_import" | "server_dir";
-        /**
-         * JobExportHistoryArchiveListResponse
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** JobDestinationParams */
+        JobDestinationParams: {
+            /**
+             * Handler
+             * @description Name of the process that handled the job.
+             */
+            Handler?: string;
+            /**
+             * Runner
+             * @description Job runner class
+             */
+            Runner?: string;
+            /**
+             * Runner Job ID
+             * @description ID assigned to submitted job by external job running system
+             */
+            "Runner Job ID"?: string;
+        };
+        /** JobDisplayParametersSummary */
+        JobDisplayParametersSummary: {
+            /**
+             * Has parameter errors
+             * @description The job has parameter errors
+             */
+            has_parameter_errors: boolean;
+            /**
+             * Outputs
+             * @description Dictionary mapping all the tool outputs (by name) with the corresponding dataset information in a nested format.
+             */
+            outputs: {
+                [key: string]: components["schemas"]["JobOutput"][] | undefined;
+            };
+            /**
+             * Parameters
+             * @description The parameters of the job in a nested format.
+             */
+            parameters: components["schemas"]["JobParameter"][];
+        };
+        /** JobErrorSummary */
+        JobErrorSummary: {
+            /**
+             * Error messages
+             * @description The error messages for the specified job.
+             */
+            messages: string[][];
+        };
+        /** JobExportHistoryArchiveListResponse */
         JobExportHistoryArchiveListResponse: components["schemas"]["JobExportHistoryArchiveModel"][];
-        /**
-         * JobExportHistoryArchiveModel
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** JobExportHistoryArchiveModel */
         JobExportHistoryArchiveModel: {
             /**
              * Download URL
@@ -6173,10 +6178,7 @@ export interface components {
              */
             job_id: string;
         };
-        /**
-         * JobImportHistoryResponse
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** JobImportHistoryResponse */
         JobImportHistoryResponse: {
             /**
              * Create Time
@@ -6248,6 +6250,32 @@ export interface components {
          * @enum {string}
          */
         JobIndexViewEnum: "collection" | "admin_job_list";
+        /** JobInputAssociation */
+        JobInputAssociation: {
+            /**
+             * dataset
+             * @description Reference to the associated item.
+             */
+            dataset: components["schemas"]["EncodedDataItemSourceId"];
+            /**
+             * name
+             * @description Name of the job input parameter.
+             */
+            name: string;
+        };
+        /** JobInputSummary */
+        JobInputSummary: {
+            /**
+             * Duplicate inputs
+             * @description Job has duplicate inputs.
+             */
+            has_duplicate_inputs: boolean;
+            /**
+             * Empty inputs
+             * @description Job has empty inputs.
+             */
+            has_empty_inputs: boolean;
+        };
         /** JobLock */
         JobLock: {
             /**
@@ -6255,6 +6283,92 @@ export interface components {
              * @description If active, jobs will not dispatch
              */
             active: boolean;
+        };
+        /**
+         * JobMetric
+         * @example {
+         *   "name": "start_epoch",
+         *   "plugin": "core",
+         *   "raw_value": "1614261340.0000000",
+         *   "title": "Job Start Time",
+         *   "value": "2021-02-25 14:55:40"
+         * }
+         */
+        JobMetric: {
+            /**
+             * Name
+             * @description The name of the metric variable.
+             */
+            name: string;
+            /**
+             * Plugin
+             * @description The instrumenter plugin that generated this metric.
+             */
+            plugin: string;
+            /**
+             * Raw Value
+             * @description The raw value of the metric as a string.
+             */
+            raw_value: string;
+            /**
+             * Title
+             * @description A descriptive title for this metric.
+             */
+            title: string;
+            /**
+             * Value
+             * @description The textual representation of the metric value.
+             */
+            value: string;
+        };
+        /** JobOutput */
+        JobOutput: {
+            /**
+             * Output label
+             * @description The output label
+             */
+            label: Record<string, never>;
+            /**
+             * Dataset
+             * @description The associated dataset.
+             */
+            value: components["schemas"]["EncodedDataItemSourceId"];
+        };
+        /** JobOutputAssociation */
+        JobOutputAssociation: {
+            /**
+             * dataset
+             * @description Reference to the associated item.
+             */
+            dataset: components["schemas"]["EncodedDataItemSourceId"];
+            /**
+             * name
+             * @description Name of the job output parameter.
+             */
+            name: string;
+        };
+        /** JobParameter */
+        JobParameter: {
+            /**
+             * Depth
+             * @description The depth of the job parameter.
+             */
+            depth: number;
+            /**
+             * Notes
+             * @description Notes associated with the job parameter.
+             */
+            notes?: string;
+            /**
+             * Text
+             * @description Text associated with the job parameter.
+             */
+            text: string;
+            /**
+             * Value
+             * @description The values of the job parameter
+             */
+            value: Record<string, never>;
         };
         /**
          * JobSourceType
@@ -6283,10 +6397,7 @@ export interface components {
             | "stop"
             | "stopped"
             | "skipped";
-        /**
-         * JobStateSummary
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** JobStateSummary */
         JobStateSummary: {
             /**
              * ID
@@ -6331,10 +6442,7 @@ export interface components {
              */
             value: string;
         };
-        /**
-         * LegacyLibraryPermissionsPayload
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** LegacyLibraryPermissionsPayload */
         LegacyLibraryPermissionsPayload: {
             /**
              * Access IDs
@@ -6361,10 +6469,7 @@ export interface components {
              */
             LIBRARY_MODIFY_in?: string[] | string;
         };
-        /**
-         * LibraryAvailablePermissions
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** LibraryAvailablePermissions */
         LibraryAvailablePermissions: {
             /**
              * Page
@@ -6387,10 +6492,7 @@ export interface components {
              */
             total: number;
         };
-        /**
-         * LibraryCurrentPermissions
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** LibraryCurrentPermissions */
         LibraryCurrentPermissions: {
             /**
              * Access Role List
@@ -6413,10 +6515,7 @@ export interface components {
              */
             modify_library_role_list: string[][];
         };
-        /**
-         * LibraryDestination
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** LibraryDestination */
         LibraryDestination: {
             /**
              * Description
@@ -6439,10 +6538,7 @@ export interface components {
              */
             type: "library";
         };
-        /**
-         * LibraryFolderContentsIndexResult
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** LibraryFolderContentsIndexResult */
         LibraryFolderContentsIndexResult: {
             /** Folder Contents */
             folder_contents: (
@@ -6451,10 +6547,7 @@ export interface components {
             )[];
             metadata: components["schemas"]["LibraryFolderMetadata"];
         };
-        /**
-         * LibraryFolderCurrentPermissions
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** LibraryFolderCurrentPermissions */
         LibraryFolderCurrentPermissions: {
             /**
              * Add Role List
@@ -6472,10 +6565,7 @@ export interface components {
              */
             modify_folder_role_list: string[][];
         };
-        /**
-         * LibraryFolderDestination
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** LibraryFolderDestination */
         LibraryFolderDestination: {
             /**
              * Library Folder Id
@@ -6488,10 +6578,7 @@ export interface components {
              */
             type: "library_folder";
         };
-        /**
-         * LibraryFolderDetails
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** LibraryFolderDetails */
         LibraryFolderDetails: {
             /**
              * Deleted
@@ -6558,10 +6645,7 @@ export interface components {
              */
             update_time: string;
         };
-        /**
-         * LibraryFolderMetadata
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** LibraryFolderMetadata */
         LibraryFolderMetadata: {
             /** Can Add Library Item */
             can_add_library_item: boolean;
@@ -6587,10 +6671,7 @@ export interface components {
          * @enum {string}
          */
         LibraryFolderPermissionAction: "set_permissions";
-        /**
-         * LibraryFolderPermissionsPayload
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** LibraryFolderPermissionsPayload */
         LibraryFolderPermissionsPayload: {
             /**
              * Action
@@ -6616,10 +6697,7 @@ export interface components {
              */
             "modify_ids[]"?: string[] | string;
         };
-        /**
-         * LibraryLegacySummary
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** LibraryLegacySummary */
         LibraryLegacySummary: {
             /**
              * Create Time
@@ -6680,10 +6758,7 @@ export interface components {
          * @enum {string}
          */
         LibraryPermissionScope: "current" | "available";
-        /**
-         * LibraryPermissionsPayload
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** LibraryPermissionsPayload */
         LibraryPermissionsPayload: {
             /**
              * Access IDs
@@ -6715,10 +6790,7 @@ export interface components {
              */
             "modify_ids[]"?: string[] | string;
         };
-        /**
-         * LibrarySummary
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** LibrarySummary */
         LibrarySummary: {
             /**
              * Can User Add
@@ -6795,7 +6867,6 @@ export interface components {
         };
         /**
          * LibrarySummaryList
-         * @description Base model definition with common configuration used by all derived models.
          * @default []
          */
         LibrarySummaryList: components["schemas"]["LibrarySummary"][];
@@ -6909,10 +6980,7 @@ export interface components {
          * @enum {string}
          */
         MandatoryNotificationCategory: "broadcast";
-        /**
-         * MaterializeDatasetInstanceAPIRequest
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** MaterializeDatasetInstanceAPIRequest */
         MaterializeDatasetInstanceAPIRequest: {
             /**
              * Content
@@ -6929,10 +6997,7 @@ export interface components {
              */
             source: components["schemas"]["DatasetSourceType"];
         };
-        /**
-         * MessageNotificationContent
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** MessageNotificationContent */
         MessageNotificationContent: {
             /**
              * Category
@@ -7087,10 +7152,7 @@ export interface components {
          * @enum {string}
          */
         ModelStoreFormat: "tgz" | "tar" | "tar.gz" | "bag.zip" | "bag.tar" | "bag.tgz" | "rocrate.zip" | "bco.json";
-        /**
-         * NestedElement
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** NestedElement */
         NestedElement: {
             /** Md5 */
             MD5?: string;
@@ -7151,10 +7213,7 @@ export interface components {
              */
             to_posix_lines?: boolean;
         };
-        /**
-         * NewSharedItemNotificationContent
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** NewSharedItemNotificationContent */
         NewSharedItemNotificationContent: {
             /**
              * Category
@@ -7308,10 +7367,7 @@ export interface components {
              */
             recipients: components["schemas"]["NotificationRecipients"];
         };
-        /**
-         * NotificationCreatedResponse
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** NotificationCreatedResponse */
         NotificationCreatedResponse: {
             /**
              * Notification
@@ -7436,10 +7492,7 @@ export interface components {
          * @enum {string}
          */
         NotificationVariant: "info" | "warning" | "urgent";
-        /**
-         * NotificationsBatchRequest
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** NotificationsBatchRequest */
         NotificationsBatchRequest: {
             /**
              * Notification IDs
@@ -7458,10 +7511,7 @@ export interface components {
              */
             updated_count: number;
         };
-        /**
-         * ObjectExportTaskResponse
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** ObjectExportTaskResponse */
         ObjectExportTaskResponse: {
             /**
              * Create Time
@@ -7520,10 +7570,7 @@ export interface components {
          * @enum {string}
          */
         PageContentFormat: "markdown" | "html";
-        /**
-         * PageDetails
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** PageDetails */
         PageDetails: {
             /**
              * Content
@@ -7620,10 +7667,7 @@ export interface components {
              */
             username: string;
         };
-        /**
-         * PageSummary
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** PageSummary */
         PageSummary: {
             /**
              * Create Time
@@ -7700,14 +7744,10 @@ export interface components {
         };
         /**
          * PageSummaryList
-         * @description Base model definition with common configuration used by all derived models.
          * @default []
          */
         PageSummaryList: components["schemas"]["PageSummary"][];
-        /**
-         * PastedDataElement
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** PastedDataElement */
         PastedDataElement: {
             /** Md5 */
             MD5?: string;
@@ -7765,10 +7805,7 @@ export interface components {
              */
             to_posix_lines?: boolean;
         };
-        /**
-         * PathDataElement
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** PathDataElement */
         PathDataElement: {
             /** Md5 */
             MD5?: string;
@@ -7838,10 +7875,7 @@ export interface components {
          * @enum {string}
          */
         PluginKind: "rfs" | "drs" | "rdm" | "stock";
-        /**
-         * PrepareStoreDownloadPayload
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** PrepareStoreDownloadPayload */
         PrepareStoreDownloadPayload: {
             /**
              * Bco Merge History Metadata
@@ -8017,7 +8051,6 @@ export interface components {
         };
         /**
          * QuotaSummaryList
-         * @description Base model definition with common configuration used by all derived models.
          * @default []
          */
         QuotaSummaryList: components["schemas"]["QuotaSummary"][];
@@ -8030,10 +8063,7 @@ export interface components {
             /** Reloaded */
             reloaded: string[];
         };
-        /**
-         * RemoteDirectory
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** RemoteDirectory */
         RemoteDirectory: {
             /**
              * Class
@@ -8056,10 +8086,7 @@ export interface components {
              */
             uri: string;
         };
-        /**
-         * RemoteFile
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** RemoteFile */
         RemoteFile: {
             /**
              * Class
@@ -8104,16 +8131,32 @@ export interface components {
          * @enum {string}
          */
         RemoteFilesFormat: "flat" | "jstree" | "uri";
-        /**
-         * RemoteUserCreationPayload
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** RemoteUserCreationPayload */
         RemoteUserCreationPayload: {
             /**
              * Email
              * @description Email of the user
              */
             remote_user_email: string;
+        };
+        /** ReportJobErrorPayload */
+        ReportJobErrorPayload: {
+            /**
+             * History Dataset Association ID
+             * @description The History Dataset Association ID related to the error.
+             * @example 0123456789ABCDEF
+             */
+            dataset_id: string;
+            /**
+             * Email
+             * @description Email address for communication with the user. Only required for anonymous users.
+             */
+            email?: string;
+            /**
+             * Message
+             * @description The optional message sent with the error report.
+             */
+            message?: string;
         };
         /**
          * RequestDataType
@@ -8135,10 +8178,7 @@ export interface components {
          * @enum {string}
          */
         Requirement: "logged_in" | "new_history" | "admin";
-        /**
-         * RoleDefinitionModel
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** RoleDefinitionModel */
         RoleDefinitionModel: {
             /**
              * Description
@@ -8161,15 +8201,9 @@ export interface components {
              */
             user_ids?: string[];
         };
-        /**
-         * RoleListResponse
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** RoleListResponse */
         RoleListResponse: components["schemas"]["RoleModelResponse"][];
-        /**
-         * RoleModelResponse
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** RoleModelResponse */
         RoleModelResponse: {
             /**
              * Description
@@ -8206,10 +8240,25 @@ export interface components {
              */
             url: string;
         };
-        /**
-         * ServerDirElement
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** SearchJobsPayload */
+        SearchJobsPayload: {
+            /**
+             * Inputs
+             * @description The inputs of the job.
+             */
+            inputs: Record<string, never>;
+            /**
+             * State
+             * @description Current state of the job.
+             */
+            state: components["schemas"]["JobState"];
+            /**
+             * Tool ID
+             * @description The tool ID related to the job.
+             */
+            tool_id: string;
+        };
+        /** ServerDirElement */
         ServerDirElement: {
             /** Md5 */
             MD5?: string;
@@ -8354,10 +8403,7 @@ export interface components {
              */
             version: string;
         };
-        /**
-         * SetSlugPayload
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** SetSlugPayload */
         SetSlugPayload: {
             /**
              * New Slug
@@ -8365,10 +8411,7 @@ export interface components {
              */
             new_slug: string;
         };
-        /**
-         * ShareWithExtra
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** ShareWithExtra */
         ShareWithExtra: {
             /**
              * Can Share
@@ -8377,10 +8420,7 @@ export interface components {
              */
             can_share?: boolean;
         };
-        /**
-         * ShareWithPayload
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** ShareWithPayload */
         ShareWithPayload: {
             /**
              * Share Option
@@ -8397,10 +8437,7 @@ export interface components {
              */
             user_ids: (string | string)[];
         };
-        /**
-         * ShareWithStatus
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** ShareWithStatus */
         ShareWithStatus: {
             /**
              * Encoded Email
@@ -8462,10 +8499,7 @@ export interface components {
          * @enum {string}
          */
         SharingOptions: "make_public" | "make_accessible_to_shared" | "no_changes";
-        /**
-         * SharingStatus
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** SharingStatus */
         SharingStatus: {
             /**
              * Encoded Email
@@ -8510,10 +8544,7 @@ export interface components {
              */
             users_shared_with?: components["schemas"]["UserEmail"][];
         };
-        /**
-         * ShortTermStoreExportPayload
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** ShortTermStoreExportPayload */
         ShortTermStoreExportPayload: {
             /** Duration */
             duration?: number | number;
@@ -8552,10 +8583,7 @@ export interface components {
          * @enum {string}
          */
         Src: "url" | "pasted" | "files" | "path" | "composite" | "ftp_import" | "server_dir";
-        /**
-         * StorageItemCleanupError
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** StorageItemCleanupError */
         StorageItemCleanupError: {
             /** Error */
             error: string;
@@ -8565,10 +8593,7 @@ export interface components {
              */
             item_id: string;
         };
-        /**
-         * StorageItemsCleanupResult
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** StorageItemsCleanupResult */
         StorageItemsCleanupResult: {
             /** Errors */
             errors: components["schemas"]["StorageItemCleanupError"][];
@@ -8579,10 +8604,7 @@ export interface components {
             /** Total Item Count */
             total_item_count: number;
         };
-        /**
-         * StoreExportPayload
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** StoreExportPayload */
         StoreExportPayload: {
             /**
              * Include deleted
@@ -8608,10 +8630,7 @@ export interface components {
              */
             model_store_format?: components["schemas"]["ModelStoreFormat"];
         };
-        /**
-         * StoredItem
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** StoredItem */
         StoredItem: {
             /**
              * Id
@@ -8637,10 +8656,7 @@ export interface components {
          * @enum {string}
          */
         StoredItemOrderBy: "name-asc" | "name-dsc" | "size-asc" | "size-dsc" | "update_time-asc" | "update_time-dsc";
-        /**
-         * SuitableConverter
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** SuitableConverter */
         SuitableConverter: {
             /**
              * Name
@@ -8678,10 +8694,7 @@ export interface components {
          * ]
          */
         TagCollection: string[];
-        /**
-         * TagOperationParams
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** TagOperationParams */
         TagOperationParams: {
             /** Tags */
             tags: string[];
@@ -8996,10 +9009,7 @@ export interface components {
              */
             visible?: boolean;
         };
-        /**
-         * UpdateLibraryFolderPayload
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** UpdateLibraryFolderPayload */
         UpdateLibraryFolderPayload: {
             /**
              * Description
@@ -9012,10 +9022,7 @@ export interface components {
              */
             name?: string;
         };
-        /**
-         * UpdateLibraryPayload
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** UpdateLibraryPayload */
         UpdateLibraryPayload: {
             /**
              * Description
@@ -9033,10 +9040,7 @@ export interface components {
              */
             synopsis?: string;
         };
-        /**
-         * UpdateQuotaParams
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** UpdateQuotaParams */
         UpdateQuotaParams: {
             /**
              * Amount
@@ -9104,10 +9108,7 @@ export interface components {
                 [key: string]: components["schemas"]["NotificationCategorySettings"] | undefined;
             };
         };
-        /**
-         * UrlDataElement
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** UrlDataElement */
         UrlDataElement: {
             /** Md5 */
             MD5?: string;
@@ -9165,10 +9166,7 @@ export interface components {
              */
             url: string;
         };
-        /**
-         * UserBeaconSetting
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** UserBeaconSetting */
         UserBeaconSetting: {
             /**
              * Enabled
@@ -9176,10 +9174,7 @@ export interface components {
              */
             enabled: boolean;
         };
-        /**
-         * UserCreationPayload
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** UserCreationPayload */
         UserCreationPayload: {
             /**
              * Email
@@ -9197,10 +9192,7 @@ export interface components {
              */
             username: string;
         };
-        /**
-         * UserDeletionPayload
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** UserDeletionPayload */
         UserDeletionPayload: {
             /**
              * Purge user
@@ -9208,10 +9200,7 @@ export interface components {
              */
             purge: boolean;
         };
-        /**
-         * UserEmail
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** UserEmail */
         UserEmail: {
             /**
              * Email
@@ -9405,10 +9394,7 @@ export interface components {
              */
             notification_ids: string[];
         };
-        /**
-         * UserQuota
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** UserQuota */
         UserQuota: {
             /**
              * Model class
@@ -9445,15 +9431,9 @@ export interface components {
             /** Error Type */
             type: string;
         };
-        /**
-         * Visualization
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** Visualization */
         Visualization: Record<string, never>;
-        /**
-         * VisualizationSummary
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** VisualizationSummary */
         VisualizationSummary: {
             /**
              * Annotation
@@ -9521,14 +9501,10 @@ export interface components {
         };
         /**
          * VisualizationSummaryList
-         * @description Base model definition with common configuration used by all derived models.
          * @default []
          */
         VisualizationSummaryList: components["schemas"]["VisualizationSummary"][];
-        /**
-         * WorkflowInvocationStateSummary
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** WorkflowInvocationStateSummary */
         WorkflowInvocationStateSummary: {
             /**
              * ID
@@ -9557,10 +9533,7 @@ export interface components {
                 [key: string]: number | undefined;
             };
         };
-        /**
-         * WriteInvocationStoreToPayload
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** WriteInvocationStoreToPayload */
         WriteInvocationStoreToPayload: {
             /**
              * Bco Merge History Metadata
@@ -9623,10 +9596,7 @@ export interface components {
              */
             target_uri: string;
         };
-        /**
-         * WriteStoreToPayload
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** WriteStoreToPayload */
         WriteStoreToPayload: {
             /**
              * Include deleted
@@ -10525,6 +10495,77 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["DatasetInheritanceChain"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_metrics_api_datasets__dataset_id__metrics_get: {
+        /**
+         * Return job metrics for specified job.
+         * @deprecated
+         */
+        parameters: {
+            /** @description Whether this dataset belongs to a history (HDA) or a library (LDDA). */
+            query?: {
+                hda_ldda?: components["schemas"]["DatasetSourceType"];
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The ID of the dataset */
+            path: {
+                dataset_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["JobMetric"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resolve_parameters_display_api_datasets__dataset_id__parameters_display_get: {
+        /**
+         * Resolve parameters as a list for nested display.
+         * @deprecated
+         * @description Resolve parameters as a list for nested display.
+         * This API endpoint is unstable and tied heavily to Galaxy's JS client code,
+         * this endpoint will change frequently.
+         */
+        parameters: {
+            /** @description Whether this dataset belongs to a history (HDA) or a library (LDDA). */
+            query?: {
+                hda_ldda?: components["schemas"]["DatasetSourceType"];
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The ID of the dataset */
+            path: {
+                dataset_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["JobDisplayParametersSummary"];
                 };
             };
             /** @description Validation Error */
@@ -14615,7 +14656,7 @@ export interface operations {
              * : The tool ID corresponding to the job. (The tag `t` can be used a short hand alias for this tag to filter on this attribute.)
              *
              * `runner`
-             * : The job runner name used to execte the job. (The tag `r` can be used a short hand alias for this tag to filter on this attribute.) This tag is only available for requests using admin keys and/or sessions.
+             * : The job runner name used to execute the job. (The tag `r` can be used a short hand alias for this tag to filter on this attribute.) This tag is only available for requests using admin keys and/or sessions.
              *
              * `handler`
              * : The job handler name used to execute the job. (The tag `h` can be used a short hand alias for this tag to filter on this attribute.) This tag is only available for requests using admin keys and/or sessions.
@@ -14667,16 +14708,43 @@ export interface operations {
             };
         };
     };
-    show_api_jobs__id__get: {
+    search_jobs_api_jobs_search_post: {
         /**
-         * Show
-         * @description Return dictionary containing description of job data
-         *
-         * Parameters
-         * - id: ID of job to return
-         * - full: Return extra information ?
+         * Return jobs for current user
+         * @description This method is designed to scan the list of previously run jobs and find records of jobs that had
+         * the exact some input parameters and datasets. This can be used to minimize the amount of repeated work, and simply
+         * recycle the old results.
          */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["SearchJobsPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["EncodedJobDetails"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    show_job_api_jobs__job_id__get: {
+        /** Return dictionary containing description of job data. */
         parameters: {
+            /** @description Show extra information. */
             query?: {
                 full?: boolean;
             };
@@ -14684,8 +14752,9 @@ export interface operations {
             header?: {
                 "run-as"?: string;
             };
+            /** @description The ID of the job */
             path: {
-                id: string;
+                job_id: string;
             };
         };
         responses: {
@@ -14693,6 +14762,185 @@ export interface operations {
             200: {
                 content: {
                     "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cancel_job_api_jobs__job_id__delete: {
+        /** Cancels specified job */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The ID of the job */
+            path: {
+                job_id: string;
+            };
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["DeleteJobPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": boolean;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    check_common_problems_api_jobs__job_id__common_problems_get: {
+        /** Check inputs and job for common potential problems to aid in error reporting */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The ID of the job */
+            path: {
+                job_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["JobInputSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    destination_params_job_api_jobs__job_id__destination_params_get: {
+        /** Return destination parameters for specified job. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The ID of the job */
+            path: {
+                job_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["JobDestinationParams"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    report_error_api_jobs__job_id__error_post: {
+        /** Submits a bug report via the API. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The ID of the job */
+            path: {
+                job_id: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ReportJobErrorPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["JobErrorSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_inputs_api_jobs__job_id__inputs_get: {
+        /** Returns input datasets created by a job. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The ID of the job */
+            path: {
+                job_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["JobInputAssociation"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_metrics_api_jobs__job_id__metrics_get: {
+        /** Return job metrics for specified job. */
+        parameters: {
+            /**
+             * @deprecated
+             * @description Whether this dataset belongs to a history (HDA) or a library (LDDA).
+             */
+            query?: {
+                hda_ldda?: components["schemas"]["DatasetSourceType"];
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The ID of the job */
+            path: {
+                job_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["JobMetric"][];
                 };
             };
             /** @description Validation Error */
@@ -14728,6 +14976,99 @@ export interface operations {
             200: {
                 content: {
                     "text/plain": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_outputs_api_jobs__job_id__outputs_get: {
+        /** Returns output datasets created by a job. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The ID of the job */
+            path: {
+                job_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["JobOutputAssociation"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resolve_parameters_display_api_jobs__job_id__parameters_display_get: {
+        /**
+         * Resolve parameters as a list for nested display.
+         * @description Resolve parameters as a list for nested display.
+         * This API endpoint is unstable and tied heavily to Galaxy's JS client code,
+         * this endpoint will change frequently.
+         */
+        parameters: {
+            /**
+             * @deprecated
+             * @description Whether this dataset belongs to a history (HDA) or a library (LDDA).
+             */
+            query?: {
+                hda_ldda?: components["schemas"]["DatasetSourceType"];
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The ID of the job */
+            path: {
+                job_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["JobDisplayParametersSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    resume_paused_job_api_jobs__job_id__resume_put: {
+        /** Resumes a paused job. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The ID of the job */
+            path: {
+                job_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["JobOutputAssociation"][];
                 };
             };
             /** @description Validation Error */
