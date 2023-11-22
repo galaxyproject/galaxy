@@ -52,12 +52,6 @@ from galaxy.managers.library_datasets import LibraryDatasetsManager
 from galaxy.managers.notification import NotificationManager
 from galaxy.managers.roles import RoleManager
 from galaxy.managers.session import GalaxySessionManager
-from galaxy.managers.short_term_storage import (
-    ShortTermStorageAllocator,
-    ShortTermStorageConfiguration,
-    ShortTermStorageManager,
-    ShortTermStorageMonitor,
-)
 from galaxy.managers.tasks import (
     AsyncTasksManager,
     CeleryAsyncTasksManager,
@@ -112,6 +106,12 @@ from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.security.vault import (
     Vault,
     VaultFactory,
+)
+from galaxy.short_term_storage import (
+    ShortTermStorageAllocator,
+    ShortTermStorageConfiguration,
+    ShortTermStorageManager,
+    ShortTermStorageMonitor,
 )
 from galaxy.tool_shed.cache import ToolShedRepositoryCache
 from galaxy.tool_shed.galaxy_install.client import InstallationTarget
