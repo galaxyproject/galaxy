@@ -35,7 +35,7 @@ class GroupsManager:
         for group in get_not_deleted_groups(trans.sa_session):
             item = group.to_dict(value_mapper={"id": DecodedDatabaseIdField.encode})
             encoded_id = DecodedDatabaseIdField.encode(group.id)
-            item["url"] = self._url_for(trans, "index", group_id=encoded_id)
+            item["url"] = self._url_for(trans, "show_group", group_id=encoded_id)
             rval.append(item)
         return rval
 
@@ -61,7 +61,7 @@ class GroupsManager:
 
         encoded_id = DecodedDatabaseIdField.encode(group.id)
         item = group.to_dict(view="element", value_mapper={"id": DecodedDatabaseIdField.encode})
-        item["url"] = self._url_for(trans, "create", group_id=encoded_id)
+        item["url"] = self._url_for(trans, "show_group", group_id=encoded_id)
         return [item]
 
     def show(self, trans: ProvidesAppContext, group_id: int):
@@ -71,17 +71,9 @@ class GroupsManager:
         encoded_id = DecodedDatabaseIdField.encode(group_id)
         group = self._get_group(trans.sa_session, group_id)
         item = group.to_dict(view="element", value_mapper={"id": DecodedDatabaseIdField.encode})
-        item["url"] = self._url_for(trans, "show", group_id=encoded_id)
-        encoded_user_id = [DecodedDatabaseIdField.encode(gu.user.id) for gu in group.users]
-        encoded_role_id = [DecodedDatabaseIdField.encode(gr.role.id) for gr in group.roles]
-        item["users_url"] = [
-            self._url_for(trans, "group_user", group_id=encoded_id, user_id=group_user)
-            for group_user in encoded_user_id
-        ]
-        item["roles_url"] = [
-            self._url_for(trans, "group_role", group_id=encoded_id, role_id=group_role)
-            for group_role in encoded_role_id
-        ]
+        item["url"] = self._url_for(trans, "show_group", group_id=encoded_id)
+        item["users_url"] = self._url_for(trans, "group_users", group_id=encoded_id)
+        item["roles_url"] = self._url_for(trans, "group_roles", group_id=encoded_id)
         return item
 
     def update(self, trans: ProvidesAppContext, group_id: int, payload: GroupCreatePayload):
@@ -107,7 +99,7 @@ class GroupsManager:
 
         encoded_id = DecodedDatabaseIdField.encode(group.id)
         item = group.to_dict(view="element", value_mapper={"id": DecodedDatabaseIdField.encode})
-        item["url"] = self._url_for(trans, "update", group_id=encoded_id)
+        item["url"] = self._url_for(trans, "show_group", group_id=encoded_id)
         return item
 
     def _url_for(self, trans, name, **kwargs):

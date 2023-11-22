@@ -389,13 +389,13 @@ export interface paths {
     };
     "/api/groups/{group_id}": {
         /** Displays information about a group. */
-        get: operations["show_api_groups__group_id__get"];
+        get: operations["show_group_api_groups__group_id__get"];
         /** Modifies a group. */
         put: operations["update_api_groups__group_id__put"];
     };
     "/api/groups/{group_id}/roles": {
         /** Displays a collection (list) of groups. */
-        get: operations["index_api_groups__group_id__roles_get"];
+        get: operations["group_roles_api_groups__group_id__roles_get"];
     };
     "/api/groups/{group_id}/roles/{role_id}": {
         /** Displays information about a group role. */
@@ -430,7 +430,7 @@ export interface paths {
          * @description GET /api/groups/{encoded_group_id}/users
          * Displays a collection (list) of groups.
          */
-        get: operations["index_api_groups__group_id__users_get"];
+        get: operations["group_users_api_groups__group_id__users_get"];
     };
     "/api/groups/{group_id}/users/{user_id}": {
         /**
@@ -4720,11 +4720,11 @@ export interface components {
             /** name of the group */
             name: string;
             /** URL for the roles of the group */
-            roles_url?: string[];
+            roles_url?: string;
             /** URL for the group */
             url: string;
             /** URL for the users of the group */
-            users_url?: string[];
+            users_url?: string;
         };
         /** GroupRoleListResponse */
         GroupRoleListResponse: components["schemas"]["GroupRoleResponse"][];
@@ -11650,7 +11650,7 @@ export interface operations {
             };
         };
     };
-    show_api_groups__group_id__get: {
+    show_group_api_groups__group_id__get: {
         /** Displays information about a group. */
         parameters: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
@@ -11707,7 +11707,7 @@ export interface operations {
             };
         };
     };
-    index_api_groups__group_id__roles_get: {
+    group_roles_api_groups__group_id__roles_get: {
         /** Displays a collection (list) of groups. */
         parameters: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
@@ -11919,7 +11919,7 @@ export interface operations {
             };
         };
     };
-    index_api_groups__group_id__users_get: {
+    group_users_api_groups__group_id__users_get: {
         /**
          * Displays a collection (list) of groups.
          * @description GET /api/groups/{encoded_group_id}/users

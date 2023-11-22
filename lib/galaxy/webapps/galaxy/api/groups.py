@@ -60,6 +60,7 @@ class FastAPIGroups:
         "/api/groups/{group_id}",
         summary="Displays information about a group.",
         require_admin=True,
+        name="show_group",
     )
     def show(
         self,

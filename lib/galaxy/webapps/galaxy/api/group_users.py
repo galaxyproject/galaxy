@@ -38,7 +38,12 @@ def group_user_to_model(trans, group_id, user) -> GroupUserResponse:
 class FastAPIGroupUsers:
     manager: GroupUsersManager = depends(GroupUsersManager)
 
-    @router.get("/api/groups/{group_id}/users", require_admin=True, summary="Displays a collection (list) of groups.")
+    @router.get(
+        "/api/groups/{group_id}/users",
+        require_admin=True,
+        summary="Displays a collection (list) of groups.",
+        name="group_users",
+    )
     def index(
         self, trans: ProvidesAppContext = DependsOnTrans, group_id: DecodedDatabaseIdField = GroupIDParam
     ) -> GroupUserListResponse:

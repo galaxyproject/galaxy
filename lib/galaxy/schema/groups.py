@@ -35,11 +35,11 @@ class GroupResponse(Model):
         Required,
         title="URL for the group",
     )
-    roles_url: Optional[List[str]] = Field(
+    roles_url: Optional[str] = Field(
         None,
         title="URL for the roles of the group",
     )
-    users_url: Optional[List[str]] = Field(
+    users_url: Optional[str] = Field(
         None,
         title="URL for the users of the group",
     )
