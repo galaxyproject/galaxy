@@ -134,6 +134,14 @@ class UserListGrid(grids.GridData):
                 query = query.order_by(func.coalesce(column, 0).desc())
             return query
 
+    class DeletedColumn(grids.GridColumn):
+        def get_value(self, trans, grid, user):
+            return user.deleted
+
+    class PurgedColumn(grids.GridColumn):
+        def get_value(self, trans, grid, user):
+            return user.purged
+
     # Grid definition
     title = "Users"
     title_id = "users-grid"
@@ -150,8 +158,8 @@ class UserListGrid(grids.GridData):
         GroupsColumn("Groups", key="groups"),
         RolesColumn("Roles", key="roles"),
         ExternalColumn("External", key="external"),
-        grids.DeletedColumn("Deleted", key="deleted"),
-        grids.PurgedColumn("Purged", key="purged"),
+        DeletedColumn("Deleted", key="deleted"),
+        PurgedColumn("Purged", key="purged"),
     ]
 
     def apply_query_filter(self, query, **kwargs):
