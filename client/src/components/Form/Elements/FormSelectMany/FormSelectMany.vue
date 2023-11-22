@@ -409,7 +409,7 @@ const selectedCount = computed(() => {
 }
 
 .options-list {
-    overflow: scroll;
+    overflow-y: scroll;
     display: flex;
     flex-direction: column;
 
