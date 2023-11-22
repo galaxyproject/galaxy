@@ -9,10 +9,6 @@ from galaxy.jobs.manager import JobManager
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.export_tracker import StoreExportTracker
 from galaxy.managers.histories import HistoryManager
-from galaxy.managers.short_term_storage import (
-    ShortTermStorageMonitor,
-    storage_context,
-)
 from galaxy.managers.users import UserManager
 from galaxy.model.base import transaction
 from galaxy.model.scoped_session import galaxy_scoped_session
@@ -42,6 +38,10 @@ from galaxy.schema.tasks import (
     WriteHistoryContentTo,
     WriteHistoryTo,
     WriteInvocationTo,
+)
+from galaxy.short_term_storage import (
+    ShortTermStorageMonitor,
+    storage_context,
 )
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.version import VERSION

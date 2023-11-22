@@ -1,3 +1,12 @@
+""" Short Term Storage service for Galaxy.
+
+This service is used to store files for a short period of time (e.g. a few minutes, hours or days)
+and then serve them to the client. This is useful for large files that take a long time to
+generate and are not worth storing permanently.
+"""
+
+# TODO: Move it to its own package https://github.com/galaxyproject/galaxy/pull/17058#discussion_r1400909897
+
 import abc
 import contextlib
 import json

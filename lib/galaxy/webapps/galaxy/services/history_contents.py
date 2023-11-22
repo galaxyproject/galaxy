@@ -57,7 +57,6 @@ from galaxy.managers.jobs import (
     summarize_jobs_to_dict,
 )
 from galaxy.managers.library_datasets import LibraryDatasetsManager
-from galaxy.managers.short_term_storage import ShortTermStorageAllocator
 from galaxy.model import (
     History,
     HistoryDatasetAssociation,
@@ -118,6 +117,7 @@ from galaxy.schema.tasks import (
     WriteHistoryContentTo,
 )
 from galaxy.security.idencoding import IdEncodingHelper
+from galaxy.short_term_storage import ShortTermStorageAllocator
 from galaxy.util.zipstream import ZipstreamWrapper
 from galaxy.webapps.galaxy.services.base import (
     async_task_summary,

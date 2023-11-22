@@ -3,7 +3,7 @@ API operations around galaxy.managers.short_term_storage infrastructure.
 """
 from uuid import UUID
 
-from galaxy.managers.short_term_storage import (
+from galaxy.short_term_storage import (
     ShortTermStorageMonitor,
     ShortTermStorageServeCancelledInformation,
     ShortTermStorageServeCompletedInformation,

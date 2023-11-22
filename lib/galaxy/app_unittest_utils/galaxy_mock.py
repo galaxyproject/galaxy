@@ -26,12 +26,6 @@ from galaxy.managers.dbkeys import GenomeBuilds
 from galaxy.managers.hdas import HDAManager
 from galaxy.managers.histories import HistoryManager
 from galaxy.managers.jobs import JobSearch
-from galaxy.managers.short_term_storage import (
-    ShortTermStorageAllocator,
-    ShortTermStorageConfiguration,
-    ShortTermStorageManager,
-    ShortTermStorageMonitor,
-)
 from galaxy.managers.users import UserManager
 from galaxy.managers.workflows import WorkflowsManager
 from galaxy.model import tags
@@ -47,6 +41,12 @@ from galaxy.model.unittest_utils import (
     GalaxyDataTestConfig,
 )
 from galaxy.security import idencoding
+from galaxy.short_term_storage import (
+    ShortTermStorageAllocator,
+    ShortTermStorageConfiguration,
+    ShortTermStorageManager,
+    ShortTermStorageMonitor,
+)
 from galaxy.structured_app import (
     BasicSharedApp,
     MinimalManagerApp,

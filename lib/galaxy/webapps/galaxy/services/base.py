@@ -23,10 +23,6 @@ from galaxy.managers.base import (
 )
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.model_stores import create_objects_from_store
-from galaxy.managers.short_term_storage import (
-    ShortTermStorageAllocator,
-    ShortTermStorageTarget,
-)
 from galaxy.model import User
 from galaxy.model.store import (
     get_export_store_factory,
@@ -35,6 +31,10 @@ from galaxy.model.store import (
 from galaxy.schema.fields import EncodedDatabaseIdField
 from galaxy.schema.schema import AsyncTaskResultSummary
 from galaxy.security.idencoding import IdEncodingHelper
+from galaxy.short_term_storage import (
+    ShortTermStorageAllocator,
+    ShortTermStorageTarget,
+)
 from galaxy.util import ready_name_for_url
 
 
