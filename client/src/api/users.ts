@@ -10,7 +10,6 @@ export const recalculateDiskUsageByUserId = fetcher
     .create();
 export const sendActivationEmail = fetcher.path("/api/users/{user_id}/send_activation_email").method("post").create();
 export const undeleteUser = fetcher.path("/api/users/deleted/{user_id}/undelete").method("post").create();
-export const updateUser = fetcher.path("/api/users/{user_id}").method("put").create();
 
 const getUsers = fetcher.path("/api/users").method("get").create();
 export async function getAllUsers() {
