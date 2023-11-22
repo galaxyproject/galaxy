@@ -38,7 +38,7 @@ const buttonTooltip = computed(() => {
 
 const deleteTooltip = computed(() => {
     return !minRepeats.value
-        ? localize(`Minimum number of ${props.input.title || "Repeat"} not reached`)
+        ? localize(`Minimum number of ${props.input.title || "Repeat"} fields reached`)
         : localize(`Click to delete ${props.input.title || "Repeat"} fields`);
 });
 
