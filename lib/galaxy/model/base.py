@@ -3,6 +3,7 @@ Shared model and mapping code between Galaxy and Tool Shed, trying to
 generalize to generic database connections.
 """
 import contextlib
+import logging
 import os
 import threading
 from contextvars import ContextVar
@@ -28,6 +29,8 @@ from galaxy.util.bunch import Bunch
 
 if TYPE_CHECKING:
     from galaxy.model.store import SessionlessContext
+
+log = logging.getLogger(__name__)
 
 # Create a ContextVar with mutable state, this allows sync tasks in the context
 # of a request (which run within a threadpool) to see changes to the ContextVar
@@ -146,23 +149,14 @@ def versioned_objects(iter):
 
 def versioned_objects_strict(iter):
     for obj in iter:
+        if hasattr(obj, "__strict_check_before_flush__"):
+            obj.__strict_check_before_flush__()
         if hasattr(obj, "__create_version__"):
-            if obj.extension != "len":
-                # TODO: Custom builds (with .len extension) do not get a history or a HID.
-                # These should get some other type of permanent storage, perhaps UserDatasetAssociation ?
-                # Everything else needs to have a hid and a history
-                if not obj.history and not obj.history_id:
-                    raise Exception(f"HistoryDatasetAssociation {obj} without history detected, this is not valid")
-                elif not obj.hid:
-                    raise Exception(f"HistoryDatasetAssociation {obj} without hid, this is not valid")
-                elif obj.dataset.file_size is None and obj.dataset.state not in obj.dataset.no_data_states:
-                    raise Exception(
-                        f"HistoryDatasetAssociation {obj} in state {obj.dataset.state} with null file size, this is not valid"
-                    )
             yield obj
 
 
 if os.environ.get("GALAXY_TEST_RAISE_EXCEPTION_ON_HISTORYLESS_HDA"):
+    log.debug("Using strict flush checks")
     versioned_objects = versioned_objects_strict  # noqa: F811
 
 
