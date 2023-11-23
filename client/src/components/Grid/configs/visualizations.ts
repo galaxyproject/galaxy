@@ -1,6 +1,6 @@
 import { faCopy, faEdit, faEye, faPlus, faShareAlt, faTrash, faTrashRestore } from "@fortawesome/free-solid-svg-icons";
+import { useEventBus } from "@vueuse/core";
 import axios from "axios";
-import type Router from "vue-router";
 
 import { fetcher } from "@/api/schema";
 import { getGalaxyInstance } from "@/app";
@@ -9,6 +9,8 @@ import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
 
 import type { ActionArray, Config, FieldArray } from "./types";
+
+const { emit } = useEventBus<string>("grid-router-push");
 
 /**
  * Api endpoint handlers
@@ -52,8 +54,8 @@ const actions: ActionArray = [
     {
         title: "Create",
         icon: faPlus,
-        handler: (router: Router) => {
-            router.push(`/visualizations`);
+        handler: () => {
+            emit("/visualizations");
         },
     },
 ];
@@ -81,8 +83,8 @@ const fields: FieldArray = [
                 title: "Edit Attributes",
                 icon: faEdit,
                 condition: (data: VisualizationEntry) => !data.deleted,
-                handler: (data: VisualizationEntry, router: Router) => {
-                    router.push(`/visualizations/edit?id=${data.id}`);
+                handler: (data: VisualizationEntry) => {
+                    emit(`/visualizations/edit?id=${data.id}`);
                 },
             },
             {
@@ -115,8 +117,8 @@ const fields: FieldArray = [
                 title: "Share and Publish",
                 icon: faShareAlt,
                 condition: (data: VisualizationEntry) => !data.deleted,
-                handler: (data: VisualizationEntry, router: Router) => {
-                    router.push(`/visualizations/sharing?id=${data.id}`);
+                handler: (data: VisualizationEntry) => {
+                    emit(`/visualizations/sharing?id=${data.id}`);
                 },
             },
             {
