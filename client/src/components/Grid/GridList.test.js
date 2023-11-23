@@ -1,7 +1,6 @@
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
-import { useRouter } from "vue-router/composables";
 
 import Filtering from "@/utils/filtering";
 
@@ -10,9 +9,6 @@ import MountTarget from "./GridList.vue";
 const localVue = getLocalVue();
 
 jest.useFakeTimers();
-jest.mock("vue-router/composables");
-
-useRouter.mockImplementation(() => "router");
 
 const testGrid = {
     actions: [
@@ -147,10 +143,7 @@ describe("GridList", () => {
         await dropdownItems.at(0).trigger("click");
         const clickHandler = testGrid.fields[2].operations[0].handler;
         expect(clickHandler).toHaveBeenCalledTimes(1);
-        expect(clickHandler.mock.calls[0]).toEqual([
-            { id: "id-1", link: "link-1", operation: "operation-1" },
-            "router",
-        ]);
+        expect(clickHandler.mock.calls[0]).toEqual([{ id: "id-1", link: "link-1", operation: "operation-1" }]);
         await dropdownItems.at(1).trigger("click");
         await flushPromises();
         const alert = wrapper.find(".alert");
