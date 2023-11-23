@@ -115,7 +115,7 @@ async function selectOption(event: MouseEvent, index: number): Promise<void> {
         const [option] = unselectedOptionsFiltered.value.splice(index, 1);
 
         if (option) {
-            selected.value.push(option.value);
+            selected.value = [...selected.value, option.value];
         }
 
         // select the element which now is where the removed element just was
@@ -139,7 +139,7 @@ async function deselectOption(event: MouseEvent, index: number) {
 
         if (option) {
             const i = selected.value.indexOf(option.value);
-            selected.value.splice(i, 1);
+            selected.value = selected.value.flatMap((value, index) => (index === i ? [] : [value]));
         }
 
         await nextTick();
@@ -270,13 +270,14 @@ const selectedCount = computed(() => {
         <BInputGroup>
             <BFormInput
                 v-model="searchValue"
+                class="select-many-search"
                 :state="regexInvalid ? false : undefined"
                 :debounce="300"
                 :placeholder="props.placeholder"></BFormInput>
 
             <template v-slot:append>
                 <BButton
-                    class="toggle-button"
+                    class="toggle-button case-sensitivity"
                     :variant="caseSensitive ? 'primary' : 'outline-primary'"
                     role="switch"
                     :aria-checked="`${caseSensitive}`"
@@ -285,7 +286,7 @@ const selectedCount = computed(() => {
                     Aa
                 </BButton>
                 <BButton
-                    class="toggle-button"
+                    class="toggle-button use-regex"
                     :variant="useRegex ? 'primary' : 'outline-primary'"
                     role="switch"
                     :aria-checked="`${useRegex}`"
@@ -300,9 +301,9 @@ const selectedCount = computed(() => {
             <div class="selection-heading border-right px-2">
                 <span>
                     Unselected
-                    <span class="font-weight-normal"> ({{ unselectedCount }}) </span>
+                    <span class="font-weight-normal unselected-count"> ({{ unselectedCount }}) </span>
                 </span>
-                <BButton class="selection-button" :title="selectText" variant="primary" @click="selectAll">
+                <BButton class="selection-button select" :title="selectText" variant="primary" @click="selectAll">
                     {{ selectText }}
                     <FontAwesomeIcon icon="fa-long-arrow-alt-right" />
                 </BButton>
@@ -332,9 +333,9 @@ const selectedCount = computed(() => {
             <div class="selection-heading px-2">
                 <span>
                     Selected
-                    <span class="font-weight-normal"> ({{ selectedCount }}) </span>
+                    <span class="font-weight-normal selected-count"> ({{ selectedCount }}) </span>
                 </span>
-                <BButton class="selection-button" :title="deselectText" variant="primary" @click="deselectAll">
+                <BButton class="selection-button deselect" :title="deselectText" variant="primary" @click="deselectAll">
                     <FontAwesomeIcon icon="fa-long-arrow-alt-left" />
                     {{ deselectText }}
                 </BButton>
