@@ -136,7 +136,7 @@ class TestWorkflowManagement(SeleniumTestCase, TestsGalaxyPagers, UsesWorkflowAs
         self.screenshot("workflow_manage_search")
 
         self.workflow_index_search_for("doesnotmatch")
-        self._assert_showing_n_workflows(0)
+        self.components.workflows.workflow_not_found_message.wait_for_visible()
 
         self.workflow_index_search_for()
         self._assert_showing_n_workflows(1)
@@ -152,7 +152,7 @@ class TestWorkflowManagement(SeleniumTestCase, TestsGalaxyPagers, UsesWorkflowAs
         self._assert_showing_n_workflows(1)
 
         self.workflow_index_search_for("name:doesnotmatch")
-        self._assert_showing_n_workflows(0)
+        self.components.workflows.workflow_not_found_message.wait_for_visible()
         self.screenshot("workflow_manage_search_no_matches")
 
         self.workflow_index_search_for()
@@ -167,7 +167,7 @@ class TestWorkflowManagement(SeleniumTestCase, TestsGalaxyPagers, UsesWorkflowAs
         self.screenshot("workflow_manage_search_name_alias")
 
         self.workflow_index_search_for("n:doesnotmatch")
-        self._assert_showing_n_workflows(0)
+        self.components.workflows.workflow_not_found_message.wait_for_visible()
         self.screenshot("workflow_manage_search_name_alias")
 
     @selenium_test
@@ -200,7 +200,7 @@ class TestWorkflowManagement(SeleniumTestCase, TestsGalaxyPagers, UsesWorkflowAs
         self.components.workflows.advanced_search_submit.wait_for_and_click()
         curr_value = self.workflow_index_get_current_filter()
         assert curr_value == "tag:'mytag' tag:'DNEtag'", curr_value
-        self._assert_showing_n_workflows(0)
+        self.components.workflows.workflow_not_found_message.wait_for_visible()
 
     @selenium_test
     def test_workflow_delete(self):
@@ -209,7 +209,7 @@ class TestWorkflowManagement(SeleniumTestCase, TestsGalaxyPagers, UsesWorkflowAs
         self.workflow_rename("fordelete")
         self._assert_showing_n_workflows(1)
         self.workflow_delete_by_name("fordelete")
-        self._assert_showing_n_workflows(0)
+        self.components.workflows.workflow_not_found_message.wait_for_visible()
 
         self.workflow_index_open()
-        self._assert_showing_n_workflows(0)
+        self.components.workflows.workflows_list_empty.wait_for_visible()
