@@ -29,7 +29,7 @@ export interface FieldEntry {
     title: string;
     condition?: (data: RowData) => boolean;
     disabled?: boolean;
-    type: string;
+    type: validTypes;
     operations?: Array<Operation>;
     handler?: FieldHandler;
     width?: number;
@@ -52,3 +52,5 @@ interface OperationHandlerMessage {
 type OperationHandlerReturn = Promise<OperationHandlerMessage> | void;
 
 export type RowData = Record<string, unknown>;
+
+type validTypes = "date" | "link" | "operations" | "sharing" | "tags" | "text";
