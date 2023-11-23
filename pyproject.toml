@@ -69,7 +69,7 @@ gxformat2 = "*"
 h5grove = ">=1.2.1"
 h5py = "*"
 importlib-metadata = "<5"  # Work around https://github.com/celery/kombu/issues/1600
-importlib-resources = "*"
+importlib-resources = { version = "*", python = "<3.9" }  # for importlib.{abc.Traversable,resources.{files, Package}}
 isa-rwval = ">=0.10.10"
 kombu = "*"
 lagom = "*"

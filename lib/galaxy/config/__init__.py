@@ -59,11 +59,10 @@ from ..version import (
 if TYPE_CHECKING:
     from galaxy.model import User
 
-try:
-    from importlib.resources import files  # type: ignore[attr-defined]
-except ImportError:
-    # Python < 3.9
-    from importlib_resources import files  # type: ignore[no-redef]
+if sys.version_info >= (3, 9):
+    from importlib.resources import files
+else:
+    from importlib_resources import files
 
 log = logging.getLogger(__name__)
 
