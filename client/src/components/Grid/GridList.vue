@@ -236,7 +236,7 @@ watch(operationMessage, () => {
                     :style="{ width: `${fieldEntry.width}%` }"
                     :data-description="`grid cell ${rowIndex}-${fieldIndex}`">
                     <GridOperations
-                        v-if="fieldEntry.type == 'operations'"
+                        v-if="fieldEntry.type == 'operations' && fieldEntry.operations"
                         :operations="fieldEntry.operations"
                         :row-data="rowData"
                         @execute="onOperation($event, rowData)" />
