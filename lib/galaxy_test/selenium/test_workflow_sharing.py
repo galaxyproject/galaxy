@@ -78,7 +78,7 @@ class TestWorkflowSharing(SeleniumTestCase, UsesWorkflowAssertions):
         self.logout_if_needed()
         self.submit_login(user2_email)
         self.workflow_index_open()
-        self._assert_showing_n_workflows(0)
+        self.components.workflows.workflows_list_empty.wait_for_visible()
 
     @selenium_test
     def test_sharing_with_invalid_user(self):

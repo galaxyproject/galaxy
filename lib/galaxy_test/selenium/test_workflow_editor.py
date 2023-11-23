@@ -906,7 +906,6 @@ steps:
         self.wait_for_selector_absent_or_hidden(self.modal_body_selector())
         self.components.masthead.workflow.wait_for_and_click()
 
-        self.components.tool_panel.search.wait_for_and_send_keys(new_workflow_name)
         self.sleep_for(self.wait_types.UX_RENDER)
         self.components.workflows.bookmark_link(action="add").wait_for_and_click()
         self.components.masthead.workflow.wait_for_and_click()
@@ -914,6 +913,7 @@ steps:
 
         # search for bookmark in tools menu
         self.components.tool_panel.search.wait_for_and_send_keys(new_workflow_name)
+        self.sleep_for(self.wait_types.UX_RENDER)
         assert_workflow_bookmarked_status(True)
 
     def tab_to(self, accessible_name, direction="forward"):

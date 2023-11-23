@@ -598,6 +598,7 @@ workflows:
     advanced_search_submit: '#workflows-advanced-filter-submit'
     workflow_rows: "#workflow-table > tbody > tr:not(.b-table-empty-row, [style*='display: none'])"
     workflows_list: '#workflows-list'
+    workflows_list_empty: '#workflow-list-empty'
     workflow_not_found_message: '#no-workflow-found'
     workflow_card: '.workflow-card'
     workflow_cards: '#workflow-cards'
@@ -614,8 +615,7 @@ workflows:
     share_button: '#workflow-share-button'
     download_button: '#workflow-download-button'
     run_button: '[data-workflow-run]'
-    edit_button: '#workflow-edit-button'
-    rename_button: '[data-workflow-rename]'
+    edit_button: '.workflow-edit-button'
     rename_input: '#workflow-name-input'
     workflow_drop_down: '[data-workflow-actions-dropdown]'
     delete_button: '.workflow-delete-button'

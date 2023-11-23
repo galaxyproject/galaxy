@@ -1433,15 +1433,9 @@ class NavigatesGalaxy(HasDriver):
     def workflow_index_click_import(self):
         return self.components.workflows.import_button.wait_for_and_click()
 
-    def workflow_index_rename(self, new_name, workflow_index=0):
-        self.workflow_index_click_option("Rename", workflow_index=workflow_index)
-        alert = self.driver.switch_to.alert
-        alert.send_keys(new_name)
-        alert.accept()
-        self.components.workflows.workflow_with_name(workflow_name=new_name).wait_for_visible()
-
-    def workflow_rename(self, new_name):
-        self.components.workflows.rename_button.wait_for_and_click()
+    def workflow_rename(self, new_name, workflow_index=0):
+        workflow = self.workflow_card_element(workflow_index=workflow_index)
+        workflow.find_element(By.CSS_SELECTOR, "[data-workflow-rename]").click()
         self.components.workflows.rename_input.wait_for_visible().clear()
         self.components.workflows.rename_input.wait_for_and_send_keys(new_name)
         self.components.workflows.rename_input.wait_for_and_send_keys(self.keys.ENTER)
@@ -1458,12 +1452,6 @@ class NavigatesGalaxy(HasDriver):
         workflow = self.workflow_card_element(workflow_index=workflow_index)
         return workflow.find_element(By.CSS_SELECTOR, ".workflow-name").text
 
-    @retry_during_transitions
-    def workflow_click_option(self, workflow_selector, workflow_index=0):
-        workflow_row = self.workflow_card_element(workflow_index=workflow_index)
-        workflow_button = workflow_row.find_element(By.CSS_SELECTOR, workflow_selector)
-        workflow_button.click()
-
     def select_dropdown_item(self, option_title):
         menu_element = self.wait_for_selector_visible(".dropdown-menu.show")
         menu_options = menu_element.find_elements(By.CSS_SELECTOR, "a.dropdown-item")
@@ -1471,11 +1459,6 @@ class NavigatesGalaxy(HasDriver):
             if option_title in menu_option.text:
                 menu_option.click()
                 return True
-
-    def workflow_index_click_option(self, option_title, workflow_index=0):
-        self.workflow_click_option(".workflow-dropdown", workflow_index)
-        if not self.select_dropdown_item(option_title):
-            raise AssertionError(f"Failed to find workflow action option with title [{option_title}]")
 
     def workflow_share_click(self):
         self.components.workflows.share_button.wait_for_and_click()

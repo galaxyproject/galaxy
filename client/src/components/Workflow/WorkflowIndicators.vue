@@ -107,10 +107,9 @@ function onViewUserPublished() {
 
         <BButton
             v-if="sourceType.includes('trs')"
-            id="source-indicator-trs"
             v-b-tooltip
             size="sm"
-            class="inline-icon-button"
+            class="workflow-trs-icon inline-icon-button"
             :title="sourceTitle">
             <FontAwesomeIcon :icon="faShieldAlt" fixed-width @click="onCopyLink" />
         </BButton>
@@ -126,10 +125,9 @@ function onViewUserPublished() {
 
         <BButton
             v-if="workflow.published && !publishedView"
-            id="sharing-indicator-published"
             v-b-tooltip
             size="sm"
-            class="inline-icon-button"
+            class="workflow-published-icon inline-icon-button"
             to="/workflows/list_published"
             title="Published workflow. Click to view all published workflows">
             <FontAwesomeIcon :icon="faGlobe" />
