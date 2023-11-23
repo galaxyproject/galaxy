@@ -154,11 +154,10 @@ async function onTagClick(tag: string) {
                     <div class="workflow-edit-run-buttons">
                         <BButton
                             v-if="!shared"
-                            id="workflow-edit-button"
                             v-b-tooltip.hover
                             :disabled="workflow.deleted"
                             size="sm"
-                            class="mr-2"
+                            class="workflow-edit-button mr-2"
                             :title="workflow.deleted ? 'You cannot edit a deleted workflow' : 'Edit'"
                             variant="outline-primary"
                             @click="onEdit">
@@ -211,12 +210,12 @@ async function onTagClick(tag: string) {
     container: workflow-card / inline-size;
 
     .workflow-rename {
-        display: none;
+        opacity: 0;
     }
 
     &:hover {
         .workflow-rename {
-            display: inline-block;
+            opacity: 1;
         }
     }
 
