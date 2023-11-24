@@ -72,7 +72,7 @@ class AthenaProject(Text):
         True
         >>> from galaxy.datatypes.sniff import get_test_fname
         >>> fname = get_test_fname('Si.cif')
-        >>> FEFFInput().sniff(fname)
+        >>> AthenaProject().sniff(fname)
         False
         """
 
