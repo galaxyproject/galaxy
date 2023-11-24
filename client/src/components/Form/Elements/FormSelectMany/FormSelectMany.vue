@@ -108,6 +108,16 @@ function handleHighlight(
     }
 }
 
+/** focus option at given index, or previous option if that doesn't exist */
+function focusOptionAtIndex(selected: "selected" | "unselected", index: number) {
+    const el = document.getElementById(`${props.id}-${selected}-${index}`);
+    if (el) {
+        el.focus();
+    } else {
+        document.getElementById(`${props.id}-${selected}-${index - 1}`)?.focus();
+    }
+}
+
 async function selectOption(event: MouseEvent, index: number): Promise<void> {
     if (event.shiftKey || event.ctrlKey) {
         handleHighlight(event, index, highlightUnselected);
@@ -121,13 +131,7 @@ async function selectOption(event: MouseEvent, index: number): Promise<void> {
         // select the element which now is where the removed element just was
         // to improve keyboard navigation
         await nextTick();
-
-        const el = document.getElementById(`${props.id}-unselected-${index}`);
-        if (el) {
-            el.focus();
-        } else {
-            document.getElementById(`${props.id}-unselected-${index - 1}`)?.focus();
-        }
+        focusOptionAtIndex("unselected", index);
     }
 }
 
@@ -143,13 +147,7 @@ async function deselectOption(event: MouseEvent, index: number) {
         }
 
         await nextTick();
-
-        const el = document.getElementById(`${props.id}-selected-${index}`);
-        if (el) {
-            el.focus();
-        } else {
-            document.getElementById(`${props.id}-selected-${index - 1}`)?.focus();
-        }
+        focusOptionAtIndex("selected", index);
     }
 }
 
