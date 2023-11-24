@@ -1,18 +1,16 @@
-from typing import List, TYPE_CHECKING
+from typing import List
 
 from galaxy.datatypes.data import (
     get_file_peek,
     Text,
 )
 from galaxy.datatypes.metadata import MetadataElement
+from galaxy.datatypes.protocols import DatasetProtocol
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
     FilePrefix,
     get_headers,
 )
-
-if TYPE_CHECKING:
-    from galaxy.model import DatasetInstance
 
 
 @build_sniff_from_prefix
@@ -78,7 +76,7 @@ class AthenaProject(Text):
 
         return file_prefix.startswith("# Athena project file")
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol, *, overwrite: bool = True, **kwd) -> None:
         """
         Extract metadata from @args
         """
@@ -104,7 +102,7 @@ class AthenaProject(Text):
         extract_arg(args, "xmax")
         extract_arg(args, "xmin")
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.info = (
@@ -198,7 +196,7 @@ class FEFFInput(Text):
 
         return False
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         """
         Extract metadata from TITLE
         """
@@ -210,7 +208,7 @@ class FEFFInput(Text):
 
         dataset.metadata.title_block = title_block
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.info = dataset.metadata.title_block
