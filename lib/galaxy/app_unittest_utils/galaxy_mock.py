@@ -280,6 +280,10 @@ class MockWebapp:
         self.security = security
 
 
+def mock_url_builder(*a, **k):
+    return f"(fake url): {a}, {k}"
+
+
 class MockTrans:
     def __init__(self, app=None, user=None, history=None, **kwargs):
         self.app = cast(UniverseApplication, app or MockApp(**kwargs))
@@ -291,7 +295,7 @@ class MockTrans:
         self.anonymous = False
         self.debug = True
         self.user_is_admin = True
-        self.url_builder = None
+        self.url_builder = mock_url_builder
 
         self.galaxy_session = None
         self.__user = user
