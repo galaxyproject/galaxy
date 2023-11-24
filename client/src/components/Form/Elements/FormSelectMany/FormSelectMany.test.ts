@@ -31,7 +31,7 @@ const selectors = {
     deselectAll: ".selection-button.deselect",
     selectedCount: ".selected-count",
     unselectedCount: ".unselected-count",
-    search: ".select-many-search",
+    search: "input[type=search]",
     caseSensitivity: ".toggle-button.case-sensitivity",
     useRegex: ".toggle-button.use-regex",
 } as const;

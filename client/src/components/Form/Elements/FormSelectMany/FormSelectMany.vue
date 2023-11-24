@@ -1,9 +1,9 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faLongArrowAltLeft, faLongArrowAltRight } from "@fortawesome/free-solid-svg-icons";
+import { faLongArrowAltLeft, faLongArrowAltRight, faTimes } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { refDebounced } from "@vueuse/core";
-import { BButton, BFormInput, BInputGroup } from "bootstrap-vue";
+import { BButton, BFormInput } from "bootstrap-vue";
 import { computed, nextTick, type PropType, reactive, ref, type UnwrapRef } from "vue";
 
 import { useUid } from "@/composables/utils/uid";
@@ -12,7 +12,7 @@ import { useHighlight } from "./useHighlight";
 import { filterOptions } from "./worker/filterOptions";
 import { useSelectMany } from "./worker/selectMany";
 
-library.add(faLongArrowAltLeft, faLongArrowAltRight);
+library.add(faLongArrowAltLeft, faLongArrowAltRight, faTimes);
 
 type SelectValue = Record<string, unknown> | string | number | null;
 
@@ -264,36 +264,43 @@ const selectedCount = computed(() => {
 </script>
 
 <template>
-    <section :id="props.id" class="form-select-many">
-        <BInputGroup>
-            <BFormInput
-                v-model="searchValue"
-                class="select-many-search"
-                :state="regexInvalid ? false : undefined"
-                :debounce="300"
-                :placeholder="props.placeholder"></BFormInput>
+    <div :id="props.id" class="form-select-many">
+        <fieldset class="search-bar">
+            <fieldset class="search-input">
+                <BFormInput
+                    v-model="searchValue"
+                    type="search"
+                    :state="regexInvalid ? false : undefined"
+                    :debounce="300"
+                    :placeholder="props.placeholder" />
+                <button
+                    class="inline-icon-button"
+                    :class="{ hidden: searchValue === '' }"
+                    title="Clear search"
+                    @click="searchValue = ''">
+                    <FontAwesomeIcon icon="fa-times" />
+                </button>
+            </fieldset>
 
-            <template v-slot:append>
-                <BButton
-                    class="toggle-button case-sensitivity"
-                    :variant="caseSensitive ? 'primary' : 'outline-primary'"
-                    role="switch"
-                    :aria-checked="`${caseSensitive}`"
-                    title="case sensitive"
-                    @click="caseSensitive = !caseSensitive">
-                    Aa
-                </BButton>
-                <BButton
-                    class="toggle-button use-regex"
-                    :variant="useRegex ? 'primary' : 'outline-primary'"
-                    role="switch"
-                    :aria-checked="`${useRegex}`"
-                    title="use regex"
-                    @click="useRegex = !useRegex">
-                    .*
-                </BButton>
-            </template>
-        </BInputGroup>
+            <BButton
+                class="toggle-button case-sensitivity"
+                :variant="caseSensitive ? 'primary' : 'outline-primary'"
+                role="switch"
+                :aria-checked="`${caseSensitive}`"
+                title="case sensitive"
+                @click="caseSensitive = !caseSensitive">
+                Aa
+            </BButton>
+            <BButton
+                class="toggle-button use-regex"
+                :variant="useRegex ? 'primary' : 'outline-primary'"
+                role="switch"
+                :aria-checked="`${useRegex}`"
+                title="use regex"
+                @click="useRegex = !useRegex">
+                .*
+            </BButton>
+        </fieldset>
 
         <div class="options-box border rounded mt-2">
             <div class="selection-heading border-right px-2">
@@ -365,17 +372,55 @@ const selectedCount = computed(() => {
             <span> Shift to highlight range. Ctrl to highlight multiple </span>
             <span v-if="workerRunning" class="working-indicator"> Processing... </span>
         </div>
-    </section>
+    </div>
 </template>
 
 <style scoped lang="scss">
 @import "theme/blue.scss";
 
 .form-select-many {
+    .search-bar {
+        display: grid;
+        grid-template-columns: 1fr 2.25rem 2.25rem;
+
+        > *:not(:first-child):not(:last-child) {
+            border-radius: 0;
+        }
+
+        > *:last-child {
+            border-top-left-radius: 0;
+            border-bottom-left-radius: 0;
+        }
+
+        .search-input {
+            position: relative;
+
+            input {
+                border-top-right-radius: 0;
+                border-bottom-right-radius: 0;
+            }
+
+            button {
+                position: absolute;
+                right: 4px;
+                top: 4px;
+                height: calc(100% - 8px);
+                width: 26px;
+
+                &.hidden:not(:focus) {
+                    color: transparent;
+
+                    &:hover {
+                        color: $white;
+                    }
+                }
+            }
+        }
+    }
+
     .toggle-button {
         padding-left: 0;
         padding-right: 0;
-        width: 2rem;
     }
 }
 
