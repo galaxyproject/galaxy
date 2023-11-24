@@ -5,6 +5,7 @@ import pytest
 
 from galaxy.tool_util.lint import (
     lint_tool_source_with,
+    lint_tool_source_with_modules,
     lint_xml_with,
     LintContext,
     XMLLintMessageLine,
@@ -920,6 +921,10 @@ def get_tool_xml_exact(xml_string: str):
         return parse_xml(tool_path, strip_whitespace=False, remove_comments=False)
 
 
+def run_lint_module(lint_ctx, lint_module, lint_target):
+    lint_tool_source_with_modules(lint_ctx, lint_target, [lint_module])
+
+
 def run_lint(lint_ctx, lint_func, lint_target):
     lint_ctx.lint(name="test_lint", lint_func=lint_func, lint_target=lint_target)
     # check if the lint messages have the line
@@ -1585,7 +1590,7 @@ def test_outputs_duplicated_name_label(lint_ctx):
 
 def test_stdio_default_for_default_profile(lint_ctx):
     tool_source = get_xml_tool_source(STDIO_DEFAULT_FOR_DEFAULT_PROFILE)
-    run_lint(lint_ctx, stdio.lint_stdio, tool_source)
+    run_lint_module(lint_ctx, stdio, tool_source)
     assert (
         "No stdio definition found, tool indicates error conditions with output written to stderr."
         in lint_ctx.info_messages
@@ -1598,7 +1603,7 @@ def test_stdio_default_for_default_profile(lint_ctx):
 
 def test_stdio_default_for_nonlegacy_profile(lint_ctx):
     tool_source = get_xml_tool_source(STDIO_DEFAULT_FOR_NONLEGACY_PROFILE)
-    run_lint(lint_ctx, stdio.lint_stdio, tool_source)
+    run_lint_module(lint_ctx, stdio, tool_source)
     assert (
         "No stdio definition found, tool indicates error conditions with non-zero exit codes." in lint_ctx.info_messages
     )
@@ -1610,7 +1615,7 @@ def test_stdio_default_for_nonlegacy_profile(lint_ctx):
 
 def test_stdio_multiple_stdio(lint_ctx):
     tool_source = get_xml_tool_source(STDIO_MULTIPLE_STDIO)
-    run_lint(lint_ctx, stdio.lint_stdio, tool_source)
+    run_lint_module(lint_ctx, stdio, tool_source)
     assert "More than one stdio tag found, behavior undefined." in lint_ctx.error_messages
     assert not lint_ctx.info_messages
     assert not lint_ctx.valid_messages
@@ -1620,7 +1625,7 @@ def test_stdio_multiple_stdio(lint_ctx):
 
 def test_stdio_invalid_child_or_attrib(lint_ctx):
     tool_source = get_xml_tool_source(STDIO_INVALID_CHILD_OR_ATTRIB)
-    run_lint(lint_ctx, stdio.lint_stdio, tool_source)
+    run_lint_module(lint_ctx, stdio, tool_source)
     assert (
         "Unknown stdio child tag discovered [reqex]. Valid options are exit_code and regex." in lint_ctx.warn_messages
     )
@@ -1634,7 +1639,7 @@ def test_stdio_invalid_child_or_attrib(lint_ctx):
 
 def test_stdio_invalid_match(lint_ctx):
     tool_source = get_xml_tool_source(STDIO_INVALID_MATCH)
-    run_lint(lint_ctx, stdio.lint_stdio, tool_source)
+    run_lint_module(lint_ctx, stdio, tool_source)
     assert (
         "Match '[' is no valid regular expression: unterminated character set at position 0" in lint_ctx.error_messages
     )

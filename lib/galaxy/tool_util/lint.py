@@ -45,12 +45,17 @@ In order to use this.
 """
 
 import inspect
+from abc import (
+    ABC,
+    abstractmethod,
+)
 from enum import IntEnum
 from typing import (
     Callable,
     List,
     Optional,
     Type,
+    TYPE_CHECKING,
     TypeVar,
     Union,
 )
@@ -61,6 +66,9 @@ from galaxy.util import (
     submodules,
 )
 
+if TYPE_CHECKING:
+    from galaxy.tool_util.parser.interface import ToolSource
+
 
 class LintLevel(IntEnum):
     SILENT = 5
@@ -69,6 +77,27 @@ class LintLevel(IntEnum):
     INFO = 2
     VALID = 1
     ALL = 0
+
+
+class Linter(ABC):
+    """
+    a linter. needs to define a lint method and the code property.
+    optionally a fix method can be given
+    """
+
+    @property
+    @abstractmethod
+    def code(self) -> str:
+        pass
+
+    @classmethod
+    @abstractmethod
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+        pass
+
+    @classmethod  # noqa: B027
+    def fix(cls):  # noqa: B027
+        pass
 
 
 class LintMessage:
@@ -170,7 +199,8 @@ class LintContext:
         return len(self.warn_messages) > 0
 
     def lint(self, name: str, lint_func: Callable[[LintTargetType, "LintContext"], None], lint_target: LintTargetType):
-        name = name[len("lint_") :]
+        if name.startswith("lint_"):
+            name = name[len("lint_") :]
         if name in self.skip_types:
             return
 
@@ -321,10 +351,15 @@ def lint_tool_source_with(lint_context, tool_source, extra_modules=None) -> Lint
     extra_modules = extra_modules or []
     import galaxy.tool_util.linters
 
-    tool_xml = getattr(tool_source, "xml_tree", None)
-    tool_type = tool_source.parse_tool_type() or "default"
     linter_modules = submodules.import_submodules(galaxy.tool_util.linters)
     linter_modules.extend(extra_modules)
+    return lint_tool_source_with_modules(lint_context, tool_source, linter_modules)
+
+
+def lint_tool_source_with_modules(lint_context: LintContext, tool_source, linter_modules) -> LintContext:
+    tool_xml = getattr(tool_source, "xml_tree", None)
+    tool_type = tool_source.parse_tool_type() or "default"
+
     for module in linter_modules:
         lint_tool_types = getattr(module, "lint_tool_types", ["default", "manage_data"])
         if not ("*" in lint_tool_types or tool_type in lint_tool_types):
@@ -344,6 +379,8 @@ def lint_tool_source_with(lint_context, tool_source, extra_modules=None) -> Lint
                         lint_context.lint(name, value, tool_xml)
                 else:
                     lint_context.lint(name, value, tool_source)
+            elif inspect.isclass(value) and issubclass(value, Linter):
+                lint_context.lint(name, value.lint, tool_source)
     return lint_context
 
 
