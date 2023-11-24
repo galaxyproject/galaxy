@@ -626,6 +626,20 @@ export interface paths {
         /** Returns the metadata file associated with this history item. */
         get: operations["history_contents__get_metadata_file"];
     };
+    "/api/histories/{history_id}/contents/{history_content_id}/tags": {
+        /** Show tags based on history_content_id */
+        get: operations["index_api_histories__history_id__contents__history_content_id__tags_get"];
+    };
+    "/api/histories/{history_id}/contents/{history_content_id}/tags/{tag_name}": {
+        /** Show tag based on history_content_id */
+        get: operations["show_api_histories__history_id__contents__history_content_id__tags__tag_name__get"];
+        /** Update tag based on history_content_id */
+        put: operations["update_api_histories__history_id__contents__history_content_id__tags__tag_name__put"];
+        /** Create tag based on history_content_id */
+        post: operations["create_api_histories__history_id__contents__history_content_id__tags__tag_name__post"];
+        /** Delete tag based on history_content_id */
+        delete: operations["delete_api_histories__history_id__contents__history_content_id__tags__tag_name__delete"];
+    };
     "/api/histories/{history_id}/contents/{id}": {
         /**
          * Return detailed information about an HDA within a history. ``/api/histories/{history_id}/contents/{type}s/{id}`` should be used instead.
@@ -648,20 +662,6 @@ export interface paths {
          * **Note**: Currently does not stop any active jobs for which this dataset is an output.
          */
         delete: operations["history_contents__delete_legacy"];
-    };
-    "/api/histories/{history_id}/contents/{id}/tags": {
-        /** Show tags based on history_content_id */
-        get: operations["index_api_histories__history_id__contents__id__tags_get"];
-    };
-    "/api/histories/{history_id}/contents/{id}/tags/{tag_name}": {
-        /** Show tag based on history_content_id */
-        get: operations["show_api_histories__history_id__contents__id__tags__tag_name__get"];
-        /** Update tag based on history_content_id */
-        put: operations["update_api_histories__history_id__contents__id__tags__tag_name__put"];
-        /** Create tag based on history_content_id */
-        post: operations["create_api_histories__history_id__contents__id__tags__tag_name__post"];
-        /** Delete tag based on history_content_id */
-        delete: operations["delete_api_histories__history_id__contents__id__tags__tag_name__delete"];
     };
     "/api/histories/{history_id}/contents/{id}/validate": {
         /**
@@ -843,6 +843,20 @@ export interface paths {
          */
         put: operations["set_slug_api_histories__history_id__slug_put"];
     };
+    "/api/histories/{history_id}/tags": {
+        /** Show tags based on history_id */
+        get: operations["index_api_histories__history_id__tags_get"];
+    };
+    "/api/histories/{history_id}/tags/{tag_name}": {
+        /** Show tag based on history_id */
+        get: operations["show_api_histories__history_id__tags__tag_name__get"];
+        /** Update tag based on history_id */
+        put: operations["update_api_histories__history_id__tags__tag_name__put"];
+        /** Create tag based on history_id */
+        post: operations["create_api_histories__history_id__tags__tag_name__post"];
+        /** Delete tag based on history_id */
+        delete: operations["delete_api_histories__history_id__tags__tag_name__delete"];
+    };
     "/api/histories/{history_id}/unpublish": {
         /**
          * Removes this item from the published list.
@@ -853,20 +867,6 @@ export interface paths {
     "/api/histories/{history_id}/write_store": {
         /** Prepare history for export-style download and write to supplied URI. */
         post: operations["write_store_api_histories__history_id__write_store_post"];
-    };
-    "/api/histories/{id}/tags": {
-        /** Show tags based on history_id */
-        get: operations["index_api_histories__id__tags_get"];
-    };
-    "/api/histories/{id}/tags/{tag_name}": {
-        /** Show tag based on history_id */
-        get: operations["show_api_histories__id__tags__tag_name__get"];
-        /** Update tag based on history_id */
-        put: operations["update_api_histories__id__tags__tag_name__put"];
-        /** Create tag based on history_id */
-        post: operations["create_api_histories__id__tags__tag_name__post"];
-        /** Delete tag based on history_id */
-        delete: operations["delete_api_histories__id__tags__tag_name__delete"];
     };
     "/api/invocations/{invocation_id}/biocompute": {
         /**
@@ -1703,20 +1703,6 @@ export interface paths {
          */
         put: operations["set_slug_api_workflows__id__slug_put"];
     };
-    "/api/workflows/{id}/tags": {
-        /** Show tags based on workflow_id */
-        get: operations["index_api_workflows__id__tags_get"];
-    };
-    "/api/workflows/{id}/tags/{tag_name}": {
-        /** Show tag based on workflow_id */
-        get: operations["show_api_workflows__id__tags__tag_name__get"];
-        /** Update tag based on workflow_id */
-        put: operations["update_api_workflows__id__tags__tag_name__put"];
-        /** Create tag based on workflow_id */
-        post: operations["create_api_workflows__id__tags__tag_name__post"];
-        /** Delete tag based on workflow_id */
-        delete: operations["delete_api_workflows__id__tags__tag_name__delete"];
-    };
     "/api/workflows/{id}/unpublish": {
         /**
          * Removes this item from the published list.
@@ -1727,6 +1713,20 @@ export interface paths {
     "/api/workflows/{workflow_id}": {
         /** Add the deleted flag to a workflow. */
         delete: operations["delete_workflow_api_workflows__workflow_id__delete"];
+    };
+    "/api/workflows/{workflow_id}/tags": {
+        /** Show tags based on workflow_id */
+        get: operations["index_api_workflows__workflow_id__tags_get"];
+    };
+    "/api/workflows/{workflow_id}/tags/{tag_name}": {
+        /** Show tag based on workflow_id */
+        get: operations["show_api_workflows__workflow_id__tags__tag_name__get"];
+        /** Update tag based on workflow_id */
+        put: operations["update_api_workflows__workflow_id__tags__tag_name__put"];
+        /** Create tag based on workflow_id */
+        post: operations["create_api_workflows__workflow_id__tags__tag_name__post"];
+        /** Delete tag based on workflow_id */
+        delete: operations["delete_api_workflows__workflow_id__tags__tag_name__delete"];
     };
     "/api/workflows/{workflow_id}/undelete": {
         /** Remove the deleted flag from a workflow. */
@@ -13251,6 +13251,155 @@ export interface operations {
             };
         };
     };
+    index_api_histories__history_id__contents__history_content_id__tags_get: {
+        /** Show tags based on history_content_id */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                history_content_id: string;
+                history_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["ItemTagsListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    show_api_histories__history_id__contents__history_content_id__tags__tag_name__get: {
+        /** Show tag based on history_content_id */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                history_content_id: string;
+                tag_name: string;
+                history_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["ItemTagsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_api_histories__history_id__contents__history_content_id__tags__tag_name__put: {
+        /** Update tag based on history_content_id */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                history_content_id: string;
+                tag_name: string;
+                history_id: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ItemTagsCreatePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["ItemTagsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_api_histories__history_id__contents__history_content_id__tags__tag_name__post: {
+        /** Create tag based on history_content_id */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                history_content_id: string;
+                tag_name: string;
+                history_id: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ItemTagsCreatePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["ItemTagsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_api_histories__history_id__contents__history_content_id__tags__tag_name__delete: {
+        /** Delete tag based on history_content_id */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                history_content_id: string;
+                tag_name: string;
+                history_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": boolean;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     history_contents__show_legacy: {
         /**
          * Return detailed information about an HDA within a history. ``/api/histories/{history_id}/contents/{type}s/{id}`` should be used instead.
@@ -13419,155 +13568,6 @@ export interface operations {
             202: {
                 content: {
                     "application/json": components["schemas"]["DeleteHistoryContentResult"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    index_api_histories__history_id__contents__id__tags_get: {
-        /** Show tags based on history_content_id */
-        parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string;
-            };
-            /** @description history_content_id */
-            path: {
-                id: string;
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json": components["schemas"]["ItemTagsListResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    show_api_histories__history_id__contents__id__tags__tag_name__get: {
-        /** Show tag based on history_content_id */
-        parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string;
-            };
-            /** @description history_content_id */
-            path: {
-                id: string;
-                tag_name: string;
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json": components["schemas"]["ItemTagsResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    update_api_histories__history_id__contents__id__tags__tag_name__put: {
-        /** Update tag based on history_content_id */
-        parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string;
-            };
-            /** @description history_content_id */
-            path: {
-                id: string;
-                tag_name: string;
-            };
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ItemTagsCreatePayload"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json": components["schemas"]["ItemTagsResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    create_api_histories__history_id__contents__id__tags__tag_name__post: {
-        /** Create tag based on history_content_id */
-        parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string;
-            };
-            /** @description history_content_id */
-            path: {
-                id: string;
-                tag_name: string;
-            };
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ItemTagsCreatePayload"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json": components["schemas"]["ItemTagsResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    delete_api_histories__history_id__contents__id__tags__tag_name__delete: {
-        /** Delete tag based on history_content_id */
-        parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string;
-            };
-            /** @description history_content_id */
-            path: {
-                id: string;
-                tag_name: string;
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json": boolean;
                 };
             };
             /** @description Validation Error */
@@ -14562,6 +14562,150 @@ export interface operations {
             };
         };
     };
+    index_api_histories__history_id__tags_get: {
+        /** Show tags based on history_id */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                history_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["ItemTagsListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    show_api_histories__history_id__tags__tag_name__get: {
+        /** Show tag based on history_id */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                history_id: string;
+                tag_name: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["ItemTagsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_api_histories__history_id__tags__tag_name__put: {
+        /** Update tag based on history_id */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                history_id: string;
+                tag_name: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ItemTagsCreatePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["ItemTagsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_api_histories__history_id__tags__tag_name__post: {
+        /** Create tag based on history_id */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                history_id: string;
+                tag_name: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ItemTagsCreatePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["ItemTagsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_api_histories__history_id__tags__tag_name__delete: {
+        /** Delete tag based on history_id */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                history_id: string;
+                tag_name: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": boolean;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     unpublish_api_histories__history_id__unpublish_put: {
         /**
          * Removes this item from the published list.
@@ -14614,155 +14758,6 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["AsyncTaskResultSummary"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    index_api_histories__id__tags_get: {
-        /** Show tags based on history_id */
-        parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string;
-            };
-            /** @description history_id */
-            path: {
-                id: string;
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json": components["schemas"]["ItemTagsListResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    show_api_histories__id__tags__tag_name__get: {
-        /** Show tag based on history_id */
-        parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string;
-            };
-            /** @description history_id */
-            path: {
-                id: string;
-                tag_name: string;
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json": components["schemas"]["ItemTagsResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    update_api_histories__id__tags__tag_name__put: {
-        /** Update tag based on history_id */
-        parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string;
-            };
-            /** @description history_id */
-            path: {
-                id: string;
-                tag_name: string;
-            };
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ItemTagsCreatePayload"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json": components["schemas"]["ItemTagsResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    create_api_histories__id__tags__tag_name__post: {
-        /** Create tag based on history_id */
-        parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string;
-            };
-            /** @description history_id */
-            path: {
-                id: string;
-                tag_name: string;
-            };
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ItemTagsCreatePayload"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json": components["schemas"]["ItemTagsResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    delete_api_histories__id__tags__tag_name__delete: {
-        /** Delete tag based on history_id */
-        parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string;
-            };
-            /** @description history_id */
-            path: {
-                id: string;
-                tag_name: string;
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json": boolean;
                 };
             };
             /** @description Validation Error */
@@ -19269,155 +19264,6 @@ export interface operations {
             };
         };
     };
-    index_api_workflows__id__tags_get: {
-        /** Show tags based on workflow_id */
-        parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string;
-            };
-            /** @description workflow_id */
-            path: {
-                id: string;
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json": components["schemas"]["ItemTagsListResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    show_api_workflows__id__tags__tag_name__get: {
-        /** Show tag based on workflow_id */
-        parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string;
-            };
-            /** @description workflow_id */
-            path: {
-                id: string;
-                tag_name: string;
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json": components["schemas"]["ItemTagsResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    update_api_workflows__id__tags__tag_name__put: {
-        /** Update tag based on workflow_id */
-        parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string;
-            };
-            /** @description workflow_id */
-            path: {
-                id: string;
-                tag_name: string;
-            };
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ItemTagsCreatePayload"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json": components["schemas"]["ItemTagsResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    create_api_workflows__id__tags__tag_name__post: {
-        /** Create tag based on workflow_id */
-        parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string;
-            };
-            /** @description workflow_id */
-            path: {
-                id: string;
-                tag_name: string;
-            };
-        };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ItemTagsCreatePayload"];
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json": components["schemas"]["ItemTagsResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    delete_api_workflows__id__tags__tag_name__delete: {
-        /** Delete tag based on workflow_id */
-        parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string;
-            };
-            /** @description workflow_id */
-            path: {
-                id: string;
-                tag_name: string;
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json": boolean;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
     unpublish_api_workflows__id__unpublish_put: {
         /**
          * Removes this item from the published list.
@@ -19465,6 +19311,150 @@ export interface operations {
             200: {
                 content: {
                     "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    index_api_workflows__workflow_id__tags_get: {
+        /** Show tags based on workflow_id */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                workflow_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["ItemTagsListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    show_api_workflows__workflow_id__tags__tag_name__get: {
+        /** Show tag based on workflow_id */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                workflow_id: string;
+                tag_name: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["ItemTagsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_api_workflows__workflow_id__tags__tag_name__put: {
+        /** Update tag based on workflow_id */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                workflow_id: string;
+                tag_name: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ItemTagsCreatePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["ItemTagsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_api_workflows__workflow_id__tags__tag_name__post: {
+        /** Create tag based on workflow_id */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                workflow_id: string;
+                tag_name: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ItemTagsCreatePayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["ItemTagsResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_api_workflows__workflow_id__tags__tag_name__delete: {
+        /** Delete tag based on workflow_id */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                workflow_id: string;
+                tag_name: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": boolean;
                 };
             };
             /** @description Validation Error */

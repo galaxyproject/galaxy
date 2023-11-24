@@ -32,83 +32,103 @@ class FastAPIItemTags:
     manager: ItemTagsManager = depends(ItemTagsManager)
 
     @classmethod
-    def create_class(cls, prefix, tagged_item_class, tagged_item_id, tagged_item_tag):
+    def create_class(cls, prefix, tagged_item_class, tagged_item_id, api_docs_tag, extra_path_params):
         class Temp(cls):
             @router.get(
-                f"/api/{prefix}/{{id}}/tags", tags=[tagged_item_tag], summary=f"Show tags based on {tagged_item_id}"
+                f"/api/{prefix}/{{{tagged_item_id}}}/tags",
+                tags=[api_docs_tag],
+                summary=f"Show tags based on {tagged_item_id}",
+                openapi_extra=extra_path_params,
             )
             def index(
                 self,
                 trans: ProvidesAppContext = DependsOnTrans,
-                id: DecodedDatabaseIdField = Path(..., title="Item ID", description=f"{tagged_item_id}"),
+                item_id: DecodedDatabaseIdField = Path(..., title="Item ID", alias=tagged_item_id),
             ) -> ItemTagsListResponse:
-                return self.manager.index(trans, tagged_item_class, id)
+                return self.manager.index(trans, tagged_item_class, item_id)
 
             @router.get(
-                f"/api/{prefix}/{{id}}/tags/{{tag_name}}",
-                tags=[tagged_item_tag],
+                f"/api/{prefix}/{{{tagged_item_id}}}/tags/{{tag_name}}",
+                tags=[api_docs_tag],
                 summary=f"Show tag based on {tagged_item_id}",
+                openapi_extra=extra_path_params,
             )
             def show(
                 self,
                 trans: ProvidesAppContext = DependsOnTrans,
-                id: DecodedDatabaseIdField = Path(..., title="Item ID", description=f"{tagged_item_id}"),
+                item_id: DecodedDatabaseIdField = Path(..., title="Item ID", alias=tagged_item_id),
                 tag_name: str = Path(..., title="Tag Name"),
             ) -> ItemTagsResponse:
-                return self.manager.show(trans, tagged_item_class, id, tag_name)
+                return self.manager.show(trans, tagged_item_class, item_id, tag_name)
 
             @router.post(
-                f"/api/{prefix}/{{id}}/tags/{{tag_name}}",
-                tags=[tagged_item_tag],
+                f"/api/{prefix}/{{{tagged_item_id}}}/tags/{{tag_name}}",
+                tags=[api_docs_tag],
                 summary=f"Create tag based on {tagged_item_id}",
+                openapi_extra=extra_path_params,
             )
             def create(
                 self,
                 trans: ProvidesAppContext = DependsOnTrans,
-                id: DecodedDatabaseIdField = Path(..., title="Item ID", description=f"{tagged_item_id}"),
+                item_id: DecodedDatabaseIdField = Path(..., title="Item ID", alias=tagged_item_id),
                 tag_name: str = Path(..., title="Tag Name"),
                 payload: ItemTagsCreatePayload = Body(...),
             ) -> ItemTagsResponse:
-                return self.manager.create(trans, tagged_item_class, id, tag_name, payload)
+                return self.manager.create(trans, tagged_item_class, item_id, tag_name, payload)
 
             @router.put(
-                f"/api/{prefix}/{{id}}/tags/{{tag_name}}",
-                tags=[tagged_item_tag],
+                f"/api/{prefix}/{{{tagged_item_id}}}/tags/{{tag_name}}",
+                tags=[api_docs_tag],
                 summary=f"Update tag based on {tagged_item_id}",
+                openapi_extra=extra_path_params,
             )
             def update(
                 self,
                 trans: ProvidesAppContext = DependsOnTrans,
-                id: DecodedDatabaseIdField = Path(..., title="Item ID", description=f"{tagged_item_id}"),
+                item_id: DecodedDatabaseIdField = Path(..., title="Item ID", alias=tagged_item_id),
                 tag_name: str = Path(..., title="Tag Name"),
                 payload: ItemTagsCreatePayload = Body(...),
             ) -> ItemTagsResponse:
-                return self.manager.create(trans, tagged_item_class, id, tag_name, payload)
+                return self.manager.create(trans, tagged_item_class, item_id, tag_name, payload)
 
             @router.delete(
-                f"/api/{prefix}/{{id}}/tags/{{tag_name}}",
-                tags=[tagged_item_tag],
+                f"/api/{prefix}/{{{tagged_item_id}}}/tags/{{tag_name}}",
+                tags=[api_docs_tag],
                 summary=f"Delete tag based on {tagged_item_id}",
+                openapi_extra=extra_path_params,
             )
             def delete(
                 self,
                 trans: ProvidesAppContext = DependsOnTrans,
-                id: DecodedDatabaseIdField = Path(..., title="Item ID", description=f"{tagged_item_id}"),
+                item_id: DecodedDatabaseIdField = Path(..., title="Item ID", alias=tagged_item_id),
                 tag_name: str = Path(..., title="Tag Name"),
             ) -> bool:
-                return self.manager.delete(trans, tagged_item_class, id, tag_name)
+                return self.manager.delete(trans, tagged_item_class, item_id, tag_name)
 
         return Temp
 
 
-prefixs = {
+prefixes = {
     "histories": ["History", "history_id", "histories"],
     "histories/{history_id}/contents": ["HistoryDatasetAssociation", "history_content_id", "histories"],
     "workflows": ["StoredWorkflow", "workflow_id", "workflows"],
 }
-for prefix, tagged_item in prefixs.items():
-    tagged_item_class, tagged_item_id, tagged_item_tag = tagged_item
-    router.cbv(FastAPIItemTags.create_class(prefix, tagged_item_class, tagged_item_id, tagged_item_tag))
+for prefix, tagged_item in prefixes.items():
+    tagged_item_class, tagged_item_id, api_docs_tag = tagged_item
+    extra_path_params = None
+    if tagged_item_id == "history_content_id":
+        extra_path_params = {
+            "parameters": [
+                {
+                    "in": "path",
+                    "name": "history_id",
+                    "required": True,
+                    "schema": {"title": "History ID", "type": "string"},
+                }
+            ]
+        }
+
+    router.cbv(FastAPIItemTags.create_class(prefix, tagged_item_class, tagged_item_id, api_docs_tag, extra_path_params))
 
 
 # TODO: Visualization and Pages once APIs for those are available
