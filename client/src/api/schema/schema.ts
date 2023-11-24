@@ -8312,7 +8312,7 @@ export interface components {
              * State
              * @description Current state of the job.
              */
-            state: components["schemas"]["JobState"];
+            state?: components["schemas"]["JobState"];
             /**
              * Tool ID
              * @description The tool ID related to the job.
