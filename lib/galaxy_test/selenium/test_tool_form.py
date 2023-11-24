@@ -67,12 +67,32 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
         job_outputs = self._table_to_key_value_elements("table#job-outputs")
         assert job_outputs[0][0].text == "environment_variables"
         generic_item = job_outputs[0][1]
-        assert "1 : environment_variables" in generic_item.text
+        assert "1: environment_variables" in generic_item.text
         generic_item.click()
         self.sleep_for(self.wait_types.UX_RENDER)
         assert generic_item.find_element(By.CSS_SELECTOR, "pre").text == "42\nmoo\nNOTTHREE"
         generic_item.find_element(By.CSS_SELECTOR, "[title='Run Job Again']").click()
         self.components.tool_form.execute.wait_for_visible()
+
+    @selenium_test
+    def test_drilldown_tool(self):
+        self._open_drilldown_test_tool()
+        # click first option in first drilldown component
+        self.wait_for_and_click(self.components.tool_form.drilldown_expand)
+        self.wait_for_and_click(self.components.tool_form.drilldown_option)
+        # click select all in second drilldown component
+        self.wait_for_and_click(self.components.tool_form.drilldown_select_all(parameter="dd_recurse"))
+        self.tool_form_execute()
+        self.history_panel_wait_for_hid_ok(1)
+        # click hid 1 in history panel
+        self.history_panel_click_item_title(hid=1)
+        # assert that the dataset peek is d = a dd_recurse = a,b,c
+        self.assert_item_peek_includes(1, "dd a")
+        self.assert_item_peek_includes(1, "dd_recurse aa,aba,abb,ba,bba,bbb")
+
+    def _open_drilldown_test_tool(self):
+        self.home()
+        self.tool_open("drill_down")
 
     @staticmethod
     def click_menu_item(menu, text):
@@ -121,7 +141,7 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
         self.perform_upload(test_path)
         self.history_panel_wait_for_hid_ok(1)
         self.tool_open("column_param")
-        self.select2_set_value("#col", "3")
+        self.select_set_value("#col", "3")
         self.tool_form_execute()
         self.history_panel_wait_for_hid_ok(2)
         # delete source dataset and click re-run on resulting dataset
@@ -145,8 +165,8 @@ class TestToolForm(SeleniumTestCase, UsesHistoryItemAssertions):
         error_col = self.components.tool_form.parameter_error(parameter="col").wait_for_visible()
         error_col_names = self.components.tool_form.parameter_error(parameter="col_names").wait_for_visible()
         assert error_input1.text == "Please provide a value for this option."
-        assert error_col.text == "parameter 'col': an invalid option (None) was selected, please verify"
-        assert error_col_names.text == "parameter 'col_names': an invalid option (None) was selected, please verify"
+        assert error_col.text == "parameter 'col': requires a value, but no legal values defined"
+        assert error_col_names.text == "parameter 'col_names': requires a value, but no legal values defined"
         # validate warnings when inputs are restored
         self.components.tool_form.parameter_data_input_single(parameter="input1").wait_for_and_click()
         self.sleep_for(self.wait_types.UX_TRANSITION)

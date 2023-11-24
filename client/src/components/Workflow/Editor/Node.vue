@@ -79,11 +79,11 @@
                 :input="input"
                 :step-id="id"
                 :datatypes-mapper="datatypesMapper"
-                :step-position="step.position"
+                :step-position="step.position ?? { top: 0, left: 0 }"
                 :root-offset="rootOffset"
                 :scroll="scroll"
                 :scale="scale"
-                :parentNode="elHtml"
+                :parent-node="elHtml"
                 @onChange="onChange" />
             <div v-if="showRule" class="rule" />
             <node-output
@@ -94,12 +94,12 @@
                 :post-job-actions="postJobActions"
                 :step-id="id"
                 :step-type="step.type"
-                :step-position="step.position"
+                :step-position="step.position ?? { top: 0, left: 0 }"
                 :root-offset="reactive(rootOffset)"
                 :scroll="scroll"
                 :scale="scale"
                 :datatypes-mapper="datatypesMapper"
-                :parentNode="elHtml"
+                :parent-node="elHtml"
                 @onDragConnector="onDragConnector"
                 @stopDragging="onStopDragging"
                 @onChange="onChange" />
@@ -107,7 +107,7 @@
     </draggable-wrapper>
 </template>
 
-<script lang="ts" setup>
+<script setup lang="ts">
 import type { PropType, Ref } from "vue";
 import Vue, { reactive } from "vue";
 import BootstrapVue from "bootstrap-vue";
@@ -133,7 +133,6 @@ import type { OutputTerminals } from "./modules/terminals";
 
 Vue.use(BootstrapVue);
 
-// @ts-ignore
 library.add(faCodeBranch);
 
 const props = defineProps({

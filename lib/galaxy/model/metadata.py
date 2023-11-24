@@ -24,6 +24,7 @@ from sqlalchemy.orm import object_session
 from sqlalchemy.orm.attributes import flag_modified
 
 import galaxy.model
+from galaxy.model.base import transaction
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.security.object_wrapper import sanitize_lists_to_string
 from galaxy.util import (
@@ -273,7 +274,7 @@ class MetadataCollection(Mapping):
             raise Exception(f"Failed encoding metadata dictionary: {meta_dict}") from e
         if filename is None:
             return encoded_meta_dict
-        with open(filename, "wt+") as fh:
+        with open(filename, "w+") as fh:
             fh.write(encoded_meta_dict)
 
     def __getstate__(self):
@@ -380,6 +381,7 @@ class MetadataElementSpec:
         no_value=None,
         visible=True,
         set_in_upload=False,
+        optional=False,
         **kwargs,
     ):
         self.name = name
@@ -388,6 +390,7 @@ class MetadataElementSpec:
         self.no_value = no_value
         self.visible = visible
         self.set_in_upload = set_in_upload
+        self.optional = optional
         # Catch-all, allows for extra attributes to be set
         self.__dict__.update(kwargs)
         # set up param last, as it uses values set above
@@ -601,7 +604,16 @@ class FileParameter(MetadataParameter):
         if isinstance(value, int):
             return session.query(galaxy.model.MetadataFile).get(value)
         else:
-            return session.query(galaxy.model.MetadataFile).filter_by(uuid=value).one()
+            wrapped_value = session.query(galaxy.model.MetadataFile).filter_by(uuid=value).one_or_none()
+            if wrapped_value:
+                return wrapped_value
+            else:
+                # If we've simultaneously copied the  dataset and we've changed the datatype on the
+                # copy we may not have committed the MetadataFile yet, so we need to commit the session.
+                # TODO: It would be great if we can avoid the commit in the future.
+                with transaction(session):
+                    session.commit()
+            return session.query(galaxy.model.MetadataFile).filter_by(uuid=value).one_or_none()
 
     def make_copy(self, value, target_context: MetadataCollection, source_context):
         session = target_context._object_session(target_context.parent)
@@ -620,7 +632,9 @@ class FileParameter(MetadataParameter):
             try:
                 new_value.update_from_file(value.file_name)
             except AssertionError:
-                session(target_context.parent).flush()
+                tmp_session = session(target_context.parent)
+                with transaction(tmp_session):
+                    tmp_session.commit()
                 new_value.update_from_file(value.file_name)
             return self.unwrap(new_value)
         return None
@@ -653,7 +667,6 @@ class FileParameter(MetadataParameter):
                 # directory. Correct.
                 file_name = path_rewriter(file_name)
             mf.update_from_file(file_name)
-            os.unlink(file_name)
             value = mf.id
         return value
 
@@ -676,7 +689,8 @@ class FileParameter(MetadataParameter):
             sa_session = object_session(dataset)
             if sa_session:
                 sa_session.add(mf)
-                sa_session.flush()  # flush to assign id
+                with transaction(sa_session):
+                    sa_session.commit()  # commit to assign id
             return mf
         else:
             # we need to make a tmp file that is accessable to the head node,

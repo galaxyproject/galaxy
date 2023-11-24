@@ -1,9 +1,10 @@
 <script setup lang="ts">
+import { storeToRefs } from "pinia";
 import TrsTool from "./TrsTool.vue";
 import TrsUrlImport from "./TrsUrlImport.vue";
 import { Toast } from "@/composables/toast";
 import { Services } from "../services";
-import { getGalaxyInstance } from "@/app";
+import { useUserStore } from "@/stores/userStore";
 import { computed, ref, watch, type Ref } from "vue";
 import { getRedirectOnImportPath } from "../redirectPath";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -40,7 +41,7 @@ const importing = ref(false);
 const trsSelection: Ref<TrsSelection | null> = ref(null);
 const errorMessage: Ref<string | null> = ref(null);
 const toolId = ref(props.queryTrsId);
-const isAnonymous: Ref<boolean> = getGalaxyInstance().user?.isAnonymous();
+const { isAnonymous } = storeToRefs(useUserStore());
 const isAutoImport = ref(
     Boolean((props.queryTrsVersionId && props.queryTrsServer && props.queryTrsId) || props.queryTrsUrl)
 );
@@ -153,7 +154,7 @@ async function importVersionFromUrl(url: string, isRunFormRedirect = false) {
 </script>
 
 <template>
-    <div>
+    <div class="workflow-import-trs-id">
         <b-card v-if="!isAnonymous" title="GA4GH Tool Registry Server (TRS) Workflow Import">
             <div>
                 <b>TRS Server:</b>
@@ -168,7 +169,7 @@ async function importVersionFromUrl(url: string, isRunFormRedirect = false) {
             </b-alert>
             <div v-else>
                 <div class="my-3">
-                    <b-form-group label="TRS ID:" label-class="font-weight-bold">
+                    <b-form-group label="TRS ID:" label-for="trs-id-input" label-class="font-weight-bold">
                         <b-form-input id="trs-id-input" v-model="toolId" debounce="500" />
                     </b-form-group>
                 </div>

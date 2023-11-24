@@ -9,7 +9,7 @@
         @input="onInput" />
 </template>
 
-<script lang="ts" setup>
+<script setup lang="ts">
 import FormElement from "@/components/Form/FormElement.vue";
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 import { computed, ref } from "vue";

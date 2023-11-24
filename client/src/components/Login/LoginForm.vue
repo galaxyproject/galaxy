@@ -6,16 +6,40 @@
                     <b-alert :show="!!messageText" :variant="messageVariant">
                         <span v-html="messageText" />
                     </b-alert>
+                    <b-alert :show="!!connectExternalProvider" variant="info">
+                        There already exists a user with the email <i>{{ connectExternalEmail }}</i
+                        >. In order to associate this account with <i>{{ connectExternalLabel }}</i
+                        >, you must first login to your existing account.
+                    </b-alert>
                     <b-form id="login" @submit.prevent="submitLogin()">
-                        <b-card no-body :header="headerWelcome">
+                        <b-card no-body>
+                            <b-card-header v-if="!connectExternalProvider">
+                                <span>{{ headerWelcome }}</span>
+                            </b-card-header>
                             <b-card-body>
                                 <div>
                                     <!-- standard internal galaxy login -->
-                                    <b-form-group :label="labelNameAddress">
-                                        <b-form-input v-model="login" name="login" type="text" />
+                                    <b-form-group :label="labelNameAddress" label-for="login-form-name">
+                                        <b-form-input
+                                            v-if="!connectExternalProvider"
+                                            id="login-form-name"
+                                            v-model="login"
+                                            name="login"
+                                            type="text" />
+                                        <b-form-input
+                                            v-else
+                                            id="login-form-name"
+                                            disabled
+                                            :value="connectExternalEmail"
+                                            name="login"
+                                            type="text" />
                                     </b-form-group>
-                                    <b-form-group :label="labelPassword">
-                                        <b-form-input v-model="password" name="password" type="password" />
+                                    <b-form-group :label="labelPassword" label-for="login-form-password">
+                                        <b-form-input
+                                            id="login-form-password"
+                                            v-model="password"
+                                            name="password"
+                                            type="password" />
                                         <b-form-text>
                                             <span v-localize>Forgot password?</span>
                                             <a
@@ -31,39 +55,36 @@
                                 </div>
                                 <div v-if="enableOidc">
                                     <!-- OIDC login-->
-                                    <external-login :login_page="true" />
+                                    <external-login :login_page="true" :exclude_idps="[connectExternalProvider]" />
                                 </div>
                             </b-card-body>
                             <b-card-footer>
-                                Don't have an account?
-                                <span v-if="allowUserCreation">
-                                    <a
-                                        id="register-toggle"
-                                        v-localize
-                                        href="javascript:void(0)"
-                                        role="button"
-                                        @click.prevent="toggleLogin">
-                                        Register here.
-                                    </a>
+                                <span v-if="!connectExternalProvider">
+                                    Don't have an account?
+                                    <span v-if="allowUserCreation">
+                                        <a
+                                            id="register-toggle"
+                                            v-localize
+                                            href="javascript:void(0)"
+                                            role="button"
+                                            @click.prevent="toggleLogin">
+                                            Register here.
+                                        </a>
+                                    </span>
+                                    <span v-else>
+                                        Registration for this Galaxy instance is disabled. Please contact an
+                                        administrator for assistance.
+                                    </span>
                                 </span>
                                 <span v-else>
-                                    Registration for this Galaxy instance is disabled. Please contact an administrator
-                                    for assistance.
+                                    Do not wish to connect to an external provider?
+                                    <a href="javascript:void(0)" role="button" @click.prevent="returnToLogin">
+                                        Return to login here.
+                                    </a>
                                 </span>
                             </b-card-footer>
                         </b-card>
                     </b-form>
-                    <b-modal id="duplicateEmail" ref="duplicateEmail" centered title="Duplicate Email" ok-only>
-                        <p>
-                            There already exists a user with this email. To associate this external login, you must
-                            first be logged in as that existing account.
-                        </p>
-                        <p>
-                            Reminder: Registration and usage of multiple accounts is tracked and such accounts are
-                            subject to termination and data deletion. Connect existing account now to avoid possible
-                            loss of data.
-                        </p>
-                    </b-modal>
                 </div>
             </template>
             <template v-else>
@@ -130,6 +151,7 @@ export default {
         },
     },
     data() {
+        const urlParams = new URLSearchParams(window.location.search);
         return {
             login: null,
             password: null,
@@ -139,13 +161,13 @@ export default {
             headerWelcome: _l("Welcome to Galaxy, please log in"),
             labelNameAddress: _l("Public Name or Email Address"),
             labelPassword: _l("Password"),
+            confirmURL: urlParams.has("confirm") && urlParams.get("confirm") == "true",
+            connectExternalEmail: urlParams.get("connect_external_email"),
+            connectExternalProvider: urlParams.get("connect_external_provider"),
+            connectExternalLabel: urlParams.get("connect_external_label"),
         };
     },
     computed: {
-        confirmURL() {
-            var urlParams = new URLSearchParams(window.location.search);
-            return urlParams.has("confirm") && urlParams.get("confirm") == "true";
-        },
         welcomeUrlWithRoot() {
             return withPrefix(this.welcomeUrl);
         },
@@ -156,6 +178,9 @@ export default {
         },
         submitLogin() {
             let redirect = this.redirect;
+            if (this.connectExternalEmail) {
+                this.login = this.connectExternalEmail;
+            }
             if (localStorage.getItem("redirect_url")) {
                 redirect = localStorage.getItem("redirect_url");
             }
@@ -172,6 +197,8 @@ export default {
                     }
                     if (data.expired_user) {
                         window.location = withPrefix(`/root/login?expired_user=${data.expired_user}`);
+                    } else if (this.connectExternalProvider) {
+                        window.location = withPrefix("/user/external_ids?connect_external=true");
                     } else if (data.redirect) {
                         window.location = encodeURI(data.redirect);
                     } else {
@@ -180,8 +207,13 @@ export default {
                 })
                 .catch((error) => {
                     this.messageVariant = "danger";
-                    const message = error.response.data && error.response.data.err_msg;
-                    this.messageText = message || "Login failed for an unknown reason.";
+                    const message = error.response && error.response.data && error.response.data.err_msg;
+                    if (this.connectExternalProvider && message && message.toLowerCase().includes("invalid")) {
+                        this.messageText =
+                            message + " Try logging in to the existing account through an external provider below.";
+                    } else {
+                        this.messageText = message || "Login failed for an unknown reason.";
+                    }
                 });
         },
         setRedirect(url) {
@@ -199,6 +231,9 @@ export default {
                     const message = error.response.data && error.response.data.err_msg;
                     this.messageText = message || "Password reset failed for an unknown reason.";
                 });
+        },
+        returnToLogin() {
+            window.location = withPrefix("/login/start");
         },
     },
 };

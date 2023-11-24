@@ -20,21 +20,19 @@ This configuration element may define a ``workers`` parameters which is the defa
 
 The collection contains `<plugin>` elements. Each ``plugin`` element may define the following parameters.
 
-```eval_rst
 id
-    ``id`` of the runner plugin referenced in ``destination`` configuration elements.
+: ``id`` of the runner plugin referenced in ``destination`` configuration elements.
 
 type
-    This must be ``runner`` currently.
+: This must be ``runner`` currently.
 
 load
-    Python module containing the plugin, and the class to instantiate.  If no class name is provided, the module must list class names to load in a module-level ``__all__`` list.
-    For example ``galaxy.jobs.runners.local:LocalJobRunner``.
+: Python module containing the plugin, and the class to instantiate.  If no class name is provided, the module must list class names to load in a module-level ``__all__`` list.
+  For example ``galaxy.jobs.runners.local:LocalJobRunner``.
 
 workers
-    Number of worker threads to start for this plugin only (defaults to the value specified
-    on ``plugins`` configuration).
-```
+: Number of worker threads to start for this plugin only (defaults to the value specified
+  on ``plugins`` configuration).
 
 ### Job Handlers
 
@@ -44,13 +42,11 @@ The handlers configuration may define a ``default`` attribute. This is the the h
 
 The collection contains `<handler>` elements.
 
-```eval_rst
 id
-    A server name that should be used to run jobs. Server names are dependent on your application server deployment scenario and are explained in the :ref:`configuration section of the scaling documentation <scaling-configuration>`.
+: A server name that should be used to run jobs. Server names are dependent on your application server deployment scenario and are explained in the [configuration section of the scaling documentation](scaling-configuration).
 
 tags
-    A comma-separated set of strings that optional define tags to which this handler belongs.
-```
+: A comma-separated set of strings that optional define tags to which this handler belongs.
 
 ### Job Destinations
 
@@ -59,16 +55,14 @@ attribute that should be the ``id`` of the ``destination`` to used if no explici
 
 The collection contains `<destination>`s, which are can be collections or single elements.
 
-```eval_rst
 id
-    Identifier to be referenced in ``<tool>`` configuration elements in the ``tools`` section.
+: Identifier to be referenced in ``<tool>`` configuration elements in the ``tools`` section.
 
 runner
-    Job runner ``plugin`` to be used to run jobs sent to this destination.
+: Job runner ``plugin`` to be used to run jobs sent to this destination.
 
 tags
-    Tags to which this destination belongs (for example `tags="longwalltime,bigcluster"`).
-```
+: Tags to which this destination belongs (for example ``tags="longwalltime,bigcluster"``).
 
 ``destination`` elements may contain zero or more ``<param>``s, which are passed to the destination's defined runner plugin and interpreted in a way native to that plugin. For details on the parameter specification, see the documentation on [Cluster configuration](cluster.md).
 
@@ -76,55 +70,54 @@ tags
 
 As of the June 2014 release, destinations may contain additional `env` elements to configure the environment for jobs on that resource. These each map to shell commands that will be injected to Galaxy's job script and executed on the destination resource.
 
-```eval_rst
 id
-    Environment variable to set (in this case text of element is value this is set to
-    (e.g. ``id="_JAVA_OPTIONS"``).
+: Environment variable to set (in this case text of element is value this is set to
+  (e.g. ``id="_JAVA_OPTIONS"``).
 
 file
-    Optional path to script File will be sourced to configure environment
-    (e.g. ``file="/mnt/java_cluster/environment_setup.sh"``).
+: Optional path to script File will be sourced to configure environment
+  (e.g. ``file="/mnt/java_cluster/environment_setup.sh"``).
 
 exec
-    Optional shell command to execute to configure environment
-    (e.g. ``module load javastuff/2.10``)
+: Optional shell command to execute to configure environment
+  (e.g. ``module load javastuff/2.10``)
 
 raw
-    Disable auto-quoting of values when setting up environment variables.
-```
+: Disable auto-quoting of values when setting up environment variables.
 
 Destinations may also specify other destinations (which may be dynamic destinations) that jobs should be resubmitted to if they fail to complete at the first destination for certain reasons. This is done with the `<resubmit>` tag contained within a `<destination>`.
 
-```eval_rst
 condition
-    Failure expression on which to resubmit jobs - this Python expression may contain
-    the boolean variables ``memory_limit_reached``, ``walltime_reached``,
-    ``unknown_error``, or ``any_failure`` and the numeric variables ``seconds_running``
-    and ``attempt``. See the [test case configuration](https://github.com/galaxyproject/galaxy/blob/dev/test/integration/resubmission_job_conf.yml) for examples of various expressions.
+: Failure expression on which to resubmit jobs - this Python expression may contain
+  the boolean variables ``memory_limit_reached``, ``walltime_reached``,
+  ``unknown_error``, or ``any_failure`` and the numeric variables ``seconds_running``
+  and ``attempt``. See the [test case configuration](https://github.com/galaxyproject/galaxy/blob/dev/test/integration/resubmission_job_conf.yml) for examples of various expressions.
 
 handler
-    Job handler(s) that should be used to run jobs for this tool after resubmission.
+: Job handler(s) that should be used to run jobs for this tool after resubmission.
 
 destination
-    Job destination(s) that should be used to run jobs for this tool after resubmission.
-```
+: Job destination(s) that should be used to run jobs for this tool after resubmission.
 
 **Note:** Currently, failure conditions for memory limits and walltime are only implemented for the [Slurm](cluster.md) job runner plugin. Contributions for other implementations would be greatly appreciated! An example job configuration and an always-fail job runner plugin for development [can be found in this gist](https://gist.github.com/natefoo/361414fbca3c0ea63aa5).
 
 
 ### Running jobs in containers
 
-Galaxy can be configured to run jobs in container runtimes. Currently the two supported runtimes are [Docker](https://www.docker.com) and [Singularity](https://www.sylabs.io/). Each ``<destination>`` can enable container support
+Galaxy can be configured to run jobs in container runtimes. Currently the supported runtimes are [Docker](https://www.docker.com), [Singularity](https://sylabs.io/) and [Apptainer](https://apptainer.org/). Each ``<destination>`` can enable container support
 with ``<param id="docker_enabled">true</param>`` and/or ``<param id="singularity_enabled">true</param>``, as documented
 in the [advanced sample job_conf.xml](https://github.com/galaxyproject/galaxy/blob/dev/lib/galaxy/config/sample/job_conf.xml.sample_advanced).
 In the case of Docker, containers are run using **sudo** unless ``<param id="docker_sudo">false</param>`` is specified, thus
 the user that Galaxy runs as should be able to run ``sudo docker`` without a password prompt for Docker containers to
 work.
 
-The images used for containers can either be specified explicitely in the ``<destination>`` using the *docker_default_container_id*, *docker_container_id_override*, *singularity_default_container_id* and
-*singularity_container_id_override* parameters, but (perhaps more commonly) the image to use can be derived from the
-tool requirements of the Galaxy tool being executed. In this latter case the image is specified by the
-tool using a ``<container>`` tag in the ``<requirements>`` section.
+The images used for containers can either be specified explicitly in the ``<destination>`` using the ``docker_default_container_id``, ``docker_container_id_override``, ``singularity_default_container_id`` and
+``singularity_container_id_override`` parameters, but (perhaps more commonly) the image to use can be derived from the
+``<requirements>`` of the Galaxy tool being executed. In the latter case the image is specified either explicitly
+using a ``<container>`` tag or a mulled (multi package) container is implied for the set 
+of packages specified by the tool's ``<requirement>`` tags. 
+In either case the container to be used is determined using container resolvers that can be specified
+globally for an instance and/or per execution environment, see [Container resolvers](container_resolvers).
 
 ### Running jobs on a Kubernetes cluster via Pulsar
 
@@ -190,20 +183,18 @@ The `<tools>` collection has no attributes.
 
 The collection contains `<tool>`s, which are can be collections or single elements.
 
-```eval_rst
 id
-    ``id`` attribute of a Galaxy tool. Valid forms include the short ``id``` as found in the Tool's XML configuration, a full Tool Shed GUID, or a Tool Shed GUID without the version component (for example ``id="toolshed.example.org/repos/nate/filter_tool_repo/filter_tool/1.0.0"`` or ``id="toolshed.example.org/repos/nate/filter_tool_repo/filter_tool"`` or ``id="filter_tool"``).
+: ``id`` attribute of a Galaxy tool. Valid forms include the short ``id`` as found in the Tool's XML configuration, a full Tool Shed GUID, or a Tool Shed GUID without the version component (for example ``id="toolshed.example.org/repos/nate/filter_tool_repo/filter_tool/1.0.0"`` or ``id="toolshed.example.org/repos/nate/filter_tool_repo/filter_tool"`` or ``id="filter_tool"``).
 
 handler
-    Job handler(s) that should be used to run jobs for this tool.
-    (e.g. ``handler="handler0"`` or ``handler="ngs"``). This is optional and if unspecified
-    will default to the handler specified as the default handler in the job configuration or
-    the only job handler if only one is specified.
+: Job handler(s) that should be used to run jobs for this tool.
+  (e.g. ``handler="handler0"`` or ``handler="ngs"``). This is optional and if unspecified
+  will default to the handler specified as the default handler in the job configuration or
+  the only job handler if only one is specified.
 
 destination
-    Job destination(s) that should be used to run jobs for this tool (e.g. ``destination="galaxy_cluster"`` or ``destination="long_walltime"``). The is optional
-    and defaults the default destination.
-```
+: Job destination(s) that should be used to run jobs for this tool (e.g. ``destination="galaxy_cluster"`` or ``destination="long_walltime"``). The is optional
+  and defaults the default destination.
 
 Tool collections contain zero or more `<param>`s, which map to parameters set at job-creation, to allow for assignment of handlers and destinations based on the manner in which the job was created.  Currently, only one parameter is defined - namely ``source``.
 
@@ -270,7 +261,6 @@ def ncbi_blastn_wrapper(job):
     else:
         walltime_str = "walltime=12:00:00/"
     return JobDestination(id="ncbi_blastn_wrapper", runner="pbs", params={"Resource_List": walltime_str})
-
 ```
 
 or
@@ -293,38 +283,36 @@ The first example above delegates to the PBS job runner and allocates extra wall
 
 The above examples demonstrate that the dynamic job destination framework will pass in the arguments to your function that are needed based on the argument names. The valid argument names at this time are:
 
-```eval_rst
 ``app``
-    Global Galaxy application object, has attributes such as config (the configuration parameters loaded from ``config/galaxy.yml``) and ``job_config`` (Galaxy representation of the data loaded in from ``job_conf.xml``).
+: Global Galaxy application object, has attributes such as config (the configuration parameters loaded from ``config/galaxy.yml``) and ``job_config`` (Galaxy representation of the data loaded in from ``job_conf.xml``).
 
 ``user_email``
-    E-mail of user submitting this job.
+: E-mail of user submitting this job.
 
 ``user``
-    Galaxy model object for user submitting this job.
+: Galaxy model object for user submitting this job.
 
 ``job``
-    Galaxy model object for submitted job, see the above example for how input information can be derived from this.
+: Galaxy model object for submitted job, see the above example for how input information can be derived from this.
 
 ``job_wrapper``
-    An object meant a higher level utility for reasoning about jobs than ``job``.
+: An object meant a higher level utility for reasoning about jobs than ``job``.
 
 ``tool``
-    Tool object corresponding to this job.
+: Tool object corresponding to this job.
 
 ``tool_id``
-    ID of the tool corresponding to this job
+: ID of the tool corresponding to this job
 
 ``rule_helper``
-    Utility object with methods designed to allow job rules to interface cleanly with the rest of Galaxy and shield them from low-level details of models, metrics, etc....
+: Utility object with methods designed to allow job rules to interface cleanly with the rest of Galaxy and shield them from low-level details of models, metrics, etc....
 
 ``resource_params``
-    A dictionary of parameters specified by the user using ``job_resource_params_conf.xml`` (if configured).
+: A dictionary of parameters specified by the user using ``job_resource_params_conf.xml`` (if configured).
 
 ``workflow_invocation_uuid``
-    A randomly generated UUID for the workflow invocation generating this job - this can be
-    useful for instance in routing all the jobs in the same workflow to one resource.
-```
+: A randomly generated UUID for the workflow invocation generating this job - this can be
+  useful for instance in routing all the jobs in the same workflow to one resource.
 
 Also available though less likely useful are ``job_id``.
 
@@ -419,42 +407,38 @@ The `<limits>` collection has no attributes.
 
 The collection contains `<limit>`s, which have different meanings based on their required `type` attribute:
 
-```eval_rst
 ``type``
-    Type of limit to define - one of ``registered_user_concurrent_jobs``, ``anonymous_user_concurrent_jobs``, ``destination_user_concurrent_jobs``, ``destination_total_concurrent_jobs``, ``walltime``, and ``output_size``.
+: Type of limit to define - one of ``registered_user_concurrent_jobs``, ``anonymous_user_concurrent_jobs``, ``destination_user_concurrent_jobs``, ``destination_total_concurrent_jobs``, ``walltime``, and ``output_size``.
 
 ``id``
-    Optional destination on which to apply limit (for ``destination_user_concurrent_jobs`` and ``destination_total_concurrent_jobs`` types only) (e.g. ``id="galaxy_cluster"``).
+: Optional destination on which to apply limit (for ``destination_user_concurrent_jobs`` and ``destination_total_concurrent_jobs`` types only) (e.g. ``id="galaxy_cluster"``).
 
 ``tag``
-    Optional destinations on which to apply limit (for ``destination_user_concurrent_jobs`` and ``destination_total_concurrent_jobs`` types only).
-```
+: Optional destinations on which to apply limit (for ``destination_user_concurrent_jobs`` and ``destination_total_concurrent_jobs`` types only).
 
 If a limit tag is defined, its value must be set.  If the limit tag is not defined, the default for each type is unlimited.  The syntax for the available `type`s are:
 
-```eval_rst
 ``registered_user_concurrent_jobs``
-    Limit on the number of jobs a user with a registered Galaxy account can have active across all destinations.
+: Limit on the number of jobs a user with a registered Galaxy account can have active across all destinations.
 
 ``anonymous_user_concurrent_jobs``
-    Limit on the number of jobs an unregistered/anonymous user can have active across all destinations.
+: Limit on the number of jobs an unregistered/anonymous user can have active across all destinations.
 
 ``destination_user_concurrent_jobs``
-    The number of jobs a user can have active in the specified destination, or across all destinations identified by the specified tag.
+: The number of jobs a user can have active in the specified destination, or across all destinations identified by the specified tag.
 
 ``destination_total_concurrent_jobs``
-    The number of jobs that can be active in the specified destination (or across all destinations identified by the specified tag) by any/all users.
+: The number of jobs that can be active in the specified destination (or across all destinations identified by the specified tag) by any/all users.
 
 ``walltime``
-    Amount of time a job can run (in any destination) before it will be terminated by Galaxy.
+: Amount of time a job can run (in any destination) before it will be terminated by Galaxy.
 
 ``total_walltime``
-    Total walltime that jobs may not exceed during a set period. If total walltime of finished
-    jobs exceeds this value, any new jobs are paused. This limit should include a ``window``
-    attribute that is the number in days representing the period.
+: Total walltime that jobs may not exceed during a set period. If total walltime of finished
+  jobs exceeds this value, any new jobs are paused. This limit should include a ``window``
+  attribute that is the number in days representing the period.
 
 ``output_size``
-    Size that any defined tool output can grow to before the job will be terminated. This does not include temporary files created by the job (e.g. ``53687091200`` for 50 GB).
-```
+: Size that any defined tool output can grow to before the job will be terminated. This does not include temporary files created by the job (e.g. ``53687091200`` for 50 GB).
 
 The concept of "across all destinations" is used because Galaxy allows users to run jobs across any number of local or remote (cluster) resources.  A user may always queue an unlimited number of jobs in Galaxy's internal job queue.  The concurrency limits apply to jobs that have been dispatched and are in the `queued` or `running` states.  These limits prevent users from monopolizing the resources Galaxy runs on by, for example, preventing a single user from submitting more long-running jobs than Galaxy has cluster slots to run and subsequently blocking all Galaxy jobs from running for any other user.

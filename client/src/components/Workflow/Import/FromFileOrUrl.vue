@@ -28,6 +28,18 @@ const hasErrorMessage = computed(() => {
     return errorMessage.value != null;
 });
 
+function autoAppendJson(urlString: string): string {
+    const sharedWorkflowRegex = /^(https?:\/\/[\S]+\/u\/[\S]+\/w\/[^\s/]+)\/?$/;
+    const matches = urlString.match(sharedWorkflowRegex);
+    const bareUrl = matches?.[1];
+
+    if (bareUrl) {
+        return `${bareUrl}/json`;
+    } else {
+        return urlString;
+    }
+}
+
 const router = useRouter();
 
 async function submit(ev: SubmitEvent) {
@@ -39,7 +51,8 @@ async function submit(ev: SubmitEvent) {
     }
 
     if (sourceURL.value) {
-        formData.append("archive_source", sourceURL.value);
+        const url = autoAppendJson(sourceURL.value);
+        formData.append("archive_source", url);
     }
 
     loading.value = true;
@@ -59,7 +72,7 @@ async function submit(ev: SubmitEvent) {
 </script>
 
 <template>
-    <b-form class="mt-4" @submit="submit">
+    <b-form class="mt-4 workflow-import-file" @submit="submit">
         <h2 class="h-sm">Import from a Galaxy workflow export URL or a workflow file</h2>
         <b-form-group label="Archived Workflow URL">
             <b-form-input

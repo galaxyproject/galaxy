@@ -65,6 +65,8 @@ class TestCustosAuthnz(TestCase):
                 "client_secret": "test-client-secret",
                 "redirect_uri": "https://test-redirect-uri",
                 "realm": "test-realm",
+                "label": "test-identity-provider",
+                "require_create_confirmation": False,
             },
         )
         self.setupMocks()
@@ -92,6 +94,10 @@ class TestCustosAuthnz(TestCase):
         self.mock_fetch_token(self.custos_authnz)
         self.mock_get_userinfo(self.custos_authnz)
         self.trans = self.mockTrans()
+        self.trans.app.config.enable_oidc = True
+        self.trans.app.config.oidc = []
+        self.trans.app.auth_manager.authenticators = []
+        self.trans.app.config.fixed_delegated_auth = False
 
     @property
     def test_id_token(self):
@@ -190,8 +196,11 @@ class TestCustosAuthnz(TestCase):
                 self.provider = provider
                 if username:
                     # This is only called with a specific username to check if it
-                    # already exists in the database.  Say no, for testing.
+                    # already exists in the database.  For testing, return none except for one username.
                     return QueryResult()
+                if email == "existing@example.com":
+                    user = User(email=email, username="test-user")
+                    return QueryResult([user])
                 if self.custos_authnz_token:
                     return QueryResult([self.custos_authnz_token])
                 else:
@@ -199,7 +208,7 @@ class TestCustosAuthnz(TestCase):
 
         class Session:
             items = []
-            flush_called = False
+            commit_called = False
             _query = Query()
             deleted = []
 
@@ -209,8 +218,8 @@ class TestCustosAuthnz(TestCase):
             def delete(self, item):
                 self.deleted.append(item)
 
-            def flush(self):
-                self.flush_called = True
+            def commit(self):
+                self.commit_called = True
 
             def query(self, cls):
                 return self._query
@@ -245,6 +254,8 @@ class TestCustosAuthnz(TestCase):
         assert self.custos_authnz.config["authorization_endpoint"] == "https://test-auth-endpoint"
         assert self.custos_authnz.config["token_endpoint"] == "https://test-token-endpoint"
         assert self.custos_authnz.config["userinfo_endpoint"] == "https://test-userinfo-endpoint"
+        assert self.custos_authnz.config["label"] == "test-identity-provider"
+        assert self.custos_authnz.config["require_create_confirmation"] is False
 
     def test_authenticate_set_state_cookie(self):
         """Verify that authenticate() sets a state cookie."""
@@ -370,6 +381,20 @@ class TestCustosAuthnz(TestCase):
         assert not self._get_userinfo_called
 
     def test_callback_user_not_created_when_does_not_exists(self):
+        self.custos_authnz = custos_authnz.CustosAuthnz(
+            "Keycloak",
+            {"VERIFY_SSL": True},
+            {
+                "url": self._get_idp_url(),
+                "client_id": "test-client-id",
+                "client_secret": "test-client-secret",
+                "redirect_uri": "https://test-redirect-uri",
+                "realm": "test-realm",
+                "label": "test-identity-provider",
+                "require_create_confirmation": True,
+            },
+        )
+        self.setupMocks()
         self.trans.set_cookie(value=self.test_state, name=custos_authnz.STATE_COOKIE_NAME)
         self.trans.set_cookie(value=self.test_nonce, name=custos_authnz.NONCE_COOKIE_NAME)
 
@@ -384,7 +409,8 @@ class TestCustosAuthnz(TestCase):
             state_token="xxx", authz_code=self.test_code, trans=self.trans, login_redirect_url="http://localhost:8000/"
         )
         assert user is None
-        assert "http://localhost:8000/root/login?confirm=true&custos_token=" in login_redirect_url
+        assert "http://localhost:8000/login/start?confirm=true&provider_token=" in login_redirect_url
+        assert "&provider=keycloak" in login_redirect_url
         assert self._fetch_token_called
 
     def test_create_user(self):
@@ -444,7 +470,7 @@ class TestCustosAuthnz(TestCase):
         )
         assert refresh_expiration_timedelta.total_seconds() < 1
         assert self.custos_authnz.config["provider"] == added_custos_authnz_token.provider
-        assert self.trans.sa_session.flush_called
+        assert self.trans.sa_session.commit_called
 
     def test_callback_galaxy_user_not_created_when_user_logged_in_and_no_custos_authnz_token_exists(self):
         """
@@ -465,6 +491,7 @@ class TestCustosAuthnz(TestCase):
         login_redirect_url, user = self.custos_authnz.callback(
             state_token="xxx", authz_code=self.test_code, trans=self.trans, login_redirect_url="http://localhost:8000/"
         )
+        assert "email_exists" not in login_redirect_url
         assert self._fetch_token_called
         assert self._get_userinfo_called
         assert 1 == len(self.trans.sa_session.items), "Session has new CustosAuthnzToken"
@@ -473,7 +500,7 @@ class TestCustosAuthnz(TestCase):
         assert isinstance(added_custos_authnz_token, CustosAuthnzToken)
         assert user is added_custos_authnz_token.user
         assert user is self.trans.user
-        assert self.trans.sa_session.flush_called
+        assert self.trans.sa_session.commit_called
 
     def test_callback_galaxy_user_not_created_when_custos_authnz_token_exists(self):
         self.trans.set_cookie(value=self.test_state, name=custos_authnz.STATE_COOKIE_NAME)
@@ -534,7 +561,56 @@ class TestCustosAuthnz(TestCase):
         )
         assert refresh_expiration_timedelta.total_seconds() < 1
         assert old_refresh_expiration_time != session_custos_authnz_token.refresh_expiration_time
-        assert self.trans.sa_session.flush_called
+        assert self.trans.sa_session.commit_called
+
+    def test_galaxy_oidc_login_when_account_matching_oidc_email_exists(self):
+        """
+        A user tries to login with an idp whose email matches an existing Galaxy account.
+        """
+        self.trans.set_cookie(value=self.test_state, name=custos_authnz.STATE_COOKIE_NAME)
+        self.trans.set_cookie(value=self.test_nonce, name=custos_authnz.NONCE_COOKIE_NAME)
+        self.test_email = "existing@example.com"
+        self.trans.user = None
+
+        # query() monkeypatched to return user with this email
+        existing_user = self.trans.sa_session.query(User).filter_by(email=self.test_email).one_or_none()
+        assert existing_user is not None
+
+        login_redirect_url, user = self.custos_authnz.callback(
+            state_token="xxx", authz_code=self.test_code, trans=self.trans, login_redirect_url="http://localhost:8000/"
+        )
+        # assert login_redirect_url is appropriate for linking dialog
+        for url_substr in (
+            "login/start",
+            "connect_external_provider=custos",
+            f"connect_external_email={self.test_email}",
+            "connect_external_label=test-identity-provider",
+        ):
+            assert url_substr in login_redirect_url
+
+    def test_show_alert_when_connecting_with_idp_matching_different_account_email(self):
+        """The email of the IDP being connected matches a different Galaxy account."""
+        self.trans.set_cookie(value=self.test_state, name=custos_authnz.STATE_COOKIE_NAME)
+        self.trans.set_cookie(value=self.test_nonce, name=custos_authnz.NONCE_COOKIE_NAME)
+        self.trans.user = User()
+        self.test_email = "existing@example.com"
+
+        existing_user = self.trans.sa_session.query(User).filter_by(email=self.test_email).one_or_none()
+        assert existing_user is not None
+
+        login_redirect_url, user = self.custos_authnz.callback(
+            state_token="xxx", authz_code=self.test_code, trans=self.trans, login_redirect_url="http://localhost:8000/"
+        )
+        # assert login_redirect_url is appropriate for linking dialog
+        for url_substr in (
+            "user/external_ids",
+            f"email_exists={self.test_email}",
+            (
+                "notification=Your%20test-identity-provider%20identity"
+                "%20has%20been%20linked%20to%20your%20Galaxy%20account."
+            ),
+        ):
+            assert url_substr in login_redirect_url
 
     def test_disconnect(self):
         custos_authnz_token = CustosAuthnzToken(
@@ -557,7 +633,7 @@ class TestCustosAuthnz(TestCase):
         assert 1 == len(self.trans.sa_session.deleted)
         deleted_token = self.trans.sa_session.deleted[0]
         assert custos_authnz_token is deleted_token
-        assert self.trans.sa_session.flush_called
+        assert self.trans.sa_session.commit_called
         assert success
         assert "" == message
         assert "/" == redirect_uri
@@ -566,7 +642,7 @@ class TestCustosAuthnz(TestCase):
         self.trans.user = User()
         success, message, redirect_uri = self.custos_authnz.disconnect("Custos", self.trans, "/")
         assert 0 == len(self.trans.sa_session.deleted)
-        assert not self.trans.sa_session.flush_called
+        assert not self.trans.sa_session.commit_called
         assert not success
         assert "" != message
         assert redirect_uri is None
@@ -598,7 +674,7 @@ class TestCustosAuthnz(TestCase):
         success, message, redirect_uri = self.custos_authnz.disconnect("Custos", self.trans, "/")
 
         assert 0 == len(self.trans.sa_session.deleted)
-        assert not self.trans.sa_session.flush_called
+        assert not self.trans.sa_session.commit_called
         assert not success
         assert "" != message
         assert redirect_uri is None

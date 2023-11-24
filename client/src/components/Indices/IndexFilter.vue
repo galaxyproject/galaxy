@@ -9,18 +9,27 @@
                     autocomplete="off"
                     :placeholder="placeholder | localize"
                     data-description="filter index input"
-                    class="search-query"
+                    class="search-query index-filter-query"
                     :size="size"
                     @input="input"
                     @keyup.esc="onReset" />
             </DebouncedInput>
             <b-input-group-append>
                 <b-button
-                    data-description="show deleted filter toggle"
+                    v-b-tooltip.hover
+                    aria-haspopup="true"
                     title="Advanced Filtering Help"
                     :size="size"
                     @click="onHelp">
-                    <icon icon="question" />
+                    <font-awesome-icon icon="question" />
+                </b-button>
+                <b-button
+                    v-b-tooltip.hover
+                    aria-haspopup="true"
+                    title="Clear Filters (esc)"
+                    :size="size"
+                    @click="onReset">
+                    <font-awesome-icon icon="times" />
                 </b-button>
             </b-input-group-append>
         </b-input-group>
@@ -31,9 +40,14 @@
 </template>
 
 <script>
+import { BInputGroup, BInputGroupAppend, BButton, BModal } from "bootstrap-vue";
 import DebouncedInput from "components/DebouncedInput";
 
-import { BInputGroup, BInputGroupAppend, BButton, BModal } from "bootstrap-vue";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import { faTimes, faQuestion } from "@fortawesome/free-solid-svg-icons";
+import { library } from "@fortawesome/fontawesome-svg-core";
+
+library.add(faTimes, faQuestion);
 
 /**
  * Component for the search/filter button on the top of Galaxy object index grids.
@@ -45,6 +59,7 @@ export default {
         BInputGroupAppend,
         BButton,
         BModal,
+        FontAwesomeIcon,
     },
     props: {
         id: {

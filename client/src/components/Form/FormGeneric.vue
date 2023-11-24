@@ -132,7 +132,7 @@ export default {
         showMessage(message, variant = "success") {
             this.messageText = message;
             this.messageVariant = variant;
-            document.querySelector(".center-panel").scrollTop = 0;
+            document.querySelector("#center").scrollTop = 0;
         },
     },
 };

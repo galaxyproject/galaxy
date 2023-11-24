@@ -1,8 +1,13 @@
 import logging
 from operator import itemgetter
+from typing import (
+    Optional,
+    TYPE_CHECKING,
+)
 
 from sqlalchemy import and_
 
+from galaxy.model.base import transaction
 from galaxy.tool_shed.util.hg_util import (
     INITIAL_CHANGELOG_HASH,
     reversed_lower_upper_bounded_changelog,
@@ -10,6 +15,12 @@ from galaxy.tool_shed.util.hg_util import (
 from galaxy.tool_shed.util.repository_util import get_repository_by_name_and_owner
 from galaxy.util.tool_shed.common_util import parse_repository_dependency_tuple
 from tool_shed.util.hg_util import changeset2rev
+
+if TYPE_CHECKING:
+    from tool_shed.structured_app import ToolShedApp
+    from tool_shed.webapp.model import RepositoryMetadata
+    from tool_shed.webapp.model.mapping import ToolShedModelMapping
+
 
 log = logging.getLogger(__name__)
 
@@ -136,7 +147,9 @@ def get_metadata_revisions(app, repository, sort_revisions=True, reverse=False, 
                 rev = changeset2rev(repo_path, repository_metadata.changeset_revision)
                 repository_metadata.numeric_revision = rev
                 sa_session.add(repository_metadata)
-                sa_session.flush()
+                session = sa_session()
+                with transaction(session):
+                    session.commit()
             except Exception:
                 rev = -1
         else:
@@ -223,24 +236,34 @@ def get_repository_dependency_tups_from_repository_metadata(app, repository_meta
                                 dependency_tups.append(repository_dependency_tup)
                         else:
                             log.debug(
-                                "Cannot locate repository %s owned by %s for inclusion in repository dependency tups."
-                                % (name, owner)
+                                "Cannot locate repository %s owned by %s for inclusion in repository dependency tups.",
+                                name,
+                                owner,
                             )
     return dependency_tups
 
 
-def get_repository_metadata_by_changeset_revision(app, id, changeset_revision):
+def get_repository_metadata_by_changeset_revision(
+    app: "ToolShedApp", id: str, changeset_revision: str
+) -> Optional["RepositoryMetadata"]:
     """Get metadata for a specified repository change set from the database."""
+    decoded_id = app.security.decode_id(id)
+    return repository_metadata_by_changeset_revision(app.model, decoded_id, changeset_revision)
+
+
+def repository_metadata_by_changeset_revision(
+    model_mapping: "ToolShedModelMapping", id: int, changeset_revision: str
+) -> Optional["RepositoryMetadata"]:
     # Make sure there are no duplicate records, and return the single unique record for the changeset_revision.
     # Duplicate records were somehow created in the past.  The cause of this issue has been resolved, but we'll
     # leave this method as is for a while longer to ensure all duplicate records are removed.
-    sa_session = app.model.session
+    sa_session = model_mapping.context
     all_metadata_records = (
-        sa_session.query(app.model.RepositoryMetadata)
+        sa_session.query(model_mapping.RepositoryMetadata)
         .filter(
             and_(
-                app.model.RepositoryMetadata.table.c.repository_id == app.security.decode_id(id),
-                app.model.RepositoryMetadata.table.c.changeset_revision == changeset_revision,
+                model_mapping.RepositoryMetadata.table.c.repository_id == id,
+                model_mapping.RepositoryMetadata.table.c.changeset_revision == changeset_revision,
             )
         )
         .all()
@@ -249,7 +272,9 @@ def get_repository_metadata_by_changeset_revision(app, id, changeset_revision):
         # Delete all records older than the last one updated.
         for repository_metadata in all_metadata_records[1:]:
             sa_session.delete(repository_metadata)
-            sa_session.flush()
+            session = sa_session()
+            with transaction(session):
+                session.commit()
         return all_metadata_records[0]
     elif all_metadata_records:
         return all_metadata_records[0]

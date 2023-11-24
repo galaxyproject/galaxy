@@ -54,8 +54,8 @@
                 </b-button>
                 <b-button
                     v-if="showHighlight"
-                    class="px-1"
-                    title="Show Inputs for this item"
+                    class="highlight-btn px-1"
+                    title="Show Related Items"
                     size="sm"
                     variant="link"
                     @click.stop="onHighlight">
@@ -123,7 +123,7 @@ export default {
     },
     methods: {
         onCopyLink() {
-            const msg = this.localize("Link is copied to your clipboard");
+            const msg = this.localize("Link copied to your clipboard");
             sendToClipboard(absPath(this.downloadUrl), msg);
         },
         onDownload(resource) {

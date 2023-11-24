@@ -1,24 +1,23 @@
 <template>
     <div v-if="isSection && hasElements" class="tool-panel-section">
         <div
-            v-b-tooltip.topright.hover
+            v-b-tooltip.topright.hover.noninteractive
             :class="['toolSectionTitle', `tool-menu-section-${sectionName}`]"
-            :title="title"
-            @mouseover="hover = true"
-            @mouseleave="hover = false"
-            @focus="hover = true"
-            @blur="hover = false">
+            :title="title">
             <a class="title-link" href="javascript:void(0)" @click="toggleMenu()">
                 <span class="name">
                     {{ name }}
                 </span>
-                <ToolPanelLinks :links="links" :show="hover" />
+                <ToolPanelLinks :links="links" />
             </a>
         </div>
         <transition name="slide">
             <div v-if="opened">
                 <template v-for="[key, el] in sortedElements">
-                    <ToolPanelLabel v-if="category.text" :key="key" :definition="el" />
+                    <ToolPanelLabel
+                        v-if="category.text || el.model_class === 'ToolSectionLabel'"
+                        :key="key"
+                        :definition="el" />
                     <tool
                         v-else
                         :key="key"
@@ -252,5 +251,19 @@ export default {
 .slide-leave-to {
     overflow: hidden;
     max-height: 0;
+}
+
+.title-link {
+    &:deep(.tool-panel-links) {
+        display: none;
+    }
+
+    &:hover,
+    &:focus,
+    &:focus-within {
+        &:deep(.tool-panel-links) {
+            display: inline;
+        }
+    }
 }
 </style>

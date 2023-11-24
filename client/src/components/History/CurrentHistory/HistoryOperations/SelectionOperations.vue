@@ -50,6 +50,13 @@
                     @click="buildCollectionFromRules">
                     <span v-localize>Build Collection from Rules</span>
                 </b-dropdown-item>
+                <b-dropdown-divider v-if="showBuildOptionForAll" />
+                <b-dropdown-item
+                    v-if="showBuildOptionForAll"
+                    data-description="build list all"
+                    @click="buildDatasetListAll">
+                    <span v-localize>Build Dataset List</span>
+                </b-dropdown-item>
                 <b-dropdown-divider />
                 <b-dropdown-item v-b-modal:change-dbkey-of-selected-content data-description="change database build">
                     <span v-localize>Change Database/Build</span>
@@ -158,6 +165,7 @@ import SingleItemSelector from "components/SingleItemSelector";
 import { StatelessTags } from "components/Tags";
 import ConfigProvider from "components/providers/ConfigProvider";
 import { HistoryFilters } from "components/History/HistoryFilters";
+import { getHistoryContent } from "components/History/model/queries";
 
 export default {
     components: {
@@ -194,6 +202,10 @@ export default {
         /** @returns {Boolean} */
         showBuildOptions() {
             return !this.isQuerySelection && !this.showHidden && !this.showDeleted;
+        },
+        /** @returns {Boolean} */
+        showBuildOptionForAll() {
+            return !this.showBuildOptions && this.selectionMatchesQuery;
         },
         /** @returns {Number} */
         numSelected() {
@@ -304,6 +316,14 @@ export default {
         async buildDatasetList() {
             await this.buildNewCollection("list");
         },
+        async buildDatasetListAll() {
+            let allContents = [];
+            const filters = HistoryFilters.getQueryDict(this.filterText);
+
+            allContents = await getHistoryContent(this.history.id, filters, "dataset");
+
+            this.buildNewCollection("list", allContents);
+        },
         async buildDatasetPair() {
             await this.buildNewCollection("paired");
         },
@@ -313,8 +333,11 @@ export default {
         async buildCollectionFromRules() {
             await this.buildNewCollection("rules");
         },
-        async buildNewCollection(collectionType) {
-            const modalResult = await buildCollectionModal(collectionType, this.contentSelection, this.history.id);
+        async buildNewCollection(collectionType, contents) {
+            if (contents === undefined) {
+                contents = this.contentSelection;
+            }
+            const modalResult = await buildCollectionModal(collectionType, contents, this.history.id);
             await createDatasetCollection(this.history, modalResult);
 
             // have to hide the source items if that was requested

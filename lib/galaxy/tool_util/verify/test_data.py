@@ -57,7 +57,7 @@ class TestDataNotFoundError(ValueError):
     pass
 
 
-def build_resolver(uri, environ):
+def build_resolver(uri: str, environ):
     if uri.startswith("http") and uri.endswith(".git"):
         return GitDataResolver(uri, environ)
     else:
@@ -65,19 +65,19 @@ def build_resolver(uri, environ):
 
 
 class FileDataResolver:
-    def __init__(self, file_dir):
+    def __init__(self, file_dir: str):
         self.file_dir = file_dir
 
-    def exists(self, filename):
+    def exists(self, filename: str):
         path = os.path.abspath(self.path(filename))
         return os.path.exists(path) and in_directory(path, self.file_dir)
 
-    def path(self, filename):
+    def path(self, filename: str):
         return os.path.join(self.file_dir, filename)
 
 
 class GitDataResolver(FileDataResolver):
-    def __init__(self, repository, environ):
+    def __init__(self, repository: str, environ):
         self.repository = repository
         self.updated = False
         repo_cache = environ.get("GALAXY_TEST_DATA_REPO_CACHE", "test-data-cache")
@@ -89,7 +89,7 @@ class GitDataResolver(FileDataResolver):
         # will leave it as true for now.
         self.fetch_data = asbool(environ.get("GALAXY_TEST_FETCH_DATA", "true"))
 
-    def exists(self, filename):
+    def exists(self, filename: str):
         exists_now = super().exists(filename)
         if exists_now or not self.fetch_data or self.updated:
             return exists_now

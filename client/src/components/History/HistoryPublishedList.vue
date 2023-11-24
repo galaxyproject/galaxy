@@ -1,6 +1,6 @@
 <script setup>
 import UtcDate from "components/UtcDate";
-import Tags from "components/Common/Tags";
+import StatelessTags from "components/TagsMultiselect/StatelessTags";
 import { computed, ref, watch } from "vue";
 import Heading from "components/Common/Heading";
 import LoadingSpan from "components/LoadingSpan";
@@ -35,7 +35,7 @@ const fields = [
     { key: "name", sortable: true },
     { key: "annotation", sortable: false },
     { label: "Owner", key: "username", sortable: false },
-    { label: "Community Tags", key: "tags", sortable: false },
+    { label: "Tags", key: "tags", sortable: false },
     { label: "Last Updated", key: "update_time", sortable: true },
 ];
 
@@ -50,28 +50,14 @@ const localFilter = computed({
     },
 });
 
-const filterSettings = computed(() => filters.toAlias(filters.getFilters(filterText.value)));
+const filterSettings = computed(() => filters.toAlias(filters.getFiltersForText(filterText.value)));
 
-const updateFilter = (newVal, append = false) => {
-    let oldValue = filterText.value;
-    if (append) {
-        oldValue += newVal;
-    } else {
-        oldValue = newVal;
-    }
-    filterText.value = oldValue.trim();
+const updateFilter = (newVal) => {
+    filterText.value = newVal.trim();
 };
 
 const onTagClick = (tag) => {
-    if (filterText.value.includes("tag:" + tag.label)) {
-        updateFilter(filterText.value.replace("tag:" + tag.label, ""));
-    } else {
-        if (filterText.value.length === 0) {
-            updateFilter("tag:" + tag.label, true);
-        } else {
-            updateFilter(" tag:" + tag.label, true);
-        }
-    }
+    updateFilter(filters.setFilterValue(filterText.value, "tag", tag));
 };
 
 const load = async () => {
@@ -221,11 +207,12 @@ watch([filterText, sortBy, sortDesc], () => {
                     </router-link>
                 </template>
                 <template v-slot:cell(tags)="row">
-                    <Tags
-                        :index="row.index"
-                        :tags="row.item.tags"
-                        @tag-click="onTagClick"
-                        @input="onTagsUpdate($event, row)" />
+                    <StatelessTags
+                        clickable
+                        :value="row.item.tags"
+                        :disabled="true"
+                        @input="(tags) => onTagsUpdate(tags, row)"
+                        @tag-click="onTagClick" />
                 </template>
 
                 <template v-slot:cell(update_time)="data">

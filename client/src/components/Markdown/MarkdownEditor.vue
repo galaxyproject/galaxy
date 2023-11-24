@@ -1,11 +1,9 @@
 <template>
-    <div>
-        <SidePanel id="left" side="left">
-            <template v-slot:panel>
-                <MarkdownToolBox :steps="steps" @onInsert="onInsert" />
-            </template>
-        </SidePanel>
-        <div id="center" class="workflow-markdown-editor">
+    <div id="columns" class="d-flex">
+        <FlexPanel side="left">
+            <MarkdownToolBox :steps="steps" @onInsert="onInsert" />
+        </FlexPanel>
+        <div id="center" class="overflow-auto w-100">
             <div class="markdown-editor h-100">
                 <div class="unified-panel-header" unselectable="on">
                     <div class="unified-panel-header-inner">
@@ -47,7 +45,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faQuestion } from "@fortawesome/free-solid-svg-icons";
 import MarkdownToolBox from "./MarkdownToolBox";
-import SidePanel from "components/Panels/SidePanel";
+import FlexPanel from "components/Panels/FlexPanel";
 import MarkdownHelp from "./MarkdownHelp";
 
 Vue.use(BootstrapVue);
@@ -59,7 +57,7 @@ const FENCE = "```";
 export default {
     components: {
         MarkdownToolBox,
-        SidePanel,
+        FlexPanel,
         FontAwesomeIcon,
         MarkdownHelp,
     },
@@ -74,7 +72,7 @@ export default {
         },
         steps: {
             type: Object,
-            required: true,
+            default: null,
         },
         title: {
             type: String,

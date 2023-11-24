@@ -1,52 +1,45 @@
 <template>
-    <CurrentUser v-slot="{ user }" class="d-flex flex-column">
-        <UserHistories v-if="user" v-slot="{ currentHistory, histories, handlers, historiesLoading }" :user="user">
-            <div v-if="currentHistory" id="current-history-panel" class="history-index">
-                <CurrentHistory
-                    v-if="!breadcrumbs.length"
-                    :list-offset="listOffset"
+    <div v-if="currentUser && currentHistory" id="current-history-panel" class="d-flex flex-column history-index">
+        <HistoryPanel
+            v-if="!breadcrumbs.length"
+            :list-offset="listOffset"
+            :history="currentHistory"
+            :filterable="true"
+            @view-collection="onViewCollection">
+            <template v-slot:navigation>
+                <HistoryNavigation
                     :history="currentHistory"
-                    :filterable="true"
-                    v-on="handlers"
-                    @view-collection="onViewCollection">
-                    <template v-slot:navigation>
-                        <HistoryNavigation
-                            :history="currentHistory"
-                            :histories="histories"
-                            :histories-loading="historiesLoading"
-                            title="Histories"
-                            v-on="handlers" />
-                    </template>
-                </CurrentHistory>
-                <CurrentCollection
-                    v-else-if="breadcrumbs.length"
-                    :history="currentHistory"
-                    :selected-collections.sync="breadcrumbs"
-                    @view-collection="onViewCollection" />
-                <div v-else>
-                    <span class="sr-only">Loading...</span>
-                </div>
-            </div>
-            <div v-else class="flex-grow-1 loadingBackground h-100">
-                <span v-localize class="sr-only">Loading History...</span>
-            </div>
-        </UserHistories>
-    </CurrentUser>
+                    :histories="histories"
+                    :histories-loading="historiesLoading"
+                    title="Histories" />
+            </template>
+        </HistoryPanel>
+        <CurrentCollection
+            v-else-if="breadcrumbs.length"
+            :history="currentHistory"
+            :selected-collections.sync="breadcrumbs"
+            @view-collection="onViewCollection" />
+        <div v-else>
+            <span class="sr-only">Loading...</span>
+        </div>
+    </div>
+    <div v-else class="flex-grow-1 loadingBackground h-100">
+        <span v-localize class="sr-only">Loading History...</span>
+    </div>
 </template>
 
 <script>
-import CurrentUser from "components/providers/CurrentUser";
-import UserHistories from "components/providers/UserHistories";
+import { mapState } from "pinia";
+import { useUserStore } from "@/stores/userStore";
+import { useHistoryStore } from "@/stores/historyStore";
 import HistoryNavigation from "./CurrentHistory/HistoryNavigation";
-import CurrentHistory from "./CurrentHistory/HistoryPanel";
+import HistoryPanel from "./CurrentHistory/HistoryPanel";
 import CurrentCollection from "./CurrentCollection/CollectionPanel";
 
 export default {
     components: {
-        CurrentUser,
-        CurrentHistory,
+        HistoryPanel,
         CurrentCollection,
-        UserHistories,
         HistoryNavigation,
     },
     data() {
@@ -55,6 +48,10 @@ export default {
             breadcrumbs: [],
             listOffset: 0,
         };
+    },
+    computed: {
+        ...mapState(useUserStore, ["currentUser"]),
+        ...mapState(useHistoryStore, ["currentHistory", "histories", "historiesLoading"]),
     },
     methods: {
         onViewCollection(collection, currentOffset) {

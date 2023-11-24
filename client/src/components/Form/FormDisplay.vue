@@ -79,6 +79,10 @@ export default {
             type: Boolean,
             default: false,
         },
+        allowEmptyValueOnRequiredInput: {
+            type: Boolean,
+            default: false,
+        },
     },
     data() {
         return {
@@ -89,7 +93,7 @@ export default {
     },
     computed: {
         validation() {
-            return validateInputs(this.formIndex, this.formData);
+            return validateInputs(this.formIndex, this.formData, this.allowEmptyValueOnRequiredInput);
         },
     },
     watch: {
@@ -104,7 +108,7 @@ export default {
             visitInputs(this.formInputs, (input, name) => {
                 const newValue = newAttributes[name];
                 if (newValue != undefined) {
-                    input.attributes = newValue;
+                    Vue.set(input, "attributes", newValue);
                 }
             });
             this.onChangeForm();
@@ -215,9 +219,9 @@ export default {
                 if (!silent && inputId) {
                     const element = this.$el.querySelector(`[id='form-element-${inputId}']`);
                     if (element) {
-                        const centerPanel = document.querySelector(".center-panel");
+                        const centerPanel = document.querySelector("#center");
                         if (centerPanel) {
-                            centerPanel.scrollTo(0, this.getOffsetTop(element));
+                            centerPanel.scrollTo(0, this.getOffsetTop(element) - 50);
                         }
                     }
                 }

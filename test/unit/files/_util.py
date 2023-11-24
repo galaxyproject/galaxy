@@ -48,7 +48,7 @@ def list_dir(file_sources, uri, recursive, user_context=None):
     return res
 
 
-def user_context_fixture(user_ftp_dir=None, role_names=None, group_names=None, is_admin=False):
+def user_context_fixture(user_ftp_dir=None, role_names=None, group_names=None, is_admin=False, file_sources=None):
     user_context = DictFileSourcesUserContext(
         username=TEST_USERNAME,
         email=TEST_EMAIL,
@@ -71,10 +71,12 @@ def user_context_fixture(user_ftp_dir=None, role_names=None, group_names=None, i
             "basespace|client_id": os.environ.get("GALAXY_TEST_ONEDATA_CLIENT_ID"),
             "basespace|client_secret": os.environ.get("GALAXY_TEST_ONEDATA_CLIENT_SECRET"),
             "basespace|access_token": os.environ.get("GALAXY_TEST_ONEDATA_ACCESS_TOKEN"),
+            "oidc|bearer_token": "IBearTokens",
         },
         role_names=role_names or set(),
         group_names=group_names or set(),
         is_admin=is_admin,
+        file_sources=file_sources,
     )
     return user_context
 

@@ -6,6 +6,7 @@ from time import sleep
 from galaxy import model
 from galaxy.jobs import TaskWrapper
 from galaxy.jobs.runners import BaseJobRunner
+from galaxy.model.base import transaction
 
 log = logging.getLogger(__name__)
 
@@ -48,7 +49,8 @@ class TaskedJobRunner(BaseJobRunner):
 
         try:
             job_wrapper.change_state(model.Job.states.RUNNING)
-            self.sa_session.flush()
+            with transaction(self.sa_session):
+                self.sa_session.commit()
             # Split with the defined method.
             parallelism = job_wrapper.get_parallelism()
             try:
@@ -67,7 +69,8 @@ class TaskedJobRunner(BaseJobRunner):
             task_wrappers = []
             for task in tasks:
                 self.sa_session.add(task)
-            self.sa_session.flush()
+            with transaction(self.sa_session):
+                self.sa_session.commit()
             # Must flush prior to the creation and queueing of task wrappers.
             for task in tasks:
                 tw = TaskWrapper(task, job_wrapper.queue)

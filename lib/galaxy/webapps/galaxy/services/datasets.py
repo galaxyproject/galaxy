@@ -23,6 +23,7 @@ from galaxy import (
     web,
 )
 from galaxy.celery.tasks import compute_dataset_hash
+from galaxy.datatypes.binary import Binary
 from galaxy.datatypes.dataproviders.exceptions import NoProviderAvailable
 from galaxy.managers.base import ModelSerializer
 from galaxy.managers.context import ProvidesHistoryContext
@@ -38,6 +39,7 @@ from galaxy.managers.history_contents import (
     HistoryContentsManager,
 )
 from galaxy.managers.lddas import LDDAManager
+from galaxy.model.base import transaction
 from galaxy.schema import (
     FilterQueryParams,
     SerializationParams,
@@ -60,6 +62,7 @@ from galaxy.schema.schema import (
     DatasetAssociationRoles,
     DatasetSourceId,
     DatasetSourceType,
+    EncodedDatasetSourceId,
     Model,
     UpdateDatasetPermissionsPayload,
 )
@@ -98,6 +101,24 @@ class RequestDataType(str, Enum):
     in_use_state = "in_use_state"
 
 
+class DatasetContentType(str, Enum):
+    """For retrieving content from a structured dataset (e.g. HDF5)"""
+
+    meta = "meta"
+    attr = "attr"
+    stats = "stats"
+    data = "data"
+
+
+class ConcreteObjectStoreQuotaSourceDetails(Model):
+    source: Optional[str] = Field(
+        description="The quota source label corresponding to the object store the dataset is stored in (or would be stored in)"
+    )
+    enabled: bool = Field(
+        description="Whether the object store tracks quota on the data (independent of Galaxy's configuration)"
+    )
+
+
 class DatasetStorageDetails(Model):
     object_store_id: Optional[str] = Field(
         description="The identifier of the destination ObjectStore for this dataset.",
@@ -116,6 +137,13 @@ class DatasetStorageDetails(Model):
     )
     hashes: List[dict] = Field(description="The file contents hashes associated with the supplied dataset instance.")
     sources: List[dict] = Field(description="The file sources associated with the supplied dataset instance.")
+    shareable: bool = Field(
+        description="Is this dataset shareable.",
+    )
+    quota: dict = Field(description="Information about quota sources around dataset storage.")
+    badges: List[Dict[str, Any]] = Field(
+        description="A mapping of object store labels to badges describing object store properties."
+    )
 
 
 class DatasetInheritanceChainEntry(Model):
@@ -215,7 +243,7 @@ class ComputeDatasetHashPayload(Model):
 
 
 class DatasetErrorMessage(Model):
-    dataset: DatasetSourceId = Field(
+    dataset: EncodedDatasetSourceId = Field(
         description="The encoded ID of the dataset and its source.",
     )
     error_message: str = Field(
@@ -364,6 +392,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         object_store_id = dataset.object_store_id
         name = object_store.get_concrete_store_name(dataset)
         description = object_store.get_concrete_store_description_markdown(dataset)
+        badges = object_store.get_concrete_store_badges(dataset)
         # not really working (existing problem)
         try:
             percent_used = object_store.get_store_usage_percent()
@@ -373,17 +402,27 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         except FileNotFoundError:
             # uninitalized directory (emtpy) disk object store can cause this...
             percent_used = None
+
+        quota_source = dataset.quota_source_info
+        quota = ConcreteObjectStoreQuotaSourceDetails(
+            source=quota_source.label,
+            enabled=quota_source.use,
+        )
+
         dataset_state = dataset.state
         hashes = [h.to_dict() for h in dataset.hashes]
         sources = [s.to_dict() for s in dataset.sources]
         return DatasetStorageDetails(
             object_store_id=object_store_id,
+            shareable=dataset.shareable,
             name=name,
             description=description,
             percent_used=percent_used,
             dataset_state=dataset_state,
             hashes=hashes,
             sources=sources,
+            quota=quota,
+            badges=badges,
         )
 
     def show_inheritance_chain(
@@ -506,15 +545,16 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         Generate list of extra files.
         """
         hda = self.hda_manager.get_accessible(history_content_id, trans.user)
-        extra_files_path = hda.extra_files_path
         rval = []
-        for root, directories, files in safe_walk(extra_files_path):
-            for directory in directories:
-                rval.append(
-                    {"class": "Directory", "path": os.path.relpath(os.path.join(root, directory), extra_files_path)}
-                )
-            for file in files:
-                rval.append({"class": "File", "path": os.path.relpath(os.path.join(root, file), extra_files_path)})
+        if not hda.is_pending and hda.extra_files_path_exists():
+            extra_files_path = hda.extra_files_path
+            for root, directories, files in safe_walk(extra_files_path):
+                for directory in directories:
+                    rval.append(
+                        {"class": "Directory", "path": os.path.relpath(os.path.join(root, directory), extra_files_path)}
+                    )
+                for file in files:
+                    rval.append({"class": "File", "path": os.path.relpath(os.path.join(root, file), extra_files_path)})
 
         return rval
 
@@ -527,6 +567,8 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         filename: Optional[str] = None,
         to_ext: Optional[str] = None,
         raw: bool = False,
+        offset: Optional[int] = None,
+        ck_size: Optional[int] = None,
         **kwd,
     ):
         """
@@ -534,7 +576,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
 
         The query parameter 'raw' should be considered experimental and may be dropped at
         some point in the future without warning. Generally, data should be processed by its
-        datatype prior to display (the defult if raw is unspecified or explicitly false.
+        datatype prior to display (the default if raw is unspecified or explicitly false.
         """
         headers = {}
         rval: Any = ""
@@ -551,6 +593,10 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
                     file_path = dataset_instance.file_name
                 rval = open(file_path, "rb")
             else:
+                if offset is not None:
+                    kwd["offset"] = offset
+                if ck_size is not None:
+                    kwd["ck_size"] = ck_size
                 rval, headers = dataset_instance.datatype.display_data(
                     trans, dataset_instance, preview, filename, to_ext, **kwd
                 )
@@ -566,7 +612,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
         dataset_id: DecodedDatabaseIdField,
     ) -> DatasetTextContentDetails:
         """Returns dataset content as Text."""
-        user = self.get_authenticated_user(trans)
+        user = trans.user
         hda = self.hda_manager.get_accessible(dataset_id, user)
         hda = self.hda_manager.error_if_uploading(hda)
         truncated, dataset_data = self.hda_manager.text_data(hda, preview=True)
@@ -651,6 +697,7 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
             try:
                 manager = self.dataset_manager_by_type[dataset.src]
                 dataset_instance = manager.get_owned(dataset.id, trans.user)
+                manager.error_unless_mutable(dataset_instance.history)
                 if dataset.src == DatasetSourceType.hda:
                     self.hda_manager.error_if_uploading(dataset_instance)
                 if payload.purge:
@@ -660,17 +707,40 @@ class DatasetsService(ServiceBase, UsesVisualizationMixin):
                 success_count += 1
             except galaxy_exceptions.MessageException as e:
                 errors.append(
-                    DatasetErrorMessage.construct(
-                        dataset=DatasetSourceId.construct(
-                            id=DecodedDatabaseIdField.encode(dataset.id), src=dataset.src
-                        ),
+                    DatasetErrorMessage(
+                        dataset=EncodedDatasetSourceId(id=dataset.id, src=dataset.src),
                         error_message=str(e),
                     )
                 )
 
         if success_count:
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
         return DeleteDatasetBatchResult.construct(success_count=success_count, errors=errors)
+
+    def get_structured_content(
+        self,
+        trans: ProvidesHistoryContext,
+        dataset_id: DecodedDatabaseIdField,
+        content_type: DatasetContentType,
+        **params,
+    ):
+        """
+        Retrieves contents of a dataset. It is left to the datatype to decide how
+        to interpret the content types.
+        """
+        headers = {}
+        content: Any = ""
+        dataset = self.hda_manager.get_accessible(dataset_id, trans.user)
+        if not isinstance(dataset.datatype, Binary):
+            raise galaxy_exceptions.InvalidFileFormatError("Only available for structured datatypes")
+        try:
+            content, headers = dataset.datatype.get_structured_content(dataset, content_type, **params)
+        except galaxy_exceptions.MessageException:
+            raise
+        except Exception as e:
+            raise galaxy_exceptions.InternalServerError(f"Could not get content for dataset: {util.unicodify(e)}")
+        return content, headers
 
     def _get_or_create_converted(self, trans, original: model.DatasetInstance, target_ext: str):
         try:

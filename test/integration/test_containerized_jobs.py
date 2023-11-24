@@ -10,38 +10,56 @@ from typing import (
 
 from galaxy.util.commands import which
 from galaxy_test.base.populators import DatasetPopulator
-from galaxy_test.driver import integration_util
+from galaxy_test.driver.integration_util import IntegrationTestCase
 from .test_job_environments import BaseJobEnvironmentIntegrationTestCase
 
 SCRIPT_DIRECTORY = os.path.abspath(os.path.dirname(__file__))
+
+# local_docker
+# local_docker_inline_container_resolvers (using only fallback resolver)_
 DOCKERIZED_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "dockerized_job_conf.yml")
+# define an environment (local_singularity) for local execution with singularity enabled
 SINGULARITY_JOB_CONFIG_FILE = os.path.join(SCRIPT_DIRECTORY, "singularity_job_conf.yml")
+
 EXTENDED_TIMEOUT = 120
 
 
 class MulledJobTestCases:
+    """
+    test cases for mulled containers
+    """
+
     dataset_populator: DatasetPopulator
 
     def test_explicit(self, history_id: str) -> None:
+        """
+        tool having one package + one explicit container requirement
+        """
         self.dataset_populator.run_tool("mulled_example_explicit", {}, history_id)
         self.dataset_populator.wait_for_history(history_id, assert_ok=True, timeout=EXTENDED_TIMEOUT)
         output = self.dataset_populator.get_history_dataset_content(history_id)
         assert "0.7.15-r1140" in output
 
     def test_mulled_simple(self, history_id: str) -> None:
+        """
+        tool having one package requirement
+        """
         self.dataset_populator.run_tool("mulled_example_simple", {}, history_id)
         self.dataset_populator.wait_for_history(history_id, assert_ok=True, timeout=EXTENDED_TIMEOUT)
         output = self.dataset_populator.get_history_dataset_content(history_id)
         assert "0.7.15-r1140" in output
 
     def test_mulled_explicit_invalid_case(self, history_id: str) -> None:
+        """
+        tool having one package + one (invalid? due to capitalization) explicit container requirement
+        """
         self.dataset_populator.run_tool("mulled_example_invalid_case", {}, history_id)
         self.dataset_populator.wait_for_history(history_id, assert_ok=True, timeout=EXTENDED_TIMEOUT)
         output = self.dataset_populator.get_history_dataset_content(history_id)
         assert "0.7.15-r1140" in output
 
 
-class ContainerizedIntegrationTestCase(integration_util.IntegrationTestCase):
+class ContainerizedIntegrationTestCase(IntegrationTestCase):
     @classmethod
     def setUpClass(cls) -> None:
         skip_if_container_type_unavailable(cls)
@@ -90,6 +108,9 @@ class TestDockerizedJobsIntegration(BaseJobEnvironmentIntegrationTestCase, Mulle
         super().setUp()
 
     def test_container_job_environment(self) -> None:
+        """
+        test job environment for non-legacy tools
+        """
         job_env = self._run_and_get_environment_properties("job_environment_default")
 
         euid = os.geteuid()
@@ -103,6 +124,10 @@ class TestDockerizedJobsIntegration(BaseJobEnvironmentIntegrationTestCase, Mulle
         assert job_env.home.endswith("/home")
 
     def test_container_job_environment_legacy(self) -> None:
+        """
+        test that legacy tools use the user's home (/home/...)
+        use the current user's home and do not use a dir in the JWD as home
+        """
         job_env = self._run_and_get_environment_properties("job_environment_default_legacy")
 
         euid = os.geteuid()
@@ -112,23 +137,38 @@ class TestDockerizedJobsIntegration(BaseJobEnvironmentIntegrationTestCase, Mulle
         assert job_env.group_id == str(egid), job_env.group_id
         assert job_env.pwd.startswith(self.jobs_directory)
         assert job_env.pwd.endswith("/working")
+        assert not job_env.home.startswith(self.jobs_directory)
         assert not job_env.home.endswith("/home")
 
     def test_container_job_environment_explicit_shared_home(self) -> None:
+        """
+        test that non-legacy tools that explicitly specify
+        <command use_shared_home="true"> use the current user's home
+        """
         job_env = self._run_and_get_environment_properties("job_environment_explicit_shared_home")
 
         assert job_env.pwd.startswith(self.jobs_directory)
         assert job_env.pwd.endswith("/working")
-        assert not job_env.home.endswith("/home")
+        assert not job_env.home.startswith(self.jobs_directory)
+        assert not job_env.home.endswith("/home"), job_env.home
 
     def test_container_job_environment_explicit_isolated_home(self) -> None:
+        """
+        test that non-legacy tools that explicitly specify
+        <command use_shared_home="false"> (the default) use a separate dir in the JWD as home
+        """
         job_env = self._run_and_get_environment_properties("job_environment_explicit_isolated_home")
 
         assert job_env.pwd.startswith(self.jobs_directory)
         assert job_env.pwd.endswith("/working")
-        assert job_env.home.endswith("/home")
+        assert job_env.home.startswith(self.jobs_directory)
+        assert job_env.home.endswith("/home"), job_env.home
 
     def test_build_mulled(self) -> None:
+        """
+        test building of a mulled container using the build_mulled container resolver
+        triggered via API dependency_resolvers/toolbox/install
+        """
         resolver_type = self.build_mulled_resolver
         tool_ids = ["mulled_example_multi_1"]
         endpoint = "dependency_resolvers/toolbox/install"
@@ -155,10 +195,33 @@ class TestDockerizedJobsIntegration(BaseJobEnvironmentIntegrationTestCase, Mulle
         status = response[0]["status"]
         assert status[0]["model_class"] == "ContainerDependency"
         assert status[0]["dependency_type"] == self.container_type
-        assert status[0]["container_description"]["identifier"].startswith("quay.io/local/mulled-v2-")
+        self._assert_container_description_identifier(
+            status[0]["container_description"]["identifier"],
+            "mulled-v2-8186960447c5cb2faa697666dc1e6d919ad23f3e:a6419f25efff953fc505dbd5ee734856180bb619-0",
+        )
+
+    def _assert_container_description_identifier(self, identifier: str, expected_hash: str):
+        """
+        function to check the identifier of container against a mulled hash
+        here we assert that locally built containers are cached in the "local"
+        namespace as if they were from quay.io
+
+        may need to be overwritten in derived classes.
+        """
+        assert identifier == f"quay.io/local/{expected_hash}"
 
 
-class TestMappingContainerResolver(integration_util.IntegrationTestCase):
+class TestMappingContainerResolver(IntegrationTestCase):
+    """
+    - test mapping resolver
+    - test global container resolvers given in extra yaml file referenced via
+      `container_resolvers_config_file` in galaxy.yml
+    - container resolvers defined per destination in the job config
+      should be ignored
+      (TODO this is not tested since a fallback resolver pointing to the same container
+       would be used)
+    """
+
     dataset_populator: DatasetPopulator
     jobs_directory: str
     framework_tool_and_types = True
@@ -202,6 +265,12 @@ class TestMappingContainerResolver(integration_util.IntegrationTestCase):
 
 
 class TestInlineContainerConfiguration(TestMappingContainerResolver):
+    """
+    Same as TestMappingContainerResolver, but defining container resolvers
+    via `container_resolvers` (not testing the YAML parsing of inline container
+    resolvers from galaxy.yml)
+    """
+
     jobs_directory: str
 
     @classmethod
@@ -211,6 +280,7 @@ class TestInlineContainerConfiguration(TestMappingContainerResolver):
         config["jobs_directory"] = cls.jobs_directory
         config["job_config_file"] = cls.job_config_file
         disable_dependency_resolution(config)
+        config.pop("container_resolvers_config_file")
         container_resolvers_config = [
             {
                 "type": "mapping",
@@ -226,7 +296,77 @@ class TestInlineContainerConfiguration(TestMappingContainerResolver):
         config["container_resolvers"] = container_resolvers_config
 
 
-class TestInlineJobEnvironmentContainerResolver(integration_util.IntegrationTestCase):
+class TestPerDestinationContainerConfiguration(TestMappingContainerResolver):
+    """
+    This tests:
+    - that container_resolvers_config_file works when specified in a destination
+    - and it does so also in presence of a global container_resolvers_config
+    """
+
+    @classmethod
+    def handle_galaxy_config_kwds(cls, config):
+        super().handle_galaxy_config_kwds(config)
+        # make sure that job_config_file is unset and set job_config
+        # its the same content as dockerized_job_conf.yml + the per
+        # destination container_resolver_config_file
+        try:
+            config.pop("job_config_file")
+        except KeyError:
+            pass
+        config["job_config"] = {
+            "runners": {"local": {"load": "galaxy.jobs.runners.local:LocalJobRunner", "workers": 1}},
+            "execution": {
+                "default": "local_docker",
+                "environments": {
+                    "local_docker": {"runner": "local", "docker_enabled": True},
+                    "local_docker_inline_container_resolvers": {
+                        "runner": "local",
+                        "docker_enabled": True,
+                        "container_resolvers_config_file": os.path.join(
+                            SCRIPT_DIRECTORY, "fallback_container_resolver.yml"
+                        ),
+                    },
+                },
+            },
+            "tools": [
+                {"id": "upload1", "environment": "local_upload"},
+                {
+                    "id": "mulled_example_broken_no_requirements",
+                    "environment": "local_docker_inline_container_resolvers",
+                },
+            ],
+        }
+        # define a global container_resolvers (that can not work .. thereby
+        # showing that the per destination config is used) and make sure that
+        # container_resolvers_config_file is not set
+        try:
+            config.pop("container_resolvers_config_file")
+        except KeyError:
+            pass
+        container_resolvers_config = [
+            {
+                "type": "mapping",
+                "mappings": [
+                    {
+                        "container_type": "docker",
+                        "tool_id": "some_bogus_too_id",
+                        "identifier": "quay.io/biocontainers/bwa:0.7.15--0",
+                    }
+                ],
+            }
+        ]
+        config["container_resolvers"] = container_resolvers_config
+
+
+class TestInlineJobEnvironmentContainerResolver(IntegrationTestCase):
+    """
+    Test
+    - container resolvers config given inline in job configuration (DOCKERIZED_JOB_CONFIG_FILE)
+    - job config maps the tool to a destination (local_docker_inline_container_resolvers)
+      which only runs the fallback container resolver (which uses bwa 0.7.15)
+    - tool defines no requirements (irrelevant for this test)
+    """
+
     dataset_populator: DatasetPopulator
     jobs_directory: str
     framework_tool_and_types = True
@@ -256,11 +396,11 @@ class TestInlineJobEnvironmentContainerResolver(integration_util.IntegrationTest
         assert "0.7.15-r1140" in output
 
 
-# Singularity 2.4 in the official Vagrant issue has some problems running this test
-# case by default because subdirectories of /tmp don't bind correctly. Overridding
-# TMPDIR can fix this.
-# TMPDIR=/home/vagrant/tmp/ pytest test/integration/test_containerized_jobs.py::TestSingularityJobsIntegration
 class TestSingularityJobsIntegration(TestDockerizedJobsIntegration):
     job_config_file = SINGULARITY_JOB_CONFIG_FILE
     build_mulled_resolver = "build_mulled_singularity"
     container_type = "singularity"
+
+    def _assert_container_description_identifier(self, identifier, expected_hash):
+        assert os.path.exists(identifier)
+        assert identifier.endswith(f"singularity/mulled/{expected_hash}")

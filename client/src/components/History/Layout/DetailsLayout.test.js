@@ -1,43 +1,34 @@
-import { mockModule, getLocalVue } from "tests/jest/helpers";
-import { userStore } from "store/userStore";
-import Vuex from "vuex";
-import DetailsLayout from "./DetailsLayout";
+import { createPinia } from "pinia";
 import { mount } from "@vue/test-utils";
+import DetailsLayout from "./DetailsLayout";
+import { useUserStore } from "stores/userStore";
+import { getLocalVue } from "tests/jest/helpers";
 
 const localVue = getLocalVue();
 
-const createStore = (currentUser) => {
-    return new Vuex.Store({
-        modules: {
-            user: mockModule(userStore, { currentUser }),
-        },
+async function createWrapper(component, localVue, userData) {
+    const pinia = createPinia();
+    const wrapper = mount(component, {
+        localVue,
+        pinia,
     });
-};
+    const userStore = useUserStore();
+    userStore.currentUser = { ...userStore.currentUser, ...userData };
+    return wrapper;
+}
 
 describe("DetailsLayout", () => {
-    it("allows logged-in users to edit details", () => {
-        const store = createStore({
+    it("allows logged-in users to edit details", async () => {
+        const wrapper = await createWrapper(DetailsLayout, localVue, {
             id: "user.id",
             email: "user.email",
-        });
-
-        const wrapper = mount(DetailsLayout, {
-            localVue,
-            store,
-            provide: { store },
         });
 
         expect(wrapper.find(".edit-button").attributes("title")).toBe("Edit");
     });
 
-    it("prompts anonymous users to log in", () => {
-        const store = createStore({});
-
-        const wrapper = mount(DetailsLayout, {
-            localVue,
-            store,
-            provide: { store },
-        });
+    it("prompts anonymous users to log in", async () => {
+        const wrapper = await createWrapper(DetailsLayout, localVue, {});
 
         expect(wrapper.find(".edit-button").attributes("title")).toContain("Log in");
     });

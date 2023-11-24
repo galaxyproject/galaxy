@@ -31,6 +31,7 @@ from galaxy.model import tags
 from galaxy.model.base import (
     ModelMapping,
     SharedModelMapping,
+    transaction,
 )
 from galaxy.model.mapping import GalaxyModelMapping
 from galaxy.model.scoped_session import galaxy_scoped_session
@@ -103,6 +104,7 @@ class MockApp(di.Container, GalaxyDataTestApp):
     history_manager: HistoryManager
     job_metrics: JobMetrics
     stop: bool
+    is_webapp: bool = True
 
     def __init__(self, config=None, **kwargs) -> None:
         super().__init__()
@@ -185,16 +187,25 @@ class MockAppConfig(GalaxyDataTestConfig, CommonConfigurationMixin):
         self.user_activation_on = False
         self.new_user_dataset_access_role_default_private = False
 
-        self.expose_dataset_path = True
+        self.activation_grace_period = 0
         self.allow_user_dataset_purge = True
         self.allow_user_creation = True
+        self.auth_config_file = "config/auth_conf.xml.sample"
+        self.custom_activation_email_message = "custom_activation_email_message"
         self.email_domain_allowlist_content = None
         self.email_domain_blocklist_content = None
+        self.email_from = "email_from"
         self.enable_old_display_applications = True
-        self.redact_username_in_logs = False
-        self.auth_config_file = "config/auth_conf.xml.sample"
         self.error_email_to = "admin@email.to"
+        self.expose_dataset_path = True
+        self.hostname = "hostname"
+        self.instance_resource_url = "instance_resource_url"
         self.password_expiration_period = 0
+        self.pretty_datetime_format = "pretty_datetime_format"
+        self.redact_username_in_logs = False
+        self.smtp_server = True
+        self.terms_url = "terms_url"
+        self.templates_dir = "templates"
 
         self.umask = 0o77
         self.flush_per_n_datasets = 0
@@ -218,7 +229,6 @@ class MockAppConfig(GalaxyDataTestConfig, CommonConfigurationMixin):
         # set by MockDir
         self.enable_tool_document_cache = False
         self.tool_cache_data_dir = os.path.join(self.root, "tool_cache")
-        self.delay_tool_initialization = True
         self.external_chown_script = None
         self.check_job_script_integrity = False
         self.check_job_script_integrity_count = 0
@@ -243,6 +253,7 @@ class MockAppConfig(GalaxyDataTestConfig, CommonConfigurationMixin):
         self.integrated_tool_panel_config = None
         self.vault_config_file = kwargs.get("vault_config_file")
         self.max_discovered_files = 10000
+        self.enable_notification_system = True
 
     @property
     def config_dict(self):
@@ -282,8 +293,12 @@ class MockTrans:
         self.security = self.app.security
         self.history = history
 
-        self.request: Any = Bunch(headers={}, body=None)
+        self.request: Any = Bunch(headers={}, is_body_readable=False, host="request.host")
         self.response: Any = Bunch(headers={}, set_content_type=lambda i: None)
+
+    @property
+    def tag_handler(self):
+        return self.app.tag_handler
 
     def check_csrf_token(self, payload):
         pass
@@ -305,7 +320,8 @@ class MockTrans:
         if self.galaxy_session:
             self.galaxy_session.user = user
             self.sa_session.add(self.galaxy_session)
-            self.sa_session.flush()
+            with transaction(self.sa_session):
+                self.sa_session.commit()
         self.__user = user
 
     user = property(get_user, set_user)

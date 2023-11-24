@@ -2,6 +2,7 @@ import { terminalFactory } from "./terminals";
 import type { Step, Steps } from "@/stores/workflowStepStore";
 import type { DatatypesMapperModel } from "@/components/Datatypes/model";
 import type { UntypedParameters } from "@/components/Workflow/Editor/modules/parameters";
+import { assertDefined } from "@/utils/assertions";
 
 interface LintState {
     stepId: number;
@@ -90,16 +91,23 @@ export function getUntypedParameters(untypedParameters: UntypedParameters) {
     const items: LintState[] = [];
     if (untypedParameters) {
         untypedParameters.parameters.forEach((parameter) => {
-            const parameterReference = parameter.references[0];
-            // TODO: Not sure this is right, but I think this may have been broken previously?
-            const stepLabel = "toolInput" in parameterReference ? parameterReference.toolInput.label : parameter.name;
-            items.push({
-                stepId: parameterReference.stepId,
-                stepLabel: stepLabel,
-                warningLabel: parameter.name,
-                name: parameter.name,
-                autofix: parameter.canExtract(),
-            });
+            try {
+                const parameterReference = parameter.references[0];
+                assertDefined(parameterReference, `Parameter references for ${parameter.name} are empty.`);
+
+                // TODO: Not sure this is right, but I think this may have been broken previously?
+                const stepLabel =
+                    "toolInput" in parameterReference ? parameterReference.toolInput.label : parameter.name;
+                items.push({
+                    stepId: parameterReference.stepId,
+                    stepLabel: stepLabel,
+                    warningLabel: parameter.name,
+                    name: parameter.name,
+                    autofix: parameter.canExtract(),
+                });
+            } catch (errorMessage) {
+                console.error(errorMessage);
+            }
         });
     }
     return items;

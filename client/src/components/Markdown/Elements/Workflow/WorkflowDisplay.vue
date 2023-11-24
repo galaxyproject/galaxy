@@ -1,5 +1,52 @@
+<script setup lang="ts">
+import axios from "axios";
+import { computed, ref, onMounted } from "vue";
+import { withPrefix } from "@/utils/redirect";
+import LoadingSpan from "@/components/LoadingSpan.vue";
+import WorkflowTree from "./WorkflowTree.vue";
+import { isEmpty } from "@/utils/utils";
+
+interface WorkflowDisplayProps {
+    workflowId: string;
+    embedded?: boolean;
+    expanded?: boolean;
+}
+
+const props = withDefaults(defineProps<WorkflowDisplayProps>(), {
+    embedded: false,
+    expanded: false,
+});
+
+type ItemContent = {
+    name: string;
+    steps: Array<any>; // This isn't actually a proper workflow step type, right?  TODO, unify w/ workflowStepStore?
+};
+
+const errorContent = ref();
+const itemContent = ref<ItemContent | null>(null);
+const loading = ref(true);
+
+const workflowName = computed(() => (itemContent.value ? itemContent.value.name : "..."));
+const downloadUrl = computed(() => withPrefix(`/api/workflows/${props.workflowId}/download?format=json-download`));
+const importUrl = computed(() => withPrefix(`/workflow/imp?id=${props.workflowId}`));
+const itemUrl = computed(() => withPrefix(`/api/workflows/${props.workflowId}/download?style=preview`));
+
+onMounted(async () => {
+    axios
+        .get(itemUrl.value)
+        .then((response) => {
+            itemContent.value = response.data;
+            loading.value = false;
+        })
+        .catch((error) => {
+            errorContent.value = error.response.data.err_msg;
+            loading.value = false;
+        });
+});
+</script>
+
 <template>
-    <b-card body-class="p-0">
+    <b-card body-class="p-0" class="workflow-display">
         <b-card-header v-if="!embedded">
             <span class="float-right">
                 <b-button
@@ -23,7 +70,7 @@
                     type="button"
                     class="py-0 px-1"
                     data-description="workflow import">
-                    <span class="fa fa-file-import" />
+                    <span class="fa fa-upload" />
                 </b-button>
             </span>
             <span>
@@ -34,7 +81,7 @@
         <b-card-body>
             <LoadingSpan v-if="loading" message="Loading Workflow" />
             <div v-else :class="!expanded && 'content-height'">
-                <b-alert v-if="errorContent" variant="danger" show>
+                <b-alert v-if="!isEmpty(errorContent)" variant="danger" show>
                     <b>Please fix the following error(s):</b>
                     <ul v-if="typeof errorContent === 'object'" class="my-2">
                         <li v-for="(errorValue, errorKey) in errorContent" :key="errorKey">
@@ -43,8 +90,8 @@
                     </ul>
                     <div v-else>{{ errorContent }}</div>
                 </b-alert>
-                <div v-else>
-                    <div v-for="step in itemContent.steps" :key="step.order_index" class="mb-2">
+                <div v-if="itemContent !== null">
+                    <div v-for="step in itemContent?.steps" :key="step.order_index" class="mb-2">
                         <div>Step {{ step.order_index + 1 }}: {{ step.label }}</div>
                         <WorkflowTree :input="step" :skip-head="true" />
                     </div>
@@ -53,66 +100,6 @@
         </b-card-body>
     </b-card>
 </template>
-
-<script>
-import { withPrefix } from "utils/redirect";
-import { urlData } from "utils/url";
-import LoadingSpan from "components/LoadingSpan";
-import WorkflowTree from "./WorkflowTree";
-export default {
-    components: {
-        LoadingSpan,
-        WorkflowTree,
-    },
-    props: {
-        args: {
-            type: Object,
-            required: true,
-        },
-        embedded: {
-            type: Boolean,
-            default: false,
-        },
-        expanded: {
-            type: Boolean,
-            default: false,
-        },
-    },
-    data() {
-        return {
-            errorContent: null,
-            itemContent: null,
-            loading: true,
-        };
-    },
-    computed: {
-        workflowName() {
-            return this.itemContent ? this.itemContent.name : "...";
-        },
-        downloadUrl() {
-            return withPrefix(`/api/workflows/${this.args.workflow_id}/download?format=json-download`);
-        },
-        importUrl() {
-            return withPrefix(`/workflow/imp?id=${this.args.workflow_id}`);
-        },
-        itemUrl() {
-            return `/api/workflows/${this.args.workflow_id}/download?style=preview`;
-        },
-    },
-    created() {
-        const url = this.itemUrl;
-        urlData({ url })
-            .then((data) => {
-                this.itemContent = data;
-                this.loading = false;
-            })
-            .catch((errorContent) => {
-                this.errorContent = errorContent;
-                this.loading = false;
-            });
-    },
-};
-</script>
 <style scoped>
 .content-height {
     max-height: 15rem;

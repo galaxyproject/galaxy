@@ -1,14 +1,17 @@
 import json
 import logging
 import math
+import os
 import re
 import uuid
 from typing import (
+    cast,
+    Iterable,
     List,
     Optional,
 )
 
-import packaging.version
+from packaging.version import Version
 
 from galaxy.tool_util.deps import requirements
 from galaxy.tool_util.parser.util import (
@@ -37,6 +40,7 @@ from .interface import (
 from .output_actions import ToolOutputActionGroup
 from .output_collection_def import dataset_collector_descriptions_from_elem
 from .output_objects import (
+    ChangeFormatModel,
     ToolExpressionOutput,
     ToolOutput,
     ToolOutputCollection,
@@ -53,6 +57,64 @@ from .stdio import (
 log = logging.getLogger(__name__)
 
 
+def inject_validates(inject):
+    if inject == "api_key":
+        return True
+    p = re.compile("^oidc_(id|access|refresh)_token_(.*)$")
+    match = p.match(inject)
+    return match is not None
+
+
+def destroy_tree(tree):
+    root = tree.getroot()
+
+    node_tracker = {root: [0, None]}
+
+    for node in root.iterdescendants():
+        parent = node.getparent()
+        node_tracker[node] = [node_tracker[parent][0] + 1, parent]
+
+    node_tracker = sorted(
+        [(depth, parent, child) for child, (depth, parent) in node_tracker.items()], key=lambda x: x[0], reverse=True
+    )
+
+    for _, parent, child in node_tracker:
+        if parent is None:
+            break
+        parent.remove(child)
+
+    del tree
+
+
+def parse_change_format(change_format: Iterable[Element]) -> List[ChangeFormatModel]:
+    change_models: List[ChangeFormatModel] = []
+    for change_elem in change_format:
+        change_elem = cast(Element, change_elem)
+        for when_elem in change_elem.findall("when"):
+            when_elem = cast(Element, when_elem)
+            value: Optional[str] = when_elem.get("value", None)
+            format_: Optional[str] = when_elem.get("format", None)
+            check: Optional[str] = when_elem.get("input", None)
+            input_dataset: Optional[str] = None
+            check_attribute: Optional[str] = None
+            if check is not None:
+                if "$" not in check:
+                    check = f"${check}"
+            else:
+                input_dataset = when_elem.get("input_dataset", None)
+                check_attribute = when_elem.get("attribute", None)
+            change_models.append(
+                ChangeFormatModel(
+                    value=value,
+                    format=format_,
+                    input=check,
+                    input_dataset=input_dataset,
+                    check_attribute=check_attribute,
+                )
+            )
+    return change_models
+
+
 class XmlToolSource(ToolSource):
     """Responsible for parsing a tool from classic Galaxy representation."""
 
@@ -61,13 +123,19 @@ class XmlToolSource(ToolSource):
 
     def __init__(self, xml_tree: ElementTree, source_path=None, macro_paths=None):
         self.xml_tree = xml_tree
-        self.root = xml_tree.getroot()
+        self.root = self.xml_tree.getroot()
         self._source_path = source_path
         self._macro_paths = macro_paths or []
         self.legacy_defaults = self.parse_profile() == "16.01"
+        self._string = xml_to_string(self.root)
 
     def to_string(self):
-        return xml_to_string(self.root)
+        return self._string
+
+    def mem_optimize(self):
+        destroy_tree(self.xml_tree)
+        self.root = None
+        self._xml_tree = None
 
     def parse_version(self):
         return self.root.get("version", None)
@@ -162,7 +230,7 @@ class XmlToolSource(ToolSource):
             inject = environment_variable_el.get("inject")
             if inject:
                 assert not template, "Cannot specify inject and environment variable template."
-                assert inject in ["api_key"]
+                assert inject_validates(inject)
             if template:
                 assert not inject, "Cannot specify inject and environment variable template."
             definition = {
@@ -437,7 +505,7 @@ class XmlToolSource(ToolSource):
         elif auto_format:
             output_format = "_sniff_"
         output.format = output_format
-        output.change_format = data_elem.findall("change_format")
+        output.change_format = parse_change_format(data_elem.findall("change_format"))
         output.format_source = data_elem.get("format_source", default_format_source)
         output.default_identifier_source = data_elem.get("default_identifier_source", "None")
         output.metadata_source = data_elem.get("metadata_source", default_metadata_source)
@@ -524,7 +592,7 @@ class XmlToolSource(ToolSource):
 
     def parse_strict_shell(self):
         command_el = self._command_el
-        if packaging.version.parse(self.parse_profile()) < packaging.version.parse("20.09"):
+        if Version(self.parse_profile()) < Version("20.09"):
             default = "False"
         else:
             default = "True"
@@ -557,7 +625,7 @@ class XmlToolSource(ToolSource):
 
         return rval
 
-    def parse_profile(self):
+    def parse_profile(self) -> str:
         # Pre-16.04 or default XML defaults
         # - Use standard error for error detection.
         # - Don't run shells with -e
@@ -572,7 +640,7 @@ class XmlToolSource(ToolSource):
     def parse_python_template_version(self):
         python_template_version = self.root.get("python_template_version")
         if python_template_version is not None:
-            python_template_version = packaging.version.Version(python_template_version)
+            python_template_version = Version(python_template_version)
         return python_template_version
 
     def parse_creator(self):
@@ -696,6 +764,11 @@ def __parse_test_attributes(output_elem, attrib, parse_elements=False, parse_dis
     attributes["delta_frac"] = float(attrib["delta_frac"]) if "delta_frac" in attrib else DEFAULT_DELTA_FRAC
     attributes["sort"] = string_as_bool(attrib.pop("sort", False))
     attributes["decompress"] = string_as_bool(attrib.pop("decompress", False))
+    # `location` may contain an URL to a remote file that will be used to download `file` (if not already present on disk).
+    location = attrib.get("location")
+    if location and file is None:
+        file = os.path.basename(location)  # If no file specified, try to get filename from URL last component
+    attributes["location"] = location
     try:
         attributes["count"] = int(attrib.pop("count"))
     except KeyError:
@@ -849,6 +922,9 @@ def __parse_param_elem(param_elem, i=0):
         value = json.loads(attrib["value_json"])
     else:
         value = None
+
+    if value is None and attrib.get("location", None) is not None:
+        value = os.path.basename(attrib["location"])
 
     children_elem = param_elem
     if children_elem is not None:
@@ -1141,21 +1217,16 @@ class XmlInputSource(InputSource):
         >>> xis.parse_static_options()
         [('a', 'a', True), ('b', 'b', False)]
         """
-        static_options = list()
+
+        deduplicated_static_options = {}
+
         elem = self.input_elem
         for option in elem.findall("option"):
             value = option.get("value")
             text = option.text or value
             selected = string_as_bool(option.get("selected", False))
-            present = False
-            for i, o in enumerate(static_options):
-                if o[1] == value:
-                    present = True
-                    static_options[i] = (text, value, selected)
-                    break
-            if not present:
-                static_options.append((text, value, selected))
-        return static_options
+            deduplicated_static_options[value] = (text, value, selected)
+        return list(deduplicated_static_options.values())
 
     def parse_optional(self, default=None):
         """Return boolean indicating whether parameter is optional."""

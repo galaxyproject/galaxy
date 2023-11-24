@@ -23,7 +23,7 @@ export function useFileDrop(
 
     type State = "idle" | "blocked" | "fileDragging";
     type StateMachine = {
-        [state in State]: (event: MouseEvent) => State;
+        [_state in State]: (event: MouseEvent) => State;
     };
 
     const currentState: Ref<State> = ref("idle");

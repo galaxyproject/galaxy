@@ -1,54 +1,53 @@
 <template>
-    <CurrentUser v-slot="{ user }" class="d-flex flex-column">
-        <UserHistories v-if="user" v-slot="{ currentHistory, handlers, historiesLoading }" :user="user">
-            <div v-if="historiesLoading">computing tour requirements...</div>
-            <b-modal
-                v-else-if="loginRequired(user)"
-                id="tour-requirement-unment"
-                v-model="showRequirementDialog"
-                static
-                ok-only
-                hide-header>
-                <b-alert show variant="danger"> You must log in to Galaxy to use this tour. </b-alert>
-            </b-modal>
-            <b-modal
-                v-else-if="adminRequired(user)"
-                id="tour-requirement-unment"
-                v-model="showRequirementDialog"
-                static
-                ok-only
-                hide-header>
-                <b-alert show variant="danger"> You must be an admin user to use this tour. </b-alert>
-            </b-modal>
-            <b-modal
-                v-else-if="newHistoryRequired(currentHistory, handlers)"
-                id="tour-requirement-unment"
-                v-model="showRequirementDialog"
-                static
-                ok-only
-                hide-header>
-                <b-alert show variant="danger">
-                    This tour is designed to run on a new history, please create a new history before running it.
-                    <a @click.prevent="handlers.createNewHistory()">Click here</a> to create a new history.
-                </b-alert>
-            </b-modal>
-            <TourStep
-                v-else-if="currentStep"
-                :key="currentIndex"
-                :step="currentStep"
-                :is-playing="isPlaying"
-                :is-last="isLast"
-                @next="next"
-                @end="end"
-                @play="play" />
-        </UserHistories>
-    </CurrentUser>
+    <div class="d-flex flex-column">
+        <div v-if="historiesLoading">computing tour requirements...</div>
+        <b-modal
+            v-else-if="loginRequired(currentUser)"
+            id="tour-requirement-unment"
+            v-model="showRequirementDialog"
+            static
+            ok-only
+            hide-header>
+            <b-alert show variant="danger"> You must log in to Galaxy to use this tour. </b-alert>
+        </b-modal>
+        <b-modal
+            v-else-if="adminRequired(currentUser)"
+            id="tour-requirement-unment"
+            v-model="showRequirementDialog"
+            static
+            ok-only
+            hide-header>
+            <b-alert show variant="danger"> You must be an admin user to use this tour. </b-alert>
+        </b-modal>
+        <b-modal
+            v-else-if="newHistoryRequired(currentHistory)"
+            id="tour-requirement-unment"
+            v-model="showRequirementDialog"
+            static
+            ok-only
+            hide-header>
+            <b-alert show variant="danger">
+                This tour is designed to run on a new history, please create a new history before running it.
+                <a @click.prevent="createNewHistory()">Click here</a> to create a new history.
+            </b-alert>
+        </b-modal>
+        <TourStep
+            v-else-if="currentStep"
+            :key="currentIndex"
+            :step="currentStep"
+            :is-playing="isPlaying"
+            :is-last="isLast"
+            @next="next"
+            @end="end"
+            @play="play" />
+    </div>
 </template>
 
 <script>
 import TourStep from "./TourStep";
-import CurrentUser from "components/providers/CurrentUser";
-import UserHistories from "components/providers/UserHistories";
+import { mapActions, mapState } from "pinia";
+import { useUserStore } from "@/stores/userStore";
+import { useHistoryStore } from "@/stores/historyStore";
 
 // popup display duration when auto-playing the tour
 const playDelay = 3000;
@@ -56,8 +55,6 @@ const playDelay = 3000;
 export default {
     components: {
         TourStep,
-        CurrentUser,
-        UserHistories,
     },
     props: {
         steps: {
@@ -77,6 +74,8 @@ export default {
         };
     },
     computed: {
+        ...mapState(useUserStore, ["currentUser"]),
+        ...mapState(useHistoryStore, ["currentHistory", "historiesLoading"]),
         currentStep() {
             return this.steps[this.currentIndex];
         },
@@ -97,6 +96,7 @@ export default {
         this.start();
     },
     methods: {
+        ...mapActions(useHistoryStore, ["createNewHistory"]),
         start() {
             window.addEventListener("keyup", this.handleKeyup);
             this.currentIndex = 0;
@@ -117,8 +117,8 @@ export default {
             if (this.hasBegun) {
                 return false;
             }
-            const hasNewNistoryRequirement = this.requirements.indexOf("new_history") >= 0;
-            if (!hasNewNistoryRequirement) {
+            const hasNewHistoryRequirement = this.requirements.indexOf("new_history") >= 0;
+            if (!hasNewHistoryRequirement) {
                 return false;
             } else if (history && history.size != 0) {
                 // TODO: better estimate for whether the history is new.
@@ -126,9 +126,6 @@ export default {
             } else {
                 return false;
             }
-        },
-        createNewHistory(handlers) {
-            handlers.createNewHistory();
         },
         async next() {
             // do post-actions

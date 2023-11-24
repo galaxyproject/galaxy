@@ -69,8 +69,8 @@ class AbstractTestCases:
 
         def test_version_path(self):
             wrapper = self._wrapper()
-            version_path = wrapper.get_version_string_path_legacy()
-            expected_path = os.path.join(self.test_directory, "working", "COMMAND_VERSION")
+            version_path = wrapper.get_version_string_path()
+            expected_path = os.path.join(self.working_directory, "outputs", "COMMAND_VERSION")
             assert version_path == expected_path
 
         def test_prepare_sets_command_line(self):
@@ -137,7 +137,6 @@ class MockJobDispatcher:
 class MockContext:
     def __init__(self, model_objects):
         self.expunged_all = False
-        self.flushed = False
         self.model_objects = model_objects
         self.created_objects = []
 
@@ -148,7 +147,10 @@ class MockContext:
         return MockQuery(self.model_objects.get(clazz))
 
     def flush(self):
-        self.flushed = True
+        pass
+
+    def commit(self):
+        pass
 
     def add(self, object):
         self.created_objects.append(object)
@@ -206,6 +208,9 @@ class MockObjectStore:
 
     def exists(self, *args, **kwargs):
         return True
+
+    def construct_path(self, *args, **kwds):
+        return self.working_directory
 
     def get_filename(self, *args, **kwds):
         if kwds.get("base_dir", "") == "job_work":

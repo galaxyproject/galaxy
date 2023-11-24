@@ -79,12 +79,7 @@ body {
     @include clearfix();
 }
 
-.text-normalwrap {
-    word-wrap: normal;
-}
-
 // ==== Page layout styles ====
-
 .full-content {
     @extend .m-0;
     @extend .p-0;
@@ -129,57 +124,6 @@ body {
     opacity: 0;
     z-index: 900; // Bootstrap elements start at 1000
     display: none;
-}
-
-// ==== Panel layout styles ====
-
-#left,
-#center,
-#right {
-    @extend .position-absolute;
-    @extend .h-100;
-}
-#left {
-    @extend .unified-panel;
-    left: 0px;
-    width: $panel-width;
-    overflow: unset !important;
-}
-#right {
-    @extend .unified-panel;
-    right: 0px;
-    width: $panel-width;
-    overflow: unset !important;
-}
-#right > .unified-panel-footer {
-    .drag {
-        left: 0;
-    }
-}
-#center {
-    left: $panel-width;
-    right: $panel-width;
-    .center-container {
-        @extend .position-absolute;
-        @extend .w-100;
-        @extend .h-100;
-        .center-panel {
-            @extend .position-absolute;
-            @extend .w-100;
-            @extend .h-100;
-            @extend .overflow-auto;
-            display: none;
-            padding: $margin-h $margin-v;
-            background: $white;
-        }
-    }
-    // Replaces unnecessary if/then logic in base_panels.mako
-    &:first-child {
-        left: 0;
-    }
-    &:last-child {
-        right: 0;
-    }
 }
 
 // ==== Unified panel styles ====
@@ -248,84 +192,8 @@ body {
     @extend .overflow-auto;
     flex: 1;
 }
-.unified-panel-body-background {
-    background: none repeat scroll 0 0 $panel-bg-color;
-}
-.unified-panel-footer {
-    @extend .unselectable;
-    position: relative;
-    height: $panel_footer_height;
-    line-height: $panel_footer_height;
-    width: 100%;
-    background: $panel-footer-bg-color;
-    color: $panel-header-text-color;
-    a {
-        color: $panel-header-text-color;
-    }
-    .drag {
-        position: absolute;
-        top: 0;
-        right: 0;
-        padding: 0 5px;
-        text-align: center;
-        height: $panel_footer_height;
-        width: $panel_footer_height - 5;
-        background-image: url(../../assets/images/visualization/draggable_horizontal.png);
-        background-repeat: no-repeat;
-        background-position: 50% 50%;
-        cursor: col-resize;
-    }
-}
-
-// Needs to be outside panel to show when hidden
-.panel-collapse {
-    @extend .fa;
-    $border-color: darken($panel-footer-bg-color, 20%);
-    font-size: 4/3em;
-    cursor: pointer;
-    display: block;
-    position: fixed;
-    text-align: center;
-    height: $panel_footer_height;
-    line-height: $panel_footer_height;
-    width: $panel_footer_height;
-    background: $panel-footer-bg-color;
-    border: solid $panel-footer-bg-color 1px;
-    z-index: 1;
-    &.right {
-        right: 0;
-        border-top-left-radius: $border-radius-base;
-        line-height: inherit;
-        &:before {
-            content: "\f054";
-        }
-        &.hidden:before {
-            content: "\f053";
-        }
-        &.hidden {
-            border-top-color: $border-color;
-            border-left-color: $border-color;
-        }
-    }
-    &.left {
-        left: 0;
-        border-top-right-radius: $border-radius-base;
-        line-height: inherit;
-        &:before {
-            content: "\f053";
-        }
-        &.hidden:before {
-            content: "\f054";
-        }
-        &.hidden {
-            border-top-color: $border-color;
-            border-right-color: $border-color;
-        }
-    }
-}
 
 // State colors
-
 $galaxy-state-border: (
     "new": $state-default-border,
     "upload": $state-info-border,
@@ -399,7 +267,6 @@ $galaxy-state-bg: (
 }
 
 // Button styles
-
 button {
     @extend .btn;
     @extend .btn-secondary;

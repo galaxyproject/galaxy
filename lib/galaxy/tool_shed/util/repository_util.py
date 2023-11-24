@@ -25,6 +25,7 @@ from galaxy import (
     util,
     web,
 )
+from galaxy.model.base import transaction
 from galaxy.model.scoped_session import install_model_scoped_session
 from galaxy.model.tool_shed_install import ToolShedRepository
 from galaxy.tool_shed.util import basic_util
@@ -96,8 +97,11 @@ def _check_or_update_tool_shed_status_for_installed_repository(
         ok = True
         if tool_shed_status_dict != repository.tool_shed_status:
             repository.tool_shed_status = tool_shed_status_dict
-            install_model_context.add(repository)
-            install_model_context.flush()
+            session = install_model_context
+            session.add(repository)
+            with transaction(session):
+                session.commit()
+
             updated = True
     else:
         ok = False
@@ -180,7 +184,8 @@ def create_or_update_tool_shed_repository(
             status=status,
         )
     context.add(tool_shed_repository)
-    context.flush()
+    with transaction(context):
+        context.commit()
     return tool_shed_repository
 
 
@@ -653,8 +658,9 @@ def get_tool_shed_status_for(tool_shed_registry: Registry, repository: ToolShedR
         # This should handle backward compatility to the Galaxy 12/20/12 release.  We used to only handle updates for an installed revision
         # using a boolean value.
         log.debug(
-            "Error attempting to get tool shed status for installed repository %s: %s\nAttempting older 'check_for_updates' method.\n"
-            % (str(repository.name), str(e))
+            "Error attempting to get tool shed status for installed repository %s: %s\nAttempting older 'check_for_updates' method.\n",
+            repository.name,
+            e,
         )
         pathspec = ["repository", "check_for_updates"]
         params["from_update_manager"] = True
@@ -765,8 +771,11 @@ def set_repository_attributes(app, repository, status, error_message, deleted, u
     repository.status = status
     repository.deleted = deleted
     repository.uninstalled = uninstalled
-    app.install_model.context.add(repository)
-    app.install_model.context.flush()
+
+    session = app.install_model.context
+    session.add(repository)
+    with transaction(session):
+        session.commit()
 
 
 __all__ = (

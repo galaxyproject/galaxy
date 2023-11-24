@@ -17,6 +17,7 @@ from galaxy.managers.libraries import LibraryManager
 from galaxy.managers.roles import RoleManager
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
+    BasicRoleModel,
     CreateLibrariesFromStore,
     CreateLibraryPayload,
     LibraryAvailablePermissions,
@@ -71,14 +72,14 @@ class LibrariesService(ServiceBase, ConsumesModelStores):
         query, prefetched_ids = self.library_manager.list(trans, deleted)
         libraries = []
         for library in query:
-            libraries.append(self.library_manager.get_library_dict(trans, library, prefetched_ids))
-        return LibrarySummaryList.construct(__root__=libraries)
+            library_dict = self.library_manager.get_library_dict(trans, library, prefetched_ids)
+            libraries.append(LibrarySummary(**library_dict))
+        return LibrarySummaryList(__root__=libraries)
 
     def show(self, trans, id: DecodedDatabaseIdField) -> LibrarySummary:
         """Returns detailed information about a library."""
         library = self.library_manager.get(trans, id)
-        library_dict = self.library_manager.get_library_dict(trans, library)
-        return LibrarySummary.construct(**library_dict)
+        return self._to_summary(trans, library)
 
     def create(self, trans, payload: CreateLibraryPayload) -> LibrarySummary:
         """Creates a new library.
@@ -130,8 +131,8 @@ class LibrariesService(ServiceBase, ConsumesModelStores):
         id: DecodedDatabaseIdField,
         scope: Optional[LibraryPermissionScope] = LibraryPermissionScope.current,
         is_library_access: Optional[bool] = False,
-        page: Optional[int] = 1,
-        page_limit: Optional[int] = 10,
+        page: int = 1,
+        page_limit: int = 10,
         query: Optional[str] = None,
     ) -> Union[LibraryCurrentPermissions, LibraryAvailablePermissions]:
         """Load all permissions for the given library id and return it.
@@ -171,7 +172,7 @@ class LibrariesService(ServiceBase, ConsumesModelStores):
             return_roles = []
             for role in roles:
                 role_id = DecodedDatabaseIdField.encode(role.id)
-                return_roles.append(dict(id=role_id, name=role.name, type=role.type))
+                return_roles.append(BasicRoleModel(id=role_id, name=role.name, type=role.type))
             return LibraryAvailablePermissions.construct(
                 roles=return_roles, page=page, page_limit=page_limit, total=total_roles
             )
@@ -326,11 +327,9 @@ class LibrariesService(ServiceBase, ConsumesModelStores):
         trans.sa_session.refresh(library)
         # Copy the permissions to the root folder
         trans.app.security_agent.copy_library_permissions(trans, library, library.root_folder)
-        item = library.to_dict(
-            view="element", value_mapper={"id": trans.security.encode_id, "root_folder_id": trans.security.encode_id}
-        )
-        return LibraryLegacySummary.construct(**item)
+        item = library.to_dict(view="element")
+        return LibraryLegacySummary(**item)
 
     def _to_summary(self, trans, library) -> LibrarySummary:
         library_dict = self.library_manager.get_library_dict(trans, library)
-        return LibrarySummary.construct(**library_dict)
+        return LibrarySummary(**library_dict)

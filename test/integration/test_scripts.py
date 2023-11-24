@@ -137,12 +137,6 @@ class TestScriptsIntegration(integration_util.IntegrationTestCase):
         output = self._scripts_check_output(script, ["-c", config_file, "decode", encoded_id])
         assert output.strip() == "1"
 
-    def test_database_scripts(self):
-        self._scripts_check_argparse_help("create_toolshed_db.py")
-        self._scripts_check_argparse_help("migrate_toolshed_db.py")
-        # TODO: test creating a smaller database - e.g. tool install database based on fresh
-        # config file.
-
     def test_galaxy_main(self):
         self._scripts_check_argparse_help("galaxy-main")
 

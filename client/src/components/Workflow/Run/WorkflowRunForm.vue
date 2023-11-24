@@ -1,68 +1,65 @@
 <template>
-    <CurrentUser v-slot="{ user }">
-        <UserHistories v-if="user" v-slot="{ currentHistoryId }" :user="user">
-            <div v-if="currentHistoryId" class="workflow-expanded-form">
-                <div class="h4 clearfix mb-3">
-                    <b>Workflow: {{ model.name }}</b>
-                    <ButtonSpinner
-                        id="run-workflow"
-                        class="float-right"
-                        title="Run Workflow"
-                        :wait="showExecuting"
-                        @onClick="onExecute" />
-                </div>
-                <FormCard v-if="wpInputsAvailable" title="Workflow Parameters">
-                    <template v-slot:body>
-                        <FormDisplay :inputs="wpInputs" @onChange="onWpInputs" />
-                    </template>
-                </FormCard>
-                <FormCard title="History Options">
-                    <template v-slot:body>
-                        <FormDisplay :inputs="historyInputs" @onChange="onHistoryInputs" />
-                    </template>
-                </FormCard>
-                <FormCard v-if="reuseAllowed(user)" title="Job re-use Options">
-                    <template v-slot:body>
-                        <FormElement
-                            v-model="useCachedJobs"
-                            title="Attempt to re-use jobs with identical parameters?"
-                            help="This may skip executing jobs that you have already run."
-                            type="boolean" />
-                    </template>
-                </FormCard>
-                <FormCard v-if="resourceInputsAvailable" title="Workflow Resource Options">
-                    <template v-slot:body>
-                        <FormDisplay :inputs="resourceInputs" @onChange="onResourceInputs" />
-                    </template>
-                </FormCard>
-                <div v-for="step in model.steps" :key="step.index">
-                    <WorkflowRunDefaultStep
-                        v-if="step.step_type == 'tool' || step.step_type == 'subworkflow'"
-                        :model="step"
-                        :replace-params="getReplaceParams(step.inputs)"
-                        :validation-scroll-to="getValidationScrollTo(step.index)"
-                        :history-id="currentHistoryId"
-                        @onChange="onToolStepInputs"
-                        @onValidation="onValidation" />
-                    <WorkflowRunInputStep
-                        v-else
-                        :model="step"
-                        :validation-scroll-to="getValidationScrollTo(step.index)"
-                        @onChange="onDefaultStepInputs"
-                        @onValidation="onValidation" />
-                </div>
-            </div>
-        </UserHistories>
-    </CurrentUser>
+    <div v-if="currentUser && currentHistoryId" class="workflow-expanded-form">
+        <div class="h4 clearfix mb-3">
+            <b>Workflow: {{ model.name }}</b>
+            <ButtonSpinner
+                id="run-workflow"
+                class="float-right"
+                title="Run Workflow"
+                :wait="showExecuting"
+                @onClick="onExecute" />
+        </div>
+        <FormCard v-if="wpInputsAvailable" title="Workflow Parameters">
+            <template v-slot:body>
+                <FormDisplay :inputs="wpInputs" @onChange="onWpInputs" />
+            </template>
+        </FormCard>
+        <FormCard title="History Options">
+            <template v-slot:body>
+                <FormDisplay :inputs="historyInputs" @onChange="onHistoryInputs" />
+            </template>
+        </FormCard>
+        <FormCard v-if="reuseAllowed(currentUser)" title="Job re-use Options">
+            <template v-slot:body>
+                <FormElement
+                    v-model="useCachedJobs"
+                    title="Attempt to re-use jobs with identical parameters?"
+                    help="This may skip executing jobs that you have already run."
+                    type="boolean" />
+            </template>
+        </FormCard>
+        <FormCard v-if="resourceInputsAvailable" title="Workflow Resource Options">
+            <template v-slot:body>
+                <FormDisplay :inputs="resourceInputs" @onChange="onResourceInputs" />
+            </template>
+        </FormCard>
+        <div v-for="step in model.steps" :key="step.index">
+            <WorkflowRunDefaultStep
+                v-if="step.step_type == 'tool' || step.step_type == 'subworkflow'"
+                :model="step"
+                :replace-params="getReplaceParams(step.inputs)"
+                :validation-scroll-to="getValidationScrollTo(step.index)"
+                :history-id="currentHistoryId"
+                @onChange="onToolStepInputs"
+                @onValidation="onValidation" />
+            <WorkflowRunInputStep
+                v-else
+                :model="step"
+                :validation-scroll-to="getValidationScrollTo(step.index)"
+                @onChange="onDefaultStepInputs"
+                @onValidation="onValidation" />
+        </div>
+    </div>
 </template>
 
 <script>
+import { mapState } from "pinia";
+import { useUserStore } from "@/stores/userStore";
+import { useHistoryStore } from "@/stores/historyStore";
 import ButtonSpinner from "components/Common/ButtonSpinner";
-import CurrentUser from "components/providers/CurrentUser";
 import FormDisplay from "components/Form/FormDisplay";
 import FormCard from "components/Form/FormCard";
 import FormElement from "components/Form/FormElement";
-import UserHistories from "components/providers/UserHistories";
 import WorkflowRunDefaultStep from "./WorkflowRunDefaultStep";
 import WorkflowRunInputStep from "./WorkflowRunInputStep";
 import { allowCachedJobs } from "components/Tool/utilities";
@@ -72,11 +69,9 @@ import { invokeWorkflow } from "./services";
 export default {
     components: {
         ButtonSpinner,
-        CurrentUser,
         FormDisplay,
         FormCard,
         FormElement,
-        UserHistories,
         WorkflowRunDefaultStep,
         WorkflowRunInputStep,
     },
@@ -129,6 +124,8 @@ export default {
         };
     },
     computed: {
+        ...mapState(useUserStore, ["currentUser"]),
+        ...mapState(useHistoryStore, ["currentHistoryId"]),
         resourceInputsAvailable() {
             return this.resourceInputs.length > 0;
         },

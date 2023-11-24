@@ -135,15 +135,17 @@ class DataManagerHandler:
                     tool_dict = repository_tools_by_guid.get(tool_guid, None)
                     if tool_dict is None:
                         log.error(
-                            "Data manager tool guid '%s' could not be found for '%s'. Perhaps the tool is invalid?"
-                            % (tool_guid, data_manager_id)
+                            "Data manager tool guid '%s' could not be found for '%s'. Perhaps the tool is invalid?",
+                            tool_guid,
+                            data_manager_id,
                         )
                         continue
                     tool = tool_dict.get("tool", None)
                     if tool is None:
                         log.error(
-                            "Data manager tool with guid '%s' could not be found for '%s'. Perhaps the tool is invalid?"
-                            % (tool_guid, data_manager_id)
+                            "Data manager tool with guid '%s' could not be found for '%s'. Perhaps the tool is invalid?",
+                            tool_guid,
+                            data_manager_id,
                         )
                         continue
                     tool_config_filename = tool_dict.get("tool_config_filename", None)

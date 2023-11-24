@@ -366,8 +366,7 @@ galaxy:
   #templates_dir: templates
 
   # Top level cache directory. Any other cache directories
-  # (tool_cache_data_dir, template_cache_path, etc.) should be
-  # subdirectories.
+  # (template_cache_path, etc.) should be subdirectories.
   # The value of this option will be resolved with respect to
   # <data_dir>.
   #cache_dir: cache
@@ -710,7 +709,7 @@ galaxy:
   # container resolvers to use when discovering containers for Galaxy.
   # If this is set to None, the default container resolvers loaded is
   # determined by enable_mulled_containers. For available options see
-  # config/container_resolvers_conf.xml.sample.
+  # https://docs.galaxyproject.org/en/master/admin/container_resolvers.html
   #container_resolvers_config_file: null
 
   # Rather than specifying a container_resolvers_config_file, the
@@ -892,26 +891,13 @@ galaxy:
   # expanded XML strings. Enabling the tool cache results in slightly
   # faster startup times. The tool cache is backed by a SQLite database,
   # which cannot be stored on certain network disks. The cache location
-  # is configurable using the ``tool_cache_data_dir`` setting, but can
-  # be disabled completely here.
+  # is configurable with the ``tool_cache_data_dir`` tag in tool config
+  # files.
   #enable_tool_document_cache: false
-
-  # Tool related caching. Fully expanded tools and metadata will be
-  # stored at this path. Per tool_conf cache locations can be configured
-  # in (``shed_``)tool_conf.xml files using the tool_cache_data_dir
-  # attribute.
-  # The value of this option will be resolved with respect to
-  # <cache_dir>.
-  #tool_cache_data_dir: tool_cache
 
   # Directory in which the toolbox search index is stored. The value of
   # this option will be resolved with respect to <data_dir>.
   #tool_search_index_dir: tool_search_index
-
-  # Set this to true to delay parsing of tool inputs and outputs until
-  # they are needed. This results in faster startup times but uses more
-  # memory when using forked Galaxy processes.
-  #delay_tool_initialization: false
 
   # Point Galaxy at a repository consisting of a copy of the bio.tools
   # database (e.g. https://github.com/bio-tools/content/) to resolve
@@ -938,6 +924,22 @@ galaxy:
   # <cache_dir>.
   #biotools_service_cache_lock_dir: biotools/locks
 
+  # When biotools_service_cache_type = ext:database, this is the url of
+  # the database used by beaker for bio.tools web service request
+  # related caching. The application config code will set it to the
+  # value of database_connection if this is not set.
+  #biotools_service_cache_url: null
+
+  # When biotools_service_cache_type = ext:database, this is the
+  # database table name used by beaker for bio.tools web service request
+  # related caching.
+  #biotools_service_cache_table_name: beaker_cache
+
+  # When biotools_service_cache_type = ext:database, this is the
+  # database table name used by beaker for bio.tools web service request
+  # related caching.
+  #biotools_service_cache_schema_name: null
+
   # Citation related caching.  Tool citations information maybe fetched
   # from external sources such as https://doi.org/ by Galaxy - the
   # following parameters can be used to control the caching used to
@@ -960,6 +962,20 @@ galaxy:
   # <cache_dir>.
   #citation_cache_lock_dir: citations/locks
 
+  # When citation_cache_type = ext:database, this is the url of the
+  # database used by beaker for citation caching. The application config
+  # code will set it to the value of database_connection if this is not
+  # set.
+  #citation_cache_url: null
+
+  # When citation_cache_type = ext:database, this is the database table
+  # name used by beaker for citation related caching.
+  #citation_cache_table_name: beaker_cache
+
+  # When citation_cache_type = ext:database, this is the database schema
+  # name of the table used by beaker for citation related caching.
+  #citation_cache_schema_name: null
+
   # Mulled resolution caching. Mulled resolution uses external APIs of
   # quay.io, these requests are caching using this and the following
   # parameters
@@ -981,11 +997,59 @@ galaxy:
   # created.
   #mulled_resolution_cache_expire: 3600
 
+  # When mulled_resolution_cache_type = ext:database, this is the url of
+  # the database used by beaker for caching mulled resolution requests.
+  # The application config code will set it to the value of
+  # database_connection if this is not set.
+  #mulled_resolution_cache_url: null
+
+  # When mulled_resolution_cache_type = ext:database, this is the
+  # database table name used by beaker for caching mulled resolution
+  # requests.
+  #mulled_resolution_cache_table_name: beaker_cache
+
+  # When mulled_resolution_cache_type = ext:database, this is the
+  # database schema name of the table used by beaker for caching mulled
+  # resolution requests.
+  #mulled_resolution_cache_schema_name: null
+
   # Configuration file for the object store If this is set and exists,
   # it overrides any other objectstore settings.
   # The value of this option will be resolved with respect to
   # <config_dir>.
   #object_store_config_file: object_store_conf.xml
+
+  # Specify where cache monitoring is driven for caching object stores
+  # such as S3, Azure, and iRODS. This option has no affect on disk
+  # object stores. For production instances, the cache should be
+  # monitored by external tools such as tmpwatch and this value should
+  # be set to 'external'. This will disable all cache monitoring in
+  # Galaxy. Alternatively, 'celery' can monitor caches using a periodic
+  # task or an 'inprocess' thread can be used - but this last option
+  # seriously limits Galaxy's ability to scale. The default of 'auto'
+  # will use 'celery' if 'enable_celery_tasks' is set to true or
+  # 'inprocess' otherwise. This option serves as the default for all
+  # object stores and can be overridden on a per object store basis (but
+  # don't - just setup tmpwatch for all relevant cache paths).
+  #object_store_cache_monitor_driver: auto
+
+  # For object store cache monitoring done by Galaxy, this is the
+  # interval between cache checking steps. This is used by both
+  # inprocess cache monitors (which we recommend you do not use) and by
+  # the celery task if it is configured (by setting enable_celery_tasks
+  # to true and not setting object_store_cache_monitor_driver to
+  # external).
+  #object_store_cache_monitor_interval: 600
+
+  # Default cache path for caching object stores if cache not configured
+  # for that object store entry.
+  # The value of this option will be resolved with respect to
+  # <cache_dir>.
+  #object_store_cache_path: object_store_cache
+
+  # Default cache size for caching object stores if cache not configured
+  # for that object store entry.
+  #object_store_cache_size: -1
 
   # What Dataset attribute is used to reference files in an ObjectStore
   # implementation, this can be 'uuid' or 'id'. The default will depend
@@ -1246,11 +1310,6 @@ galaxy:
   # The value of this option will be resolved with respect to
   # <config_dir>.
   #trs_servers_config_file: trs_servers_conf.yml
-
-  # Server-wide default selection to use the legacy history during the
-  # transition period, after which this option will disappear.  Users
-  # will remain able to swap back and forth per their preference.
-  #use_legacy_history: false
 
   # Location of the configuration file containing extra user
   # preferences.
@@ -2178,10 +2237,6 @@ galaxy:
   # 'show-selection' can be added later.
   #simplified_workflow_run_ui_job_cache: 'off'
 
-  # The URL to the myExperiment instance being used (omit scheme but
-  # include port).
-  #myexperiment_target_url: www.myexperiment.org:80
-
   # Enable Galaxy's "Upload via FTP" interface.  You'll need to install
   # and configure an FTP server (we've used ProFTPd since it can use
   # Galaxy's database for authentication) and set the following two
@@ -2723,4 +2778,39 @@ galaxy:
   # Enables user preferences and api endpoint for the beacon
   # integration.
   #enable_beacon_integration: false
+
+  # Displays a link to training material, if any includes the current
+  # tool. When activated the following options also need to be set:
+  # tool_training_recommendations_link,
+  # tool_training_recommendations_api_url
+  #tool_training_recommendations: true
+
+  # Template URL to display all tutorials containing current tool. Valid
+  # template inputs are:   {repository_owner}   {name}   {tool_id}
+  # {training_tool_identifier}   {version}
+  #tool_training_recommendations_link: https://training.galaxyproject.org/training-material/by-tool/{training_tool_identifier}.html
+
+  # URL to API describing tutorials containing specific tools. When CORS
+  # is used, make sure to add this host.
+  #tool_training_recommendations_api_url: https://training.galaxyproject.org/training-material/api/top-tools.json
+
+  # Message to display on the export citations tool page
+  #citations_export_message_html: When writing up your analysis, remember to include all references that should be cited in order to completely describe your work. Also, please remember to <a href="https://galaxyproject.org/citing-galaxy">cite Galaxy</a>.
+
+  # Enables the Notification System integrated in Galaxy.
+  # Users can receive automatic notifications when a certain resource is
+  # shared with them or when some long running operations have finished,
+  # etc.
+  # The system allows notification scheduling and expiration, and users
+  # can opt-out of specific notification categories or channels.
+  # Admins can schedule and broadcast notifications that will be visible
+  # to all users, including special server-wide announcements such as
+  # scheduled maintenance, high load warnings, and event announcements,
+  # to name a few examples.
+  #enable_notification_system: false
+
+  # The interval in seconds between attempts to delete all expired
+  # notifications from the database (every 24 hours by default). Runs in
+  # a Celery task.
+  #expired_notifications_cleanup_interval: 86400
 

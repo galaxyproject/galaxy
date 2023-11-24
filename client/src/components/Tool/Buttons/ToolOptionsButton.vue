@@ -1,12 +1,13 @@
 <script setup>
 import { computed, ref } from "vue";
 import { copyLink, copyId, downloadTool, openLink } from "../utilities";
-import { useCurrentUser } from "composables/user";
+import { storeToRefs } from "pinia";
 import Webhooks from "utils/webhooks";
+import { useUserStore } from "@/stores/userStore";
 import ToolSourceMenuItem from "components/Tool/ToolSourceMenuItem";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
-const { currentUser: user } = useCurrentUser(false, true);
+const { currentUser } = storeToRefs(useUserStore());
 
 const props = defineProps({
     id: {
@@ -43,7 +44,7 @@ Webhooks.load({
     },
 });
 
-const showDownload = computed(() => user.value?.is_admin);
+const showDownload = computed(() => currentUser.value?.is_admin);
 const showLink = computed(() => Boolean(props.sharableUrl));
 
 function onCopyLink() {

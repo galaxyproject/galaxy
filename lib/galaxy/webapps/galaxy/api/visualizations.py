@@ -20,6 +20,7 @@ from galaxy import (
     web,
 )
 from galaxy.managers.context import ProvidesUserContext
+from galaxy.model.base import transaction
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
@@ -273,7 +274,8 @@ class VisualizationsController(BaseGalaxyAPIController, UsesVisualizationMixin, 
 
         # allow updating vis title
         visualization.title = title
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
 
         return rval
 

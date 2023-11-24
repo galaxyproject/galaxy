@@ -250,6 +250,11 @@ class ToolDataTable(Dictifiable):
                 self.add_entry(
                     entry, allow_duplicates=allow_duplicates, persist=persist, entry_source=entry_source, **kwd
                 )
+            except MessageException as e:
+                if e.type == "warning":
+                    log.warning(str(e))
+                else:
+                    log.error(str(e))
             except Exception as e:
                 log.error(str(e))
         return self._loaded_content_version
@@ -686,7 +691,8 @@ class TabularToolDataTable(ToolDataTable):
                 self.data.append(fields)
             else:
                 raise MessageException(
-                    f"Attempted to add fields ({fields}) to data table '{self.name}', but this entry already exists and allow_duplicates is False."
+                    f"Attempted to add fields ({fields}) to data table '{self.name}', but this entry already exists and allow_duplicates is False.",
+                    type="warning",
                 )
         else:
             raise MessageException(
@@ -1174,8 +1180,10 @@ class ToolDataTableManager(Dictifiable):
         out_data: Dict[str, OutputDataset],
         bundle_description: DataTableBundleProcessorDescription,
         repo_info: Optional[RepoInfo],
-    ) -> None:
+    ) -> Dict[str, OutputDataset]:
+        """Writes bundle and returns bundle path."""
         data_manager_dict = _data_manager_dict(out_data, ensure_single_output=True)
+        bundle_datasets: Dict[str, OutputDataset] = {}
         for output_name, dataset in out_data.items():
             if dataset.ext != "data_manager_json":
                 continue
@@ -1190,6 +1198,8 @@ class ToolDataTableManager(Dictifiable):
             bundle_path = os.path.join(extra_files_path, BUNDLE_INDEX_FILE_NAME)
             with open(bundle_path, "w") as fw:
                 json.dump(bundle.dict(), fw)
+            bundle_datasets[bundle_path] = dataset
+        return bundle_datasets
 
 
 SUPPORTED_DATA_TABLE_TYPES = TabularToolDataTable

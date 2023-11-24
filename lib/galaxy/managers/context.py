@@ -39,6 +39,7 @@ import string
 from json import dumps
 from typing import (
     Callable,
+    cast,
     List,
     Optional,
 )
@@ -49,12 +50,18 @@ from galaxy.exceptions import (
 )
 from galaxy.model import (
     Dataset,
+    GalaxySession,
     History,
     HistoryDatasetAssociation,
     Role,
+    User,
 )
-from galaxy.model.base import ModelMapping
+from galaxy.model.base import (
+    ModelMapping,
+    transaction,
+)
 from galaxy.model.scoped_session import galaxy_scoped_session
+from galaxy.model.tags import GalaxyTagHandlerSession
 from galaxy.schema.tasks import RequestUser
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.security.vault import UserVaultWrapper
@@ -109,7 +116,8 @@ class ProvidesAppContext:
             except Exception:
                 action.session_id = None
             self.sa_session.add(action)
-            self.sa_session.flush()
+            with transaction(self.sa_session):
+                self.sa_session.commit()
 
     def log_event(self, message, tool_id=None, **kwargs):
         """
@@ -140,7 +148,8 @@ class ProvidesAppContext:
             except Exception:
                 event.session_id = None
             self.sa_session.add(event)
-            self.sa_session.flush()
+            with transaction(self.sa_session):
+                self.sa_session.commit()
 
     @property
     def sa_session(self) -> galaxy_scoped_session:
@@ -149,17 +158,6 @@ class ProvidesAppContext:
         :rtype: galaxy.model.scoped_session.galaxy_scoped_session
         """
         return self.app.model.session
-
-    def expunge_all(self):
-        """Expunge all the objects in Galaxy's SQLAlchemy sessions."""
-        app = self.app
-        context = app.model.context
-        context.expunge_all()
-        # This is a bit hacky, should refctor this. Maybe refactor to app -> expunge_all()
-        if hasattr(app, "install_model"):
-            install_model = app.install_model
-            if install_model != app.model:
-                install_model.context.expunge_all()
 
     def get_toolbox(self):
         """Returns the application toolbox.
@@ -201,6 +199,15 @@ class ProvidesUserContext(ProvidesAppContext):
     properties.
     """
 
+    galaxy_session: Optional[GalaxySession] = None
+    _tag_handler: Optional[GalaxyTagHandlerSession] = None
+
+    @property
+    def tag_handler(self):
+        if self._tag_handler is None:
+            self._tag_handler = self.app.tag_handler.create_tag_handler_session(self.galaxy_session)
+        return self._tag_handler
+
     @property
     def async_request_user(self) -> RequestUser:
         if self.user is None:
@@ -215,6 +222,10 @@ class ProvidesUserContext(ProvidesAppContext):
     def user_vault(self):
         """Provide access to a user's personal vault."""
         return UserVaultWrapper(self.app.vault, self.user)
+
+    def get_user(self) -> Optional[User]:
+        user = cast(Optional[User], self.user or self.galaxy_session and self.galaxy_session.user)
+        return user
 
     @property
     def anonymous(self) -> bool:

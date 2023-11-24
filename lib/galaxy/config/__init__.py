@@ -4,7 +4,6 @@ Universe configuration builder.
 # absolute_import needed for tool_shed package.
 
 import configparser
-import ipaddress
 import json
 import locale
 import logging
@@ -30,6 +29,7 @@ from typing import (
     TypeVar,
     Union,
 )
+from urllib.parse import urlparse
 
 import yaml
 
@@ -41,6 +41,7 @@ from galaxy.util import (
     string_as_bool,
     unicodify,
 )
+from galaxy.util.config_parsers import parse_allowlist_ips
 from galaxy.util.custom_logging import LOGLV_TRACE
 from galaxy.util.dynamic import HasDynamicProperties
 from galaxy.util.facts import get_facts
@@ -138,7 +139,17 @@ LOGGING_CONFIG_DEFAULT: Dict[str, Any] = {
 }
 """Default value for logging configuration, passed to :func:`logging.config.dictConfig`"""
 
+DEPENDENT_CONFIG_DEFAULTS: Dict[str, str] = {
+    "mulled_resolution_cache_url": "database_connection",
+    "citation_cache_url": "database_connection",
+    "biotools_service_cache_url": "database_connection",
+}
+"""Config parameters whose default is the value of another config parameter
+This should be moved to a .yml config file.
+"""
+
 VERSION_JSON_FILE = "version.json"
+DEFAULT_EMAIL_FROM_LOCAL_PART = "galaxy-no-reply"
 DISABLED_FLAG = "disabled"  # Used to mark a config option as disabled
 
 
@@ -617,16 +628,6 @@ class CommonConfigurationMixin:
 
 
 class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
-    deprecated_options = (
-        "database_file",
-        "track_jobs_in_database",
-        "blacklist_file",
-        "whitelist_file",
-        "sanitize_whitelist_file",
-        "user_library_import_symlink_whitelist",
-        "fetch_url_whitelist",
-        "containers_resolvers_config_file",
-    )
     renamed_options = {
         "blacklist_file": "email_domain_blocklist_file",
         "whitelist_file": "email_domain_allowlist_file",
@@ -634,7 +635,14 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         "user_library_import_symlink_whitelist": "user_library_import_symlink_allowlist",
         "fetch_url_whitelist": "fetch_url_allowlist",
         "containers_resolvers_config_file": "container_resolvers_config_file",
+        "activation_email": "email_from",
     }
+
+    deprecated_options = list(renamed_options.keys()) + [
+        "database_file",
+        "track_jobs_in_database",
+    ]
+
     default_config_file_name = "galaxy.yml"
     deprecated_dirs = {"config_dir": "config", "data_dir": "database"}
 
@@ -732,6 +740,20 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self._override_tempdir(kwargs)
         self._configure_sqlalchemy20_warnings(kwargs)
         self._process_config(kwargs)
+        self._set_dependent_defaults()
+
+    def _set_dependent_defaults(self):
+        """Set values of unset parameters which take their default values from other parameters"""
+        for dependent_config_param, config_param in DEPENDENT_CONFIG_DEFAULTS.items():
+            try:
+                if getattr(self, dependent_config_param) is None:
+                    setattr(self, dependent_config_param, getattr(self, config_param))
+            except AttributeError:
+                raise Exception(
+                    "One or more invalid config parameter names specified in "
+                    "DEPENDENT_CONFIG_DEFAULTS, "
+                    f"{dependent_config_param}, {config_param}"
+                )
 
     def _configure_sqlalchemy20_warnings(self, kwargs):
         """
@@ -787,6 +809,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         return val
 
     def _process_config(self, kwargs: Dict[str, Any]) -> None:
+        self._check_database_connection_strings()
         # Backwards compatibility for names used in too many places to fix
         self.datatypes_config = self.datatypes_config_file
         self.tool_configs = self.tool_config_file
@@ -834,6 +857,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self.builds_file_path = os.path.join(self.tool_data_path, self.builds_file_path)
         self.len_file_path = os.path.join(self.tool_data_path, self.len_file_path)
         self.oidc: Dict[str, Dict] = {}
+        self.fixed_delegated_auth: bool = False
         self.integrated_tool_panel_config = self._in_managed_config_dir(self.integrated_tool_panel_config)
         integrated_tool_panel_tracking_directory = kwargs.get("integrated_tool_panel_tracking_directory")
         if integrated_tool_panel_tracking_directory:
@@ -883,13 +907,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self.tool_secret = kwargs.get("tool_secret", "")
         self.metadata_strategy = kwargs.get("metadata_strategy", "directory")
         self.use_remote_user = self.use_remote_user or self.single_user
-        self.fetch_url_allowlist_ips = [
-            ipaddress.ip_network(unicodify(ip.strip()))  # If it has a slash, assume 127.0.0.1/24 notation
-            if "/" in ip
-            else ipaddress.ip_address(unicodify(ip.strip()))  # Otherwise interpret it as an ip address.
-            for ip in kwargs.get("fetch_url_allowlist", "").split(",")
-            if len(ip.strip()) > 0
-        ]
+        self.fetch_url_allowlist_ips = parse_allowlist_ips(listify(kwargs.get("fetch_url_allowlist")))
         self.job_queue_cleanup_interval = int(kwargs.get("job_queue_cleanup_interval", "5"))
 
         # Fall back to legacy job_working_directory config variable if set.
@@ -900,8 +918,6 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self.nodejs_path = kwargs.get("nodejs_path")
         self.container_image_cache_path = self._in_data_dir(kwargs.get("container_image_cache_path", "container_cache"))
         self.output_size_limit = int(kwargs.get("output_size_limit", 0))
-        # activation_email was used until release_15.03
-        self.email_from = self.email_from or kwargs.get("activation_email")
 
         self.email_domain_blocklist_content = (
             self._load_list_from_file(self._in_config_dir(self.email_domain_blocklist_file))
@@ -1051,7 +1067,7 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             if section.startswith("server:"):
                 self.server_names.append(section.replace("server:", "", 1))
 
-        self._set_galaxy_infrastructure_url(kwargs)
+        self._set_host_related_options(kwargs)
 
         # Asynchronous execution process pools - limited functionality for now, attach_to_pools is designed to allow
         # webless Galaxy server processes to attach to arbitrary message queues (e.g. as job handlers) so they do not
@@ -1198,6 +1214,29 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         else:
             _load_theme(self.themes_config_file, self.themes)
 
+    def _check_database_connection_strings(self):
+        """
+        Verify connection URI strings in galaxy's configuration are parseable with urllib.
+        """
+
+        def try_parsing(value, name):
+            try:
+                urlparse(value)
+            except ValueError as e:
+                msg = f"The `{name}` configuration property cannot be parsed as a connection URI."
+                if "Invalid IPv6 URL" in str(e):
+                    msg += (
+                        "\nBesides an invalid IPv6 format, this may be caused by a bracket character in the `netloc` part of "
+                        "the URI (most likely, the password). In this case, you should percent-encode that character: for `[` "
+                        "use `%5B`, for `]` use `%5D`. For example, if your URI is `postgresql://user:pass[word@host/db`, "
+                        "change it to `postgresql://user:pass%5Bword@host/db`. "
+                    )
+                raise ConfigurationError(msg) from e
+
+        try_parsing(self.database_connection, "database_connection")
+        try_parsing(self.install_database_connection, "install_database_connection")
+        try_parsing(self.amqp_internal_connection, "amqp_internal_connection")
+
     def _configure_dataset_storage(self):
         # The default for `file_path` has changed in 20.05; we may need to fall back to the old default
         self._set_alt_paths("file_path", self._in_data_dir("files"))  # this is called BEFORE guessing id/uuid
@@ -1213,6 +1252,12 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
     def _load_list_from_file(self, filepath):
         with open(filepath) as f:
             return [line.strip() for line in f]
+
+    def _set_host_related_options(self, kwargs):
+        # The following 3 method calls must be made in sequence
+        self._set_galaxy_infrastructure_url(kwargs)
+        self._set_hostname()
+        self._set_email_from()
 
     def _set_galaxy_infrastructure_url(self, kwargs):
         # indicate if this was not set explicitly, so dependending on the context a better default
@@ -1231,6 +1276,16 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
             )
         if "UWSGI_PORT" in self.galaxy_infrastructure_url:
             raise Exception("UWSGI_PORT is not supported anymore")
+
+    def _set_hostname(self):
+        if self.galaxy_infrastructure_url_set:
+            self.hostname = urlparse(self.galaxy_infrastructure_url).hostname
+        else:
+            self.hostname = socket.getfqdn()
+
+    def _set_email_from(self):
+        if not self.email_from:
+            self.email_from = f"{DEFAULT_EMAIL_FROM_LOCAL_PART}@{self.hostname}"
 
     def reload_sanitize_allowlist(self, explicit=True):
         self.sanitize_allowlist = []

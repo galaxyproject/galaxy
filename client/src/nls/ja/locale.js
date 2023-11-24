@@ -26,9 +26,7 @@ define({
     User: "ユーザー",
     Login: "ログイン",
     Register: "登録",
-    "Login or Register": "ログイン/登録",
-    //"Logged in as":
-    //    "",
+    "Log in or Register": "ログイン/登録",
     Preferences: "設定",
     "Custom Builds": "カスタムビルド",
     Logout: "ログアウト",

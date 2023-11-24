@@ -28,7 +28,8 @@ describe("QuotaUsageBar.vue", () => {
     it("should display the quota source label when the quota source is not the default one", async () => {
         const wrapper = mountQuotaUsageBarWith(NON_DEFAULT_QUOTA_USAGE);
         const storageSourceLabel = wrapper.find(".storage-source-label");
-        expect(wrapper.vm.isDefaultQuota).toBe(false);
+        // TODO: explicit any because the type of the vm is not correctly inferred, remove when fixed
+        expect((wrapper.vm as any).isDefaultQuota).toBe(false);
         expect(storageSourceLabel.exists()).toBe(true);
         expect(storageSourceLabel.text()).toBe(NON_DEFAULT_QUOTA_USAGE.sourceLabel);
     });
@@ -36,7 +37,8 @@ describe("QuotaUsageBar.vue", () => {
     it("should show the usage percent when there is a quota limit", async () => {
         const wrapper = mountQuotaUsageBarWith(NON_DEFAULT_QUOTA_USAGE);
         const percentText = wrapper.find(".quota-percent-text");
-        expect(wrapper.vm.quotaHasLimit).toBe(true);
+        // TODO: explicit any because the type of the vm is not correctly inferred, remove when fixed
+        expect((wrapper.vm as any).quotaHasLimit).toBe(true);
         expect(percentText.exists()).toBe(true);
         expect(percentText.text()).toContain(NON_DEFAULT_QUOTA_USAGE.quotaPercent?.toString());
     });
@@ -44,7 +46,8 @@ describe("QuotaUsageBar.vue", () => {
     it("should not show percentage when there is no quota limit", async () => {
         const wrapper = mountQuotaUsageBarWith(UNLIMITED_USAGE);
         const percentText = wrapper.find(".quota-percent-text");
-        expect(wrapper.vm.quotaHasLimit).toBe(false);
+        // TODO: explicit any because the type of the vm is not correctly inferred, remove when fixed
+        expect((wrapper.vm as any).quotaHasLimit).toBe(false);
         expect(percentText.exists()).toBe(false);
     });
 });

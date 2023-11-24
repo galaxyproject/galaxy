@@ -3,7 +3,8 @@
         <div class="row justify-content-md-center">
             <div class="col col-lg-6">
                 <b-alert :show="!!registrationWarningMessage" variant="info">
-                    {{ registrationWarningMessage }}
+                    <!-- eslint-disable-next-line vue/no-v-html -->
+                    <span v-html="registrationWarningMessage" />
                 </b-alert>
                 <b-alert :show="!!messageText" :variant="messageVariant">
                     {{ messageText }}
@@ -34,17 +35,29 @@
                             role="tabpanel"
                             accordion="registration_acc">
                             <b-card-body>
-                                <b-form-group :label="labelEmailAddress">
-                                    <b-form-input v-model="email" name="email" type="text" />
+                                <b-form-group :label="labelEmailAddress" label-for="register-form-email">
+                                    <b-form-input id="register-form-email" v-model="email" name="email" type="text" />
                                 </b-form-group>
-                                <b-form-group :label="labelPassword">
-                                    <b-form-input v-model="password" name="password" type="password" />
+                                <b-form-group :label="labelPassword" label-for="register-form-password">
+                                    <b-form-input
+                                        id="register-form-password"
+                                        v-model="password"
+                                        name="password"
+                                        type="password" />
                                 </b-form-group>
-                                <b-form-group :label="labelConfirmPassword">
-                                    <b-form-input v-model="confirm" name="confirm" type="password" />
+                                <b-form-group :label="labelConfirmPassword" label-for="register-form-confirm">
+                                    <b-form-input
+                                        id="register-form-confirm"
+                                        v-model="confirm"
+                                        name="confirm"
+                                        type="password" />
                                 </b-form-group>
-                                <b-form-group :label="labelPublicName">
-                                    <b-form-input v-model="username" name="username" type="text" />
+                                <b-form-group :label="labelPublicName" label-for="register-form-username">
+                                    <b-form-input
+                                        id="register-form-username"
+                                        v-model="username"
+                                        name="username"
+                                        type="text" />
                                     <b-form-text v-localize
                                         >Your public name is an identifier that will be used to generate addresses for
                                         information you share publicly. Public names must be at least three characters
@@ -52,16 +65,22 @@
                                         dashes ('.', '_', '-').
                                     </b-form-text>
                                 </b-form-group>
-                                <b-form-group v-if="mailingJoinAddr && serverMailConfigured" :label="labelSubscribe">
-                                    <input v-model="subscribe" name="subscribe" type="checkbox" />
+                                <b-form-group v-if="mailingJoinAddr && serverMailConfigured">
+                                    <b-form-checkbox
+                                        id="register-form-subscribe"
+                                        v-model="subscribe"
+                                        name="subscribe"
+                                        type="checkbox">
+                                        {{ labelSubscribe }}
+                                    </b-form-checkbox>
                                 </b-form-group>
-                                <b-button v-localize name="create" type="submit" :disabled="disableCreate"
-                                    >Create</b-button
-                                >
+                                <b-button v-localize name="create" type="submit" :disabled="disableCreate">
+                                    Create
+                                </b-button>
                             </b-card-body>
                         </b-collapse>
-                        <b-card-footer v-if="showLoginLink" v-localize>
-                            Already have an account?
+                        <b-card-footer v-if="showLoginLink">
+                            <span v-localize>Already have an account?</span>
                             <a
                                 id="login-toggle"
                                 v-localize
@@ -74,8 +93,9 @@
                     </b-card>
                 </b-form>
             </div>
-            <div v-if="termsUrl" class="col">
-                <b-embed type="iframe" :src="termsUrl" aspect="1by1" />
+            <div v-if="termsUrl" class="col position-relative embed-container">
+                <iframe title="terms-of-use" :src="termsUrl" frameborder="0" class="terms-iframe"></iframe>
+                <div v-localize class="scroll-hint">↓ Scroll to review ↓</div>
             </div>
         </div>
     </div>
@@ -185,3 +205,26 @@ export default {
     },
 };
 </script>
+<style scoped>
+.embed-container {
+    position: relative;
+}
+
+.scroll-hint {
+    position: absolute;
+    bottom: 10px;
+    left: 50%;
+    transform: translateX(-50%);
+    background-color: rgba(255, 255, 255, 0.9);
+    border: 1px solid #ccc;
+    padding: 2px 5px;
+    border-radius: 4px;
+}
+
+.terms-iframe {
+    width: 100%;
+    height: 90vh;
+    border: none;
+    overflow-y: auto;
+}
+</style>

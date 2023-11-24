@@ -3,6 +3,7 @@ import logging
 import os
 import socket
 import string
+from typing import TYPE_CHECKING
 
 import sqlalchemy.orm.exc
 from sqlalchemy import (
@@ -11,7 +12,6 @@ from sqlalchemy import (
     true,
 )
 
-import galaxy.tool_util.deps.requirements
 from galaxy import util
 from galaxy.tool_shed.util.shed_util_common import (
     can_eliminate_repository_dependency,
@@ -35,6 +35,9 @@ from tool_shed.util import (
     hg_util,
     repository_util,
 )
+
+if TYPE_CHECKING:
+    from tool_shed.structured_app import ToolShedApp
 
 log = logging.getLogger(__name__)
 
@@ -99,7 +102,7 @@ This message was sent from the Galaxy Tool Shed instance hosted on the server
 """
 
 
-def count_repositories_in_category(app, category_id):
+def count_repositories_in_category(app: "ToolShedApp", category_id: str) -> int:
     sa_session = app.model.session
     return (
         sa_session.query(app.model.RepositoryCategoryAssociation)
@@ -108,7 +111,7 @@ def count_repositories_in_category(app, category_id):
     )
 
 
-def get_categories(app):
+def get_categories(app: "ToolShedApp"):
     """Get all categories from the database."""
     sa_session = app.model.session
     return (
@@ -119,70 +122,19 @@ def get_categories(app):
     )
 
 
-def get_category(app, id):
+def get_category(app: "ToolShedApp", id: str):
     """Get a category from the database."""
     sa_session = app.model.session
     return sa_session.query(app.model.Category).get(app.security.decode_id(id))
 
 
-def get_category_by_name(app, name):
+def get_category_by_name(app: "ToolShedApp", name: str):
     """Get a category from the database via name."""
     sa_session = app.model.session
     try:
         return sa_session.query(app.model.Category).filter_by(name=name).one()
     except sqlalchemy.orm.exc.NoResultFound:
         return None
-
-
-def get_tool_shed_repo_requirements(app, tool_shed_url, repositories=None, repo_info_dicts=None):
-    """
-    Contact tool_shed_url for a list of requirements for a repository or a list of repositories.
-    Returns a list of requirements, where each requirement is a dictionary with name and version as keys.
-    """
-    if not repositories and not repo_info_dicts:
-        raise Exception("Need to pass either repository or repo_info_dicts")
-    if repositories:
-        if not isinstance(repositories, list):
-            repositories = [repositories]
-        repository_params = [
-            {"name": repository.name, "owner": repository.owner, "changeset_revision": repository.changeset_revision}
-            for repository in repositories
-        ]
-    else:
-        if not isinstance(repo_info_dicts, list):
-            repo_info_dicts = [repo_info_dicts]
-        repository_params = []
-        for repo_info_dict in repo_info_dicts:
-            for name, repo_info_tuple in repo_info_dict.items():
-                # repo_info_tuple is a list, but keep terminology
-                owner = repo_info_tuple[4]
-                changeset_revision = repo_info_tuple[2]
-                repository_params.append({"name": name, "owner": owner, "changeset_revision": changeset_revision})
-    pathspec = ["api", "repositories", "get_repository_revision_install_info"]
-    tools = []
-    for params in repository_params:
-        response = util.url_get(
-            tool_shed_url, auth=app.tool_shed_registry.url_auth(tool_shed_url), pathspec=pathspec, params=params
-        )
-        json_response = json.loads(response)
-        valid_tools = json_response[1].get("valid_tools", [])
-        if valid_tools:
-            tools.extend(valid_tools)
-    return get_requirements_from_tools(tools)
-
-
-def get_requirements_from_tools(tools):
-    return {
-        tool["id"]: galaxy.tool_util.deps.requirements.ToolRequirements.from_list(tool["requirements"])
-        for tool in tools
-    }
-
-
-def get_requirements_from_repository(repository):
-    if not repository.includes_tools:
-        return {}
-    else:
-        return get_requirements_from_tools(repository.metadata_.get("tools", []))
 
 
 def get_repository_categories(app, id):
@@ -196,10 +148,10 @@ def get_repository_categories(app, id):
 def get_repository_file_contents(app, file_path, repository_id, is_admin=False):
     """Return the display-safe contents of a repository file for display in a browser."""
     safe_str = ""
-    if not is_path_browsable(app, file_path, repository_id, is_admin):
+    if not _is_path_browsable(app, file_path, repository_id, is_admin):
         log.warning("Request tries to access a file outside of the repository location. File path: %s", file_path)
         return "Invalid file path"
-    # Symlink targets are checked by is_path_browsable
+    # Symlink targets are checked by _is_path_browsable
     if os.path.islink(file_path):
         safe_str = f"link to: {basic_util.to_html_string(os.readlink(file_path))}"
         return safe_str
@@ -421,7 +373,7 @@ def handle_email_alerts(app, host, repository, content_alert_str="", new_repo_al
                 log.exception("An error occurred sending a tool shed repository update alert by email.")
 
 
-def is_path_browsable(app, path, repository_id, is_admin=False):
+def _is_path_browsable(app, path, repository_id, is_admin=False):
     """
     Detects whether the given path is browsable i.e. is within the
     allowed repository folders. Admins can additionaly browse folders
@@ -461,7 +413,7 @@ def open_repository_files_folder(app, folder_path, repository_id, is_admin=False
     Return a list of dictionaries, each of which contains information for a file or directory contained
     within a directory in a repository file hierarchy.
     """
-    if not is_path_browsable(app, folder_path, repository_id, is_admin):
+    if not _is_path_browsable(app, folder_path, repository_id, is_admin):
         log.warning("Request tries to access a folder outside of the allowed locations. Folder path: %s", folder_path)
         return []
     try:
@@ -475,7 +427,7 @@ def open_repository_files_folder(app, folder_path, repository_id, is_admin=False
         is_folder = False
         full_path = os.path.join(folder_path, filename)
         is_link = os.path.islink(full_path)
-        path_is_browsable = is_path_browsable(app, full_path, repository_id)
+        path_is_browsable = _is_path_browsable(app, full_path, repository_id)
         if is_link and not path_is_browsable:
             log.warning(
                 f"Valid folder contains a symlink outside of the repository location. Link found in: {str(full_path)}"
@@ -505,9 +457,6 @@ __all__ = (
     "get_categories",
     "get_category",
     "get_category_by_name",
-    "get_requirements_from_tools",
-    "get_requirements_from_repository",
-    "get_tool_shed_repo_requirements",
     "get_ctx_rev",
     "get_next_prior_import_or_install_required_dict_entry",
     "get_repository_categories",
@@ -519,7 +468,6 @@ __all__ = (
     "get_user",
     "handle_email_alerts",
     "have_shed_tool_conf_for_install",
-    "is_path_browsable",
     "is_path_within_dependency_dir",
     "is_path_within_repo",
     "open_repository_files_folder",

@@ -21,15 +21,17 @@
             <FormElement
                 :id="actionNames.TagDatasetAction__tags"
                 :value="formData[actionNames.TagDatasetAction__tags]"
+                :attributes="{ placeholder: 'Enter Tags' }"
                 title="Add Tags"
-                type="text"
+                type="tags"
                 help="This action will set tags for the dataset."
                 @input="onInput" />
             <FormElement
                 :id="actionNames.RemoveTagDatasetAction__tags"
                 :value="formData[actionNames.RemoveTagDatasetAction__tags]"
+                :attributes="{ placeholder: 'Enter Tags' }"
                 title="Remove Tags"
-                type="text"
+                type="tags"
                 help="This action will remove tags for the dataset."
                 @input="onInput" />
             <FormCard title="Assign columns" collapsible :expanded.sync="expandedColumn">
@@ -128,7 +130,7 @@ export default {
             required: true,
         },
         step: {
-            // type  Step from "@/stores/workflowStepStore";
+            // type Step from @/stores/workflowStepStore
             type: Object,
             required: true,
         },

@@ -17,9 +17,7 @@ function mountDefault() {
     axiosMock.onGet(`/api/workflows/workflow_id/download?style=preview`).reply(200, data);
     return mount(MountTarget, {
         propsData: {
-            args: {
-                workflow_id: "workflow_id",
-            },
+            workflowId: "workflow_id",
             embedded: false,
             expanded: false,
         },
@@ -35,9 +33,7 @@ function mountError(errContent) {
     axiosMock.onGet(`/api/workflows/workflow_id/download?style=preview`).reply(400, data);
     return mount(MountTarget, {
         propsData: {
-            args: {
-                workflow_id: "workflow_id",
-            },
+            workflowId: "workflow_id",
             embedded: false,
             expanded: false,
         },

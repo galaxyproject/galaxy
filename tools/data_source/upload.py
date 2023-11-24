@@ -96,8 +96,7 @@ def add_file(dataset, registry, output_path: str) -> Dict[str, str]:
     # run_as_real_user is estimated from galaxy config (external chmod indicated of inputs executed)
     # If this is True we always purge supplied upload inputs so they are cleaned up and we reuse their
     # paths during data conversions since this user already owns that path.
-    # Older in_place check for upload jobs created before 18.01, TODO remove in 19.XX. xref #5206
-    run_as_real_user = dataset.get("run_as_real_user", False) or dataset.get("in_place", False)
+    run_as_real_user = dataset.get("run_as_real_user", False)
 
     # purge_source defaults to True unless this is an FTP import and
     # ftp_upload_purge has been overridden to False in Galaxy's config.
@@ -123,9 +122,7 @@ def add_file(dataset, registry, output_path: str) -> Dict[str, str]:
     # auto_decompress is a request flag that can be swapped off to prevent Galaxy from automatically
     # decompressing archive files before sniffing.
     auto_decompress = dataset.get("auto_decompress", True)
-    try:
-        dataset.file_type
-    except AttributeError:
+    if not hasattr(dataset, "file_type"):
         raise UploadProblemException("Unable to process uploaded file, missing file_type parameter.")
 
     if dataset.type == "url":

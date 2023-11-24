@@ -5,28 +5,25 @@ Testing approach:
 - Run command as subprocess, verify captured output + database state.
 """
 import os
-import subprocess
-import tempfile
-from typing import (
-    List,
-    NewType,
-    Tuple,
-)
+from typing import NewType
 
 import alembic
 import pytest
 from alembic.config import Config
-from alembic.runtime.migration import MigrationContext
 from alembic.script import ScriptDirectory
-from sqlalchemy import create_engine
 
+from galaxy.model.unittest_utils.migration_scripts_testing_utils import (  # noqa: F401 - contains fixtures we have to import explicitly
+    alembic_config_text,
+    get_db_heads,
+    run_command,
+    tmp_directory,
+    update_config_for_staging,
+    write_to_file,
+)
 from galaxy.model.unittest_utils.model_testing_utils import (  # noqa: F401 - url_factory is a fixture we have to import explicitly
     url_factory,
 )
-from galaxy.util import (
-    galaxy_directory,
-    in_packages,
-)
+from galaxy.util import in_packages
 from galaxy.util.resources import resource_path
 
 pytestmark = pytest.mark.skipif(in_packages(), reason="Running from packages")
@@ -55,20 +52,6 @@ def alembic_env_dir(migrations_dir) -> str:
     return migrations_dir / "alembic"
 
 
-@pytest.fixture(scope="session")
-def alembic_config_text(migrations_dir) -> List[str]:
-    """Contents of production alembic.ini as list of lines"""
-    current_config_path = migrations_dir / "alembic.ini"
-    with open(current_config_path) as f:
-        return f.readlines()
-
-
-@pytest.fixture()
-def tmp_directory():
-    with tempfile.TemporaryDirectory() as tmp_dir:
-        yield tmp_dir
-
-
 @pytest.fixture(params=["one database", "two databases"])
 def config(url_factory, alembic_env_dir, alembic_config_text, tmp_directory, monkeypatch, request):  # noqa: F811
     """
@@ -86,7 +69,7 @@ def config(url_factory, alembic_env_dir, alembic_config_text, tmp_directory, mon
     # Copy production alembic.ini to staging location
     config_file_path = os.path.join(tmp_directory, "alembic.ini")
     update_config_for_staging(alembic_config_text, alembic_env_dir, version_locations, gxy_dburl)
-    write_config_file(config_file_path, alembic_config_text)
+    write_to_file(config_file_path, alembic_config_text)
 
     alembic_cfg = Config(config_file_path)
     create_alembic_branches(alembic_cfg, gxy_versions_dir, tsi_versions_dir)
@@ -99,29 +82,6 @@ def config(url_factory, alembic_env_dir, alembic_config_text, tmp_directory, mon
     return alembic_cfg
 
 
-def update_config_for_staging(config_text: List[str], script_location: str, version_locations: str, dburl: str) -> None:
-    """Set script_location, version_locations, sqlalchemy.url values."""
-    alembic_section_index, url_set = -1, False
-    url_line = f"sqlalchemy.url = {dburl}\n"
-    for i, line in enumerate(config_text):
-        if line.strip() == "[alembic]":
-            alembic_section_index = i
-        elif line.startswith("script_location ="):
-            config_text[i] = f"script_location = {script_location}\n"
-        elif line.startswith("version_locations ="):
-            config_text[i] = f"version_locations = {version_locations}\n"
-        elif line.startswith("sqlalchemy.url ="):
-            config_text[i] = url_line
-            url_set = True
-    if not url_set:  # True when executed for the first time
-        config_text.insert(alembic_section_index + 1, url_line)
-
-
-def write_config_file(config_file_path: str, config_text: str) -> None:
-    with open(config_file_path, "w") as f:
-        f.write("".join(config_text))
-
-
 def create_alembic_branches(config: Config, gxy_versions_dir: str, tsi_versions_dir: str) -> None:
     """
     Create gxy and tsi branches (required for galaxy's alembic setup; included with 22.05 release)
@@ -132,32 +92,6 @@ def create_alembic_branches(config: Config, gxy_versions_dir: str, tsi_versions_
     alembic.command.revision(
         config, branch_label=TSI_BRANCH_LABEL, head="base", rev_id=TSI_BASE_ID, version_path=tsi_versions_dir
     )
-
-
-def dburl_from_config(config: Config) -> str:
-    url = config.get_main_option("sqlalchemy.url")
-    assert url
-    return url
-
-
-def run_command(cmd: str) -> subprocess.CompletedProcess:
-    # Example of incoming cmd: "scripts/db_dev.sh revision --message foo1".
-    # We need to make the path absolute, then build a sequence of args for subprocess.
-    cmd_as_list = cmd.split()
-    cmd_path, cmd_args = cmd_as_list[0], cmd_as_list[1:]
-    cmd_path = os.path.join(galaxy_directory(), cmd_path)
-    args = ["sh", cmd_path] + cmd_args
-    return subprocess.run(args, capture_output=True, text=True)
-
-
-def get_db_heads(config: Config) -> Tuple[str, ...]:
-    dburl = dburl_from_config(config)
-    engine = create_engine(dburl)
-    with engine.connect() as conn:
-        context = MigrationContext.configure(conn)
-        heads = context.get_current_heads()
-    engine.dispose()
-    return heads
 
 
 class TestRevisionCommand:
@@ -370,6 +304,14 @@ class TestUpgradeCommand:
         heads = get_db_heads(config)
         assert heads == ("d",)
 
+    def test_repair_arg_available_to_dev_script_only(self, config, command):
+        completed = run_command(f"{command} upgrade --repair")
+        if command == DEV_CMD:
+            assert completed.returncode == 0
+        else:
+            assert completed.returncode == 2
+            assert "unrecognized arguments: --repair" in completed.stderr
+
 
 @pytest.mark.parametrize("command", COMMANDS)
 class TestDowngradeCommand:
@@ -430,3 +372,11 @@ class TestDowngradeCommand:
 
         heads = get_db_heads(config)
         assert "a" in heads
+
+    def test_repair_arg_available_to_dev_script_only(self, config, command):
+        completed = run_command(f"{command} downgrade base --repair")
+        if command == DEV_CMD:
+            assert completed.returncode == 0
+        else:
+            assert completed.returncode == 2
+            assert "unrecognized arguments: --repair" in completed.stderr

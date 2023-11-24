@@ -3,7 +3,7 @@
 
 <% _=n_ %>
 <!DOCTYPE HTML>
-<html>
+<html lang="en">
     <!--base.mako-->
     ${self.init()}
     <head>
@@ -50,7 +50,6 @@
 
 ## Default stylesheets
 <%def name="stylesheets()">
-    ${h.css('bootstrap-tour')}
     ${h.dist_css('base')}
 </%def>
 

@@ -11,6 +11,7 @@ from sqlalchemy.sql.expression import (
 )
 
 from galaxy import web
+from galaxy.model.base import transaction
 from galaxy.webapps.base.controller import (
     BaseUIController,
     UsesTagsMixin,
@@ -21,71 +22,40 @@ log = logging.getLogger(__name__)
 
 class TagsController(BaseUIController, UsesTagsMixin):
     @web.expose
-    @web.require_login("edit item tags")
-    def get_tagging_elt_async(self, trans, item_id, item_class, elt_context=""):
-        """
-        Returns HTML for editing an item's tags.
-        """
-        item = self._get_item(trans, item_class, trans.security.decode_id(item_id))
-        if not item:
-            return trans.show_error_message(f"No item of class {item_class} with id {item_id} ")
-        return trans.fill_template(
-            "/tagging_common.mako",
-            tag_type="individual",
-            user=trans.user,
-            tagged_item=item,
-            elt_context=elt_context,
-            tag_click_fn="default_tag_click_fn",
-            use_toggle_link=False,
-        )
-
-    @web.expose
     @web.require_login("add tag to an item")
-    def add_tag_async(self, trans, item_id=None, item_class=None, new_tag=None, context=None):
+    def add_tag_async(self, trans, item_id=None, item_class=None, new_tag=None, context=None, **kwargs):
         """
         Add tag to an item.
         """
         # Apply tag.
         item = self._get_item(trans, item_class, trans.security.decode_id(item_id))
         user = trans.user
-        self.get_tag_handler(trans).apply_item_tags(user, item, new_tag)
-        trans.sa_session.flush()
+        trans.tag_handler.apply_item_tags(user, item, new_tag)
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         # Log.
         params = dict(item_id=item.id, item_class=item_class, tag=new_tag)
         trans.log_action(user, "tag", context, params)
 
     @web.expose
     @web.require_login("remove tag from an item")
-    def remove_tag_async(self, trans, item_id=None, item_class=None, tag_name=None, context=None):
+    def remove_tag_async(self, trans, item_id=None, item_class=None, tag_name=None, context=None, **kwargs):
         """
         Remove tag from an item.
         """
         # Remove tag.
         item = self._get_item(trans, item_class, trans.security.decode_id(item_id))
         user = trans.user
-        self.get_tag_handler(trans).remove_item_tag(user, item, tag_name)
-        trans.sa_session.flush()
+        trans.tag_handler.remove_item_tag(user, item, tag_name)
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         # Log.
         params = dict(item_id=item.id, item_class=item_class, tag=tag_name)
         trans.log_action(user, "untag", context, params)
 
-    # Retag an item. All previous tags are deleted and new tags are applied.
-    @web.expose
-    @web.require_login("Apply a new set of tags to an item; previous tags are deleted.")
-    def retag_async(self, trans, item_id=None, item_class=None, new_tags=None):
-        """
-        Apply a new set of tags to an item; previous tags are deleted.
-        """
-        # Apply tags.
-        item = self._get_item(trans, item_class, trans.security.decode_id(item_id))
-        user = trans.user
-        self.get_tag_handler(trans).delete_item_tags(user, item)
-        self.get_tag_handler(trans).apply_item_tags(user, item, new_tags)
-        trans.sa_session.flush()
-
     @web.expose
     @web.require_login("get autocomplete data for an item's tags")
-    def tag_autocomplete_data(self, trans, q=None, limit=None, timestamp=None, item_id=None, item_class=None):
+    def tag_autocomplete_data(self, trans, q=None, limit=None, timestamp=None, item_id=None, item_class=None, **kwargs):
         """
         Get autocomplete data for an item's tags.
         """
@@ -112,7 +82,7 @@ class TagsController(BaseUIController, UsesTagsMixin):
             raise RuntimeError("Both item and item_class cannot be None")
         elif item is not None:
             item_class = item.__class__
-        item_tag_assoc_class = self.get_tag_handler(trans).get_tag_assoc_class(item_class)
+        item_tag_assoc_class = trans.tag_handler.get_tag_assoc_class(item_class)
         # Build select statement.
         cols_to_select = [item_tag_assoc_class.table.c.tag_id, func.count("*")]
         from_obj = item_tag_assoc_class.table.join(item_class.table).join(trans.app.model.Tag.table)
@@ -134,9 +104,9 @@ class TagsController(BaseUIController, UsesTagsMixin):
         # Create and return autocomplete data.
         ac_data = "#Header|Your Tags\n"
         for row in result_set:
-            tag = self.get_tag_handler(trans).get_tag_by_id(row[0])
+            tag = trans.tag_handler.get_tag_by_id(row[0])
             # Exclude tags that are already applied to the item.
-            if (item is not None) and (self.get_tag_handler(trans).item_has_tag(trans.user, item, tag)):
+            if (item is not None) and (trans.tag_handler.item_has_tag(trans.user, item, tag)):
                 continue
             # Add tag to autocomplete data. Use the most frequent name that user
             # has employed for the tag.
@@ -152,7 +122,7 @@ class TagsController(BaseUIController, UsesTagsMixin):
         tag_name_and_value = q.split(":")
         tag_name = tag_name_and_value[0]
         tag_value = tag_name_and_value[1]
-        tag = self.get_tag_handler(trans).get_tag_by_name(tag_name)
+        tag = trans.tag_handler.get_tag_by_name(tag_name)
         # Don't autocomplete if tag doesn't exist.
         if tag is None:
             return ""
@@ -161,7 +131,7 @@ class TagsController(BaseUIController, UsesTagsMixin):
             raise RuntimeError("Both item and item_class cannot be None")
         elif item is not None:
             item_class = item.__class__
-        item_tag_assoc_class = self.get_tag_handler(trans).get_tag_assoc_class(item_class)
+        item_tag_assoc_class = trans.tag_handler.get_tag_assoc_class(item_class)
         # Build select statement.
         cols_to_select = [item_tag_assoc_class.table.c.value, func.count("*")]
         from_obj = item_tag_assoc_class.table.join(item_class.table).join(trans.app.model.Tag.table)
@@ -213,6 +183,6 @@ class TagsController(BaseUIController, UsesTagsMixin):
         """
         Get an item based on type and id.
         """
-        item_class = self.get_tag_handler(trans).item_tag_assoc_info[item_class_name].item_class
+        item_class = trans.tag_handler.item_tag_assoc_info[item_class_name].item_class
         item = trans.sa_session.query(item_class).filter(item_class.id == id)[0]
         return item

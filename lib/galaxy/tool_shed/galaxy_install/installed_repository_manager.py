@@ -15,6 +15,7 @@ from typing import (
 )
 
 from galaxy import util
+from galaxy.model.base import transaction
 from galaxy.model.tool_shed_install import (
     ToolDependency,
     ToolShedRepository,
@@ -144,7 +145,8 @@ class InstalledRepositoryManager:
                     repository_tools_tups,
                 )
         self.context.add(repository)
-        self.context.flush()
+        with transaction(self.context):
+            self.context.commit()
 
     def add_entry_to_installed_repository_dependencies_of_installed_repositories(
         self, repository: ToolShedRepository
@@ -699,7 +701,8 @@ class InstalledRepositoryManager:
         else:
             repository.status = ToolShedRepository.installation_status.DEACTIVATED
         self.context.add(repository)
-        self.context.flush()
+        with transaction(self.context):
+            self.context.commit()
         return errors
 
     def remove_entry_from_installed_repository_dependencies_of_installed_repositories(
@@ -875,29 +878,31 @@ class InstalledRepositoryManager:
                 if new_dependency_name and new_dependency_type and new_dependency_version:
                     # Update all attributes of the tool_dependency record in the database.
                     log.debug(
-                        "Updating version %s of tool dependency %s %s to have new version %s and type %s."
-                        % (
-                            str(tool_dependency.version),
-                            str(tool_dependency.type),
-                            str(tool_dependency.name),
-                            str(new_dependency_version),
-                            str(new_dependency_type),
-                        )
+                        "Updating version %s of tool dependency %s %s to have new version %s and type %s.",
+                        tool_dependency.version,
+                        tool_dependency.type,
+                        tool_dependency.name,
+                        new_dependency_version,
+                        new_dependency_type,
                     )
                     tool_dependency.type = new_dependency_type
                     tool_dependency.version = new_dependency_version
                     tool_dependency.status = ToolDependency.installation_status.UNINSTALLED
                     tool_dependency.error_message = None
                     context.add(tool_dependency)
-                    context.flush()
+                    with transaction(context):
+                        context.commit()
                     new_tool_dependency = tool_dependency
                 else:
                     # We have no new tool dependency definition based on a matching dependency name, so remove
                     # the existing tool dependency record from the database.
                     log.debug(
-                        "Deleting version %s of tool dependency %s %s from the database since it is no longer defined."
-                        % (str(tool_dependency.version), str(tool_dependency.type), str(tool_dependency.name))
+                        "Deleting version %s of tool dependency %s %s from the database since it is no longer defined.",
+                        tool_dependency.version,
+                        tool_dependency.type,
+                        tool_dependency.name,
                     )
                     context.delete(tool_dependency)
-                    context.flush()
+                    with transaction(context):
+                        context.commit()
         return new_tool_dependency

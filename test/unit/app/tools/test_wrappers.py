@@ -248,7 +248,10 @@ def test_dataset_false_extra_files_path():
     new_path = "/new/path/dataset_123.dat"
     dataset_path = DatasetPath(123, MOCK_DATASET_PATH, false_path=new_path)
     wrapper = DatasetFilenameWrapper(
-        dataset, compute_environment=cast(ComputeEnvironment, MockComputeEnvironment(dataset_path))
+        dataset,
+        compute_environment=cast(
+            ComputeEnvironment, MockComputeEnvironment(dataset_path, MOCK_DATASET_EXTRA_FILES_PATH)
+        ),
     )
     # Setting false_path is not enough to override
     assert wrapper.extra_files_path == MOCK_DATASET_EXTRA_FILES_PATH
@@ -317,6 +320,7 @@ class MockTool:
     def __init__(self, app):
         self.app = app
         self.options = Mock(sanitize=False)
+        self.profile = 23.0
 
 
 class MockApp:

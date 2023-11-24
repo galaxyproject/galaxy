@@ -33,7 +33,9 @@ from galaxy.schema import (
 )
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.schema import (
+    AnyArchivedHistoryView,
     AnyHistoryView,
+    ArchiveHistoryRequestPayload,
     AsyncFile,
     AsyncTaskResultSummary,
     CreateHistoryFromStore,
@@ -132,6 +134,16 @@ class FastAPIHistories:
         )
 
     @router.get(
+        "/api/histories/count",
+        summary="Returns number of histories for the current user.",
+    )
+    def count(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+    ) -> int:
+        return self.service.count(trans)
+
+    @router.get(
         "/api/histories/deleted",
         summary="Returns deleted histories for the current user.",
     )
@@ -169,6 +181,27 @@ class FastAPIHistories:
         serialization_params: SerializationParams = Depends(query_serialization_params),
     ) -> List[AnyHistoryView]:
         return self.service.shared_with_me(trans, serialization_params, filter_query_params)
+
+    @router.get(
+        "/api/histories/archived",
+        summary="Get a list of all archived histories for the current user.",
+    )
+    def get_archived_histories(
+        self,
+        response: Response,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        serialization_params: SerializationParams = Depends(query_serialization_params),
+        filter_query_params: FilterQueryParams = Depends(get_filter_query_params),
+    ) -> List[AnyArchivedHistoryView]:
+        """Get a list of all archived histories for the current user.
+
+        Archived histories are histories are not part of the active histories of the user but they can be accessed using this endpoint.
+        """
+        archived_histories, total_matches = self.service.get_archived_histories(
+            trans, serialization_params, filter_query_params, include_total_matches=True
+        )
+        response.headers["total_matches"] = str(total_matches)
+        return archived_histories
 
     @router.get(
         "/api/histories/most_recently_used",
@@ -446,6 +479,56 @@ class FastAPIHistories:
         history_id: DecodedDatabaseIdField = HistoryIDPathParam,
     ) -> CustomBuildsMetadataResponse:
         return self.service.get_custom_builds_metadata(trans, history_id)
+
+    @router.post(
+        "/api/histories/{history_id}/archive",
+        summary="Archive a history.",
+    )
+    def archive_history(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
+        payload: Optional[ArchiveHistoryRequestPayload] = Body(default=None),
+    ) -> AnyArchivedHistoryView:
+        """Marks the given history as 'archived' and returns the history.
+
+        Archiving a history will remove it from the list of active histories of the user but it will still be
+        accessible via the `/api/histories/{id}` or the `/api/histories/archived` endpoints.
+
+        Associating an export record:
+
+        - Optionally, an export record (containing information about a recent snapshot of the history) can be associated with the
+        archived history by providing an `archive_export_id` in the payload. The export record must belong to the history and
+        must be in the ready state.
+        - When associating an export record, the history can be purged after it has been archived using the `purge_history` flag.
+
+        If the history is already archived, this endpoint will return a 409 Conflict error, indicating that the history is already archived.
+        If the history was not purged after it was archived, you can restore it using the `/api/histories/{id}/archive/restore` endpoint.
+        """
+        return self.service.archive_history(trans, history_id, payload)
+
+    @router.put(
+        "/api/histories/{history_id}/archive/restore",
+        summary="Restore an archived history.",
+    )
+    def restore_archived_history(
+        self,
+        trans: ProvidesHistoryContext = DependsOnTrans,
+        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
+        force: Optional[bool] = Query(
+            default=None,
+            description="If true, the history will be un-archived even if it has an associated archive export record and was purged.",
+        ),
+    ) -> AnyHistoryView:
+        """Restores an archived history and returns it.
+
+        Restoring an archived history will add it back to the list of active histories of the user (unless it was purged).
+
+        **Warning**: Please note that histories that are associated with an archive export might be purged after export, so un-archiving them
+        will not restore the datasets that were in the history before it was archived. You will need to import back the archive export
+        record to restore the history and its datasets as a new copy. See `/api/histories/from_store_async` for more information.
+        """
+        return self.service.restore_archived_history(trans, history_id, force)
 
     @router.get(
         "/api/histories/{history_id}/sharing",

@@ -9,16 +9,18 @@ import pkgutil
 from pathlib import Path
 from string import Template
 from typing import (
+    cast,
     Dict,
     List,
     Optional,
     Tuple,
-    TYPE_CHECKING,
+    Union,
 )
 
 import yaml
 
 import galaxy.util
+from galaxy.datatypes.protocols import DatasetProtocol
 from galaxy.tool_util.edam_util import load_edam_tree
 from galaxy.util import RW_R__R__
 from galaxy.util.bunch import Bunch
@@ -36,9 +38,6 @@ from . import (
     xml,
 )
 from .display_applications.application import DisplayApplication
-
-if TYPE_CHECKING:
-    from galaxy.model import DatasetInstance
 
 
 class ConfigurationError(Exception):
@@ -238,8 +237,9 @@ class Registry:
                             # Because of the way that the value of can_process_datatype was set above, we know that the value of
                             # override is True.
                             self.log.debug(
-                                "Overriding conflicting datatype with extension '%s', using datatype from %s."
-                                % (str(extension), str(config))
+                                "Overriding conflicting datatype with extension '%s', using datatype from %s.",
+                                extension,
+                                config,
                             )
                         if make_subclass:
                             datatype_class = type(datatype_class_name, (datatype_class,), {})
@@ -590,13 +590,14 @@ class Registry:
         return self.datatypes_by_extension.get(ext, None)
 
     def change_datatype(self, data, ext):
-        data.extension = ext
-        # call init_meta and copy metadata from itself.  The datatype
-        # being converted *to* will handle any metadata copying and
-        # initialization.
-        if data.has_data():
-            data.set_size()
-            data.init_meta(copy_from=data)
+        if data.extension != ext:
+            data.extension = ext
+            # call init_meta and copy metadata from itself.  The datatype
+            # being converted *to* will handle any metadata copying and
+            # initialization.
+            if data.has_data():
+                data.set_size()
+                data.init_meta(copy_from=data)
         return data
 
     def load_datatype_converters(self, toolbox, use_cached=False):
@@ -832,8 +833,8 @@ class Registry:
         return None
 
     def find_conversion_destination_for_dataset_by_extensions(
-        self, dataset_or_ext, accepted_formats: List[str], converter_safe: bool = True
-    ) -> Tuple[bool, Optional[str], Optional["DatasetInstance"]]:
+        self, dataset_or_ext: Union[str, DatasetProtocol], accepted_formats: List[str], converter_safe: bool = True
+    ) -> Tuple[bool, Optional[str], Optional[DatasetProtocol]]:
         """
         returns (direct_match, converted_ext, converted_dataset)
         - direct match is True iff no the data set already has an accepted format
@@ -841,7 +842,7 @@ class Registry:
         """
         if hasattr(dataset_or_ext, "ext"):
             ext = dataset_or_ext.ext
-            dataset = dataset_or_ext
+            dataset = cast(DatasetProtocol, dataset_or_ext)
         else:
             ext = dataset_or_ext
             dataset = None
@@ -854,7 +855,7 @@ class Registry:
             convert_ext_datatype = self.get_datatype_by_extension(convert_ext)
             if convert_ext_datatype is None:
                 self.log.warning(
-                    f"Datatype class not found for extension '{convert_ext}', which is used as target for conversion from datatype '{dataset.ext}'"
+                    f"Datatype class not found for extension '{convert_ext}', which is used as target for conversion from datatype '{ext}'"
                 )
             elif convert_ext_datatype.matches_any(accepted_formats):
                 converted_dataset = dataset and dataset.get_converted_files_by_type(convert_ext)

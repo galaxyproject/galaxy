@@ -14,6 +14,7 @@ import tempfile
 import zipfile
 from functools import partial
 from typing import (
+    Callable,
     Dict,
     IO,
     NamedTuple,
@@ -35,6 +36,7 @@ from galaxy.util.checkers import (
     COMPRESSION_CHECK_FUNCTIONS,
     is_tar,
 )
+from galaxy.util.path import StrPath
 
 import pylibmagic  # noqa: F401  # isort:skip
 import magic  # isort:skip
@@ -409,6 +411,9 @@ def guess_ext(fname_or_file_prefix: Union[str, "FilePrefix"], sniff_order, is_bi
     >>> fname = get_test_fname('Si.castep')
     >>> guess_ext(fname, sniff_order)
     'castep'
+    >>> fname = get_test_fname('test.fits')
+    >>> guess_ext(fname, sniff_order)
+    'fits'
     >>> fname = get_test_fname('Si.param')
     >>> guess_ext(fname, sniff_order)
     'param'
@@ -721,11 +726,12 @@ def run_sniffers_raw(file_prefix: FilePrefix, sniff_order):
     return file_ext
 
 
-def zip_single_fileobj(path):
+def zip_single_fileobj(path: StrPath) -> IO[bytes]:
     z = zipfile.ZipFile(path)
     for name in z.namelist():
         if not name.endswith("/"):
             return z.open(name)
+    raise ValueError("No file present in the zip file")
 
 
 def build_sniff_from_prefix(klass):
@@ -937,12 +943,7 @@ def handle_uploaded_dataset_file_internal(
 AUTO_DETECT_EXTENSIONS = ["auto"]  # should 'data' also cause auto detect?
 
 
-class Decompress(Protocol):
-    def __call__(self, path: str) -> IO[bytes]:
-        ...
-
-
-DECOMPRESSION_FUNCTIONS: Dict[str, Decompress] = dict(gzip=gzip.GzipFile, bz2=bz2.BZ2File, zip=zip_single_fileobj)
+DECOMPRESSION_FUNCTIONS: Dict[str, Callable] = dict(gzip=gzip.GzipFile, bz2=bz2.BZ2File, zip=zip_single_fileobj)
 
 
 class InappropriateDatasetContentError(Exception):

@@ -19,7 +19,6 @@ const emit = defineEmits<{
     (e: "deleted", tag: string): void;
 }>();
 
-//@ts-ignore bad types
 library.add(faTimes);
 
 const color = computed(() => keyedColorScheme(props.option));
@@ -42,7 +41,8 @@ const searched = computed(() => props.option?.toLowerCase() === props.search?.to
         :data-option="props.option"
         :class="{ editable, clickable, searched }"
         :style="`--color-primary: ${color.primary}; --color-darker: ${color.darker}; --color-dimmed: ${color.dimmed}`"
-        @click.prevent.stop="onClick">
+        @click.prevent.stop="onClick"
+        @mousedown.prevent.stop>
         <span :class="{ 'font-weight-bold': named }">
             {{ props.option }}
         </span>

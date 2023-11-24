@@ -3,6 +3,7 @@ import pytest
 from galaxy import model
 from galaxy.managers import context
 from galaxy.model import mapping
+from galaxy.model.base import transaction as db_transaction
 from galaxy.util import bunch
 
 
@@ -64,14 +65,18 @@ def test_expunge_all(transaction):
     transaction.sa_session.add(user)
 
     user.password = "bar2"
-    transaction.sa_session.flush()
+    session = transaction.sa_session
+    with db_transaction(session):
+        session.commit()
 
     assert transaction.sa_session.query(model.User).first().password == "bar2"
 
     transaction.sa_session.expunge_all()
 
     user.password = "bar3"
-    transaction.sa_session.flush()
+    session = transaction.sa_session
+    with db_transaction(session):
+        session.commit()
 
     # Password unchange because not attached to session/context.
     assert transaction.sa_session.query(model.User).first().password == "bar2"

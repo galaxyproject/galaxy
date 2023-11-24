@@ -7,7 +7,7 @@ from typing import (
     Sequence,
 )
 
-import packaging.version
+from packaging.version import Version
 
 log = logging.getLogger(__name__)
 
@@ -147,7 +147,7 @@ def _json_wrap_input(input, value_wrapper, profile, handle_files="skip"):
         else:
             json_value = _cast_if_not_none(value_wrapper, bool, empty_to_none=input.optional)
     elif input_type == "select":
-        if packaging.version.parse(str(profile)) < packaging.version.parse("20.05"):
+        if Version(str(profile)) < Version("20.05"):
             json_value = _cast_if_not_none(value_wrapper, str)
         else:
             if input.multiple:

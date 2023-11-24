@@ -17,8 +17,9 @@ import LibraryRoutes from "entry/analysis/routes/library-routes";
 import StorageDashboardRoutes from "entry/analysis/routes/storageDashboardRoutes";
 
 // child components
-import Citations from "components/Citation/Citations";
 import AboutGalaxy from "components/AboutGalaxy.vue";
+import CarbonEmissionsCalculations from "components/JobMetrics/CarbonEmissions/CarbonEmissionsCalculations";
+import Citations from "components/Citation/Citations";
 import ClientError from "components/ClientError";
 import CollectionEditView from "components/Collections/common/CollectionEditView";
 import CustomBuilds from "components/User/CustomBuilds";
@@ -28,18 +29,19 @@ import DatasetError from "components/DatasetInformation/DatasetError";
 import DatasetList from "components/Dataset/DatasetList";
 import AvailableDatatypes from "components/AvailableDatatypes/AvailableDatatypes";
 import FormGeneric from "components/Form/FormGeneric";
-import Grid from "components/Grid/Grid";
 import GridShared from "components/Grid/GridShared";
 import GridHistory from "components/Grid/GridHistory";
+import PageList from "components/Page/PageList";
 import HistoryImport from "components/HistoryImport";
 import HistoryView from "components/History/HistoryView";
 import HistoryPublished from "components/History/HistoryPublished";
 import HistoryPublishedList from "components/History/HistoryPublishedList";
+import HistoryInvocations from "components/Workflow/HistoryInvocations";
 import HistoryMultipleView from "components/History/Multiple/MultipleView";
+import NotificationsList from "components/Notifications/NotificationsList.vue";
 import InteractiveTools from "components/InteractiveTools/InteractiveTools";
 import InvocationReport from "components/Workflow/InvocationReport";
 import JobDetails from "components/JobInformation/JobDetails";
-import NewUserConfirmation from "components/Login/NewUserConfirmation";
 import NewUserWelcome from "components/NewUserWelcome/NewUserWelcome";
 import PageDisplay from "components/PageDisplay/PageDisplay";
 import PageEditor from "components/PageEditor/PageEditor";
@@ -62,10 +64,13 @@ import WorkflowImport from "components/Workflow/WorkflowImport";
 import WorkflowList from "components/Workflow/WorkflowList";
 import WorkflowPublished from "components/Workflow/WorkflowPublished";
 import { APIKey } from "components/User/APIKey";
+import { NotificationsPreferences } from "components/User/Notifications";
 import { CloudAuth } from "components/User/CloudAuth";
 import { ExternalIdentities } from "components/User/ExternalIdentities";
 import { HistoryExport } from "components/HistoryExport/index";
 import HistoryExportTasks from "components/History/Export/HistoryExport";
+import HistoryArchiveWizard from "@/components/History/Archiving/HistoryArchiveWizard.vue";
+import HistoryArchive from "@/components/History/Archiving/HistoryArchive.vue";
 
 Vue.use(VueRouter);
 
@@ -80,6 +85,20 @@ function redirectAnon() {
     }
 }
 
+// redirect logged in users
+function redirectLoggedIn() {
+    const Galaxy = getGalaxyInstance();
+    if (Galaxy.user.id) {
+        return "/";
+    }
+}
+
+function redirectIf(condition, path) {
+    if (condition) {
+        return path;
+    }
+}
+
 // produces the client router
 export function getRouter(Galaxy) {
     const router = new VueRouter({
@@ -90,7 +109,11 @@ export function getRouter(Galaxy) {
             ...LibraryRoutes,
             ...StorageDashboardRoutes,
             /** Login entry route */
-            { path: "/login/start", component: Login },
+            {
+                path: "/login/start",
+                component: Login,
+                redirect: redirectLoggedIn(),
+            },
             /** Page editor */
             {
                 path: "/pages/editor",
@@ -144,6 +167,10 @@ export function getRouter(Galaxy) {
                         component: AboutGalaxy,
                     },
                     {
+                        path: "carbon_emissions_calculations",
+                        component: CarbonEmissionsCalculations,
+                    },
+                    {
                         path: "custom_builds",
                         component: CustomBuilds,
                         redirect: redirectAnon(),
@@ -164,6 +191,7 @@ export function getRouter(Galaxy) {
                     },
                     {
                         path: "datasets/:datasetId/details",
+                        name: "DatasetDetails",
                         component: DatasetDetails,
                         props: true,
                     },
@@ -244,6 +272,10 @@ export function getRouter(Galaxy) {
                         props: true,
                     },
                     {
+                        path: "histories/archived",
+                        component: HistoryArchive,
+                    },
+                    {
                         path: "histories/:actionId",
                         component: GridHistory,
                         props: true,
@@ -254,6 +286,16 @@ export function getRouter(Galaxy) {
                         get component() {
                             return Galaxy.config.enable_celery_tasks ? HistoryExportTasks : HistoryExport;
                         },
+                        props: true,
+                    },
+                    {
+                        path: "histories/:historyId/archive",
+                        component: HistoryArchiveWizard,
+                        props: true,
+                    },
+                    {
+                        path: "histories/:historyId/invocations",
+                        component: HistoryInvocations,
                         props: true,
                     },
                     {
@@ -269,14 +311,6 @@ export function getRouter(Galaxy) {
                         path: "jobs/:jobId/view",
                         component: JobDetails,
                         props: true,
-                    },
-                    {
-                        path: "login/confirm",
-                        component: NewUserConfirmation,
-                        props: {
-                            registrationWarningMessage: Galaxy.config.registration_warning_message,
-                            termsUrl: Galaxy.config.terms_url,
-                        },
                     },
                     {
                         path: "pages/create",
@@ -314,11 +348,9 @@ export function getRouter(Galaxy) {
                     },
                     {
                         path: "pages/:actionId",
-                        component: GridShared,
+                        component: PageList,
                         props: (route) => ({
-                            actionId: route.params.actionId,
-                            item: "page",
-                            plural: "Pages",
+                            published: route.params.actionId == "list_published" ? true : false,
                         }),
                     },
                     {
@@ -365,6 +397,16 @@ export function getRouter(Galaxy) {
                     {
                         path: "user/external_ids",
                         component: ExternalIdentities,
+                        redirect: redirectIf(Galaxy.config.fixed_delegated_auth, "/") || redirectAnon(),
+                    },
+                    {
+                        path: "user/notifications",
+                        component: NotificationsList,
+                        redirect: redirectIf(!Galaxy.config.enable_notification_system, "/") || redirectAnon(),
+                    },
+                    {
+                        path: "user/notifications/preferences",
+                        component: NotificationsPreferences,
                         redirect: redirectAnon(),
                     },
                     {
@@ -447,10 +489,9 @@ export function getRouter(Galaxy) {
                     },
                     {
                         path: "workflows/list_published",
-                        component: Grid,
+                        component: WorkflowList,
                         props: (route) => ({
-                            urlBase: "workflow/list_published",
-                            userFilter: route.query["f-username"],
+                            published: true,
                         }),
                     },
                     {
@@ -460,6 +501,7 @@ export function getRouter(Galaxy) {
                         props: (route) => ({
                             importMessage: route.query["message"],
                             importStatus: route.query["status"],
+                            query: route.query["query"],
                         }),
                     },
                     {

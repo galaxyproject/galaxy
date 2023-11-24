@@ -2,46 +2,60 @@
 API operations on annotations.
 """
 import logging
+from typing import (
+    Dict,
+    List,
+    Optional,
+)
 
-from galaxy.managers.display_applications import DisplayApplicationsManager
-from galaxy.web import (
-    expose_api,
-    require_admin,
+from fastapi import Body
+
+from galaxy.managers.display_applications import (
+    DisplayApplication,
+    DisplayApplicationsManager,
+    ReloadFeedback,
 )
 from . import (
-    BaseGalaxyAPIController,
     depends,
+    Router,
 )
 
 log = logging.getLogger(__name__)
 
+router = Router(tags=["display_applications"])
 
-class DisplayApplicationsController(BaseGalaxyAPIController):
-    manager = depends(DisplayApplicationsManager)
 
-    @expose_api
-    def index(self, trans, **kwd):
+@router.cbv
+class FastAPIDisplay:
+    manager: DisplayApplicationsManager = depends(DisplayApplicationsManager)
+
+    @router.get(
+        "/api/display_applications",
+        summary="Returns the list of display applications.",
+        name="display_applications_index",
+    )
+    def index(
+        self,
+    ) -> List[DisplayApplication]:
         """
-        GET /api/display_applications/
-
         Returns the list of display applications.
-
-        :returns:   list of available display applications
-        :rtype:     list
         """
         return self.manager.index()
 
-    @expose_api
-    @require_admin
-    def reload(self, trans, payload=None, **kwd):
+    @router.post(
+        "/api/display_applications/reload",
+        summary="Reloads the list of display applications.",
+        name="display_applications_reload",
+        require_admin=True,
+    )
+    def reload(
+        self,
+        payload: Optional[Dict[str, List[str]]] = Body(default=None),
+    ) -> ReloadFeedback:
         """
-        POST /api/display_applications/reload
-
         Reloads the list of display applications.
-
-        :param  ids:  list containing ids of display to be reloaded
-        :type   ids:  list
         """
         payload = payload or {}
         ids = payload.get("ids", [])
-        return self.manager.reload(ids)
+        result = self.manager.reload(ids)
+        return result

@@ -8,6 +8,7 @@ from galaxy import (
     exceptions,
     model,
 )
+from galaxy.model.base import transaction
 from galaxy.tool_util.parser import ToolOutputCollectionPart
 from galaxy.tools.parameters.basic import (
     DataCollectionToolParameter,
@@ -70,7 +71,8 @@ def extract_workflow(
     workflow.stored_workflow = stored
     stored.latest_workflow = workflow
     trans.sa_session.add(stored)
-    trans.sa_session.flush()
+    with transaction(trans.sa_session):
+        trans.sa_session.commit()
     return stored
 
 

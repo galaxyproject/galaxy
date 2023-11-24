@@ -6,30 +6,32 @@
                 <sts-download-button
                     v-if="effectiveExportLink"
                     class="float-right markdown-pdf-export"
-                    variant="link"
                     :fallback-url="exportLink"
                     :download-endpoint="downloadEndpoint"
-                    title="Download PDF"></sts-download-button>
+                    size="sm"
+                    title="Generate PDF">
+                </sts-download-button>
                 <b-button
                     v-if="!readOnly"
-                    v-b-tooltip.hover.bottom
-                    class="float-right markdown-edit"
-                    title="Edit Markdown"
-                    variant="link"
+                    v-b-tooltip.hover
+                    class="float-right markdown-edit mr-2"
                     role="button"
+                    size="sm"
+                    title="Edit Markdown"
                     @click="$emit('onEdit')">
+                    Edit
                     <font-awesome-icon icon="edit" />
                 </b-button>
-                <h1 class="float-right align-middle mr-1 mt-2 h-md">Galaxy {{ markdownConfig.model_class }}</h1>
-                <span class="float-left font-weight-light mb-3">
-                    <small>Title: {{ markdownConfig.title || markdownConfig.model_class }}</small>
-                    <br />
-                    <small>Created by {{ markdownConfig.username }}</small>
+                <h1 class="float-right align-middle mr-2 mt-1 h-md">Galaxy {{ markdownConfig.model_class }}</h1>
+                <span class="float-left font-weight-light">
+                    <h1 class="text-break align-middle">
+                        Title: {{ markdownConfig.title || markdownConfig.model_class }}
+                    </h1>
                 </span>
             </div>
-            <b-badge variant="info" class="w-100 rounded mb-3">
-                <div class="float-left m-1">Published with Galaxy {{ version }} on {{ time }}</div>
-                <div class="float-right m-1">Identifier {{ markdownConfig.id }}</div>
+            <b-badge variant="info" class="w-100 rounded mb-3 white-space-normal">
+                <div class="float-left m-1 text-break">Generated with Galaxy {{ version }} on {{ time }}</div>
+                <div class="float-right m-1">Identifier: {{ markdownConfig.id }}</div>
             </b-badge>
             <div>
                 <b-alert v-if="markdownErrors.length > 0" variant="warning" show>
@@ -165,7 +167,7 @@ export default {
         initConfig() {
             if (Object.keys(this.markdownConfig).length) {
                 const config = this.markdownConfig;
-                const markdown = config.content || config.markdown;
+                const markdown = config.content || config.markdown || "";
                 this.markdownErrors = config.errors || [];
                 this.markdownObjects = this.splitMarkdown(markdown);
                 this.datasets = config.history_datasets || {};
@@ -241,9 +243,6 @@ export default {
                 args: args,
                 content: content,
             };
-        },
-        onDownload() {
-            window.location.href = this.exportLink;
         },
     },
 };

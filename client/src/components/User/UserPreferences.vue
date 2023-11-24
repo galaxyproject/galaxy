@@ -5,7 +5,7 @@
             {{ message }}
         </b-alert>
         <p>
-            <span v-localize>You are logged in as</span>
+            <span v-localize>You are signed in as</span>
             <strong id="user-preferences-current-email">{{ email }}</strong>
             <span v-localize>and you are using</span>
             <strong>{{ diskUsage }}</strong>
@@ -36,6 +36,12 @@
             description="Access your current API key or create a new one."
             to="/user/api_key" />
         <user-preferences-element
+            id="edit-preferences-notifications"
+            icon="fa-bell"
+            title="Manage Notifications"
+            description="Manage your notification settings."
+            to="/user/notifications/preferences" />
+        <user-preferences-element
             id="edit-preferences-cloud-auth"
             icon="fa-cloud"
             title="Manage Cloud Authorization"
@@ -43,7 +49,7 @@
             to="/user/cloud_auth" />
         <ConfigProvider v-slot="{ config }">
             <user-preferences-element
-                v-if="config.enable_oidc"
+                v-if="config.enable_oidc && !config.fixed_delegated_auth"
                 id="manage-third-party-identities"
                 icon="fa-id-card-o"
                 title="Manage Third-Party Identities"
@@ -57,6 +63,16 @@
             description="Add or remove custom builds using history datasets."
             to="/custom_builds" />
         <user-preferences-element
+            icon="fa-th-list"
+            title="Manage Activity Bar"
+            description="Click here to show or hide the activity bar."
+            badge="New!"
+            @click="toggleActivityBar = !toggleActivityBar">
+            <b-collapse v-model="toggleActivityBar">
+                <UserActivityBarSettings />
+            </b-collapse>
+        </user-preferences-element>
+        <user-preferences-element
             v-if="hasThemes"
             icon="fa-palette"
             title="Pick a Color Theme"
@@ -67,12 +83,6 @@
                 <ThemeSelector />
             </b-collapse>
         </user-preferences-element>
-        <user-preferences-element
-            id="edit-preferences-notifications"
-            icon="fa-plus-square-o"
-            title="Enable notifications"
-            description="Allow push and tab notifcations on job completion. To disable, revoke the site notification privilege in your browser."
-            @click="toggleNotifications" />
         <ConfigProvider v-slot="{ config }">
             <user-preferences-element
                 v-if="!config.single_user"
@@ -83,9 +93,15 @@
                 @click="makeDataPrivate" />
         </ConfigProvider>
         <ConfigProvider v-slot="{ config }">
-            <UserBeaconSettings v-if="config && config.enable_beacon_integration" :user-id="userId"
-                >>
+            <UserBeaconSettings v-if="config && config.enable_beacon_integration" :user-id="userId">
             </UserBeaconSettings>
+        </ConfigProvider>
+        <ConfigProvider v-slot="{ config }">
+            <UserPreferredObjectStore
+                v-if="config && config.object_store_allows_id_selection && currentUser"
+                :preferred-object-store-id="currentUser.preferred_object_store_id"
+                :user-id="userId">
+            </UserPreferredObjectStore>
         </ConfigProvider>
         <ConfigProvider v-slot="{ config }">
             <UserDeletion
@@ -106,6 +122,7 @@
 
 <script>
 import Vue from "vue";
+import { mapState } from "pinia";
 import BootstrapVue from "bootstrap-vue";
 import ThemeSelector from "./ThemeSelector.vue";
 import { getGalaxyInstance } from "app";
@@ -117,20 +134,25 @@ import { getUserPreferencesModel } from "components/User/UserPreferencesModel";
 import ConfigProvider from "components/providers/ConfigProvider";
 import { userLogoutAll } from "utils/logout";
 import UserDeletion from "./UserDeletion";
+import UserActivityBarSettings from "./UserActivityBarSettings";
 import UserPreferencesElement from "./UserPreferencesElement";
+import UserPreferredObjectStore from "./UserPreferredObjectStore";
 
 import "@fortawesome/fontawesome-svg-core";
 import UserBeaconSettings from "./UserBeaconSettings";
+import { useUserStore } from "@/stores/userStore";
 
 Vue.use(BootstrapVue);
 
 export default {
     components: {
         ConfigProvider,
+        UserActivityBarSettings,
         UserDeletion,
         UserPreferencesElement,
         ThemeSelector,
         UserBeaconSettings,
+        UserPreferredObjectStore,
     },
     props: {
         userId: {
@@ -149,12 +171,17 @@ export default {
             diskQuota: "",
             messageVariant: null,
             message: null,
+            toggleActivityBar: false,
             toggleTheme: false,
         };
     },
     computed: {
+        ...mapState(useUserStore, ["currentUser"]),
         activePreferences() {
-            const enabledPreferences = Object.entries(getUserPreferencesModel()).filter((f) => !f.disabled);
+            const userPreferencesEntries = Object.entries(getUserPreferencesModel());
+            // Object.entries returns an array of arrays, where the first element
+            // is the key (string) and the second is the value (object)
+            const enabledPreferences = userPreferencesEntries.filter((f) => !f[1].disabled);
             return Object.fromEntries(enabledPreferences);
         },
         hasLogout() {
@@ -181,22 +208,6 @@ export default {
         });
     },
     methods: {
-        toggleNotifications() {
-            if (window.Notification) {
-                Notification.requestPermission().then(function (permission) {
-                    //If the user accepts, let's create a notification
-                    if (permission === "granted") {
-                        new Notification("Notifications enabled", {
-                            icon: "static/favicon.ico",
-                        });
-                    } else {
-                        alert("Notifications disabled, please re-enable through browser settings.");
-                    }
-                });
-            } else {
-                alert("Notifications are not supported by this browser.");
-            }
-        },
         makeDataPrivate() {
             const Galaxy = getGalaxyInstance();
             if (

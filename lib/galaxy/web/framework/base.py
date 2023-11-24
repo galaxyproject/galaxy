@@ -158,14 +158,21 @@ class WebApplication:
         friendly objects, finds the appropriate method to handle the request
         and calls it.
         """
-        # Immediately create request_id which we will use for logging
-        request_id = environ.get("request_id", "unknown")
+        # Get request_id (set by RequestIDMiddleware):
+        # Used for logging + ensuring request-scoped SQLAlchemy sessions.
+        request_id = environ["request_id"]
+
         if self.trace_logger:
             self.trace_logger.context_set("request_id", request_id)
         self.trace(message="Starting request")
+
+        path_info = environ.get("PATH_INFO", "")
+
         try:
-            return self.handle_request(environ, start_response)
+            self._model.set_request_id(request_id)  # Start SQLAlchemy session scope
+            return self.handle_request(request_id, path_info, environ, start_response)
         finally:
+            self._model.unset_request_id(request_id)  # End SQLAlchemy session scope
             self.trace(message="Handle request finished")
             if self.trace_logger:
                 self.trace_logger.context_remove("request_id")
@@ -198,11 +205,8 @@ class WebApplication:
             raise webob.exc.HTTPNotFound(f"Action not callable for {path_info}")
         return (controller_name, controller, action, method)
 
-    def handle_request(self, environ, start_response, body_renderer=None):
-        # Grab the request_id (should have been set by middleware)
-        request_id = environ.get("request_id", "unknown")
+    def handle_request(self, request_id, path_info, environ, start_response, body_renderer=None):
         # Map url using routes
-        path_info = environ.get("PATH_INFO", "")
         client_match = self.clientside_routes.match(path_info, environ)
         map_match = self.mapper.match(path_info, environ) or client_match
         if path_info.startswith("/api"):
@@ -218,6 +222,12 @@ class WebApplication:
         rc = routes.request_config()
         rc.mapper = self.mapper
         rc.mapper_dict = map_match
+        server_port = environ["SERVER_PORT"]
+        if isinstance(server_port, int):
+            # Workaround bug in the routes package, which would concatenate this
+            # without casting to str in
+            # https://github.com/bbangert/routes/blob/c4d5a5fb693ce8dc7cf5dbc591861acfc49d5c23/routes/__init__.py#L73
+            environ["SERVER_PORT"] = str(server_port)
         rc.environ = environ
         # Setup the transaction
         trans = self.transaction_factory(environ)
@@ -251,7 +261,7 @@ class WebApplication:
         try:
             body = method(trans, **kwargs)
         except Exception as e:
-            body = self.handle_controller_exception(e, trans, **kwargs)
+            body = self.handle_controller_exception(e, trans, method, **kwargs)
             if not body:
                 raise
         body_renderer = body_renderer or self._render_body
@@ -286,7 +296,7 @@ class WebApplication:
             # Worst case scenario
             return [smart_str(body)]
 
-    def handle_controller_exception(self, e, trans, **kwargs):
+    def handle_controller_exception(self, e, trans, method, **kwargs):
         """
         Allow handling of exceptions raised in controller methods.
         """
@@ -539,9 +549,9 @@ def send_file(start_response, trans, body):
         start = None
         end = None
         if trans.request.range:
-            start = trans.request.range.start
-            end = trans.request.range.end
-            file_size = trans.response.headers["content-length"]
+            start = int(trans.request.range.start)
+            file_size = int(trans.response.headers["content-length"])
+            end = int(file_size if end is None else trans.request.range.end)
             trans.response.headers["content-length"] = str(end - start)
             trans.response.headers["content-range"] = f"bytes {start}-{end - 1}/{file_size}"
             trans.response.status = 206

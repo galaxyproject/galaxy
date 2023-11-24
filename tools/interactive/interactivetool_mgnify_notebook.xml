@@ -1,6 +1,6 @@
-<tool id="interactive_tool_mgnify_notebook" tool_type="interactive" name="Interactive MGnify Notebook" version="0.0.1" profile="22.01">
+<tool id="interactive_tool_mgnify_notebook" tool_type="interactive" name="Interactive MGnify Notebook" version="1.1.0" profile="22.01">
     <requirements>
-        <container type="docker">quay.io/microbiome-informatics/emg-notebooks.dev:v1.0.1</container>
+        <container type="docker">quay.io/microbiome-informatics/emg-notebooks.dev:v1.1.0</container>
     </requirements>
     <entry_points>
         <entry_point name="MGnify Interactive Tool" requires_domain="True">

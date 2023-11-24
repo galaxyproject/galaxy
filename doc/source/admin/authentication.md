@@ -3,9 +3,9 @@
 Galaxy supports the following authentication mechanisms:
 
 * [Galaxy Database](#galaxy-database) - Galaxy-specific login using e-mail address and password (the default);
-* [OIDC and OAuth2.0](#OIDC-and-OAuth2.0) - Login to Galaxy using your Google account, without having to create a Galaxy user;
+* [OIDC and OAuth2.0](#oidc-and-oauth2-0) - Login to Galaxy using your Google account, without having to create a Galaxy user;
 * [Authentication Framework](#authentication-framework) - A plugin-driven framework supporting LDAP/Active Directory and PAM;
-* [Proxy Authentication](#proxy_authentication) - HTTP [remote user](http://httpd.apache.org/docs/current/mod/mod_cgi.html#env) provided by any front-end Web server.
+* [Proxy Authentication](#remote-user-authentication) - HTTP [remote user](http://httpd.apache.org/docs/current/mod/mod_cgi.html#env) provided by any front-end Web server.
 
 ## Galaxy Database
 
@@ -16,11 +16,11 @@ If deploying Galaxy using the default authentication option, user activation can
 [below](#user-activation).
 
 ## OIDC and OAuth2.0
-Leveraging OpenID Connect (OIDC) protocol, we enable login to Galaxy without explicitly creating a Galaxy user. This feature is disabled by default. In short, to enable this feature, a Galaxy server admin has to take the following two steps: 
+Leveraging OpenID Connect (OIDC) protocol, we enable login to Galaxy without explicitly creating a Galaxy user. This feature is disabled by default. In short, to enable this feature, a Galaxy server admin has to take the following two steps:
 
 1. Define the Galaxy instance on an OIDC identity provider. At the moment, we support Google and Okta. To set a Galaxy instance on Google, go to _credentials_ section at [developers console](https://console.developers.google.com/), and configure the instance. At the end, you'll receive _client ID_ and _client secret_ take a note of these two tokens. For Okta, create a new application in Okta, type _web_. At the end you should take note of the _client ID_ and _client secret_ tokens.
 
-2. Configure Galaxy. In the `galaxy.yml` file enable the OIDC service using the `enable_oidc` key and set the two configuration files (i.e., `oidc_config_file` and `oidc_backends_config_file`), based on the IdP information. 
+2. Configure Galaxy. In the `galaxy.yml` file enable the OIDC service using the `enable_oidc` key and set the two configuration files (i.e., `oidc_config_file` and `oidc_backends_config_file`), based on the IdP information.
 
 The configuration is explained with provider-specific details at [User Authentication Configuration](https://galaxyproject.org/authnz/config/oidc/). How to authenticate from the user perspective we describe [here](https://galaxyproject.org/authnz/use/oidc/).
 
@@ -31,8 +31,8 @@ just one (and the default plugin). This framework can be used to allow Galaxy to
 an LDAP server, an Active Directory server, or to PAM.
 
 Currently, we provide two variants of the LDAP authenticator namely, `ldap` and `ldap3`. Both are identical implementations that use different Python modules for binding and making queries to a LDAP server. The authenticator
-`ldap` is based on the [python-ldap](https://www.python-ldap.org/) module which is a wrapper around the 
-OpenLDAP's client library `libldap`. Currently, `python-ldap` does not provide pre-built Python wheel packages and hence, the OpenLDAP client libraries are needed to install `python-ldap` on the Galaxy server. 
+`ldap` is based on the [python-ldap](https://www.python-ldap.org/) module which is a wrapper around the
+OpenLDAP's client library `libldap`. Currently, `python-ldap` does not provide pre-built Python wheel packages and hence, the OpenLDAP client libraries are needed to install `python-ldap` on the Galaxy server.
 
 On the otherhand, `ldap3` is a pure-Python implementation of the OpenLDAP client library and has no external dependencies. This package can be installed out-of-the-box, so we recommend to use it when the OpenLDAP client libraries are not available on the Galaxy server.
 
@@ -43,8 +43,8 @@ To configure one or more authentication plugins, simply copy ``config/auth_conf.
 The provided sample configuration file has numerous commented out examples and serves as the most up-to-date source
 of documentation on configuring these plugins.
 
-It is relatively straight-forward to add a custom authenticator to the framework. In this example, we will demonstrate 
-a new authenticator based on the LDAP authenticator that performs custom checks besides password verification for 
+It is relatively straight-forward to add a custom authenticator to the framework. In this example, we will demonstrate
+a new authenticator based on the LDAP authenticator that performs custom checks besides password verification for
 authenticating a user on the Galaxy instance. First, we will create an authenticator source file
 `lib/galaxy/auth/providers/ldap_custom.py` with the following content:
 
@@ -100,10 +100,10 @@ __all__ = ("LDAPCustom",)
 
 ```
 
-In this simple custom LDAP authenticator, we are verifying the remote IP address of the client is declared in the whitelisted 
-IP addresses. The so-called `white-listed-ips` can be provided within the `auth_config.xml` file. However this can be done in 
-many ways depending on the deployments like getting white listed IPs from LDAP query or simply reading it from a file on the 
-file system. This list of IP addresses can be a global whitelist or IP addresses per user. In order to use this authenticator, 
+In this simple custom LDAP authenticator, we are verifying the remote IP address of the client is declared in the whitelisted
+IP addresses. The so-called `white-listed-ips` can be provided within the `auth_config.xml` file. However this can be done in
+many ways depending on the deployments like getting white listed IPs from LDAP query or simply reading it from a file on the
+file system. This list of IP addresses can be a global whitelist or IP addresses per user. In order to use this authenticator,
 we need to declare it in the `auth_config.xml` file as `<type>ldap_custom</type>`.
 
 ## Remote User Authentication
@@ -126,7 +126,7 @@ information supplied by the Web server.
 Enabling remote user authentication requires you to edit Galaxy's configuration file and set `use_remote_user` to `true`.
 This file is likely located in `config/galaxy.yml` and can be created by copying Galaxy's sample `config/galaxy.yml.sample`.
 
-Additional Galaxy configuration options related to remote user authentication are documented in Galaxy's sample 
+Additional Galaxy configuration options related to remote user authentication are documented in Galaxy's sample
 configuration file. The options ``remote_user_maildomain``, ``remote_user_header``, and ``normalize_remote_user_email`` can
 adapt Galaxy to different responses from the proxy, while ``remote_user_secret`` can be used to provide added
 security, and ``remote_user_logout_href`` can be used to fix Galaxy's logout for the deployed setup.
@@ -134,8 +134,8 @@ security, and ``remote_user_logout_href`` can be used to fix Galaxy's logout for
 ## User Activation
 
 Galaxy admins using the default authentication mechanism have an option to turn on the email verification feature
-to force users to provide working email during the registration. You can also turn on the disposable email domains
-filter to disable registration for users using known disposable email provider. 
+to require users to provide working email during the registration. You can also turn on the disposable email domains
+filter to disable registration for users using known disposable email provider.
 
 How to set up this config is presented here.
 
@@ -143,7 +143,7 @@ How to set up this config is presented here.
 
 ### Account activation feature
 
-In the Galaxy config file **config/galaxy.yml** there is the user activation setting that you have to turn on.
+In the Galaxy config file **config/galaxy.yml** there is the user activation setting that you have to turn on. By default it is off.
 
 ```yaml
 user_activation_on: true
@@ -157,61 +157,47 @@ track_jobs_in_database: true
 ```
 
 
-After you turn on both of these every user that will try to register after this configuration file takes effect will have the verification email sent to the email address provided. Unless the Grace period (see below) is set, the user won't be able to login before the verification happens.
+After you turn on both of these every user that will try to register after this configuration file takes effect will have the activation email sent to the email address provided. Unless the `activation_grace_period` (see below) is set, the user won't be able to login before the activation happens.
 
-Furthermore in order for this to work correctly smtp server and admin email should be set:
+Furthermore in order for this to work correctly smtp server and email need be set:
 
 ```yaml
 smtp_server: some.server.edu:587
 smtp_username: example_username
 smtp_password: example_passsword
-activation_email: activation-noreply@example.com
-error_email_to: admin@example.com
+email_from: galaxy-instance@example.com
 ```
 
-Smtp server takes care of the email sending and the activation_email email is used as the *From* address in the verification email. Furthermore the error_email_to is being shown to the user if the Galaxy detects its own misconfiguration.
+Smtp server takes care of the email sending and the `email_from` is used as the *From* address in the verification email.
 
-You can also set the instance_resource_url which is shown in the activation emails so you can point users to your wiki or other materials.
+### Email template
+
+You can modify the activation email body by modifying the provided templates. You can use them in [html](https://github.com/galaxyproject/galaxy/blob/release_23.0/lib/galaxy/config/templates/mail/activation-email.html) or [txt](https://github.com/galaxyproject/galaxy/blob/release_23.0/lib/galaxy/config/templates/mail/activation-email.txt) depending on your emailing configuration.
+
+The mapping of mentioned templates' variables to config options is as follows:
 ```
-instance_resource_url = http://galaxyproject.org/
-```
-
-
-The final activation email looks like this:
-
-```
-Hello <user_name>,
-
-In order to complete the activation process for <user_email> begun on <date> at <hostname>, please click on the following link to verify your account:
-
-test.galaxyproject.org/activate?activation_token=46701ecdbbf2a79a7348ddae33062774edadef59&email=example%40example.com
-
-By clicking on the above link and opening a Galaxy account you are also confirming that you have read and agreed to Galaxy's Terms and Conditions for use of this service (<link_to_terms_config>). This includes a quota limit of one account per user. Attempts to subvert this limit by creating multiple accounts or through any other method may result in termination of all associated accounts and data.
-
-Please contact us if you need help with your account at: <error_email_to_config>. You can also browse resources available at: <instance_resources_url_config>.
-
-More about the Galaxy Project can be found at galaxyproject.org
-
-Your Galaxy Team
-
+"terms_url": config.terms_url,
+"contact_email": config.error_email_to,
+"instance_resource_url": config.instance_resource_url,
+"custom_message": config.custom_activation_email_message,
 ```
 
 ### Changing email address
 
-If an activated user changes email address in user settings, his/her account will be deactivated. A new activation link will be sent and the user will have to visit it to activate the account again.
+If an activated user changes email address in user settings, their account will be deactivated. A new activation link will be sent and the user will have to visit it to activate the account again.
 
 ### Grace period
 
-In case you want the account activation feature but don't want to disable login completely you can set the **activation_grace_period** parameter. It specifies, in hours, the period in between registration time and the login time that the user will be allowed to log in even with an inactive account. 
+In case you want the account activation feature but don't want to disable login completely you can set the `activation_grace_period` parameter. It specifies, in hours, the period in between registration time and the login time that the user will be allowed to log in even with an inactive account.
 ```
-# Activation grace period. Activation is not forced (login is not disabled) until 
+# Activation grace period. Activation is not forced (login is not disabled) until
 # grace period has passed. Users under grace period can't run jobs (see inactivity_box_content).
-# In hours. Default is 3. Enter 0 to disable grace period. 
-# Users with OpenID logins have grace period forever. 
+# In hours. Default is 3. Enter 0 to disable grace period.
+# Users with OpenID logins have grace period forever.
 #activation_grace_period = 3
 ```
 
-However with inactive account the user won't be able to run jobs and warning message will be shown to him at the top of the page. It is customizable via the **inactivity_box_content** parameter.
+However with inactive account the user won't be able to run jobs and warning message will be shown to them at the top of the page. It is customizable via the `inactivity_box_content` parameter.
 ```
 # Used for warning box for inactive accounts (unable to run jobs).
 # In use only if activation_grace_period is set.
@@ -219,20 +205,18 @@ However with inactive account the user won't be able to run jobs and warning mes
 ```
 
 ### Disposable email address filtering
+To prevent users from using unwanted email addresses for the email activation admins can select from two methods of filtering: domain blocking and allowing.
 
-<a name="disposable_email_filter"></a>
+#### Blocklist
 
-To prevent users from using disposable email addresses as a workaround for the email verification the domain blacklist can be turned on through the **blacklist_file** path parameter. Users that use disposable email domains defined at the file in this provided path will be refused registration.
+The domain blocklist can be turned on through the `email_domain_blocklist_file` path parameter. Users that use disposable email domains defined at the file in this provided path will be refused registration.
 ```
-# E-mail domains blacklist is used for filtering out users that are using disposable email address
+# E-mail domains blocklist is used for filtering out users that are using disposable email address
 # during the registration. If their address domain matches any domain in the BL they are refused the registration.
-blacklist_file = config/disposable_email_blacklist.conf
+email_domain_blocklist_file = config/disposable_email_blocklist.conf
 ```
 
-
-Disposable domains blacklist file for download and modification is [at GitHub](https://github.com/martenson/disposable-email-domains/blob/master/disposable_email_blacklist.conf)
-
-In the file each domain is on its own line and without the *@* sign. Example of the blacklist file format:
+In the file each domain is on its own line and without the *@* sign. Example of the blocklist file format:
 
 ```
 drdrb.com
@@ -240,17 +224,13 @@ mailinator.com
 sogetthis.com
 spamgourmet.com
 trashmail.net
-kurzepost.de
-objectmail.com
-proxymail.eu
-rcpt.at
-trash-mail.at
-trashmail.at
-trashmail.me
-wegwerfmail.de
-wegwerfmail.net
-wegwerfmail.org
 ```
+
+A disposable domains blocklist file for download and modification is [at GitHub](https://github.com/martenson/disposable-email-domains/blob/master/disposable_email_blocklist.conf)
+
+#### Allowlist
+
+The domain allowlist can be turned on through the `email_domain_allowlist_file` path parameter. The file has the same format as the `email_domain_blocklist_file` above. The difference is that domains _outside_ of the allowlist will not be allowed for account registration.
 
 ## Authentication Related Code
 

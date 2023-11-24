@@ -15,6 +15,7 @@ import galaxy.datatypes.registry
 import galaxy.model
 import galaxy.model.mapping as mapping
 from galaxy import model
+from galaxy.model.base import transaction
 from galaxy.model.database_utils import create_database
 from galaxy.model.metadata import MetadataTempFile
 from galaxy.model.orm.util import (
@@ -22,6 +23,7 @@ from galaxy.model.orm.util import (
     get_object_session,
 )
 from galaxy.model.security import GalaxyRBACAgent
+from galaxy.objectstore import QuotaSourceMap
 from galaxy.util.unittest import TestCase
 
 datatypes_registry = galaxy.datatypes.registry.Registry()
@@ -35,6 +37,7 @@ skip_if_not_postgres_base = pytest.mark.skipif(
     not os.environ.get("GALAXY_TEST_UNIT_MAPPING_URI_POSTGRES_BASE"),
     reason="GALAXY_TEST_UNIT_MAPPING_URI_POSTGRES_BASE not set",
 )
+PRIVATE_OBJECT_STORE_ID = "my_private_data"
 
 
 class BaseModelTestCase(TestCase):
@@ -153,8 +156,12 @@ class TestMappings(BaseModelTestCase):
         assert history.get_display_name() == "Hello₩◎ґʟⅾ"
 
     def test_hda_to_library_dataset_dataset_association(self):
-        u = model.User(email="mary@example.com", password="password")
-        hda = model.HistoryDatasetAssociation(name="hda_name")
+        model = self.model
+        u = self.model.User(email="mary@example.com", password="password")
+        h1 = model.History(name="History 1", user=u)
+        hda = model.HistoryDatasetAssociation(
+            name="hda_name", create_dataset=True, history=h1, sa_session=model.session
+        )
         self.persist(hda)
         trans = collections.namedtuple("trans", "user")
         target_folder = model.LibraryFolder(name="library_folder")
@@ -179,6 +186,24 @@ class TestMappings(BaseModelTestCase):
         assert len(new_ldda.library_dataset.expired_datasets) == 1
         assert new_ldda.library_dataset.expired_datasets[0] == ldda
         assert target_folder.item_count == 1
+
+    def test_hda_to_library_dataset_dataset_association_fails_if_private(self):
+        model = self.model
+        u = model.User(email="mary2@example.com", password="password")
+        h1 = model.History(name="History 1", user=u)
+        hda = model.HistoryDatasetAssociation(
+            name="hda_name", create_dataset=True, history=h1, sa_session=model.session
+        )
+        hda.dataset.object_store_id = PRIVATE_OBJECT_STORE_ID
+        self.persist(hda)
+        trans = collections.namedtuple("trans", "user")
+        target_folder = model.LibraryFolder(name="library_folder")
+        with pytest.raises(Exception) as exec_info:
+            hda.to_library_dataset_dataset_association(
+                trans=trans(user=u),
+                target_folder=target_folder,
+            )
+        assert galaxy.model.CANNOT_SHARE_PRIVATE_DATASET_MESSAGE in str(exec_info.value)
 
     def test_tags(self):
         TAG_NAME = "Test Tag"
@@ -474,7 +499,7 @@ class TestMappings(BaseModelTestCase):
     def test_default_disk_usage(self):
         u = model.User(email="disk_default@test.com", password="password")
         self.persist(u)
-        u.adjust_total_disk_usage(1)
+        u.adjust_total_disk_usage(1, None)
         u_id = u.id
         self.expunge()
         user_reload = self.model.session.query(model.User).get(u_id)
@@ -588,8 +613,8 @@ class TestMappings(BaseModelTestCase):
         self.persist(u, h1, expunge=False)
 
         d1 = self.new_hda(h1, name="1")
-        d2 = self.new_hda(h1, name="2", visible=False)
-        d3 = self.new_hda(h1, name="3", deleted=True)
+        d2 = self.new_hda(h1, name="2", visible=False, object_store_id="foobar")
+        d3 = self.new_hda(h1, name="3", deleted=True, object_store_id="three_store")
         d4 = self.new_hda(h1, name="4", visible=False, deleted=True)
 
         self.session().flush()
@@ -603,8 +628,11 @@ class TestMappings(BaseModelTestCase):
         assert contents_iter_names() == ["1", "2", "3", "4"]
         assert contents_iter_names(deleted=False) == ["1", "2"]
         assert contents_iter_names(visible=True) == ["1", "3"]
+        assert contents_iter_names(visible=True, object_store_ids=["three_store"]) == ["3"]
         assert contents_iter_names(visible=False) == ["2", "4"]
         assert contents_iter_names(deleted=True, visible=False) == ["4"]
+        assert contents_iter_names(deleted=False, object_store_ids=["foobar"]) == ["2"]
+        assert contents_iter_names(deleted=False, object_store_ids=["foobar2"]) == []
 
         assert contents_iter_names(ids=[d1.id, d2.id, d3.id, d4.id]) == ["1", "2", "3", "4"]
         assert contents_iter_names(ids=[d1.id, d2.id, d3.id, d4.id], max_in_filter_length=1) == ["1", "2", "3", "4"]
@@ -634,7 +662,11 @@ class TestMappings(BaseModelTestCase):
 
         self.new_hda(h1, name="1")
         self.new_hda(h2, name="2")
-        self.session().flush()
+
+        session = self.session()
+
+        with transaction(session):
+            session.commit()
         # _next_hid modifies history, plus trigger on HDA means 2 additional audit rows per history
 
         h1_audits = get_audit_table_entries(h1)
@@ -645,7 +677,13 @@ class TestMappings(BaseModelTestCase):
         h1_latest = get_latest_entry(h1_audits)
         h2_latest = get_latest_entry(h2_audits)
 
-        model.HistoryAudit.prune(self.session())
+        # In galaxy, HistoryAudit.prune() executes in the context of a separate thread, where it
+        # starts and commits a new transaction, closing a scoped session on exit. Thus, here we
+        # should end the current transaction (via rollback) and add the History objects to a new
+        # session, as the previous one will be closed.
+        session.rollback()
+        model.HistoryAudit.prune(session)
+        session.add_all([h1, h2])
 
         h1_audits = get_audit_table_entries(h1)
         h2_audits = get_audit_table_entries(h2)
@@ -688,6 +726,8 @@ class TestMappings(BaseModelTestCase):
         # However, flushing anything non-empty - even unrelated object will invalidate
         # the session ID.
         self._non_empty_flush()
+        if session().in_transaction():
+            session.commit()
         assert "id" in inspect(galaxy_model_object).unloaded
 
         # Fetch the ID loads the value from the database
@@ -696,6 +736,8 @@ class TestMappings(BaseModelTestCase):
 
         # Using cached_id instead does not exhibit this behavior.
         self._non_empty_flush()
+        if session().in_transaction():
+            session.commit()
         assert expected_id == galaxy.model.cached_id(galaxy_model_object)
         assert "id" in inspect(galaxy_model_object).unloaded
 
@@ -722,11 +764,13 @@ class TestMappings(BaseModelTestCase):
         galaxy_model_object_new = model.GalaxySession()
         session.add(galaxy_model_object_new)
         session.flush()
+        if session().in_transaction():
+            session.commit()
         assert galaxy.model.cached_id(galaxy_model_object_new)
         assert "id" in inspect(galaxy_model_object_new).unloaded
 
         # Verify a targeted flush prevent expiring unrelated objects.
-        galaxy_model_object_new.id
+        galaxy_model_object_new.id  # noqa: B018
         assert "id" not in inspect(galaxy_model_object_new).unloaded
         session.flush(model.GalaxySession())
         assert "id" not in inspect(galaxy_model_object_new).unloaded
@@ -960,6 +1004,77 @@ class TestMappings(BaseModelTestCase):
         h._next_hid(n=3)
         assert h.hid_counter == 5
 
+    def test_cannot_make_private_objectstore_dataset_public(self):
+        security_agent = GalaxyRBACAgent(self.model)
+        u_from, u_to, _ = self._three_users("cannot_make_private_public")
+
+        h = self.model.History(name="History for Prevent Sharing", user=u_from)
+        d1 = self.model.HistoryDatasetAssociation(
+            extension="txt", history=h, create_dataset=True, sa_session=self.model.session
+        )
+        self.persist(h, d1)
+
+        d1.dataset.object_store_id = PRIVATE_OBJECT_STORE_ID
+        self._make_private(security_agent, u_from, d1)
+
+        with pytest.raises(Exception) as exec_info:
+            self._make_owned(security_agent, u_from, d1)
+        assert galaxy.model.CANNOT_SHARE_PRIVATE_DATASET_MESSAGE in str(exec_info.value)
+
+    def test_cannot_make_private_objectstore_dataset_shared(self):
+        security_agent = GalaxyRBACAgent(self.model)
+        u_from, u_to, _ = self._three_users("cannot_make_private_shared")
+
+        h = self.model.History(name="History for Prevent Sharing", user=u_from)
+        d1 = self.model.HistoryDatasetAssociation(
+            extension="txt", history=h, create_dataset=True, sa_session=self.model.session
+        )
+        self.persist(h, d1)
+
+        d1.dataset.object_store_id = PRIVATE_OBJECT_STORE_ID
+        self._make_private(security_agent, u_from, d1)
+
+        with pytest.raises(Exception) as exec_info:
+            security_agent.privately_share_dataset(d1.dataset, [u_to])
+        assert galaxy.model.CANNOT_SHARE_PRIVATE_DATASET_MESSAGE in str(exec_info.value)
+
+    def test_cannot_set_dataset_permisson_on_private(self):
+        security_agent = GalaxyRBACAgent(self.model)
+        u_from, u_to, _ = self._three_users("cannot_set_permissions_on_private")
+
+        h = self.model.History(name="History for Prevent Sharing", user=u_from)
+        d1 = self.model.HistoryDatasetAssociation(
+            extension="txt", history=h, create_dataset=True, sa_session=self.model.session
+        )
+        self.persist(h, d1)
+
+        d1.dataset.object_store_id = PRIVATE_OBJECT_STORE_ID
+        self._make_private(security_agent, u_from, d1)
+
+        role = security_agent.get_private_user_role(u_to, auto_create=True)
+        access_action = security_agent.permitted_actions.DATASET_ACCESS.action
+
+        with pytest.raises(Exception) as exec_info:
+            security_agent.set_dataset_permission(d1.dataset, {access_action: [role]})
+        assert galaxy.model.CANNOT_SHARE_PRIVATE_DATASET_MESSAGE in str(exec_info.value)
+
+    def test_cannot_make_private_dataset_public(self):
+        security_agent = GalaxyRBACAgent(self.model)
+        u_from, u_to, u_other = self._three_users("cannot_make_private_dataset_public")
+
+        h = self.model.History(name="History for Annotation", user=u_from)
+        d1 = self.model.HistoryDatasetAssociation(
+            extension="txt", history=h, create_dataset=True, sa_session=self.model.session
+        )
+        self.persist(h, d1)
+
+        d1.dataset.object_store_id = PRIVATE_OBJECT_STORE_ID
+        self._make_private(security_agent, u_from, d1)
+
+        with pytest.raises(Exception) as exec_info:
+            security_agent.make_dataset_public(d1.dataset)
+        assert galaxy.model.CANNOT_SHARE_PRIVATE_DATASET_MESSAGE in str(exec_info.value)
+
     def _three_users(self, suffix):
         email_from = f"user_{suffix}e1@example.com"
         email_to = f"user_{suffix}e2@example.com"
@@ -976,18 +1091,26 @@ class TestMappings(BaseModelTestCase):
         access_action = security_agent.permitted_actions.DATASET_ACCESS.action
         manage_action = security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action
         permissions = {access_action: [role], manage_action: [role]}
-        security_agent.set_all_dataset_permissions(hda.dataset, permissions)
+        self._set_permissions(security_agent, hda.dataset, permissions)
 
     def _make_owned(self, security_agent, user, hda):
         role = security_agent.get_private_user_role(user, auto_create=True)
         manage_action = security_agent.permitted_actions.DATASET_MANAGE_PERMISSIONS.action
         permissions = {manage_action: [role]}
-        security_agent.set_all_dataset_permissions(hda.dataset, permissions)
+        self._set_permissions(security_agent, hda.dataset, permissions)
+
+    def _set_permissions(self, security_agent, dataset, permissions):
+        # TODO: refactor set_all_dataset_permissions to actually throw an exception :|
+        error = security_agent.set_all_dataset_permissions(dataset, permissions)
+        if error:
+            raise Exception(error)
 
     def new_hda(self, history, **kwds):
-        return history.add_dataset(
-            model.HistoryDatasetAssociation(create_dataset=True, sa_session=self.model.session, **kwds)
-        )
+        object_store_id = kwds.pop("object_store_id", None)
+        hda = self.model.HistoryDatasetAssociation(create_dataset=True, sa_session=self.model.session, **kwds)
+        if object_store_id is not None:
+            hda.dataset.object_store_id = object_store_id
+        return history.add_dataset(hda)
 
 
 @skip_if_not_postgres_base
@@ -1027,8 +1150,11 @@ def _workflow_from_steps(user, steps):
 
 
 class MockObjectStore:
-    def __init__(self):
-        pass
+    def __init__(self, quota_source_map=None):
+        self._quota_source_map = quota_source_map or QuotaSourceMap()
+
+    def get_quota_source_map(self):
+        return self._quota_source_map
 
     def size(self, dataset):
         return 42
@@ -1039,8 +1165,17 @@ class MockObjectStore:
     def get_filename(self, *args, **kwds):
         return "mock_dataset_14.dat"
 
+    def construct_path(self, *args, **kwds):
+        return "mock_dataset_14.dat"
+
     def get_store_by(self, *args, **kwds):
         return "id"
 
     def update_from_file(self, *arg, **kwds):
         pass
+
+    def is_private(self, object):
+        if object.object_store_id == PRIVATE_OBJECT_STORE_ID:
+            return True
+        else:
+            return False

@@ -8,6 +8,7 @@ from galaxy import (
     util,
     web,
 )
+from galaxy.model.base import transaction
 from galaxy.webapps.base.controller import (
     BaseUIController,
     UsesFormDefinitionsMixin,
@@ -31,7 +32,8 @@ class User(BaseUIController, UsesFormDefinitionsMixin):
         new_key.user_id = trans.security.decode_id(uid)
         new_key.key = trans.app.security.get_new_guid()
         trans.sa_session.add(new_key)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         return self.get_all_users(trans)
 
     @web.expose

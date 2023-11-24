@@ -1,13 +1,13 @@
 {
     "name": "visualization",
-    "version": "0.1.0",
+    "version": "0.2.0",
     "keywords": [
         "galaxy",
         "visualization"
     ],
     "license": "AFL-3.0",
     "dependencies": {
-        "@galaxyproject/charts": "^0.0.6",
+        "@galaxyproject/charts": "^0.1.0",
         "babel-preset-env": "^1.6.1",
         "backbone": "^1.4.0",
         "bootstrap": "^3.3.7",

@@ -36,10 +36,11 @@ from galaxy.exceptions import (
     MalformedId,
     RequestParameterInvalidException,
 )
+from galaxy.model.base import transaction
 from galaxy.model.scoped_session import galaxy_scoped_session
+from galaxy.schema.fields import LibraryFolderDatabaseIdField
 from galaxy.schema.schema import LibraryFolderContentsIndexQueryPayload
 from galaxy.security import RBACAgent
-from galaxy.security.idencoding import IdEncodingHelper
 
 log = logging.getLogger(__name__)
 
@@ -216,7 +217,8 @@ class FolderManager:
         new_folder.genome_build = trans.app.genome_builds.default_value
         parent_folder.add_folder(new_folder)
         trans.sa_session.add(new_folder)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         # New folders default to having the same permissions as their parent folder
         trans.app.security_agent.copy_library_permissions(trans, parent_folder, new_folder)
         return new_folder
@@ -250,7 +252,8 @@ class FolderManager:
             changed = True
         if changed:
             trans.sa_session.add(folder)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
         return folder
 
     def delete(self, trans, folder, undelete=False):
@@ -274,7 +277,8 @@ class FolderManager:
         else:
             folder.deleted = True
         trans.sa_session.add(folder)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         return folder
 
     def get_current_roles(self, trans, folder):
@@ -539,7 +543,7 @@ class FolderManager:
         return query
 
     def build_folder_path(
-        self, sa_session: galaxy_scoped_session, security: IdEncodingHelper, folder: model.LibraryFolder
+        self, sa_session: galaxy_scoped_session, folder: model.LibraryFolder
     ) -> List[Tuple[str, str]]:
         """
         Returns the folder path from root to the given folder.
@@ -547,9 +551,9 @@ class FolderManager:
         The path items are tuples with the name and id of each folder for breadcrumb building purposes.
         """
         current_folder = folder
-        path_to_root = [(f"F{security.encode_id(current_folder.id)}", current_folder.name)]
+        path_to_root = [(LibraryFolderDatabaseIdField.encode(current_folder.id), current_folder.name)]
         while current_folder.parent_id is not None:
             parent_folder = sa_session.query(model.LibraryFolder).get(current_folder.parent_id)
             current_folder = parent_folder
-            path_to_root.insert(0, (f"F{security.encode_id(current_folder.id)}", current_folder.name))
+            path_to_root.insert(0, (LibraryFolderDatabaseIdField.encode(current_folder.id), current_folder.name))
         return path_to_root

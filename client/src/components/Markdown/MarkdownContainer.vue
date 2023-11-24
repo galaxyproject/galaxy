@@ -81,7 +81,10 @@ const isVisible = computed(() => !isCollapsible.value || toggle.value);
             <InvocationTime v-else-if="name == 'invocation_time'" :args="args" :invocations="invocations" />
             <JobMetrics v-else-if="name == 'job_metrics'" :args="args" />
             <JobParameters v-else-if="name == 'job_parameters'" :args="args" />
-            <WorkflowDisplay v-else-if="name == 'workflow_display'" :args="args" :workflows="workflows" />
+            <WorkflowDisplay
+                v-else-if="name == 'workflow_display'"
+                :workflow-id="args.workflow_id"
+                :workflows="workflows" />
             <Visualization v-else-if="name == 'visualization'" :args="args" />
             <HistoryDatasetCollectionDisplay
                 v-else-if="name == 'history_dataset_collection_display'"

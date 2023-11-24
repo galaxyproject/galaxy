@@ -1,77 +1,91 @@
 <template>
     <div>
         <b-link
-            v-b-tooltip.hover
+            aria-expanded="false"
             class="workflow-dropdown font-weight-bold"
             data-toggle="dropdown"
-            :title="getWorkflowTooltip(sourceType, workflow)"
-            aria-haspopup="true"
-            aria-expanded="false">
-            <font-awesome-icon icon="caret-down" />
+            :data-workflow-dropdown="workflow.id"
+            draggable
+            @dragstart="onDragStart"
+            @dragend="onDragEnd">
+            <Icon icon="caret-down" class="fa-lg" />
             <span class="workflow-dropdown-name">{{ workflow.name }}</span>
-            <span v-if="sourceType.includes('trs')">
-                <font-awesome-icon icon="check" class="workflow-trs-icon" />
+            <span
+                v-if="sourceType.includes('trs')"
+                v-b-tooltip.hover
+                aria-haspopup="true"
+                :title="getWorkflowTooltip(sourceType, workflow)">
+                <Icon fixed-width icon="check" class="mr-1 workflow-trs-icon" />
             </span>
-            <span v-if="sourceType == 'url'">
-                <font-awesome-icon class="workflow-external-link" icon="link" />
+            <span
+                v-if="sourceType == 'url'"
+                v-b-tooltip.hover
+                aria-haspopup="true"
+                :title="getWorkflowTooltip(sourceType, workflow)">
+                <Icon fixed-width icon="link" class="mr-1 workflow-external-link" />
             </span>
         </b-link>
-        <p v-if="workflow.description" class="workflow-dropdown-description">{{ workflow.description }}</p>
+        <p v-if="workflow.description" class="workflow-dropdown-description">
+            <TextSummary :description="workflow.description" :show-details.sync="showDetails" />
+        </p>
         <div class="dropdown-menu" aria-labelledby="workflow-dropdown">
             <a
                 v-if="!readOnly && !isDeleted"
                 class="dropdown-item"
+                href="#"
                 @keypress="$router.push(urlEdit)"
                 @click.prevent="$router.push(urlEdit)">
-                <span class="fa fa-edit fa-fw mr-1" />
+                <Icon fixed-width icon="edit" class="mr-1" />
                 <span v-localize>Edit</span>
             </a>
-            <a v-if="!isDeleted" class="dropdown-item" href="#" @click.prevent="onCopy">
-                <span class="fa fa-copy fa-fw mr-1" />
+            <a v-if="!isDeleted && !isAnonymous" class="dropdown-item" href="#" @click.prevent="onCopy">
+                <Icon fixed-width icon="copy" class="mr-1" />
                 <span v-localize>Copy</span>
             </a>
             <a
                 v-if="!readOnly && !isDeleted"
                 class="dropdown-item"
+                href="#"
                 @keypress="$router.push(urlInvocations)"
                 @click.prevent="$router.push(urlInvocations)">
-                <span class="fa fa-list fa-fw mr-1" />
+                <Icon fixed-width icon="sitemap" class="fa-rotate-270 mr-1" />
                 <span v-localize>Invocations</span>
             </a>
             <a v-if="!isDeleted" class="dropdown-item" :href="urlDownload">
-                <span class="fa fa-download fa-fw mr-1" />
+                <Icon fixed-width icon="download" class="mr-1" />
                 <span v-localize>Download</span>
             </a>
             <a v-if="!readOnly && !isDeleted" class="dropdown-item" href="#" @click.prevent="onRename">
-                <span class="fa fa-signature fa-fw mr-1" />
+                <Icon fixed-width icon="signature" class="mr-1" />
                 <span v-localize>Rename</span>
             </a>
             <a
                 v-if="!readOnly && !isDeleted"
                 class="dropdown-item"
+                href="#"
                 @keypress="$router.push(urlShare)"
                 @click.prevent="$router.push(urlShare)">
-                <span class="fa fa-share-alt fa-fw mr-1" />
+                <Icon fixed-width icon="share-alt" class="mr-1" />
                 <span v-localize>Share</span>
             </a>
             <a v-if="!readOnly && !isDeleted" class="dropdown-item" :href="urlExport">
-                <span class="fa fa-file-export fa-fw mr-1" />
+                <Icon fixed-width icon="file-export" class="mr-1" />
                 <span v-localize>Export</span>
             </a>
             <a v-if="!isDeleted" class="dropdown-item" :href="urlView">
-                <span class="fa fa-eye fa-fw mr-1" />
+                <Icon fixed-width icon="eye" class="mr-1" />
                 <span v-localize>View</span>
             </a>
-            <a v-if="sourceLabel && !isDeleted" class="dropdown-item" :href="sourceUrl">
-                <span class="fa fa-globe fa-fw mr-1" />
+            <a v-if="sourceLabel && !isDeleted" class="dropdown-item" target="_blank" :href="sourceUrl">
+                <Icon fixed-width icon="external-link-alt" class="mr-1" />
                 <span v-localize>{{ sourceLabel }}</span>
             </a>
             <a v-if="!readOnly && !isDeleted" class="dropdown-item" href="#" @click.prevent="onDelete">
-                <span class="fa fa-trash fa-fw mr-1" />
+                <Icon fixed-width icon="trash" class="mr-1" />
                 <span v-localize>Delete</span>
             </a>
             <a v-if="isDeleted" class="dropdown-item" href="#" @click.prevent="onRestore">
-                <span class="fa fa-trash fa-fw mr-1" />
+                <Icon fixed-width icon="trash-restore" class="mr-1" />
                 <span v-localize>Restore</span>
             </a>
         </div>
@@ -80,19 +94,36 @@
 <script>
 import { Services } from "./services";
 import { withPrefix } from "utils/redirect";
-
-import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
+import TextSummary from "components/Common/TextSummary";
+import { mapState } from "pinia";
+import { useUserStore } from "@/stores/userStore";
+import { setDrag, clearDrag } from "@/utils/setDrag.js";
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
+import { faCaretDown, faSignature, faTimes, faEdit } from "@fortawesome/free-solid-svg-icons";
 
 library.add(faCaretDown);
+library.add(faSignature);
+library.add(faTimes);
+library.add(faEdit);
 
 export default {
     components: {
-        FontAwesomeIcon,
+        TextSummary,
     },
-    props: ["workflow"],
+    props: {
+        workflow: { type: Object, required: true },
+        detailsShowing: { type: Boolean, default: false },
+    },
     computed: {
+        ...mapState(useUserStore, ["isAnonymous"]),
+        showDetails: {
+            get() {
+                return this.detailsShowing;
+            },
+            set() {
+                this.$emit("toggleDetails");
+            },
+        },
         urlEdit() {
             return `/workflows/edit?id=${this.workflow.id}`;
         },
@@ -188,6 +219,12 @@ export default {
                     this.$emit("onError", error);
                 });
         },
+        onDragStart: function (evt) {
+            setDrag(evt, this.workflow);
+        },
+        onDragEnd: function () {
+            clearDrag();
+        },
         onRename: function () {
             const id = this.workflow.id;
             const name = this.workflow.name;
@@ -220,7 +257,7 @@ export default {
         getWorkflowTooltip: function (sourceType, workflow) {
             let tooltip = "";
             if (sourceType.includes("trs")) {
-                tooltip = `Imported from TRS ID (version ${workflow.source_metadata.trs_version_id})`;
+                tooltip = `Imported from TRS ID (version: ${workflow.source_metadata.trs_version_id})`;
             } else if (sourceType == "url") {
                 tooltip = `Imported from ${workflow.source_metadata.url}`;
             }

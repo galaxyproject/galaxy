@@ -22,7 +22,7 @@ export class Model {
                 delete this.values[key];
             }
         } else {
-            throw "Invalid record with no <id>.";
+            throw Error("Invalid record with no <id>.");
         }
     }
 

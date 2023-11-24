@@ -6,6 +6,7 @@ from abc import (
 )
 from typing import (
     Any,
+    Container,
     Optional,
     TYPE_CHECKING,
 )
@@ -16,7 +17,11 @@ from galaxy.util.dictifiable import Dictifiable
 if TYPE_CHECKING:
     from beaker.cache import Cache
 
-    from ..dependencies import AppInfo
+    from ..dependencies import (
+        AppInfo,
+        ToolInfo,
+    )
+    from ..requirements import ContainerDescription
 
 
 class ResolutionCache(Bunch):
@@ -38,7 +43,7 @@ class ContainerResolver(Dictifiable, metaclass=ABCMeta):
     builds_on_resolution = False
     read_only = True  # not used for containers, but set for when they are used like dependency resolvers
 
-    def __init__(self, app_info: Optional["AppInfo"] = None, **kwds) -> None:
+    def __init__(self, app_info: "AppInfo", **kwds) -> None:
         """Default initializer for ``ContainerResolver`` subclasses."""
         self.app_info = app_info
         self.resolver_kwds = kwds
@@ -47,26 +52,27 @@ class ContainerResolver(Dictifiable, metaclass=ABCMeta):
         """Look in resolver-specific settings for option and then fallback to
         global settings.
         """
-        if self.app_info:
-            return getattr(self.app_info, key, default)
-        else:
-            return default
+        return getattr(self.app_info, key, default)
 
     @abstractmethod
-    def resolve(self, enabled_container_types, tool_info, resolution_cache=None, **kwds):
+    def resolve(
+        self, enabled_container_types: Container[str], tool_info: "ToolInfo", **kwds
+    ) -> Optional["ContainerDescription"]:
         """Find a container matching all supplied requirements for tool.
 
-        The supplied argument is a :class:`galaxy.tool_util.deps.containers.ToolInfo` description
+        The supplied argument is a :class:`galaxy.tool_util.deps.dependencies.ToolInfo` description
         of the tool and its requirements.
         """
 
     @abstractproperty
-    def resolver_type(self):
+    def resolver_type(self) -> str:
         """Short label for the type of container resolution."""
 
-    def _container_type_enabled(self, container_description, enabled_container_types):
+    def _container_type_enabled(
+        self, container_description: "ContainerDescription", enabled_container_types: Container[str]
+    ) -> bool:
         """Return a boolean indicating if the specified container type is enabled."""
         return container_description.type in enabled_container_types
 
-    def __str__(self):
+    def __str__(self) -> str:
         return f"{self.__class__.__name__}[]"

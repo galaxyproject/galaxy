@@ -49,6 +49,7 @@ class ToolApp(MinimalToolApp):
     """Dummy App that allows loading tools"""
 
     name = "tool_app"
+    is_webapp = False
 
     def __init__(
         self,

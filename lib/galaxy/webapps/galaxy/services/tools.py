@@ -24,6 +24,7 @@ from galaxy.managers.context import (
 )
 from galaxy.managers.histories import HistoryManager
 from galaxy.model import PostJobAction
+from galaxy.model.base import transaction
 from galaxy.schema.fetch_data import (
     FetchDataFormPayload,
     FetchDataPayload,
@@ -67,7 +68,7 @@ class ToolsService(ServiceBase):
                 with tempfile.NamedTemporaryFile(
                     dir=trans.app.config.new_file_path, prefix="upload_file_data_", delete=False
                 ) as dest:
-                    shutil.copyfileobj(upload_file.file, dest)
+                    shutil.copyfileobj(upload_file.file, dest)  # type: ignore[misc]  # https://github.com/python/mypy/issues/15031
                 upload_file.file.close()
                 files_payload[f"files_{i}|file_data"] = FilesPayload(
                     filename=upload_file.filename, local_filename=dest.name
@@ -133,7 +134,7 @@ class ToolsService(ServiceBase):
         history_id = payload.get("history_id")
         if history_id:
             history_id = trans.security.decode_id(history_id) if isinstance(history_id, str) else history_id
-            target_history = self.history_manager.get_owned(history_id, trans.user, current_history=trans.history)
+            target_history = self.history_manager.get_mutable(history_id, trans.user, current_history=trans.history)
         else:
             target_history = None
 
@@ -161,12 +162,17 @@ class ToolsService(ServiceBase):
         use_cached_job = payload.get("use_cached_job", False) or util.string_as_bool(
             inputs.get("use_cached_job", "false")
         )
-
+        preferred_object_store_id = payload.get("preferred_object_store_id")
         input_format = str(payload.get("input_format", "legacy"))
         if "data_manager_mode" in payload:
             incoming["__data_manager_mode"] = payload["data_manager_mode"]
         vars = tool.handle_input(
-            trans, incoming, history=target_history, use_cached_job=use_cached_job, input_format=input_format
+            trans,
+            incoming,
+            history=target_history,
+            use_cached_job=use_cached_job,
+            input_format=input_format,
+            preferred_object_store_id=preferred_object_store_id,
         )
 
         new_pja_flush = False
@@ -182,7 +188,8 @@ class ToolsService(ServiceBase):
                     new_pja_flush = True
 
         if new_pja_flush:
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
 
         return self._handle_inputs_output_to_api_response(trans, tool, target_history, vars)
 

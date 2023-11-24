@@ -56,7 +56,7 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
         galaxy.app.app = app
     else:
         try:
-            app = galaxy.app.UniverseApplication(global_conf=global_conf, **kwargs)
+            app = galaxy.app.UniverseApplication(global_conf=global_conf, is_webapp=True, **kwargs)
             galaxy.app.app = app
         except Exception:
             traceback.print_exc()
@@ -201,6 +201,7 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/admin/reset_metadata")
     webapp.add_client_route("/admin/roles")
     webapp.add_client_route("/admin/forms")
+    webapp.add_client_route("/admin/notifications")
     webapp.add_client_route("/admin/groups")
     webapp.add_client_route("/admin/repositories")
     webapp.add_client_route("/admin/sanitize_allow")
@@ -209,14 +210,15 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/admin/quotas")
     webapp.add_client_route("/admin/form/{form_id}")
     webapp.add_client_route("/admin/api_keys")
+    webapp.add_client_route("/carbon_emissions_calculations")
     webapp.add_client_route("/datatypes")
     webapp.add_client_route("/login/start")
-    webapp.add_client_route("/login/confirm")
     webapp.add_client_route("/tools/list")
     webapp.add_client_route("/tools/json")
     webapp.add_client_route("/tours")
     webapp.add_client_route("/tours/{tour_id}")
     webapp.add_client_route("/user")
+    webapp.add_client_route("/user/notifications{path:.*?}")
     webapp.add_client_route("/user/{form_id}")
     webapp.add_client_route("/welcome/new")
     webapp.add_client_route("/visualizations")
@@ -238,6 +240,9 @@ def app_pair(global_conf, load_app_kwds=None, wsgi_preflight=True, **kwargs):
     webapp.add_client_route("/histories/list")
     webapp.add_client_route("/histories/import")
     webapp.add_client_route("/histories/{history_id}/export")
+    webapp.add_client_route("/histories/{history_id}/archive")
+    webapp.add_client_route("/histories/{history_id}/invocations")
+    webapp.add_client_route("/histories/archived")
     webapp.add_client_route("/histories/list_published")
     webapp.add_client_route("/histories/list_shared")
     webapp.add_client_route("/histories/rename")
@@ -766,26 +771,6 @@ def populate_api_routes(webapp, app):
         "update_step", "/steps/{step_id}", action="update_invocation_step", conditions=dict(method=["PUT"])
     )
 
-    # ======================================
-    # ====== DISPLAY APPLICATIONS API ======
-    # ======================================
-
-    webapp.mapper.connect(
-        "index",
-        "/api/display_applications",
-        controller="display_applications",
-        action="index",
-        conditions=dict(method=["GET"]),
-    )
-
-    webapp.mapper.connect(
-        "reload",
-        "/api/display_applications/reload",
-        controller="display_applications",
-        action="reload",
-        conditions=dict(method=["POST"]),
-    )
-
     # ================================
     # ===== USERS API =====
     # ================================
@@ -1075,6 +1060,7 @@ def populate_api_routes(webapp, app):
         path_prefix="/api/jobs/{job_id}",
         parent_resources=dict(member_name="job", collection_name="jobs"),
     )
+
     webapp.mapper.resource(
         "port",
         "ports",
@@ -1299,12 +1285,6 @@ def wrap_in_middleware(app, global_conf, application_stack, **local_conf):
                 normalize_remote_user_email=conf.get("normalize_remote_user_email", False),
             ),
         )
-    # The recursive middleware allows for including requests in other
-    # requests or forwarding of requests, all on the server side.
-    if asbool(conf.get("use_recursive", True)):
-        from paste import recursive
-
-        app = wrap_if_allowed(app, stack, recursive.RecursiveMiddleware, args=(conf,))
 
     # Error middleware
     app = wrap_if_allowed(app, stack, ErrorMiddleware, args=(conf,))

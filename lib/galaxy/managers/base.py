@@ -54,8 +54,15 @@ from galaxy import (
     model,
 )
 from galaxy.model import tool_shed_install
+from galaxy.model.base import transaction
 from galaxy.schema import ValueFilterQueryParams
 from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.storage_cleaner import (
+    CleanableItemsSummary,
+    StorageItemsCleanupResult,
+    StoredItem,
+    StoredItemOrderBy,
+)
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.structured_app import (
     BasicSharedApp,
@@ -232,7 +239,9 @@ class ModelManager(Generic[U]):
 
         self.session().add(item)
         if flush:
-            self.session().flush()
+            session = self.session()
+            with transaction(session):
+                session.commit()
         return item
 
     # .... query foundation wrapper
@@ -382,6 +391,21 @@ class ModelManager(Generic[U]):
         items = self._apply_fn_filters_gen(items, fn_filters)
         return list(self._apply_fn_limit_offset_gen(items, limit, offset))
 
+    def count(self, filters=None, **kwargs):
+        """
+        Returns the number of objects matching the given filters.
+
+        If the filters include functional filters, this function will raise an exception as they might cause
+        performance issues.
+        """
+        self._handle_filters_case_sensitivity(filters)
+        orm_filters, fn_filters = self._split_filters(filters)
+        if fn_filters:
+            raise exceptions.RequestParameterInvalidException("Counting with functional filters is not supported.")
+
+        query = self.query(filters=orm_filters, **kwargs)
+        return query.count()
+
     def _handle_filters_case_sensitivity(self, filters):
         """Modifies the filters to make them case insensitive if needed."""
         if filters is None:
@@ -503,7 +527,9 @@ class ModelManager(Generic[U]):
         item = self.model_class(*args, **kwargs)
         self.session().add(item)
         if flush:
-            self.session().flush()
+            session = self.session()
+            with transaction(session):
+                session.commit()
         return item
 
     def copy(self, item, **kwargs):
@@ -523,7 +549,9 @@ class ModelManager(Generic[U]):
             if hasattr(item, key):
                 setattr(item, key, value)
         if flush:
-            self.session().flush()
+            session = self.session()
+            with transaction(session):
+                session.commit()
         return item
 
     def associate(self, associate_with, item, foreign_key_name=None):
@@ -934,7 +962,8 @@ class ModelDeserializer(HasAModelManager[T]):
         # TODO:?? add and flush here or in manager?
         if flush and len(new_dict):
             sa_session.add(item)
-            sa_session.flush()
+            with transaction(sa_session):
+                sa_session.commit()
 
         return new_dict
 
@@ -1310,4 +1339,53 @@ class SortableManager:
     def parse_order_by(self, order_by_string, default=None):
         """Return an ORM compatible order_by clause using the given string (i.e.: 'name-dsc,create_time').
         This must be implemented by the manager."""
+        raise NotImplementedError
+
+
+class StorageCleanerManager(Protocol):
+    """
+    Interface for monitoring storage usage and managing deletion/purging of objects that consume user's storage space.
+    """
+
+    # TODO: refactor this interface to be more generic and allow for more types of cleanable items
+
+    sort_map: Dict[StoredItemOrderBy, Any]
+
+    def get_discarded_summary(self, user: model.User) -> CleanableItemsSummary:
+        """Returns information with the total storage space taken by discarded items for the given user.
+
+        Discarded items are those that are deleted but not purged yet.
+        """
+        raise NotImplementedError
+
+    def get_discarded(
+        self,
+        user: model.User,
+        offset: Optional[int],
+        limit: Optional[int],
+        order: Optional[StoredItemOrderBy],
+    ) -> List[StoredItem]:
+        """Returns a paginated list of items deleted by the given user that are not yet purged."""
+        raise NotImplementedError
+
+    def get_archived_summary(self, user: model.User) -> CleanableItemsSummary:
+        """Returns information with the total storage space taken by archived items for the given user.
+
+        Archived items are those that are not currently active. Some archived items may be purged already, but
+        this method does not return information about those.
+        """
+        raise NotImplementedError
+
+    def get_archived(
+        self,
+        user: model.User,
+        offset: Optional[int],
+        limit: Optional[int],
+        order: Optional[StoredItemOrderBy],
+    ) -> List[StoredItem]:
+        """Returns a paginated list of items archived by the given user that are not yet purged."""
+        raise NotImplementedError
+
+    def cleanup_items(self, user: model.User, item_ids: Set[int]) -> StorageItemsCleanupResult:
+        """Purges the given list of items by ID. The items must be owned by the user."""
         raise NotImplementedError

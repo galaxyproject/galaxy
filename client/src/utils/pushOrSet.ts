@@ -4,7 +4,7 @@
  * @param key Key which array is in
  * @param value Value to push
  */
-export function pushOrSet<T, K extends string | number | symbol>(object: { [key in K]: Array<T> }, key: K, value: T) {
+export function pushOrSet<T, K extends string | number | symbol>(object: { [_key in K]: Array<T> }, key: K, value: T) {
     if (key in object) {
         object[key]!.push(value);
     } else {

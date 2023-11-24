@@ -37,11 +37,11 @@ except Exception:
 """
 
 
-def get_metadata_compute_strategy(config, job_id, metadata_strategy_override=None, tool_id=None):
+def get_metadata_compute_strategy(config, job_id, metadata_strategy_override=None, tool_id=None, tool_type=None):
     metadata_strategy = metadata_strategy_override or config.metadata_strategy
     if metadata_strategy == "legacy":
         raise Exception("legacy metadata_strategy has been removed")
-    elif "extended" in metadata_strategy and tool_id != "__SET_METADATA__":
+    elif "extended" in metadata_strategy and tool_id != "__SET_METADATA__" and tool_type != "interactive":
         return ExtendedDirectoryMetadataGenerator(job_id)
     else:
         return PortableDirectoryMetadataGenerator(job_id)
@@ -312,10 +312,14 @@ def _initialize_metadata_inputs(dataset, path_for_part, tmp_dir, kwds, real_meta
     filename_kwds = path_for_part("kwds")
     filename_override_metadata = path_for_part("override")
 
-    open(filename_out, "wt+")  # create the file on disk, so it cannot be reused by tempfile (unlikely, but possible)
     # create the file on disk, so it cannot be reused by tempfile (unlikely, but possible)
-    json.dump((False, "External set_meta() not called"), open(filename_results_code, "wt+"))
-    json.dump(kwds, open(filename_kwds, "wt+"), ensure_ascii=True)
+    with open(filename_out, "w+"):
+        pass
+    # create the file on disk, so it cannot be reused by tempfile (unlikely, but possible)
+    with open(filename_results_code, "w+") as f:
+        json.dump((False, "External set_meta() not called"), f)
+    with open(filename_kwds, "w+") as f:
+        json.dump(kwds, f, ensure_ascii=True)
 
     override_metadata = []
     for meta_key, spec_value in dataset.metadata.spec.items():
@@ -326,7 +330,8 @@ def _initialize_metadata_inputs(dataset, path_for_part, tmp_dir, kwds, real_meta
                 shutil.copy(dataset.metadata.get(meta_key, None).file_name, metadata_temp.file_name)
                 override_metadata.append((meta_key, metadata_temp.to_JSON()))
 
-    json.dump(override_metadata, open(filename_override_metadata, "wt+"))
+    with open(filename_override_metadata, "w+") as f:
+        json.dump(override_metadata, f)
 
     return filename_out, filename_results_code, filename_kwds, filename_override_metadata
 

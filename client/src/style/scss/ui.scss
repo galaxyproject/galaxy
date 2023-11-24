@@ -40,6 +40,16 @@
     overflow: auto !important;
 }
 
+// utility class to set word wrap to normal
+.word-wrap-normal {
+    word-wrap: normal;
+}
+
+// utility class to set white space wrapping to normal
+.white-space-normal {
+    white-space: normal;
+}
+
 // default margins
 $ui-margin-vertical: $margin-v * 0.25;
 $ui-margin-vertical-large: $margin-v * 0.5;
@@ -201,6 +211,10 @@ $ui-margin-horizontal-large: $margin-v * 2;
         cursor: not-allowed;
         background-color: $brand-light;
     }
+}
+
+.ui-input-error {
+    border-color: $brand-danger;
 }
 
 .ui-textarea {
@@ -382,6 +396,10 @@ $ui-margin-horizontal-large: $margin-v * 2;
     column-gap: 0.25rem;
 }
 
+.flex-gapy-1 {
+    row-gap: 0.25rem;
+}
+
 /* Heading Sizes */
 .h-xl {
     font-size: $h1-font-size;
@@ -412,8 +430,13 @@ $ui-margin-horizontal-large: $margin-v * 2;
     display: inline;
     line-height: unset;
     vertical-align: unset;
+    user-select: text;
 
     &:hover {
         text-decoration: underline;
     }
+}
+
+.overflow-x-hidden {
+    overflow-x: hidden !important;
 }

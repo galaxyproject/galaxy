@@ -5,6 +5,7 @@ import logging
 from io import (
     BytesIO,
     IOBase,
+    StringIO,
 )
 from typing import (
     Any,
@@ -21,7 +22,10 @@ from fastapi import (
     Query,
     Request,
 )
-from starlette.responses import StreamingResponse
+from starlette.responses import (
+    Response,
+    StreamingResponse,
+)
 
 from galaxy.schema import (
     FilterQueryParams,
@@ -52,6 +56,7 @@ from galaxy.webapps.galaxy.api.common import (
 from galaxy.webapps.galaxy.services.datasets import (
     ComputeDatasetHashPayload,
     ConvertedDatasetsMap,
+    DatasetContentType,
     DatasetInheritanceChain,
     DatasetsService,
     DatasetStorageDetails,
@@ -101,6 +106,24 @@ RawQueryParam = Query(
         "The query parameter 'raw' should be considered experimental and may be dropped at "
         "some point in the future without warning. Generally, data should be processed by its "
         "datatype prior to display."
+    ),
+)
+
+DisplayOffsetQueryParam = Query(
+    default=None,
+    description=(
+        "Set this for datatypes that allow chunked display through the display_data method to enable "
+        "chunking. This specifies a byte offset into the target dataset's display."
+    ),
+)
+
+DisplayChunkSizeQueryParam = Query(
+    default=None,
+    description=(
+        "If offset is set, this recommends 'how large' the next chunk should be. "
+        "This is not respected or interpreted uniformly and should be interpreted as a very loose recommendation. "
+        "Different datatypes interpret 'largeness' differently - for bam datasets this is a number of lines whereas "
+        "for tabular datatypes this is interpreted as a number of bytes. "
     ),
 )
 
@@ -254,9 +277,11 @@ class FastAPIDatasets:
         filename: Optional[str] = FilenameQueryParam,
         to_ext: Optional[str] = ToExtQueryParam,
         raw: bool = RawQueryParam,
+        offset: Optional[int] = DisplayOffsetQueryParam,
+        ck_size: Optional[int] = DisplayChunkSizeQueryParam,
     ):
         """Streams the dataset for download or the contents preview to be displayed in a browser."""
-        return self._display(request, trans, history_content_id, preview, filename, to_ext, raw)
+        return self._display(request, trans, history_content_id, preview, filename, to_ext, raw, offset, ck_size)
 
     @router.get(
         "/api/datasets/{history_content_id}/display",
@@ -276,9 +301,11 @@ class FastAPIDatasets:
         filename: Optional[str] = FilenameQueryParam,
         to_ext: Optional[str] = ToExtQueryParam,
         raw: bool = RawQueryParam,
+        offset: Optional[int] = DisplayOffsetQueryParam,
+        ck_size: Optional[int] = DisplayChunkSizeQueryParam,
     ):
         """Streams the dataset for download or the contents preview to be displayed in a browser."""
-        return self._display(request, trans, history_content_id, preview, filename, to_ext, raw)
+        return self._display(request, trans, history_content_id, preview, filename, to_ext, raw, offset, ck_size)
 
     def _display(
         self,
@@ -289,12 +316,22 @@ class FastAPIDatasets:
         filename: Optional[str],
         to_ext: Optional[str],
         raw: bool,
+        offset: Optional[int] = None,
+        ck_size: Optional[int] = None,
     ):
         extra_params = get_query_parameters_from_request_excluding(
-            request, {"preview", "filename", "to_ext", "raw", "dataset"}
+            request, {"preview", "filename", "to_ext", "raw", "dataset", "ck_size", "offset"}
         )
         display_data, headers = self.service.display(
-            trans, history_content_id, preview=preview, filename=filename, to_ext=to_ext, raw=raw, **extra_params
+            trans,
+            history_content_id,
+            preview=preview,
+            filename=filename,
+            to_ext=to_ext,
+            raw=raw,
+            offset=offset,
+            ck_size=ck_size,
+            **extra_params,
         )
         if isinstance(display_data, IOBase):
             file_name = getattr(display_data, "name", None)
@@ -304,6 +341,8 @@ class FastAPIDatasets:
             return StreamingResponse(display_data.response(), headers=headers)
         elif isinstance(display_data, bytes):
             return StreamingResponse(BytesIO(display_data), headers=headers)
+        elif isinstance(display_data, str):
+            return StreamingResponse(content=StringIO(display_data), headers=headers)
         return StreamingResponse(display_data, headers=headers)
 
     @router.get(
@@ -333,6 +372,10 @@ class FastAPIDatasets:
         summary="Returns the metadata file associated with this history item.",
         response_class=GalaxyFileResponse,
         operation_id="datasets__get_metadata_file",
+    )
+    @router.head(
+        "/api/datasets/{history_content_id}/metadata_file",
+        summary="Check if metadata file can be downloaded.",
     )
     def get_metadata_file_datasets(
         self,
@@ -387,6 +430,20 @@ class FastAPIDatasets:
         extra_params = get_query_parameters_from_request_excluding(request, exclude_params)
 
         return self.service.show(trans, dataset_id, hda_ldda, serialization_params, data_type, **extra_params)
+
+    @router.get(
+        "/api/datasets/{dataset_id}/content/{content_type}",
+        summary="Retrieve information about the content of a dataset.",
+    )
+    def get_structured_content(
+        self,
+        request: Request,
+        trans=DependsOnTrans,
+        dataset_id: DecodedDatabaseIdField = DatasetIDPathParam,
+        content_type: DatasetContentType = DatasetContentType.data,
+    ):
+        content, headers = self.service.get_structured_content(trans, dataset_id, content_type, **request.query_params)
+        return Response(content=content, headers=headers)
 
     @router.delete(
         "/api/datasets",

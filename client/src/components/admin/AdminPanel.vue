@@ -43,9 +43,9 @@ export default {
             default: "",
         },
     },
-    data() {
-        return {
-            sections: [
+    computed: {
+        sections() {
+            return [
                 {
                     title: "Server",
                     items: [
@@ -148,8 +148,8 @@ export default {
                         },
                     ],
                 },
-            ],
-        };
+            ];
+        },
     },
 };
 </script>

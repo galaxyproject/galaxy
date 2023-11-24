@@ -2,18 +2,34 @@
     "extends": "@vue/tsconfig/tsconfig.json",
     "compilerOptions": {
         "target": "es2016",
-        "module": "es6",
+        "module": "es2020",
+
+        // @vue/tsconfig now sets this by default, but this doesn't play well
+        // with the ts-jest presets.
+        // It doesn't seem to have any immediate impact, and may not be worth
+        // fighting with as we want to swap to vitest anyway
+        // TODO: revisit and drop this override
+        // See https://www.typescriptlang.org/tsconfig#verbatimModuleSyntax for context
+        "verbatimModuleSyntax": false,
 
         "baseUrl": ".",
         "paths": {
             "@/*": ["src/*"],
-            "@tests/*": ["tests/*"]
+            "@tests/*": ["tests/*"],
+            "@fortawesome/fontawesome-common-types": [
+                "./node_modules/@fortawesome/fontawesome-common-types/index"
+            ]
         },
         "outDir": "./dist/build",
 
         "allowJs": true,
         "checkJs": false,
-        "allowSyntheticDefaultImports": true
+        "allowSyntheticDefaultImports": true,
+        "noUncheckedIndexedAccess": true,
+
+        // Necessary for now, was previously the default setting
+        // See more at https://github.com/vuejs/tsconfig#migrating-from-typescript--50
+        "resolvePackageJsonExports": false
     },
     "vueCompilerOptions": {
         "target": 2.7

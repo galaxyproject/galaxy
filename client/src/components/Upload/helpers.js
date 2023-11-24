@@ -9,6 +9,7 @@ const URI_PREFIXES = [
     "gximport://",
     "gxuserimport://",
     "gxftp://",
+    "drs://",
 ];
 function itemIsUrl(item) {
     return URI_PREFIXES.some((prefix) => item.get("url_paste").startsWith(prefix));

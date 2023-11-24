@@ -73,6 +73,16 @@ class TestHistorySharing(SeleniumTestCase):
         self.assert_error_message(contains="You cannot share resources with yourself")
         self.screenshot("history_sharing_invalid_with_self")
 
+    @selenium_test
+    def test_shared_with_me(self):
+        user1_email, user2_email, history_id = self.setup_two_users_with_one_shared_history()
+        self.submit_login(user2_email, retries=VALID_LOGIN_RETRIES)
+        self.navigate_to_histories_shared_with_me_page()
+        self.components.shared_histories.selector.wait_for_present()
+        rows = self.components.shared_histories.histories.all()
+        assert len(rows) > 0
+        assert any(user1_email in row.text for row in rows)
+
     def setup_two_users_with_one_shared_history(self, share_by_id=False):
         user1_email = self._get_random_email()
         user2_email = self._get_random_email()
@@ -125,7 +135,7 @@ class TestHistoryRequiresLoginSelenium(SeleniumTestCase):
 
     @selenium_test
     def test_share_history_login_redirect(self):
-        user_email = self.get_logged_in_user()["email"]
+        user_email = self.get_user_email()
         history_id = self.current_history_id()
         self.logout()
         self.go_to_history_sharing(history_id)

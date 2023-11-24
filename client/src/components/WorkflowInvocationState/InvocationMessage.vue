@@ -62,7 +62,12 @@ const workflow = computed(() => {
 });
 
 const workflowStep = computed(() => {
-    if ("workflow_step_id" in props.invocationMessage && workflow.value) {
+    if (
+        "workflow_step_id" in props.invocationMessage &&
+        props.invocationMessage.workflow_step_id !== undefined &&
+        props.invocationMessage.workflow_step_id !== null &&
+        workflow.value
+    ) {
         return workflow.value.steps[props.invocationMessage.workflow_step_id];
     }
     return undefined;
@@ -93,7 +98,7 @@ const stepDescription = computed(() => {
     } else if (messageLevel === "error") {
         return "This step failed the invocation";
     } else {
-        throw "Unknown message level";
+        throw Error("Unknown message level");
     }
 });
 
@@ -146,7 +151,14 @@ const infoString = computed(() => {
             invocationMessage.workflow_step_id + 1
         } is a conditional step and the result of the when expression is not a boolean type.`;
     } else if (reason === "unexpected_failure") {
-        return `${failFragment} an unexpected failure occurred.`;
+        let atStep = "";
+        if (invocationMessage.workflow_step_id !== null && invocationMessage.workflow_step_id !== undefined) {
+            atStep = ` at step ${invocationMessage.workflow_step_id + 1}`;
+        }
+        if (invocationMessage.details) {
+            return `${failFragment} an unexpected failure occurred${atStep}: '${invocationMessage.details}'`;
+        }
+        return `${failFragment} an unexpected failure occurred${atStep}.`;
     } else if (reason === "workflow_output_not_found") {
         return `Defined workflow output '${invocationMessage.output_name}' was not found in step ${
             invocationMessage.workflow_step_id + 1

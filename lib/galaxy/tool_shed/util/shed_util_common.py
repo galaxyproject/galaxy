@@ -2,6 +2,7 @@ import logging
 import re
 
 from galaxy import util
+from galaxy.model.base import transaction
 from galaxy.tool_shed.util import repository_util
 from galaxy.util.tool_shed import common_util
 from galaxy.web import url_for
@@ -44,8 +45,10 @@ def clean_dependency_relationships(trans, metadata_dict, tool_shed_repository, t
             message = "Repository dependency %s by owner %s is not required by repository %s, owner %s, "
             message += "removing from list of repository dependencies."
             log.debug(message % (r.name, r.owner, tool_shed_repository.name, tool_shed_repository.owner))
-            trans.install_model.context.delete(rrda)
-            trans.install_model.context.flush()
+            session = trans.install_model.context
+            session.delete(rrda)
+            with transaction(session):
+                session.commit()
 
 
 def generate_tool_guid(repository_clone_url, tool):

@@ -1,6 +1,7 @@
 <script setup lang="ts">
 import { ref, computed } from "vue";
 import Multiselect from "vue-multiselect";
+import { useMultiselect } from "@/composables/useMultiselect";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faTags, faCheck, faTimes, faPlus } from "@fortawesome/free-solid-svg-icons";
@@ -17,6 +18,8 @@ interface StatelessTagsProps {
     clickable?: boolean;
     useToggleLink?: boolean;
     maxVisibleTags?: number;
+    placeholder?: string;
+    noPadding?: boolean;
 }
 
 const props = withDefaults(defineProps<StatelessTagsProps>(), {
@@ -25,6 +28,7 @@ const props = withDefaults(defineProps<StatelessTagsProps>(), {
     clickable: false,
     useToggleLink: true,
     maxVisibleTags: 5,
+    placeholder: "Add Tags",
 });
 
 const emit = defineEmits<{
@@ -32,7 +36,6 @@ const emit = defineEmits<{
     (e: "tag-click", tag: string): void;
 }>();
 
-//@ts-ignore bad library types
 library.add(faTags, faCheck, faTimes, faPlus);
 
 const { userTags, addLocalTag } = useUserTags();
@@ -60,15 +63,7 @@ function onDelete(tag: string) {
     emit("input", val);
 }
 
-const editing = ref(false);
-
-function onOpen() {
-    editing.value = true;
-}
-
-function onClose() {
-    editing.value = false;
-}
+const { editing, ariaExpanded, onOpen, onClose } = useMultiselect();
 
 const multiselectElement: Ref<Multiselect | null> = ref(null);
 
@@ -114,17 +109,18 @@ function onTagClicked(tag: string) {
 </script>
 
 <template>
-    <div class="stateless-tags px-1">
+    <div class="stateless-tags" :class="{ 'px-1': !props.noPadding }">
         <Multiselect
             v-if="!disabled"
             ref="multiselectElement"
-            placeholder="Add Tags"
             open-direction="bottom"
+            :placeholder="props.placeholder"
             :value="tags"
             :options="userTags"
             :multiple="true"
             :taggable="true"
             :close-on-select="false"
+            :aria-expanded="ariaExpanded"
             @tag="onAddTag"
             @input="onInput"
             @open="onOpen"
@@ -145,7 +141,7 @@ function onTagClicked(tag: string) {
 
             <template v-slot:caret>
                 <b-button v-if="!editing" class="toggle-button" variant="link" tabindex="-1" @click="openMultiselect">
-                    Add Tags
+                    {{ props.placeholder }}
                     <FontAwesomeIcon icon="fa-tags" />
                 </b-button>
             </template>
@@ -173,7 +169,7 @@ function onTagClicked(tag: string) {
             </template>
         </Multiselect>
 
-        <div v-else class="pl-1 pb-2">
+        <div v-else :class="{ 'pl-1': !props.noPadding, 'pb-2': !props.noPadding }">
             <div class="d-inline">
                 <Tag
                     v-for="tag in trimmedTags"
@@ -327,6 +323,7 @@ function onTagClicked(tag: string) {
         .multiselect__option--selected {
             .multiselect-option {
                 color: $brand-primary;
+                background-color: $brand-secondary;
 
                 .info:not(.highlighted) {
                     display: inline-block;

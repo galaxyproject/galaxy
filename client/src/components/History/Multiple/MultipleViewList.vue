@@ -3,23 +3,14 @@ import { computed, ref, type Ref } from "vue";
 //@ts-ignore missing typedefs
 import VirtualList from "vue-virtual-scroll-list";
 import MultipleViewItem from "./MultipleViewItem.vue";
-import { useHistoryStore } from "@/stores/historyStore";
-import SelectorModal from "@/components/History/Modals/SelectorModal.vue";
+import type { HistorySummary } from "@/stores/historyStore";
 import { useAnimationFrameScroll } from "@/composables/sensors/animationFrameScroll";
 import { useAnimationFrameResizeObserver } from "@/composables/sensors/animationFrameResizeObserver";
 
-const historyStore = useHistoryStore();
-
-interface History {
-    id: string;
-}
-
 const props = withDefaults(
     defineProps<{
-        histories: History[];
-        currentHistory: History;
-        // todo: stricter typedef for handlers, when MultipleViewItem is refactored
-        handlers: { [handler: string]: Function };
+        histories: HistorySummary[];
+        selectedHistories: { id: string }[];
         filter?: string;
     }>(),
     {
@@ -37,38 +28,19 @@ useAnimationFrameResizeObserver(scrollContainer, ({ clientSize, scrollSize }) =>
 
 const scrolledLeft = computed(() => !isScrollable.value || arrived.left);
 const scrolledRight = computed(() => !isScrollable.value || arrived.right);
-
-const selectedHistories: Ref<History[]> = computed(() => historyStore.pinnedHistories);
-
-function removeHistoryFromList(history: History) {
-    historyStore.unpinHistory(history.id);
-}
-
-if (!selectedHistories.value.length) {
-    historyStore.pinHistory(props.histories[0].id);
-}
-
-function addHistoriesToList(histories: History[]) {
-    histories.forEach((history) => {
-        const historyExists = selectedHistories.value.find((h) => h.id === history.id);
-        if (!historyExists) {
-            historyStore.pinHistory(history.id);
-        }
-    });
-}
 </script>
 
 <template>
     <div class="list-container h-100" :class="{ 'scrolled-left': scrolledLeft, 'scrolled-right': scrolledRight }">
         <div ref="scrollContainer" class="d-flex h-100 w-auto overflow-auto">
             <virtual-list
-                v-if="selectedHistories.length"
-                :estimate-size="selectedHistories.length"
+                v-if="props.selectedHistories.length"
+                :estimate-size="props.selectedHistories.length"
                 :data-key="'id'"
                 :data-component="MultipleViewItem"
-                :data-sources="selectedHistories"
+                :data-sources="props.selectedHistories"
                 :direction="'horizontal'"
-                :extra-props="{ currentHistory, handlers, filter, removeHistoryFromList }"
+                :extra-props="{ filter }"
                 :item-style="{ width: '15rem' }"
                 item-class="d-flex mx-1 mt-1"
                 class="d-flex"
@@ -76,18 +48,10 @@ function addHistoriesToList(histories: History[]) {
             </virtual-list>
 
             <div
-                v-b-modal.select-histories-modal
-                class="history-picker text-primary d-flex m-3 p-5 align-items-center text-nowrap">
+                class="history-picker text-primary d-flex m-3 p-5 align-items-center text-nowrap"
+                @click.stop="$emit('update:show-modal', true)">
                 Select histories
             </div>
-
-            <SelectorModal
-                id="select-histories-modal"
-                :multiple="true"
-                :histories="histories"
-                :current-history-id="currentHistory.id"
-                title="Select histories"
-                @selectHistories="addHistoriesToList" />
         </div>
     </div>
 </template>
@@ -96,6 +60,7 @@ function addHistoriesToList(histories: History[]) {
 .list-container {
     .history-picker {
         border: dotted lightgray;
+        cursor: pointer;
     }
 
     position: relative;

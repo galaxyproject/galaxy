@@ -5,9 +5,14 @@ import { DEFAULT_QUOTA_SOURCE_LABEL, QuotaUsage } from "./model/QuotaUsage";
 
 interface QuotaUsageBarProps {
     quotaUsage: QuotaUsage;
+    embedded?: boolean;
+    compact?: boolean;
 }
 
-const props = defineProps<QuotaUsageBarProps>();
+const props = withDefaults(defineProps<QuotaUsageBarProps>(), {
+    embedded: false,
+    compact: false,
+});
 
 const storageSourceText = ref(localize("storage source"));
 const percentOfDiskQuotaUsedText = ref(localize("% of disk quota used"));
@@ -33,6 +38,14 @@ const progressVariant = computed(() => {
     return "danger";
 });
 
+const sourceTag = computed(() => {
+    return props.embedded ? "div" : "h2";
+});
+
+const usageTag = computed(() => {
+    return props.embedded ? "div" : "h3";
+});
+
 defineExpose({
     isDefaultQuota,
     quotaHasLimit,
@@ -40,20 +53,28 @@ defineExpose({
 </script>
 
 <template>
-    <div class="quota-usage-bar w-75 mx-auto my-5">
-        <h2 v-if="!isDefaultQuota" class="quota-storage-source">
+    <div class="quota-usage-bar mx-auto" :class="{ 'w-75': !embedded, 'my-5': !embedded, 'my-1': embedded }">
+        <component :is="sourceTag" v-if="!isDefaultQuota && !embedded" class="quota-storage-source">
             <span class="storage-source-label">
                 <b>{{ quotaUsage.sourceLabel }}</b>
             </span>
             {{ storageSourceText }}
-        </h2>
-        <h3>
+        </component>
+        <component
+            :is="usageTag"
+            v-if="!compact"
+            :data-quota-usage="quotaUsage.totalDiskUsageInBytes"
+            class="quota-usage">
             <b>{{ quotaUsage.niceTotalDiskUsage }}</b>
             <span v-if="quotaHasLimit"> of {{ quotaUsage.niceQuota }}</span> used
-        </h3>
-        <span v-if="quotaHasLimit" class="quota-percent-text">
+        </component>
+        <span v-if="quotaHasLimit && !compact" class="quota-percent-text" :data-quota-percent="quotaUsage.quotaPercent">
             {{ quotaUsage.quotaPercent }}{{ percentOfDiskQuotaUsedText }}
         </span>
-        <b-progress :value="quotaUsage.quotaPercent" :variant="progressVariant" max="100" />
+        <b-progress
+            v-if="quotaHasLimit || !(embedded || compact)"
+            :value="quotaUsage.quotaPercent"
+            :variant="progressVariant"
+            max="100" />
     </div>
 </template>

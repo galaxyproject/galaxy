@@ -221,7 +221,7 @@ def recalculate_user_disk_usage(app, **kwargs):
     if user_id:
         user = sa_session.query(app.model.User).get(user_id)
         if user:
-            user.calculate_and_set_disk_usage()
+            user.calculate_and_set_disk_usage(app.object_store)
         else:
             log.error(f"Recalculate user disk usage task failed, user {user_id} not found")
     else:
@@ -238,7 +238,7 @@ def reload_tool_data_tables(app, **kwargs):
 
 
 def rebuild_toolbox_search_index(app, **kwargs):
-    if app.is_webapp:
+    if app.is_webapp and app.database_heartbeat.is_config_watcher:
         if app.toolbox_search.index_count < app.toolbox._reload_count:
             app.reindex_tool_search()
     else:

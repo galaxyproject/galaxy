@@ -143,3 +143,25 @@ class OwnableManagerMixin:
         """
         # just alias to list_owned
         return self.list_owned(user, **kwargs)
+
+    def get_mutable(self, id: int, user: Optional[model.User], **kwargs: Any) -> Any:
+        """
+        Return the item with the given id if the user can mutate it,
+        otherwise raise an error. The user must be the owner of the item.
+
+        :raises exceptions.ItemOwnershipException:
+        """
+        item = self.get_owned(id, user, **kwargs)
+        self.error_unless_mutable(item)
+        return item
+
+    def error_unless_mutable(self, item):
+        """
+        Raise an error if the item is NOT mutable.
+
+        Items purged or archived are considered immutable.
+
+        :raises exceptions.ItemImmutableException:
+        """
+        if getattr(item, "purged", False) or getattr(item, "archived", False):
+            raise exceptions.ItemImmutableException(f"{self.model_class.__name__} is immutable")

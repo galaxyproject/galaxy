@@ -15,6 +15,7 @@ from galaxy.files import (
 )
 from galaxy.managers.context import ProvidesUserContext
 from galaxy.schema.remote_files import (
+    FilesSourcePlugin,
     FilesSourcePluginList,
     RemoteFilesDisableMode,
     RemoteFilesFormat,
@@ -91,7 +92,7 @@ class RemoteFilesManager:
             # rip out directories, ensure sorted by path
             index = [i for i in index if i["class"] == "File"]
             index = sorted(index, key=itemgetter("path"))
-        if format == RemoteFilesFormat.jstree:
+        elif format == RemoteFilesFormat.jstree:
             if disable is None:
                 disable = RemoteFilesDisableMode.folders
 
@@ -118,10 +119,15 @@ class RemoteFilesManager:
 
         return index
 
-    def get_files_source_plugins(self, user_context: ProvidesUserContext) -> FilesSourcePluginList:
+    def get_files_source_plugins(
+        self, user_context: ProvidesUserContext, browsable_only: Optional[bool] = True
+    ) -> FilesSourcePluginList:
         """Display plugin information for each of the gxfiles:// URI targets available."""
         user_file_source_context = ProvidesUserFileSourcesUserContext(user_context)
-        plugins = self._file_sources.plugins_to_dict(user_context=user_file_source_context)
+        plugins_dict = self._file_sources.plugins_to_dict(
+            user_context=user_file_source_context, browsable_only=True if browsable_only is None else browsable_only
+        )
+        plugins = [FilesSourcePlugin(**plugin_dict) for plugin_dict in plugins_dict]
         return FilesSourcePluginList.construct(__root__=plugins)
 
     @property

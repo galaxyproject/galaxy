@@ -4,6 +4,7 @@
         <div v-else>
             <ContentItem
                 :id="item.hid ?? item.element_index + 1"
+                add-highlight-btn
                 is-history-item
                 :item="item?.object || item"
                 :name="item.name || item.element_identifier"
@@ -11,7 +12,8 @@
                 :is-dataset="item.history_content_type == 'dataset' || item.element_type == 'hda'"
                 @update:expand-dataset="expandDataset = $event"
                 @view-collection="viewCollection = !viewCollection"
-                @delete="onDelete(item)"
+                @delete="onDelete"
+                @toggleHighlights="onHighlight(item)"
                 @undelete="onUndelete(item)"
                 @unhide="onUnhide(item)" />
             <div v-if="viewCollection">
@@ -28,6 +30,8 @@ import { DatasetCollectionElementProvider } from "@/components/providers/storePr
 import { deleteContent, updateContentFields } from "@/components/History/model/queries";
 import ContentItem from "./ContentItem";
 import GenericElement from "./GenericElement";
+import { mapActions } from "pinia";
+import { useHistoryStore } from "@/stores/historyStore";
 
 export default {
     components: {
@@ -64,13 +68,14 @@ export default {
                 case "dce":
                     return "DatasetCollectionElementProvider";
                 default:
-                    throw `Unknown element src ${this.itemSrc}`;
+                    throw Error(`Unknown element src ${this.itemSrc}`);
             }
         },
     },
     methods: {
-        onDelete(item) {
-            deleteContent(item);
+        ...mapActions(useHistoryStore, ["applyFilters"]),
+        onDelete(item, recursive = false) {
+            deleteContent(item, { recursive: recursive });
         },
         onUndelete(item) {
             updateContentFields(item, { deleted: false });
@@ -80,6 +85,19 @@ export default {
         },
         onUnhide(item) {
             updateContentFields(item, { visible: true });
+        },
+        async onHighlight(item) {
+            const { history_id } = item;
+            const filters = {
+                deleted: item.deleted,
+                visible: item.visible,
+                related: item.hid,
+            };
+            try {
+                await this.applyFilters(history_id, filters);
+            } catch (error) {
+                this.onError(error);
+            }
         },
     },
 };

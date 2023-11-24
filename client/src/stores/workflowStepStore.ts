@@ -2,6 +2,7 @@ import Vue from "vue";
 import { defineStore } from "pinia";
 import { getConnectionId, useConnectionStore, type Connection } from "@/stores/workflowConnectionStore";
 import type { CollectionTypeDescriptor } from "@/components/Workflow/Editor/modules/collectionTypeDescription";
+import { assertDefined } from "@/utils/assertions";
 
 interface State {
     steps: { [index: string]: Step };
@@ -104,6 +105,7 @@ export interface NewStep {
     position?: StepPosition;
     post_job_actions?: PostJobActions;
     tool_state: Record<string, unknown>;
+    tool_version?: string;
     tooltip?: string;
     type: "tool" | "data_input" | "data_collection_input" | "subworkflow" | "parameter_input" | "pause";
     uuid?: string;
@@ -150,7 +152,7 @@ export const useWorkflowStepStore = defineStore("workflowStepStore", {
     }),
     getters: {
         getStep(state: State) {
-            return (stepId: number): Step => {
+            return (stepId: number): Step | undefined => {
                 return state.steps[stepId.toString()];
             };
         },
@@ -179,6 +181,23 @@ export const useWorkflowStepStore = defineStore("workflowStepStore", {
             });
             return workflowOutputs;
         },
+        duplicateLabels(state: State) {
+            const duplicateLabels: Set<string> = new Set();
+            const labels: Set<string> = new Set();
+            Object.values(state.steps).forEach((step) => {
+                if (step.workflow_outputs?.length) {
+                    step.workflow_outputs.forEach((workflowOutput) => {
+                        if (workflowOutput.label) {
+                            if (labels.has(workflowOutput.label)) {
+                                duplicateLabels.add(workflowOutput.label);
+                            }
+                            labels.add(workflowOutput.label);
+                        }
+                    });
+                }
+            });
+            return duplicateLabels;
+        },
     },
     actions: {
         addStep(newStep: NewStep): Step {
@@ -189,6 +208,25 @@ export const useWorkflowStepStore = defineStore("workflowStepStore", {
             stepToConnections(step).map((connection) => connectionStore.addConnection(connection));
             this.stepExtraInputs[step.id] = getStepExtraInputs(step);
             return step;
+        },
+        insertNewStep(
+            contentId: NewStep["content_id"],
+            name: NewStep["name"],
+            type: NewStep["type"],
+            position: NewStep["position"]
+        ) {
+            const stepData: NewStep = {
+                name: name,
+                content_id: contentId,
+                input_connections: {},
+                type: type,
+                inputs: [],
+                outputs: [],
+                position: position,
+                post_job_actions: {},
+                tool_state: {},
+            };
+            return this.addStep(stepData);
         },
         updateStep(this: State, step: Step) {
             const workflow_outputs = step.workflow_outputs?.filter((workflowOutput) =>
@@ -205,13 +243,17 @@ export const useWorkflowStepStore = defineStore("workflowStepStore", {
         },
         changeStepInputMapOver(stepId: number, inputName: string, mapOver: CollectionTypeDescriptor) {
             if (this.stepInputMapOver[stepId]) {
-                Vue.set(this.stepInputMapOver[stepId], inputName, mapOver);
+                Vue.set(this.stepInputMapOver[stepId]!, inputName, mapOver);
             } else {
                 Vue.set(this.stepInputMapOver, stepId, { [inputName]: mapOver });
             }
         },
         addConnection(connection: Connection) {
             const inputStep = this.getStep(connection.input.stepId);
+            assertDefined(
+                inputStep,
+                `Failed to add connection, because step with id ${connection.input.stepId} is undefined`
+            );
             const input = inputStep.inputs.find((input) => input.name === connection.input.name);
             const connectionLink: ConnectionOutputLink = {
                 output_name: connection.output.name,
@@ -245,6 +287,11 @@ export const useWorkflowStepStore = defineStore("workflowStepStore", {
         },
         removeConnection(connection: Connection) {
             const inputStep = this.getStep(connection.input.stepId);
+            assertDefined(
+                inputStep,
+                `Failed to remove connection, because step with id ${connection.input.stepId} is undefined`
+            );
+
             const inputConnections = inputStep.input_connections[connection.input.name];
             if (this.getStepExtraInputs(inputStep.id).find((input) => connection.input.name === input.name)) {
                 inputStep.input_connections[connection.input.name] = undefined;

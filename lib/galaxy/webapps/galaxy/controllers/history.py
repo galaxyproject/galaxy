@@ -2,7 +2,10 @@ import logging
 
 from dateutil.parser import isoparse
 from markupsafe import escape
-from sqlalchemy import false
+from sqlalchemy import (
+    false,
+    true,
+)
 from sqlalchemy.orm import undefer
 
 from galaxy import (
@@ -12,6 +15,7 @@ from galaxy import (
 )
 from galaxy.managers import histories
 from galaxy.managers.sharable import SlugBuilder
+from galaxy.model.base import transaction
 from galaxy.model.item_attrs import (
     UsesAnnotations,
     UsesItemRatings,
@@ -63,7 +67,32 @@ class HistoryListGrid(grids.Grid):
                 link = dict(operation="Switch", id=history.id, use_panels=grid.use_panels, async_compatible=True)
             return link
 
-    class DeletedColumn(grids.DeletedColumn):
+    class StatusColumn(grids.GridColumn):
+        def get_accepted_filters(self):
+            """Returns a list of accepted filters for this column."""
+            accepted_filter_labels_and_vals = {
+                "active": "active",
+                "deleted": "deleted",
+                "archived": "archived",
+                "all": "all",
+            }
+            accepted_filters = []
+            for label, val in accepted_filter_labels_and_vals.items():
+                args = {self.key: val}
+                accepted_filters.append(grids.GridColumnFilter(label, args))
+            return accepted_filters
+
+        def filter(self, trans, user, query, column_filter):
+            """Modify query to filter self.model_class by state."""
+            if column_filter == "all":
+                return query
+            elif column_filter == "active":
+                return query.filter(self.model_class.deleted == false(), self.model_class.archived == false())
+            elif column_filter == "deleted":
+                return query.filter(self.model_class.deleted == true())
+            elif column_filter == "archived":
+                return query.filter(self.model_class.archived == true())
+
         def get_value(self, trans, grid, history):
             if history == trans.history:
                 return "<strong>current history</strong>"
@@ -71,6 +100,8 @@ class HistoryListGrid(grids.Grid):
                 return "deleted permanently"
             elif history.deleted:
                 return "deleted"
+            elif history.archived:
+                return "archived"
             return ""
 
         def sort(self, trans, query, ascending, column_name=None):
@@ -107,7 +138,7 @@ class HistoryListGrid(grids.Grid):
         grids.GridColumn("Size on Disk", key="disk_size", sortable=False, delayed=True),
         grids.GridColumn("Created", key="create_time", format=time_ago),
         grids.GridColumn("Last Updated", key="update_time", format=time_ago),
-        DeletedColumn("Status", key="deleted", filterable="advanced"),
+        StatusColumn("Status", key="status", filterable="advanced"),
     ]
     columns.append(
         grids.MulticolFilterColumn(
@@ -161,7 +192,7 @@ class HistoryListGrid(grids.Grid):
         grids.GridColumnFilter("Deleted", args=dict(deleted=True)),
         grids.GridColumnFilter("All", args=dict(deleted="All")),
     ]
-    default_filter = dict(name="All", deleted="False", tags="All", sharing="All")
+    default_filter = dict(name="All", status="active", tags="All", sharing="All")
     num_rows_per_page = 15
     use_paging = True
     info_text = "Histories that have been deleted for more than a time period specified by the Galaxy administrator(s) may be permanently deleted."
@@ -281,7 +312,8 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                 elif operation == "undelete":
                     status, message = self._list_undelete(trans, histories)
 
-                trans.sa_session.flush()
+                with transaction(trans.sa_session):
+                    trans.sa_session.commit()
         # Render the list view
         if message and status:
             kwargs["message"] = sanitize_text(message)
@@ -379,7 +411,8 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             association = None
         new_history.add_galaxy_session(galaxy_session, association=association)
         trans.sa_session.add(new_history)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         trans.set_history(new_history)
         # No message
         return None, None
@@ -408,7 +441,8 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                         .one()
                     )
                     trans.sa_session.delete(association)
-                    trans.sa_session.flush()
+                    with transaction(trans.sa_session):
+                        trans.sa_session.commit()
                 message = "Unshared %d shared histories" % len(ids)
                 status = "done"
         # Render the list view
@@ -454,6 +488,10 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             history_is_current = history_to_view == trans.history
         else:
             history_to_view = trans.history
+            if not history_to_view:
+                raise exceptions.RequestParameterMissingException(
+                    "No 'id' parameter provided for history, and user does not have a current history."
+                )
             user_is_owner = True
             history_is_current = True
 
@@ -533,6 +571,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                 )
             return {"title": "Change default dataset permissions for history '%s'" % history.name, "inputs": inputs}
         else:
+            self.history_manager.error_unless_mutable(history)
             permissions = {}
             for action_key, action in trans.app.model.Dataset.permitted_actions.items():
                 in_roles = payload.get(action_key) or []
@@ -569,6 +608,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             trans.app.security_agent.permitted_actions.DATASET_ACCESS: [private_role],
         }
         for history in histories:
+            self.history_manager.error_unless_mutable(history)
             # Set default role for history to private
             trans.app.security_agent.history_set_default_permissions(history, private_permissions)
             # Set private role for all datasets
@@ -598,7 +638,8 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                     hda.mark_deleted()
         elif action == "unhide":
             trans.history.unhide_datasets()
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
 
     # ......................................................................... actions/orig. async
 
@@ -609,11 +650,12 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
             for hda in trans.history.datasets:
                 if not hda.deleted or hda.purged:
                     continue
-                hda.purge_usage_from_quota(trans.user)
+                hda.purge_usage_from_quota(trans.user, hda.dataset.quota_source_info)
                 hda.purged = True
                 trans.sa_session.add(hda)
                 trans.log_event(f"HDA id {hda.id} has been purged")
-                trans.sa_session.flush()
+                with transaction(trans.sa_session):
+                    trans.sa_session.commit()
                 if hda.dataset.user_can_purge:
                     try:
                         hda.dataset.full_delete()
@@ -630,7 +672,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         return trans.show_error_message("Cannot purge deleted datasets from this session.")
 
     @web.expose
-    def resume_paused_jobs(self, trans, current=False, ids=None):
+    def resume_paused_jobs(self, trans, current=False, ids=None, **kwargs):
         """Resume paused jobs the active history -- this does not require a logged in user."""
         if not ids and string_as_bool(current):
             histories = [trans.get_history()]
@@ -640,45 +682,10 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         for history in histories:
             history.resume_paused_jobs()
             trans.sa_session.add(history)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         return trans.show_ok_message("Your jobs have been resumed.", refresh_frames=refresh_frames)
         # TODO: used in index.mako
-
-    @web.expose
-    @web.json
-    @web.require_login("get history name and link")
-    def get_name_and_link_async(self, trans, id=None):
-        """Returns history's name and link."""
-        history = self.history_manager.get_accessible(self.decode_id(id), trans.user, current_history=trans.history)
-        if self.slug_builder.create_item_slug(trans.sa_session, history):
-            trans.sa_session.flush()
-        return_dict = {
-            "name": history.name,
-            "link": url_for(
-                controller="history",
-                action="display_by_username_and_slug",
-                username=history.user.username,
-                slug=history.slug,
-            ),
-        }
-        return return_dict
-        # TODO: used in page/editor.mako
-
-    @web.expose
-    @web.require_login("set history's accessible flag")
-    def set_accessible_async(self, trans, id=None, accessible=False):
-        """Set history's importable attribute and slug."""
-        history = self.history_manager.get_owned(self.decode_id(id), trans.user, current_history=trans.history)
-        # Only set if importable value would change; this prevents a change in the update_time unless attribute really changed.
-        importable = accessible in ["True", "true", "t", "T"]
-        if history and history.importable != importable:
-            if importable:
-                self._make_item_accessible(trans.sa_session, history)
-            else:
-                history.importable = importable
-            trans.sa_session.flush()
-        return
-        # TODO: used in page/editor.mako
 
     @web.legacy_expose_api
     @web.require_login("rename histories")
@@ -690,7 +697,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         id = listify(id)
         histories = []
         for history_id in id:
-            history = self.history_manager.get_owned(
+            history = self.history_manager.get_mutable(
                 self.decode_id(history_id), trans.user, current_history=trans.history
             )
             if history and history.user_id == user.id:
@@ -718,7 +725,8 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
                 elif new_name != cur_name:
                     h.name = new_name
                     trans.sa_session.add(h)
-                    trans.sa_session.flush()
+                    with transaction(trans.sa_session):
+                        trans.sa_session.commit()
                     trans.log_event(f"History renamed: id: {str(h.id)}, renamed to: {new_name}")
                     messages.append(f"History '{cur_name}' renamed to '{new_name}'.")
             message = sanitize_text(" ".join(messages)) if messages else "History names remain unchanged."
@@ -727,7 +735,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
     # ------------------------------------------------------------------------- current history
     @web.expose
     @web.require_login("switch to a history")
-    def switch_to_history(self, trans, hist_id=None):
+    def switch_to_history(self, trans, hist_id=None, **kwargs):
         """Change the current user's current history to one with `hist_id`."""
         # remains for backwards compat
         self.set_as_current(trans, id=hist_id)
@@ -745,10 +753,10 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
     # @web.require_login( "switch to a history" )
     @web.json
     @web.do_not_cache
-    def set_as_current(self, trans, id):
+    def set_as_current(self, trans, id, **kwargs):
         """Change the current user's current history to one with `id`."""
         try:
-            history = self.history_manager.get_owned(self.decode_id(id), trans.user, current_history=trans.history)
+            history = self.history_manager.get_mutable(self.decode_id(id), trans.user, current_history=trans.history)
             trans.set_history(history)
             return self.history_data(trans, history)
         except exceptions.MessageException as msg_exc:
@@ -757,7 +765,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
 
     @web.json
     @web.do_not_cache
-    def current_history_json(self, trans, since=None):
+    def current_history_json(self, trans, since=None, **kwargs):
         """Return the current user's current history in a serialized, dictionary form."""
         history = trans.get_history(most_recent=True, create=True)
         if since and history.update_time <= isoparse(since):
@@ -767,7 +775,7 @@ class HistoryController(BaseUIController, SharableMixin, UsesAnnotations, UsesIt
         return self.history_data(trans, history)
 
     @web.json
-    def create_new_current(self, trans, name=None):
+    def create_new_current(self, trans, name=None, **kwargs):
         """Create a new, current history for the current user"""
         new_history = trans.new_history(name)
         return self.history_data(trans, new_history)

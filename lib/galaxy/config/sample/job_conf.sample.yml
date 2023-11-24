@@ -550,6 +550,13 @@ execution:
       # 'command: <command>' to execute a command on the node and use its output
       #container_monitor_get_ip_method: null
 
+      # Container resolvers can be defined per execution environment using
+      # either a yaml file
+      #container_resolvers_config_file: null
+      
+      # Alternatively the yaml can be defined inline using 
+      #container_resolvers:
+
     singularity_local:
       runner: local
       # Enable Singularity execution of tools with the follow property.

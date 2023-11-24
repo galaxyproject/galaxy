@@ -4,6 +4,7 @@ import os
 import tempfile
 
 from galaxy.job_execution.setup import create_working_directory_for_job
+from galaxy.model.base import transaction
 from galaxy.tools.actions import ToolAction
 from galaxy.tools.imp_exp import (
     JobExportHistoryArchiveWrapper,
@@ -43,7 +44,8 @@ class ImportHistoryToolAction(ToolAction):
             job.states.WAITING
         )  # we need to set job state to something other than NEW, or else when tracking jobs in db it will be picked up before we have added input / output parameters
         trans.sa_session.add(job)
-        trans.sa_session.flush()  # ensure job.id are available
+        with transaction(trans.sa_session):  # ensure job.id are available
+            trans.sa_session.commit()
 
         #
         # Setup job and job wrapper.
@@ -127,7 +129,8 @@ class ExportHistoryToolAction(ToolAction):
             # dynamic objectstore assignment, etc..) but it is arguably less bad than
             # creating a dataset (like above for dataset export case).
             # ensure job.id is available
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
             job_directory = create_working_directory_for_job(trans.app.object_store, job)
             store_directory = os.path.join(job_directory, "working", "_object_export")
             os.makedirs(store_directory)
@@ -165,7 +168,8 @@ class ExportHistoryToolAction(ToolAction):
 
         for name, value in tool.params_to_strings(incoming, trans.app).items():
             job.add_parameter(name, value)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
 
         job_wrapper = JobExportHistoryArchiveWrapper(trans.app, job.id)
         job_wrapper.setup_job(

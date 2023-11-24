@@ -27,7 +27,7 @@ export default {
             return this.allSelected && this.totalItemsInQuery !== this.items.size;
         },
         currentFilters() {
-            return HistoryFilters.getFilters(this.filterText);
+            return HistoryFilters.getFiltersForText(this.filterText);
         },
     },
     methods: {

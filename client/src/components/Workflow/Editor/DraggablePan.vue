@@ -1,3 +1,146 @@
+<script setup lang="ts">
+import type { PropType, UnwrapRef } from "vue";
+import Draggable from "./Draggable.vue";
+import type { UseElementBoundingReturn } from "@vueuse/core";
+
+const props = defineProps({
+    rootOffset: {
+        type: Object as PropType<UnwrapRef<UseElementBoundingReturn>>,
+        required: true,
+    },
+    scale: {
+        type: Number,
+        required: false,
+        default: 1,
+    },
+    preventDefault: {
+        type: Boolean,
+        default: true,
+    },
+    stopPropagation: {
+        type: Boolean,
+        default: true,
+    },
+    dragData: {
+        type: Object,
+        required: false,
+        default: null,
+    },
+});
+
+type Size = { width: number; height: number };
+type Position = { x: number; y: number };
+
+type MovePosition = Position & {
+    unscaled: Position & Size;
+};
+
+const emit = defineEmits<{
+    (e: "pan-by", position: Position): void;
+    (e: "move", position: MovePosition, event?: MouseEvent): void;
+    (e: "mouseup", event: MouseEvent): void;
+}>();
+
+let isPanning = false;
+const panBy: Position = { x: 0, y: 0 };
+let movePosition: MovePosition = {
+    x: 0,
+    y: 0,
+    unscaled: {
+        x: 0,
+        y: 0,
+        width: 0,
+        height: 0,
+    },
+};
+
+let previousTimestamp: number | undefined;
+
+function pan(timestamp: number) {
+    if (isPanning) {
+        if (!previousTimestamp) {
+            previousTimestamp = timestamp;
+        }
+
+        const deltaTime = (timestamp - previousTimestamp) / 1000;
+        const scaledPan = { x: panBy.x * deltaTime, y: panBy.y * deltaTime };
+
+        emit("pan-by", scaledPan);
+
+        // we need to move in the opposite direction of the pan
+        movePosition.x -= scaledPan.x;
+        movePosition.y -= scaledPan.y;
+
+        emit("move", movePosition);
+
+        previousTimestamp = timestamp;
+        requestAnimationFrame(pan);
+    } else {
+        previousTimestamp = undefined;
+    }
+}
+
+const panSpeedFactor = 6;
+
+function onMove(position: MovePosition, event: MouseEvent) {
+    let doPan = false;
+
+    panBy.x = 0;
+    panBy.y = 0;
+
+    const deltaSpeed = (delta: number) => {
+        const scaledDelta = Math.abs((delta * panSpeedFactor) / props.scale);
+        const clampedDelta = Math.min(scaledDelta, 1200 / props.scale);
+        return clampedDelta;
+    };
+
+    const unscaled = position.unscaled;
+
+    const deltaLeft = unscaled.x - props.rootOffset.left;
+    const deltaRight = props.rootOffset.right - unscaled.x - unscaled.width * props.scale;
+
+    const deltaTop = unscaled.y - props.rootOffset.top;
+    const deltaBottom = props.rootOffset.bottom - unscaled.y - unscaled.height * props.scale;
+
+    if (deltaLeft < 0) {
+        panBy.x = deltaSpeed(deltaLeft);
+        doPan = true;
+    }
+
+    if (deltaTop < 0) {
+        panBy.y = deltaSpeed(deltaTop);
+        doPan = true;
+    }
+
+    if (deltaRight < 0) {
+        panBy.x = -deltaSpeed(deltaRight);
+        doPan = true;
+    }
+
+    if (deltaBottom < 0) {
+        panBy.y = -deltaSpeed(deltaBottom);
+        doPan = true;
+    }
+
+    movePosition = { ...position };
+
+    if (!doPan) {
+        emit("move", position, event);
+        isPanning = false;
+    }
+
+    if (doPan && !isPanning) {
+        isPanning = true;
+        requestAnimationFrame(pan);
+    }
+}
+
+function onMouseUp(e: MouseEvent) {
+    isPanning = false;
+    emit("mouseup", e);
+}
+</script>
+
 <template>
     <Draggable
         :root-offset="rootOffset"
@@ -10,104 +153,3 @@
         <slot></slot>
     </Draggable>
 </template>
-
-<script>
-import Draggable from "./Draggable.vue";
-import { useAnimationFrameThrottle } from "@/composables/throttle";
-
-export default {
-    components: {
-        Draggable,
-    },
-    props: {
-        rootOffset: {
-            type: Object,
-            required: true,
-        },
-        scale: {
-            type: Number,
-            required: false,
-            default: 1,
-        },
-        preventDefault: {
-            type: Boolean,
-            default: true,
-        },
-        stopPropagation: {
-            type: Boolean,
-            default: true,
-        },
-        dragData: {
-            type: Object,
-            required: false,
-            default: null,
-        },
-    },
-    setup() {
-        const { throttle } = useAnimationFrameThrottle();
-        return { throttle };
-    },
-    data() {
-        return {
-            isPanning: false,
-            // distance to move per pan
-            deltaPerPan: 8,
-            // 60hz seems pretty common, should result in smooth panning
-            refreshRate: 1000 / 60,
-            panBy: {},
-            timeout: null,
-        };
-    },
-    beforeDestroy() {
-        clearTimeout(this.timeout);
-    },
-    methods: {
-        emitPan(position) {
-            if (this.isPanning) {
-                this.$emit("pan-by", this.panBy);
-                // we need to move in the opposite direction of the pan
-                position.x -= this.panBy.x;
-                position.y -= this.panBy.y;
-                this.$emit("move", position);
-            }
-            this.timeout = setTimeout(() => {
-                // ensure the recursive call also runs in the animation frame
-                this.throttle(() => {
-                    this.emitPan(position);
-                });
-            }, this.refreshRate);
-        },
-        onMove(position, event) {
-            clearTimeout(this.timeout);
-            // Check if we're out of bounds
-            let doPan = false;
-            const panBy = { x: 0, y: 0 };
-            const delta = this.deltaPerPan / this.scale;
-            if (position.unscaled.x - this.rootOffset.left < 0) {
-                panBy["x"] = delta;
-                doPan = true;
-            }
-            if (position.unscaled.y - this.rootOffset.top < 0) {
-                panBy["y"] = delta;
-                doPan = true;
-            }
-            if (this.rootOffset.right - position.unscaled.x - position.unscaled.width * this.scale < 0) {
-                panBy["x"] = -delta;
-                doPan = true;
-            }
-            if (this.rootOffset.bottom - position.unscaled.y - position.unscaled.height * this.scale < 0) {
-                panBy["y"] = -delta;
-                doPan = true;
-            }
-            this.$emit("move", position, event);
-            this.panBy = panBy;
-            this.isPanning = doPan;
-            this.emitPan(position);
-        },
-        onMouseUp(e) {
-            this.isPanning = false;
-            this.$emit("mouseup", e);
-        },
-    },
-};
-</script>

@@ -55,6 +55,7 @@ from galaxy.files import (
     ProvidesUserFileSourcesUserContext,
 )
 from galaxy.files.uris import stream_url_to_file
+from galaxy.model.base import transaction
 from galaxy.model.mapping import GalaxyModelMapping
 from galaxy.model.metadata import MetadataCollection
 from galaxy.model.orm.util import (
@@ -197,6 +198,9 @@ class ImportOptions:
 class SessionlessContext:
     def __init__(self) -> None:
         self.objects: Dict[Type, Dict] = defaultdict(dict)
+
+    def commit(self) -> None:
+        pass
 
     def flush(self) -> None:
         pass
@@ -451,6 +455,16 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 self._attach_dataset_sources(dataset_attrs["dataset"], dataset_instance)
                 if "id" in dataset_attrs["dataset"] and self.import_options.allow_edit:
                     dataset_instance.dataset.id = dataset_attrs["dataset"]["id"]
+                    for dataset_association in dataset_instance.dataset.history_associations:
+                        if (
+                            dataset_association is not dataset_instance
+                            and dataset_association.extension == dataset_instance.extension
+                        ):
+                            dataset_association.metadata = dataset_instance.metadata
+                            dataset_association.blurb = dataset_instance.blurb
+                            dataset_association.peek = dataset_instance.peek
+                            dataset_association.info = dataset_instance.info
+                            dataset_association.tool_version = dataset_instance.tool_version
                 if job:
                     dataset_instance.dataset.job_id = job.id
 
@@ -756,7 +770,8 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                     ld.library_dataset_dataset_association = ldda
                 self._session_add(ld)
 
-            self.sa_session.flush()
+            with transaction(self.sa_session):
+                self.sa_session.commit()
             return library_folder
 
         libraries_attrs = self.library_properties()
@@ -1268,7 +1283,8 @@ class ModelImportStore(metaclass=abc.ABCMeta):
         self.sa_session.add(obj)
 
     def _flush(self) -> None:
-        self.sa_session.flush()
+        with transaction(self.sa_session):
+            self.sa_session.commit()
 
 
 def _copied_from_object_key(
@@ -2930,7 +2946,7 @@ def source_to_import_store(
     else:
         source_uri: str = str(source)
         delete = False
-        tag_handler = app.tag_handler.create_tag_handler_session()
+        tag_handler = app.tag_handler.create_tag_handler_session(galaxy_session=None)
         if source_uri.startswith("file://"):
             source_uri = source_uri[len("file://") :]
         if "://" in source_uri:

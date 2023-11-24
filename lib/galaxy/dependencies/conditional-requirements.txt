@@ -13,14 +13,12 @@ ldap3==2.9.1
 python-pam
 galaxycloudrunner
 pkce
-total-perspective-vortex>=2.2.4,<3
+total-perspective-vortex>=2.3.2,<3
 
 # For file sources plugins
 fs.webdavfs>=0.4.2  # type: webdav
 fs.dropboxfs  # type: dropbox
 fs.sshfs  # type: ssh
-fs-s3fs  # type: s3
-s3fs  # type: s3fs
 fs.anvilfs # type: anvil
 fs.googledrivefs # type: googledrive
 fs-gcsfs # type: googlecloudstorage

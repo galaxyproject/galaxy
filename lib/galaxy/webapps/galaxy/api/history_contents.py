@@ -249,6 +249,12 @@ LegacyVisibleQueryParam = Query(
     deprecated=True,
 )
 
+LegacyShareableQueryParam = Query(
+    default=None,
+    title="Shareable",
+    description="Whether to return only shareable or not shareable datasets. Leave unset for both.",
+)
+
 ArchiveFilenamePathParam = Path(
     description="The name that the Archive will have (defaults to history name).",
 )
@@ -270,6 +276,7 @@ def get_legacy_index_query_params(
     details: Optional[str] = LegacyDetailsQueryParam,
     deleted: Optional[bool] = LegacyDeletedQueryParam,
     visible: Optional[bool] = LegacyVisibleQueryParam,
+    shareable: Optional[bool] = LegacyShareableQueryParam,
 ) -> LegacyHistoryContentsIndexParams:
     """This function is meant to be used as a dependency to render the OpenAPI documentation
     correctly"""
@@ -279,6 +286,7 @@ def get_legacy_index_query_params(
         details=details,
         deleted=deleted,
         visible=visible,
+        shareable=shareable,
     )
 
 
@@ -288,6 +296,7 @@ def parse_legacy_index_query_params(
     details: Optional[str] = None,
     deleted: Optional[bool] = None,
     visible: Optional[bool] = None,
+    shareable: Optional[bool] = None,
     **_,  # Additional params are ignored
 ) -> LegacyHistoryContentsIndexParams:
     """Parses (legacy) query parameters for the history contents `index` operation
@@ -311,6 +320,7 @@ def parse_legacy_index_query_params(
             ids=id_list,
             deleted=deleted,
             visible=visible,
+            shareable=shareable,
             dataset_details=dataset_details,
         )
     except ValidationError as e:
@@ -794,7 +804,9 @@ class FastAPIHistoryContents:
         payload: UpdateHistoryContentsPayload = Body(...),
     ) -> AnyHistoryContentItem:
         """Updates the values for the history content item with the given ``ID``."""
-        return self.service.update(trans, history_id, id, payload.dict(), serialization_params, contents_type=type)
+        return self.service.update(
+            trans, history_id, id, payload.dict(exclude_unset=True), serialization_params, contents_type=type
+        )
 
     @router.put(
         "/api/histories/{history_id}/contents/{id}",
@@ -812,7 +824,9 @@ class FastAPIHistoryContents:
         payload: UpdateHistoryContentsPayload = Body(...),
     ) -> AnyHistoryContentItem:
         """Updates the values for the history content item with the given ``ID``."""
-        return self.service.update(trans, history_id, id, payload.dict(), serialization_params, contents_type=type)
+        return self.service.update(
+            trans, history_id, id, payload.dict(exclude_unset=True), serialization_params, contents_type=type
+        )
 
     @router.delete(
         "/api/histories/{history_id}/contents/{type}s/{id}",
@@ -824,7 +838,7 @@ class FastAPIHistoryContents:
         self,
         response: Response,
         trans: ProvidesHistoryContext = DependsOnTrans,
-        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
+        history_id: str = Path(..., description="History ID or any string."),
         id: DecodedDatabaseIdField = HistoryItemIDPathParam,
         type: HistoryContentType = ContentTypePathParam,
         serialization_params: SerializationParams = Depends(query_serialization_params),

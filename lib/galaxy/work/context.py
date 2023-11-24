@@ -1,8 +1,16 @@
 import abc
-from typing import Optional
+from typing import (
+    List,
+    Optional,
+)
 
 from galaxy.managers.context import ProvidesHistoryContext
-from galaxy.model import History
+from galaxy.model import (
+    GalaxySession,
+    History,
+    Role,
+)
+from galaxy.model.base import transaction
 
 
 class WorkRequestContext(ProvidesHistoryContext):
@@ -18,13 +26,22 @@ class WorkRequestContext(ProvidesHistoryContext):
     objects.
     """
 
-    def __init__(self, app, user=None, history=None, workflow_building_mode=False, url_builder=None):
+    def __init__(
+        self,
+        app,
+        user=None,
+        history=None,
+        workflow_building_mode=False,
+        url_builder=None,
+        galaxy_session: Optional[GalaxySession] = None,
+    ):
         self._app = app
         self.__user = user
-        self.__user_current_roles = None
+        self.__user_current_roles: Optional[List[Role]] = None
         self.__history = history
         self._url_builder = url_builder
         self.workflow_building_mode = workflow_building_mode
+        self.galaxy_session = galaxy_session
 
     @property
     def app(self):
@@ -87,10 +104,9 @@ class GalaxyAbstractResponse:
 
 
 class SessionRequestContext(WorkRequestContext):
-    """Like WorkRequestContext, but provides access to galaxy session and request."""
+    """Like WorkRequestContext, but provides access to request."""
 
     def __init__(self, **kwargs):
-        self.galaxy_session = kwargs.pop("galaxy_session", None)
         self.__request: GalaxyAbstractRequest = kwargs.pop("request")
         self.__response: GalaxyAbstractResponse = kwargs.pop("response")
         super().__init__(**kwargs)
@@ -111,10 +127,11 @@ class SessionRequestContext(WorkRequestContext):
         return self.galaxy_session
 
     def set_history(self, history):
-        if history and not history.deleted:
+        if history and not history.deleted and self.galaxy_session:
             self.galaxy_session.current_history = history
         self.sa_session.add(self.galaxy_session)
-        self.sa_session.flush()
+        with transaction(self.sa_session):
+            self.sa_session.commit()
 
 
 def proxy_work_context_for_history(
@@ -132,4 +149,5 @@ def proxy_work_context_for_history(
         history=history or trans.history,
         url_builder=trans.url_builder,
         workflow_building_mode=workflow_building_mode,
+        galaxy_session=trans.galaxy_session,
     )

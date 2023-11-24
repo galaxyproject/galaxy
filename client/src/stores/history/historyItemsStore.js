@@ -28,7 +28,7 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", {
         getHistoryItems: (state) => {
             return (historyId, filterText) => {
                 const itemArray = state.items[historyId] || [];
-                const filters = HistoryFilters.getFilters(filterText).filter(
+                const filters = HistoryFilters.getFiltersForText(filterText).filter(
                     (filter) => !filter[0].includes("related")
                 );
                 const relatedHid = HistoryFilters.getFilterValue(filterText, "related");
@@ -67,7 +67,7 @@ export const useHistoryItemsStore = defineStore("historyItemsStore", {
             const params = `v=dev&order=hid&offset=${offset}&limit=${limit}`;
             const url = `/api/histories/${historyId}/contents?${params}&${queryString}`;
             const headers = { accept: "application/vnd.galaxy.history.contents.stats+json" };
-            await queue.enqueue(urlData, { url, headers }, historyId).then((data) => {
+            return await queue.enqueue(urlData, { url, headers, errorSimplify: false }, historyId).then((data) => {
                 const stats = data.stats;
                 this.totalMatchesCount = stats.total_matches;
                 const payload = data.contents;

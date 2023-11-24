@@ -15,11 +15,8 @@ import { faStar as farStar } from "@fortawesome/free-regular-svg-icons";
 import { library } from "@fortawesome/fontawesome-svg-core";
 library.add(faStar, farStar);
 
-const CHECKED_DESCRIPTION =
-    "This workflow is currently bookmarked, click this link to remove this bookmark for this workflow.";
-const UNCHECKED_DESCRIPTION =
-    "This workflow is not currently bookmarked, click this link to add a bookmark for this workflow.";
-const BOOKMARKS_DESCRIPTION = "Workflows that are bookmarked will appear in your Galaxy tool panel for quick access.";
+const CHECKED_DESCRIPTION = "Remove bookmark";
+const UNCHECKED_DESCRIPTION = "Add a bookmark. This workflow will appear in the left tool panel.";
 
 export default {
     components: {
@@ -37,11 +34,7 @@ export default {
     },
     computed: {
         title() {
-            if (this.checked) {
-                return `${CHECKED_DESCRIPTION} ${BOOKMARKS_DESCRIPTION}`;
-            } else {
-                return `${UNCHECKED_DESCRIPTION} ${BOOKMARKS_DESCRIPTION}`;
-            }
+            return this.checked ? CHECKED_DESCRIPTION : UNCHECKED_DESCRIPTION;
         },
     },
     methods: {

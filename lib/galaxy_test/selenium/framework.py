@@ -1,6 +1,7 @@
 """Basis for Selenium test framework."""
 
 import datetime
+import errno
 import json
 import os
 import traceback
@@ -26,7 +27,9 @@ from gxformat2 import (
 from requests.models import Response
 
 from galaxy.selenium import driver_factory
+from galaxy.selenium.axe_results import assert_baseline_accessible
 from galaxy.selenium.context import GalaxySeleniumContext
+from galaxy.selenium.has_driver import DEFAULT_AXE_SCRIPT_URL
 from galaxy.selenium.navigates_galaxy import (
     NavigatesGalaxy,
     retry_during_transitions,
@@ -94,6 +97,8 @@ GALAXY_TEST_SELENIUM_ADMIN_USER_EMAIL = os.environ.get("GALAXY_TEST_SELENIUM_ADM
 GALAXY_TEST_SELENIUM_ADMIN_USER_PASSWORD = os.environ.get(
     "GALAXY_TEST_SELENIUM_ADMIN_USER_PASSWORD", DEFAULT_ADMIN_PASSWORD
 )
+GALAXY_TEST_AXE_SCRIPT_URL = os.environ.get("GALAXY_TEST_AXE_SCRIPT_URL", DEFAULT_AXE_SCRIPT_URL)
+GALAXY_TEST_SKIP_AXE = os.environ.get("GALAXY_TEST_SKIP_AXE", "0") == "1"
 
 # JS code to execute in Galaxy JS console to setup localStorage of session for logging and
 # logging "flatten" messages because it seems Selenium (with Chrome at least) only grabs
@@ -147,6 +152,14 @@ def dump_test_information(self, name_prefix):
         for snapshot in getattr(self, "snapshots", []):
             snapshot.write_to_error_directory(write_file)
 
+        # Try to use the Selenium driver to write a final summary of the accessibility
+        # information for the test.
+        try:
+            self.axe_eval(write_to=os.path.join(target_directory, "last.a11y.json"))
+        except Exception as e:
+            print(e)
+            print("Failed to use test driver to print accessibility information")
+
         # Try to use the Selenium driver to recover more debug information, but don't
         # throw an exception if the connection is broken in some way.
         try:
@@ -167,6 +180,20 @@ def dump_test_information(self, name_prefix):
             except Exception:
                 continue
 
+        try_symlink(target_directory, os.path.join(GALAXY_TEST_ERRORS_DIRECTORY, "latest"))
+
+
+def try_symlink(file1, file2):
+    try:
+        try:
+            os.symlink(file1, file2)
+        except OSError as e:
+            if e.errno == errno.EEXIST:
+                os.remove(file2)
+                os.symlink(file1, file2)
+    except Exception:
+        pass
+
 
 def selenium_test(f):
     test_name = f.__name__
@@ -178,7 +205,9 @@ def selenium_test(f):
             if retry_attempts > 0:
                 self.reset_driver_and_session()
             try:
-                return f(self, *args, **kwds)
+                rval = f(self, *args, **kwds)
+                self.assert_baseline_accessibility()
+                return rval
             except unittest.SkipTest:
                 dump_test_information(self, test_name)
                 # Don't retry if we have purposely decided to skip the test.
@@ -254,6 +283,17 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
     # GALAXY_TEST_SELENIUM_ADMIN_USER_PASSWORD
     run_as_admin = False
 
+    # where we pull axe from if enabled
+    axe_script_url = GALAXY_TEST_AXE_SCRIPT_URL
+
+    # boolean used to skip axe testing, might be useful to speed up
+    # tests or may be required if you have no external internet access
+    axe_skip = GALAXY_TEST_SKIP_AXE
+
+    def assert_baseline_accessibility(self):
+        axe_results = self.axe_eval()
+        assert_baseline_accessible(axe_results)
+
     def _target_url_from_selenium(self):
         # Deal with the case when Galaxy has a different URL when being accessed by Selenium
         # then when being accessed by local API calls.
@@ -302,6 +342,12 @@ class TestWithSeleniumMixin(GalaxyTestSeleniumContext, UsesApiTestCaseMixin, Use
     def get_download_path(self):
         """Returns default download path"""
         return DEFAULT_DOWNLOAD_PATH
+
+    @property
+    def anonymous_galaxy_interactor(self):
+        api_key = self.get_api_key(force=False)
+        interactor = self._get_interactor(api_key=api_key, allow_anonymous=True)
+        return interactor
 
     def api_interactor_for_logged_in_user(self):
         api_key = self.get_api_key(force=True)
@@ -504,7 +550,7 @@ class UsesHistoryItemAssertions(NavigatesGalaxyMixin):
     def assert_item_peek_includes(self, hid, expected):
         item_body = self.history_panel_item_component(hid=hid)
         peek_text = item_body.peek.wait_for_text()
-        assert expected in peek_text
+        assert expected in peek_text, f"Expected peek [{expected}] not found in peek [{peek_text}]"
 
     def assert_item_info_includes(self, hid, expected):
         item_body = self.history_panel_item_component(hid=hid)
@@ -527,10 +573,10 @@ class UsesHistoryItemAssertions(NavigatesGalaxyMixin):
         assert name == expected_name, name
 
     def assert_item_hid_text(self, hid):
-        # Check the text HID matches HID returned from API.
+        # Check the text HID matches HID returned from API.  The hid span includes a colon.
         item_body = self.history_panel_item_component(hid=hid)
         hid_text = item_body.hid.wait_for_text()
-        assert hid_text == str(hid), hid_text
+        assert hid_text == f"{hid}:", hid_text
 
 
 EXAMPLE_WORKFLOW_URL_1 = (

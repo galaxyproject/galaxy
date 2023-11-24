@@ -13,7 +13,10 @@ from galaxy.exceptions import (
     ObjectNotFound,
     RequestParameterMissingException,
 )
-from galaxy.util import pretty_print_time_interval
+from galaxy.util import (
+    pretty_print_time_interval,
+    UNKNOWN,
+)
 from galaxy.web import (
     expose_api,
     expose_api_anonymous_and_sessionless,
@@ -155,7 +158,7 @@ class GroupsController(BaseAPIController):
                 "username": user.username,
                 "user_repos_url": user_repos_url,
                 "user_repos_count": user_repos_count,
-                "user_tools_count": "unknown",
+                "user_tools_count": UNKNOWN,
                 "time_created": time_created,
             }
             group_members.append(member_dict)

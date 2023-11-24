@@ -8,9 +8,8 @@ import os
 import os.path
 import shutil
 import subprocess
-import threading
-import time
 from datetime import datetime
+from typing import Optional
 
 from galaxy.exceptions import (
     ObjectInvalid,
@@ -22,10 +21,11 @@ from galaxy.util import (
     umask_fix_perms,
     unlink,
 )
-from galaxy.util.sleeper import Sleeper
-from . import (
-    ConcreteObjectStore,
-    convert_bytes,
+from . import ConcreteObjectStore
+from .caching import (
+    CacheTarget,
+    enable_cache_monitor,
+    InProcessCacheMonitor,
 )
 from .s3 import parse_config_xml
 
@@ -67,7 +67,6 @@ class CloudConfigMixin:
                 "size": self.cache_size,
                 "path": self.staging_path,
             },
-            "enable_cache_monitor": False,
         }
 
 
@@ -78,6 +77,7 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
     Galaxy and the cloud storage.
     """
 
+    cache_monitor: Optional[InProcessCacheMonitor] = None
     store_type = "cloud"
 
     def __init__(self, config, config_dict):
@@ -86,8 +86,8 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
 
         bucket_dict = config_dict["bucket"]
         connection_dict = config_dict.get("connection", {})
-        cache_dict = config_dict["cache"]
-        self.enable_cache_monitor = config_dict.get("enable_cache_monitor", True)
+        cache_dict = config_dict.get("cache") or {}
+        self.enable_cache_monitor, self.cache_monitor_interval = enable_cache_monitor(config, config_dict)
 
         self.provider = config_dict["provider"]
         self.credentials = config_dict["auth"]
@@ -101,7 +101,7 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
         self.is_secure = connection_dict.get("is_secure", True)
         self.conn_path = connection_dict.get("conn_path", "/")
 
-        self.cache_size = cache_dict.get("size", -1)
+        self.cache_size = cache_dict.get("size") or self.config.object_store_cache_size
         self.staging_path = cache_dict.get("path") or self.config.object_store_cache_path
 
         self._initialize()
@@ -121,15 +121,8 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
             self.use_axel = False
 
     def start_cache_monitor(self):
-        # Clean cache only if value is set in galaxy.ini
-        if self.cache_size != -1 and self.enable_cache_monitor:
-            # Convert GBs to bytes for comparison
-            self.cache_size = self.cache_size * 1073741824
-            # Helper for interruptable sleep
-            self.sleeper = Sleeper()
-            self.cache_monitor_thread = threading.Thread(target=self.__cache_monitor)
-            self.cache_monitor_thread.start()
-            log.info("Cache cleaner manager started")
+        if self.enable_cache_monitor:
+            self.cache_monitor = InProcessCacheMonitor(self.cache_target, self.cache_monitor_interval)
 
     @staticmethod
     def _get_connection(provider, credentials):
@@ -250,72 +243,13 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
         as_dict.update(self._config_to_dict())
         return as_dict
 
-    def __cache_monitor(self):
-        time.sleep(2)  # Wait for things to load before starting the monitor
-        while self.running:
-            total_size = 0
-            # Is this going to be too expensive of an operation to be done frequently?
-            file_list = []
-            for dirpath, _, filenames in os.walk(self.staging_path):
-                for filename in filenames:
-                    filepath = os.path.join(dirpath, filename)
-                    file_size = os.path.getsize(filepath)
-                    total_size += file_size
-                    # Get the time given file was last accessed
-                    last_access_time = time.localtime(os.stat(filepath)[7])
-                    # Compose a tuple of the access time and the file path
-                    file_tuple = last_access_time, filepath, file_size
-                    file_list.append(file_tuple)
-            # Sort the file list (based on access time)
-            file_list.sort()
-            # Initiate cleaning once within 10% of the defined cache size?
-            cache_limit = self.cache_size * 0.9
-            if total_size > cache_limit:
-                log.info(
-                    "Initiating cache cleaning: current cache size: %s; clean until smaller than: %s",
-                    convert_bytes(total_size),
-                    convert_bytes(cache_limit),
-                )
-                # How much to delete? If simply deleting up to the cache-10% limit,
-                # is likely to be deleting frequently and may run the risk of hitting
-                # the limit - maybe delete additional #%?
-                # For now, delete enough to leave at least 10% of the total cache free
-                delete_this_much = total_size - cache_limit
-                self.__clean_cache(file_list, delete_this_much)
-            self.sleeper.sleep(30)  # Test cache size every 30 seconds?
-
-    def __clean_cache(self, file_list, delete_this_much):
-        """Keep deleting files from the file_list until the size of the deleted
-        files is greater than the value in delete_this_much parameter.
-
-        :type file_list: list
-        :param file_list: List of candidate files that can be deleted. This method
-            will start deleting files from the beginning of the list so the list
-            should be sorted accordingly. The list must contains 3-element tuples,
-            positioned as follows: position 0 holds file last accessed timestamp
-            (as time.struct_time), position 1 holds file path, and position 2 has
-            file size (e.g., (<access time>, /mnt/data/dataset_1.dat), 472394)
-
-        :type delete_this_much: int
-        :param delete_this_much: Total size of files, in bytes, that should be deleted.
-        """
-        # Keep deleting datasets from file_list until deleted_amount does not
-        # exceed delete_this_much; start deleting from the front of the file list,
-        # which assumes the oldest files come first on the list.
-        deleted_amount = 0
-        for entry in enumerate(file_list):
-            if deleted_amount < delete_this_much:
-                deleted_amount += entry[2]
-                os.remove(entry[1])
-                # Debugging code for printing deleted files' stats
-                # folder, file_name = os.path.split(f[1])
-                # file_date = time.strftime("%m/%d/%y %H:%M:%S", f[0])
-                # log.debug("%s. %-25s %s, size %s (deleted %s/%s)" \
-                #     % (i, file_name, convert_bytes(f[2]), file_date, \
-                #     convert_bytes(deleted_amount), convert_bytes(delete_this_much)))
-            else:
-                log.debug("Cache cleaning done. Total space freed: %s", convert_bytes(deleted_amount))
-                return
+    @property
+    def cache_target(self) -> CacheTarget:
+        return CacheTarget(
+            self.staging_path,
+            self.cache_size,
+            0.9,
+        )
 
     def _get_bucket(self, bucket_name):
         try:
@@ -354,6 +288,7 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
         extra_dir_at_root=False,
         alt_name=None,
         obj_dir=False,
+        in_cache=False,
         **kwargs,
     ):
         # extra_dir should never be constructed from provided data but just
@@ -389,6 +324,10 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
 
         if not dir_only:
             rel_path = os.path.join(rel_path, alt_name if alt_name else f"dataset_{self._get_object_id(obj)}.dat")
+
+        if in_cache:
+            return self._get_cache_path(rel_path)
+
         return rel_path
 
     def _get_cache_path(self, rel_path):
@@ -400,8 +339,7 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
     def _get_size_in_cloud(self, rel_path):
         try:
             obj = self.bucket.objects.get(rel_path)
-            if obj:
-                return obj.size
+            return obj.size
         except Exception:
             log.exception("Could not get size of key '%s' from S3", rel_path)
             return -1
@@ -448,12 +386,12 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
             log.debug("Pulling key '%s' into cache to %s", rel_path, self._get_cache_path(rel_path))
             key = self.bucket.objects.get(rel_path)
             # Test if cache is large enough to hold the new file
-            if self.cache_size > 0 and key.size > self.cache_size:
+            if not self.cache_target.fits_in_cache(key.size):
                 log.critical(
-                    "File %s is larger (%s) than the cache size (%s). Cannot download.",
+                    "File %s is larger (%s) than the configured cache allows (%s). Cannot download.",
                     rel_path,
                     key.size,
-                    self.cache_size,
+                    self.cache_target.log_description,
                 )
                 return False
             if self.use_axel:
@@ -608,6 +546,7 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
                 rel_path = os.path.join(rel_path, alt_name if alt_name else f"dataset_{self._get_object_id(obj)}.dat")
                 open(os.path.join(self.staging_path, rel_path), "w").close()
                 self._push_to_os(rel_path, from_string="")
+        return self
 
     def _empty(self, obj, **kwargs):
         if self._exists(obj, **kwargs):
@@ -751,9 +690,4 @@ class Cloud(ConcreteObjectStore, CloudConfigMixin):
         return 0.0
 
     def shutdown(self):
-        self.running = False
-        thread = getattr(self, "cache_monitor_thread", None)
-        if thread:
-            log.debug("Shutting down thread")
-            self.sleeper.wake()
-            thread.join(5)
+        self.cache_monitor and self.cache_monitor.shutdown()

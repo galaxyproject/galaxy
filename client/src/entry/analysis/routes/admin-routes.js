@@ -14,7 +14,7 @@ import DisplayApplications from "components/admin/DisplayApplications";
 import ErrorStack from "components/admin/ErrorStack";
 import FormGeneric from "components/Form/FormGeneric";
 import Grid from "components/Grid/Grid";
-import Jobs from "components/admin/Jobs";
+import JobsList from "components/admin/JobsList";
 import RegisterForm from "components/Login/RegisterForm";
 import ResetMetadata from "components/admin/ResetMetadata";
 import SanitizeAllow from "components/admin/SanitizeAllow";
@@ -42,7 +42,7 @@ export default [
             { path: "display_applications", component: DisplayApplications },
             { path: "error_stack", component: ErrorStack },
             { path: "invocations", component: ActiveInvocations },
-            { path: "jobs", component: Jobs },
+            { path: "jobs", component: JobsList },
             { path: "reset_metadata", component: ResetMetadata },
             { path: "sanitize_allow", component: SanitizeAllow },
             { path: "toolbox_dependencies", component: ToolboxDependencies },

@@ -2,6 +2,7 @@
 import localize from "@/utils/localization";
 import { computed, ref } from "vue";
 import type { CleanupResult } from "./model";
+import Alert from "components/Alert.vue";
 
 interface CleanupResultDialogProps {
     result?: CleanupResult;
@@ -46,6 +47,9 @@ defineExpose({
 <template>
     <b-modal id="cleanup-result-modal" v-model="showModal" :title="title" title-tag="h2" hide-footer static>
         <div class="text-center">
+            <Alert
+                variant="info"
+                message="After the operation, the storage space that will be freed up will only be for the unique items. This means that some items may not free up any storage space because they are duplicates of other items." />
             <b-spinner v-if="isLoading" class="mx-auto" data-test-id="loading-spinner" />
             <div v-else>
                 <b-alert v-if="result.hasFailed" show variant="danger" data-test-id="error-alert">

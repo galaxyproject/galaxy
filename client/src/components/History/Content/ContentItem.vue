@@ -7,9 +7,9 @@
         tabindex="0"
         role="button"
         @keydown="onKeyDown">
-        <div class="p-1 cursor-pointer" draggable @dragstart="onDragStart" @click.stop="onClick">
+        <div class="p-1 cursor-pointer" draggable @dragstart="onDragStart" @dragend="onDragEnd" @click.stop="onClick">
             <div class="d-flex justify-content-between">
-                <span class="p-1 font-weight-bold">
+                <span class="p-1 font-weight-bold" data-description="content item header info">
                     <b-button v-if="selectable" class="selector p-0" @click.stop="$emit('update:selected', !selected)">
                         <icon v-if="selected" fixed-width size="lg" :icon="['far', 'check-square']" />
                         <icon v-else fixed-width size="lg" :icon="['far', 'square']" />
@@ -45,8 +45,7 @@
                     <span v-if="hasStateIcon" class="state-icon">
                         <icon fixed-width :icon="contentState.icon" :spin="contentState.spin" />
                     </span>
-                    <span class="id hid">{{ id }}</span>
-                    <span>:</span>
+                    <span class="id hid">{{ id }}:</span>
                     <span class="content-title name">{{ name }}</span>
                 </span>
                 <span v-if="item.purged" class="align-self-start btn-group p-1">
@@ -64,7 +63,7 @@
                     :state="state"
                     :item-urls="itemUrls"
                     :keyboard-selectable="expandDataset"
-                    @delete="$emit('delete')"
+                    @delete="onDelete"
                     @display="onDisplay"
                     @showCollectionInfo="onShowCollectionInfo"
                     @edit="onEdit"
@@ -93,7 +92,7 @@
                 v-if="expandDataset"
                 :dataset="item"
                 :writable="writable"
-                :show-highlight="isHistoryItem && filterable"
+                :show-highlight="(isHistoryItem && filterable) || addHighlightBtn"
                 :item-urls="itemUrls"
                 @edit="onEdit"
                 @toggleHighlights="toggleHighlights" />
@@ -113,6 +112,7 @@ import { library } from "@fortawesome/fontawesome-svg-core";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { faArrowCircleUp, faArrowCircleDown, faCheckCircle } from "@fortawesome/free-solid-svg-icons";
 import { useEntryPointStore } from "stores/entryPointStore";
+import { clearDrag, setDrag } from "@/utils/setDrag.js";
 
 library.add(faArrowCircleUp, faArrowCircleDown, faCheckCircle);
 export default {
@@ -126,6 +126,7 @@ export default {
     props: {
         writable: { type: Boolean, default: true },
         expandDataset: { type: Boolean, required: true },
+        addHighlightBtn: { type: Boolean, default: false },
         highlight: { type: String, default: null },
         id: { type: Number, required: true },
         isDataset: { type: Boolean, default: true },
@@ -233,10 +234,14 @@ export default {
                 this.$router.push(this.itemUrls.display, { title: this.name });
             }
         },
+        onDelete(recursive = false) {
+            this.$emit("delete", this.item, recursive);
+        },
         onDragStart(evt) {
-            evt.dataTransfer.dropEffect = "move";
-            evt.dataTransfer.effectAllowed = "move";
-            evt.dataTransfer.setData("text", JSON.stringify([this.item]));
+            setDrag(evt, this.item);
+        },
+        onDragEnd: function () {
+            clearDrag();
         },
         onEdit() {
             this.$router.push(this.itemUrls.edit);

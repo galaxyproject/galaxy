@@ -26,20 +26,18 @@ from isatools import (
 from markupsafe import escape
 
 from galaxy import util
-from galaxy.datatypes.data import (
-    Data,
-    GeneratePrimaryFileDataset,
+from galaxy.datatypes.data import Data
+from galaxy.datatypes.protocols import (
+    DatasetHasHidProtocol,
+    DatasetProtocol,
+    HasExtraFilesAndMetadata,
+    HasExtraFilesPath,
 )
 from galaxy.util.compression_utils import CompressedFile
 from galaxy.util.sanitize_html import sanitize_html
 
 if TYPE_CHECKING:
     from isatools.model import Investigation
-
-    from galaxy.model import (
-        DatasetInstance,
-        HistoryDatasetAssociation,
-    )
 
 # CONSTANTS {{{1
 ################################################################
@@ -92,7 +90,7 @@ class _Isa(Data):
     # Get ISA folder path {{{2
     ################################################################
 
-    def _get_isa_folder_path(self, dataset: "DatasetInstance") -> str:
+    def _get_isa_folder_path(self, dataset: HasExtraFilesPath) -> str:
         isa_folder = dataset.extra_files_path
         if not isa_folder:
             raise Exception("Unvalid dataset object, or no extra files path found for this dataset.")
@@ -101,7 +99,7 @@ class _Isa(Data):
     # Get main file {{{2
     ################################################################
 
-    def _get_main_file(self, dataset: "DatasetInstance") -> Optional[str]:
+    def _get_main_file(self, dataset: HasExtraFilesPath) -> Optional[str]:
         """Get the main file of the ISA archive. Either the investigation file i_*.txt for ISA-Tab, or the JSON file for ISA-JSON."""
 
         main_file = None
@@ -126,7 +124,7 @@ class _Isa(Data):
     # Get investigation {{{2
     ################################################################
 
-    def _get_investigation(self, dataset: "DatasetInstance") -> Optional["Investigation"]:
+    def _get_investigation(self, dataset: HasExtraFilesPath) -> Optional["Investigation"]:
         """Create a contained instance specific to the exact ISA type (Tab or Json).
         We will use it to parse and access information from the archive."""
 
@@ -163,7 +161,7 @@ class _Isa(Data):
     # Set peek {{{2
     ################################################################
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text. Get first lines of the main file and set it as the peek."""
 
         main_file = self._get_main_file(dataset)
@@ -189,7 +187,7 @@ class _Isa(Data):
     # Display peek {{{2
     ################################################################
 
-    def display_peek(self, dataset: "DatasetInstance") -> str:
+    def display_peek(self, dataset: DatasetProtocol) -> str:
         """Create the HTML table used for displaying peek, from the peek text found by set_peek() method."""
 
         out = ['<table cellspacing="0" cellpadding="3">']
@@ -210,7 +208,7 @@ class _Isa(Data):
     # Generate primary file {{{2
     ################################################################
 
-    def generate_primary_file(self, dataset: GeneratePrimaryFileDataset) -> str:
+    def generate_primary_file(self, dataset: HasExtraFilesAndMetadata) -> str:
         """Generate the primary file. It is an HTML file containing description of the composite dataset
         as well as a list of the composite files that it contains."""
 
@@ -269,7 +267,7 @@ class _Isa(Data):
     def display_data(
         self,
         trans,
-        dataset: "HistoryDatasetAssociation",
+        dataset: DatasetHasHidProtocol,
         preview: bool = False,
         filename: Optional[str] = None,
         to_ext: Optional[str] = None,

@@ -17,7 +17,6 @@ from typing import (
     Dict,
     List,
     Optional,
-    TYPE_CHECKING,
     Union,
 )
 
@@ -53,6 +52,12 @@ from galaxy.datatypes.metadata import (
     MetadataElement,
     MetadataParameter,
 )
+from galaxy.datatypes.protocols import (
+    DatasetHasHidProtocol,
+    DatasetProtocol,
+    HasFileName,
+    HasMetadata,
+)
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
     FilePrefix,
@@ -70,12 +75,6 @@ from galaxy.util.markdown import (
     pre_formatted_contents,
 )
 from . import dataproviders
-
-if TYPE_CHECKING:
-    from galaxy.model import (
-        DatasetInstance,
-        HistoryDatasetAssociation,
-    )
 
 log = logging.getLogger(__name__)
 
@@ -122,16 +121,16 @@ class TabularData(Text):
     )
 
     @abc.abstractmethod
-    def set_meta(self, dataset: "DatasetInstance", *, overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol, *, overwrite: bool = True, **kwd) -> None:
         raise NotImplementedError
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         kwd.setdefault("line_wrap", False)
         super().set_peek(dataset, **kwd)
         if dataset.metadata.comment_lines:
             dataset.blurb = f"{dataset.blurb}, {util.commaify(str(dataset.metadata.comment_lines))} comments"
 
-    def displayable(self, dataset: "DatasetInstance"):
+    def displayable(self, dataset: DatasetProtocol) -> bool:
         try:
             return (
                 not dataset.dataset.purged
@@ -143,7 +142,7 @@ class TabularData(Text):
         except Exception:
             return False
 
-    def get_chunk(self, trans, dataset: "DatasetInstance", offset: int = 0, ck_size: Optional[int] = None) -> str:
+    def get_chunk(self, trans, dataset: HasFileName, offset: int = 0, ck_size: Optional[int] = None) -> str:
         ck_data, last_read = self._read_chunk(trans, dataset, offset, ck_size)
         return dumps(
             {
@@ -153,7 +152,7 @@ class TabularData(Text):
             }
         )
 
-    def _read_chunk(self, trans, dataset: "DatasetInstance", offset: int, ck_size: Optional[int] = None):
+    def _read_chunk(self, trans, dataset: HasFileName, offset: int, ck_size: Optional[int] = None):
         with compression_utils.get_fileobj(dataset.file_name) as f:
             f.seek(offset)
             ck_data = f.read(ck_size or trans.app.config.display_chunk_size)
@@ -168,7 +167,7 @@ class TabularData(Text):
     def display_data(
         self,
         trans,
-        dataset: "HistoryDatasetAssociation",
+        dataset: DatasetHasHidProtocol,
         preview: bool = False,
         filename: Optional[str] = None,
         to_ext: Optional[str] = None,
@@ -225,7 +224,7 @@ class TabularData(Text):
                 headers,
             )
 
-    def display_as_markdown(self, dataset_instance: "DatasetInstance") -> str:
+    def display_as_markdown(self, dataset_instance: DatasetProtocol) -> str:
         with open(dataset_instance.file_name) as f:
             contents = f.read(data.DEFAULT_MAX_PEEK_SIZE)
         markdown = self.make_html_table(dataset_instance, peek=contents)
@@ -233,7 +232,7 @@ class TabularData(Text):
             markdown += indicate_data_truncated()
         return pre_formatted_contents(markdown)
 
-    def make_html_table(self, dataset: "DatasetInstance", **kwargs) -> str:
+    def make_html_table(self, dataset: DatasetProtocol, **kwargs) -> str:
         """Create HTML table, used for displaying peek"""
         try:
             out = ['<table cellspacing="0" cellpadding="3">']
@@ -246,7 +245,7 @@ class TabularData(Text):
 
     def make_html_peek_header(
         self,
-        dataset: "DatasetInstance",
+        dataset: DatasetProtocol,
         skipchars: Optional[List] = None,
         column_names: Optional[List] = None,
         column_number_format: str = "%s",
@@ -300,7 +299,7 @@ class TabularData(Text):
             raise Exception(f"Can't create peek header: {util.unicodify(exc)}")
         return "".join(out)
 
-    def make_html_peek_rows(self, dataset: "DatasetInstance", skipchars: Optional[List] = None, **kwargs) -> str:
+    def make_html_peek_rows(self, dataset: DatasetProtocol, skipchars: Optional[List] = None, **kwargs) -> str:
         if skipchars is None:
             skipchars = []
         out = []
@@ -337,7 +336,7 @@ class TabularData(Text):
             raise Exception(f"Can't create peek rows: {util.unicodify(exc)}")
         return "".join(out)
 
-    def display_peek(self, dataset: "DatasetInstance") -> str:
+    def display_peek(self, dataset: DatasetProtocol) -> str:
         """Returns formatted html of peek"""
         return self.make_html_table(dataset)
 
@@ -373,27 +372,27 @@ class TabularData(Text):
 
     # ------------- Dataproviders
     @dataproviders.decorators.dataprovider_factory("column", ColumnarDataProvider.settings)
-    def column_dataprovider(self, dataset: "DatasetInstance", **settings) -> ColumnarDataProvider:
+    def column_dataprovider(self, dataset: DatasetProtocol, **settings) -> ColumnarDataProvider:
         """Uses column settings that are passed in"""
         dataset_source = DatasetDataProvider(dataset)
         delimiter = dataset.metadata.delimiter
         return ColumnarDataProvider(dataset_source, deliminator=delimiter, **settings)
 
     @dataproviders.decorators.dataprovider_factory("dataset-column", ColumnarDataProvider.settings)
-    def dataset_column_dataprovider(self, dataset: "DatasetInstance", **settings) -> DatasetColumnarDataProvider:
+    def dataset_column_dataprovider(self, dataset: DatasetProtocol, **settings) -> DatasetColumnarDataProvider:
         """Attempts to get column settings from dataset.metadata"""
         delimiter = dataset.metadata.delimiter
         return DatasetColumnarDataProvider(dataset, deliminator=delimiter, **settings)
 
     @dataproviders.decorators.dataprovider_factory("dict", DictDataProvider.settings)
-    def dict_dataprovider(self, dataset: "DatasetInstance", **settings) -> DictDataProvider:
+    def dict_dataprovider(self, dataset: DatasetProtocol, **settings) -> DictDataProvider:
         """Uses column settings that are passed in"""
         dataset_source = DatasetDataProvider(dataset)
         delimiter = dataset.metadata.delimiter
         return DictDataProvider(dataset_source, deliminator=delimiter, **settings)
 
     @dataproviders.decorators.dataprovider_factory("dataset-dict", DictDataProvider.settings)
-    def dataset_dict_dataprovider(self, dataset: "DatasetInstance", **settings) -> DatasetDictDataProvider:
+    def dataset_dict_dataprovider(self, dataset: DatasetProtocol, **settings) -> DatasetDictDataProvider:
         """Attempts to get column settings from dataset.metadata"""
         delimiter = dataset.metadata.delimiter
         return DatasetDictDataProvider(dataset, deliminator=delimiter, **settings)
@@ -410,7 +409,7 @@ class Tabular(TabularData):
 
     def set_meta(
         self,
-        dataset: "DatasetInstance",
+        dataset: DatasetProtocol,
         *,
         overwrite: bool = True,
         skip: Optional[int] = None,
@@ -579,10 +578,10 @@ class Tabular(TabularData):
         if column_names is not None:
             dataset.metadata.column_names = column_names
 
-    def as_gbrowse_display_file(self, dataset: "DatasetInstance", **kwd) -> Union[FileObjType, str]:
+    def as_gbrowse_display_file(self, dataset: HasFileName, **kwd) -> Union[FileObjType, str]:
         return open(dataset.file_name, "rb")
 
-    def as_ucsc_display_file(self, dataset: "DatasetInstance", **kwd) -> Union[FileObjType, str]:
+    def as_ucsc_display_file(self, dataset: DatasetProtocol, **kwd) -> Union[FileObjType, str]:
         return open(dataset.file_name, "rb")
 
 
@@ -592,7 +591,7 @@ class SraManifest(Tabular):
     file_ext = "sra_manifest.tabular"
     data_line_offset = 1
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         dataset.metadata.comment_lines = 1
 
@@ -633,7 +632,7 @@ class Taxonomy(Tabular):
             "Subspecies",
         ]
 
-    def display_peek(self, dataset: "DatasetInstance") -> str:
+    def display_peek(self, dataset: DatasetProtocol) -> str:
         """Returns formated html of peek"""
         return self.make_html_table(dataset, column_names=self.column_names)
 
@@ -724,7 +723,7 @@ class Sam(Tabular, _BamOrSam):
             "OPT",
         ]
 
-    def display_peek(self, dataset: "DatasetInstance") -> str:
+    def display_peek(self, dataset: DatasetProtocol) -> str:
         """Returns formated html of peek"""
         return self.make_html_table(dataset, column_names=self.column_names)
 
@@ -782,7 +781,7 @@ class Sam(Tabular, _BamOrSam):
 
     def set_meta(
         self,
-        dataset: "DatasetInstance",
+        dataset: DatasetProtocol,
         overwrite: bool = True,
         skip: Optional[int] = None,
         max_data_lines: Optional[int] = 5,
@@ -796,8 +795,8 @@ class Sam(Tabular, _BamOrSam):
         >>> from galaxy.model.mapping import init
         >>> sa_session = init("/tmp", "sqlite:///:memory:", create_tables=True).session
         >>> hist = History()
-        >>> sa_session.add(hist)
-        >>> sa_session.flush()
+        >>> with sa_session.begin():
+        ...     sa_session.add(hist)
         >>> set_datatypes_registry(example_datatype_registry_for_sample())
         >>> fname = get_test_fname( 'sam_with_header.sam' )
         >>> samds = Dataset(external_filename=fname)
@@ -864,55 +863,55 @@ class Sam(Tabular, _BamOrSam):
     # sam does not use '#' to indicate comments/headers - we need to strip out those headers from the std. providers
     # TODO:?? seems like there should be an easier way to do this - metadata.comment_char?
     @dataproviders.decorators.dataprovider_factory("line", FilteredLineDataProvider.settings)
-    def line_dataprovider(self, dataset: "DatasetInstance", **settings) -> FilteredLineDataProvider:
+    def line_dataprovider(self, dataset: DatasetProtocol, **settings) -> FilteredLineDataProvider:
         settings["comment_char"] = "@"
         return super().line_dataprovider(dataset, **settings)
 
     @dataproviders.decorators.dataprovider_factory("regex-line", RegexLineDataProvider.settings)
-    def regex_line_dataprovider(self, dataset: "DatasetInstance", **settings) -> RegexLineDataProvider:
+    def regex_line_dataprovider(self, dataset: DatasetProtocol, **settings) -> RegexLineDataProvider:
         settings["comment_char"] = "@"
         return super().regex_line_dataprovider(dataset, **settings)
 
     @dataproviders.decorators.dataprovider_factory("column", ColumnarDataProvider.settings)
-    def column_dataprovider(self, dataset: "DatasetInstance", **settings) -> ColumnarDataProvider:
+    def column_dataprovider(self, dataset: DatasetProtocol, **settings) -> ColumnarDataProvider:
         settings["comment_char"] = "@"
         return super().column_dataprovider(dataset, **settings)
 
     @dataproviders.decorators.dataprovider_factory("dataset-column", ColumnarDataProvider.settings)
-    def dataset_column_dataprovider(self, dataset: "DatasetInstance", **settings) -> DatasetColumnarDataProvider:
+    def dataset_column_dataprovider(self, dataset: DatasetProtocol, **settings) -> DatasetColumnarDataProvider:
         settings["comment_char"] = "@"
         return super().dataset_column_dataprovider(dataset, **settings)
 
     @dataproviders.decorators.dataprovider_factory("dict", DictDataProvider.settings)
-    def dict_dataprovider(self, dataset: "DatasetInstance", **settings) -> DictDataProvider:
+    def dict_dataprovider(self, dataset: DatasetProtocol, **settings) -> DictDataProvider:
         settings["comment_char"] = "@"
         return super().dict_dataprovider(dataset, **settings)
 
     @dataproviders.decorators.dataprovider_factory("dataset-dict", DictDataProvider.settings)
-    def dataset_dict_dataprovider(self, dataset: "DatasetInstance", **settings) -> DatasetDictDataProvider:
+    def dataset_dict_dataprovider(self, dataset: DatasetProtocol, **settings) -> DatasetDictDataProvider:
         settings["comment_char"] = "@"
         return super().dataset_dict_dataprovider(dataset, **settings)
 
     @dataproviders.decorators.dataprovider_factory("header", RegexLineDataProvider.settings)
-    def header_dataprovider(self, dataset: "DatasetInstance", **settings) -> RegexLineDataProvider:
+    def header_dataprovider(self, dataset: DatasetProtocol, **settings) -> RegexLineDataProvider:
         dataset_source = DatasetDataProvider(dataset)
         headers_source = RegexLineDataProvider(dataset_source, regex_list=["^@"])
         return RegexLineDataProvider(headers_source, **settings)
 
     @dataproviders.decorators.dataprovider_factory("id-seq-qual", dict_dataprovider.settings)
-    def id_seq_qual_dataprovider(self, dataset: "DatasetInstance", **settings) -> DictDataProvider:
+    def id_seq_qual_dataprovider(self, dataset: DatasetProtocol, **settings) -> DictDataProvider:
         # provided as an example of a specified column dict (w/o metadata)
         settings["indeces"] = [0, 9, 10]
         settings["column_names"] = ["id", "seq", "qual"]
         return self.dict_dataprovider(dataset, **settings)
 
     @dataproviders.decorators.dataprovider_factory("genomic-region", GenomicRegionDataProvider.settings)
-    def genomic_region_dataprovider(self, dataset: "DatasetInstance", **settings) -> GenomicRegionDataProvider:
+    def genomic_region_dataprovider(self, dataset: DatasetProtocol, **settings) -> GenomicRegionDataProvider:
         settings["comment_char"] = "@"
         return GenomicRegionDataProvider(dataset, 2, 3, 3, **settings)
 
     @dataproviders.decorators.dataprovider_factory("genomic-region-dict", GenomicRegionDataProvider.settings)
-    def genomic_region_dict_dataprovider(self, dataset: "DatasetInstance", **settings) -> GenomicRegionDataProvider:
+    def genomic_region_dict_dataprovider(self, dataset: DatasetProtocol, **settings) -> GenomicRegionDataProvider:
         settings["comment_char"] = "@"
         return GenomicRegionDataProvider(dataset, 2, 3, 3, True, **settings)
 
@@ -937,10 +936,10 @@ class Pileup(Tabular):
     MetadataElement(name="endCol", default=2, desc="End column", param=metadata.ColumnParameter)
     MetadataElement(name="baseCol", default=3, desc="Reference base column", param=metadata.ColumnParameter)
 
-    def init_meta(self, dataset: "DatasetInstance", copy_from: Optional["DatasetInstance"] = None) -> None:
+    def init_meta(self, dataset: HasMetadata, copy_from: Optional[HasMetadata] = None) -> None:
         super().init_meta(dataset, copy_from=copy_from)
 
-    def display_peek(self, dataset: "DatasetInstance") -> str:
+    def display_peek(self, dataset: DatasetProtocol) -> str:
         """Returns formated html of peek"""
         return self.make_html_table(
             dataset, column_parameter_alias={"chromCol": "Chrom", "startCol": "Start", "baseCol": "Base"}
@@ -993,11 +992,11 @@ class Pileup(Tabular):
 
     # Dataproviders
     @dataproviders.decorators.dataprovider_factory("genomic-region", GenomicRegionDataProvider.settings)
-    def genomic_region_dataprovider(self, dataset: "DatasetInstance", **settings) -> GenomicRegionDataProvider:
+    def genomic_region_dataprovider(self, dataset: DatasetProtocol, **settings) -> GenomicRegionDataProvider:
         return GenomicRegionDataProvider(dataset, **settings)
 
     @dataproviders.decorators.dataprovider_factory("genomic-region-dict", GenomicRegionDataProvider.settings)
-    def genomic_region_dict_dataprovider(self, dataset: "DatasetInstance", **settings) -> GenomicRegionDataProvider:
+    def genomic_region_dict_dataprovider(self, dataset: DatasetProtocol, **settings) -> GenomicRegionDataProvider:
         settings["named_columns"] = True
         return self.genomic_region_dataprovider(dataset, **settings)
 
@@ -1042,11 +1041,11 @@ class BaseVcf(Tabular):
         headers = get_headers(fname_or_file_prefix, "\n", count=1)
         return headers[0][0].startswith("##fileformat=VCF")
 
-    def display_peek(self, dataset: "DatasetInstance") -> str:
+    def display_peek(self, dataset: DatasetProtocol) -> str:
         """Returns formated html of peek"""
         return self.make_html_table(dataset, column_names=self.column_names)
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         line = None
         with compression_utils.get_fileobj(dataset.file_name) as fh:
@@ -1072,7 +1071,7 @@ class BaseVcf(Tabular):
         if exit_code != 0:
             raise Exception(f"Error merging VCF files: {stderr!r}")
 
-    def validate(self, dataset: "DatasetInstance", **kwd) -> DatatypeValidation:
+    def validate(self, dataset: DatasetProtocol, **kwd) -> DatatypeValidation:
         def validate_row(row):
             if len(row) < 8:
                 raise Exception("Not enough columns in row %s" % row.join("\t"))
@@ -1082,11 +1081,11 @@ class BaseVcf(Tabular):
 
     # Dataproviders
     @dataproviders.decorators.dataprovider_factory("genomic-region", GenomicRegionDataProvider.settings)
-    def genomic_region_dataprovider(self, dataset: "DatasetInstance", **settings) -> GenomicRegionDataProvider:
+    def genomic_region_dataprovider(self, dataset: DatasetProtocol, **settings) -> GenomicRegionDataProvider:
         return GenomicRegionDataProvider(dataset, 0, 1, 1, **settings)
 
     @dataproviders.decorators.dataprovider_factory("genomic-region-dict", GenomicRegionDataProvider.settings)
-    def genomic_region_dict_dataprovider(self, dataset: "DatasetInstance", **settings) -> GenomicRegionDataProvider:
+    def genomic_region_dict_dataprovider(self, dataset: DatasetProtocol, **settings) -> GenomicRegionDataProvider:
         settings["named_columns"] = True
         return self.genomic_region_dataprovider(dataset, **settings)
 
@@ -1127,7 +1126,7 @@ class VcfGz(BaseVcf, binary.Binary):
             return binascii.hexlify(last28) == b"1f8b08040000000000ff0600424302001b0003000000000000000000"
 
     def set_meta(
-        self, dataset: "DatasetInstance", overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
+        self, dataset: DatasetProtocol, overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
     ) -> None:
         super().set_meta(dataset, overwrite=overwrite, **kwd)
         # Creates the index for the VCF file.
@@ -1230,7 +1229,7 @@ class Eland(Tabular):
         ]
 
     def make_html_table(
-        self, dataset: "DatasetInstance", skipchars: Optional[List] = None, peek: Optional[List] = None, **kwargs
+        self, dataset: DatasetProtocol, skipchars: Optional[List] = None, peek: Optional[List] = None, **kwargs
     ) -> str:
         """Create HTML table, used for displaying peek"""
         skipchars = skipchars or []
@@ -1291,7 +1290,7 @@ class Eland(Tabular):
 
     def set_meta(
         self,
-        dataset: "DatasetInstance",
+        dataset: DatasetProtocol,
         overwrite: bool = True,
         skip: Optional[int] = None,
         max_data_lines: Optional[int] = 5,
@@ -1453,7 +1452,7 @@ class BaseCSV(TabularData):
             return False
         return True
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         column_types = []
         header_row = []
         data_row = []
@@ -1535,7 +1534,7 @@ class ConnectivityTable(Tabular):
         self.column_names = ["base_index", "base", "neighbor_left", "neighbor_right", "partner", "natural_numbering"]
         self.column_types = ["int", "str", "int", "int", "int", "int"]
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         data_lines = 0
 
         with open(dataset.file_name) as fh:
@@ -1602,7 +1601,7 @@ class ConnectivityTable(Tabular):
                 i += 1
         return False
 
-    def get_chunk(self, trans, dataset: "DatasetInstance", offset: int = 0, ck_size: Optional[int] = None) -> str:
+    def get_chunk(self, trans, dataset: HasFileName, offset: int = 0, ck_size: Optional[int] = None) -> str:
         ck_data, last_read = self._read_chunk(trans, dataset, offset, ck_size)
         try:
             # The ConnectivityTable format has several derivatives of which one is delimited by (multiple) spaces.
@@ -1670,7 +1669,7 @@ class MatrixMarket(TabularData):
 
     def set_meta(
         self,
-        dataset: "DatasetInstance",
+        dataset: DatasetProtocol,
         overwrite: bool = True,
         skip: Optional[int] = None,
         max_data_lines: Optional[int] = 5,
@@ -1798,7 +1797,7 @@ class CMAP(TabularData):
 
     def set_meta(
         self,
-        dataset: "DatasetInstance",
+        dataset: DatasetProtocol,
         overwrite: bool = True,
         skip: Optional[int] = None,
         max_data_lines: Optional[int] = 7,

@@ -7,6 +7,7 @@ from typing import (
 from galaxy import model
 from galaxy.exceptions import ObjectNotFound
 from galaxy.managers.context import ProvidesAppContext
+from galaxy.model.base import transaction
 from galaxy.structured_app import MinimalManagerApp
 
 log = logging.getLogger(__name__)
@@ -83,8 +84,10 @@ class GroupRolesManager:
     def _add_role_to_group(self, trans: ProvidesAppContext, group: model.Group, role: model.Role):
         gra = model.GroupRoleAssociation(group, role)
         trans.sa_session.add(gra)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
 
     def _remove_role_from_group(self, trans: ProvidesAppContext, group_role: model.GroupRoleAssociation):
         trans.sa_session.delete(group_role)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()

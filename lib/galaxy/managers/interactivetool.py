@@ -7,6 +7,7 @@ from galaxy import (
     exceptions,
     model,
 )
+from galaxy.model.base import transaction
 from galaxy.util.filelock import FileLock
 
 log = logging.getLogger(__name__)
@@ -167,7 +168,8 @@ class InteractiveToolManager:
             )
             self.sa_session.add(ep)
         if flush:
-            self.sa_session.flush()
+            with transaction(self.sa_session):
+                self.sa_session.commit()
 
     def configure_entry_point(self, job, tool_port=None, host=None, port=None, protocol=None):
         return self.configure_entry_points(
@@ -192,7 +194,8 @@ class InteractiveToolManager:
                 self.save_entry_point(ep)
                 configured.append(ep)
         if configured:
-            self.sa_session.flush()
+            with transaction(self.sa_session):
+                self.sa_session.commit()
         return dict(not_configured=not_configured, configured=configured)
 
     def save_entry_point(self, entry_point):
@@ -271,19 +274,22 @@ class InteractiveToolManager:
             # This self.job_manager.stop(job) does nothing without changing job.state, manually or e.g. with .mark_deleted()
             self.job_manager.stop(job)
             trans.sa_session.add(job)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
 
     def remove_entry_points(self, entry_points):
         if entry_points:
             for entry_point in entry_points:
                 self.remove_entry_point(entry_point, flush=False)
-            self.sa_session.flush()
+            with transaction(self.sa_session):
+                self.sa_session.commit()
 
     def remove_entry_point(self, entry_point, flush=True):
         entry_point.deleted = True
         self.sa_session.add(entry_point)
         if flush:
-            self.sa_session.flush()
+            with transaction(self.sa_session):
+                self.sa_session.commit()
         self.propagator.remove_entry_point(entry_point)
 
     def target_if_active(self, trans, entry_point):

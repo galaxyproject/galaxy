@@ -47,10 +47,12 @@ describe("StsDownloadButton", () => {
     });
 
     it("should fallback to a URL if tasks not enabled", async () => {
+        const windowSpy = jest.spyOn(window, "open");
+        windowSpy.mockImplementation(() => {});
         const wrapper = await mountStsDownloadButtonWrapper(NO_TASKS_CONFIG);
         wrapper.vm.onDownload(NO_TASKS_CONFIG);
         await flushPromises();
-        expect(window.location).toBeAt(FALLBACK_URL);
+        expect(window.open).toBeCalled();
     });
 
     it("should poll until ready", async () => {

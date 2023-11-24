@@ -44,18 +44,18 @@ def init():
     return init_models_from_config(config, object_store=object_store), object_store, engine
 
 
-def quotacheck(sa_session, users, engine):
+def quotacheck(sa_session, users, engine, object_store):
     sa_session.refresh(user)
     current = user.get_disk_usage()
     print(user.username, "<" + user.email + ">:", end=" ")
 
     if not args.dryrun:
         # Apply new disk usage
-        user.calculate_and_set_disk_usage()
+        user.calculate_and_set_disk_usage(object_store)
         # And fetch
         new = user.get_disk_usage()
     else:
-        new = user.calculate_disk_usage()
+        new = user.calculate_disk_usage_default_source(object_store)
 
     print("old usage:", nice_size(current), "change:", end=" ")
     if new in (current, None):
@@ -77,7 +77,7 @@ if __name__ == "__main__":
         print("Processing %i users..." % user_count)
         for i, user in enumerate(sa_session.query(model.User).enable_eagerloads(False).yield_per(1000)):
             print("%3i%%" % int(float(i) / user_count * 100), end=" ")
-            quotacheck(sa_session, user, engine)
+            quotacheck(sa_session, user, engine, object_store)
         print("100% complete")
         object_store.shutdown()
         sys.exit(0)
@@ -88,5 +88,5 @@ if __name__ == "__main__":
     if not user:
         print("User not found")
         sys.exit(1)
+    quotacheck(sa_session, user, engine, object_store)
     object_store.shutdown()
-    quotacheck(sa_session, user, engine)

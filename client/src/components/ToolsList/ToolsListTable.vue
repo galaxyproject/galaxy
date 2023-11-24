@@ -15,6 +15,7 @@
             :help="item.help"
             :local="item.target === 'galaxy_main'"
             :link="item.link"
+            :owner="item.tool_shed_repository && item.tool_shed_repository.owner"
             :workflow-compatible="item.is_workflow_compatible"
             :version="item.version"
             @open="() => onOpen(item)" />
@@ -133,7 +134,7 @@ export default {
 .tools-list-table {
     display: flex;
     flex-direction: column;
-    gap: 0.5rem;
+    gap: 1rem;
 
     .list-end {
         width: 100%;

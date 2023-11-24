@@ -30,6 +30,7 @@ class TestLibraryContents(SeleniumTestCase, UsesLibraryAssertions):
         long_description = self._get_random_name(prefix="new_sub_folder_description", len=45)
 
         # create mew folder
+        self.admin_login()
         self.navigate_to_new_library()
         self.assert_num_displayed_items_is(0)
         self.libraries_folder_create(sub_folder_name)
@@ -63,7 +64,7 @@ class TestLibraryContents(SeleniumTestCase, UsesLibraryAssertions):
         self.admin_login()
         self.perform_upload(self.get_filename("1.txt"))
         self.wait_for_history()
-        self.navigate_to_new_library(login=False)
+        self.navigate_to_new_library()
         self.assert_num_displayed_items_is(0)
         self.sleep_for(self.wait_types.UX_RENDER)
         self.libraries_dataset_import(self.navigation.libraries.folder.labels.from_history)
@@ -125,6 +126,7 @@ class TestLibraryContents(SeleniumTestCase, UsesLibraryAssertions):
     @requires_admin
     @requires_new_library
     def test_import_dataset_from_path(self):
+        self.admin_login()
         self.navigate_to_new_library()
         self.assert_num_displayed_items_is(0)
         self.sleep_for(self.wait_types.UX_RENDER)
@@ -162,6 +164,7 @@ class TestLibraryContents(SeleniumTestCase, UsesLibraryAssertions):
     @requires_admin
     @requires_new_library
     def test_import_dataset_from_import_dir(self):
+        self.admin_login()
         self.navigate_to_new_library()
         self.assert_num_displayed_items_is(0)
         filenames = ["1.axt", "1.bed", "1.bam"]
@@ -172,6 +175,7 @@ class TestLibraryContents(SeleniumTestCase, UsesLibraryAssertions):
     @requires_admin
     @requires_new_library
     def test_show_details(self):
+        self.admin_login()
         self.navigate_to_new_library()
         self.sleep_for(self.wait_types.UX_RENDER)
         self.components.libraries.folder.open_location_details_btn.wait_for_and_click()

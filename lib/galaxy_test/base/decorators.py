@@ -18,6 +18,7 @@ from typing_extensions import Literal
 
 KnownRequirementT = Union[
     Literal["admin"],
+    Literal["celery"],
     Literal["new_history"],
     Literal["new_library"],
     Literal["new_published_objects"],
@@ -49,9 +50,7 @@ def using_requirement(tag: KnownRequirementT):
 
 def _attach_requirements(method, tag: KnownRequirementT):
     requirement = f"requires_{tag}"
-    try:
-        method.__required_galaxy_features
-    except AttributeError:
+    if not hasattr(method, "__required_galaxy_features"):
         method.__required_galaxy_features = []
     method.__required_galaxy_features.append(tag)
     getattr(pytest.mark, requirement)(method)
@@ -92,9 +91,14 @@ def requires_admin(method):
     return _wrap_method_with_galaxy_requirement(method, "admin")
 
 
+def requires_celery(method):
+    return _wrap_method_with_galaxy_requirement(method, "celery")
+
+
 __all__ = (
     "has_requirement",
     "requires_admin",
+    "requires_celery",
     "requires_new_history",
     "requires_new_library",
     "requires_new_published_objects",

@@ -54,7 +54,10 @@ export class QuotaUsage {
         if (this.isUnlimited) {
             return "unlimited";
         }
-        return bytesToString(this.quotaInBytes, true, undefined);
+        if (this.quotaInBytes !== undefined) {
+            return bytesToString(this.quotaInBytes, true, undefined);
+        }
+        return "unknown";
     }
 
     /**

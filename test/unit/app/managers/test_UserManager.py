@@ -4,6 +4,7 @@ User Manager testing.
 Executable directly using: python -m test.unit.managers.test_UserManager
 """
 from datetime import datetime
+from unittest.mock import patch
 
 from sqlalchemy import desc
 
@@ -186,6 +187,51 @@ class TestUserManager(BaseTestCase):
         # should not be able to login with a null or empty password
         assert not check_password("", user.password)
         assert not check_password(None, user.password)
+
+    def testable_url_for(*a, **k):
+        return f"(url_for): {k}"
+
+    @patch("routes.url_for", testable_url_for)
+    def test_activation_email(self):
+        self.log("should produce the activation email")
+        self.user_manager.create(email="user@nopassword.com", username="nopassword")
+
+        def validate_send_email(frm, to, subject, body, config, html=None):
+            assert frm == "email_from"
+            assert to == "user@nopassword.com"
+            assert subject == "Galaxy Account Activation"
+            assert "custom_activation_email_message" in body
+            assert "Hello nopassword" in body
+            assert (
+                "{'controller': 'user', 'action': 'activate', 'activation_token': 'activation_token', 'email': Markup('user@nopassword.com'), 'qualified': True}"
+                in body
+            )
+
+        with patch("galaxy.util.send_mail", side_effect=validate_send_email) as mock_send_mail:
+            with patch("galaxy.util.hash_util.new_secure_hash_v2", return_value="activation_token") as mock_hash_util:
+                result = self.user_manager.send_activation_email(self.trans, "user@nopassword.com", "nopassword")
+                mock_send_mail.assert_called_once()
+                mock_hash_util.assert_called_once()
+        assert result is True
+
+    @patch("routes.url_for", testable_url_for)
+    def test_reset_email(self):
+        self.log("should produce the password reset email")
+        self.user_manager.create(email="user@nopassword.com", username="nopassword")
+
+        def validate_send_email(frm, to, subject, body, config, html=None):
+            assert frm == "email_from"
+            assert to == "user@nopassword.com"
+            assert subject == "Galaxy Password Reset"
+            assert "reset your Galaxy password" in body
+            assert "{'controller': 'login', 'action': 'start', 'token': 'reset_token'}" in body
+
+        with patch("galaxy.util.send_mail", side_effect=validate_send_email) as mock_send_mail:
+            with patch("galaxy.model.unique_id", return_value="reset_token") as mock_unique_id:
+                result = self.user_manager.send_reset_email(self.trans, dict(email="user@nopassword.com"))
+                mock_send_mail.assert_called_once()
+                mock_unique_id.assert_called_once()
+        assert result is None
 
     def test_get_user_by_identity(self):
         # return None if username/email not found

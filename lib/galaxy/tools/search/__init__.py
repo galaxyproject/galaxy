@@ -137,9 +137,10 @@ class ToolPanelViewSearch:
             # The stored ID field is not searchable
             "id": ID(stored=True, unique=True),
             # This exact field is searchable by exact matches only
-            "id_exact": TEXT(
+            "id_exact": NGRAMWORDS(
+                minsize=config.tool_ngram_minsize,
+                maxsize=config.tool_ngram_maxsize,
                 field_boost=(config.tool_id_boost * config.tool_name_exact_multiplier),
-                analyzer=analysis.IDTokenizer() | analysis.LowercaseFilter(),
             ),
             # The primary name field is searchable by exact match only, and is
             # eligible for massive score boosting. A secondary ngram or text
@@ -156,6 +157,10 @@ class ToolPanelViewSearch:
             "edam_operations": TEXT(field_boost=float(config.tool_section_boost)),
             # The edam topics section where the tool is listed in the tool panel
             "edam_topics": TEXT(field_boost=float(config.tool_section_boost)),
+            # The name of the repository the tool belongs to
+            "repository": TEXT(field_boost=float(config.tool_section_boost)),
+            # The owner id of the repository the tool belongs to
+            "owner": TEXT(field_boost=float(config.tool_section_boost)),
             # Short description defined in the tool XML
             "description": TEXT(
                 field_boost=config.tool_description_boost,
@@ -289,6 +294,8 @@ class ToolPanelViewSearch:
             "section": to_unicode(tool.get_panel_section()[1] if len(tool.get_panel_section()) == 2 else ""),
             "edam_operations": clean(tool.edam_operations),
             "edam_topics": clean(tool.edam_topics),
+            "repository": to_unicode(tool.repository_name),
+            "owner": to_unicode(tool.repository_owner),
             "help": to_unicode(""),
         }
         if tool.guid:
@@ -335,6 +342,8 @@ class ToolPanelViewSearch:
             "section",
             "edam_operations",
             "edam_topics",
+            "repository",
+            "owner",
             "help",
             "labels",
             "stub",

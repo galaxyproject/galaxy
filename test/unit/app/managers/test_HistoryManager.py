@@ -1,9 +1,12 @@
-"""
-"""
+import time
 from unittest import mock
 
+import pytest
 import sqlalchemy
-from sqlalchemy import true
+from sqlalchemy import (
+    false,
+    true,
+)
 
 from galaxy import (
     exceptions,
@@ -19,6 +22,7 @@ from galaxy.managers.histories import (
     HistoryManager,
     HistorySerializer,
 )
+from galaxy.model.base import transaction
 from .base import BaseTestCase
 
 default_password = "123456"
@@ -82,13 +86,13 @@ class TestHistoryManager(BaseTestCase):
         history1 = self.history_manager.create(name="history1", user=user2)
         tags = ["tag-one"]
         annotation = "history annotation"
-        self.history_manager.set_tags(history1, tags, user=user2)
+        self.history_manager.tag_handler.set_tags_from_list(user=user2, item=history1, new_tags_list=tags)
         self.history_manager.annotate(history1, annotation, user=user2)
 
         hda = self.add_hda_to_history(history1, name="wat")
         hda_tags = ["tag-one", "tag-two"]
         hda_annotation = "annotation"
-        self.hda_manager.set_tags(hda, hda_tags, user=user2)
+        self.app.tag_handler.set_tags_from_list(user=user2, item=hda, new_tags_list=hda_tags)
         self.hda_manager.annotate(hda, hda_annotation, user=user2)
 
         history2 = self.history_manager.copy(history1, user=user3)
@@ -99,8 +103,7 @@ class TestHistoryManager(BaseTestCase):
         assert history2 != history1
 
         copied_hda = history2.datasets[0]
-        copied_hda_tags = self.hda_manager.get_tags(copied_hda)
-        assert sorted(hda_tags) == sorted(copied_hda_tags)
+        assert hda.make_tag_string_list() == copied_hda.make_tag_string_list()
         copied_hda_annotation = self.hda_manager.annotation(copied_hda)
         assert hda_annotation == copied_hda_annotation
 
@@ -334,6 +337,9 @@ class TestHistoryManager(BaseTestCase):
 
         history1 = self.history_manager.create(name="history1", user=user2)
         self.trans.set_history(history1)
+
+        # sleep a tiny bit so update time for history2 is different from history1
+        time.sleep(0.1)
         history2 = self.history_manager.create(name="history2", user=user2)
 
         self.log("should be able to get the most recently used (updated) history for a given user")
@@ -492,7 +498,9 @@ class TestHistorySerializer(BaseTestCase):
             job.state = model.Job.states.PAUSED
             jobs = [job]
             self.trans.sa_session.add(jobs[0])
-            self.trans.sa_session.flush()
+            session = self.trans.sa_session
+            with transaction(session):
+                session.commit()
             assert job.state == model.Job.states.PAUSED
             mock_paused_jobs.return_value = jobs
             history.resume_paused_jobs()
@@ -790,7 +798,9 @@ class TestHistoryFilters(BaseTestCase):
         anno_filter = filters[0].filter
 
         history3.add_item_annotation(self.trans.sa_session, user2, history3, "All work and no play")
-        self.trans.sa_session.flush()
+        session = self.trans.sa_session
+        with transaction(session):
+            session.commit()
 
         assert anno_filter(history3)
         assert not anno_filter(history2)
@@ -801,7 +811,9 @@ class TestHistoryFilters(BaseTestCase):
         self.history_manager.update(history3, dict(importable=True))
         self.history_manager.update(history2, dict(importable=True))
         history1.add_item_annotation(self.trans.sa_session, user2, history1, "All work and no play")
-        self.trans.sa_session.flush()
+        session = self.trans.sa_session
+        with transaction(session):
+            session.commit()
 
         shining_examples = self.history_manager.list(
             filters=self.filter_parser.parse_filters(
@@ -855,11 +867,17 @@ class TestHistoryFilters(BaseTestCase):
 
         test_annotation = "testing"
         history2.add_item_annotation(self.trans.sa_session, user2, history2, test_annotation)
-        self.trans.sa_session.flush()
+        session = self.trans.sa_session
+        with transaction(session):
+            session.commit()
         history3.add_item_annotation(self.trans.sa_session, user2, history3, test_annotation)
-        self.trans.sa_session.flush()
+        session = self.trans.sa_session
+        with transaction(session):
+            session.commit()
         history3.add_item_annotation(self.trans.sa_session, user2, history4, test_annotation)
-        self.trans.sa_session.flush()
+        session = self.trans.sa_session
+        with transaction(session):
+            session.commit()
 
         all_histories = [history1, history2, history3, history4]
         deleted_and_annotated = [history2, history3]
@@ -938,6 +956,48 @@ class TestHistoryFilters(BaseTestCase):
         found = self.history_manager.list(filters=filters, offset=-1)
         assert found == deleted_and_annotated
 
-    # TODO: eq, ge, le
-    # def test_ratings( self ):
-    #     pass
+    def test_count(self):
+        user2 = self.user_manager.create(**user2_data)
+        history1 = self.history_manager.create(name="history1", user=user2)
+        history2 = self.history_manager.create(name="history2", user=user2)
+        history3 = self.history_manager.create(name="history3", user=user2)
+        history4 = self.history_manager.create(name="history4", user=user2)
+        history5 = self.history_manager.create(name="history5", user=user2)
+
+        self.history_manager.delete(history1)
+        self.history_manager.delete(history2)
+        self.history_manager.archive_history(history3, None)
+        self.history_manager.archive_history(history4, None)
+
+        test_annotation = "testing"
+        history2.add_item_annotation(self.trans.sa_session, user2, history2, test_annotation)
+        self.trans.sa_session.flush()
+        history3.add_item_annotation(self.trans.sa_session, user2, history3, test_annotation)
+        self.trans.sa_session.flush()
+        history3.add_item_annotation(self.trans.sa_session, user2, history4, test_annotation)
+        self.trans.sa_session.flush()
+
+        all_histories = [history1, history2, history3, history4, history5]
+        deleted = [history1, history2]
+        archived = [history3, history4]
+
+        assert self.history_manager.count() == len(all_histories), "having no filters should count all histories"
+        filters = [model.History.deleted == true()]
+        assert self.history_manager.count(filters=filters) == len(deleted)
+        filters = [model.History.archived == true()]
+        assert self.history_manager.count(filters=filters) == len(archived)
+        filters = [model.History.deleted == false(), model.History.archived == false()]
+        assert self.history_manager.count(filters=filters) == len(all_histories) - len(deleted) - len(archived)
+
+        raw_annotation_fn_filter = ("annotation", "has", test_annotation)
+        # functional filtering is not supported
+        with pytest.raises(exceptions.RequestParameterInvalidException) as exc_info:
+            filters = self.filter_parser.parse_filters([raw_annotation_fn_filter])
+            self.history_manager.count(filters=filters)
+            assert "not supported" in str(exc_info)
+
+        raw_deleted_orm_filter = ("deleted", "eq", "True")
+        with pytest.raises(exceptions.RequestParameterInvalidException) as exc_info:
+            filters = self.filter_parser.parse_filters([raw_deleted_orm_filter, raw_annotation_fn_filter])
+            self.history_manager.count(filters=filters)
+            assert "not supported" in str(exc_info)

@@ -581,8 +581,24 @@ class BooleanToolParameter(ToolParameter):
     def __init__(self, tool, input_source):
         input_source = ensure_input_source(input_source)
         super().__init__(tool, input_source)
-        self.truevalue = input_source.get("truevalue", "true")
-        self.falsevalue = input_source.get("falsevalue", "false")
+        truevalue = input_source.get("truevalue", "true")
+        falsevalue = input_source.get("falsevalue", "false")
+        if tool and tool.profile >= 23.1:
+            if truevalue == falsevalue:
+                raise ParameterValueError("Cannot set true and false to the same value", self.name)
+            if truevalue.lower() == "false":
+                raise ParameterValueError(
+                    f"Cannot set truevalue to [{truevalue}], Galaxy state may encounter issues distinguishing booleans and strings in this case.",
+                    self.name,
+                )
+            if falsevalue.lower() == "true":
+                raise ParameterValueError(
+                    f"Cannot set falsevalue to [{falsevalue}], Galaxy state may encounter issues distinguishing booleans and strings in this case.",
+                    self.name,
+                )
+
+        self.truevalue = truevalue
+        self.falsevalue = falsevalue
         nullable = input_source.get_bool("optional", False)
         self.optional = nullable
         self.checked = input_source.get_bool("checked", None if nullable else False)
@@ -651,9 +667,6 @@ class FileToolParameter(ToolParameter):
                 if re.match(r"^[\w-]+$", session_id) is None:
                     raise ValueError("Invalid session id format.")
                 local_filename = os.path.abspath(os.path.join(upload_store, session_id))
-                if upload_store != trans.app.config.new_file_path and not os.path.exists(local_filename):
-                    # Fallback for old chunked API, remove in 22.05
-                    local_filename = os.path.abspath(os.path.join(trans.app.config.new_file_path, session_id))
             else:
                 # handle nginx upload
                 upload_store = trans.app.config.nginx_upload_store
@@ -1326,8 +1339,8 @@ class ColumnListParameter(SelectToolParameter):
     >>> from galaxy.model.mapping import init
     >>> sa_session = init("/tmp", "sqlite:///:memory:", create_tables=True).session
     >>> hist = History()
-    >>> sa_session.add(hist)
-    >>> sa_session.flush()
+    >>> with sa_session.begin():
+    ...     sa_session.add(hist)
     >>> hda = hist.add_dataset(HistoryDatasetAssociation(id=1, extension='interval', create_dataset=True, sa_session=sa_session))
     >>> dtp =  DataToolParameter(None, XML('<param name="blah" type="data" format="interval"/>'))
     >>> print(dtp.name)

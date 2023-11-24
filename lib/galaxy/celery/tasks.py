@@ -31,9 +31,14 @@ from galaxy.managers.hdas import HDAManager
 from galaxy.managers.lddas import LDDAManager
 from galaxy.managers.markdown_util import generate_branded_pdf
 from galaxy.managers.model_stores import ModelStoreManager
+from galaxy.managers.notification import NotificationManager
 from galaxy.managers.tool_data import ToolDataImportManager
 from galaxy.metadata.set_metadata import set_metadata_portable
+from galaxy.model.base import transaction
 from galaxy.model.scoped_session import galaxy_scoped_session
+from galaxy.objectstore import BaseObjectStore
+from galaxy.objectstore.caching import check_caches
+from galaxy.queue_worker import GalaxyQueueWorker
 from galaxy.schema.tasks import (
     ComputeDatasetHashTaskRequest,
     GenerateHistoryContentDownload,
@@ -43,6 +48,7 @@ from galaxy.schema.tasks import (
     ImportModelStoreTaskRequest,
     MaterializeDatasetInstanceTaskRequest,
     PrepareDatasetCollectionDownload,
+    PurgeDatasetsTaskRequest,
     SetupHistoryExportJob,
     WriteHistoryContentTo,
     WriteHistoryTo,
@@ -59,19 +65,25 @@ log = get_logger(__name__)
 
 
 @lru_cache()
+def setup_data_table_manager(app):
+    app._configure_tool_data_tables(from_shed_config=False)
+
+
+@lru_cache()
 def cached_create_tool_from_representation(app, raw_tool_source):
     return create_tool_from_representation(
         app=app, raw_tool_source=raw_tool_source, tool_dir="", tool_source_class="XmlToolSource"
     )
 
 
-@galaxy_task(ignore_result=True, action="recalculate a user's disk usage")
-def recalculate_user_disk_usage(session: galaxy_scoped_session, user_id: Optional[int] = None):
+@galaxy_task(action="recalculate a user's disk usage")
+def recalculate_user_disk_usage(
+    session: galaxy_scoped_session, object_store: BaseObjectStore, user_id: Optional[int] = None
+):
     if user_id:
         user = session.query(model.User).get(user_id)
         if user:
-            user.calculate_and_set_disk_usage()
-            log.info(f"New user disk usage is {user.disk_usage}")
+            user.calculate_and_set_disk_usage(object_store)
         else:
             log.error(f"Recalculate user disk usage task failed, user {user_id} not found")
     else:
@@ -82,6 +94,11 @@ def recalculate_user_disk_usage(session: galaxy_scoped_session, user_id: Optiona
 def purge_hda(hda_manager: HDAManager, hda_id: int):
     hda = hda_manager.by_id(hda_id)
     hda_manager._purge(hda)
+
+
+@galaxy_task(ignore_result=True, action="completely removes a set of datasets from the object_store")
+def purge_datasets(dataset_manager: DatasetManager, request: PurgeDatasetsTaskRequest):
+    dataset_manager.purge_datasets(request)
 
 
 @galaxy_task(ignore_result=True, action="materializing dataset instance")
@@ -129,7 +146,8 @@ def change_datatype(
         path = dataset_instance.dataset.file_name
         datatype = sniff.guess_ext(path, datatypes_registry.sniff_order)
     datatypes_registry.change_datatype(dataset_instance, datatype)
-    sa_session.flush()
+    with transaction(sa_session):
+        sa_session.commit()
     set_metadata(hda_manager, ldda_manager, sa_session, dataset_id, model_class)
 
 
@@ -139,7 +157,8 @@ def touch(sa_session: galaxy_scoped_session, item_id: int, model_class: str = "H
         raise NotImplementedError(f"touch method not implemented for '{model_class}'")
     item = sa_session.query(model.HistoryDatasetCollectionAssociation).filter_by(id=item_id).one()
     item.touch()
-    sa_session.flush()
+    with transaction(sa_session):
+        sa_session.commit()
 
 
 @galaxy_task(action="set dataset association metadata")
@@ -166,7 +185,8 @@ def set_metadata(
     except Exception as e:
         log.info(f"Setting metadata failed on {model_class} {dataset_instance.id}: {str(e)}")
         dataset_instance.dataset.state = dataset_instance.dataset.states.FAILED_METADATA
-    sa_session.flush()
+    with transaction(sa_session):
+        sa_session.commit()
 
 
 def _get_dataset_manager(
@@ -222,9 +242,7 @@ def is_aborted(session: galaxy_scoped_session, job_id: int):
         select(
             exists(model.Job.state).where(
                 model.Job.id == job_id,
-                model.Job.state.in_(
-                    [model.Job.states.DELETED, model.Job.states.DELETED_NEW, model.Job.states.DELETING]
-                ),
+                model.Job.state.in_([model.Job.states.DELETED, model.Job.states.DELETING]),
             )
         )
     ).scalar()
@@ -369,6 +387,7 @@ def compute_dataset_hash(
 
 @galaxy_task(action="import a data bundle")
 def import_data_bundle(
+    app: MinimalManagerApp,
     hda_manager: HDAManager,
     ldda_manager: LDDAManager,
     tool_data_import_manager: ToolDataImportManager,
@@ -378,6 +397,7 @@ def import_data_bundle(
     id: Optional[int] = None,
     tool_data_file_path: Optional[str] = None,
 ):
+    setup_data_table_manager(app)
     if src == "uri":
         assert uri
         tool_data_import_manager.import_data_bundle_by_uri(config, uri, tool_data_file_path=tool_data_file_path)
@@ -389,6 +409,8 @@ def import_data_bundle(
         else:
             dataset = ldda_manager.by_id(id)
         tool_data_import_manager.import_data_bundle_by_dataset(config, dataset, tool_data_file_path=tool_data_file_path)
+    queue_worker = GalaxyQueueWorker(app)
+    queue_worker.send_control_task("reload_tool_data_tables")
 
 
 @galaxy_task(action="pruning history audit table")
@@ -401,3 +423,17 @@ def prune_history_audit_table(sa_session: galaxy_scoped_session):
 def cleanup_short_term_storage(storage_monitor: ShortTermStorageMonitor):
     """Cleanup short term storage."""
     storage_monitor.cleanup()
+
+
+@galaxy_task(action="clean up expired notifications")
+def cleanup_expired_notifications(notification_manager: NotificationManager):
+    """Cleanup expired notifications."""
+    result = notification_manager.cleanup_expired_notifications()
+    log.info(
+        f"Successfully deleted {result.deleted_notifications_count} notifications and {result.deleted_associations_count} associations."
+    )
+
+
+@galaxy_task(action="prune object store cache directories")
+def clean_object_store_caches(object_store: BaseObjectStore):
+    check_caches(object_store.cache_targets())

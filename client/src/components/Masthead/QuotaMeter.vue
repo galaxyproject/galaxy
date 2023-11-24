@@ -1,29 +1,41 @@
 <template>
-    <current-user>
-        <div class="quota-meter d-flex align-items-center">
-            <b-link v-if="!hasQuota" v-b-tooltip.hover.left to="/storage" class="ml-auto quota-text" :title="title">
+    <div>
+        <div v-if="!hasQuota" class="quota-text d-flex align-items-center">
+            <b-link
+                v-b-tooltip.hover.left
+                to="/storage"
+                :disabled="isAnonymous"
+                class="ml-auto"
+                :title="title"
+                data-description="storage dashboard link">
                 {{ usingString + " " + totalUsageString }}
             </b-link>
-            <b-link v-else v-b-tooltip.hover.left class="quota-progress" to="/storage" :title="title">
+        </div>
+        <div v-else class="quota-meter d-flex align-items-center">
+            <b-link
+                v-b-tooltip.hover.left
+                class="quota-progress"
+                :disabled="isAnonymous"
+                to="/storage"
+                :title="title"
+                data-description="storage dashboard link">
                 <b-progress :max="100">
                     <b-progress-bar aria-label="Quota usage" :value="usage" :variant="variant" />
                 </b-progress>
                 <span>{{ usingString + " " + usage.toFixed(0) }}%</span>
             </b-link>
         </div>
-    </current-user>
+    </div>
 </template>
 
 <script>
+import { mapState } from "pinia";
 import { bytesToString } from "utils/utils";
-import CurrentUser from "components/providers/CurrentUser";
+import { useUserStore } from "@/stores/userStore";
 import { mapGetters } from "vuex";
 
 export default {
     name: "QuotaMeter",
-    components: {
-        CurrentUser,
-    },
     data() {
         return {
             usingString: this.l("Using"),
@@ -31,7 +43,7 @@ export default {
     },
     computed: {
         ...mapGetters("config", ["config"]),
-        ...mapGetters("user", ["currentUser"]),
+        ...mapState(useUserStore, ["currentUser", "isAnonymous"]),
         hasQuota() {
             const quotasEnabled = this.config?.enable_quotas ?? false;
             const quotaLimited = this.currentUser?.quota !== "unlimited" ?? false;
@@ -51,7 +63,7 @@ export default {
         },
         title() {
             let details = "";
-            if (this.currentUser.isAnonymous) {
+            if (this.isAnonymous) {
                 details = this.l("Log in for details.");
             } else {
                 details = this.l("Click for details.");
@@ -77,35 +89,38 @@ export default {
 </script>
 
 <style lang="scss" scoped>
-.quota-meter {
+.quote-container {
     position: relative;
-    right: 0.8rem;
-    width: 100px;
     height: 100%;
-
+    margin-right: 0.5rem;
+}
+.quota-text {
+    @extend .quote-container;
+    background: var(--masthead-link-color);
+    padding-right: 0.5rem;
+    padding-left: 0.5rem;
+    a {
+        color: var(--masthead-text-color);
+        text-decoration: none;
+    }
+}
+.quota-meter {
+    @extend .quote-container;
     .quota-progress {
-        width: 100%;
-        height: 16px;
+        width: 100px;
+        height: 1.4em;
         position: relative;
-
         & > * {
             position: absolute;
             width: 100%;
             height: 100%;
             text-align: center;
         }
-
         & > span {
-            line-height: 1em;
+            line-height: 1.4em;
             pointer-events: none;
         }
     }
-
-    .quota-text {
-        color: var(--masthead-text-color);
-        text-decoration: none;
-    }
-
     :deep(a) {
         &:focus-visible {
             outline: 2px solid var(--masthead-text-hover);

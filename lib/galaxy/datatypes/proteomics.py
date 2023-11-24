@@ -7,14 +7,14 @@ from typing import (
     IO,
     List,
     Optional,
-    TYPE_CHECKING,
 )
 
 from galaxy.datatypes import data
 from galaxy.datatypes.binary import Binary
-from galaxy.datatypes.data import (
-    GeneratePrimaryFileDataset,
-    Text,
+from galaxy.datatypes.data import Text
+from galaxy.datatypes.protocols import (
+    DatasetProtocol,
+    HasExtraFilesAndMetadata,
 )
 from galaxy.datatypes.sequence import Sequence
 from galaxy.datatypes.sniff import (
@@ -27,9 +27,6 @@ from galaxy.datatypes.tabular import (
 )
 from galaxy.datatypes.xml import GenericXml
 from galaxy.util import nice_size
-
-if TYPE_CHECKING:
-    from galaxy.model import DatasetInstance
 
 log = logging.getLogger(__name__)
 
@@ -58,7 +55,7 @@ class Wiff(Binary):
             is_binary=True,
         )
 
-    def generate_primary_file(self, dataset: GeneratePrimaryFileDataset) -> str:
+    def generate_primary_file(self, dataset: HasExtraFilesAndMetadata) -> str:
         rval = ["<html><head><title>Wiff Composite Dataset </title></head><p/>"]
         rval.append("<div>This composite dataset is composed of the following files:<p/><ul>")
         for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
@@ -100,7 +97,7 @@ class Wiff2(Binary):
             is_binary=True,
         )
 
-    def generate_primary_file(self, dataset: GeneratePrimaryFileDataset) -> str:
+    def generate_primary_file(self, dataset: HasExtraFilesAndMetadata) -> str:
         rval = ["<html><head><title>Wiff2 Composite Dataset </title></head><p/>"]
         rval.append("<div>This composite dataset is composed of the following files:<p/><ul>")
         for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
@@ -148,7 +145,7 @@ class MzTab(Text):
     def __init__(self, **kwd):
         super().__init__(**kwd)
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -199,7 +196,7 @@ class MzTab2(MzTab):
     def __init__(self, **kwd):
         super().__init__(**kwd)
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -244,7 +241,7 @@ class Kroenik(Tabular):
             "Modifications",
         ]
 
-    def display_peek(self, dataset: "DatasetInstance") -> str:
+    def display_peek(self, dataset: DatasetProtocol) -> str:
         """Returns formated html of peek"""
         return self.make_html_table(dataset, column_names=self.column_names)
 
@@ -283,7 +280,7 @@ class PepList(Tabular):
         super().__init__(**kwd)
         self.column_names = ["m/z", "rt(min)", "snr", "charge", "intensity"]
 
-    def display_peek(self, dataset: "DatasetInstance") -> str:
+    def display_peek(self, dataset: DatasetProtocol) -> str:
         """Returns formated html of peek"""
         return self.make_html_table(dataset, column_names=self.column_names)
 
@@ -320,7 +317,7 @@ class PSMS(Tabular):
         super().__init__(**kwd)
         self.column_names = ["PSMId", "score", "q-value", "posterior_error_prob", "peptide", "proteinIds"]
 
-    def display_peek(self, dataset: "DatasetInstance") -> str:
+    def display_peek(self, dataset: DatasetProtocol) -> str:
         """Returns formated html of peek"""
         return self.make_html_table(dataset, column_names=self.column_names)
 
@@ -380,7 +377,7 @@ class PepXmlReport(Tabular):
             "Interprophet Probability",
         ]
 
-    def display_peek(self, dataset: "DatasetInstance") -> str:
+    def display_peek(self, dataset: DatasetProtocol) -> str:
         """Returns formated html of peek"""
         return self.make_html_table(dataset, column_names=self.column_names)
 
@@ -421,7 +418,7 @@ class ProtXmlReport(Tabular):
             "Is Evidence?",
         ]
 
-    def display_peek(self, dataset: "DatasetInstance") -> str:
+    def display_peek(self, dataset: DatasetProtocol) -> str:
         """Returns formated html of peek"""
         return self.make_html_table(dataset, column_names=self.column_names)
 
@@ -436,7 +433,7 @@ class Dta(TabularData):
     file_ext = "dta"
     comment_lines = 0
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         column_types = []
         data_row: List = []
         data_lines = 0
@@ -509,7 +506,7 @@ class Dta2d(TabularData):
             return False
         return True
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         data_lines = 0
         delim = None
         if dataset.has_data():
@@ -645,7 +642,7 @@ class Edta(TabularData):
                 line[idx] += str(idx // 4)
         return line
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         data_lines = 0
         delim = None
         tpe = None
@@ -719,7 +716,7 @@ class ProteomicsXml(GenericXml):
         pattern = r"<(\w*:)?%s" % self.root
         return re.search(pattern, line) is not None
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -888,7 +885,7 @@ class Mgf(Text):
     edam_format = "format_3651"
     file_ext = "mgf"
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -918,7 +915,7 @@ class MascotDat(Text):
     edam_format = "format_3713"
     file_ext = "mascotdat"
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -962,7 +959,7 @@ class ThermoRAW(Binary):
         except Exception:
             return False
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Thermo Finnigan RAW file"
             dataset.blurb = nice_size(dataset.get_size())
@@ -970,7 +967,7 @@ class ThermoRAW(Binary):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: "DatasetInstance") -> str:
+    def display_peek(self, dataset: DatasetProtocol) -> str:
         try:
             return dataset.peek
         except Exception:
@@ -1004,7 +1001,7 @@ class SPLibNoIndex(Text):
 
     file_ext = "splib_noindex"
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -1029,7 +1026,7 @@ class SPLib(Msp):
         self.add_composite_file("library.spidx", description="Spectrum index", is_binary=False)
         self.add_composite_file("library.pepidx", description="Peptide index", is_binary=False)
 
-    def generate_primary_file(self, dataset: GeneratePrimaryFileDataset) -> str:
+    def generate_primary_file(self, dataset: HasExtraFilesAndMetadata) -> str:
         rval = ["<html><head><title>Spectral Library Composite Dataset </title></head><p/>"]
         rval.append("<div>This composite dataset is composed of the following files:<p/><ul>")
         for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
@@ -1046,7 +1043,7 @@ class SPLib(Msp):
         rval.append("</ul></div></html>")
         return "\n".join(rval)
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)
@@ -1118,7 +1115,7 @@ class ImzML(Binary):
 
         self.add_composite_file("ibd", description="The mass spectral data component.", is_binary=True)
 
-    def generate_primary_file(self, dataset: GeneratePrimaryFileDataset) -> str:
+    def generate_primary_file(self, dataset: HasExtraFilesAndMetadata) -> str:
         rval = ["<html><head><title>imzML Composite Dataset </title></head><p/>"]
         rval.append("<div>This composite dataset is composed of the following files:<p/><ul>")
         for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():

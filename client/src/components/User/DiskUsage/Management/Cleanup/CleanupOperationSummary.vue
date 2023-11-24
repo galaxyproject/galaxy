@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import localize from "@/utils/localization";
-import { delay } from "@/utils/utils";
+import { wait } from "@/utils/utils";
 import { computed, ref, onMounted, watchEffect } from "vue";
 import { BAlert, BCard, BCardText, BLink } from "bootstrap-vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
@@ -45,7 +45,7 @@ async function refresh() {
         const start = Date.now();
         summary.value = await props.operation.fetchSummary();
         const duration = Date.now() - start;
-        await delay(props.refreshDelay - duration);
+        await wait(props.refreshDelay - duration);
     } catch (error) {
         onError(String(error));
     } finally {

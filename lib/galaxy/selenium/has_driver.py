@@ -4,14 +4,21 @@ This should be mixed into classes with a self.driver and self.default_timeout
 attribute.
 """
 import abc
+import threading
 from typing import (
+    Dict,
     List,
     Optional,
     Type,
     Union,
 )
 
-from selenium.common.exceptions import TimeoutException as SeleniumTimeoutException
+import requests
+from axe_selenium_python import Axe
+from selenium.common.exceptions import (
+    NoSuchElementException,
+    TimeoutException as SeleniumTimeoutException,
+)
 from selenium.webdriver.common.action_chains import ActionChains
 from selenium.webdriver.common.by import By
 from selenium.webdriver.common.keys import Keys
@@ -21,16 +28,35 @@ from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.support.wait import WebDriverWait
 
 from galaxy.navigation.components import Target
+from .axe_results import (
+    AxeResults,
+    NullAxeResults,
+    RealAxeResults,
+)
 
 UNSPECIFIED_TIMEOUT = object()
 
 HasFindElement = Union[WebDriver, WebElement]
+DEFAULT_AXE_SCRIPT_URL = "https://cdnjs.cloudflare.com/ajax/libs/axe-core/4.7.1/axe.min.js"
+AXE_SCRIPT_HASH: Dict[str, str] = {}
+AXE_SCRIPT_HASH_LOCK = threading.Lock()
+
+
+def get_axe_script(script_url: str) -> str:
+    with AXE_SCRIPT_HASH_LOCK:
+        if script_url not in AXE_SCRIPT_HASH:
+            content = requests.get(script_url).text
+            AXE_SCRIPT_HASH[script_url] = content
+
+    return AXE_SCRIPT_HASH[script_url]
 
 
 class HasDriver:
     by: Type[By] = By
     keys: Type[Keys] = Keys
     driver: WebDriver
+    axe_script_url: str = DEFAULT_AXE_SCRIPT_URL
+    axe_skip: bool = False
 
     def re_get_with_query_params(self, params_str: str):
         driver = self.driver
@@ -76,8 +102,15 @@ class HasDriver:
     def find_elements(self, selector_template: Target) -> List[WebElement]:
         return self.driver.find_elements(*selector_template.element_locator)
 
-    def assert_absent(self, selector_template: Target):
-        assert len(self.find_elements(selector_template)) == 0
+    def assert_absent(self, selector_template: Target) -> None:
+        elements = self.find_elements(selector_template)
+        if len(elements) != 0:
+            description = selector_template.description
+            any_displayed = False
+            for element in elements:
+                any_displayed = any_displayed or element.is_displayed()
+            msg = f"Expected DOM elements [{elements}] to be empty for selector target {description} - any actually displayed? [{any_displayed}]"
+            raise AssertionError(msg)
 
     def element_absent(self, selector_template: Target) -> bool:
         return len(self.find_elements(selector_template)) == 0
@@ -161,7 +194,7 @@ class HasDriver:
     def wait_for_element_count_of_at_least(self, selector_template: Target, n: int, **kwds) -> WebElement:
         element = self._wait_on(
             lambda driver: len(driver.find_elements(*selector_template.element_locator)) >= n,
-            f"{selector_template.description} to become absent",
+            f"{selector_template.description} to become visible",
             **kwds,
         )
         return element
@@ -239,7 +272,10 @@ class HasDriver:
 
     def fill(self, form: WebElement, info: dict):
         for key, value in info.items():
-            input_element = form.find_element(By.NAME, key)
+            try:
+                input_element = form.find_element(By.NAME, key)
+            except NoSuchElementException:
+                input_element = form.find_element(By.ID, key)
             input_element.send_keys(value)
 
     def click_submit(self, form: WebElement):
@@ -277,6 +313,18 @@ class HasDriver:
 
     def find_element_by_selector(self, selector: str, element: Optional[WebElement] = None) -> WebElement:
         return self._locator_aware(element).find_element(By.CSS_SELECTOR, selector)
+
+    def axe_eval(self, context: Optional[str] = None, write_to: Optional[str] = None) -> AxeResults:
+        if self.axe_skip:
+            return NullAxeResults()
+
+        content = get_axe_script(self.axe_script_url)
+        self.driver.execute_script(content)
+        axe = Axe(self.driver)
+        results = axe.run(context=context)
+        if write_to is not None:
+            axe.write_results(results, write_to)
+        return RealAxeResults(results)
 
     def _locator_aware(self, element: Optional[WebElement] = None) -> HasFindElement:
         if element is None:

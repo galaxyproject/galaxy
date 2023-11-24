@@ -2,7 +2,7 @@
 VENV?=.venv
 # Source virtualenv to execute command (darker, sphinx, twine, etc...)
 IN_VENV=if [ -f "$(VENV)/bin/activate" ]; then . "$(VENV)/bin/activate"; fi;
-RELEASE_CURR:=23.0
+RELEASE_CURR:=23.1
 RELEASE_UPSTREAM:=upstream
 CONFIG_MANAGE=$(IN_VENV) python lib/galaxy/config/config_manage.py
 PROJECT_URL?=https://github.com/galaxyproject/galaxy
@@ -13,6 +13,10 @@ OPEN_RESOURCE=bash -c 'open $$0 || xdg-open $$0'
 SLIDESHOW_TO_PDF?=bash -c 'docker run --rm -v `pwd`:/cwd astefanutti/decktape /cwd/$$0 /cwd/`dirname $$0`/`basename -s .html $$0`.pdf'
 YARN := $(shell command -v yarn 2> /dev/null)
 YARN_INSTALL_OPTS=--network-timeout 300000 --check-files
+# Respect predefined NODE_OPTIONS, otherwise set maximum heap size low for
+# compatibility with smaller machines.
+NODE_OPTIONS ?= --max-old-space-size=3072
+NODE_ENV = env NODE_OPTIONS=$(NODE_OPTIONS)
 CWL_TARGETS := test/functional/tools/cwl_tools/v1.0/conformance_tests.yaml \
 	test/functional/tools/cwl_tools/v1.1/conformance_tests.yaml \
 	test/functional/tools/cwl_tools/v1.2/conformance_tests.yaml \
@@ -120,19 +124,16 @@ release-push-dev: release-ensure-upstream # Push local dev branch upstream
 	git push $(RELEASE_UPSTREAM) dev
 
 release-issue: ## Create release issue on github
-	$(IN_VENV) python scripts/bootstrap_history.py --create-release-issue $(RELEASE_CURR)
-
-release-check-metadata: ## check github PR metadata for target release
-	$(IN_VENV) python scripts/bootstrap_history.py --check-release $(RELEASE_CURR)
+	$(IN_VENV) galaxy-release-util create-release-issue $(RELEASE_CURR)
 
 release-check-blocking-issues: ## Check github for release blocking issues
-	$(IN_VENV) python scripts/bootstrap_history.py --check-blocking-issues $(RELEASE_CURR)
+	$(IN_VENV) galaxy-release-util check-blocking-issues $(RELEASE_CURR)
 
 release-check-blocking-prs: ## Check github for release blocking PRs
-	$(IN_VENV) python scripts/bootstrap_history.py --check-blocking-prs $(RELEASE_CURR)
+	$(IN_VENV) galaxy-release-util check-blocking-prs $(RELEASE_CURR)
 
 release-bootstrap-history: ## bootstrap history for a new release
-	$(IN_VENV) python scripts/bootstrap_history.py --release $(RELEASE_CURR)
+	$(IN_VENV) galaxy-release-util create-changelog $(RELEASE_CURR)
 
 update-lint-requirements:
 	./lib/galaxy/dependencies/update_lint_requirements.sh
@@ -193,23 +194,26 @@ lint-api-schema: build-api-schema
 	$(IN_VENV) codespell -I .ci/ignore-spelling.txt _schema.yaml
 	$(MAKE) remove-api-schema
 
+update-navigation-schema: client-node-deps
+	$(IN_VENV) cd client && node navigation_to_schema.mjs
+
 install-client: node-deps ## Install prebuilt client as defined in root package.json
 	yarn install && yarn run stage
 
 client: client-node-deps ## Rebuild client-side artifacts for local development.
-	cd client && yarn run build
+	cd client && $(NODE_ENV) yarn run build
 
 client-production: client-node-deps ## Rebuild client-side artifacts for a production deployment without sourcemaps.
-	cd client && yarn run build-production
+	cd client && $(NODE_ENV) yarn run build-production
 
 client-production-maps: client-node-deps ## Rebuild client-side artifacts for a production deployment with sourcemaps.
-	cd client && yarn run build-production-maps
+	cd client && $(NODE_ENV) yarn run build-production-maps
 
 client-format: client-node-deps ## Reformat client code
 	cd client && yarn run format
 
 client-dev-server: client-node-deps ## Starts a webpack dev server for client development (HMR enabled)
-	cd client && yarn run develop
+	cd client && $(NODE_ENV) yarn run develop
 
 client-test: client-node-deps  ## Run JS unit tests
 	cd client && yarn run test

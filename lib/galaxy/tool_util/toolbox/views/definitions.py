@@ -50,7 +50,7 @@ class Tool(BaseModel):
 
 
 class Label(BaseModel):
-    content_type: Literal["label"] = Field(alias="type")
+    content_type: Literal["label"] = Field(alias="type", default="label")
     id: Optional[str]
     text: str
 
@@ -64,7 +64,7 @@ class LabelShortcut(BaseModel):
 
 
 class Workflow(BaseModel):
-    content_type: Literal["workflow"] = Field(alias="type")
+    content_type: Literal["workflow"] = Field(alias="type", default="workflow")
     id: str
 
     class Config:

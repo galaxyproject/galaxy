@@ -24,7 +24,7 @@ export function useDatatypesMapper() {
             datatypesMapperLoading.value = false;
         }
         if (!datatypesMapperStore.datatypesMapper) {
-            throw "Error creating datatypesMapper";
+            throw Error("Error creating datatypesMapper");
         }
     }
 

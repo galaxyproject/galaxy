@@ -9,6 +9,7 @@ import { useConfig } from "@/composables/config";
 import UtcDate from "@/components/UtcDate.vue";
 import License from "@/components/License/License.vue";
 import ExternalLink from "@/components/ExternalLink.vue";
+import Heading from "@/components/Common/Heading.vue";
 
 const { config, isLoaded } = useConfig();
 
@@ -25,11 +26,11 @@ const versionUserDocumentationUrl = computed(() => {
 </script>
 
 <template>
-    <div v-if="isLoaded">
-        <h1>About This Galaxy</h1>
+    <div v-if="isLoaded" class="about-galaxy">
+        <Heading h1 :icon="['gxd', 'galaxyLogo']" size="xl">About This Galaxy</Heading>
         <div>
             <!-- Galaxy version (detailed), with a link to the release notes -->
-            <h2>Galaxy Version Information</h2>
+            <Heading h2 separator size="md">Galaxy Version Information</Heading>
             <p>
                 The Galaxy Server is running version
                 <external-link :href="versionUserDocumentationUrl">
@@ -47,7 +48,7 @@ const versionUserDocumentationUrl = computed(() => {
             </template>
         </div>
         <div>
-            <h2>Galaxy API Documentation</h2>
+            <Heading h2 separator size="md">Galaxy API Documentation</Heading>
             <!-- API documentation link -->
             <p>
                 The Galaxy API is available, and explorable, at
@@ -57,12 +58,12 @@ const versionUserDocumentationUrl = computed(() => {
             </p>
         </div>
         <div>
-            <h2>License Information</h2>
+            <Heading h2 separator size="md">License Information</Heading>
             <p>The Galaxy Software is licensed under <License :license-id="galaxyLicense" /></p>
         </div>
         <div v-if="config.terms_url">
             <!-- Terms, if available.-->
-            <h2>Terms and Conditions</h2>
+            <Heading h2 separator size="md">Terms and Conditions</Heading>
             <p>
                 This Galaxy Server has specified Terms and Conditions that apply to use of the service.
                 <external-link :href="config.terms_url">Review them here.</external-link>
@@ -70,3 +71,13 @@ const versionUserDocumentationUrl = computed(() => {
         </div>
     </div>
 </template>
+
+<style lang="scss" scoped>
+@import "theme/blue.scss";
+
+.about-galaxy h1 {
+    --fa-primary-color: #{$brand-primary};
+    --fa-secondary-color: #{$brand-toggle};
+    --fa-secondary-opacity: 1;
+}
+</style>

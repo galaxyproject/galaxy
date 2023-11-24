@@ -81,6 +81,10 @@ export default {
             type: String,
             default: "",
         },
+        owner: {
+            type: String,
+            default: "",
+        },
         help: {
             type: String,
             default: "",

@@ -4,6 +4,7 @@ from requests import get
 
 from galaxy_test.base.api_util import baseauth_headers
 from galaxy_test.base.decorators import requires_new_user
+from galaxy_test.base.populators import skip_without_tool
 from ._framework import ApiTestCase
 
 TEST_USER_EMAIL = "auth_user_test@bx.psu.edu"
@@ -26,6 +27,7 @@ class TestAuthenticateApi(ApiTestCase):
         random_api_response = get(random_api_url, params=dict(key=auth_dict["api_key"]))
         self._assert_status_code_is(random_api_response, 200)
 
+    @skip_without_tool("test_data_source")
     def test_tool_runner_session_cookie_handling(self):
         response = get(self.url)
         tool_runner_session_cookie = response.cookies["galaxytoolrunnersession"]

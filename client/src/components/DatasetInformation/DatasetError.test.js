@@ -1,8 +1,9 @@
+import { createPinia } from "pinia";
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 import DatasetError from "./DatasetError";
+import { useUserStore } from "stores/userStore";
 import MockProvider from "../providers/MockProvider";
-import MockCurrentUser from "../providers/MockCurrentUser";
 
 jest.mock("components/providers", () => {
     return {}; // stubbed below
@@ -11,7 +12,8 @@ jest.mock("components/providers", () => {
 const localVue = getLocalVue();
 
 function buildWrapper(has_duplicate_inputs = true, has_empty_inputs = true, user_email = "") {
-    return mount(DatasetError, {
+    const pinia = createPinia();
+    const wrapper = mount(DatasetError, {
         propsData: {
             datasetId: "dataset_id",
         },
@@ -34,9 +36,14 @@ function buildWrapper(has_duplicate_inputs = true, has_empty_inputs = true, user
             }),
             FontAwesomeIcon: false,
             FormElement: false,
-            CurrentUser: MockCurrentUser({ email: "email" }),
         },
+        pinia,
     });
+
+    const userStore = useUserStore();
+    userStore.currentUser = { email: user_email || "email" };
+
+    return wrapper;
 }
 
 describe("DatasetError", () => {

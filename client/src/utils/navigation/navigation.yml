@@ -12,10 +12,10 @@ _:  # global stuff
     editable_text: '.editable-text'
     tooltip_balloon: '.tooltip'
     tooltip_inner: .tooltip-inner
-    left_panel_drag: '#left > .unified-panel-footer > .drag'
-    left_panel_collapse: '#left > .unified-panel-footer > .panel-collapse'
-    right_panel_drag: '#right > .unified-panel-footer > .drag'
-    right_panel_collapse: '#right > .unified-panel-footer > .panel-collapse'
+    left_panel_drag: '#left-drag'
+    left_panel_collapse: '#left-collapse'
+    right_panel_drag: '#right-drag'
+    right_panel_collapse: '#right-collapse'
     by_attribute: '${scope} [${name}="${value}"]'
 
   messages:
@@ -43,10 +43,13 @@ masthead:
 
     username:
       type: xpath
-      selector: '//a[contains(text(), "Logged in as")]'
+      selector: '//a[contains(text(), "Signed in as")]'
 
     logged_in_only: '.loggedin-only'
     logged_out_only: '.loggedout-only'
+    storage_dashboard_link:
+      selector: 'storage dashboard link'
+      type: data-description
 
   labels:
     # top-level menus
@@ -59,16 +62,18 @@ masthead:
     admin: 'Admin'
 
     # user menu
-    logout: 'Logout'
-    custom_builds: 'Custom Builds'
+    logout: 'Sign Out'
     preferences: 'Preferences'
     histories: 'Histories'
     invocations: 'Workflow Invocations'
     pages: 'Pages'
+    histories_shared_with_me: 'Histories shared with me'
 
     # Shared data
     libraries: 'Data Libraries'
+    published_workflows: 'Workflows'
     published_histories: 'Histories'
+    published_pages: 'Pages'
 
 preferences:
   selectors:
@@ -77,14 +82,22 @@ preferences:
     manage_information: '#edit-preferences-information'
     toolbox_filters: '#edit-preferences-toolbox-filters'
     manage_api_key: '#edit-preferences-api-key'
+    custom_builds: '#edit-preferences-custom-builds'
     current_email: "#user-preferences-current-email"
     get_new_key: '.create-button'
     api_key_input: '[data-test-id="api-key-input"]'
+    object_store: '#select-preferred-object-store'
     delete_account: '#delete-account'
     delete_account_input: '#name-input'
     delete_account_ok_btn: '.modal-footer .btn-primary'
     email_input: "input[id='email']"
     username_input: "input[id='username']"
+    preferred_storage: '.preferred-storage'
+
+  object_store_selection:
+    selectors:
+      option_buttons: '.preferred-object-store-select-button'
+      option_button: '.preferred-object-store-select-button[data-object-store-id="${object_store_id}"]'
 
 toolbox_filters:
   selectors:
@@ -118,6 +131,15 @@ dataset_details:
     tool_parameters: 'table#tool-parameters'
     transform_action: '[data-transform-action="${action}"]'
     deferred_source_uri: '.deferred-dataset-source-uri'
+
+object_store_details:
+  selectors:
+    stored_by_name: '.display-os-by-name'
+    badge_of_type: '.object-store-badge-wrapper [data-badge-type="${type}"]'
+    usage_details: '.quota-usage-bar'
+    usage_bytes: '.quota-usage'
+    usage_percent: '.quota-percent-text'
+    usage_progress: '.quota-usage-bar .progress'
 
 history_panel:
   menu:
@@ -190,10 +212,11 @@ history_panel:
       # Action buttons...
       download_button: '${_} .download-btn'
       info_button: '${_} .params-btn'
+      highlight_button: '${_} .highlight-btn'
       alltags: '${_} .stateless-tags .tag'
       metadata_file_download: '${_} [data-description="download ${metadata_name}"]'
 
-      dataset_operations_dropdown: '${_}  .dataset-actions'
+      dataset_operations: '${_} .dataset-actions'
 
   # re-usable history editor, scoped for use in different layout scenarios (multi, etc.)
   editor:
@@ -293,14 +316,31 @@ history_panel:
     pagination_next: '.list-pagination button.next'
     pagination_previous: '.list-pagination button.prev'
 
+    storage_overview: '.history-storage-overview-button'
+
   text:
     tooltip_name: 'Rename history...'
     new_name: 'Unnamed history'
 
+history_storage:
+  selectors:
+    _: '.history-storage-overview'
+
+storage_dashboard:
+  selectors:
+    free_space_link: '[data-description="free space card"] button'
+    explore_usage_link: '[data-description="explore usage card"] button'
+
 edit_dataset_attributes:
   selectors:
     database_build_dropdown: '[data-label="Database/Build"]'
-    save_btn: '#dataset-attributes-default-save'
+
+    _: '[aria-labelledby="dataset-attributes-heading"]'
+    name_input: '[aria-labelledby="dataset-attributes-heading"] input#name'
+    info_input: '[aria-labelledby="dataset-attributes-heading"] textarea#info'
+    annotation_input: '[aria-labelledby="dataset-attributes-heading"] textarea#annotation'
+    save_button: '#dataset-attributes-default-save'
+    alert: '.dataset-attributes-alert'
 
   dbkey_dropdown_results:
     selectors:
@@ -363,8 +403,13 @@ published_histories:
     advanced_search_name_input: '#published-histories-advanced-filter-name'
     advanced_search_tag_input: '#published-histories-advanced-filter-tag'
     advanced_search_submit: '#published-histories-advanced-filter-submit'
-    tag_content: '#published-histories-table tbody tr .ti-tag .tag-name'
+    tag_content: '#published-histories-table tbody tr .tag span'
     column_header: '#published-histories-table thead tr th:nth-child(${column_number})'
+
+shared_histories:
+  selectors:
+    _: ".histories-shared-with-you-by-others"
+    histories: "#grid-table-body tr"
 
 history_copy_elements:
   selectors:
@@ -382,6 +427,7 @@ collection_builders:
     clear_filters: "a.clear-filters-link"
     forward_datasets: ".forward-column .column-datasets"
     reverse_datasets: ".reverse-column .column-datasets"
+    name: "input.collection-name"
 
 histories:
   labels:
@@ -453,20 +499,36 @@ history_import:
 
 pages:
   selectors:
-    create: '.manage-table-actions .action-button'
+    create: '#page-create'
     submit: '#submit'
+    drop: '.page-dropdown'
+    drop_edit: '.dropdown-item-edit'
+    drop_view: '.dropdown-item-view'
+    create_title_input: '#form-element-title input'
+    create_slug_input: '#form-element-slug input'
     export: '.markdown-pdf-export'
+    dropdown: '[data-page-dropdown*="${id}"]'
+    index_table: "#page-table"
+    index_rows: "#page-table > tbody > tr:not(.b-table-empty-row, [style*='display: none'])"
+    delete_modal_confirm: '#delete-page-modal-${id}___BV_modal_footer_ .btn-primary'
+
   editor:
     selectors:
       save: '#save-button'
-      embed_dataset:
-        type: xpath
-        selector: '//span[text() = "Embedded Dataset"]'
+      embed_dataset: '.toolTitle .title-link[data-tool-id="history_dataset_embedded"]'
+      embed_workflow_display: '.toolTitle .title-link[data-tool-id="workflow_display"]'
+      history_link: '.toolTitle .title-link[data-tool-id="history_link"]'
       dataset_selector:
         type: xpath
         selector: '//span[text() = "1: 1.fasta"]'
+      workflow_selection: .selection-dialog-modal [role="row"][data-pk="${id}"]
+      history_selection: .selection-dialog-modal [role="row"][data-pk="${id}"]
       embed_dialog_add_button: '.pages-embed .buttons #button-0'
       markdown_editor: '.markdown-textarea'
+
+  view:
+    selectors:
+      history_link: '[data-description="history import link"][data-history-id="${history_id}"]'
 
 login:
   selectors:
@@ -503,6 +565,11 @@ tool_form:
     repeat_insert: '[data-description="repeat insert"]'
     reference: '.formatted-reference'
     about: '.tool-footer'
+    storage_options: '.tool-storage'
+    drilldown_select_all: 'div.ui-form-element[id="form-element-${parameter}"] div.select-all-checkbox'
+    drilldown_option: '.drilldown-option'
+    drilldown_expand: '.fa-plus-square'
+
 
   labels:
     generate_tour: 'Generate Tour'
@@ -524,8 +591,16 @@ workflows:
     pager_page_last: '.gx-workflows-grid-pager .gx-grid-pager-last button'
     pager_page_previous: '.gx-workflows-grid-pager .gx-grid-pager-prev button'
     pager_page_active: '.gx-workflows-grid-pager .gx-grid-pager-page.active button'
+    dropdown: '[data-workflow-dropdown*="${id}"]'
     run_button: '[data-workflow-run*="${id}"]'
     bookmark_link: '.workflow-bookmark-link'
+    import_file: '.workflow-import-file'
+    import_trs_search: '.workflow-import-trs-search'
+    import_trs_id: '.workflow-import-trs-id'
+    import_file_link: '.workflow-import-file-link'
+    import_trs_search_link: '.workflow-import-trs-search-link'
+    import_trs_id_link: '.workflow-import-trs-id-link'
+
     workflow_with_name:
       type: xpath
       selector: '//span[@class="workflow-dropdown-name" and text() = "${workflow_name}"]'
@@ -575,15 +650,21 @@ workflow_run:
     # TODO: put step labels in the DOM ideally
     subworkflow_step_icon: ".portlet-title-icon.fa-sitemap"
     run_workflow: "#run-workflow"
+    run_workflow_disabled: "#run-workflow.disabled"
     validation_error: ".validation-error"
     expand_form_link: '.workflow-expand-form-link'
     expanded_form: '.workflow-expanded-form'
     new_history_target_link: '.workflow-new-history-target-link'
     runtime_setting_button: '.workflow-run-settings'
     runtime_setting_target: '.workflow-run-settings-target'
+    simplified_input:
+      type: xpath
+      selector: //div[@data-label="${label}"]//input
     input_select_field:
       type: xpath
-      selector: '//div[@data-label="${label}"]//span[@class="select2-chosen"]'
+      selector: '//div[@data-label="${label}"]//div[contains(@class, "multiselect")]'
+    primary_storage_indciator: '.workflow-storage-indicator-primary'
+    intermediate_storage_indciator: '.workflow-storage-indicator-intermediate'
 
 workflow_editor:
   node:
@@ -594,7 +675,7 @@ workflow_editor:
       clone: '${_} .node-clone'
       output_data_row:
         type: xpath
-        selector: '//div[contains(@class, "output-data-row") and contains(string(), "${output_name} (${extension})")]'
+        selector: '//div[@data-output-name="${output_name}"]//span[contains(text(), "(${extension})")]'
       output_terminal: "${_} [output-name='${name}']"
       input_terminal: "${_} [input-name='${name}']"
       input_mapping_icon: "${_} [input-name='${name}'].multiple"
@@ -604,6 +685,18 @@ workflow_editor:
     canvas_body: '#workflow-canvas'
     edit_annotation: '#workflow-annotation'
     edit_name: '#workflow-name'
+    license_selector:
+      selector: 'license selector'
+      type: data-description
+    edit_license_link:
+      selector: 'edit license link'
+      type: data-description
+    license_select:
+      selector: 'license select'
+      type: data-description
+    license_save:
+      selector: 'license save'
+      type: data-description
     tool_menu: '.toolMenuContainer'
     tool_menu_section_link: '.tool-menu-section-${section_name} a span'
     tool_menu_item_link: 'a.tool-menu-item-${item_name}'
@@ -652,20 +745,28 @@ workflow_editor:
     change_datatype:
       type: xpath
       selector: >
-        //div[@data-label='Change datatype' and not(ancestor::div[contains(@style,'display: none')])]//span[contains(@class, 'select2-chosen')]
+        //div[@data-label='Change datatype']//div[contains(@class, 'multiselect')]
     select_datatype_text_search:
       type: xpath
       selector: >
-        //div[@class="select2-search" and not(ancestor::div[contains(@style,'display: none')])]//input
+        //input[@class="multiselect__input"]
     select_datatype:
       type: xpath
       selector: >
-        //div[@class="select2-result-label" and contains(text(), "${datatype}") and not(ancestor::div[contains(@style,'display: none')])]
-    add_tags:
+        //li[@class="multiselect__element"]//span[text()="${datatype}"]
+    add_tags_button:
+      type: xpath
+      selector: >
+        //div[@data-label='Add Tags']//button
+    add_tags_input:
       type: xpath
       selector: >
         //div[@data-label='Add Tags']//input
-    remove_tags:
+    remove_tags_button:
+      type: xpath
+      selector: >
+        //div[@data-label='Remove Tags']//button
+    remove_tags_input:
       type: xpath
       selector: >
         //div[@data-label='Remove Tags']//input
@@ -680,6 +781,7 @@ workflow_editor:
 
 workflow_show:
   selectors:
+    _: '.workflow-display'
     title: '[data-description="workflow name"]'
     import_link: '[data-description="workflow import"]'
 
@@ -761,12 +863,29 @@ admin:
         type: xpath
         selector: "//label[@for='prevent-job-dispatching']/strong"
       cutoff: '#cutoff'
+      table: '.jobs-table'
+      filter_link_user: '.job-filter-link-user'
+      filter_link_tool: '.job-filter-link-tool-id'
+      filter_link_handler: '.job-filter-link-handler'
+      filter_link_runner: '.job-filter-link-runner'
+      filter_link_by_user: '.job-filter-link-user[data-user="${user}"]'
+      filter_link_by_tool: '.job-filter-link-tool-id[data-tool-id="${tool_id}"]'
+      filter_link_by_handler: '.job-filter-link-handler[data-handler="${handler}"]'
+      filter_link_by_runner: '.job-filter-link-runner[data-runner="${runner}"]'
+      filter_query: '.index-filter-query'
 
   toolshed:
     selectors:
       repo_search: '#toolshed-repo-search'
       search_results: '#shed-search-results'
       upgrade_notification: '#repository-table .badge'
+
+  quota:
+    selectors:
+      add_new: '.quotas .manage-table-actions .action-button'
+      items: '.quotas #grid-table-body tr'
+      add_form: "[url='/admin/create_quota']"
+      add_form_submit: "[url='/admin/create_quota'] #submit"
 
   index:
     selectors:
@@ -926,7 +1045,7 @@ upload:
     paste_content: '#upload-row-${n} .upload-text-content'
     settings: '.upload-settings-table'
     setting_deferred: '.upload-deferred'
-    start: '.upload-button'
+    start: '#activity-upload'
     start_uploading: '.upload-start'
     close: '.upload-close'
     rule_source_content: 'textarea.upload-rule-source-content'
@@ -942,6 +1061,16 @@ upload:
       selector: '//span[contains(@title, "${path}")]'
     file_dialog_ok: '.file-dialog-modal-ok'
     paste_new: .upload-paste
+
+new_user_welcome:
+  selectors:
+    _: .new-user-welcome
+    topics: .new-user-welcome-topic
+    topic_button: '.new-user-welcome-topic[data-new-user-welcome-topic-title="${title}"] button'
+    subtopics: .new-user-welcome-subtopic
+    subtopic_button: '.new-user-welcome-subtopic[data-new-user-welcome-subtopic-title="${title}"] button'
+    slides: .new-user-welcome-slides
+    back: .new-user-welcome-return
 
 rule_builder:
   selectors:

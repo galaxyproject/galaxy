@@ -18,6 +18,7 @@ from galaxy.exceptions import (
     RequestParameterMissingException,
 )
 from galaxy.managers import cloudauthzs
+from galaxy.model.base import transaction
 from galaxy.structured_app import StructuredApp
 from galaxy.util import unicodify
 from galaxy.web import expose_api
@@ -190,7 +191,8 @@ class CloudAuthzController(BaseGalaxyAPIController):
         try:
             cloudauthz = trans.app.authnz_manager.try_get_authz_config(trans.sa_session, trans.user.id, authz_id)
             trans.sa_session.delete(cloudauthz)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
             log.debug(f"Deleted a cloudauthz record with id `{authz_id}` for the user id `{str(trans.user.id)}` ")
             view = self.cloudauthz_serializer.serialize_to_view(
                 cloudauthz, trans=trans, **self._parse_serialization_params(kwargs, "summary")

@@ -15,6 +15,7 @@ from urllib.request import (
     urlopen,
 )
 
+from galaxy.model.base import transaction
 from galaxy.tool_shed.galaxy_install.tools import tool_panel_manager
 from galaxy.tool_shed.util import repository_util
 from galaxy.tool_shed.util.container_util import get_components_from_key
@@ -133,15 +134,20 @@ class RepositoryDependencyInstallManager:
                                     repository_dependency = install_model.RepositoryDependency(
                                         tool_shed_repository_id=required_repository.id
                                     )
-                                    install_model.context.add(repository_dependency)
-                                    install_model.context.flush()
+                                    session = install_model.context
+                                    session.add(repository_dependency)
+                                    with transaction(session):
+                                        session.commit()
+
                                 # Build the relationship between the d_repository and the required_repository.
                                 rrda = install_model.RepositoryRepositoryDependencyAssociation(
                                     tool_shed_repository_id=d_repository.id,
                                     repository_dependency_id=repository_dependency.id,
                                 )
-                                install_model.context.add(rrda)
-                                install_model.context.flush()
+                                session = install_model.context
+                                session.add(rrda)
+                                with transaction(session):
+                                    session.commit()
 
     def create_repository_dependency_objects(
         self,
@@ -234,15 +240,14 @@ class RepositoryDependencyInstallManager:
                             install_model.ToolShedRepository.installation_status.INSTALLING_TOOL_DEPENDENCIES,
                             install_model.ToolShedRepository.installation_status.LOADING_PROPRIETARY_DATATYPES,
                         ]:
-                            info_msg = (
+                            log.info(
                                 "Skipping installation of revision %s of repository '%s' because it was installed "
-                                % (changeset_revision, repository_db_record.name)
+                                "with the (possibly updated) revision %s and its current installation status is '%s'.",
+                                changeset_revision,
+                                repository_db_record.name,
+                                installed_changeset_revision,
+                                repository_db_record.status,
                             )
-                            info_msg += (
-                                "with the (possibly updated) revision %s and its current installation status is '%s'."
-                                % (installed_changeset_revision, repository_db_record.status)
-                            )
-                            log.info(info_msg)
                             can_update_db_record = False
                         else:
                             if repository_db_record.status in [
@@ -572,8 +577,11 @@ class RepositoryDependencyInstallManager:
         repository.uninstalled = False
         repository.status = self.app.install_model.ToolShedRepository.installation_status.NEW
         repository.error_message = None
-        self.app.install_model.context.add(repository)
-        self.app.install_model.context.flush()
+
+        session = self.app.install_model.context
+        session.add(repository)
+        with transaction(session):
+            session.commit()
 
 
 def _urlopen(url, data=None):

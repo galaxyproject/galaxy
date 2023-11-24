@@ -44,7 +44,7 @@ const myFunction = (param) => {
 };
 
 // anonymous functions
-const myFunction = function(param) {
+const myFunction = function (param) {
     //do stuff
 };
 ```
@@ -84,10 +84,9 @@ When possible, use arrow functions instead.
 > export function myFunction(parameter) {
 >     const addOne = (value) => {
 >         return value + 1;
->     }
+>     };
 >     // do more stuff...
 > }
->
 > ```
 >
 > **Don't**
@@ -96,12 +95,11 @@ When possible, use arrow functions instead.
 > // in myModules.js
 >
 > export const myFunction = (parameter) => {
->     const addOne = function(value) {
+>     const addOne = function (value) {
 >         return value + 1;
->     }
+>     };
 >     // do more stuff...
-> }
->
+> };
 > ```
 
 ## HTML Multi-Line Layout
@@ -115,9 +113,7 @@ Prettier tries to respect whitespace when formatting your HTML templates, even w
 Might get turned into:
 
 ```vue
-<b-button class="danger-button mb-4" variant="danger" @click="onDangerButtonClick"
-    >A very Long Button Text</b-button
->
+<b-button class="danger-button mb-4" variant="danger" @click="onDangerButtonClick">A very Long Button Text</b-button>
 ```
 
 Notice the strange positioning of the `>` brackets.
@@ -277,7 +273,7 @@ Do not add space between elements connected by conditionals.
 >     <span v-if="conditional">
 >         condition met
 >     </span>
->
+> 
 >     <span v-else>
 >         condition not met
 >     </span>
@@ -293,7 +289,7 @@ Add space between non-connected elements.
 >     <span>
 >         First span.
 >     </span>
->
+> 
 >     <span>
 >         Second span.
 >     </span>
@@ -325,7 +321,7 @@ Add space between logical blocks of elements.
 >     <span v-else>
 >         condition 1 not met
 >     </span>
->
+> 
 >     <span v-if="otherConditional">
 >         condition 2 met
 >     </span>
@@ -431,11 +427,3 @@ Use `??` to assign default values.
 > The `??` operator uses the right hand value, when the left hand one is unassigned (`undefined` or `null`), while `||` does this on all falsely values (eg. `false` or `0`). This can lead to unexpected bugs in edge cases.
 >
 > [Read more on MDN](https://developer.mozilla.org/en-US/docs/Web/JavaScript/Reference/Operators/Nullish_coalescing#assigning_a_default_value_to_a_variable)
-
-### Working with unused variables
-
-Unused variables are marked as errors in eslint, however when destructuring objects to remove
-certain keys you may be left with a variable you will not use further. You can
-name the unused variable `ignoredUnused`. The `no-unused-vars` config setting in `client/.eslintrc`
-contains `"varsIgnorePattern": "[iI]gnoreUnused.*"}` to ignore unused variables if they
-start with `ignoredUnused` or `IgnoredUnused`.

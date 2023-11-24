@@ -6,23 +6,23 @@ Heading Levels are used by screen readers, and other software, to get a rough id
 
 ## Heading Level best practices
 
- - Make sure every route has exactly one `<h1>` element, which best describes the content of the current page.
+-   Make sure every route has exactly one `<h1>` element, which best describes the content of the current page.
 
- - When increasing a heading level, do not skip Levels.
+-   When increasing a heading level, do not skip Levels.
 
- - Do not use a headings level to determine it's size. Use one of the heading utility classes (e.g. `h-lg`) instead.
+-   Do not use a headings level to determine it's size. Use one of the heading utility classes (e.g. `h-lg`) instead.
 
- - Do not use a heading tag to make a non-heading text large. Use a heading utility class on a `<span>` instead.
+-   Do not use a heading tag to make a non-heading text large. Use a heading utility class on a `<span>` instead.
 
 ## Sizing Headings
 
 There are several utility classes which size headings:
 
- - `h-xl` - Extra large headings
- - `h-lg` - Large headings (most main headings should have this size)
- - `h-md` - Medium headings
- - `h-sm` - Small headings (many sub-headings have this size)
- - `h-text` - Text sized headings
+-   `h-xl` - Extra large headings
+-   `h-lg` - Large headings (most main headings should have this size)
+-   `h-md` - Medium headings
+-   `h-sm` - Small headings (many sub-headings have this size)
+-   `h-text` - Text sized headings
 
 Galaxy uses `h-lg` for most top-level (`<h1>`) headings.
 
@@ -45,8 +45,8 @@ Set the headings level, by setting aa `h1 ... h6` prop:
 
 Following properties allow for further styling the component:
 
- - `size=["xl", "lg", "md", "sm", "text"]` - sets the headings size class
- - `bold` - makes a heading bold
- - `inline` - displays the heading inline
- - `separator` - draws a separating line, to better distinguish sections
- - `icon="..."` - adds a font-awesome icon decoration to the left of the heading. Make sure to also load the icon with `library.add(...)`.
+-   `size=["xl", "lg", "md", "sm", "text"]` - sets the headings size class
+-   `bold` - makes a heading bold
+-   `inline` - displays the heading inline
+-   `separator` - draws a separating line, to better distinguish sections
+-   `icon="..."` - adds a font-awesome icon decoration to the left of the heading. Make sure to also load the icon with `library.add(...)`.

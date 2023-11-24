@@ -65,7 +65,7 @@ steps:
 
     - title: State Indicator
       component: history_panel.item(hid=1,state=deferred).state_icon
-      intro: This cloud icon indicates the dataset is deferred. Click to exapnd the dataset.
+      intro: This cloud icon indicates the dataset is deferred. Click to expand the dataset.
       postclick: true
 
     - title: A Note About Datatype/Format

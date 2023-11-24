@@ -19,7 +19,10 @@
                     <DatasetHistory :item="row.item" />
                 </template>
                 <template v-slot:cell(tags)="row">
-                    <Tags :index="row.index" :tags="row.item.tags" @input="onTags" />
+                    <StatelessTags
+                        :value="row.item.tags"
+                        :disabled="row.item.deleted"
+                        @input="(tags) => onTags(tags, row.index)" />
                 </template>
                 <template v-slot:cell(update_time)="data">
                     <UtcDate :date="data.value" mode="elapsed" />
@@ -35,16 +38,16 @@
     </div>
 </template>
 <script>
-import store from "store";
+import { mapActions } from "pinia";
+import { useHistoryStore } from "@/stores/historyStore";
 import { getGalaxyInstance } from "app";
 import { copyDataset, getDatasets, updateTags } from "./services";
 import DatasetName from "./DatasetName";
 import DatasetHistory from "./DatasetHistory";
 import DelayedInput from "components/Common/DelayedInput";
 import UtcDate from "components/UtcDate";
-import Tags from "components/Common/Tags";
+import StatelessTags from "components/TagsMultiselect/StatelessTags";
 import LoadingSpan from "components/LoadingSpan";
-import { mapActions } from "vuex";
 
 export default {
     components: {
@@ -53,7 +56,7 @@ export default {
         LoadingSpan,
         DelayedInput,
         UtcDate,
-        Tags,
+        StatelessTags,
     },
     data() {
         return {
@@ -111,11 +114,10 @@ export default {
         },
     },
     created() {
-        this.loadHistories();
         this.load();
     },
     methods: {
-        ...mapActions("history", ["loadHistories"]),
+        ...mapActions(useHistoryStore, ["applyFilters"]),
         load(concat = false) {
             this.loading = true;
             getDatasets({
@@ -151,9 +153,14 @@ export default {
                 });
         },
         async onShowDataset(item) {
-            const historyId = item.history_id;
+            const { history_id } = item;
+            const filters = {
+                deleted: item.deleted,
+                visible: item.visible,
+                hid: item.hid,
+            };
             try {
-                await store.dispatch("history/setCurrentHistory", historyId);
+                await this.applyFilters(history_id, filters);
             } catch (error) {
                 this.onError(error);
             }

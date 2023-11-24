@@ -5,6 +5,7 @@
             :markdown-config="markdownConfig"
             :enable_beta_markdown_export="config.enable_beta_markdown_export"
             :export-link="exportUrl"
+            :download-endpoint="stsUrl(config)"
             @onEdit="onEdit" />
     </config-provider>
 </template>
@@ -59,6 +60,9 @@ export default {
     methods: {
         onEdit() {
             window.location = withPrefix(`/pages/create?invocation_id=${this.invocationId}`);
+        },
+        stsUrl(config) {
+            return `${this.dataUrl}/prepare_download`;
         },
     },
 };

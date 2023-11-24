@@ -907,10 +907,9 @@ class MetadataGenerator:
                     # shed may have simply been inaccessible when metadata was being generated for the
                     # installed tool shed repository.
                     error_message = (
-                        "Ignoring invalid repository dependency definition for tool shed %s, name %s, owner %s, "
-                        % (toolshed, name, owner)
+                        f"Ignoring invalid repository dependency definition for tool shed {toolshed}, name {name}, owner {owner}, "
+                        f"changeset revision {changeset_revision}."
                     )
-                    error_message += f"changeset revision {changeset_revision}."
                     log.debug(error_message)
                     is_valid = False
                     return repository_dependency_tup, is_valid, error_message
@@ -925,10 +924,9 @@ class MetadataGenerator:
                     )
                 except Exception:
                     error_message = (
-                        "Ignoring repository dependency definition for tool shed %s, name %s, owner %s, "
-                        % (toolshed, name, owner)
+                        f"Ignoring repository dependency definition for tool shed {toolshed}, name {name}, owner {owner}, "
+                        f"changeset revision {changeset_revision} because the owner is invalid."
                     )
-                    error_message += f"changeset revision {changeset_revision} because the owner is invalid."
                     log.debug(error_message)
                     is_valid = False
                     return repository_dependency_tup, is_valid, error_message
@@ -945,10 +943,9 @@ class MetadataGenerator:
                     )
                 except Exception:
                     error_message = (
-                        "Ignoring repository dependency definition for tool shed %s, name %s, owner %s, "
-                        % (toolshed, name, owner)
+                        f"Ignoring repository dependency definition for tool shed {toolshed}, name {name}, owner {owner}, "
+                        f"changeset revision {changeset_revision} because the name is invalid.  "
                     )
-                    error_message += f"changeset revision {changeset_revision} because the name is invalid.  "
                     log.debug(error_message)
                     is_valid = False
                     return repository_dependency_tup, is_valid, error_message
@@ -980,10 +977,7 @@ class MetadataGenerator:
                             break
                     if not found:
                         error_message = (
-                            "Ignoring repository dependency definition for tool shed %s, name %s, owner %s, "
-                            % (toolshed, name, owner)
-                        )
-                        error_message += (
+                            f"Ignoring repository dependency definition for tool shed {toolshed}, name {name}, owner {owner}, "
                             f"changeset revision {changeset_revision} because the changeset revision is invalid.  "
                         )
                         log.debug(error_message)
@@ -993,10 +987,7 @@ class MetadataGenerator:
                 # Repository dependencies are currently supported within a single tool shed.
                 error_message = (
                     "Repository dependencies are currently supported only within the same tool shed.  Ignoring "
-                )
-                error_message += (
-                    "repository dependency definition  for tool shed %s, name %s, owner %s, changeset revision %s.  "
-                    % (toolshed, name, owner, changeset_revision)
+                    f"repository dependency definition  for tool shed {toolshed}, name {name}, owner {owner}, changeset revision {changeset_revision}.  "
                 )
                 log.debug(error_message)
                 is_valid = False

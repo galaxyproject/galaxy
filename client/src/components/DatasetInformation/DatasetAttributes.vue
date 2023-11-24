@@ -1,7 +1,7 @@
 <template>
     <div aria-labelledby="dataset-attributes-heading">
         <h1 id="dataset-attributes-heading" v-localize class="h-lg">Edit Dataset Attributes</h1>
-        <b-alert v-if="messageText" :variant="messageVariant" show>
+        <b-alert v-if="messageText" class="dataset-attributes-alert" :variant="messageVariant" show>
             {{ messageText | l }}
         </b-alert>
         <DatasetAttributesProvider :id="datasetId" v-slot="{ result, loading }" @error="onError">
@@ -31,37 +31,14 @@
                             !result['metadata_disable']
                         ">
                         <template v-slot:title>
-                            <span v-if="!result['conversion_disable']">
-                                <font-awesome-icon icon="cog" class="mr-1" />{{ "Convert" | l }}
-                            </span>
-                            <span v-else>
-                                <font-awesome-icon icon="database" class="mr-1" />{{ "Datatypes" | l }}
-                            </span>
+                            <font-awesome-icon icon="database" class="mr-1" />{{ "Datatypes" | l }}
                         </template>
-                        <div v-if="!result['conversion_disable']" class="ui-portlet-section">
-                            <div class="portlet-header">
-                                <div class="portlet-title">
-                                    <font-awesome-icon icon="cog" class="portlet-title-icon fa-fw mr-1" />
-                                    <span class="portlet-title-text">
-                                        <b itemprop="name">{{ "Convert" | l }}</b>
-                                    </span>
-                                </div>
-                            </div>
-                            <div class="portlet-content">
-                                <FormDisplay :inputs="result['conversion_inputs']" @onChange="onConversion" />
-                                <div class="mt-2">
-                                    <b-button variant="primary" @click="submit('conversion', 'conversion')">
-                                        <font-awesome-icon icon="exchange-alt" class="mr-1" />{{ "Create Dataset" | l }}
-                                    </b-button>
-                                </div>
-                            </div>
-                        </div>
                         <div v-if="!result['datatype_disable']" class="ui-portlet-section">
                             <div class="portlet-header">
                                 <div class="portlet-title">
                                     <font-awesome-icon icon="database" class="portlet-title-icon fa-fw mr-1" />
                                     <span class="portlet-title-text">
-                                        <b itemprop="name">{{ "Datatypes" | l }}</b>
+                                        <b itemprop="name">{{ "Assign Datatype" | l }}</b>
                                     </span>
                                 </div>
                             </div>
@@ -73,6 +50,24 @@
                                     </b-button>
                                     <b-button @click="submit('datatype', 'datatype_detect')">
                                         <font-awesome-icon icon="redo" class="mr-1" />{{ "Auto-detect" | l }}
+                                    </b-button>
+                                </div>
+                            </div>
+                        </div>
+                        <div v-if="!result['conversion_disable']" class="ui-portlet-section">
+                            <div class="portlet-header">
+                                <div class="portlet-title">
+                                    <font-awesome-icon icon="cog" class="portlet-title-icon fa-fw mr-1" />
+                                    <span class="portlet-title-text">
+                                        <b itemprop="name">{{ "Convert to Datatype" | l }}</b>
+                                    </span>
+                                </div>
+                            </div>
+                            <div class="portlet-content">
+                                <FormDisplay :inputs="result['conversion_inputs']" @onChange="onConversion" />
+                                <div class="mt-2">
+                                    <b-button variant="primary" @click="submit('conversion', 'conversion')">
+                                        <font-awesome-icon icon="exchange-alt" class="mr-1" />{{ "Create Dataset" | l }}
                                     </b-button>
                                 </div>
                             </div>

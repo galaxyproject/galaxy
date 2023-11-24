@@ -14,6 +14,7 @@ from galaxy.datatypes.data import (
     get_file_peek,
     Text,
 )
+from galaxy.datatypes.protocols import DatasetProtocol
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
     FilePrefix,
@@ -23,8 +24,6 @@ from .metadata import MetadataElement
 
 if TYPE_CHECKING:
     from io import StringIO
-
-    from galaxy.model import DatasetInstance
 
 
 @build_sniff_from_prefix
@@ -39,7 +38,7 @@ class Phylip(Text):
         name="sequences", default=0, desc="Number of sequences", readonly=True, visible=False, optional=True, no_value=0
     )
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         """
         Set the number of sequences and the number of data lines in dataset.
         """
@@ -49,7 +48,7 @@ class Phylip(Text):
         except Exception:
             raise Exception("Header does not correspond to PHYLIP header.")
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             if dataset.metadata.sequences:

@@ -12,6 +12,7 @@ from typing import (
     List,
     Optional,
     Tuple,
+    TYPE_CHECKING,
     Union,
 )
 
@@ -20,6 +21,13 @@ from typing_extensions import TypedDict
 
 from galaxy.util.path import safe_walk
 from .util import _parse_name
+
+if TYPE_CHECKING:
+    from galaxy.tool_util.deps.requirements import (
+        ContainerDescription,
+        ResourceRequirement,
+        ToolRequirements,
+    )
 
 NOT_IMPLEMENTED_MESSAGE = "Galaxy tool format does not yet support this tool feature."
 
@@ -217,7 +225,9 @@ class ToolSource(metaclass=ABCMeta):
         return None
 
     @abstractmethod
-    def parse_requirements_and_containers(self) -> Tuple:
+    def parse_requirements_and_containers(
+        self,
+    ) -> Tuple["ToolRequirements", List["ContainerDescription"], List["ResourceRequirement"]]:
         """Return triple of ToolRequirement, ContainerDescription and ResourceRequirement lists."""
 
     @abstractmethod
@@ -260,7 +270,7 @@ class ToolSource(metaclass=ABCMeta):
         return [], []
 
     @abstractmethod
-    def parse_help(self):
+    def parse_help(self) -> Optional[str]:
         """Return RST definition of help text for tool or None if the tool
         doesn't define help text.
         """

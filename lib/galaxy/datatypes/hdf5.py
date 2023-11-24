@@ -2,19 +2,14 @@
 
 This datatype was created for use with the iSEE interactive tool.
 """
-from typing import (
-    Optional,
-    TYPE_CHECKING,
-)
+from typing import Optional
 
-from galaxy.datatypes.data import (
-    Data,
-    GeneratePrimaryFileDataset,
-)
+from galaxy.datatypes.data import Data
 from galaxy.datatypes.metadata import MetadataElement
-
-if TYPE_CHECKING:
-    from galaxy.model import DatasetInstance
+from galaxy.datatypes.protocols import (
+    HasExtraFilesAndMetadata,
+    HasMetadata,
+)
 
 
 class HDF5SummarizedExperiment(Data):
@@ -56,11 +51,11 @@ class HDF5SummarizedExperiment(Data):
             description="Summarized experiment data array",
         )
 
-    def init_meta(self, dataset: "DatasetInstance", copy_from: Optional["DatasetInstance"] = None) -> None:
+    def init_meta(self, dataset: HasMetadata, copy_from: Optional[HasMetadata] = None) -> None:
         """Override parent init metadata."""
         Data.init_meta(self, dataset, copy_from=copy_from)
 
-    def generate_primary_file(self, dataset: GeneratePrimaryFileDataset) -> str:
+    def generate_primary_file(self, dataset: HasExtraFilesAndMetadata) -> str:
         """Generate primary file to represent dataset."""
         return f"""
               <html>

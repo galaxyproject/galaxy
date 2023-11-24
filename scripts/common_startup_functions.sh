@@ -109,11 +109,9 @@ setup_python() {
     # should run this instance in.
     : ${GALAXY_VIRTUAL_ENV:=.venv}
     # $GALAXY_CONDA_ENV isn't set here to avoid running the version check if not using Conda
-    if [ -d "$GALAXY_VIRTUAL_ENV" ] && [ -z "$skip_venv" ]; then
-        [ -n "$PYTHONPATH" ] && { echo 'Unsetting $PYTHONPATH'; unset PYTHONPATH; }
-        echo "Activating virtualenv at $GALAXY_VIRTUAL_ENV"
-        . "$GALAXY_VIRTUAL_ENV/bin/activate"
-    elif [ -z "$skip_venv" ]; then
+
+    # if conda and the galaxy conda environment (_galaxy_) are available then init it
+    if [ -z "$skip_venv" ]; then
         set_conda_exe
         if [ -n "$CONDA_EXE" ] && \
                 check_conda_env ${GALAXY_CONDA_ENV:="_galaxy_"}; then
@@ -126,6 +124,12 @@ setup_python() {
                 exit 1
             fi
         fi
+    fi
+
+    if [ -d "$GALAXY_VIRTUAL_ENV" ] && [ -z "$skip_venv" ]; then
+        [ -n "$PYTHONPATH" ] && { echo 'Unsetting $PYTHONPATH'; unset PYTHONPATH; }
+        echo "Activating virtualenv at $GALAXY_VIRTUAL_ENV"
+        . "$GALAXY_VIRTUAL_ENV/bin/activate"
     fi
 
     # If you are using --skip-venv we assume you know what you are doing but warn

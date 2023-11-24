@@ -76,6 +76,7 @@ export default {
     },
     props: {
         step: {
+            // type Step from @/stores/workflowStepStore
             type: Object,
             required: true,
         },
@@ -122,11 +123,12 @@ export default {
         },
         inputs() {
             const inputs = this.configForm.inputs;
-            Utils.deepeach(inputs, (input) => {
+            Utils.deepEach(inputs, (input) => {
                 if (input.type) {
                     if (["data", "data_collection"].indexOf(input.type) != -1) {
+                        const extensions = Array.isArray(input.extensions) ? Utils.textify(input.extensions) : "";
                         input.titleonly = true;
-                        input.info = `Data input '${input.name}' (${Utils.textify(input.extensions)})`;
+                        input.info = `Data input '${input.name}' (${extensions})`;
                         input.value = { __class__: "RuntimeValue" };
                     } else {
                         input.connectable = ["rules"].indexOf(input.type) == -1;
@@ -139,7 +141,7 @@ export default {
                     }
                 }
             });
-            Utils.deepeach(inputs, (input) => {
+            Utils.deepEach(inputs, (input) => {
                 if (input.type === "conditional") {
                     input.connectable = false;
                     input.test_param.collapsible_value = undefined;

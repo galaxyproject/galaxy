@@ -162,3 +162,32 @@
   bucket: copernicus-dem-30m
   anon: true
 
+- type: http
+  label: Custom http filesource
+  id: httpcustom
+  url_regex: "^https?://myprotectedsite.org/"
+  http_headers:
+    Authorization: |-
+      #import base64
+      Basic ${base64.b64encode(str.encode(user.preferences['myprotectedsite|username'] + ":" + user.preferences['myprotectedsite|password'])).decode()}
+  doc: Only define this if you want custom control over http downloads. You should also define a stock http source (below) or only downloads from this site will be allowed.
+
+- type: http
+  label: Stock http filesource
+  id: httpstock
+  doc: Make sure to define this generic http file source if you have defined any other http file sources, or stock http download capability will be disabled.
+
+- type: drs
+  label: Custom DRS filesource
+  id: drscustom
+  url_regex: "^drs://mydrssite.org/"
+  http_headers:
+    Authorization: |-
+      #import base64
+      Basic ${base64.b64encode(str.encode(user.preferences['mydrssite|username'] + ":" + user.preferences['mydrssite|password'])).decode()}
+  doc: Define this if you want custom control over drs downloads. You should also define a stock drs source (below) or only downloads from this drs server will be allowed.
+
+- type: drs
+  label: Stock DRS filesource
+  id: drsstock
+  doc: Make sure to define this generic drs file source if you have defined any other drs file sources, or stock drs download capability will be disabled.

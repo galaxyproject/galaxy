@@ -38,10 +38,13 @@
         <Toast ref="toastRef" />
         <ConfirmDialog ref="confirmDialogRef" />
         <UploadModal ref="uploadModal" />
+        <BroadcastsOverlay />
+        <DragGhost />
     </div>
 </template>
 <script>
 import Alert from "@/components/Alert.vue";
+import DragGhost from "@/components/DragGhost.vue";
 import Modal from "mvc/ui/ui-modal";
 import Masthead from "components/Masthead/Masthead.vue";
 import { getGalaxyInstance } from "app";
@@ -54,20 +57,32 @@ import Toast from "components/Toast";
 import ConfirmDialog from "components/ConfirmDialog";
 import UploadModal from "components/Upload/UploadModal.vue";
 import { ref } from "vue";
+import { storeToRefs } from "pinia";
+import { useUserStore } from "@/stores/userStore";
+import { useHistoryStore } from "@/stores/historyStore";
 import { setToastComponentRef } from "composables/toast";
 import { setConfirmDialogComponentRef } from "composables/confirmDialog";
 import { setGlobalUploadModal } from "composables/globalUploadModal";
-import { useCurrentTheme } from "@/composables/user";
+import { useNotificationsStore } from "@/stores/notificationsStore";
+import BroadcastsOverlay from "@/components/Notifications/Broadcasts/BroadcastsOverlay.vue";
 
 export default {
     components: {
         Alert,
+        DragGhost,
         Masthead,
         Toast,
         ConfirmDialog,
         UploadModal,
+        BroadcastsOverlay,
     },
     setup() {
+        const userStore = useUserStore();
+        const { currentTheme } = storeToRefs(userStore);
+        const { currentHistory } = storeToRefs(useHistoryStore());
+
+        userStore.loadUser();
+
         const toastRef = ref(null);
         setToastComponentRef(toastRef);
 
@@ -77,9 +92,7 @@ export default {
         const uploadModal = ref(null);
         setGlobalUploadModal(uploadModal);
 
-        const { currentTheme } = useCurrentTheme();
-
-        return { toastRef, confirmDialogRef, uploadModal, currentTheme };
+        return { toastRef, confirmDialogRef, uploadModal, currentTheme, currentHistory };
     },
     data() {
         return {
@@ -118,12 +131,18 @@ export default {
             console.debug("App - Confirmation before route change: ", this.confirmation);
             this.$router.confirmation = this.confirmation;
         },
+        currentHistory() {
+            this.Galaxy.currHistoryPanel.syncCurrentHistoryModel(this.currentHistory);
+        },
     },
     mounted() {
-        const Galaxy = getGalaxyInstance();
-        Galaxy.currHistoryPanel = new HistoryPanelProxy();
-        Galaxy.modal = new Modal.View();
-        Galaxy.frame = this.windowManager;
+        this.Galaxy = getGalaxyInstance();
+        this.Galaxy.currHistoryPanel = new HistoryPanelProxy();
+        this.Galaxy.modal = new Modal.View();
+        this.Galaxy.frame = this.windowManager;
+        if (this.Galaxy.config.enable_notification_system) {
+            this.startNotificationsPolling();
+        }
     },
     created() {
         window.onbeforeunload = () => {
@@ -133,6 +152,10 @@ export default {
         };
     },
     methods: {
+        startNotificationsPolling() {
+            const notificationsStore = useNotificationsStore();
+            notificationsStore.startPollingNotifications();
+        },
         openUrl(urlObj) {
             if (!urlObj.target) {
                 this.$router.push(urlObj.url);

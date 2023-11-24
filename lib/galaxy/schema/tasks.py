@@ -1,4 +1,7 @@
-from typing import Optional
+from typing import (
+    List,
+    Optional,
+)
 from uuid import UUID
 
 from pydantic import (
@@ -96,12 +99,10 @@ class MaterializeDatasetInstanceTaskRequest(BaseModel):
     history_id: int
     user: RequestUser
     source: DatasetSourceType = Field(
-        None,
         title="Source",
         description="The source of the content. Can be other history element to be copied or library elements.",
     )
     content: int = Field(
-        None,
         title="Content",
         description=(
             "Depending on the `source` it can be:\n"
@@ -116,3 +117,7 @@ class ComputeDatasetHashTaskRequest(BaseModel):
     extra_files_path: Optional[str]
     hash_function: HashFunctionNameEnum
     user: Optional[RequestUser]  # access checks should be done pre-celery so this is optional
+
+
+class PurgeDatasetsTaskRequest(BaseModel):
+    dataset_ids: List[int]

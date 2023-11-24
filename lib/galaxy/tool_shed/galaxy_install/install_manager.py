@@ -15,6 +15,7 @@ from galaxy import (
     exceptions,
     util,
 )
+from galaxy.model.base import transaction
 from galaxy.structured_app import StructuredApp
 from galaxy.tool_shed.galaxy_install.metadata.installed_repository_metadata_manager import (
     InstalledRepositoryMetadataManager,
@@ -35,6 +36,10 @@ from galaxy.tool_util.deps import views
 from galaxy.util.tool_shed import (
     common_util,
     encoding_util,
+)
+from tool_shed_client.schema import (
+    ExtraRepoInfo,
+    RepositoryMetadataInstallInfoDict,
 )
 
 log = logging.getLogger(__name__)
@@ -73,7 +78,7 @@ class InstallRepositoryManager:
 
     def __get_install_info_from_tool_shed(
         self, tool_shed_url: str, name: str, owner: str, changeset_revision: str
-    ) -> Tuple[Dict[str, Any], List[Dict[str, Any]]]:
+    ) -> Tuple[RepositoryMetadataInstallInfoDict, List[ExtraRepoInfo]]:
         params = dict(name=name, owner=owner, changeset_revision=changeset_revision)
         pathspec = ["api", "repositories", "get_repository_revision_install_info"]
         try:
@@ -94,13 +99,10 @@ class InstallRepositoryManager:
             # Repository revision (RepositoryMetadata), and a dictionary including the additional
             # information required to install the repository.
             items = json.loads(util.unicodify(raw_text))
-            repository_revision_dict = items[1]
-            repo_info_dict = items[2]
+            repository_revision_dict: RepositoryMetadataInstallInfoDict = items[1]
+            repo_info_dict: ExtraRepoInfo = items[2]
         else:
-            message = (
-                "Unable to retrieve installation information from tool shed %s for revision %s of repository %s owned by %s"
-                % (str(tool_shed_url), str(changeset_revision), str(name), str(owner))
-            )
+            message = f"Unable to retrieve installation information from tool shed {tool_shed_url} for revision {changeset_revision} of repository {name} owned by {owner}"
             log.warning(message)
             raise exceptions.InternalServerError(message)
         # Make sure the tool shed returned everything we need for installing the repository.
@@ -157,8 +159,12 @@ class InstallRepositoryManager:
         )
         if tool_shed_status_dict:
             tool_shed_repository.tool_shed_status = tool_shed_status_dict
-        self.install_model.context.add(tool_shed_repository)
-        self.install_model.context.flush()
+
+        session = self.install_model.context
+        session.add(tool_shed_repository)
+        with transaction(session):
+            session.commit()
+
         if "sample_files" in irmm_metadata_dict:
             sample_files = irmm_metadata_dict.get("sample_files", [])
             tool_index_sample_files = stdtm.get_tool_index_sample_files(sample_files)
@@ -343,8 +349,8 @@ class InstallRepositoryManager:
     def __initiate_and_install_repositories(
         self,
         tool_shed_url: str,
-        repository_revision_dict: Dict[str, Any],
-        repo_info_dicts: List[Dict[str, Any]],
+        repository_revision_dict: RepositoryMetadataInstallInfoDict,
+        repo_info_dicts: List[ExtraRepoInfo],
         install_options: Dict[str, Any],
     ):
         try:
@@ -547,7 +553,11 @@ class InstallRepositoryManager:
         install_options=None,
     ):
         tool_panel_section_mapping = tool_panel_section_mapping or {}
-        self.app.install_model.context.flush()
+
+        session = self.app.install_model.context
+        with transaction(session):
+            session.commit()
+
         if tool_panel_section_key:
             _, tool_section = self.app.toolbox.get_section(tool_panel_section_key)
             if tool_section is None:
@@ -842,8 +852,11 @@ class InstallRepositoryManager:
         """
         tool_shed_repository.status = status
         tool_shed_repository.error_message = error_message
-        self.install_model.context.add(tool_shed_repository)
-        self.install_model.context.flush()
+
+        session = self.install_model.context
+        session.add(tool_shed_repository)
+        with transaction(session):
+            session.commit()
 
 
 class RepositoriesInstalledException(exceptions.RequestParameterInvalidException):

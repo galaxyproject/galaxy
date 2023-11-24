@@ -222,7 +222,10 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
         kwd = _kwd_or_payload(kwd)
         tool_version = kwd.get("tool_version", None)
         tool = self.service._get_tool(trans, id, tool_version=tool_version, user=trans.user)
-        path = tool.test_data_path(kwd.get("filename"))
+        try:
+            path = tool.test_data_path(kwd.get("filename"))
+        except ValueError as e:
+            raise exceptions.MessageException(str(e))
         if path:
             return path
         else:
@@ -494,6 +497,8 @@ class ToolsController(BaseGalaxyAPIController, UsesVisualizationMixin):
                 self.history_manager.error_unless_owner(target_history, trans.user, current_history=trans.history)
             else:
                 raise exceptions.RequestParameterInvalidException("Must run conversion on either hdca or hda.")
+
+        self.history_manager.error_unless_mutable(target_history)
 
         # Make the target datatype available to the converter
         params["__target_datatype__"] = target_type

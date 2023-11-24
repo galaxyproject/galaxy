@@ -13,22 +13,18 @@
                     class="py-0 px-1">
                     <span class="fa fa-download" />
                 </b-button>
-                <CurrentUser v-slot="{ user }">
-                    <UserHistories v-if="user" v-slot="{ currentHistoryId }" :user="user">
-                        <b-button
-                            v-if="currentHistoryId"
-                            v-b-tooltip.hover
-                            href="#"
-                            role="button"
-                            variant="link"
-                            title="Import Collection"
-                            type="button"
-                            class="py-0 px-1"
-                            @click="onCopyCollection(currentHistoryId)">
-                            <span class="fa fa-file-import" />
-                        </b-button>
-                    </UserHistories>
-                </CurrentUser>
+                <b-button
+                    v-if="vcurrentUser && currentHistoryId"
+                    v-b-tooltip.hover
+                    href="#"
+                    role="button"
+                    variant="link"
+                    title="Import Collection"
+                    type="button"
+                    class="py-0 px-1"
+                    @click="onCopyCollection(currentHistoryId)">
+                    <span class="fa fa-file-import" />
+                </b-button>
             </span>
             <span>
                 <span>Dataset Collection:</span>
@@ -49,19 +45,18 @@
 
 <script>
 import axios from "axios";
+import { mapState } from "pinia";
+import { useUserStore } from "@/stores/userStore";
+import { useHistoryStore } from "@/stores/historyStore";
 import { getAppRoot } from "onload/loadConfig";
 import CollectionTree from "./CollectionTree";
 import LoadingSpan from "components/LoadingSpan";
-import CurrentUser from "components/providers/CurrentUser";
-import UserHistories from "components/providers/UserHistories";
 import { copyCollection } from "components/Markdown/services";
 
 export default {
     components: {
         CollectionTree,
-        CurrentUser,
         LoadingSpan,
-        UserHistories,
     },
     props: {
         args: {
@@ -82,14 +77,14 @@ export default {
         };
     },
     computed: {
+        ...mapState(useUserStore, ["currentUser"]),
+        ...mapState(useHistoryStore, ["currentHistoryId"]),
         collectionName() {
             const collection = this.collections[this.args.history_dataset_collection_id];
             return collection && collection.name;
         },
         itemUrl() {
-            const collectionId = this.args.history_dataset_collection_id;
-            const collection = this.collections[collectionId];
-            return collection.url;
+            return `${getAppRoot()}api/dataset_collections/${this.args.history_dataset_collection_id}`;
         },
         downloadUrl() {
             return `${getAppRoot()}api/dataset_collections/${this.args.history_dataset_collection_id}/download`;

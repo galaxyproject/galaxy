@@ -1,12 +1,12 @@
 import logging
 import re
-from typing import TYPE_CHECKING
 
 from galaxy.datatypes.data import (
     get_file_peek,
     Text,
 )
 from galaxy.datatypes.metadata import MetadataElement
+from galaxy.datatypes.protocols import DatasetProtocol
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
     FilePrefix,
@@ -15,9 +15,6 @@ from galaxy.datatypes.sniff import (
 from galaxy.datatypes.tabular import Tabular
 from galaxy.util import nice_size
 
-if TYPE_CHECKING:
-    from galaxy.model import DatasetInstance
-
 log = logging.getLogger(__name__)
 
 
@@ -25,13 +22,13 @@ log = logging.getLogger(__name__)
 class Smat(Text):
     file_ext = "smat"
 
-    def display_peek(self, dataset: "DatasetInstance") -> str:
+    def display_peek(self, dataset: DatasetProtocol) -> str:
         try:
             return dataset.peek
         except Exception:
             return f"ESTScan scores matrices ({nice_size(dataset.get_size())})"
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "ESTScan scores matrices"
@@ -97,13 +94,13 @@ class PlantTribesKsComponents(Tabular):
         no_value=0,
     )
 
-    def display_peek(self, dataset: "DatasetInstance") -> str:
+    def display_peek(self, dataset: DatasetProtocol) -> str:
         try:
             return dataset.peek
         except Exception:
             return f"Significant components in the Ks distribution ({nice_size(dataset.get_size())})"
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         """
         Set the number of significant components in the Ks distribution.
         The dataset will always be on the order of less than 10 lines.
@@ -125,7 +122,7 @@ class PlantTribesKsComponents(Tabular):
         if len(significant_components) > 0:
             dataset.metadata.number_comp = max(significant_components)
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             if dataset.metadata.number_comp == 1:

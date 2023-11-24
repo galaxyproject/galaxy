@@ -1,5 +1,5 @@
 <template>
-    <CurrentUser v-if="dependencies && dependencies.length > 0" v-slot="{ user }">
+    <div v-if="dependencies && dependencies.length > 0">
         <div>
             <h2 class="h-md">Job Dependencies</h2>
             <table class="tabletip">
@@ -8,7 +8,7 @@
                         <th>Dependency</th>
                         <th>Dependency Type</th>
                         <th>Version</th>
-                        <th v-if="user.is_admin">Path</th>
+                        <th v-if="currentUser.is_admin">Path</th>
                     </tr>
                 </thead>
                 <tbody>
@@ -16,7 +16,7 @@
                         <td>${{ dependency.name }}</td>
                         <td>${{ dependency.dependency_type }}</td>
                         <td>${{ dependency.version }}</td>
-                        <td v-if="user.is_admin">
+                        <td v-if="currentUser.is_admin">
                             <div v-if="dependency.environment_path">{{ dependency.environment_path }}</div>
                             <div v-else-if="dependency.path">{{ dependency.path }}</div>
                             <div v-else></div>
@@ -25,21 +25,22 @@
                 </tbody>
             </table>
         </div>
-    </CurrentUser>
+    </div>
 </template>
 
 <script>
-import CurrentUser from "components/providers/CurrentUser";
+import { mapState } from "pinia";
+import { useUserStore } from "@/stores/userStore";
 
 export default {
-    components: {
-        CurrentUser,
-    },
     props: {
         dependencies: {
             type: Array,
             required: true,
         },
+    },
+    computed: {
+        ...mapState(useUserStore, ["currentUser"]),
     },
 };
 </script>

@@ -1,11 +1,171 @@
+<script setup lang="ts">
+import AwsEstimate from "./AwsEstimate.vue";
+import CarbonEmissions from "./CarbonEmissions/CarbonEmissions.vue";
+import { useJobMetricsStore } from "@/stores/jobMetricsStore";
+import { computed, ref, unref } from "vue";
+
+const props = defineProps({
+    jobId: {
+        type: String,
+        default: null,
+    },
+    datasetFilesize: {
+        type: Number,
+        default: 0,
+    },
+    datasetId: {
+        type: String,
+        default: "",
+    },
+    datasetType: {
+        type: String,
+        default: "hda",
+    },
+    includeTitle: {
+        type: Boolean,
+        default: true,
+    },
+    shouldShowAwsEstimate: {
+        type: Boolean,
+        default: false,
+    },
+});
+
+const jobMetricsStore = useJobMetricsStore();
+
+async function getJobMetrics() {
+    if (props.jobId) {
+        await jobMetricsStore.fetchJobMetricsForJobId(props.jobId);
+    } else {
+        await jobMetricsStore.fetchJobMetricsForDatasetId(props.datasetId, props.datasetType);
+    }
+}
+getJobMetrics();
+
+const ec2Instances = ref<EC2[]>();
+import("./awsEc2ReferenceData.js").then((data) => (ec2Instances.value = data.ec2Instances));
+
+type EC2 = {
+    name: string;
+    mem: number;
+    price: number;
+    priceUnit: string;
+    vCpuCount: number;
+    cpu: {
+        cpuModel: string;
+        tdp: number;
+        coreCount: number;
+        source: string;
+    }[];
+};
+
+const jobMetrics = computed(() => {
+    if (props.jobId) {
+        return jobMetricsStore.getJobMetricsByJobId(props.jobId);
+    } else {
+        return jobMetricsStore.getJobMetricsByDatasetId(props.datasetId, props.datasetType);
+    }
+});
+
+const jobMetricsGroupedByPluginType = computed(() => {
+    const pluginGroups: Record<string, any> = {};
+
+    for (const metric of jobMetrics.value) {
+        // new group found
+        if (!(metric.plugin in pluginGroups)) {
+            pluginGroups[metric.plugin] = {};
+        }
+
+        // Add metric to group
+        const group = pluginGroups[metric.plugin];
+        group[metric.title] = metric.value;
+    }
+
+    return pluginGroups;
+});
+
+const pluginsSortedByPluginType = computed(() => {
+    return Object.keys(jobMetricsGroupedByPluginType.value).sort();
+});
+
+function getMetricByName(key: string) {
+    return jobMetrics.value.find(({ name }) => name === key)?.raw_value;
+}
+
+const jobRuntimeInSeconds = computed(() => {
+    const runtime = getMetricByName("runtime_seconds");
+
+    return runtime ? parseInt(runtime) : undefined;
+});
+
+const coresAllocated = computed(() => {
+    const coreCount = getMetricByName("galaxy_slots");
+
+    return coreCount ? parseInt(coreCount) : undefined;
+});
+
+const memoryAllocatedInMebibyte = computed(() => {
+    const memoryUsage = getMetricByName("galaxy_memory_mb");
+
+    return memoryUsage ? parseInt(memoryUsage) : undefined;
+});
+
+const estimatedServerInstance = computed(() => {
+    const cores = unref(coresAllocated);
+    if (!cores) {
+        return;
+    }
+
+    const memory = unref(memoryAllocatedInMebibyte);
+    const adjustedMemory = memory ? memory / 1024 : 0;
+
+    const ec2 = unref(ec2Instances);
+    if (!ec2) {
+        return;
+    }
+
+    const serverInstance = ec2.find((instance) => {
+        if (adjustedMemory === 0) {
+            // Exclude memory from search criteria
+            return instance.vCpuCount >= cores;
+        }
+
+        // Search by all criteria
+        return instance.mem >= adjustedMemory && instance.vCpuCount >= cores;
+    });
+
+    if (!serverInstance) {
+        return;
+    }
+
+    const cpu = serverInstance.cpu[0];
+    if (!cpu) {
+        return;
+    }
+
+    return {
+        name: serverInstance.name,
+        cpuInfo: {
+            modelName: cpu.cpuModel,
+            totalAvailableCores: cpu.coreCount,
+            tdp: cpu.tdp,
+        },
+    };
+});
+</script>
+
 <template>
-    <div v-if="orderedPlugins.length > 0">
+    <div v-if="pluginsSortedByPluginType.length > 0">
         <h2 v-if="includeTitle" class="h-md">Job Metrics</h2>
-        <div v-for="plugin in orderedPlugins" :key="plugin" class="metrics_plugin">
-            <h3 class="metrics_plugin_title m-sm">{{ plugin }}</h3>
+
+        <div v-for="pluginType in pluginsSortedByPluginType" :key="pluginType" class="metrics_plugin">
+            <h3 class="metrics_plugin_title m-sm">{{ pluginType }}</h3>
+
             <table class="tabletip info_data_table">
                 <tbody>
-                    <tr v-for="(metricValue, metricTitle) in metricsByPlugins[plugin]" :key="metricTitle">
+                    <tr
+                        v-for="(metricValue, metricTitle) in jobMetricsGroupedByPluginType[pluginType]"
+                        :key="metricTitle">
                         <td>{{ metricTitle }}</td>
                         <td>{{ metricValue }}</td>
                     </tr>
@@ -13,127 +173,19 @@
             </table>
         </div>
 
-        <div v-if="aws_estimate && computedAwsEstimate" id="aws-estimate">
-            <div class="aws">
-                <h3>AWS estimate</h3>
-                <b>{{ computedAwsEstimate.price }} USD</b><br />
-                This job requested {{ computedAwsEstimate.vcpus }} cores and {{ computedAwsEstimate.memory }} Gb. Given
-                this, the smallest EC2 machine we could find is
-                <span id="aws_name">{{ computedAwsEstimate.instance.name }}</span> (<span id="aws_mem">{{
-                    computedAwsEstimate.instance.mem
-                }}</span>
-                GB / <span id="aws_vcpus">{{ computedAwsEstimate.instance.vcpus }}</span> vCPUs /
-                <span id="aws_cpu">{{ computedAwsEstimate.instance.cpu }}</span
-                >). That instance is priced at {{ computedAwsEstimate.instance.price }} USD/hour.<br />
-                Please note, that those numbers are only estimates, all jobs are always free of charge for all users.
-            </div>
-        </div>
+        <AwsEstimate
+            v-if="jobRuntimeInSeconds && coresAllocated && ec2Instances"
+            :ec2-instances="ec2Instances"
+            :should-show-aws-estimate="shouldShowAwsEstimate"
+            :job-runtime-in-seconds="jobRuntimeInSeconds"
+            :cores-allocated="coresAllocated"
+            :memory-allocated-in-mebibyte="memoryAllocatedInMebibyte" />
+
+        <CarbonEmissions
+            v-if="estimatedServerInstance && jobRuntimeInSeconds && coresAllocated"
+            :estimated-server-instance="estimatedServerInstance"
+            :job-runtime-in-seconds="jobRuntimeInSeconds"
+            :cores-allocated="coresAllocated"
+            :memory-allocated-in-mebibyte="memoryAllocatedInMebibyte" />
     </div>
 </template>
-
-<script>
-import { mapCacheActions } from "vuex-cache";
-import { mapGetters } from "vuex";
-import ec2 from "./ec2.json";
-
-export default {
-    props: {
-        jobId: {
-            type: String,
-        },
-        datasetId: {
-            type: String,
-        },
-        aws_estimate: {
-            type: Boolean,
-        },
-        datasetType: {
-            type: String,
-            default: "hda",
-        },
-        includeTitle: {
-            type: Boolean,
-            default: true,
-        },
-    },
-    computed: {
-        ...mapGetters(["getJobMetricsByDatasetId", "getJobMetricsByJobId"]),
-        computedAwsEstimate: function () {
-            if (!this.aws_estimate) {
-                return;
-            }
-
-            const aws = {};
-            this.jobMetrics.forEach((metric) => {
-                switch (metric.name) {
-                    case "galaxy_memory_mb":
-                        aws.memory = parseInt(metric.raw_value);
-                        break;
-                    case "galaxy_slots":
-                        aws.vcpus = parseInt(metric.raw_value);
-                        break;
-                    case "runtime_seconds":
-                        aws.seconds = parseInt(metric.raw_value);
-                        break;
-                    default:
-                }
-            });
-
-            if (aws.memory) {
-                aws.memory /= 1024;
-            }
-            // if memory was not specified, assign the smallest amount (we judge based on CPU-count only)
-            else {
-                aws.memory = 0.5;
-            }
-
-            // ec2 is already pre-sorted
-            aws.instance = ec2.find((ec) => {
-                return ec.mem >= aws.memory && ec.vcpus >= aws.vcpus;
-            });
-            if (aws.instance === undefined) {
-                return;
-            }
-            aws.price = ((aws.seconds * aws.instance.price) / 3600).toFixed(2);
-            return aws;
-        },
-        jobMetrics: function () {
-            if (this.jobId) {
-                return this.getJobMetricsByJobId(this.jobId);
-            } else {
-                return this.getJobMetricsByDatasetId(this.datasetId, this.datasetType);
-            }
-        },
-        metricsByPlugins: function () {
-            const metricsByPlugins = {};
-            const metrics = this.jobMetrics;
-            metrics.forEach((metric) => {
-                if (!(metric.plugin in metricsByPlugins)) {
-                    metricsByPlugins[metric.plugin] = {};
-                }
-                const metricsForPlugin = metricsByPlugins[metric.plugin];
-                metricsForPlugin[metric.title] = metric.value;
-            });
-            return metricsByPlugins;
-        },
-        orderedPlugins: function () {
-            return Object.keys(this.metricsByPlugins).sort();
-        },
-    },
-    created: function () {
-        if (this.jobId) {
-            this.fetchJobMetricsForJobId(this.jobId);
-        } else {
-            this.fetchJobMetricsForDatasetId({ datasetId: this.datasetId, datasetType: this.datasetType });
-        }
-    },
-    methods: {
-        ...mapCacheActions(["fetchJobMetricsForDatasetId", "fetchJobMetricsForJobId"]),
-    },
-};
-</script>
-<style scoped>
-.aws {
-    padding-top: 0.6rem;
-}
-</style>

@@ -4,20 +4,20 @@ Image classes
 import base64
 import json
 import logging
-from typing import (
-    Optional,
-    TYPE_CHECKING,
-)
+from typing import Optional
 
 import mrcfile
 import numpy as np
 import tifffile
 
 from galaxy.datatypes.binary import Binary
-from galaxy.datatypes.data import GeneratePrimaryFileDataset
 from galaxy.datatypes.metadata import (
     FileParameter,
     MetadataElement,
+)
+from galaxy.datatypes.protocols import (
+    DatasetProtocol,
+    HasExtraFilesAndMetadata,
 )
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
@@ -28,9 +28,6 @@ from galaxy.util import nice_size
 from galaxy.util.image_util import check_image_type
 from . import data
 from .xml import GenericXml
-
-if TYPE_CHECKING:
-    from galaxy.model import DatasetInstance
 
 log = logging.getLogger(__name__)
 
@@ -56,7 +53,7 @@ class Image(data.Data):
         super().__init__(**kwd)
         self.image_formats = [self.file_ext.upper()]
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = f"Image in {dataset.extension} format"
             dataset.blurb = nice_size(dataset.get_size())
@@ -68,7 +65,7 @@ class Image(data.Data):
         """Determine if the file is in this format"""
         return check_image_type(filename, self.image_formats)
 
-    def handle_dataset_as_image(self, hda: "DatasetInstance") -> str:
+    def handle_dataset_as_image(self, hda: DatasetProtocol) -> str:
         dataset = hda.dataset
         name = hda.name or ""
         with open(dataset.file_name, "rb") as f:
@@ -108,7 +105,7 @@ class OMETiff(Tiff):
     )
 
     def set_meta(
-        self, dataset: "DatasetInstance", overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
+        self, dataset: DatasetProtocol, overwrite: bool = True, metadata_tmp_files_dir: Optional[str] = None, **kwd
     ) -> None:
         spec_key = "offsets"
         offsets_file = dataset.metadata.offsets
@@ -383,7 +380,7 @@ class Analyze75(Binary):
 
         self.add_composite_file("t2m", description="The Analyze75 t2m file.", optional=True, is_binary=True)
 
-    def generate_primary_file(self, dataset: GeneratePrimaryFileDataset) -> str:
+    def generate_primary_file(self, dataset: HasExtraFilesAndMetadata) -> str:
         rval = ["<html><head><title>Analyze75 Composite Dataset.</title></head><p/>"]
         rval.append("<div>This composite dataset is composed of the following files:<p/><ul>")
         for composite_name, composite_file in self.get_composite_files(dataset=dataset).items():
@@ -493,7 +490,7 @@ class Star(data.Text):
 
     file_ext = "star"
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = data.get_file_peek(dataset.file_name)

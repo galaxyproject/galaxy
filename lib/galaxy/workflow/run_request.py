@@ -11,14 +11,17 @@ from typing import (
 
 from galaxy import exceptions
 from galaxy.model import (
+    EffectiveOutput,
     History,
     HistoryDatasetAssociation,
+    HistoryDatasetCollectionAssociation,
     LibraryDataset,
     LibraryDatasetDatasetAssociation,
     WorkflowInvocation,
     WorkflowRequestInputParameter,
     WorkflowRequestStepState,
 )
+from galaxy.model.base import transaction
 from galaxy.tools.parameters.meta import expand_workflow_inputs
 from galaxy.workflow.resources import get_resource_mapper_function
 
@@ -72,6 +75,10 @@ class WorkflowRunConfig:
         copy_inputs_to_history: bool = False,
         use_cached_job: bool = False,
         resource_params: Optional[Dict[int, Any]] = None,
+        preferred_object_store_id: Optional[str] = None,
+        preferred_outputs_object_store_id: Optional[str] = None,
+        preferred_intermediate_object_store_id: Optional[str] = None,
+        effective_outputs: Optional[List[EffectiveOutput]] = None,
     ) -> None:
         self.target_history = target_history
         self.replacement_dict = replacement_dict or {}
@@ -81,6 +88,10 @@ class WorkflowRunConfig:
         self.resource_params = resource_params or {}
         self.allow_tool_state_corrections = allow_tool_state_corrections
         self.use_cached_job = use_cached_job
+        self.preferred_object_store_id = preferred_object_store_id
+        self.preferred_outputs_object_store_id = preferred_outputs_object_store_id
+        self.preferred_intermediate_object_store_id = preferred_intermediate_object_store_id
+        self.effective_outputs = effective_outputs
 
 
 def _normalize_inputs(
@@ -114,8 +125,9 @@ def _normalize_inputs(
         # but asserting 'optional' is definitely a bool and not a String->Bool or something is a good
         # start to ensure tool state is being preserved and loaded in a type safe way.
         assert isinstance(optional, bool)
-        if not inputs_key and default_value is None and not optional:
-            message = f"Workflow cannot be run because an expected input step '{step.id}' ({step.label}) is not optional and no input."
+        has_input_value = inputs_key and inputs[inputs_key] is not None
+        if not has_input_value and default_value is None and not optional:
+            message = f"Workflow cannot be run because input step '{step.id}' ({step.label}) is not optional and no input provided."
             raise exceptions.MessageException(message)
         if inputs_key:
             normalized_inputs[step.id] = inputs[inputs_key]
@@ -244,7 +256,7 @@ def _get_target_history(
             history_name = history_param
     if history_id:
         history_manager = trans.app.history_manager
-        target_history = history_manager.get_owned(
+        target_history = history_manager.get_mutable(
             trans.security.decode_id(history_id), trans.user, current_history=trans.history
         )
     else:
@@ -262,7 +274,8 @@ def _get_target_history(
             nh_name = f"{nh_name} on {', '.join(ids[0:-1])} and {ids[-1]}"
         new_history = History(user=trans.user, name=nh_name)
         trans.sa_session.add(new_history)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         target_history = new_history
     return target_history
 
@@ -389,7 +402,10 @@ def build_workflow_run_configs(
                         f"Unknown workflow input source '{input_source}' specified."
                     )
                 if add_to_history and content.history != history:
-                    content = content.copy(flush=False)
+                    if isinstance(content, HistoryDatasetCollectionAssociation):
+                        content = content.copy(element_destination=history, flush=False)
+                    else:
+                        content = content.copy(flush=False)
                     history.stage_addition(content)
                 input_dict["content"] = content
             except AssertionError:
@@ -431,6 +447,20 @@ def build_workflow_run_configs(
                                 f"Invalid value for parameter '{name}' found."
                             )
         history.add_pending_items()
+        preferred_object_store_id = payload.get("preferred_object_store_id")
+        preferred_outputs_object_store_id = payload.get("preferred_outputs_object_store_id")
+        preferred_intermediate_object_store_id = payload.get("preferred_intermediate_object_store_id")
+        if payload.get("effective_outputs"):
+            raise exceptions.RequestParameterInvalidException(
+                "Cannot declare effective outputs on invocation in this fashion."
+            )
+        split_object_store_config = bool(
+            preferred_outputs_object_store_id is not None or preferred_intermediate_object_store_id is not None
+        )
+        if split_object_store_config and preferred_object_store_id:
+            raise exceptions.RequestParameterInvalidException(
+                "May specified either 'preferred_object_store_id' or one/both of 'preferred_outputs_object_store_id' and 'preferred_intermediate_object_store_id' but not both"
+            )
         run_configs.append(
             WorkflowRunConfig(
                 target_history=history,
@@ -440,6 +470,9 @@ def build_workflow_run_configs(
                 allow_tool_state_corrections=allow_tool_state_corrections,
                 use_cached_job=use_cached_job,
                 resource_params=resource_params,
+                preferred_object_store_id=preferred_object_store_id,
+                preferred_outputs_object_store_id=preferred_outputs_object_store_id,
+                preferred_intermediate_object_store_id=preferred_intermediate_object_store_id,
             )
         )
 
@@ -476,6 +509,19 @@ def workflow_run_config_to_request(
         workflow_invocation.step_states.append(step_state)
 
         if step.type == "subworkflow":
+            subworkflow = step.subworkflow
+            assert subworkflow
+            effective_outputs: Optional[List[EffectiveOutput]] = None
+            if run_config.preferred_intermediate_object_store_id or run_config.preferred_outputs_object_store_id:
+                step_outputs = step.workflow_outputs
+                effective_outputs = []
+                for step_output in step_outputs:
+                    subworkflow_output = subworkflow.workflow_output_for(step_output.output_name)
+                    if subworkflow_output is not None:
+                        output_dict = EffectiveOutput(
+                            output_name=subworkflow_output.output_name, step_id=subworkflow_output.workflow_step_id
+                        )
+                        effective_outputs.append(output_dict)
             subworkflow_run_config = WorkflowRunConfig(
                 target_history=run_config.target_history,
                 replacement_dict=run_config.replacement_dict,
@@ -485,12 +531,15 @@ def workflow_run_config_to_request(
                 param_map=run_config.param_map.get(step.order_index),
                 allow_tool_state_corrections=run_config.allow_tool_state_corrections,
                 resource_params=run_config.resource_params,
+                preferred_object_store_id=run_config.preferred_object_store_id,
+                preferred_intermediate_object_store_id=run_config.preferred_intermediate_object_store_id,
+                preferred_outputs_object_store_id=run_config.preferred_outputs_object_store_id,
+                effective_outputs=effective_outputs,
             )
-            assert step.subworkflow
             subworkflow_invocation = workflow_run_config_to_request(
                 trans,
                 subworkflow_run_config,
-                step.subworkflow,
+                subworkflow,
             )
             workflow_invocation.attach_subworkflow_invocation_for_step(
                 step,
@@ -520,6 +569,18 @@ def workflow_run_config_to_request(
         "copy_inputs_to_history", "true" if run_config.copy_inputs_to_history else "false", param_types.META_PARAMETERS
     )
     add_parameter("use_cached_job", "true" if run_config.use_cached_job else "false", param_types.META_PARAMETERS)
+    for param in [
+        "preferred_object_store_id",
+        "preferred_outputs_object_store_id",
+        "preferred_intermediate_object_store_id",
+    ]:
+        value = getattr(run_config, param)
+        if value:
+            add_parameter(param, value, param_types.META_PARAMETERS)
+    if run_config.effective_outputs is not None:
+        # empty list needs to come through here...
+        add_parameter("effective_outputs", json.dumps(run_config.effective_outputs), param_types.META_PARAMETERS)
+
     return workflow_invocation
 
 
@@ -533,6 +594,11 @@ def workflow_request_to_run_config(
     param_map = {}
     resource_params = {}
     copy_inputs_to_history = None
+    # Preferred object store IDs - either split or join.
+    preferred_object_store_id = None
+    preferred_outputs_object_store_id = None
+    preferred_intermediate_object_store_id = None
+    effective_outputs = None
     for parameter in workflow_invocation.input_parameters:
         parameter_type = parameter.type
 
@@ -543,6 +609,14 @@ def workflow_request_to_run_config(
                 copy_inputs_to_history = parameter.value == "true"
             if parameter.name == "use_cached_job":
                 use_cached_job = parameter.value == "true"
+            if parameter.name == "preferred_object_store_id":
+                preferred_object_store_id = parameter.value
+            if parameter.name == "preferred_outputs_object_store_id":
+                preferred_outputs_object_store_id = parameter.value
+            if parameter.name == "preferred_intermediate_object_store_id":
+                preferred_intermediate_object_store_id = parameter.value
+            if parameter.name == "effective_outputs":
+                effective_outputs = json.loads(parameter.value)
         elif parameter_type == param_types.RESOURCE_PARAMETERS:
             resource_params[parameter.name] = parameter.value
         elif parameter_type == param_types.STEP_PARAMETERS:
@@ -569,5 +643,9 @@ def workflow_request_to_run_config(
         copy_inputs_to_history=copy_inputs_to_history,
         use_cached_job=use_cached_job,
         resource_params=resource_params,
+        preferred_object_store_id=preferred_object_store_id,
+        preferred_outputs_object_store_id=preferred_outputs_object_store_id,
+        preferred_intermediate_object_store_id=preferred_intermediate_object_store_id,
+        effective_outputs=effective_outputs,
     )
     return workflow_run_config

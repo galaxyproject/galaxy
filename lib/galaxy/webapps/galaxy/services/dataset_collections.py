@@ -124,7 +124,7 @@ class DatasetCollectionsService(ServiceBase, UsesLibraryMixinItems):
         if payload.instance_type == "history":
             if payload.history_id is None:
                 raise exceptions.RequestParameterInvalidException("Parameter history_id is required.")
-            history = self.history_manager.get_owned(payload.history_id, trans.user, current_history=trans.history)
+            history = self.history_manager.get_mutable(payload.history_id, trans.user, current_history=trans.history)
             create_params["parent"] = history
             create_params["history"] = history
         elif payload.instance_type == "library" and payload.folder_id:

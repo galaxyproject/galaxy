@@ -3,6 +3,7 @@ import hashlib
 import json
 import logging
 import os
+import time
 from datetime import (
     datetime,
     timedelta,
@@ -22,6 +23,7 @@ from galaxy.model import (
     CustosAuthnzToken,
     User,
 )
+from galaxy.model.base import transaction
 from galaxy.model.orm.util import add_object_to_object_session
 from . import IdentityProvider
 
@@ -47,8 +49,12 @@ class CustosAuthnz(IdentityProvider):
         self.config = {"provider": provider}
         self.config["verify_ssl"] = oidc_config["VERIFY_SSL"]
         self.config["url"] = oidc_backend_config["url"]
+        self.config["label"] = oidc_backend_config.get("label", provider.capitalize())
         self.config["client_id"] = oidc_backend_config["client_id"]
         self.config["client_secret"] = oidc_backend_config["client_secret"]
+        self.config["require_create_confirmation"] = oidc_backend_config.get(
+            "require_create_confirmation", provider == "custos"
+        )
         self.config["redirect_uri"] = oidc_backend_config["redirect_uri"]
         self.config["ca_bundle"] = oidc_backend_config.get("ca_bundle", None)
         self.config["pkce_support"] = oidc_backend_config.get("pkce_support", False)
@@ -66,6 +72,43 @@ class CustosAuthnz(IdentityProvider):
 
     def _decode_token_no_signature(self, token):
         return jwt.decode(token, audience=self.config["client_id"], options={"verify_signature": False})
+
+    def refresh(self, trans, custos_authnz_token):
+        if custos_authnz_token is None:
+            raise exceptions.AuthenticationFailed("cannot find authorized user while refreshing token")
+        id_token_decoded = self._decode_token_no_signature(custos_authnz_token.id_token)
+        # do not refresh tokens if they didn't reach their half lifetime
+        if int(id_token_decoded["iat"]) + int(id_token_decoded["exp"]) > 2 * int(time.time()):
+            return False
+        log.info(custos_authnz_token.access_token)
+        oauth2_session = self._create_oauth2_session()
+        token_endpoint = self.config["token_endpoint"]
+        if self.config.get("iam_client_secret"):
+            client_secret = self.config["iam_client_secret"]
+        else:
+            client_secret = self.config["client_secret"]
+        clientIdAndSec = f"{self.config['client_id']}:{self.config['client_secret']}"  # for custos
+
+        params = {
+            "client_secret": client_secret,
+            "refresh_token": custos_authnz_token.refresh_token,
+            "headers": {
+                "Authorization": f"Basic {util.unicodify(base64.b64encode(util.smart_str(clientIdAndSec)))}"
+            },  # for custos
+        }
+
+        token = oauth2_session.refresh_token(token_endpoint, **params)
+        processed_token = self._process_token(trans, oauth2_session, token, False)
+
+        custos_authnz_token.access_token = processed_token["access_token"]
+        custos_authnz_token.id_token = processed_token["id_token"]
+        custos_authnz_token.refresh_token = processed_token["refresh_token"]
+        custos_authnz_token.expiration_time = processed_token["expiration_time"]
+        custos_authnz_token.refresh_expiration_time = processed_token["refresh_expiration_time"]
+
+        trans.sa_session.add(custos_authnz_token)
+        trans.sa_session.flush()
+        return True
 
     def authenticate(self, trans, idphint=None):
         base_authorize_url = self.config["authorization_endpoint"]
@@ -95,6 +138,34 @@ class CustosAuthnz(IdentityProvider):
         trans.set_cookie(value=nonce, name=NONCE_COOKIE_NAME)
         return authorization_url
 
+    def _process_token(self, trans, oauth2_session, token, validate_nonce=True):
+        processed_token = {}
+        processed_token["access_token"] = token["access_token"]
+        processed_token["id_token"] = token["id_token"]
+        processed_token["refresh_token"] = token["refresh_token"] if "refresh_token" in token else None
+        processed_token["expiration_time"] = datetime.now() + timedelta(seconds=token.get("expires_in", 3600))
+        processed_token["refresh_expiration_time"] = (
+            (datetime.now() + timedelta(seconds=token["refresh_expires_in"])) if "refresh_expires_in" in token else None
+        )
+
+        # Get nonce from token['id_token'] and validate. 'nonce' in the
+        # id_token is a hash of the nonce stored in the NONCE_COOKIE_NAME
+        # cookie.
+        id_token_decoded = self._decode_token_no_signature(processed_token["id_token"])
+        if validate_nonce:
+            nonce_hash = id_token_decoded["nonce"]
+            self._validate_nonce(trans, nonce_hash)
+
+        # Get userinfo and lookup/create Galaxy user record
+        if id_token_decoded.get("email", None):
+            userinfo = id_token_decoded
+        else:
+            userinfo = self._get_userinfo(oauth2_session)
+        processed_token["email"] = userinfo["email"]
+        processed_token["user_id"] = userinfo["sub"]
+        processed_token["username"] = self._username_from_userinfo(trans, userinfo)
+        return processed_token
+
     def callback(self, state_token, authz_code, trans, login_redirect_url):
         # Take state value to validate from token. OAuth2Session.fetch_token
         # will validate that the state query parameter value on the URL matches
@@ -102,61 +173,45 @@ class CustosAuthnz(IdentityProvider):
         state_cookie = trans.get_cookie(name=STATE_COOKIE_NAME)
         oauth2_session = self._create_oauth2_session(state=state_cookie)
         token = self._fetch_token(oauth2_session, trans)
-        access_token = token["access_token"]
-        id_token = token["id_token"]
-        refresh_token = token["refresh_token"] if "refresh_token" in token else None
-        expiration_time = datetime.now() + timedelta(seconds=token.get("expires_in", 3600))
-        refresh_expiration_time = (
-            (datetime.now() + timedelta(seconds=token["refresh_expires_in"])) if "refresh_expires_in" in token else None
-        )
+        processed_token = self._process_token(trans, oauth2_session, token)
 
-        # Get nonce from token['id_token'] and validate. 'nonce' in the
-        # id_token is a hash of the nonce stored in the NONCE_COOKIE_NAME
-        # cookie.
-        id_token_decoded = self._decode_token_no_signature(id_token)
-        nonce_hash = id_token_decoded["nonce"]
-        self._validate_nonce(trans, nonce_hash)
-
-        # Get userinfo and lookup/create Galaxy user record
-        if id_token_decoded.get("email", None):
-            userinfo = id_token_decoded
-        else:
-            userinfo = self._get_userinfo(oauth2_session)
-        email = userinfo["email"]
-        user_id = userinfo["sub"]
+        user_id = processed_token["user_id"]
+        email = processed_token["email"]
+        username = processed_token["username"]
+        access_token = processed_token["access_token"]
+        id_token = processed_token["id_token"]
+        refresh_token = processed_token["refresh_token"]
+        expiration_time = processed_token["expiration_time"]
+        refresh_expiration_time = processed_token["refresh_expiration_time"]
 
         # Create or update custos_authnz_token record
         custos_authnz_token = self._get_custos_authnz_token(trans.sa_session, user_id, self.config["provider"])
         if custos_authnz_token is None:
             user = trans.user
+            existing_user = trans.sa_session.query(User).filter_by(email=email).first()
             if not user:
-                existing_user = trans.sa_session.query(User).filter_by(email=email).first()
                 if existing_user:
-                    # If there is only a single external authentication
-                    # provider in use, trust the user provided and
-                    # automatically associate.
-                    # TODO: Future work will expand on this and provide an
-                    # interface for when there are multiple auth providers
-                    # allowing explicit authenticated association.
-                    if (
-                        trans.app.config.enable_oidc
-                        and len(trans.app.config.oidc) == 1
-                        and len(trans.app.auth_manager.authenticators) == 0
-                    ):
+                    if trans.app.config.fixed_delegated_auth:
                         user = existing_user
                     else:
                         message = f"There already exists a user with email {email}.  To associate this external login, you must first be logged in as that existing account."
-                        log.exception(message)
-                        raise exceptions.AuthenticationFailed(message)
-                elif self.config["provider"] == "custos":
-                    login_redirect_url = f"{login_redirect_url}root/login?confirm=true&custos_token={json.dumps(token)}"
+                        log.info(message)
+                        login_redirect_url = (
+                            f"{login_redirect_url}login/start"
+                            f"?connect_external_provider={self.config['provider']}"
+                            f"&connect_external_email={email}"
+                            f"&connect_external_label={self.config['label']}"
+                        )
+                        return login_redirect_url, None
+                elif self.config["require_create_confirmation"]:
+                    login_redirect_url = f"{login_redirect_url}login/start?confirm=true&provider_token={json.dumps(token)}&provider={self.config['provider']}"
                     return login_redirect_url, None
                 else:
-                    username = self._username_from_userinfo(trans, userinfo)
                     user = trans.app.user_manager.create(email=email, username=username)
                     if trans.app.config.user_activation_on:
                         trans.app.user_manager.send_activation_email(trans, email, username)
 
+            # Create a token to link this identity with an existing account
             custos_authnz_token = CustosAuthnzToken(
                 user=user,
                 external_user_id=user_id,
@@ -167,15 +222,36 @@ class CustosAuthnz(IdentityProvider):
                 expiration_time=expiration_time,
                 refresh_expiration_time=refresh_expiration_time,
             )
+            label = self.config["label"]
+            if trans.app.config.fixed_delegated_auth:
+                redirect_url = login_redirect_url
+            elif existing_user and existing_user != user:
+                redirect_url = (
+                    f"{login_redirect_url}user/external_ids"
+                    f"?email_exists={email}"
+                    f"&notification=Your%20{label}%20identity%20has%20been%20linked"
+                    "%20to%20your%20Galaxy%20account."
+                )
+            else:
+                redirect_url = (
+                    f"{login_redirect_url}user/external_ids"
+                    f"?notification=Your%20{label}%20identity%20has%20been%20linked"
+                    "%20to%20your%20Galaxy%20account."
+                )
         else:
+            # Identity is already linked to account - login as usual
             custos_authnz_token.access_token = access_token
             custos_authnz_token.id_token = id_token
             custos_authnz_token.refresh_token = refresh_token
             custos_authnz_token.expiration_time = expiration_time
             custos_authnz_token.refresh_expiration_time = refresh_expiration_time
+            redirect_url = "/"
+
         trans.sa_session.add(custos_authnz_token)
-        trans.sa_session.flush()
-        return "/", custos_authnz_token.user
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
+
+        return redirect_url, custos_authnz_token.user
 
     def create_user(self, token, trans, login_redirect_url):
         token_dict = json.loads(token)
@@ -221,7 +297,8 @@ class CustosAuthnz(IdentityProvider):
 
         trans.sa_session.add(user)
         trans.sa_session.add(custos_authnz_token)
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         return login_redirect_url, user
 
     def disconnect(self, provider, trans, email=None, disconnect_redirect_url=None):
@@ -238,7 +315,8 @@ class CustosAuthnz(IdentityProvider):
                     if id_token_decoded["email"] == email:
                         index = idx
             trans.sa_session.delete(provider_tokens[index])
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
             return True, "", disconnect_redirect_url
         except Exception as e:
             return False, f"Failed to disconnect provider {provider}: {util.unicodify(e)}", None

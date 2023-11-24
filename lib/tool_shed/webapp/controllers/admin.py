@@ -5,6 +5,7 @@ from galaxy import (
     util,
     web,
 )
+from galaxy.model.base import transaction
 from galaxy.util import inflector
 from galaxy.web.legacy_framework import grids
 from galaxy.webapps.base.controller import BaseUIController
@@ -150,7 +151,8 @@ class AdminController(BaseUIController, Admin):
                 # Create the category
                 category = trans.app.model.Category(name=name, description=description)
                 trans.sa_session.add(category)
-                trans.sa_session.flush()
+                with transaction(trans.sa_session):
+                    trans.sa_session.commit()
                 # Update the Tool Shed's repository registry.
                 trans.app.repository_registry.add_category_entry(category)
                 message = f"Category '{escape(category.name)}' has been created"
@@ -192,7 +194,8 @@ class AdminController(BaseUIController, Admin):
                             trans.sa_session.add(repository_admin_role)
                         repository.deleted = True
                         trans.sa_session.add(repository)
-                        trans.sa_session.flush()
+                        with transaction(trans.sa_session):
+                            trans.sa_session.commit()
                         # Update the repository registry.
                         trans.app.repository_registry.remove_entry(repository)
                         count += 1
@@ -226,7 +229,8 @@ class AdminController(BaseUIController, Admin):
             for repository_metadata_id in ids:
                 repository_metadata = metadata_util.get_repository_metadata_by_id(trans.app, repository_metadata_id)
                 trans.sa_session.delete(repository_metadata)
-                trans.sa_session.flush()
+                with transaction(trans.sa_session):
+                    trans.sa_session.commit()
                 count += 1
             if count:
                 message = "Deleted %d repository metadata %s" % (count, inflector.cond_plural(len(ids), "record"))
@@ -277,7 +281,8 @@ class AdminController(BaseUIController, Admin):
                     flush_needed = True
             if flush_needed:
                 trans.sa_session.add(category)
-                trans.sa_session.flush()
+                with transaction(trans.sa_session):
+                    trans.sa_session.commit()
                 if original_category_name != new_name:
                     # Update the Tool Shed's repository registry.
                     trans.app.repository_registry.edit_category_entry(original_category_name, new_name)
@@ -402,7 +407,8 @@ class AdminController(BaseUIController, Admin):
                             trans.sa_session.add(repository_admin_role)
                         repository.deleted = False
                         trans.sa_session.add(repository)
-                        trans.sa_session.flush()
+                        with transaction(trans.sa_session):
+                            trans.sa_session.commit()
                         if not repository.deprecated:
                             # Update the repository registry.
                             trans.app.repository_registry.add_entry(repository)
@@ -439,7 +445,8 @@ class AdminController(BaseUIController, Admin):
                 category = suc.get_category(trans.app, category_id)
                 category.deleted = True
                 trans.sa_session.add(category)
-                trans.sa_session.flush()
+                with transaction(trans.sa_session):
+                    trans.sa_session.commit()
                 # Update the Tool Shed's repository registry.
                 trans.app.repository_registry.remove_category_entry(category)
                 message += f" {escape(category.name)} "
@@ -470,7 +477,8 @@ class AdminController(BaseUIController, Admin):
                     # Delete RepositoryCategoryAssociations
                     for rca in category.repositories:
                         trans.sa_session.delete(rca)
-                    trans.sa_session.flush()
+                    with transaction(trans.sa_session):
+                        trans.sa_session.commit()
                     purged_categories += f" {category.name} "
             message = "Purged %d categories: %s" % (count, escape(purged_categories))
         else:
@@ -495,7 +503,8 @@ class AdminController(BaseUIController, Admin):
                 if category.deleted:
                     category.deleted = False
                     trans.sa_session.add(category)
-                    trans.sa_session.flush()
+                    with transaction(trans.sa_session):
+                        trans.sa_session.commit()
                     # Update the Tool Shed's repository registry.
                     trans.app.repository_registry.add_category_entry(category)
                     count += 1

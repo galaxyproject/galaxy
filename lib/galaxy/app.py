@@ -43,6 +43,7 @@ from galaxy.managers.interactivetool import InteractiveToolManager
 from galaxy.managers.jobs import JobSearch
 from galaxy.managers.libraries import LibraryManager
 from galaxy.managers.library_datasets import LibraryDatasetsManager
+from galaxy.managers.notification import NotificationManager
 from galaxy.managers.roles import RoleManager
 from galaxy.managers.session import GalaxySessionManager
 from galaxy.managers.tasks import (
@@ -83,6 +84,7 @@ from galaxy.objectstore import (
 )
 from galaxy.queue_worker import (
     GalaxyQueueWorker,
+    reload_toolbox,
     send_local_control_task,
 )
 from galaxy.quota import (
@@ -322,6 +324,9 @@ class MinimalGalaxyApplication(BasicSharedApp, HaltableContainer, SentryClientMi
                 "cache.data_dir": self.config.mulled_resolution_cache_data_dir,
                 "cache.lock_dir": self.config.mulled_resolution_cache_lock_dir,
                 "cache.expire": self.config.mulled_resolution_cache_expire,
+                "cache.url": self.config.mulled_resolution_cache_url,
+                "cache.table_name": self.config.mulled_resolution_cache_table_name,
+                "cache.schema_name": self.config.mulled_resolution_cache_schema_name,
             }
             mulled_resolution_cache = CacheManager(**parse_cache_config_options(cache_opts)).get_cache(
                 "mulled_resolution"
@@ -540,10 +545,11 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
         self.library_datasets_manager = self._register_singleton(LibraryDatasetsManager)
         self.role_manager = self._register_singleton(RoleManager)
         self.job_manager = self._register_singleton(JobManager)
+        self.notification_manager = self._register_singleton(NotificationManager)
 
         self.task_manager = self._register_abstract_singleton(
-            AsyncTasksManager, CeleryAsyncTasksManager  # type: ignore[type-abstract]
-        )  # Ignored because of https://github.com/python/mypy/issues/4717
+            AsyncTasksManager, CeleryAsyncTasksManager  # type: ignore[type-abstract]  # https://github.com/python/mypy/issues/4717
+        )
 
         # ConfiguredFileSources
         self.file_sources = self._register_singleton(
@@ -576,8 +582,6 @@ class GalaxyManagerApplication(MinimalManagerApp, MinimalGalaxyApplication):
 
         self._configure_tool_shed_registry()
         self._register_singleton(tool_shed_registry.Registry, self.tool_shed_registry)
-        # Tool Data Tables
-        self._configure_tool_data_tables(from_shed_config=False)
 
     def _configure_tool_shed_registry(self) -> None:
         # Set up the tool sheds registry
@@ -614,6 +618,8 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
             ("application stack", self._shutdown_application_stack),
         ]
         self._register_singleton(StructuredApp, self)  # type: ignore[type-abstract]
+        if kwargs.get("is_webapp"):
+            self.is_webapp = kwargs["is_webapp"]
         # A lot of postfork initialization depends on the server name, ensure it is set immediately after forking before other postfork functions
         self.application_stack.register_postfork_function(self.application_stack.set_postfork_server_name, self)
         self.config.reload_sanitize_allowlist(explicit="sanitize_allowlist_file" in kwargs)
@@ -630,6 +636,8 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         )
         self.api_keys_manager = self._register_singleton(ApiKeyManager)
 
+        # Tool Data Tables
+        self._configure_tool_data_tables(from_shed_config=False)
         # Load dbkey / genome build manager
         self._configure_genome_builds(data_table_name="__dbkeys__", load_old_style=True)
 
@@ -701,6 +709,13 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
                 self, self.config.oidc_config_file, self.config.oidc_backends_config_file
             )
 
+            # If there is only a single external authentication provider in use
+            # TODO: Future work will expand on this and provide an interface for
+            # multiple auth providers allowing explicit authenticated association.
+            self.config.fixed_delegated_auth = (
+                len(list(self.config.oidc)) == 1 and len(list(self.auth_manager.authenticators)) == 0
+            )
+
         if not self.config.enable_celery_tasks and self.config.history_audit_table_prune_interval > 0:
             self.prune_history_audit_task = IntervalTask(
                 func=lambda: galaxy.model.HistoryAudit.prune(self.model.session),
@@ -739,6 +754,10 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         # Start web stack message handling
         self.application_stack.register_postfork_function(self.application_stack.start)
         self.application_stack.register_postfork_function(self.queue_worker.bind_and_start)
+        # Reload toolbox to pick up changes to toolbox made after master was ready
+        self.application_stack.register_postfork_function(
+            lambda: reload_toolbox(self, save_integrated_tool_panel=False), post_fork_only=True
+        )
         # Delay toolbox index until after startup
         self.application_stack.register_postfork_function(
             lambda: send_local_control_task(self, "rebuild_toolbox_search_index")

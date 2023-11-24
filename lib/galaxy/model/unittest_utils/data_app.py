@@ -68,6 +68,13 @@ class GalaxyDataTestConfig(Bunch):
         self.new_file_path = os.path.join(self.data_dir, "tmp")
         self.file_path = os.path.join(self.data_dir, "files")
         self.server_name = "main"
+        self.enable_quotas = False
+        self.user_library_import_symlink_allowlist = []
+        self.fetch_url_allowlist_ips = []
+        self.library_import_dir = None
+        self.user_library_import_dir = None
+        self.ftp_upload_dir = None
+        self.ftp_upload_purge = False
 
     def __del__(self):
         if self._remove_root:

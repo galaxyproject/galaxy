@@ -33,13 +33,7 @@ from markupsafe import escape
         tagged_item_id = str( trans.security.encode_id ( tagged_item.id ) )
         controller_name = get_controller_name(tagged_item)
         click_url = h.url_for( controller='/' + modern_route_for_controller(controller_name) , action='list_published')
-        community_tags = trans.app.tag_handler.get_community_tags( item=tagged_item, limit=5 )
-
-        ## Having trouble converting list of tags into a plain array, this just
-        ## just plucks out the name
-        community_tag_names = []
-        for tag in community_tags:
-            community_tag_names.append(escape(tag.name))
+        community_tag_names = community_tags = tagged_item.make_tag_string_list()
     %>
     
     <div id="tags-community-${controller_name}-${tagged_item_id}"></div>

@@ -1,4 +1,4 @@
-<script lang="ts" setup>
+<script setup lang="ts">
 import { computed, onMounted, ref, unref, watch } from "vue";
 import { useAnimationFrame } from "@/composables/sensors/animationFrame";
 import { useAnimationFrameThrottle } from "@/composables/throttle";
@@ -12,8 +12,7 @@ import type { Ref } from "vue";
 const props = defineProps<{
     steps: Steps;
     viewportBounds: UseElementBoundingReturn;
-    viewportPan: { x: number; y: number };
-    viewportScale: number;
+    viewportBoundingBox: AxisAlignedBoundingBox;
 }>();
 
 const emit = defineEmits<{
@@ -29,33 +28,12 @@ let redraw = false;
 
 // it is important these throttles are defined before useAnimationFrame,
 // so that they are executed first in the frame loop
-const { throttle: viewportThrottle } = useAnimationFrameThrottle();
 const { throttle: dragThrottle } = useAnimationFrameThrottle();
 
-/** bounding box following the viewport */
-const viewportBounds = ref(new AxisAlignedBoundingBox());
 watch(
-    () => ({
-        x: props.viewportPan.x,
-        y: props.viewportPan.y,
-        scale: props.viewportScale,
-        width: unref(props.viewportBounds.width),
-        height: unref(props.viewportBounds.height),
-    }),
-    ({ x, y, scale, width, height }) => {
-        redraw = true;
-
-        viewportThrottle(() => {
-            const bounds = viewportBounds.value;
-
-            bounds.x = -x / scale;
-            bounds.y = -y / scale;
-            bounds.width = width / scale;
-            bounds.height = height / scale;
-
-            viewportBounds.value = bounds;
-        });
-    }
+    () => props.viewportBoundingBox,
+    () => (redraw = true),
+    { deep: true }
 );
 
 /** bounding box encompassing all nodes in the workflow */
@@ -70,12 +48,15 @@ function recalculateAABB() {
 
     Object.values(props.steps).forEach((step) => {
         const rect = stateStore.stepPosition[step.id];
-        aabb.fitRectangle({
-            x: step.position!.left,
-            y: step.position!.top,
-            width: rect.width,
-            height: rect.height,
-        });
+
+        if (rect) {
+            aabb.fitRectangle({
+                x: step.position!.left,
+                y: step.position!.top,
+                width: rect.width,
+                height: rect.height,
+            });
+        }
     });
 
     aabb.squareCenter();
@@ -181,7 +162,10 @@ function renderMinimap() {
     ctx.fillStyle = colors.node;
     okSteps.forEach((step) => {
         const rect = stateStore.stepPosition[step.id];
-        ctx.rect(step.position!.left, step.position!.top, rect.width, rect.height);
+
+        if (rect) {
+            ctx.rect(step.position!.left, step.position!.top, rect.width, rect.height);
+        }
     });
     ctx.fill();
 
@@ -189,7 +173,10 @@ function renderMinimap() {
     ctx.fillStyle = colors.error;
     errorSteps.forEach((step) => {
         const rect = stateStore.stepPosition[step.id];
-        ctx.rect(step.position!.left, step.position!.top, rect.width, rect.height);
+
+        if (rect) {
+            ctx.rect(step.position!.left, step.position!.top, rect.width, rect.height);
+        }
     });
     ctx.fill();
 
@@ -201,12 +188,16 @@ function renderMinimap() {
         ctx.strokeStyle = colors.selectedOutline;
         ctx.lineWidth = edge;
         const rect = stateStore.stepPosition[selectedStep.id];
-        ctx.rect(
-            selectedStep.position!.left - edge,
-            selectedStep.position!.top - edge,
-            rect.width + edge * 2,
-            rect.height + edge * 2
-        );
+
+        if (rect) {
+            ctx.rect(
+                selectedStep.position!.left - edge,
+                selectedStep.position!.top - edge,
+                rect.width + edge * 2,
+                rect.height + edge * 2
+            );
+        }
+
         ctx.stroke();
     }
 
@@ -215,7 +206,12 @@ function renderMinimap() {
     ctx.strokeStyle = colors.viewOutline;
     ctx.fillStyle = colors.view;
     ctx.lineWidth = 1 / canvasTransform.scaleX;
-    ctx.rect(viewportBounds.value.x, viewportBounds.value.y, viewportBounds.value.width, viewportBounds.value.height);
+    ctx.rect(
+        props.viewportBoundingBox.x,
+        props.viewportBoundingBox.y,
+        props.viewportBoundingBox.width,
+        props.viewportBoundingBox.height
+    );
     ctx.fill();
     ctx.stroke();
 }
@@ -259,7 +255,7 @@ useDraggable(canvas, {
             .scale([scaleFactor.value, scaleFactor.value])
             .apply([event.offsetX, event.offsetY]);
 
-        if (viewportBounds.value.isPointInBounds({ x, y })) {
+        if (props.viewportBoundingBox.isPointInBounds({ x, y })) {
             dragViewport = true;
         }
     },

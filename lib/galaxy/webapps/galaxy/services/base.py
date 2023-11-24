@@ -45,6 +45,10 @@ def ensure_celery_tasks_enabled(config):
         )
 
 
+class SecurityNotProvidedError(Exception):
+    pass
+
+
 class ServiceBase:
     """Base class with common logic and utils reused by other services.
 
@@ -57,8 +61,16 @@ class ServiceBase:
        the required parameters and outputs of each operation.
     """
 
-    def __init__(self, security: IdEncodingHelper):
-        self.security = security
+    def __init__(self, security: Optional[IdEncodingHelper] = None):
+        self._security = security
+
+    @property
+    def security(self) -> IdEncodingHelper:
+        if self._security is None:
+            raise SecurityNotProvidedError(
+                "Security encoding helper must be set in the service constructor to encode/decode ids."
+            )
+        return self._security
 
     def decode_id(self, id: EncodedDatabaseIdField, kind: Optional[str] = None) -> int:
         """Decodes a previously encoded database ID."""

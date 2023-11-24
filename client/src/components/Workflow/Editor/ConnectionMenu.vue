@@ -21,11 +21,17 @@
         </template>
     </b-list-group>
 </template>
-<script lang="ts" setup>
+<script setup lang="ts">
 import { useWorkflowStepStore } from "@/stores/workflowStepStore";
 import { computed, onMounted, ref, watch, type ComputedRef } from "vue";
-import { type OutputTerminals, type InputTerminalsAndInvalid, terminalFactory } from "./modules/terminals";
+import {
+    type OutputTerminals,
+    type InputTerminalsAndInvalid,
+    terminalFactory,
+    type InputTerminals,
+} from "./modules/terminals";
 import { useFocusWithin } from "@/composables/useActiveElement";
+import { assertDefined } from "@/utils/assertions";
 
 const props = defineProps<{
     terminal: OutputTerminals;
@@ -41,7 +47,7 @@ const emit = defineEmits<{ (e: "closeMenu", value: boolean): void }>();
 onMounted(() => {
     if (menuItem.value) {
         if ("length" in menuItem.value) {
-            menuItem.value[0].focus();
+            menuItem.value[0]?.focus();
         } else {
             menuItem.value.focus();
         }
@@ -67,29 +73,28 @@ function increment() {
     if (menuItem.value && "length" in menuItem.value) {
         activeElement.value += 1;
         activeElement.value = Math.min(activeElement.value, menuItem.value!.length - 1);
-        menuItem.value![activeElement.value].focus();
+        menuItem.value![activeElement.value]?.focus();
     }
 }
 
 function decrement() {
     if (menuItem.value && "length" in menuItem.value) {
         activeElement.value = Math.max(activeElement.value - 1, 0);
-        menuItem.value![activeElement.value].focus();
+        menuItem.value![activeElement.value]?.focus();
     }
 }
 
 function terminalToInputObject(terminal: InputTerminalsAndInvalid, connected: boolean): InputObject {
     const step = stepStore.getStep(terminal.stepId);
+    assertDefined(step);
     const inputLabel = `${terminal.name} in step ${step.id + 1}: ${step.label}`;
     return { stepId: step.id, inputName: terminal.name, inputLabel, connected };
 }
 
-function inputObjectToTerminal(inputObject: InputObject): InputTerminalsAndInvalid {
-    // TODO: this isn't ideal, we may not actually have a step .. except we do.
-    // Generalize connection.<input | output> to terminalSource ?
-    const inputSource = stepStore
-        .getStep(inputObject.stepId)
-        .inputs.find((input) => input.name == inputObject.inputName)!;
+function inputObjectToTerminal(inputObject: InputObject): InputTerminals {
+    const step = stepStore.getStep(inputObject.stepId);
+    assertDefined(step);
+    const inputSource = step.inputs.find((input) => input.name == inputObject.inputName)!;
     return terminalFactory(inputObject.stepId, inputSource, props.terminal.datatypesMapper);
 }
 

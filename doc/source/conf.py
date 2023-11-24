@@ -16,9 +16,6 @@ import sys
 
 import sphinx_rtd_theme
 
-# Library to make .md to slideshow
-from recommonmark.transform import AutoStructify
-
 # Set GALAXY_DOCS_SKIP_VIEW_CODE=1 to skip embedding highlighted source
 # code into docs.
 SKIP_VIEW_CODE = os.environ.get("GALAXY_DOCS_SKIP_VIEW_CODE", False) == "1"
@@ -45,12 +42,19 @@ sys.path.insert(1, os.path.abspath(os.path.join(os.path.dirname(__file__), os.pa
 
 # Add any Sphinx extension module names here, as strings. They can be extensions
 # coming with Sphinx (named 'sphinx.ext.*') or your custom ones.
-extensions = ["recommonmark", "sphinx.ext.intersphinx", "sphinx_markdown_tables"]
+extensions = ["myst_parser", "sphinx.ext.intersphinx"]
 if not SKIP_SOURCE:
     # TODO: Add https://pypi.org/project/sphinx-autodoc-typehints
     extensions += ["sphinx.ext.doctest", "sphinx.ext.todo", "sphinx.ext.coverage", "sphinx.ext.autodoc"]
     if not SKIP_VIEW_CODE:
         extensions.append("sphinx.ext.viewcode")
+myst_enable_extensions = [
+    "attrs_block",
+    "deflist",
+    "substitution",
+]
+myst_heading_anchors = 5
+myst_heading_slug_func = "docutils.nodes.make_id"
 
 # Add any paths that contain templates here, relative to this directory.
 templates_path = ["_templates"]
@@ -71,16 +75,6 @@ def dont_skip_init(app, what, name, obj, skip, options):
 def setup(app):
     if not SKIP_SOURCE:
         app.connect("autodoc-skip-member", dont_skip_init)
-    app.add_config_value(
-        "recommonmark_config",
-        {
-            "enable_auto_doc_ref": False,
-            "enable_auto_toc_tree": False,
-            "enable_inline_math": False,  # https://github.com/rtfd/recommonmark/pull/124
-        },
-        True,
-    )
-    app.add_transform(AutoStructify)
 
 
 # The suffix of source filenames.
@@ -122,7 +116,7 @@ release = VERSION
 
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
-exclude_patterns = ["**/_*.rst"]
+exclude_patterns = ["**/_*.*"]
 if SKIP_SOURCE:
     exclude_patterns.extend(["lib"])
 if SKIP_RELEASES:

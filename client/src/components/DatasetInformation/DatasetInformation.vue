@@ -32,7 +32,7 @@
                     </tr>
                     <tr>
                         <td>File contents</td>
-                        <td id="file-contents"><a :href="dataset.download_url">contents</a></td>
+                        <td id="file-contents"><a :href="prefixedUrl(dataset.download_url)">contents</a></td>
                     </tr>
                     <tr v-if="dataset.id">
                         <td>History Content API ID</td>
@@ -77,7 +77,8 @@
 </template>
 
 <script>
-import Utils from "utils/utils";
+import { bytesToString } from "utils/utils";
+import { withPrefix } from "utils/redirect";
 import UtcDate from "components/UtcDate";
 import DecodedId from "../DecodedId";
 import { DatasetProvider } from "components/providers";
@@ -100,7 +101,10 @@ export default {
     },
     methods: {
         bytesToString(raw_size) {
-            return Utils.bytesToString(raw_size);
+            return bytesToString(raw_size, false);
+        },
+        prefixedUrl(url) {
+            return withPrefix(url);
         },
     },
 };

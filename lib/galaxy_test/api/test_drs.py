@@ -4,10 +4,19 @@ from typing import (
     List,
 )
 from unittest import SkipTest
-from urllib.parse import urlparse
+from urllib.parse import (
+    urljoin,
+    urlparse,
+)
 
 import requests
 
+from galaxy.files import (
+    ConfiguredFileSources,
+    ConfiguredFileSourcesConfig,
+    DictFileSourcesUserContext,
+)
+from galaxy.util.config_parsers import parse_allowlist_ips
 from galaxy.util.drs import (
     fetch_drs_to_file,
     RetryOptions,
@@ -23,6 +32,18 @@ HTTP_METHODS: List[Callable[[str], requests.Response]] = [requests.get, requests
 CHECKSUM_TEST_SLEEP_TIME = 3.0
 
 
+def user_context_fixture():
+    file_sources_config = ConfiguredFileSourcesConfig(fetch_url_allowlist=parse_allowlist_ips(["127.0.0.0/24"]))
+    file_sources = ConfiguredFileSources(file_sources_config, load_stock_plugins=True)
+    user_context = DictFileSourcesUserContext(
+        preferences={
+            "oidc|bearer_token": "IBearTokens",
+        },
+        file_sources=file_sources,
+    )
+    return user_context
+
+
 class TestDrsApi(ApiTestCase):
     dataset_populator: DatasetPopulator
 
@@ -31,18 +52,18 @@ class TestDrsApi(ApiTestCase):
         self.dataset_populator = DatasetPopulator(self.galaxy_interactor)
 
     def test_service_info(self):
-        api_url = f"{self.url}ga4gh/drs/v1/service-info"
+        api_url = self._url_join("ga4gh/drs/v1/service-info")
         info_response = requests.get(api_url)
         info_response.raise_for_status()
 
-    def test_404_on_private_datsets(self):
+    def test_404_on_private_datasets(self):
         history_id = self.dataset_populator.new_history()
         hda = self.dataset_populator.new_dataset(history_id, content=CONTENT, wait=True)
         dataset_id = hda["id"]
         drs_id = hda["drs_id"]
         self.dataset_populator.make_private(history_id=history_id, dataset_id=dataset_id)
         for method in HTTP_METHODS:
-            api_url = f"{self.url}ga4gh/drs/v1/objects/{drs_id}"
+            api_url = self._url_join(f"ga4gh/drs/v1/objects/{drs_id}")
             show_response = method(api_url)
             assert show_response.status_code == 403
 
@@ -52,7 +73,7 @@ class TestDrsApi(ApiTestCase):
         drs_id = hda["drs_id"]
         for method in HTTP_METHODS:
             for _ in range(10):
-                api_url = f"{self.url}ga4gh/drs/v1/objects/{drs_id}"
+                api_url = self._url_join(f"ga4gh/drs/v1/objects/{drs_id}")
                 show_response = method(api_url)
                 show_response.raise_for_status()
                 if show_response.status_code != 202:
@@ -92,7 +113,13 @@ class TestDrsApi(ApiTestCase):
         with tempfile.NamedTemporaryFile(prefix="gxtest_drs") as tf:
             retry_options = RetryOptions()
             retry_options.override_retry_after = CHECKSUM_TEST_SLEEP_TIME
-            fetch_drs_to_file(drs_uri, tf.name, force_http=force_http, retry_options=retry_options)
+            fetch_drs_to_file(
+                drs_uri,
+                tf.name,
+                user_context=user_context_fixture(),
+                force_http=force_http,
+                retry_options=retry_options,
+            )
             with open(tf.name) as f:
                 assert CONTENT == f.read()
 
@@ -102,10 +129,13 @@ class TestDrsApi(ApiTestCase):
         drs_id = hda["drs_id"]
 
         for method in HTTP_METHODS:
-            api_url = f"{self.url}ga4gh/drs/v1/objects/{drs_id}/access/fakeid"
+            api_url = self._url_join(f"ga4gh/drs/v1/objects/{drs_id}/access/fakeid")
             error_response = method(api_url)
             assert type(error_response.status_code) == int
             assert error_response.status_code == 404
             error_as_dict = error_response.json()
             assert "status_code" in error_as_dict
             assert "msg" in error_as_dict
+
+    def _url_join(self, suffix):
+        return urljoin(self.url, suffix)

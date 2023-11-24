@@ -1,7 +1,8 @@
 <script setup>
 import { computed } from "vue";
-import { useCurrentUser } from "composables/user";
+import { storeToRefs } from "pinia";
 import ariaAlert from "utils/ariaAlert";
+import { useUserStore } from "@/stores/userStore";
 
 const props = defineProps({
     id: {
@@ -12,10 +13,10 @@ const props = defineProps({
 
 const emit = defineEmits(["onSetError", "onUpdateFavorites"]);
 
-const { currentUser: user, currentFavorites, addFavoriteTool, removeFavoriteTool } = useCurrentUser();
-
-const hasUser = computed(() => !user.value.isAnonymous);
-const isFavorite = computed(() => currentFavorites.value.tools.includes(props.id));
+const userStore = useUserStore();
+const { currentFavorites, isAnonymous } = storeToRefs(userStore);
+const hasUser = computed(() => !isAnonymous.value);
+const isFavorite = computed(() => currentFavorites.value.tools?.includes(props.id));
 const showAddFavorite = computed(() => hasUser.value && !isFavorite.value);
 const showRemoveFavorite = computed(() => hasUser.value && isFavorite.value);
 
@@ -39,7 +40,7 @@ function onToggleFavorite() {
 
 async function onAddFavorite() {
     try {
-        await addFavoriteTool(props.id);
+        await userStore.addFavoriteTool(props.id);
         emit("onSetError", null);
         ariaAlert("added to favorites");
     } catch {
@@ -50,7 +51,7 @@ async function onAddFavorite() {
 
 async function onRemoveFavorite() {
     try {
-        await removeFavoriteTool(props.id);
+        await userStore.removeFavoriteTool(props.id);
         emit("onSetError", null);
         ariaAlert("removed from favorites");
     } catch {

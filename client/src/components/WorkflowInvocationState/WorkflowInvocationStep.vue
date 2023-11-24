@@ -116,7 +116,7 @@ export default {
         };
     },
     computed: {
-        ...mapState(useWorkflowStore, ["getWorkflowByInstanceId"]),
+        ...mapState(useWorkflowStore, ["getStoredWorkflowByInstanceId"]),
         ...mapGetters(["getToolForId", "getToolNameById", "getInvocationStepById"]),
         isReady() {
             return this.invocation.steps.length > 0;
@@ -173,7 +173,7 @@ export default {
                 case "tool":
                     return `Step ${oneBasedStepIndex}: ${this.getToolNameById(workflowStep.tool_id)}`;
                 case "subworkflow": {
-                    const subworkflow = this.getWorkflowByInstanceId(workflowStep.workflow_id);
+                    const subworkflow = this.getStoredWorkflowByInstanceId(workflowStep.workflow_id);
                     const label = subworkflow ? subworkflow.name : "Subworkflow";
                     return `Step ${oneBasedStepIndex}: ${label}`;
                 }

@@ -11,7 +11,7 @@ class TestWorkflowSharingRedirect(SeleniumTestCase):
 
     @selenium_test
     def test_share_workflow_with_login_redirect(self):
-        user_email = self.get_logged_in_user()["email"]
+        user_email = self.get_user_email()
         workflow_id = self.workflow_populator.upload_yaml_workflow(WORKFLOW_SIMPLE_CAT_TWICE)
         self.logout()
         self.go_to_workflow_sharing(workflow_id)
@@ -24,7 +24,7 @@ class TestWorkflowSharingRedirect(SeleniumTestCase):
 
     @selenium_test
     def test_export_workflow_with_login_redirect(self):
-        user_email = self.get_logged_in_user()["email"]
+        user_email = self.get_user_email()
         workflow_id = self.workflow_populator.upload_yaml_workflow(WORKFLOW_SIMPLE_CAT_TWICE)
         self.logout()
         self.go_to_workflow_export(workflow_id)

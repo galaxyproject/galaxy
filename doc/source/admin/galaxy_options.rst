@@ -59,8 +59,7 @@
 
 :Description:
     Top level cache directory. Any other cache directories
-    (tool_cache_data_dir, template_cache_path, etc.) should be
-    subdirectories.
+    (template_cache_path, etc.) should be subdirectories.
     The value of this option will be resolved with respect to
     <data_dir>.
 :Default: ``cache``
@@ -773,7 +772,7 @@
     container resolvers to use when discovering containers for Galaxy.
     If this is set to None, the default container resolvers loaded is
     determined by enable_mulled_containers. For available options see
-    config/container_resolvers_conf.xml.sample.
+    https://docs.galaxyproject.org/en/master/admin/container_resolvers.html
 :Default: ``None``
 :Type: str
 
@@ -1151,25 +1150,10 @@
     expanded XML strings. Enabling the tool cache results in slightly
     faster startup times. The tool cache is backed by a SQLite
     database, which cannot be stored on certain network disks. The
-    cache location is configurable using the ``tool_cache_data_dir``
-    setting, but can be disabled completely here.
+    cache location is configurable with the ``tool_cache_data_dir``
+    tag in tool config files.
 :Default: ``false``
 :Type: bool
-
-
-~~~~~~~~~~~~~~~~~~~~~~~
-``tool_cache_data_dir``
-~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Tool related caching. Fully expanded tools and metadata will be
-    stored at this path. Per tool_conf cache locations can be
-    configured in (``shed_``)tool_conf.xml files using the
-    tool_cache_data_dir attribute.
-    The value of this option will be resolved with respect to
-    <cache_dir>.
-:Default: ``tool_cache``
-:Type: str
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1181,18 +1165,6 @@
     of this option will be resolved with respect to <data_dir>.
 :Default: ``tool_search_index``
 :Type: str
-
-
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``delay_tool_initialization``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Set this to true to delay parsing of tool inputs and outputs until
-    they are needed. This results in faster startup times but uses
-    more memory when using forked Galaxy processes.
-:Default: ``false``
-:Type: bool
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1255,6 +1227,43 @@
 :Type: str
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``biotools_service_cache_url``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    When biotools_service_cache_type = ext:database, this is the url
+    of the database used by beaker for bio.tools web service request
+    related caching. The application config code will set it to the
+    value of database_connection if this is not set.
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``biotools_service_cache_table_name``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    When biotools_service_cache_type = ext:database, this is the
+    database table name used by beaker for bio.tools web service
+    request related caching.
+:Default: ``beaker_cache``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``biotools_service_cache_schema_name``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    When biotools_service_cache_type = ext:database, this is the
+    database table name used by beaker for bio.tools web service
+    request related caching.
+:Default: ``None``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~
 ``citation_cache_type``
 ~~~~~~~~~~~~~~~~~~~~~~~
@@ -1295,6 +1304,42 @@
     The value of this option will be resolved with respect to
     <cache_dir>.
 :Default: ``citations/locks``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~
+``citation_cache_url``
+~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    When citation_cache_type = ext:database, this is the url of the
+    database used by beaker for citation caching. The application
+    config code will set it to the value of database_connection if
+    this is not set.
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``citation_cache_table_name``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    When citation_cache_type = ext:database, this is the database
+    table name used by beaker for citation related caching.
+:Default: ``beaker_cache``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``citation_cache_schema_name``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    When citation_cache_type = ext:database, this is the database
+    schema name of the table used by beaker for citation related
+    caching.
+:Default: ``None``
 :Type: str
 
 
@@ -1347,6 +1392,43 @@
 :Type: int
 
 
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``mulled_resolution_cache_url``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    When mulled_resolution_cache_type = ext:database, this is the url
+    of the database used by beaker for caching mulled resolution
+    requests. The application config code will set it to the value of
+    database_connection if this is not set.
+:Default: ``None``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``mulled_resolution_cache_table_name``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    When mulled_resolution_cache_type = ext:database, this is the
+    database table name used by beaker for caching mulled resolution
+    requests.
+:Default: ``beaker_cache``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``mulled_resolution_cache_schema_name``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    When mulled_resolution_cache_type = ext:database, this is the
+    database schema name of the table used by beaker for caching
+    mulled resolution requests.
+:Default: ``None``
+:Type: str
+
+
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
 ``object_store_config_file``
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1358,6 +1440,67 @@
     <config_dir>.
 :Default: ``object_store_conf.xml``
 :Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``object_store_cache_monitor_driver``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Specify where cache monitoring is driven for caching object stores
+    such as S3, Azure, and iRODS. This option has no affect on disk
+    object stores. For production instances, the cache should be
+    monitored by external tools such as tmpwatch and this value should
+    be set to 'external'. This will disable all cache monitoring in
+    Galaxy. Alternatively, 'celery' can monitor caches using a
+    periodic task or an 'inprocess' thread can be used - but this last
+    option seriously limits Galaxy's ability to scale. The default of
+    'auto' will use 'celery' if 'enable_celery_tasks' is set to true
+    or 'inprocess' otherwise. This option serves as the default for
+    all object stores and can be overridden on a per object store
+    basis (but don't - just setup tmpwatch for all relevant cache
+    paths).
+:Default: ``auto``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``object_store_cache_monitor_interval``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    For object store cache monitoring done by Galaxy, this is the
+    interval between cache checking steps. This is used by both
+    inprocess cache monitors (which we recommend you do not use) and
+    by the celery task if it is configured (by setting
+    enable_celery_tasks to true and not setting
+    object_store_cache_monitor_driver to external).
+:Default: ``600``
+:Type: int
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``object_store_cache_path``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Default cache path for caching object stores if cache not
+    configured for that object store entry.
+    The value of this option will be resolved with respect to
+    <cache_dir>.
+:Default: ``object_store_cache``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``object_store_cache_size``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Default cache size for caching object stores if cache not
+    configured for that object store entry.
+:Default: ``-1``
+:Type: int
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -1939,18 +2082,6 @@
     <config_dir>.
 :Default: ``trs_servers_conf.yml``
 :Type: str
-
-
-~~~~~~~~~~~~~~~~~~~~~~
-``use_legacy_history``
-~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    Server-wide default selection to use the legacy history during the
-    transition period, after which this option will disappear.  Users
-    will remain able to swap back and forth per their preference.
-:Default: ``false``
-:Type: bool
 
 
 ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
@@ -3998,17 +4129,6 @@
 :Type: str
 
 
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-``myexperiment_target_url``
-~~~~~~~~~~~~~~~~~~~~~~~~~~~
-
-:Description:
-    The URL to the myExperiment instance being used (omit scheme but
-    include port).
-:Default: ``www.myexperiment.org:80``
-:Type: str
-
-
 ~~~~~~~~~~~~~~~~~~~
 ``ftp_upload_site``
 ~~~~~~~~~~~~~~~~~~~
@@ -5113,6 +5233,83 @@
     integration.
 :Default: ``false``
 :Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``tool_training_recommendations``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Displays a link to training material, if any includes the current
+    tool. When activated the following options also need to be set:
+    tool_training_recommendations_link,
+    tool_training_recommendations_api_url
+:Default: ``true``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``tool_training_recommendations_link``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Template URL to display all tutorials containing current tool.
+    Valid template inputs are:   {repository_owner}   {name}
+    {tool_id}   {training_tool_identifier}   {version}
+:Default: ``https://training.galaxyproject.org/training-material/by-tool/{training_tool_identifier}.html``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``tool_training_recommendations_api_url``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    URL to API describing tutorials containing specific tools. When
+    CORS is used, make sure to add this host.
+:Default: ``https://training.galaxyproject.org/training-material/api/top-tools.json``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``citations_export_message_html``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Message to display on the export citations tool page
+:Default: ``When writing up your analysis, remember to include all references that should be cited in order to completely describe your work. Also, please remember to <a href="https://galaxyproject.org/citing-galaxy">cite Galaxy</a>.``
+:Type: str
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``enable_notification_system``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    Enables the Notification System integrated in Galaxy.
+    Users can receive automatic notifications when a certain resource
+    is shared with them or when some long running operations have
+    finished, etc.
+    The system allows notification scheduling and expiration, and
+    users can opt-out of specific notification categories or channels.
+    Admins can schedule and broadcast notifications that will be
+    visible to all users, including special server-wide announcements
+    such as scheduled maintenance, high load warnings, and event
+    announcements, to name a few examples.
+:Default: ``false``
+:Type: bool
+
+
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+``expired_notifications_cleanup_interval``
+~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~
+
+:Description:
+    The interval in seconds between attempts to delete all expired
+    notifications from the database (every 24 hours by default). Runs
+    in a Celery task.
+:Default: ``86400``
+:Type: int
 
 
 

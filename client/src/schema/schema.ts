@@ -112,6 +112,10 @@ export interface paths {
          */
         get: operations["show_api_datasets__dataset_id__get"];
     };
+    "/api/datasets/{dataset_id}/content/{content_type}": {
+        /** Retrieve information about the content of a dataset. */
+        get: operations["get_structured_content_api_datasets__dataset_id__content__content_type__get"];
+    };
     "/api/datasets/{dataset_id}/converted": {
         /**
          * Return a a map with all the existing converted datasets associated with this instance.
@@ -168,6 +172,8 @@ export interface paths {
     "/api/datasets/{history_content_id}/metadata_file": {
         /** Returns the metadata file associated with this history item. */
         get: operations["datasets__get_metadata_file"];
+        /** Check if metadata file can be downloaded. */
+        head: operations["get_metadata_file_datasets_api_datasets__history_content_id__metadata_file_head"];
     };
     "/api/datatypes": {
         /**
@@ -235,6 +241,20 @@ export interface paths {
          * response.
          */
         get: operations["types_and_mapping_api_datatypes_types_and_mapping_get"];
+    };
+    "/api/display_applications": {
+        /**
+         * Returns the list of display applications.
+         * @description Returns the list of display applications.
+         */
+        get: operations["display_applications_index_api_display_applications_get"];
+    };
+    "/api/display_applications/reload": {
+        /**
+         * Reloads the list of display applications.
+         * @description Reloads the list of display applications.
+         */
+        post: operations["display_applications_reload_api_display_applications_reload_post"];
     };
     "/api/drs_download/{object_id}": {
         /** Download */
@@ -390,6 +410,19 @@ export interface paths {
          */
         post: operations["create_api_histories_post"];
     };
+    "/api/histories/archived": {
+        /**
+         * Get a list of all archived histories for the current user.
+         * @description Get a list of all archived histories for the current user.
+         *
+         * Archived histories are histories are not part of the active histories of the user but they can be accessed using this endpoint.
+         */
+        get: operations["get_archived_histories_api_histories_archived_get"];
+    };
+    "/api/histories/count": {
+        /** Returns number of histories for the current user. */
+        get: operations["count_api_histories_count_get"];
+    };
     "/api/histories/deleted": {
         /** Returns deleted histories for the current user. */
         get: operations["index_deleted_api_histories_deleted_get"];
@@ -425,6 +458,39 @@ export interface paths {
         put: operations["update_api_histories__history_id__put"];
         /** Marks the history with the given ID as deleted. */
         delete: operations["delete_api_histories__history_id__delete"];
+    };
+    "/api/histories/{history_id}/archive": {
+        /**
+         * Archive a history.
+         * @description Marks the given history as 'archived' and returns the history.
+         *
+         * Archiving a history will remove it from the list of active histories of the user but it will still be
+         * accessible via the `/api/histories/{id}` or the `/api/histories/archived` endpoints.
+         *
+         * Associating an export record:
+         *
+         * - Optionally, an export record (containing information about a recent snapshot of the history) can be associated with the
+         * archived history by providing an `archive_export_id` in the payload. The export record must belong to the history and
+         * must be in the ready state.
+         * - When associating an export record, the history can be purged after it has been archived using the `purge_history` flag.
+         *
+         * If the history is already archived, this endpoint will return a 409 Conflict error, indicating that the history is already archived.
+         * If the history was not purged after it was archived, you can restore it using the `/api/histories/{id}/archive/restore` endpoint.
+         */
+        post: operations["archive_history_api_histories__history_id__archive_post"];
+    };
+    "/api/histories/{history_id}/archive/restore": {
+        /**
+         * Restore an archived history.
+         * @description Restores an archived history and returns it.
+         *
+         * Restoring an archived history will add it back to the list of active histories of the user (unless it was purged).
+         *
+         * **Warning**: Please note that histories that are associated with an archive export might be purged after export, so un-archiving them
+         * will not restore the datasets that were in the history before it was archived. You will need to import back the archive export
+         * record to restore the history and its datasets as a new copy. See `/api/histories/from_store_async` for more information.
+         */
+        put: operations["restore_archived_history_api_histories__history_id__archive_restore_put"];
     };
     "/api/histories/{history_id}/citations": {
         /** Return all the citations for the tools used to produce the datasets in the history. */
@@ -817,6 +883,13 @@ export interface paths {
          */
         get: operations["show_api_jobs__id__get"];
     };
+    "/api/jobs/{job_id}/oidc-tokens": {
+        /**
+         * Get a fresh OIDC token
+         * @description Allows remote job running mechanisms to get a fresh OIDC token that can be used on remote side to authorize user. It is not meant to represent part of Galaxy's stable, user facing API
+         */
+        get: operations["get_token_api_jobs__job_id__oidc_tokens_get"];
+    };
     "/api/libraries": {
         /**
          * Returns a list of summary data for all libraries.
@@ -892,6 +965,104 @@ export interface paths {
          * @description Record any metrics sent and return some status object.
          */
         post: operations["create_api_metrics_post"];
+    };
+    "/api/notifications": {
+        /**
+         * Returns the list of notifications associated with the user.
+         * @description Anonymous users cannot receive personal notifications, only broadcasted notifications.
+         *
+         * You can use the `limit` and `offset` parameters to paginate through the notifications.
+         */
+        get: operations["get_user_notifications_api_notifications_get"];
+        /** Updates a list of notifications with the requested values in a single request. */
+        put: operations["update_user_notifications_api_notifications_put"];
+        /**
+         * Sends a notification to a list of recipients (users, groups or roles).
+         * @description Sends a notification to a list of recipients (users, groups or roles).
+         */
+        post: operations["send_notification_api_notifications_post"];
+        /** Deletes a list of notifications received by the user in a single request. */
+        delete: operations["delete_user_notifications_api_notifications_delete"];
+    };
+    "/api/notifications/broadcast": {
+        /**
+         * Returns all currently active broadcasted notifications.
+         * @description Only Admin users can access inactive notifications (scheduled or recently expired).
+         */
+        get: operations["get_all_broadcasted_api_notifications_broadcast_get"];
+        /**
+         * Broadcasts a notification to every user in the system.
+         * @description Broadcasted notifications are a special kind of notification that are always accessible to all users, including anonymous users.
+         * They are typically used to display important information such as maintenance windows or new features.
+         * These notifications are displayed differently from regular notifications, usually in a banner at the top or bottom of the page.
+         *
+         * Broadcasted notifications can include action links that are displayed as buttons.
+         * This allows users to easily perform tasks such as filling out surveys, accepting legal agreements, or accessing new tutorials.
+         *
+         * Some key features of broadcasted notifications include:
+         * - They are not associated with a specific user, so they cannot be deleted or marked as read.
+         * - They can be scheduled to be displayed in the future or to expire after a certain time.
+         * - By default, broadcasted notifications are published immediately and expire six months after publication.
+         * - Only admins can create, edit, reschedule, or expire broadcasted notifications as needed.
+         */
+        post: operations["broadcast_notification_api_notifications_broadcast_post"];
+    };
+    "/api/notifications/broadcast/{notification_id}": {
+        /**
+         * Returns the information of a specific broadcasted notification.
+         * @description Only Admin users can access inactive notifications (scheduled or recently expired).
+         */
+        get: operations["get_broadcasted_api_notifications_broadcast__notification_id__get"];
+        /**
+         * Updates the state of a broadcasted notification.
+         * @description Only Admins can update broadcasted notifications. This is useful to reschedule, edit or expire broadcasted notifications.
+         */
+        put: operations["update_broadcasted_notification_api_notifications_broadcast__notification_id__put"];
+    };
+    "/api/notifications/preferences": {
+        /**
+         * Returns the current user's preferences for notifications.
+         * @description Anonymous users cannot have notification preferences. They will receive only broadcasted notifications.
+         */
+        get: operations["get_notification_preferences_api_notifications_preferences_get"];
+        /**
+         * Updates the user's preferences for notifications.
+         * @description Anonymous users cannot have notification preferences. They will receive only broadcasted notifications.
+         *
+         * - Can be used to completely enable/disable notifications for a particular type (category)
+         * or to enable/disable a particular channel on each category.
+         */
+        put: operations["update_notification_preferences_api_notifications_preferences_put"];
+    };
+    "/api/notifications/status": {
+        /**
+         * Returns the current status summary of the user's notifications since a particular date.
+         * @description Anonymous users cannot receive personal notifications, only broadcasted notifications.
+         */
+        get: operations["get_notifications_status_api_notifications_status_get"];
+    };
+    "/api/notifications/{notification_id}": {
+        /** Displays information about a notification received by the user. */
+        get: operations["show_notification_api_notifications__notification_id__get"];
+        /** Updates the state of a notification received by the user. */
+        put: operations["update_user_notification_api_notifications__notification_id__put"];
+        /**
+         * Deletes a notification received by the user.
+         * @description When a notification is deleted, it is not immediately removed from the database, but marked as deleted.
+         *
+         * - It will not be returned in the list of notifications, but admins can still access it as long as it is not expired.
+         * - It will be eventually removed from the database by a background task after the expiration time.
+         * - Deleted notifications will be permanently deleted when the expiration time is reached.
+         */
+        delete: operations["delete_user_notification_api_notifications__notification_id__delete"];
+    };
+    "/api/object_stores": {
+        /** Get a list of (currently only concrete) object stores configured with this Galaxy instance. */
+        get: operations["index_api_object_stores_get"];
+    };
+    "/api/object_stores/{object_store_id}": {
+        /** Get information about a concrete object store configured with Galaxy. */
+        get: operations["show_info_api_object_stores__object_store_id__get"];
     };
     "/api/pages": {
         /**
@@ -1066,6 +1237,44 @@ export interface paths {
         /** Determine if specified storage request ID is ready for download. */
         get: operations["is_ready_api_short_term_storage__storage_request_id__ready_get"];
     };
+    "/api/storage/datasets": {
+        /**
+         * Purges a set of datasets by ID from disk. The datasets must be owned by the user.
+         * @description **Warning**: This operation cannot be undone. All objects will be deleted permanently from the disk.
+         */
+        delete: operations["cleanup_datasets_api_storage_datasets_delete"];
+    };
+    "/api/storage/datasets/discarded": {
+        /** Returns discarded datasets owned by the given user. The results can be paginated. */
+        get: operations["discarded_datasets_api_storage_datasets_discarded_get"];
+    };
+    "/api/storage/datasets/discarded/summary": {
+        /** Returns information with the total storage space taken by discarded datasets owned by the given user. */
+        get: operations["discarded_datasets_summary_api_storage_datasets_discarded_summary_get"];
+    };
+    "/api/storage/histories": {
+        /**
+         * Purges a set of histories by ID. The histories must be owned by the user.
+         * @description **Warning**: This operation cannot be undone. All objects will be deleted permanently from the disk.
+         */
+        delete: operations["cleanup_histories_api_storage_histories_delete"];
+    };
+    "/api/storage/histories/archived": {
+        /** Returns archived histories owned by the given user that are not purged. The results can be paginated. */
+        get: operations["archived_histories_api_storage_histories_archived_get"];
+    };
+    "/api/storage/histories/archived/summary": {
+        /** Returns information with the total storage space taken by non-purged archived histories associated with the given user. */
+        get: operations["archived_histories_summary_api_storage_histories_archived_summary_get"];
+    };
+    "/api/storage/histories/discarded": {
+        /** Returns all discarded histories associated with the given user. */
+        get: operations["discarded_histories_api_storage_histories_discarded_get"];
+    };
+    "/api/storage/histories/discarded/summary": {
+        /** Returns information with the total storage space taken by discarded histories associated with the given user. */
+        get: operations["discarded_histories_summary_api_storage_histories_discarded_summary_get"];
+    };
     "/api/tags": {
         /**
          * Apply a new set of tags to an item.
@@ -1157,8 +1366,23 @@ export interface paths {
          */
         post: operations["update_tour_api_tours__tour_id__post"];
     };
+    "/api/users/current/recalculate_disk_usage": {
+        /**
+         * Triggers a recalculation of the current user disk usage.
+         * @description This route will be removed in a future version.
+         *
+         * Please use `/api/users/current/recalculate_disk_usage` instead.
+         */
+        put: operations["recalculate_disk_usage_api_users_current_recalculate_disk_usage_put"];
+    };
     "/api/users/recalculate_disk_usage": {
-        /** Triggers a recalculation of the current user disk usage. */
+        /**
+         * Triggers a recalculation of the current user disk usage.
+         * @deprecated
+         * @description This route will be removed in a future version.
+         *
+         * Please use `/api/users/current/recalculate_disk_usage` instead.
+         */
         put: operations["recalculate_disk_usage_api_users_recalculate_disk_usage_put"];
     };
     "/api/users/{user_id}/api_key": {
@@ -1184,6 +1408,14 @@ export interface paths {
          * @description **Warning**: This endpoint is experimental and might change or disappear in future versions.
          */
         post: operations["set_beacon_api_users__user_id__beacon_post"];
+    };
+    "/api/users/{user_id}/usage": {
+        /** Return the user's quota usage summary broken down by quota source */
+        get: operations["get_user_usage_api_users__user_id__usage_get"];
+    };
+    "/api/users/{user_id}/usage/{label}": {
+        /** Return the user's quota usage summary for a given quota source label */
+        get: operations["get_user_usage_for_label_api_users__user_id__usage__label__get"];
     };
     "/api/version": {
         /**
@@ -1397,6 +1629,257 @@ export interface components {
             url: string;
         };
         /**
+         * ActionLink
+         * @description An action link to be displayed in the notification as a button.
+         */
+        ActionLink: {
+            /**
+             * Action name
+             * @description The name of the action, will be the button title.
+             */
+            action_name: string;
+            /**
+             * Link
+             * Format: uri
+             * @description The link to be opened when the button is clicked.
+             */
+            link: string;
+        };
+        /**
+         * ArchiveHistoryRequestPayload
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        ArchiveHistoryRequestPayload: {
+            /**
+             * Export Record ID
+             * @description The encoded ID of the export record to associate with this history archival.This is used to be able to recover the history from the export record.
+             * @example 0123456789ABCDEF
+             */
+            archive_export_id?: string;
+            /**
+             * Purge History
+             * @description Whether to purge the history after archiving it. It requires an `archive_export_id` to be set.
+             * @default false
+             */
+            purge_history?: boolean;
+        };
+        /**
+         * ArchivedHistoryDetailed
+         * @description History detailed information.
+         */
+        ArchivedHistoryDetailed: {
+            /**
+             * Annotation
+             * @description An annotation to provide details or to help understand the purpose and usage of this item.
+             */
+            annotation: string;
+            /**
+             * Archived
+             * @description Whether this item has been archived and is no longer active.
+             */
+            archived: boolean;
+            /**
+             * Contents URL
+             * @description The relative URL to access the contents of this History.
+             */
+            contents_url: string;
+            /**
+             * Count
+             * @description The number of items in the history.
+             */
+            count: number;
+            /**
+             * Create Time
+             * Format: date-time
+             * @description The time and date this item was created.
+             */
+            create_time: string;
+            /**
+             * Deleted
+             * @description Whether this item is marked as deleted.
+             */
+            deleted: boolean;
+            /**
+             * Export Record Data
+             * @description The export record data associated with this archived history. Used to recover the history.
+             */
+            export_record_data?: components["schemas"]["ExportRecordData"];
+            /**
+             * Genome Build
+             * @description TODO
+             * @default ?
+             */
+            genome_build?: string;
+            /**
+             * ID
+             * @description The encoded ID of this entity.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Importable
+             * @description Whether this History can be imported by other users with a shared link.
+             */
+            importable: boolean;
+            /**
+             * Model class
+             * @description The name of the database model class.
+             * @default History
+             * @enum {string}
+             */
+            model_class: "History";
+            /**
+             * Name
+             * @description The name of the history.
+             */
+            name: string;
+            /**
+             * Preferred Object Store ID
+             * @description The ID of the object store that should be used to store new datasets in this history.
+             */
+            preferred_object_store_id?: string;
+            /**
+             * Published
+             * @description Whether this resource is currently publicly available to all users.
+             */
+            published: boolean;
+            /**
+             * Purged
+             * @description Whether this item has been permanently removed.
+             */
+            purged: boolean;
+            /**
+             * Size
+             * @description The total size of the contents of this history in bytes.
+             */
+            size: number;
+            /**
+             * Slug
+             * @description Part of the URL to uniquely identify this History by link in a readable way.
+             */
+            slug?: string;
+            /**
+             * State
+             * @description The current state of the History based on the states of the datasets it contains.
+             */
+            state: components["schemas"]["DatasetState"];
+            /**
+             * State Counts
+             * @description A dictionary keyed to possible dataset states and valued with the number of datasets in this history that have those states.
+             */
+            state_details: {
+                [key: string]: number | undefined;
+            };
+            /**
+             * State IDs
+             * @description A dictionary keyed to possible dataset states and valued with lists containing the ids of each HDA in that state.
+             */
+            state_ids: {
+                [key: string]: string[] | undefined;
+            };
+            tags: components["schemas"]["TagCollection"];
+            /**
+             * Update Time
+             * Format: date-time
+             * @description The last time and date this item was updated.
+             */
+            update_time: string;
+            /**
+             * URL
+             * @deprecated
+             * @description The relative URL to access this item.
+             */
+            url: string;
+            /**
+             * User ID
+             * @description The encoded ID of the user that owns this History.
+             * @example 0123456789ABCDEF
+             */
+            user_id: string;
+            /**
+             * Username and slug
+             * @description The relative URL in the form of /u/{username}/h/{slug}
+             */
+            username_and_slug?: string;
+        };
+        /**
+         * ArchivedHistorySummary
+         * @description History summary information.
+         */
+        ArchivedHistorySummary: {
+            /**
+             * Annotation
+             * @description An annotation to provide details or to help understand the purpose and usage of this item.
+             */
+            annotation: string;
+            /**
+             * Archived
+             * @description Whether this item has been archived and is no longer active.
+             */
+            archived: boolean;
+            /**
+             * Count
+             * @description The number of items in the history.
+             */
+            count: number;
+            /**
+             * Deleted
+             * @description Whether this item is marked as deleted.
+             */
+            deleted: boolean;
+            /**
+             * Export Record Data
+             * @description The export record data associated with this archived history. Used to recover the history.
+             */
+            export_record_data?: components["schemas"]["ExportRecordData"];
+            /**
+             * ID
+             * @description The encoded ID of this entity.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Model class
+             * @description The name of the database model class.
+             * @default History
+             * @enum {string}
+             */
+            model_class: "History";
+            /**
+             * Name
+             * @description The name of the history.
+             */
+            name: string;
+            /**
+             * Preferred Object Store ID
+             * @description The ID of the object store that should be used to store new datasets in this history.
+             */
+            preferred_object_store_id?: string;
+            /**
+             * Published
+             * @description Whether this resource is currently publicly available to all users.
+             */
+            published: boolean;
+            /**
+             * Purged
+             * @description Whether this item has been permanently removed.
+             */
+            purged: boolean;
+            tags: components["schemas"]["TagCollection"];
+            /**
+             * Update Time
+             * Format: date-time
+             * @description The last time and date this item was updated.
+             */
+            update_time: string;
+            /**
+             * URL
+             * @deprecated
+             * @description The relative URL to access this item.
+             */
+            url: string;
+        };
+        /**
          * AsyncFile
          * @description Base model definition with common configuration used by all derived models.
          */
@@ -1427,6 +1910,30 @@ export interface components {
             name?: string;
             /** Queue of task being done derived from Celery AsyncResult */
             queue?: string;
+        };
+        /** BadgeDict */
+        BadgeDict: {
+            /** Message */
+            message: string;
+            /**
+             * Source
+             * @enum {string}
+             */
+            source: "admin" | "galaxy";
+            /** Type */
+            type:
+                | (
+                      | "faster"
+                      | "slower"
+                      | "short_term"
+                      | "backed_up"
+                      | "not_backed_up"
+                      | "more_secure"
+                      | "less_secure"
+                      | "more_stable"
+                      | "less_stable"
+                  )
+                | ("cloud" | "quota" | "no_quota" | "restricted");
         };
         /**
          * BasicRoleModel
@@ -1481,13 +1988,137 @@ export interface components {
             targets: Record<string, never>;
         };
         /**
+         * BroadcastNotificationContent
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        BroadcastNotificationContent: {
+            /**
+             * Action links
+             * @description The optional action links (buttons) to be displayed in the notification.
+             */
+            action_links?: components["schemas"]["ActionLink"][];
+            /**
+             * Category
+             * @default broadcast
+             * @enum {string}
+             */
+            category?: "broadcast";
+            /**
+             * Message
+             * @description The message of the notification (supports Markdown).
+             */
+            message: string;
+            /**
+             * Subject
+             * @description The subject of the notification.
+             */
+            subject: string;
+        };
+        /**
+         * BroadcastNotificationCreateRequest
+         * @description A notification create request specific for broadcasting.
+         */
+        BroadcastNotificationCreateRequest: {
+            /**
+             * Category
+             * @default broadcast
+             * @enum {string}
+             */
+            category?: "broadcast";
+            /**
+             * Content
+             * @description The content of the broadcast notification. Broadcast notifications are displayed prominently to all users and can contain action links to redirect the user to a specific page.
+             */
+            content: components["schemas"]["BroadcastNotificationContent"];
+            /**
+             * Expiration time
+             * Format: date-time
+             * @description The time when the notification should expire. By default it will expire after 6 months. Expired notifications will be permanently deleted.
+             */
+            expiration_time?: string;
+            /**
+             * Publication time
+             * Format: date-time
+             * @description The time when the notification should be published. Notifications can be created and then scheduled to be published at a later time.
+             */
+            publication_time?: string;
+            /**
+             * Source
+             * @description The source of the notification. Represents the agent that created the notification. E.g. 'galaxy' or 'admin'.
+             */
+            source: string;
+            /**
+             * Variant
+             * @description The variant of the notification. Represents the intent or relevance of the notification. E.g. 'info' or 'urgent'.
+             */
+            variant: components["schemas"]["NotificationVariant"];
+        };
+        /**
+         * BroadcastNotificationListResponse
+         * @description A list of broadcast notifications.
+         */
+        BroadcastNotificationListResponse: components["schemas"]["BroadcastNotificationResponse"][];
+        /**
+         * BroadcastNotificationResponse
+         * @description A notification response specific for broadcasting.
+         */
+        BroadcastNotificationResponse: {
+            /**
+             * Category
+             * @default broadcast
+             * @enum {string}
+             */
+            category?: "broadcast";
+            content: components["schemas"]["BroadcastNotificationContent"];
+            /**
+             * Create time
+             * Format: date-time
+             * @description The time when the notification was created.
+             */
+            create_time: string;
+            /**
+             * Expiration time
+             * Format: date-time
+             * @description The time when the notification will expire. If not set, the notification will never expire. Expired notifications will be permanently deleted.
+             */
+            expiration_time?: string;
+            /**
+             * ID
+             * @description The encoded ID of the notification.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Publication time
+             * Format: date-time
+             * @description The time when the notification was published. Notifications can be created and then published at a later time.
+             */
+            publication_time: string;
+            /**
+             * Source
+             * @description The source of the notification. Represents the agent that created the notification. E.g. 'galaxy' or 'admin'.
+             */
+            source: string;
+            /**
+             * Update time
+             * Format: date-time
+             * @description The time when the notification was last updated.
+             */
+            update_time: string;
+            /**
+             * Variant
+             * @description The variant of the notification. Represents the intent or relevance of the notification. E.g. 'info' or 'urgent'.
+             */
+            variant: components["schemas"]["NotificationVariant"];
+        };
+        /**
          * BulkOperationItemError
          * @description Base model definition with common configuration used by all derived models.
          */
         BulkOperationItemError: {
             /** Error */
             error: string;
-            item: components["schemas"]["HistoryContentItem"];
+            item: components["schemas"]["EncodedHistoryContentItem"];
         };
         /**
          * ChangeDatatypeOperationParams
@@ -1547,6 +2178,30 @@ export interface components {
              * @example sha-256
              */
             type: string;
+        };
+        /**
+         * CleanableItemsSummary
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        CleanableItemsSummary: {
+            /**
+             * Total Items
+             * @description The total number of items that could be purged.
+             */
+            total_items: number;
+            /**
+             * Total Size
+             * @description The total size in bytes that can be recovered by purging all the items.
+             */
+            total_size: number;
+        };
+        /**
+         * CleanupStorageItemsRequest
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        CleanupStorageItemsRequest: {
+            /** Item Ids */
+            item_ids: string[];
         };
         /**
          * CollectionElementIdentifier
@@ -1710,6 +2365,20 @@ export interface components {
              */
             hash_function?: components["schemas"]["HashFunctionNameEnum"];
         };
+        /** ConcreteObjectStoreModel */
+        ConcreteObjectStoreModel: {
+            /** Badges */
+            badges: components["schemas"]["BadgeDict"][];
+            /** Description */
+            description?: string;
+            /** Name */
+            name?: string;
+            /** Object Store Id */
+            object_store_id?: string;
+            /** Private */
+            private: boolean;
+            quota: components["schemas"]["QuotaModel"];
+        };
         /** ContentsObject */
         ContentsObject: {
             /**
@@ -1776,8 +2445,8 @@ export interface components {
             content?: string | string;
             /**
              * Copy Elements
-             * @description If the source is a collection, whether to copy child HDAs into the target history as well, defaults to False but this is less than ideal and may be changed in future releases.
-             * @default false
+             * @description If the source is a collection, whether to copy child HDAs into the target history as well. Prior to the galaxy release 23.1 this defaulted to false.
+             * @default true
              */
             copy_elements?: boolean;
             /**
@@ -1947,7 +2616,7 @@ export interface components {
             /**
              * Copy Elements
              * @description Whether to create a copy of the source HDAs for the new collection.
-             * @default false
+             * @default true
              */
             copy_elements?: boolean;
             /**
@@ -2021,7 +2690,7 @@ export interface components {
             slug: string;
             /**
              * Title
-             * @description The name of the page
+             * @description The name of the page.
              */
             title: string;
         };
@@ -2069,6 +2738,11 @@ export interface components {
              * @default =
              */
             operation?: components["schemas"]["QuotaOperation"];
+            /**
+             * Quota Source Label
+             * @description If set, quota source label to apply this quota operation to. Otherwise, the default quota is used.
+             */
+            quota_source_label?: string;
         };
         /**
          * CreateQuotaResult
@@ -2098,6 +2772,11 @@ export interface components {
              * @description The name of the quota. This must be unique within a Galaxy instance.
              */
             name: string;
+            /**
+             * Quota Source Label
+             * @description Quota source label
+             */
+            quota_source_label?: string;
             /**
              * URL
              * @deprecated
@@ -2188,7 +2867,7 @@ export interface components {
              * Collection Type
              * @description The type of the collection, can be `list`, `paired`, or define subcollections using `:` as separator like `list:paired` or `list:list`.
              */
-            collection_type?: string;
+            collection_type: string;
             /**
              * Contents URL
              * @description The relative URL to access the contents of this History.
@@ -2340,6 +3019,18 @@ export interface components {
          */
         DatasetCollectionContentElements: components["schemas"]["DCESummary"][];
         /**
+         * DatasetCollectionPopulatedState
+         * @description An enumeration.
+         * @enum {string}
+         */
+        DatasetCollectionPopulatedState: "new" | "ok" | "failed";
+        /**
+         * DatasetContentType
+         * @description For retrieving content from a structured dataset (e.g. HDF5)
+         * @enum {string}
+         */
+        DatasetContentType: "meta" | "attr" | "stats" | "data";
+        /**
          * DatasetErrorMessage
          * @description Base model definition with common configuration used by all derived models.
          */
@@ -2348,7 +3039,7 @@ export interface components {
              * Dataset
              * @description The encoded ID of the dataset and its source.
              */
-            dataset: components["schemas"]["DatasetSourceId"];
+            dataset: components["schemas"]["EncodedDatasetSourceId"];
             /**
              * Error Message
              * @description The error message returned while processing this dataset.
@@ -2419,10 +3110,33 @@ export interface components {
          */
         DatasetSourceType: "hda" | "ldda";
         /**
+         * DatasetState
+         * @description An enumeration.
+         * @enum {string}
+         */
+        DatasetState:
+            | "new"
+            | "upload"
+            | "queued"
+            | "running"
+            | "ok"
+            | "empty"
+            | "error"
+            | "paused"
+            | "setting_metadata"
+            | "failed_metadata"
+            | "deferred"
+            | "discarded";
+        /**
          * DatasetStorageDetails
          * @description Base model definition with common configuration used by all derived models.
          */
         DatasetStorageDetails: {
+            /**
+             * Badges
+             * @description A mapping of object store labels to badges describing object store properties.
+             */
+            badges: Record<string, never>[];
             /**
              * Dataset State
              * @description The model state of the supplied dataset instance.
@@ -2454,6 +3168,16 @@ export interface components {
              */
             percent_used?: number;
             /**
+             * Quota
+             * @description Information about quota sources around dataset storage.
+             */
+            quota: Record<string, never>;
+            /**
+             * Shareable
+             * @description Is this dataset shareable.
+             */
+            shareable: boolean;
+            /**
              * Sources
              * @description The file sources associated with the supplied dataset instance.
              */
@@ -2480,6 +3204,12 @@ export interface components {
              */
             truncated: boolean;
         };
+        /**
+         * DatasetValidatedState
+         * @description An enumeration.
+         * @enum {string}
+         */
+        DatasetValidatedState: "unknown" | "invalid" | "ok";
         /** DatatypeConverter */
         DatatypeConverter: {
             /**
@@ -2761,12 +3491,59 @@ export interface components {
              */
             links: components["schemas"]["Hyperlink"][];
         };
+        /** DisplayApplication */
+        DisplayApplication: {
+            /** Filename */
+            filename_: string;
+            /** Id */
+            id: string;
+            /** Links */
+            links: components["schemas"]["Link"][];
+            /** Name */
+            name: string;
+            /** Version */
+            version: string;
+        };
         /**
          * ElementsFromType
          * @description An enumeration.
          * @enum {string}
          */
         ElementsFromType: "archive" | "bagit" | "bagit_archive" | "directory";
+        /**
+         * EncodedDatasetSourceId
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        EncodedDatasetSourceId: {
+            /**
+             * ID
+             * @description The encoded ID of this entity.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Source
+             * @description The source of this dataset, either `hda` or `ldda` depending of its origin.
+             */
+            src: components["schemas"]["DatasetSourceType"];
+        };
+        /**
+         * EncodedHistoryContentItem
+         * @description Identifies a dataset or collection contained in a History.
+         */
+        EncodedHistoryContentItem: {
+            /**
+             * Content Type
+             * @description The type of this item.
+             */
+            history_content_type: components["schemas"]["HistoryContentType"];
+            /**
+             * ID
+             * @description The encoded ID of this entity.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+        };
         /**
          * ExportHistoryArchivePayload
          * @description Base model definition with common configuration used by all derived models.
@@ -2846,6 +3623,40 @@ export interface components {
          * @enum {string}
          */
         ExportObjectType: "history" | "invocation";
+        /**
+         * ExportRecordData
+         * @description Data of an export record associated with a history that was archived.
+         */
+        ExportRecordData: {
+            /**
+             * Include deleted
+             * @description Include file contents for deleted datasets (if include_files is True).
+             * @default false
+             */
+            include_deleted?: boolean;
+            /**
+             * Include Files
+             * @description include materialized files in export when available
+             * @default true
+             */
+            include_files?: boolean;
+            /**
+             * Include hidden
+             * @description Include file contents for hidden datasets (if include_files is True).
+             * @default false
+             */
+            include_hidden?: boolean;
+            /**
+             * @description format of model store to export
+             * @default tar.gz
+             */
+            model_store_format?: components["schemas"]["ModelStoreFormat"];
+            /**
+             * Target URI
+             * @description Galaxy Files URI to write mode store content to.
+             */
+            target_uri: string;
+        };
         /**
          * ExportTaskListResponse
          * @description Base model definition with common configuration used by all derived models.
@@ -2990,9 +3801,8 @@ export interface components {
              * State
              * @description The current state of this dataset.
              */
-            state: components["schemas"]["galaxy__model__Dataset__states"];
-            /** Tags */
-            tags: string;
+            state: components["schemas"]["DatasetState"];
+            tags: components["schemas"]["TagCollection"];
             /**
              * Type
              * @enum {string}
@@ -3049,7 +3859,7 @@ export interface components {
              * @description The URI root used by this type of plugin.
              * @example gximport://
              */
-            uri_root: string;
+            uri_root?: string;
             /**
              * Writeable
              * @description Whether this files source plugin allows write access.
@@ -3063,6 +3873,7 @@ export interface components {
          * @default []
          * @example [
          *   {
+         *     "browsable": true,
          *     "doc": "Galaxy's library import directory",
          *     "id": "_import",
          *     "label": "Library Import Directory",
@@ -3243,15 +4054,15 @@ export interface components {
             model_class: "GroupQuotaAssociation";
         };
         /**
-         * GroupRoleListModel
+         * GroupRoleListResponse
          * @description Base model definition with common configuration used by all derived models.
          */
-        GroupRoleListModel: components["schemas"]["GroupRoleModel"][];
+        GroupRoleListResponse: components["schemas"]["GroupRoleResponse"][];
         /**
-         * GroupRoleModel
+         * GroupRoleResponse
          * @description Base model definition with common configuration used by all derived models.
          */
-        GroupRoleModel: {
+        GroupRoleResponse: {
             /**
              * ID
              * @description Encoded ID of the role
@@ -3271,15 +4082,15 @@ export interface components {
             url: string;
         };
         /**
-         * GroupUserListModel
+         * GroupUserListResponse
          * @description Base model definition with common configuration used by all derived models.
          */
-        GroupUserListModel: components["schemas"]["GroupUserModel"][];
+        GroupUserListResponse: components["schemas"]["GroupUserResponse"][];
         /**
-         * GroupUserModel
+         * GroupUserResponse
          * @description Base model definition with common configuration used by all derived models.
          */
-        GroupUserModel: {
+        GroupUserResponse: {
             /**
              * Email
              * @description Email of the user
@@ -3495,7 +4306,7 @@ export interface components {
              * State
              * @description The current state of this dataset.
              */
-            state: components["schemas"]["galaxy__model__Dataset__states"];
+            state: components["schemas"]["DatasetState"];
             tags: components["schemas"]["TagCollection"];
             /**
              * Type
@@ -3532,7 +4343,7 @@ export interface components {
              * Validated State
              * @description The state of the datatype validation for this dataset.
              */
-            validated_state: components["schemas"]["validated_states"];
+            validated_state: components["schemas"]["DatasetValidatedState"];
             /**
              * Validated State Message
              * @description The message with details about the datatype validation result for this dataset.
@@ -3583,7 +4394,7 @@ export interface components {
              * State
              * @description The current state of this dataset.
              */
-            state: components["schemas"]["galaxy__model__Dataset__states"];
+            state: components["schemas"]["DatasetState"];
             /** Tags */
             tags: string[];
         };
@@ -3651,7 +4462,7 @@ export interface components {
              * State
              * @description The current state of this dataset.
              */
-            state: components["schemas"]["galaxy__model__Dataset__states"];
+            state: components["schemas"]["DatasetState"];
             tags: components["schemas"]["TagCollection"];
             /**
              * Type
@@ -3697,7 +4508,7 @@ export interface components {
              * Collection Type
              * @description The type of the collection, can be `list`, `paired`, or define subcollections using `:` as separator like `list:paired` or `list:list`.
              */
-            collection_type?: string;
+            collection_type: string;
             /**
              * Contents URL
              * @description The relative URL to access the contents of this History.
@@ -3789,7 +4600,7 @@ export interface components {
              * Populated State
              * @description Indicates the general state of the elements in the dataset collection:- 'new': new dataset collection, unpopulated elements.- 'ok': collection elements populated (HDAs may or may not have errors).- 'failed': some problem populating, won't be populated.
              */
-            populated_state: components["schemas"]["populated_states"];
+            populated_state: components["schemas"]["DatasetCollectionPopulatedState"];
             /**
              * Populated State Message
              * @description Optional message with further information in case the population of the dataset collection failed.
@@ -3842,7 +4653,7 @@ export interface components {
              * Collection Type
              * @description The type of the collection, can be `list`, `paired`, or define subcollections using `:` as separator like `list:paired` or `list:list`.
              */
-            collection_type?: string;
+            collection_type: string;
             /**
              * Contents URL
              * @description The relative URL to access the contents of this History.
@@ -3918,7 +4729,7 @@ export interface components {
              * Populated State
              * @description Indicates the general state of the elements in the dataset collection:- 'new': new dataset collection, unpopulated elements.- 'ok': collection elements populated (HDAs may or may not have errors).- 'failed': some problem populating, won't be populated.
              */
-            populated_state: components["schemas"]["populated_states"];
+            populated_state: components["schemas"]["DatasetCollectionPopulatedState"];
             /**
              * Populated State Message
              * @description Optional message with further information in case the population of the dataset collection failed.
@@ -4264,6 +5075,11 @@ export interface components {
              */
             annotation: string;
             /**
+             * Archived
+             * @description Whether this item has been archived and is no longer active.
+             */
+            archived: boolean;
+            /**
              * Contents URL
              * @description The relative URL to access the contents of this History.
              */
@@ -4314,6 +5130,11 @@ export interface components {
              */
             name: string;
             /**
+             * Preferred Object Store ID
+             * @description The ID of the object store that should be used to store new datasets in this history.
+             */
+            preferred_object_store_id?: string;
+            /**
              * Published
              * @description Whether this resource is currently publicly available to all users.
              */
@@ -4337,7 +5158,7 @@ export interface components {
              * State
              * @description The current state of the History based on the states of the datasets it contains.
              */
-            state: components["schemas"]["galaxy__model__Dataset__states"];
+            state: components["schemas"]["DatasetState"];
             /**
              * State Counts
              * @description A dictionary keyed to possible dataset states and valued with the number of datasets in this history that have those states.
@@ -4388,6 +5209,11 @@ export interface components {
              */
             annotation: string;
             /**
+             * Archived
+             * @description Whether this item has been archived and is no longer active.
+             */
+            archived: boolean;
+            /**
              * Count
              * @description The number of items in the history.
              */
@@ -4416,6 +5242,11 @@ export interface components {
              */
             name: string;
             /**
+             * Preferred Object Store ID
+             * @description The ID of the object store that should be used to store new datasets in this history.
+             */
+            preferred_object_store_id?: string;
+            /**
              * Published
              * @description Whether this resource is currently publicly available to all users.
              */
@@ -4426,6 +5257,12 @@ export interface components {
              */
             purged: boolean;
             tags: components["schemas"]["TagCollection"];
+            /**
+             * Update Time
+             * Format: date-time
+             * @description The last time and date this item was updated.
+             */
+            update_time: string;
             /**
              * URL
              * @deprecated
@@ -4478,7 +5315,7 @@ export interface components {
              * Populated State
              * @description Indicates the general state of the elements in the dataset collection:- 'new': new dataset collection, unpopulated elements.- 'ok': collection elements populated (HDAs may or may not have errors).- 'failed': some problem populating, won't be populated.
              */
-            populated_state: components["schemas"]["populated_states"];
+            populated_state: components["schemas"]["DatasetCollectionPopulatedState"];
             /**
              * States
              * @description A dictionary of job states and the number of jobs in that state.
@@ -4759,7 +5596,7 @@ export interface components {
              * State
              * @description Current state of the job.
              */
-            state: components["schemas"]["galaxy__model__Job__states"];
+            state: components["schemas"]["JobState"];
             /**
              * Tool ID
              * @description Identifier of the tool that generated this job.
@@ -4799,6 +5636,27 @@ export interface components {
          */
         JobSourceType: "Job" | "ImplicitCollectionJobs" | "WorkflowInvocation";
         /**
+         * JobState
+         * @description An enumeration.
+         * @enum {string}
+         */
+        JobState:
+            | "new"
+            | "resubmitted"
+            | "upload"
+            | "waiting"
+            | "queued"
+            | "running"
+            | "ok"
+            | "error"
+            | "failed"
+            | "paused"
+            | "deleting"
+            | "deleted"
+            | "stop"
+            | "stopped"
+            | "skipped";
+        /**
          * JobStateSummary
          * @description Base model definition with common configuration used by all derived models.
          */
@@ -4820,7 +5678,7 @@ export interface components {
              * Populated State
              * @description Indicates the general state of the elements in the dataset collection:- 'new': new dataset collection, unpopulated elements.- 'ok': collection elements populated (HDAs may or may not have errors).- 'failed': some problem populating, won't be populated.
              */
-            populated_state: components["schemas"]["populated_states"];
+            populated_state: components["schemas"]["DatasetCollectionPopulatedState"];
             /**
              * States
              * @description A dictionary of job states and the number of jobs in that state.
@@ -4883,7 +5741,7 @@ export interface components {
         LibraryAvailablePermissions: {
             /**
              * Page
-             * @description Current page .
+             * @description Current page.
              */
             page: number;
             /**
@@ -5382,6 +6240,19 @@ export interface components {
              */
             url: string;
         };
+        /** Link */
+        Link: {
+            /** Name */
+            name: string;
+        };
+        /**
+         * MandatoryNotificationCategory
+         * @description These notification categories cannot be opt-out by the user.
+         *
+         * The user will always receive notifications from these categories.
+         * @enum {string}
+         */
+        MandatoryNotificationCategory: "broadcast";
         /**
          * MaterializeDatasetInstanceAPIRequest
          * @description Base model definition with common configuration used by all derived models.
@@ -5395,12 +6266,34 @@ export interface components {
              *
              * @example 0123456789ABCDEF
              */
-            content?: string;
+            content: string;
             /**
              * Source
              * @description The source of the content. Can be other history element to be copied or library elements.
              */
-            source?: components["schemas"]["DatasetSourceType"];
+            source: components["schemas"]["DatasetSourceType"];
+        };
+        /**
+         * MessageNotificationContent
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        MessageNotificationContent: {
+            /**
+             * Category
+             * @default message
+             * @enum {string}
+             */
+            category?: "message";
+            /**
+             * Message
+             * @description The message of the notification (supports Markdown).
+             */
+            message: string;
+            /**
+             * Subject
+             * @description The subject of the notification.
+             */
+            subject: string;
         };
         /**
          * MetadataFile
@@ -5603,6 +6496,313 @@ export interface components {
             to_posix_lines?: boolean;
         };
         /**
+         * NewSharedItemNotificationContent
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        NewSharedItemNotificationContent: {
+            /**
+             * Category
+             * @default new_shared_item
+             * @enum {string}
+             */
+            category?: "new_shared_item";
+            /**
+             * Item name
+             * @description The name of the shared item.
+             */
+            item_name: string;
+            /**
+             * Item type
+             * @description The type of the shared item.
+             * @enum {string}
+             */
+            item_type: "history" | "workflow" | "visualization" | "page";
+            /**
+             * Owner name
+             * @description The name of the owner of the shared item.
+             */
+            owner_name: string;
+            /**
+             * Slug
+             * @description The slug of the shared item. Used for the link to the item.
+             */
+            slug: string;
+        };
+        /**
+         * NotificationBroadcastUpdateRequest
+         * @description A notification update request specific for broadcasting.
+         */
+        NotificationBroadcastUpdateRequest: {
+            /**
+             * Content
+             * @description The content of the broadcast notification. Broadcast notifications are displayed prominently to all users and can contain action links to redirect the user to a specific page.
+             */
+            content?: components["schemas"]["BroadcastNotificationContent"];
+            /**
+             * Expiration time
+             * Format: date-time
+             * @description The time when the notification should expire. By default it will expire after 6 months. Expired notifications will be permanently deleted.
+             */
+            expiration_time?: string;
+            /**
+             * Publication time
+             * Format: date-time
+             * @description The time when the notification should be published. Notifications can be created and then scheduled to be published at a later time.
+             */
+            publication_time?: string;
+            /**
+             * Source
+             * @description The source of the notification. Represents the agent that created the notification.
+             */
+            source?: string;
+            /**
+             * Variant
+             * @description The variant of the notification. Used to express the importance of the notification.
+             */
+            variant?: components["schemas"]["NotificationVariant"];
+        };
+        /**
+         * NotificationCategorySettings
+         * @description The settings for a notification category.
+         */
+        NotificationCategorySettings: {
+            /**
+             * Channels
+             * @description The channels that the user wants to receive notifications from for this category.
+             * @default {
+             *   "push": true
+             * }
+             */
+            channels?: components["schemas"]["NotificationChannelSettings"];
+            /**
+             * Enabled
+             * @description Whether the user wants to receive notifications for this category.
+             * @default true
+             */
+            enabled?: boolean;
+        };
+        /**
+         * NotificationChannelSettings
+         * @description The settings for each channel of a notification category.
+         */
+        NotificationChannelSettings: {
+            /**
+             * Push
+             * @description Whether the user wants to receive push notifications in the browser for this category.
+             * @default true
+             */
+            push?: boolean;
+        };
+        /**
+         * NotificationCreateData
+         * @description Basic common fields for all notification create requests.
+         */
+        NotificationCreateData: {
+            /**
+             * Category
+             * @description The category of the notification. Represents the type of the notification. E.g. 'message' or 'new_shared_item'.
+             */
+            category:
+                | components["schemas"]["MandatoryNotificationCategory"]
+                | components["schemas"]["PersonalNotificationCategory"];
+            /**
+             * Content
+             * @description The content of the notification. The structure depends on the category.
+             */
+            content:
+                | components["schemas"]["MessageNotificationContent"]
+                | components["schemas"]["NewSharedItemNotificationContent"]
+                | components["schemas"]["BroadcastNotificationContent"];
+            /**
+             * Expiration time
+             * Format: date-time
+             * @description The time when the notification should expire. By default it will expire after 6 months. Expired notifications will be permanently deleted.
+             */
+            expiration_time?: string;
+            /**
+             * Publication time
+             * Format: date-time
+             * @description The time when the notification should be published. Notifications can be created and then scheduled to be published at a later time.
+             */
+            publication_time?: string;
+            /**
+             * Source
+             * @description The source of the notification. Represents the agent that created the notification. E.g. 'galaxy' or 'admin'.
+             */
+            source: string;
+            /**
+             * Variant
+             * @description The variant of the notification. Represents the intent or relevance of the notification. E.g. 'info' or 'urgent'.
+             */
+            variant: components["schemas"]["NotificationVariant"];
+        };
+        /**
+         * NotificationCreateRequest
+         * @description Contains the recipients and the notification to create.
+         */
+        NotificationCreateRequest: {
+            /**
+             * Notification
+             * @description The notification to create. The structure depends on the category.
+             */
+            notification: components["schemas"]["NotificationCreateData"];
+            /**
+             * Recipients
+             * @description The recipients of the notification. Can be a combination of users, groups and roles.
+             */
+            recipients: components["schemas"]["NotificationRecipients"];
+        };
+        /**
+         * NotificationCreatedResponse
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        NotificationCreatedResponse: {
+            /**
+             * Notification
+             * @description The notification that was created. The structure depends on the category.
+             */
+            notification: components["schemas"]["NotificationResponse"];
+            /**
+             * Total notifications sent
+             * @description The total number of notifications that were sent to the recipients.
+             */
+            total_notifications_sent: number;
+        };
+        /**
+         * NotificationRecipients
+         * @description The recipients of a notification. Can be a combination of users, groups and roles.
+         */
+        NotificationRecipients: {
+            /**
+             * Group IDs
+             * @description The list of encoded group IDs of the groups that should receive the notification.
+             * @default []
+             */
+            group_ids?: string[];
+            /**
+             * Role IDs
+             * @description The list of encoded role IDs of the roles that should receive the notification.
+             * @default []
+             */
+            role_ids?: string[];
+            /**
+             * User IDs
+             * @description The list of encoded user IDs of the users that should receive the notification.
+             * @default []
+             */
+            user_ids?: string[];
+        };
+        /**
+         * NotificationResponse
+         * @description Basic common fields for all notification responses.
+         */
+        NotificationResponse: {
+            /**
+             * Category
+             * @description The category of the notification. Represents the type of the notification. E.g. 'message' or 'new_shared_item'.
+             */
+            category:
+                | components["schemas"]["MandatoryNotificationCategory"]
+                | components["schemas"]["PersonalNotificationCategory"];
+            /**
+             * Content
+             * @description The content of the notification. The structure depends on the category.
+             */
+            content:
+                | components["schemas"]["MessageNotificationContent"]
+                | components["schemas"]["NewSharedItemNotificationContent"]
+                | components["schemas"]["BroadcastNotificationContent"];
+            /**
+             * Create time
+             * Format: date-time
+             * @description The time when the notification was created.
+             */
+            create_time: string;
+            /**
+             * Expiration time
+             * Format: date-time
+             * @description The time when the notification will expire. If not set, the notification will never expire. Expired notifications will be permanently deleted.
+             */
+            expiration_time?: string;
+            /**
+             * ID
+             * @description The encoded ID of the notification.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Publication time
+             * Format: date-time
+             * @description The time when the notification was published. Notifications can be created and then published at a later time.
+             */
+            publication_time: string;
+            /**
+             * Source
+             * @description The source of the notification. Represents the agent that created the notification. E.g. 'galaxy' or 'admin'.
+             */
+            source: string;
+            /**
+             * Update time
+             * Format: date-time
+             * @description The time when the notification was last updated.
+             */
+            update_time: string;
+            /**
+             * Variant
+             * @description The variant of the notification. Represents the intent or relevance of the notification. E.g. 'info' or 'urgent'.
+             */
+            variant: components["schemas"]["NotificationVariant"];
+        };
+        /**
+         * NotificationStatusSummary
+         * @description A summary of the notification status for a user. Contains only updates since a particular timestamp.
+         */
+        NotificationStatusSummary: {
+            /**
+             * Broadcasts
+             * @description The list of updated broadcasts.
+             */
+            broadcasts: components["schemas"]["BroadcastNotificationResponse"][];
+            /**
+             * Notifications
+             * @description The list of updated notifications for the user.
+             */
+            notifications: components["schemas"]["UserNotificationResponse"][];
+            /**
+             * Total unread count
+             * @description The total number of unread notifications for the user.
+             */
+            total_unread_count: number;
+        };
+        /**
+         * NotificationVariant
+         * @description The notification variant communicates the intent or relevance of the notification.
+         * @enum {string}
+         */
+        NotificationVariant: "info" | "warning" | "urgent";
+        /**
+         * NotificationsBatchRequest
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        NotificationsBatchRequest: {
+            /**
+             * Notification IDs
+             * @description The list of encoded notification IDs of the notifications that should be updated.
+             */
+            notification_ids: string[];
+        };
+        /**
+         * NotificationsBatchUpdateResponse
+         * @description The response of a batch update request.
+         */
+        NotificationsBatchUpdateResponse: {
+            /**
+             * Updated count
+             * @description The number of notifications that were updated.
+             */
+            updated_count: number;
+        };
+        /**
          * ObjectExportTaskResponse
          * @description Base model definition with common configuration used by all derived models.
          */
@@ -5682,13 +6882,19 @@ export interface components {
              */
             content_format?: components["schemas"]["PageContentFormat"];
             /**
+             * Create Time
+             * Format: date-time
+             * @description The time and date this item was created.
+             */
+            create_time?: string;
+            /**
              * Deleted
              * @description Whether this Page has been deleted.
              */
             deleted: boolean;
             /**
              * Encoded email
-             * @description The encoded email of the user
+             * @description The encoded email of the user.
              */
             email_hash: string;
             /**
@@ -5740,11 +6946,18 @@ export interface components {
              * @description The title slug for the page URL, must be unique.
              */
             slug: string;
+            tags: components["schemas"]["TagCollection"];
             /**
              * Title
-             * @description The name of the page
+             * @description The name of the page.
              */
             title: string;
+            /**
+             * Update Time
+             * Format: date-time
+             * @description The last time and date this item was updated.
+             */
+            update_time?: string;
             /**
              * Username
              * @description The name of the user owning this Page.
@@ -5752,16 +6965,16 @@ export interface components {
             username: string;
         };
         /**
-         * PageSortByEnum
-         * @description An enumeration.
-         * @enum {string}
-         */
-        PageSortByEnum: "create_time" | "update_time";
-        /**
          * PageSummary
          * @description Base model definition with common configuration used by all derived models.
          */
         PageSummary: {
+            /**
+             * Create Time
+             * Format: date-time
+             * @description The time and date this item was created.
+             */
+            create_time?: string;
             /**
              * Deleted
              * @description Whether this Page has been deleted.
@@ -5769,7 +6982,7 @@ export interface components {
             deleted: boolean;
             /**
              * Encoded email
-             * @description The encoded email of the user
+             * @description The encoded email of the user.
              */
             email_hash: string;
             /**
@@ -5811,11 +7024,18 @@ export interface components {
              * @description The title slug for the page URL, must be unique.
              */
             slug: string;
+            tags: components["schemas"]["TagCollection"];
             /**
              * Title
-             * @description The name of the page
+             * @description The name of the page.
              */
             title: string;
+            /**
+             * Update Time
+             * Format: date-time
+             * @description The last time and date this item was updated.
+             */
+            update_time?: string;
             /**
              * Username
              * @description The name of the user owning this Page.
@@ -5950,6 +7170,13 @@ export interface components {
             to_posix_lines?: boolean;
         };
         /**
+         * PersonalNotificationCategory
+         * @description These notification categories can be opt-out by the user and will be
+         * displayed in the notification preferences.
+         * @enum {string}
+         */
+        PersonalNotificationCategory: "message" | "new_shared_item";
+        /**
          * PrepareStoreDownloadPayload
          * @description Base model definition with common configuration used by all derived models.
          */
@@ -6067,11 +7294,23 @@ export interface components {
              */
             operation?: components["schemas"]["QuotaOperation"];
             /**
+             * Quota Source Label
+             * @description Quota source label
+             */
+            quota_source_label?: string;
+            /**
              * Users
              * @description A list of specific users associated with this quota.
              * @default []
              */
             users?: components["schemas"]["UserQuota"][];
+        };
+        /** QuotaModel */
+        QuotaModel: {
+            /** Enabled */
+            enabled: boolean;
+            /** Source */
+            source?: string;
         };
         /**
          * QuotaOperation
@@ -6103,6 +7342,11 @@ export interface components {
              */
             name: string;
             /**
+             * Quota Source Label
+             * @description Quota source label
+             */
+            quota_source_label?: string;
+            /**
              * URL
              * @deprecated
              * @description The relative URL to get this particular Quota details from the rest API.
@@ -6115,6 +7359,15 @@ export interface components {
          * @default []
          */
         QuotaSummaryList: components["schemas"]["QuotaSummary"][];
+        /** ReloadFeedback */
+        ReloadFeedback: {
+            /** Failed */
+            failed: string[];
+            /** Message */
+            message: string;
+            /** Reloaded */
+            reloaded: string[];
+        };
         /**
          * RemoteFilesDisableMode
          * @description An enumeration.
@@ -6174,15 +7427,15 @@ export interface components {
             user_ids?: string[];
         };
         /**
-         * RoleListModel
+         * RoleListResponse
          * @description Base model definition with common configuration used by all derived models.
          */
-        RoleListModel: components["schemas"]["RoleModel"][];
+        RoleListResponse: components["schemas"]["RoleModelResponse"][];
         /**
-         * RoleModel
+         * RoleModelResponse
          * @description Base model definition with common configuration used by all derived models.
          */
-        RoleModel: {
+        RoleModelResponse: {
             /**
              * Description
              * @description Description of the role
@@ -6565,6 +7818,33 @@ export interface components {
          */
         Src: "url" | "pasted" | "files" | "path" | "composite" | "ftp_import" | "server_dir";
         /**
+         * StorageItemCleanupError
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        StorageItemCleanupError: {
+            /** Error */
+            error: string;
+            /**
+             * Item Id
+             * @example 0123456789ABCDEF
+             */
+            item_id: string;
+        };
+        /**
+         * StorageItemsCleanupResult
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        StorageItemsCleanupResult: {
+            /** Errors */
+            errors: components["schemas"]["StorageItemCleanupError"][];
+            /** Success Item Count */
+            success_item_count: number;
+            /** Total Free Bytes */
+            total_free_bytes: number;
+            /** Total Item Count */
+            total_item_count: number;
+        };
+        /**
          * StoreExportPayload
          * @description Base model definition with common configuration used by all derived models.
          */
@@ -6593,6 +7873,35 @@ export interface components {
              */
             model_store_format?: components["schemas"]["ModelStoreFormat"];
         };
+        /**
+         * StoredItem
+         * @description Base model definition with common configuration used by all derived models.
+         */
+        StoredItem: {
+            /**
+             * Id
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /** Name */
+            name: string;
+            /** Size */
+            size: number;
+            /** Type */
+            type: "history" | "dataset";
+            /**
+             * Update Time
+             * Format: date-time
+             * @description The last time and date this item was updated.
+             */
+            update_time: string;
+        };
+        /**
+         * StoredItemOrderBy
+         * @description Available options for sorting Stored Items results.
+         * @enum {string}
+         */
+        StoredItemOrderBy: "name-asc" | "name-dsc" | "size-asc" | "size-dsc" | "update_time-asc" | "update_time-dsc";
         /**
          * SuitableConverter
          * @description Base model definition with common configuration used by all derived models.
@@ -6647,14 +7956,11 @@ export interface components {
         TaggableItemClass:
             | "History"
             | "HistoryDatasetAssociation"
+            | "HistoryDatasetCollectionAssociation"
             | "LibraryDatasetDatasetAssociation"
             | "Page"
-            | "WorkflowStep"
             | "StoredWorkflow"
-            | "Visualization"
-            | "HistoryDatasetCollection"
-            | "LibraryDatasetCollection"
-            | "Tool";
+            | "Visualization";
         /** ToolDataDetails */
         ToolDataDetails: {
             /**
@@ -6911,13 +8217,39 @@ export interface components {
         };
         /**
          * UpdateHistoryContentsPayload
-         * @description Contains arbitrary property values that will be updated for a particular history item.
+         * @description Can contain arbitrary/dynamic fields that will be updated for a particular history item.
          * @example {
          *   "annotation": "Test",
          *   "visible": false
          * }
          */
-        UpdateHistoryContentsPayload: Record<string, never>;
+        UpdateHistoryContentsPayload: {
+            /**
+             * Annotation
+             * @description A user-defined annotation for this item.
+             */
+            annotation?: string;
+            /**
+             * Deleted
+             * @description Whether this item is marked as deleted.
+             */
+            deleted?: boolean;
+            /**
+             * Name
+             * @description The new name of the item.
+             */
+            name?: string;
+            /**
+             * Tags
+             * @description A list of tags to add to this item.
+             */
+            tags?: components["schemas"]["TagCollection"];
+            /**
+             * Visible
+             * @description Whether this item is visible in the history.
+             */
+            visible?: boolean;
+        };
         /**
          * UpdateLibraryFolderPayload
          * @description Base model definition with common configuration used by all derived models.
@@ -6996,6 +8328,35 @@ export interface components {
              * @default =
              */
             operation?: components["schemas"]["QuotaOperation"];
+        };
+        /**
+         * UpdateUserNotificationPreferencesRequest
+         * @description Contains the new notification preferences of a user.
+         * @example {
+         *   "preferences": {
+         *     "message": {
+         *       "channels": {
+         *         "push": true
+         *       },
+         *       "enabled": true
+         *     },
+         *     "new_shared_item": {
+         *       "channels": {
+         *         "push": true
+         *       },
+         *       "enabled": true
+         *     }
+         *   }
+         * }
+         */
+        UpdateUserNotificationPreferencesRequest: {
+            /**
+             * Preferences
+             * @description The new notification preferences of the user.
+             */
+            preferences: {
+                [key: string]: components["schemas"]["NotificationCategorySettings"] | undefined;
+            };
         };
         /**
          * UrlDataElement
@@ -7131,6 +8492,142 @@ export interface components {
             username: string;
         };
         /**
+         * UserNotificationListResponse
+         * @description A list of user notifications.
+         */
+        UserNotificationListResponse: components["schemas"]["UserNotificationResponse"][];
+        /**
+         * UserNotificationPreferences
+         * @description Contains the full notification preferences of a user.
+         * @example {
+         *   "preferences": {
+         *     "message": {
+         *       "channels": {
+         *         "push": true
+         *       },
+         *       "enabled": true
+         *     },
+         *     "new_shared_item": {
+         *       "channels": {
+         *         "push": true
+         *       },
+         *       "enabled": true
+         *     }
+         *   }
+         * }
+         */
+        UserNotificationPreferences: {
+            /**
+             * Preferences
+             * @description The notification preferences of the user.
+             */
+            preferences: {
+                [key: string]: components["schemas"]["NotificationCategorySettings"] | undefined;
+            };
+        };
+        /**
+         * UserNotificationResponse
+         * @description A notification response specific to the user.
+         */
+        UserNotificationResponse: {
+            /**
+             * Category
+             * @description The category of the notification. Represents the type of the notification. E.g. 'message' or 'new_shared_item'.
+             */
+            category: components["schemas"]["PersonalNotificationCategory"];
+            /**
+             * Content
+             * @description The content of the notification. The structure depends on the category.
+             */
+            content:
+                | components["schemas"]["MessageNotificationContent"]
+                | components["schemas"]["NewSharedItemNotificationContent"]
+                | components["schemas"]["BroadcastNotificationContent"];
+            /**
+             * Create time
+             * Format: date-time
+             * @description The time when the notification was created.
+             */
+            create_time: string;
+            /**
+             * Deleted
+             * @description Whether the notification is marked as deleted by the user. Deleted notifications don't show up in the notification list.
+             */
+            deleted: boolean;
+            /**
+             * Expiration time
+             * Format: date-time
+             * @description The time when the notification will expire. If not set, the notification will never expire. Expired notifications will be permanently deleted.
+             */
+            expiration_time?: string;
+            /**
+             * ID
+             * @description The encoded ID of the notification.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Publication time
+             * Format: date-time
+             * @description The time when the notification was published. Notifications can be created and then published at a later time.
+             */
+            publication_time: string;
+            /**
+             * Seen time
+             * Format: date-time
+             * @description The time when the notification was seen by the user. If not set, the notification was not seen yet.
+             */
+            seen_time?: string;
+            /**
+             * Source
+             * @description The source of the notification. Represents the agent that created the notification. E.g. 'galaxy' or 'admin'.
+             */
+            source: string;
+            /**
+             * Update time
+             * Format: date-time
+             * @description The time when the notification was last updated.
+             */
+            update_time: string;
+            /**
+             * Variant
+             * @description The variant of the notification. Represents the intent or relevance of the notification. E.g. 'info' or 'urgent'.
+             */
+            variant: components["schemas"]["NotificationVariant"];
+        };
+        /**
+         * UserNotificationUpdateRequest
+         * @description A notification update request specific to the user.
+         */
+        UserNotificationUpdateRequest: {
+            /**
+             * Deleted
+             * @description Whether the notification should be marked as deleted by the user. If not set, the notification will not be changed.
+             */
+            deleted?: boolean;
+            /**
+             * Seen
+             * @description Whether the notification should be marked as seen by the user. If not set, the notification will not be changed.
+             */
+            seen?: boolean;
+        };
+        /**
+         * UserNotificationsBatchUpdateRequest
+         * @description A batch update request specific for user notifications.
+         */
+        UserNotificationsBatchUpdateRequest: {
+            /**
+             * Changes
+             * @description The changes that should be applied to the notifications. Only the fields that are set will be changed.
+             */
+            changes: components["schemas"]["UserNotificationUpdateRequest"];
+            /**
+             * Notification IDs
+             * @description The list of encoded notification IDs of the notifications that should be updated.
+             */
+            notification_ids: string[];
+        };
+        /**
          * UserQuota
          * @description Base model definition with common configuration used by all derived models.
          */
@@ -7147,6 +8644,19 @@ export interface components {
              * @description Information about a user associated with a quota.
              */
             user: components["schemas"]["UserModel"];
+        };
+        /** UserQuotaUsage */
+        UserQuotaUsage: {
+            /** Quota */
+            quota?: string;
+            /** Quota Bytes */
+            quota_bytes?: number;
+            /** Quota Percent */
+            quota_percent?: number;
+            /** Quota Source Label */
+            quota_source_label?: string;
+            /** Total Disk Usage */
+            total_disk_usage: number;
         };
         /** ValidationError */
         ValidationError: {
@@ -7184,7 +8694,7 @@ export interface components {
              * Populated State
              * @description Indicates the general state of the elements in the dataset collection:- 'new': new dataset collection, unpopulated elements.- 'ok': collection elements populated (HDAs may or may not have errors).- 'failed': some problem populating, won't be populated.
              */
-            populated_state: components["schemas"]["populated_states"];
+            populated_state: components["schemas"]["DatasetCollectionPopulatedState"];
             /**
              * States
              * @description A dictionary of job states and the number of jobs in that state.
@@ -7324,58 +8834,6 @@ export interface components {
              */
             namespace: string;
         };
-        /**
-         * states
-         * @description An enumeration.
-         * @enum {string}
-         */
-        galaxy__model__Dataset__states:
-            | "new"
-            | "upload"
-            | "queued"
-            | "running"
-            | "ok"
-            | "empty"
-            | "error"
-            | "paused"
-            | "setting_metadata"
-            | "failed_metadata"
-            | "deferred"
-            | "discarded";
-        /**
-         * states
-         * @description An enumeration.
-         * @enum {string}
-         */
-        galaxy__model__Job__states:
-            | "new"
-            | "resubmitted"
-            | "upload"
-            | "waiting"
-            | "queued"
-            | "running"
-            | "ok"
-            | "error"
-            | "failed"
-            | "paused"
-            | "deleting"
-            | "deleted"
-            | "deleted_new"
-            | "stop"
-            | "stopped"
-            | "skipped";
-        /**
-         * populated_states
-         * @description An enumeration.
-         * @enum {string}
-         */
-        populated_states: "new" | "ok" | "failed";
-        /**
-         * validated_states
-         * @description An enumeration.
-         * @enum {string}
-         */
-        validated_states: "unknown" | "invalid" | "ok";
     };
     responses: never;
     parameters: never;
@@ -7842,10 +9300,7 @@ export interface operations {
              */
             /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
             /** @description The maximum number of items to return. */
-            /**
-             * @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values.
-             * @example name-dsc,create_time
-             */
+            /** @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values. */
             query?: {
                 history_id?: string;
                 view?: string;
@@ -7940,6 +9395,34 @@ export interface operations {
             /** @description The encoded database identifier of the dataset. */
             path: {
                 dataset_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_structured_content_api_datasets__dataset_id__content__content_type__get: {
+        /** Retrieve information about the content of a dataset. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The encoded database identifier of the dataset. */
+            path: {
+                dataset_id: string;
+                content_type: components["schemas"]["DatasetContentType"];
             };
         };
         responses: {
@@ -8207,11 +9690,15 @@ export interface operations {
             /** @description If non-null, get the specified filename from the extra files for this dataset. */
             /** @description The file extension when downloading the display data. Use the value `data` to let the server infer it from the data type. */
             /** @description The query parameter 'raw' should be considered experimental and may be dropped at some point in the future without warning. Generally, data should be processed by its datatype prior to display. */
+            /** @description Set this for datatypes that allow chunked display through the display_data method to enable chunking. This specifies a byte offset into the target dataset's display. */
+            /** @description If offset is set, this recommends 'how large' the next chunk should be. This is not respected or interpreted uniformly and should be interpreted as a very loose recommendation. Different datatypes interpret 'largeness' differently - for bam datasets this is a number of lines whereas for tabular datatypes this is interpreted as a number of bytes. */
             query?: {
                 preview?: boolean;
                 filename?: string;
                 to_ext?: string;
                 raw?: boolean;
+                offset?: number;
+                ck_size?: number;
             };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
@@ -8243,11 +9730,15 @@ export interface operations {
             /** @description If non-null, get the specified filename from the extra files for this dataset. */
             /** @description The file extension when downloading the display data. Use the value `data` to let the server infer it from the data type. */
             /** @description The query parameter 'raw' should be considered experimental and may be dropped at some point in the future without warning. Generally, data should be processed by its datatype prior to display. */
+            /** @description Set this for datatypes that allow chunked display through the display_data method to enable chunking. This specifies a byte offset into the target dataset's display. */
+            /** @description If offset is set, this recommends 'how large' the next chunk should be. This is not respected or interpreted uniformly and should be interpreted as a very loose recommendation. Different datatypes interpret 'largeness' differently - for bam datasets this is a number of lines whereas for tabular datatypes this is interpreted as a number of bytes. */
             query?: {
                 preview?: boolean;
                 filename?: string;
                 to_ext?: string;
                 raw?: boolean;
+                offset?: number;
+                ck_size?: number;
             };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
@@ -8292,6 +9783,37 @@ export interface operations {
         responses: {
             /** @description Successful Response */
             200: never;
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_metadata_file_datasets_api_datasets__history_content_id__metadata_file_head: {
+        /** Check if metadata file can be downloaded. */
+        parameters: {
+            /** @description The name of the metadata file to retrieve. */
+            query: {
+                metadata_file: string;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The encoded database identifier of the dataset. */
+            path: {
+                history_content_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
             /** @description Validation Error */
             422: {
                 content: {
@@ -8452,6 +9974,53 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["DatatypesCombinedMap"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    display_applications_index_api_display_applications_get: {
+        /**
+         * Returns the list of display applications.
+         * @description Returns the list of display applications.
+         */
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["DisplayApplication"][];
+                };
+            };
+        };
+    };
+    display_applications_reload_api_display_applications_reload_post: {
+        /**
+         * Reloads the list of display applications.
+         * @description Reloads the list of display applications.
+         */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        requestBody?: {
+            content: {
+                "application/json": {
+                    [key: string]: string[] | undefined;
+                };
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["ReloadFeedback"];
                 };
             };
             /** @description Validation Error */
@@ -9011,7 +10580,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["GroupRoleListModel"];
+                    "application/json": components["schemas"]["GroupRoleListResponse"];
                 };
             };
             /** @description Validation Error */
@@ -9040,7 +10609,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["GroupRoleModel"];
+                    "application/json": components["schemas"]["GroupRoleResponse"];
                 };
             };
             /** @description Validation Error */
@@ -9069,7 +10638,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["GroupRoleModel"];
+                    "application/json": components["schemas"]["GroupRoleResponse"];
                 };
             };
             /** @description Validation Error */
@@ -9098,7 +10667,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["GroupRoleModel"];
+                    "application/json": components["schemas"]["GroupRoleResponse"];
                 };
             };
             /** @description Validation Error */
@@ -9130,7 +10699,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["GroupUserModel"];
+                    "application/json": components["schemas"]["GroupUserResponse"];
                 };
             };
             /** @description Validation Error */
@@ -9163,7 +10732,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["GroupUserModel"];
+                    "application/json": components["schemas"]["GroupUserResponse"];
                 };
             };
             /** @description Validation Error */
@@ -9196,7 +10765,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["GroupUserModel"];
+                    "application/json": components["schemas"]["GroupUserResponse"];
                 };
             };
             /** @description Validation Error */
@@ -9227,7 +10796,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["GroupUserListModel"];
+                    "application/json": components["schemas"]["GroupUserListResponse"];
                 };
             };
             /** @description Validation Error */
@@ -9259,7 +10828,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["GroupUserModel"];
+                    "application/json": components["schemas"]["GroupUserResponse"];
                 };
             };
             /** @description Validation Error */
@@ -9292,7 +10861,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["GroupUserModel"];
+                    "application/json": components["schemas"]["GroupUserResponse"];
                 };
             };
             /** @description Validation Error */
@@ -9325,7 +10894,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["GroupUserModel"];
+                    "application/json": components["schemas"]["GroupUserResponse"];
                 };
             };
             /** @description Validation Error */
@@ -9354,10 +10923,7 @@ export interface operations {
              */
             /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
             /** @description The maximum number of items to return. */
-            /**
-             * @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values.
-             * @example name-dsc,create_time
-             */
+            /** @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values. */
             /** @description View to be passed to the serializer */
             /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
@@ -9436,6 +11002,83 @@ export interface operations {
             };
         };
     };
+    get_archived_histories_api_histories_archived_get: {
+        /**
+         * Get a list of all archived histories for the current user.
+         * @description Get a list of all archived histories for the current user.
+         *
+         * Archived histories are histories are not part of the active histories of the user but they can be accessed using this endpoint.
+         */
+        parameters?: {
+            /** @description View to be passed to the serializer */
+            /** @description Comma-separated list of keys to be passed to the serializer */
+            /**
+             * @description Generally a property name to filter by followed by an (often optional) hyphen and operator string.
+             * @example create_time-gt
+             */
+            /**
+             * @description The value to filter by.
+             * @example 2015-01-29
+             */
+            /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
+            /** @description The maximum number of items to return. */
+            /** @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values. */
+            query?: {
+                view?: string;
+                keys?: string;
+                q?: string[];
+                qv?: string[];
+                offset?: number;
+                limit?: number;
+                order?: string;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": (
+                        | components["schemas"]["ArchivedHistorySummary"]
+                        | components["schemas"]["ArchivedHistoryDetailed"]
+                        | Record<string, never>
+                    )[];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    count_api_histories_count_get: {
+        /** Returns number of histories for the current user. */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": number;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     index_deleted_api_histories_deleted_get: {
         /** Returns deleted histories for the current user. */
         parameters?: {
@@ -9450,10 +11093,7 @@ export interface operations {
              */
             /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
             /** @description The maximum number of items to return. */
-            /**
-             * @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values.
-             * @example name-dsc,create_time
-             */
+            /** @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values. */
             /** @description View to be passed to the serializer */
             /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
@@ -9636,10 +11276,7 @@ export interface operations {
              */
             /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
             /** @description The maximum number of items to return. */
-            /**
-             * @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values.
-             * @example name-dsc,create_time
-             */
+            /** @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values. */
             /** @description View to be passed to the serializer */
             /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
@@ -9688,10 +11325,7 @@ export interface operations {
              */
             /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
             /** @description The maximum number of items to return. */
-            /**
-             * @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values.
-             * @example name-dsc,create_time
-             */
+            /** @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values. */
             /** @description View to be passed to the serializer */
             /** @description Comma-separated list of keys to be passed to the serializer */
             query?: {
@@ -9846,6 +11480,100 @@ export interface operations {
             };
         };
     };
+    archive_history_api_histories__history_id__archive_post: {
+        /**
+         * Archive a history.
+         * @description Marks the given history as 'archived' and returns the history.
+         *
+         * Archiving a history will remove it from the list of active histories of the user but it will still be
+         * accessible via the `/api/histories/{id}` or the `/api/histories/archived` endpoints.
+         *
+         * Associating an export record:
+         *
+         * - Optionally, an export record (containing information about a recent snapshot of the history) can be associated with the
+         * archived history by providing an `archive_export_id` in the payload. The export record must belong to the history and
+         * must be in the ready state.
+         * - When associating an export record, the history can be purged after it has been archived using the `purge_history` flag.
+         *
+         * If the history is already archived, this endpoint will return a 409 Conflict error, indicating that the history is already archived.
+         * If the history was not purged after it was archived, you can restore it using the `/api/histories/{id}/archive/restore` endpoint.
+         */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The encoded database identifier of the History. */
+            path: {
+                history_id: string;
+            };
+        };
+        requestBody?: {
+            content: {
+                "application/json": components["schemas"]["ArchiveHistoryRequestPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json":
+                        | components["schemas"]["ArchivedHistorySummary"]
+                        | components["schemas"]["ArchivedHistoryDetailed"]
+                        | Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    restore_archived_history_api_histories__history_id__archive_restore_put: {
+        /**
+         * Restore an archived history.
+         * @description Restores an archived history and returns it.
+         *
+         * Restoring an archived history will add it back to the list of active histories of the user (unless it was purged).
+         *
+         * **Warning**: Please note that histories that are associated with an archive export might be purged after export, so un-archiving them
+         * will not restore the datasets that were in the history before it was archived. You will need to import back the archive export
+         * record to restore the history and its datasets as a new copy. See `/api/histories/from_store_async` for more information.
+         */
+        parameters: {
+            /** @description If true, the history will be un-archived even if it has an associated archive export record and was purged. */
+            query?: {
+                force?: boolean;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The encoded database identifier of the History. */
+            path: {
+                history_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json":
+                        | components["schemas"]["HistorySummary"]
+                        | components["schemas"]["HistoryDetailed"]
+                        | Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     citations_api_histories__history_id__citations_get: {
         /** Return all the citations for the tools used to produce the datasets in the history. */
         parameters: {
@@ -9908,6 +11636,7 @@ export interface operations {
              * @deprecated
              * @description Whether to return visible or hidden datasets only. Leave unset for both.
              */
+            /** @description Whether to return only shareable or not shareable datasets. Leave unset for both. */
             /** @description View to be passed to the serializer */
             /** @description Comma-separated list of keys to be passed to the serializer */
             /**
@@ -9920,10 +11649,7 @@ export interface operations {
              */
             /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
             /** @description The maximum number of items to return. */
-            /**
-             * @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values.
-             * @example name-dsc,create_time
-             */
+            /** @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values. */
             query?: {
                 v?: string;
                 details?: string;
@@ -9931,6 +11657,7 @@ export interface operations {
                 types?: string[];
                 deleted?: boolean;
                 visible?: boolean;
+                shareable?: boolean;
                 view?: string;
                 keys?: string;
                 q?: string[];
@@ -10087,10 +11814,7 @@ export interface operations {
              */
             /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
             /** @description The maximum number of items to return. */
-            /**
-             * @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values.
-             * @example name-dsc,create_time
-             */
+            /** @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values. */
             query?: {
                 filename?: string;
                 dry_run?: boolean;
@@ -10143,10 +11867,7 @@ export interface operations {
              */
             /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
             /** @description The maximum number of items to return. */
-            /**
-             * @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values.
-             * @example name-dsc,create_time
-             */
+            /** @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values. */
             query?: {
                 dry_run?: boolean;
                 q?: string[];
@@ -10348,11 +12069,15 @@ export interface operations {
             /** @description If non-null, get the specified filename from the extra files for this dataset. */
             /** @description The file extension when downloading the display data. Use the value `data` to let the server infer it from the data type. */
             /** @description The query parameter 'raw' should be considered experimental and may be dropped at some point in the future without warning. Generally, data should be processed by its datatype prior to display. */
+            /** @description Set this for datatypes that allow chunked display through the display_data method to enable chunking. This specifies a byte offset into the target dataset's display. */
+            /** @description If offset is set, this recommends 'how large' the next chunk should be. This is not respected or interpreted uniformly and should be interpreted as a very loose recommendation. Different datatypes interpret 'largeness' differently - for bam datasets this is a number of lines whereas for tabular datatypes this is interpreted as a number of bytes. */
             query?: {
                 preview?: boolean;
                 filename?: string;
                 to_ext?: string;
                 raw?: boolean;
+                offset?: number;
+                ck_size?: number;
             };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
@@ -10386,11 +12111,15 @@ export interface operations {
             /** @description If non-null, get the specified filename from the extra files for this dataset. */
             /** @description The file extension when downloading the display data. Use the value `data` to let the server infer it from the data type. */
             /** @description The query parameter 'raw' should be considered experimental and may be dropped at some point in the future without warning. Generally, data should be processed by its datatype prior to display. */
+            /** @description Set this for datatypes that allow chunked display through the display_data method to enable chunking. This specifies a byte offset into the target dataset's display. */
+            /** @description If offset is set, this recommends 'how large' the next chunk should be. This is not respected or interpreted uniformly and should be interpreted as a very loose recommendation. Different datatypes interpret 'largeness' differently - for bam datasets this is a number of lines whereas for tabular datatypes this is interpreted as a number of bytes. */
             query?: {
                 preview?: boolean;
                 filename?: string;
                 to_ext?: string;
                 raw?: boolean;
+                offset?: number;
+                ck_size?: number;
             };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
@@ -10721,6 +12450,7 @@ export interface operations {
              * @deprecated
              * @description Whether to return visible or hidden datasets only. Leave unset for both.
              */
+            /** @description Whether to return only shareable or not shareable datasets. Leave unset for both. */
             /** @description View to be passed to the serializer */
             /** @description Comma-separated list of keys to be passed to the serializer */
             /**
@@ -10733,10 +12463,7 @@ export interface operations {
              */
             /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
             /** @description The maximum number of items to return. */
-            /**
-             * @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values.
-             * @example name-dsc,create_time
-             */
+            /** @description String containing one of the valid ordering attributes followed (optionally) by '-asc' or '-dsc' for ascending and descending order respectively. Orders can be stacked as a comma-separated list of values. */
             query?: {
                 v?: string;
                 details?: string;
@@ -10744,6 +12471,7 @@ export interface operations {
                 types?: string[];
                 deleted?: boolean;
                 visible?: boolean;
+                shareable?: boolean;
                 view?: string;
                 keys?: string;
                 q?: string[];
@@ -10979,7 +12707,7 @@ export interface operations {
             header?: {
                 "run-as"?: string;
             };
-            /** @description The ID of the History. */
+            /** @description History ID or any string. */
             /** @description The ID of the item (`HDA`/`HDCA`) contained in the history. */
             /**
              * @description The type of the target history element.
@@ -11919,7 +13647,7 @@ export interface operations {
     index_api_jobs_get: {
         /** Index */
         parameters?: {
-            /** @description If true, and requestor is an admin, will return external job id and user email. This is only available to admins. */
+            /** @description If true, and requester is an admin, will return external job id and user email. This is only available to admins. */
             /** @description an encoded user id to restrict query to, must be own id if not admin user */
             /** @description Determines columns to return. Defaults to 'collection'. */
             /** @description Limit listing of jobs to those that are updated after specified date (e.g. '2014-01-01') */
@@ -12032,6 +13760,41 @@ export interface operations {
             200: {
                 content: {
                     "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_token_api_jobs__job_id__oidc_tokens_get: {
+        /**
+         * Get a fresh OIDC token
+         * @description Allows remote job running mechanisms to get a fresh OIDC token that can be used on remote side to authorize user. It is not meant to represent part of Galaxy's stable, user facing API
+         */
+        parameters: {
+            /** @description A key used to authenticate this request as acting onbehalf or a job runner for the specified job */
+            /** @description OIDC provider name */
+            query: {
+                job_key: string;
+                provider: string;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                job_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "text/plain": string;
                 };
             };
             /** @description Validation Error */
@@ -12425,6 +14188,477 @@ export interface operations {
             };
         };
     };
+    get_user_notifications_api_notifications_get: {
+        /**
+         * Returns the list of notifications associated with the user.
+         * @description Anonymous users cannot receive personal notifications, only broadcasted notifications.
+         *
+         * You can use the `limit` and `offset` parameters to paginate through the notifications.
+         */
+        parameters?: {
+            query?: {
+                limit?: number;
+                offset?: number;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["UserNotificationListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_user_notifications_api_notifications_put: {
+        /** Updates a list of notifications with the requested values in a single request. */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserNotificationsBatchUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["NotificationsBatchUpdateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    send_notification_api_notifications_post: {
+        /**
+         * Sends a notification to a list of recipients (users, groups or roles).
+         * @description Sends a notification to a list of recipients (users, groups or roles).
+         */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NotificationCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["NotificationCreatedResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_user_notifications_api_notifications_delete: {
+        /** Deletes a list of notifications received by the user in a single request. */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NotificationsBatchRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["NotificationsBatchUpdateResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_all_broadcasted_api_notifications_broadcast_get: {
+        /**
+         * Returns all currently active broadcasted notifications.
+         * @description Only Admin users can access inactive notifications (scheduled or recently expired).
+         */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["BroadcastNotificationListResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    broadcast_notification_api_notifications_broadcast_post: {
+        /**
+         * Broadcasts a notification to every user in the system.
+         * @description Broadcasted notifications are a special kind of notification that are always accessible to all users, including anonymous users.
+         * They are typically used to display important information such as maintenance windows or new features.
+         * These notifications are displayed differently from regular notifications, usually in a banner at the top or bottom of the page.
+         *
+         * Broadcasted notifications can include action links that are displayed as buttons.
+         * This allows users to easily perform tasks such as filling out surveys, accepting legal agreements, or accessing new tutorials.
+         *
+         * Some key features of broadcasted notifications include:
+         * - They are not associated with a specific user, so they cannot be deleted or marked as read.
+         * - They can be scheduled to be displayed in the future or to expire after a certain time.
+         * - By default, broadcasted notifications are published immediately and expire six months after publication.
+         * - Only admins can create, edit, reschedule, or expire broadcasted notifications as needed.
+         */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["BroadcastNotificationCreateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["NotificationCreatedResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_broadcasted_api_notifications_broadcast__notification_id__get: {
+        /**
+         * Returns the information of a specific broadcasted notification.
+         * @description Only Admin users can access inactive notifications (scheduled or recently expired).
+         */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                notification_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["BroadcastNotificationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_broadcasted_notification_api_notifications_broadcast__notification_id__put: {
+        /**
+         * Updates the state of a broadcasted notification.
+         * @description Only Admins can update broadcasted notifications. This is useful to reschedule, edit or expire broadcasted notifications.
+         */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                notification_id: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["NotificationBroadcastUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: never;
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_notification_preferences_api_notifications_preferences_get: {
+        /**
+         * Returns the current user's preferences for notifications.
+         * @description Anonymous users cannot have notification preferences. They will receive only broadcasted notifications.
+         */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["UserNotificationPreferences"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_notification_preferences_api_notifications_preferences_put: {
+        /**
+         * Updates the user's preferences for notifications.
+         * @description Anonymous users cannot have notification preferences. They will receive only broadcasted notifications.
+         *
+         * - Can be used to completely enable/disable notifications for a particular type (category)
+         * or to enable/disable a particular channel on each category.
+         */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateUserNotificationPreferencesRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["UserNotificationPreferences"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_notifications_status_api_notifications_status_get: {
+        /**
+         * Returns the current status summary of the user's notifications since a particular date.
+         * @description Anonymous users cannot receive personal notifications, only broadcasted notifications.
+         */
+        parameters: {
+            query: {
+                since: string;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["NotificationStatusSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    show_notification_api_notifications__notification_id__get: {
+        /** Displays information about a notification received by the user. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                notification_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["UserNotificationResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    update_user_notification_api_notifications__notification_id__put: {
+        /** Updates the state of a notification received by the user. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                notification_id: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UserNotificationUpdateRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: never;
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_user_notification_api_notifications__notification_id__delete: {
+        /**
+         * Deletes a notification received by the user.
+         * @description When a notification is deleted, it is not immediately removed from the database, but marked as deleted.
+         *
+         * - It will not be returned in the list of notifications, but admins can still access it as long as it is not expired.
+         * - It will be eventually removed from the database by a background task after the expiration time.
+         * - Deleted notifications will be permanently deleted when the expiration time is reached.
+         */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                notification_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            204: never;
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    index_api_object_stores_get: {
+        /** Get a list of (currently only concrete) object stores configured with this Galaxy instance. */
+        parameters?: {
+            /** @description Restrict index query to user selectable object stores, the current implementation requires this to be true. */
+            query?: {
+                selectable?: boolean;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        responses: {
+            /** @description A list of the configured object stores. */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["ConcreteObjectStoreModel"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    show_info_api_object_stores__object_store_id__get: {
+        /** Get information about a concrete object store configured with Galaxy. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The concrete object store ID. */
+            path: {
+                object_store_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["ConcreteObjectStoreModel"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     index_api_pages_get: {
         /**
          * Lists all Pages viewable by the user.
@@ -12434,15 +14668,52 @@ export interface operations {
             /** @description Whether to include deleted pages in the result. */
             /** @description Sort page index by this specified attribute on the page model */
             /** @description Sort in descending order? */
+            /**
+             * @description A mix of free text and GitHub-style tags used to filter the index operation.
+             *
+             * ## Query Structure
+             *
+             * GitHub-style filter tags (not be confused with Galaxy tags) are tags of the form
+             * `<tag_name>:<text_no_spaces>` or `<tag_name>:'<text with potential spaces>'`. The tag name
+             * *generally* (but not exclusively) corresponds to the name of an attribute on the model
+             * being indexed (i.e. a column in the database).
+             *
+             * If the tag is quoted, the attribute will be filtered exactly. If the tag is unquoted,
+             * generally a partial match will be used to filter the query (i.e. in terms of the implementation
+             * this means the database operation `ILIKE` will typically be used).
+             *
+             * Once the tagged filters are extracted from the search query, the remaining text is just
+             * used to search various documented attributes of the object.
+             *
+             * ## GitHub-style Tags Available
+             *
+             * `title`
+             * : The page's title.
+             *
+             * `slug`
+             * : The page's slug. (The tag `s` can be used a short hand alias for this tag to filter on this attribute.)
+             *
+             * `tag`
+             * : The page's tags. (The tag `t` can be used a short hand alias for this tag to filter on this attribute.)
+             *
+             * `user`
+             * : The page's owner's username. (The tag `u` can be used a short hand alias for this tag to filter on this attribute.)
+             *
+             * ## Free Text
+             *
+             * Free text search terms will be searched against the following attributes of the
+             * Pages: `title`, `slug`, `tag`, `user`.
+             */
             query?: {
                 deleted?: boolean;
                 user_id?: string;
                 show_published?: boolean;
                 show_shared?: boolean;
-                sort_by?: components["schemas"]["PageSortByEnum"];
+                sort_by?: "update_time" | "title" | "username";
                 sort_desc?: boolean;
                 limit?: number;
                 offset?: number;
+                search?: string;
             };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
@@ -13120,6 +15391,10 @@ export interface operations {
          * @description Display plugin information for each of the gxfiles:// URI targets available.
          */
         parameters?: {
+            /** @description Whether to return browsable filesources only. The default is `True`, which will omit filesourceslike `http` and `base64` that do not implement a list method. */
+            query?: {
+                browsable_only?: boolean;
+            };
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
                 "run-as"?: string;
@@ -13152,7 +15427,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["RoleListModel"];
+                    "application/json": components["schemas"]["RoleListResponse"];
                 };
             };
             /** @description Validation Error */
@@ -13180,7 +15455,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["RoleModel"];
+                    "application/json": components["schemas"]["RoleModelResponse"];
                 };
             };
             /** @description Validation Error */
@@ -13206,7 +15481,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["RoleModel"];
+                    "application/json": components["schemas"]["RoleModelResponse"];
                 };
             };
             /** @description Validation Error */
@@ -13249,6 +15524,230 @@ export interface operations {
             200: {
                 content: {
                     "application/json": boolean;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cleanup_datasets_api_storage_datasets_delete: {
+        /**
+         * Purges a set of datasets by ID from disk. The datasets must be owned by the user.
+         * @description **Warning**: This operation cannot be undone. All objects will be deleted permanently from the disk.
+         */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CleanupStorageItemsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["StorageItemsCleanupResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    discarded_datasets_api_storage_datasets_discarded_get: {
+        /** Returns discarded datasets owned by the given user. The results can be paginated. */
+        parameters?: {
+            /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
+            /** @description The maximum number of items to return. */
+            /** @description String containing one of the valid ordering attributes followed by '-asc' or '-dsc' for ascending and descending order respectively. */
+            query?: {
+                offset?: number;
+                limit?: number;
+                order?: components["schemas"]["StoredItemOrderBy"];
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["StoredItem"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    discarded_datasets_summary_api_storage_datasets_discarded_summary_get: {
+        /** Returns information with the total storage space taken by discarded datasets owned by the given user. */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["CleanableItemsSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    cleanup_histories_api_storage_histories_delete: {
+        /**
+         * Purges a set of histories by ID. The histories must be owned by the user.
+         * @description **Warning**: This operation cannot be undone. All objects will be deleted permanently from the disk.
+         */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["CleanupStorageItemsRequest"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["StorageItemsCleanupResult"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    archived_histories_api_storage_histories_archived_get: {
+        /** Returns archived histories owned by the given user that are not purged. The results can be paginated. */
+        parameters?: {
+            /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
+            /** @description The maximum number of items to return. */
+            /** @description String containing one of the valid ordering attributes followed by '-asc' or '-dsc' for ascending and descending order respectively. */
+            query?: {
+                offset?: number;
+                limit?: number;
+                order?: components["schemas"]["StoredItemOrderBy"];
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["StoredItem"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    archived_histories_summary_api_storage_histories_archived_summary_get: {
+        /** Returns information with the total storage space taken by non-purged archived histories associated with the given user. */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["CleanableItemsSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    discarded_histories_api_storage_histories_discarded_get: {
+        /** Returns all discarded histories associated with the given user. */
+        parameters?: {
+            /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
+            /** @description The maximum number of items to return. */
+            /** @description String containing one of the valid ordering attributes followed by '-asc' or '-dsc' for ascending and descending order respectively. */
+            query?: {
+                offset?: number;
+                limit?: number;
+                order?: components["schemas"]["StoredItemOrderBy"];
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["StoredItem"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    discarded_histories_summary_api_storage_histories_discarded_summary_get: {
+        /** Returns information with the total storage space taken by discarded histories associated with the given user. */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["CleanableItemsSummary"];
                 };
             };
             /** @description Validation Error */
@@ -13717,8 +16216,13 @@ export interface operations {
             };
         };
     };
-    recalculate_disk_usage_api_users_recalculate_disk_usage_put: {
-        /** Triggers a recalculation of the current user disk usage. */
+    recalculate_disk_usage_api_users_current_recalculate_disk_usage_put: {
+        /**
+         * Triggers a recalculation of the current user disk usage.
+         * @description This route will be removed in a future version.
+         *
+         * Please use `/api/users/current/recalculate_disk_usage` instead.
+         */
         parameters?: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
@@ -13726,7 +16230,44 @@ export interface operations {
             };
         };
         responses: {
-            /** @description Successful Response */
+            /** @description The asynchronous task summary to track the task state. */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["AsyncTaskResultSummary"];
+                };
+            };
+            /** @description The background task was submitted but there is no status tracking ID available. */
+            204: never;
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    recalculate_disk_usage_api_users_recalculate_disk_usage_put: {
+        /**
+         * Triggers a recalculation of the current user disk usage.
+         * @deprecated
+         * @description This route will be removed in a future version.
+         *
+         * Please use `/api/users/current/recalculate_disk_usage` instead.
+         */
+        parameters?: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        responses: {
+            /** @description The asynchronous task summary to track the task state. */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["AsyncTaskResultSummary"];
+                };
+            };
+            /** @description The background task was submitted but there is no status tracking ID available. */
             204: never;
             /** @description Validation Error */
             422: {
@@ -13897,6 +16438,62 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["UserBeaconSetting"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_user_usage_api_users__user_id__usage_get: {
+        /** Return the user's quota usage summary broken down by quota source */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The ID of the user to get or 'current'. */
+            path: {
+                user_id: string | "current";
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["UserQuotaUsage"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_user_usage_for_label_api_users__user_id__usage__label__get: {
+        /** Return the user's quota usage summary for a given quota source label */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The ID of the user to get or 'current'. */
+            /** @description The label corresponding to the quota source to fetch usage information about. */
+            path: {
+                user_id: string | "current";
+                label: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["UserQuotaUsage"];
                 };
             };
             /** @description Validation Error */

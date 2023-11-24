@@ -1,9 +1,11 @@
+import { createPinia } from "pinia";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { getLocalVue } from "tests/jest/helpers";
 import { getAppRoot } from "onload/loadConfig";
 import { Services } from "../services";
 import LibraryDataset from "./LibraryDataset";
+import { useUserStore } from "stores/userStore";
 import cannotManageDatasetResponse from "./testData/cannotManageDataset.json";
 import cannotModifyDatasetResponse from "./testData/cannotModifyDataset.json";
 import restrictedDatasetResponse from "./testData/restrictedDataset.json";
@@ -63,6 +65,7 @@ const DATASET_TABLE = '[data-test-id="dataset-table"]';
 const PEEK_VIEW = '[data-test-id="peek-view"]';
 
 async function mountLibraryDatasetWrapper(localVue, expectDatasetId, isAdmin = false) {
+    const pinia = createPinia();
     const propsData = {
         dataset_id: expectDatasetId,
         folder_id: FOLDER_ID,
@@ -73,15 +76,11 @@ async function mountLibraryDatasetWrapper(localVue, expectDatasetId, isAdmin = f
         stubs: {
             DatatypesProvider: mockDatatypesProvider,
             DbKeyProvider: mockDbKeyProvider,
-            CurrentUser: {
-                render() {
-                    return this.$scopedSlots.default({
-                        user: { is_admin: isAdmin },
-                    });
-                },
-            },
         },
+        pinia,
     });
+    const userStore = useUserStore();
+    userStore.currentUser = { is_admin: isAdmin };
     await flushPromises();
     return wrapper;
 }

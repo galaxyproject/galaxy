@@ -22,34 +22,27 @@ component we previously made, but you are free to putput whatever you want in th
 doodad and saveDoddad properties as desired, as well as any other local data with the only
 restriction that Vue needs a single root element in which to render.
 
-
 ## The Renderer
 
 ```html static
 <!-- DoodadEditor.vue, a simple "rendering" component -->
 
 <template>
-    <AutoComplete
-        :options="options"
-        :value="doodad.category"
-        @select="saveCategory"
-    />
+    <AutoComplete :options="options" :value="doodad.category" @select="saveCategory" />
 </template>
 
 <script>
-
-export default {
-    props: {
-        doodad: { type: Object, required: true },
-        options: { type: Array, required: true },
-    },
-    methods: {
-        saveCategory(newCategory) {
-            this.$emit('update:doodad', { ...this.doodad, category: newCategory });
-        }
-    }
-}
-
+    export default {
+        props: {
+            doodad: { type: Object, required: true },
+            options: { type: Array, required: true },
+        },
+        methods: {
+            saveCategory(newCategory) {
+                this.$emit("update:doodad", { ...this.doodad, category: newCategory });
+            },
+        },
+    };
 </script>
 ```
 
@@ -66,7 +59,6 @@ binds](https://vuejs.org/v2/guide/components-custom-events.html#sync-Modifier)).
 Whatever happens to that new object is somebody else's job. As soon as you tie the data management
 to the rendering, the re-usability of your components craters.
 
-
 ## The Provider
 
 As the opposite of the rendering component, a provider or renderless component, is pure logic. It
@@ -75,7 +67,6 @@ fancy way of configuring some data manipulation methods. This is one of the many
 functionality available in Vue. Some others are [Mixins](https://vuejs.org/v2/guide/mixins.html),
 [Provide/Inject](https://v3.vuejs.org/guide/component-provide-inject.html) and (in Vue3) [the
 composition API](https://v3.vuejs.org/guide/composition-api-introduction.html).
-
 
 ```js static
 // DoodadProvider.js
@@ -134,7 +125,7 @@ mandatory markup, just one big empty slot.
 // Testing a renderless component
 
 import { shallowMount } from "@vue/test-utils";
-import { getLocalVue, waitForLifecyleEvent } from "tests/jest/helpers"
+import { getLocalVue, waitForLifecyleEvent } from "tests/jest/helpers";
 import DoodadProvider from "./DoodadProvider";
 
 describe("A renderless component", () => {
@@ -157,12 +148,12 @@ describe("A renderless component", () => {
         // component. This is often good enough for waiting for
         // an initial ajax load to finish, for example
         await waitForLifecyleEvent(wrapper.vm, "updated");
-    })
+    });
 
     test("someProp", () => {
         const { someProp } = slotProps;
         expect(someProp).toExist();
         // ...more tests
-    })
-})
+    });
+});
 ```

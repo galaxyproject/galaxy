@@ -38,6 +38,7 @@ from galaxy.model import (
     User,
     UserShareAssociation,
 )
+from galaxy.model.base import transaction
 from galaxy.model.tags import GalaxyTagHandler
 from galaxy.schema.schema import (
     ShareWithExtra,
@@ -57,7 +58,6 @@ class SharableModelManager(
     base.ModelManager,
     secured.OwnableManagerMixin,
     secured.AccessibleManagerMixin,
-    taggable.TaggableManagerMixin,
     annotatable.AnnotatableManagerMixin,
     ratable.RatableManagerMixin,
 ):
@@ -203,7 +203,9 @@ class SharableModelManager(
             self.create_unique_slug(item)
 
         if flush:
-            self.session().flush()
+            session = self.session()
+            with transaction(session):
+                session.commit()
         return user_share_assoc
 
     def unshare_with(self, item, user: User, flush: bool = True):
@@ -214,7 +216,9 @@ class SharableModelManager(
         user_share_assoc = self.get_share_assocs(item, user=user)[0]
         self.session().delete(user_share_assoc)
         if flush:
-            self.session().flush()
+            session = self.session()
+            with transaction(session):
+                session.commit()
         return user_share_assoc
 
     def _query_shared_with(self, user, eagerloads=True, **kwargs):
@@ -279,8 +283,10 @@ class SharableModelManager(
             current_shares.remove(self.unshare_with(item, user, flush=False))
 
         if flush:
-            self.session().flush()
-        return current_shares
+            session = self.session()
+            with transaction(session):
+                session.commit()
+        return current_shares, needs_adding, needs_removing
 
     # .... slugs
     # slugs are human readable strings often used to link to sharable resources (replacing ids)
@@ -302,7 +308,9 @@ class SharableModelManager(
 
         item.slug = new_slug
         if flush:
-            self.session().flush()
+            session = self.session()
+            with transaction(session):
+                session.commit()
         return item
 
     def is_valid_slug(self, slug):
@@ -366,7 +374,9 @@ class SharableModelManager(
         item.slug = self.get_unique_slug(item)
         self.session().add(item)
         if flush:
-            self.session().flush()
+            session = self.session()
+            with transaction(session):
+                session.commit()
         return item
 
     # TODO: def by_slug( self, user, **kwargs ):
@@ -511,7 +521,7 @@ class SharableModelDeserializer(
         """
         unencoded_ids = [self.app.security.decode_id(id_) for id_ in val]
         new_users_shared_with = set(self.manager.user_manager.by_ids(unencoded_ids))
-        current_shares = self.manager.update_current_sharing_with_users(item, new_users_shared_with)
+        current_shares, _, _ = self.manager.update_current_sharing_with_users(item, new_users_shared_with)
         # TODO: or should this return the list of ids?
         return current_shares
 

@@ -9,6 +9,7 @@ from typing import (
 
 from galaxy import web
 from galaxy.managers.context import ProvidesUserContext
+from galaxy.managers.notification import NotificationManager
 from galaxy.managers.workflows import (
     WorkflowContentsManager,
     WorkflowSerializer,
@@ -33,11 +34,12 @@ class WorkflowsService(ServiceBase):
         workflow_contents_manager: WorkflowContentsManager,
         serializer: WorkflowSerializer,
         tool_shed_registry: Registry,
+        notification_manager: NotificationManager,
     ):
         self._workflows_manager = workflows_manager
         self._workflow_contents_manager = workflow_contents_manager
         self._serializer = serializer
-        self.shareable_service = ShareableService(workflows_manager, serializer)
+        self.shareable_service = ShareableService(workflows_manager, serializer, notification_manager)
         self._tool_shed_registry = tool_shed_registry
 
     def index(

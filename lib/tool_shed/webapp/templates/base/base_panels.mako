@@ -3,7 +3,6 @@
 
 <%
     self.has_left_panel = hasattr( self, 'left_panel' )
-    self.has_right_panel = hasattr( self, 'right_panel' )
     self.message_box_visible = app.config.message_box_visible
     self.show_inactivity_warning = False
     self.overlay_visible=False
@@ -19,9 +18,6 @@
 ## Default stylesheets
 <%def name="stylesheets()">
     <!--- base/base_panels.mako stylesheets() -->
-    ${h.css(
-        'bootstrap-tour',
-    )}
     ${h.dist_css(
         'base'
     )}
@@ -174,30 +170,17 @@
 
             ${self.overlay(visible=self.overlay_visible)}
 
-            <div id="columns">
+            <div id="columns" class="d-flex">
                 %if self.has_left_panel:
                     <div id="left">
                         ${self.left_panel()}
-                        <div class="unified-panel-footer">
-                            <div id="left-panel-collapse" class="panel-collapse left"></div>
-                            <div id="left-panel-drag" class="drag"></div>
-                        </div>
-                    </div><!--end left-->
+                    </div>
                 %endif
                 <div id="center" class="inbound">
                     ${self.center_panel()}
-                </div><!--end center-->
-                %if self.has_right_panel:
-                    <div id="right">
-                        ${self.right_panel()}
-                        <div class="unified-panel-footer">
-                            <div id="right-panel-collapse" class="panel-collapse right"></div>
-                            <div id="right-panel-drag" class="drag"></div>
-                        </div>
-                    </div><!--end right-->
-                %endif
-            </div><!--end columns-->
-        </div><!--end everything-->
+                </div>
+            </div>
+        </div>
 
         <div id='dd-helper' style="display: none;"></div>
         ## Allow other body level elements

@@ -262,8 +262,9 @@ class RepositoriesController(BaseAPIController):
                 return repository_dict, repository_metadata_dict, repo_info_dict
             else:
                 log.debug(
-                    "Unable to locate repository_metadata record for repository id %s and changeset_revision %s"
-                    % (str(repository.id), str(changeset_revision))
+                    "Unable to locate repository_metadata record for repository id %s and changeset_revision %s",
+                    repository.id,
+                    changeset_revision,
                 )
                 return repository_dict, {}, {}
         else:
@@ -563,10 +564,17 @@ class RepositoriesController(BaseAPIController):
 
         """
 
-        def handle_repository(trans, rmm, repository, results):
+        def handle_repository(trans, repository, results):
             log.debug(f"Resetting metadata on repository {repository.name}")
             try:
-                rmm.set_repository(repository)
+                rmm = repository_metadata_manager.RepositoryMetadataManager(
+                    app=self.app,
+                    user=trans.user,
+                    resetting_all_metadata_on_repository=True,
+                    updating_installed_repository=False,
+                    repository=repository,
+                    persist=False,
+                )
                 rmm.reset_all_metadata_on_repository_in_tool_shed()
                 rmm_invalid_file_tups = rmm.get_invalid_file_tups()
                 if rmm_invalid_file_tups:
@@ -586,13 +594,6 @@ class RepositoriesController(BaseAPIController):
             results["repository_status"].append(status)
             return results
 
-        rmm = repository_metadata_manager.RepositoryMetadataManager(
-            app=self.app,
-            user=trans.user,
-            resetting_all_metadata_on_repository=True,
-            updating_installed_repository=False,
-            persist=False,
-        )
         start_time = strftime("%Y-%m-%d %H:%M:%S")
         results = dict(start_time=start_time, repository_status=[], successful_count=0, unsuccessful_count=0)
         handled_repository_ids = []
@@ -611,27 +612,36 @@ class RepositoriesController(BaseAPIController):
             my_writable = util.asbool(payload.get("my_writable", False))
         else:
             my_writable = True
+        rmm = repository_metadata_manager.RepositoryMetadataManager(
+            app=self.app,
+            user=trans.user,
+            resetting_all_metadata_on_repository=True,
+            updating_installed_repository=False,
+            persist=False,
+        )
         query = rmm.get_query_for_setting_metadata_on_repositories(my_writable=my_writable, order=False)
         # First reset metadata on all repositories of type repository_dependency_definition.
         for repository in query:
             encoded_id = trans.security.encode_id(repository.id)
             if encoded_id in encoded_ids_to_skip:
                 log.debug(
-                    "Skipping repository with id %s because it is in encoded_ids_to_skip %s"
-                    % (str(repository.id), str(encoded_ids_to_skip))
+                    "Skipping repository with id %s because it is in encoded_ids_to_skip %s",
+                    repository.id,
+                    encoded_ids_to_skip,
                 )
             elif repository.type == rt_util.TOOL_DEPENDENCY_DEFINITION and repository.id not in handled_repository_ids:
-                results = handle_repository(trans, rmm, repository, results)
+                results = handle_repository(trans, repository, results)
         # Now reset metadata on all remaining repositories.
         for repository in query:
             encoded_id = trans.security.encode_id(repository.id)
             if encoded_id in encoded_ids_to_skip:
                 log.debug(
-                    "Skipping repository with id %s because it is in encoded_ids_to_skip %s"
-                    % (str(repository.id), str(encoded_ids_to_skip))
+                    "Skipping repository with id %s because it is in encoded_ids_to_skip %s",
+                    repository.id,
+                    encoded_ids_to_skip,
                 )
             elif repository.type != rt_util.TOOL_DEPENDENCY_DEFINITION and repository.id not in handled_repository_ids:
-                results = handle_repository(trans, rmm, repository, results)
+                results = handle_repository(trans, repository, results)
         stop_time = strftime("%Y-%m-%d %H:%M:%S")
         results["stop_time"] = stop_time
         return json.dumps(results, sort_keys=True, indent=4)
@@ -811,8 +821,9 @@ class RepositoriesController(BaseAPIController):
             return repository_metadata_dict
         else:
             log.debug(
-                "Unable to locate repository_metadata record for repository id %s and changeset_revision %s"
-                % (str(id), str(changeset))
+                "Unable to locate repository_metadata record for repository id %s and changeset_revision %s",
+                id,
+                changeset,
             )
             return {}
 
@@ -910,7 +921,7 @@ class RepositoriesController(BaseAPIController):
             category_ids=category_ids,
         )
 
-        repo, message = repository_util.update_repository(app=self.app, trans=trans, id=id, **update_kwds)
+        repo, message = repository_util.update_repository(trans, id, **update_kwds)
         if repo is None:
             if "You are not the owner" in message:
                 raise InsufficientPermissionsException(message)

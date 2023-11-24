@@ -11,6 +11,7 @@ from galaxy import (
     util,
     web,
 )
+from galaxy.model.base import transaction
 from galaxy.security.validate_user_input import validate_password
 from galaxy.util import inflector
 from galaxy.util.hash_util import new_secure_hash_v2
@@ -119,7 +120,8 @@ class Admin:
                     num_in_groups = len(in_groups) + 1
                 else:
                     num_in_groups = len(in_groups)
-                trans.sa_session.flush()
+                with transaction(trans.sa_session):
+                    trans.sa_session.commit()
                 message = "Role '%s' has been created with %d associated users and %d associated groups.  " % (
                     role.name,
                     len(in_users),
@@ -192,7 +194,8 @@ class Admin:
                         role.name = new_name
                         role.description = new_description
                         trans.sa_session.add(role)
-                        trans.sa_session.flush()
+                        with transaction(trans.sa_session):
+                            trans.sa_session.commit()
                         message = f"Role '{old_name}' has been renamed to '{new_name}'"
                     return trans.response.send_redirect(
                         web.url_for(
@@ -231,7 +234,8 @@ class Admin:
                             for dhp in history.default_permissions:
                                 if role == dhp.role:
                                     trans.sa_session.delete(dhp)
-                        trans.sa_session.flush()
+                        with transaction(trans.sa_session):
+                            trans.sa_session.commit()
             in_groups = [trans.sa_session.query(trans.app.model.Group).get(x) for x in util.listify(params.in_groups)]
             trans.app.security_agent.set_entity_role_associations(roles=[role], users=in_users, groups=in_groups)
             trans.sa_session.refresh(role)
@@ -325,7 +329,8 @@ class Admin:
             role = get_role(trans, role_id)
             role.deleted = True
             trans.sa_session.add(role)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
             message += f" {role.name} "
         trans.response.send_redirect(
             web.url_for(controller="admin", action="roles", message=util.sanitize_text(message), status="done")
@@ -352,7 +357,8 @@ class Admin:
                 )
             role.deleted = False
             trans.sa_session.add(role)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
             count += 1
             undeleted_roles += f" {role.name}"
         message = "Undeleted %d roles: %s" % (count, undeleted_roles)
@@ -404,7 +410,8 @@ class Admin:
             # Delete DatasetPermissionss
             for dp in role.dataset_actions:
                 trans.sa_session.delete(dp)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
             message += f" {role.name} "
         trans.response.send_redirect(
             web.url_for(controller="admin", action="roles", message=util.sanitize_text(message), status="done")
@@ -464,7 +471,8 @@ class Admin:
                     if group.name != new_name:
                         group.name = new_name
                         trans.sa_session.add(group)
-                        trans.sa_session.flush()
+                        with transaction(trans.sa_session):
+                            trans.sa_session.commit()
                         message = f"Group '{old_name}' has been renamed to '{new_name}'"
                     return trans.response.send_redirect(
                         web.url_for(
@@ -567,7 +575,8 @@ class Admin:
                 # Create the group
                 group = trans.app.model.Group(name=name)
                 trans.sa_session.add(group)
-                trans.sa_session.flush()
+                with transaction(trans.sa_session):
+                    trans.sa_session.commit()
                 # Create the UserRoleAssociations
                 for user in [trans.sa_session.query(trans.app.model.User).get(x) for x in in_users]:
                     uga = trans.app.model.UserGroupAssociation(user, group)
@@ -586,7 +595,8 @@ class Admin:
                     num_in_roles = len(in_roles) + 1
                 else:
                     num_in_roles = len(in_roles)
-                trans.sa_session.flush()
+                with transaction(trans.sa_session):
+                    trans.sa_session.commit()
                 message = "Group '%s' has been created with %d associated users and %d associated roles.  " % (
                     group.name,
                     len(in_users),
@@ -640,7 +650,8 @@ class Admin:
             group = get_group(trans, group_id)
             group.deleted = True
             trans.sa_session.add(group)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
             message += f" {group.name} "
         trans.response.send_redirect(
             web.url_for(controller="admin", action="groups", message=util.sanitize_text(message), status="done")
@@ -669,7 +680,8 @@ class Admin:
                 )
             group.deleted = False
             trans.sa_session.add(group)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
             count += 1
             undeleted_groups += f" {group.name}"
         message = "Undeleted %d groups: %s" % (count, undeleted_groups)
@@ -706,7 +718,8 @@ class Admin:
             # Delete GroupRoleAssociations
             for gra in group.roles:
                 trans.sa_session.delete(gra)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
             message += f" {group.name} "
         trans.response.send_redirect(
             web.url_for(controller="admin", action="groups", message=util.sanitize_text(message), status="done")
@@ -741,7 +754,8 @@ class Admin:
                 else:
                     user.set_password_cleartext(password)
                     trans.sa_session.add(user)
-                    trans.sa_session.flush()
+                    with transaction(trans.sa_session):
+                        trans.sa_session.commit()
             if not message and not status:
                 message = "Passwords reset for %d %s." % (len(user_ids), inflector.cond_plural(len(user_ids), "user"))
                 status = "done"
@@ -793,7 +807,8 @@ class Admin:
                 user.username = uname_hash
 
             trans.sa_session.add(user)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
             message += f" {user.email} "
         trans.response.send_redirect(
             web.url_for(controller="admin", action="users", message=util.sanitize_text(message), status="done")
@@ -820,7 +835,8 @@ class Admin:
                 )
             user.deleted = False
             trans.sa_session.add(user)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
             count += 1
             undeleted_users += f" {user.email}"
         message = "Undeleted %d users: %s" % (count, undeleted_users)
@@ -887,7 +903,8 @@ class Admin:
             # Purge the user
             user.purged = True
             trans.sa_session.add(user)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
             message += f"{user.email} "
         trans.response.send_redirect(
             web.url_for(controller="admin", action="users", message=util.sanitize_text(message), status="done")

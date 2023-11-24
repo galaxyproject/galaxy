@@ -18,6 +18,7 @@ from galaxy.model import (
     WorkflowStep,
     WorkflowStepConnection,
 )
+from galaxy.model.base import transaction
 from galaxy.tools.parameters.basic import workflow_building_modes
 from galaxy.workflow.refactor.schema import RefactorActionExecutionMessageTypeEnum
 from galaxy_test.base.populators import WorkflowPopulator
@@ -789,7 +790,8 @@ steps:
         # Do a bunch of checks to ensure nothing workflow related was written to the database
         # or even added to the sa_session.
         sa_session = self._app.model.session
-        sa_session.flush()
+        with transaction(sa_session):
+            sa_session.commit()
 
         sw_update_time = self._model_last_time(StoredWorkflow)
         assert sw_update_time
@@ -803,8 +805,8 @@ steps:
         wo_last_id = self._model_last_id(WorkflowOutput)
 
         response = self._refactor(actions, stored_workflow=stored_workflow, dry_run=True)
-        sa_session.flush()
-        sa_session.expunge_all()
+        with transaction(sa_session):
+            sa_session.commit()
         assert sw_update_time == self._model_last_time(StoredWorkflow)
         assert w_update_time == self._model_last_time(Workflow)
         assert ws_last_id == self._model_last_id(WorkflowStep)
@@ -890,6 +892,10 @@ class MockTrans(ProvidesAppContext):
         self.user = user
         self.history = None
         self.workflow_building_mode = workflow_building_modes.ENABLED
+
+    @property
+    def galaxy_session(self):
+        return None
 
     @property
     def app(self):

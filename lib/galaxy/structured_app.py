@@ -29,6 +29,7 @@ from galaxy.quota import QuotaAgent
 from galaxy.security.idencoding import IdEncodingHelper
 from galaxy.security.vault import Vault
 from galaxy.tool_shed.cache import ToolShedRepositoryCache
+from galaxy.tool_util.deps.containers import ContainerFinder
 from galaxy.tool_util.deps.views import DependencyResolversView
 from galaxy.tool_util.verify import test_data
 from galaxy.util.dbkeys import GenomeBuilds
@@ -72,6 +73,7 @@ class BasicSharedApp(Container):
 
 
 class MinimalToolApp(Protocol):
+    is_webapp: bool
     name: str
     # Leave config as Any: in a full Galaxy app this is a GalaxyAppConfiguration object, but this is mostly dynamically
     # generated, and here we want to also allow other kinds of configuration objects (e.g. a Bunch).
@@ -113,6 +115,7 @@ class MinimalManagerApp(MinimalApp):
     dynamic_tool_manager: Any  # 'galaxy.managers.tools.DynamicToolManager'
     genomes: "Genomes"
     error_reports: "ErrorReports"
+    notification_manager: Any  # 'galaxy.managers.notification.NotificationManager'
     object_store: BaseObjectStore
     tool_shed_registry: ToolShedRegistry
 
@@ -139,6 +142,7 @@ class StructuredApp(MinimalManagerApp):
 
     amqp_internal_connection_obj: Optional[Connection]
     dependency_resolvers_view: DependencyResolversView
+    container_finder: ContainerFinder
     tool_dependency_dir: Optional[str]
     test_data_resolver: test_data.TestDataResolver
     trs_proxy: TrsProxy

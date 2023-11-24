@@ -36,7 +36,8 @@ while read -r package_dir; do
 
     # Prevent execution of alembic/env.py at test collection stage (alembic.context not set)
     # Also ignore functional tests (galaxy_test/ and tool_shed/test/).
-    unit_extra='--doctest-modules --ignore=galaxy/model/migrations/alembic/ --ignore=galaxy_test/ --ignore=tool_shed/test/'
+    unit_extra='--doctest-modules --ignore=galaxy/model/migrations/alembic/ --ignore=galaxy_test/
+		--ignore=tool_shed/test/ --ignore=tool_shed/webapp/model/migrations/alembic/'
     # Ignore exit code 5 (no tests ran)
     pytest $unit_extra -m 'not external_dependency_management' . || test $? -eq 5
     make mypy

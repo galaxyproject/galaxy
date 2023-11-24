@@ -63,6 +63,15 @@ DisableModeQueryParam: Optional[RemoteFilesDisableMode] = Query(
     ),
 )
 
+BrowsableQueryParam: Optional[bool] = Query(
+    default=True,
+    title="Browsable filesources only",
+    description=(
+        "Whether to return browsable filesources only. The default is `True`, which will omit filesources"
+        "like `http` and `base64` that do not implement a list method."
+    ),
+)
+
 
 @router.cbv
 class FastAPIRemoteFiles:
@@ -97,6 +106,7 @@ class FastAPIRemoteFiles:
     async def plugins(
         self,
         user_ctx: ProvidesUserContext = DependsOnTrans,
+        browsable_only: Optional[bool] = BrowsableQueryParam,
     ) -> FilesSourcePluginList:
         """Display plugin information for each of the gxfiles:// URI targets available."""
-        return self.manager.get_files_source_plugins(user_ctx)
+        return self.manager.get_files_source_plugins(user_ctx, browsable_only)

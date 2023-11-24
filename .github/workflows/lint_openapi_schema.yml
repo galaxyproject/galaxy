@@ -20,7 +20,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        python-version: ['3.7']
+        python-version: ['3.7', '3.11']
     steps:
       - uses: actions/checkout@v3
         with:
@@ -43,7 +43,7 @@ jobs:
           path: 'galaxy root/.venv'
           key: gxy-venv-${{ runner.os }}-${{ steps.full-python-version.outputs.version }}-${{ hashFiles('galaxy root/requirements.txt') }}-api
       - name: Install dependencies
-        run: ./scripts/common_startup.sh --skip-client-build
+        run: ./scripts/common_startup.sh --dev-wheels --skip-client-build
         working-directory: 'galaxy root'
       - name: Lint schema
         run: make lint-api-schema

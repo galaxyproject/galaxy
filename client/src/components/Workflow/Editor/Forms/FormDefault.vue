@@ -57,7 +57,7 @@
     </FormCard>
 </template>
 
-<script lang="ts" setup>
+<script setup lang="ts">
 import FormDisplay from "@/components/Form/FormDisplay.vue";
 import FormCard from "@/components/Form/FormCard.vue";
 import FormElement from "@/components/Form/FormElement.vue";

@@ -1,41 +1,7 @@
 import $ from "jquery";
 import _ from "underscore";
 import Backbone from "backbone";
-import addLogging from "utils/add-logging";
 import _l from "utils/localization";
-
-//==============================================================================
-/** @class Mixin to add logging capabilities to an object.
- *      Designed to allow switching an objects log output off/on at one central
- *      statement. Can be used with plain browser console (or something more
- *      complex like an AJAX logger).
- *  <br />NOTE: currently only uses the console.debug log function
- *  (as opposed to debug, error, warn, etc.)
- *  @name LoggableMixin
- *
- *  @example
- *  // Add to your models/views at the definition using chaining:
- *      var MyModel = Backbone.Model.extend( LoggableMixin ).extend({ // ... });
- *
- *  // or - more explicitly AFTER the definition:
- *      var MyModel = Backbone.Model.extend({
- *          logger  : console
- *          // ...
- *          this.log( '$#%& it! - broken already...' );
- *      })
- *      _.extend( MyModel.prototype, LoggableMixin )
- *
- */
-var LoggableMixin = /** @lends LoggableMixin# */ {
-    // replace null with console (if available) to see all logs for a particular view/model
-    /** The logging object whose log function will be used to output
-     *      messages. Null will supress all logging. Commonly set to console.
-     */
-    logger: null,
-    /** @type {String} a namespace for filtering/focusing log output */
-    _logNamespace: ".",
-};
-addLogging(LoggableMixin);
 
 //==============================================================================
 /** Backbone model that syncs to the browser's sessionStorage API.
@@ -196,7 +162,7 @@ var SearchableModelMixin = {
     /** search the attribute with key attrKey for the string searchFor; T/F if found */
     searchAttribute: function (attrKey, searchFor) {
         var attrVal = this.get(attrKey);
-        //this.debug( 'searchAttribute', attrKey, attrVal, searchFor );
+        //console.debug( 'searchAttribute', attrKey, attrVal, searchFor );
         // bail if empty searchFor or unsearchable values
         if (!searchFor || attrVal === undefined || attrVal === null) {
             return false;
@@ -210,7 +176,7 @@ var SearchableModelMixin = {
 
     /** deep(er) search for array attributes; T/F if found */
     _searchArrayAttribute: function (array, searchFor) {
-        //this.debug( '_searchArrayAttribute', array, searchFor );
+        //console.debug( '_searchArrayAttribute', array, searchFor );
         searchFor = searchFor.toLowerCase();
         //precondition: searchFor has already been validated as non-empty string
         //precondition: assumes only 1 level array
@@ -575,7 +541,6 @@ function buildComparator(attribute_name, options) {
 
 //==============================================================================
 export default {
-    LoggableMixin: LoggableMixin,
     SessionStorageModel: SessionStorageModel,
     mixin: mixin,
     SearchableModelMixin: SearchableModelMixin,

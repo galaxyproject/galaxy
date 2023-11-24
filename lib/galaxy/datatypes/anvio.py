@@ -5,17 +5,14 @@ https://github.com/merenlab/anvio
 import glob
 import logging
 import os
-from typing import (
-    Optional,
-    TYPE_CHECKING,
-)
+from typing import Optional
 
-from galaxy.datatypes.data import GeneratePrimaryFileDataset
 from galaxy.datatypes.metadata import MetadataElement
+from galaxy.datatypes.protocols import (
+    DatasetProtocol,
+    HasExtraFilesAndMetadata,
+)
 from galaxy.datatypes.text import Html
-
-if TYPE_CHECKING:
-    from galaxy.model import DatasetInstance
 
 log = logging.getLogger(__name__)
 
@@ -29,7 +26,7 @@ class AnvioComposite(Html):
     file_ext = "anvio_composite"
     composite_type = "auto_primary_file"
 
-    def generate_primary_file(self, dataset: GeneratePrimaryFileDataset) -> str:
+    def generate_primary_file(self, dataset: HasExtraFilesAndMetadata) -> str:
         """
         This is called only at upload to write the html file
         cannot rename the datasets here - they come with the default unfortunately
@@ -68,7 +65,7 @@ class AnvioComposite(Html):
         """Returns the mime type of the datatype"""
         return "text/html"
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         """Set the peek and blurb text"""
         if not dataset.dataset.purged:
             dataset.peek = "Anvio database (multiple files)"
@@ -77,7 +74,7 @@ class AnvioComposite(Html):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: "DatasetInstance") -> str:
+    def display_peek(self, dataset: DatasetProtocol) -> str:
         """Create HTML content, used for displaying peek."""
         try:
             return dataset.peek
@@ -97,7 +94,7 @@ class AnvioDB(AnvioComposite):
         if self._anvio_basename is not None:
             self.add_composite_file(self._anvio_basename, is_binary=True, optional=False)
 
-    def set_meta(self, dataset: "DatasetInstance", overwrite: bool = True, **kwd) -> None:
+    def set_meta(self, dataset: DatasetProtocol, overwrite: bool = True, **kwd) -> None:
         """
         Set the anvio_basename based upon actual extra_files_path contents.
         """

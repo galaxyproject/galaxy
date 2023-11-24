@@ -1,15 +1,11 @@
-import base64
 import ipaddress
 import logging
 import os
 import socket
 import tempfile
-import urllib.request
 from typing import (
     List,
     Optional,
-    TYPE_CHECKING,
-    Union,
 )
 from urllib.parse import urlparse
 
@@ -17,17 +13,16 @@ from galaxy.exceptions import (
     AdminRequiredException,
     ConfigDoesNotAllowException,
 )
+from galaxy.files import (
+    ConfiguredFileSources,
+    NoMatchingFileSource,
+)
+from galaxy.files.sources import FilesSourceOptions
 from galaxy.util import (
-    DEFAULT_SOCKET_TIMEOUT,
-    get_charset_from_http_headers,
     stream_to_open_named_file,
     unicodify,
 )
-from galaxy.util.drs import fetch_drs_to_file
-
-if TYPE_CHECKING:
-    from galaxy.files import ConfiguredFileSources
-
+from galaxy.util.config_parsers import IpAllowedListEntryT
 
 log = logging.getLogger(__name__)
 
@@ -44,44 +39,31 @@ def stream_url_to_str(
 
 
 def stream_url_to_file(
-    path: str,
+    url: str,
     file_sources: Optional["ConfiguredFileSources"] = None,
     prefix: str = "gx_file_stream",
     dir: Optional[str] = None,
     user_context=None,
+    target_path: Optional[str] = None,
+    file_source_opts: Optional[FilesSourceOptions] = None,
 ) -> str:
-    temp_name: str
-    if file_sources and file_sources.looks_like_uri(path):
-        file_source_path = file_sources.get_file_source_path(path)
-        with tempfile.NamedTemporaryFile(prefix=prefix, delete=False, dir=dir) as temp:
-            temp_name = temp.name
-        file_source_path.file_source.realize_to(file_source_path.path, temp_name, user_context=user_context)
-    elif path.startswith("drs://"):
-        with tempfile.NamedTemporaryFile(prefix=prefix, delete=False) as temp:
-            temp_name = temp.name
-            fetch_drs_to_file(path, temp_name)
-    elif path.startswith("base64://"):
-        with tempfile.NamedTemporaryFile(prefix=prefix, delete=False, dir=dir) as temp:
-            temp_name = temp.name
-            temp.write(base64.b64decode(path[len("base64://") :]))
-            temp.flush()
+    if file_sources is None:
+        file_sources = ConfiguredFileSources.from_dict(None, load_stock_plugins=True)
+    file_source, rel_path = file_sources.get_file_source_path(url)
+    if file_source:
+        if not target_path:
+            with tempfile.NamedTemporaryFile(prefix=prefix, delete=False, dir=dir) as temp:
+                target_path = temp.name
+        file_source.realize_to(rel_path, target_path, user_context=user_context, opts=file_source_opts)
+        return target_path
     else:
-        page = urllib.request.urlopen(path, timeout=DEFAULT_SOCKET_TIMEOUT)  # page will be .close()ed in stream_to_file
-        temp_name = stream_to_file(
-            page, prefix=prefix, source_encoding=get_charset_from_http_headers(page.headers), dir=dir
-        )
-    return temp_name
+        raise NoMatchingFileSource(f"Could not find a matching handler for: {url}")
 
 
 def stream_to_file(stream, suffix="", prefix="", dir=None, text=False, **kwd):
     """Writes a stream to a temporary file, returns the temporary file's name"""
     fd, temp_name = tempfile.mkstemp(suffix=suffix, prefix=prefix, dir=dir, text=text)
     return stream_to_open_named_file(stream, fd, temp_name, **kwd)
-
-
-IpAddressT = Union[ipaddress.IPv4Address, ipaddress.IPv6Address]
-IpNetwrokT = Union[ipaddress.IPv4Network, ipaddress.IPv6Network]
-IpAllowedListEntryT = Union[IpAddressT, IpNetwrokT]
 
 
 def validate_uri_access(uri: str, is_admin: bool, ip_allowlist: List[IpAllowedListEntryT]) -> None:
@@ -141,7 +123,7 @@ def validate_non_local(uri: str, ip_allowlist: List[IpAllowedListEntryT]) -> str
             parsed_url = parsed_url[:idx]
 
     # safe to log out, no credentials/request path, just an IP + port
-    log.debug("parsed url, port: %s : %s", parsed_url, port)
+    log.debug("parsed url %s, port:  %s", parsed_url, port)
     # Call getaddrinfo to resolve hostname into tuples containing IPs.
     addrinfo = socket.getaddrinfo(parsed_url, port)
     # Get the IP addresses that this entry resolves to (uniquely)

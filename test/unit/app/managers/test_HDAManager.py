@@ -89,18 +89,6 @@ class TestHDAManager(HDATestCase):
         assert hda3.history is None, "history will be None"
         assert hda3.hid is None, "should allow setting hid to None (or any other value)"
 
-    def test_hda_tags(self):
-        owner = self.user_manager.create(**user2_data)
-        history1 = self.history_manager.create(name="history1", user=owner)
-        dataset1 = self.dataset_manager.create()
-        hda1 = self.hda_manager.create(history=history1, dataset=dataset1)
-
-        self.log("should be able to set tags on an hda")
-        tags_to_set = ["tag-one", "tag-two"]
-        self.hda_manager.set_tags(hda1, tags_to_set, user=owner)
-        tag_str_array = self.hda_manager.get_tags(hda1)
-        assert sorted(tags_to_set) == sorted(tag_str_array)
-
     def test_hda_annotation(self):
         owner = self.user_manager.create(**user2_data)
         history1 = self.history_manager.create(name="history1", user=owner)
@@ -130,11 +118,9 @@ class TestHDAManager(HDATestCase):
         self.log("tags should be copied between HDAs")
         tagged = self.hda_manager.create(history=history1, dataset=self.dataset_manager.create())
         tags_to_set = ["tag-one", "tag-two"]
-        self.hda_manager.set_tags(tagged, tags_to_set, user=owner)
-
+        self.app.tag_handler.add_tags_from_list(owner, tagged, tags_to_set)
         hda2 = self.hda_manager.copy(tagged, history=history1)
-        tag_str_array = self.hda_manager.get_tags(hda2)
-        assert sorted(tags_to_set) == sorted(tag_str_array)
+        assert tagged.make_tag_string_list() == hda2.make_tag_string_list()
 
         self.log("annotations should be copied between HDAs")
         annotated = self.hda_manager.create(history=history1, dataset=self.dataset_manager.create())

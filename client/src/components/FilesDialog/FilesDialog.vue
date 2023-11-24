@@ -67,6 +67,7 @@ import { Model } from "./model";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCaretLeft } from "@fortawesome/free-solid-svg-icons";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 library.add(faCaretLeft);
 export default {
@@ -312,8 +313,8 @@ export default {
                         this.showTime = false;
                         this.showDetails = true;
                     })
-                    .catch((errorMessage) => {
-                        this.errorMessage = errorMessage;
+                    .catch((error) => {
+                        this.errorMessage = errorMessageAsString(error);
                     });
             } else {
                 this.services
@@ -325,8 +326,8 @@ export default {
                         this.showTime = true;
                         this.showDetails = false;
                     })
-                    .catch((errorMessage) => {
-                        this.errorMessage = errorMessage;
+                    .catch((error) => {
+                        this.errorMessage = errorMessageAsString(error);
                     });
             }
         },

@@ -246,6 +246,9 @@ TOOL_SHED_TEST_TMP_DIR          Defaults to random /tmp directory - place for
 TOOL_SHED_TEST_OMIT_GALAXY      Do not launch a Galaxy server for tool shed
                                 testing.
 GALAXY_TEST_DISABLE_ACCESS_LOG  Do not log access messages
+GALAXY_TEST_AXE_SCRIPT_URL      URL of aXe script to use for accessibility testing.
+GALAXY_TEST_SKIP_AXE            Set this to '1' to skip aXe accessibilty testing when
+                                running selenium tests.
 
 We're tyring annotate API and Selenium tests with the resources they require
 and create to make them more appropriate to run on established Galaxy instances.
@@ -467,7 +470,15 @@ do
           ;;
       -u|-unit|--unit)
           report_file="run_unit_tests.html"
-          unit_extra='--doctest-modules --ignore lib/galaxy/web/proxy/js/node_modules/ --ignore lib/tool_shed/webapp/controllers --ignore lib/galaxy/jobs/runners/chronos.py --ignore lib/tool_shed/webapp/model/migrate --ignore lib/galaxy/tools/bundled --ignore lib/galaxy_test --ignore lib/tool_shed/test --ignore lib/galaxy/model/migrations/alembic'
+          unit_extra='--doctest-modules
+			--ignore lib/galaxy/jobs/runners/chronos.py
+			--ignore lib/galaxy/model/migrations/alembic
+			--ignore lib/galaxy/tools/bundled
+			--ignore lib/galaxy/web/proxy/js/node_modules/
+			--ignore lib/galaxy_test
+			--ignore lib/tool_shed/test
+			--ignore lib/tool_shed/webapp/controllers
+			--ignore=lib/tool_shed/webapp/model/migrations/alembic/'
           generate_cwl_conformance_tests=1
           if [ $# -gt 1 ]; then
               unit_extra="$unit_extra $2"

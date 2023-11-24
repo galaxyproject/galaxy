@@ -3,6 +3,10 @@ from urllib.parse import urljoin
 from requests import post
 
 from galaxy_test.base import api_asserts
+from tool_shed_client.schema import (
+    CreateUserRequest,
+    User,
+)
 from ..base.api import (
     email_to_username,
     ensure_user_with_email,
@@ -24,14 +28,19 @@ class TestShedUsersApi(ShedApiTestCase):
         }
         email = "testcreateuser@bx.psu.edu"
         password = "mycoolpassword123"
+        username = email_to_username(email)
         body = {
             "email": email,
             "password": password,
-            "username": email_to_username(email),
+            "username": username,
         }
-        response = post(url, json=body, headers=headers)
+        request = CreateUserRequest(**body)
+        response = post(url, json=request.dict(), headers=headers)
         api_asserts.assert_status_code_is_ok(response)
         self._verify_username_password(email, password)
+        user = User(**response.json())
+        assert user.id
+        assert user.username == username
 
     def test_create_user_interactor(self):
         email = "testcreateuserinteractor@bx.psu.edu"

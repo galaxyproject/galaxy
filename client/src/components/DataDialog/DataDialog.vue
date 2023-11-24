@@ -47,6 +47,7 @@ import { Model } from "./model";
 import { Services } from "./services";
 import { getAppRoot } from "onload/loadConfig";
 import { useGlobalUploadModal } from "composables/globalUploadModal";
+import { errorMessageAsString } from "@/utils/simple-error";
 
 Vue.use(BootstrapVue);
 
@@ -175,8 +176,8 @@ export default {
                     this.formatRows();
                     this.optionsShow = true;
                 })
-                .catch((errorMessage) => {
-                    this.errorMessage = errorMessage;
+                .catch((error) => {
+                    this.errorMessage = errorMessageAsString(error);
                 });
         },
     },

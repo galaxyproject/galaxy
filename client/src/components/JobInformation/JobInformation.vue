@@ -5,7 +5,7 @@
         <table id="job-information" class="tabletip info_data_table">
             <tbody>
                 <tr v-if="job && job.tool_id">
-                    <td>Galaxy Tool ID:</td>
+                    <td>Galaxy Tool ID</td>
                     <td id="galaxy-tool-id">
                         {{ job.tool_id }}
                         <copy-to-clipboard
@@ -14,8 +14,12 @@
                             title="Copy Tool ID" />
                     </td>
                 </tr>
+                <tr v-if="job && job.state">
+                    <td>Job State</td>
+                    <td data-description="galaxy-job-state">{{ job.state }}</td>
+                </tr>
                 <tr v-if="job && job.tool_version">
-                    <td>Galaxy Tool Version:</td>
+                    <td>Galaxy Tool Version</td>
                     <td id="galaxy-tool-version">{{ job.tool_version }}</td>
                 </tr>
                 <tr v-if="job && includeTimes">
@@ -45,7 +49,7 @@
                     :code-label="'Unexpected Job Errors'"
                     :code-item="job.traceback" />
                 <tr v-if="job">
-                    <td>Tool Exit Code:</td>
+                    <td>Tool Exit Code</td>
                     <td id="exit-code">{{ job.exit_code }}</td>
                 </tr>
                 <tr v-if="job && job.job_messages && job.job_messages.length > 0" id="job-messages">
@@ -58,11 +62,11 @@
                 </tr>
                 <slot></slot>
                 <tr v-if="job && job.id">
-                    <td>Job API ID:</td>
+                    <td>Job API ID</td>
                     <td id="encoded-job-id">{{ job.id }} <decoded-id :id="job.id" /></td>
                 </tr>
                 <tr v-if="job && job.copied_from_job_id">
-                    <td>Copied from Job API ID:</td>
+                    <td>Copied from Job API ID</td>
                     <td id="encoded-copied-from-job-id">
                         {{ job.copied_from_job_id }} <decoded-id :id="job.copied_from_job_id" />
                     </td>

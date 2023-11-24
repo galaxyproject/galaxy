@@ -8,8 +8,14 @@ from galaxy.webapps.galaxy.services.base import model_store_storage_target
 
 
 class MockShortTermStorageAllocator(ShortTermStorageAllocator):
+    def __init__(self, expected_filename: str, expected_mime_type: str) -> None:
+        super().__init__()
+        self.expected_filename = expected_filename
+        self.expected_mime_type = expected_mime_type
+
     def new_target(self, filename, mime_type):
-        return filename, mime_type
+        assert filename == self.expected_filename
+        assert mime_type == self.expected_mime_type
 
 
 @pytest.mark.parametrize(
@@ -29,9 +35,7 @@ class MockShortTermStorageAllocator(ShortTermStorageAllocator):
     ],
 )
 def test_model_store_storage_target(file_name: str, model_store_format: str, expected: Tuple[str, str]):
-    mock_sts_allocator = MockShortTermStorageAllocator()
-    actual = model_store_storage_target(
+    mock_sts_allocator = MockShortTermStorageAllocator(*expected)
+    model_store_storage_target(
         short_term_storage_allocator=mock_sts_allocator, file_name=file_name, model_store_format=model_store_format
     )
-
-    assert actual == expected

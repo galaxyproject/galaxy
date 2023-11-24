@@ -13,6 +13,7 @@ from galaxy import model
 from galaxy.app_unittest_utils.tools_support import UsesTools
 from galaxy.config_watchers import ConfigWatchers
 from galaxy.model import tool_shed_install
+from galaxy.model.base import transaction
 from galaxy.model.tool_shed_install import mapping
 from galaxy.tool_util.unittest_utils import mock_trans
 from galaxy.tool_util.unittest_utils.sample_data import (
@@ -121,7 +122,9 @@ class BaseToolBoxTestCase(TestCase, UsesTools):
         repository.deleted = False
         repository.uninstalled = False
         self.app.install_model.context.add(repository)
-        self.app.install_model.context.flush()
+        session = self.app.install_model.context
+        with transaction(session):
+            session.commit()
         return repository
 
     def _setup_two_versions(self):
@@ -129,20 +132,26 @@ class BaseToolBoxTestCase(TestCase, UsesTools):
         version1 = tool_shed_install.ToolVersion()
         version1.tool_id = "github.com/galaxyproject/example/test_tool/0.1"
         self.app.install_model.context.add(version1)
-        self.app.install_model.context.flush()
+        session = self.app.install_model.context
+        with transaction(session):
+            session.commit()
 
         self._repo_install(changeset="2")
         version2 = tool_shed_install.ToolVersion()
         version2.tool_id = "github.com/galaxyproject/example/test_tool/0.2"
         self.app.install_model.context.add(version2)
-        self.app.install_model.context.flush()
+        session = self.app.install_model.context
+        with transaction(session):
+            session.commit()
 
         version_association = tool_shed_install.ToolVersionAssociation()
         version_association.parent_id = version1.id
         version_association.tool_id = version2.id
 
         self.app.install_model.context.add(version_association)
-        self.app.install_model.context.flush()
+        session = self.app.install_model.context
+        with transaction(session):
+            session.commit()
 
     def _setup_two_versions_in_config(self, section=False):
         if section:
@@ -384,14 +393,14 @@ class TestToolBox(BaseToolBoxTestCase):
         self._add_config("""<toolbox><tool file="tool.xml" /></toolbox>""")
 
         self.assert_integerated_tool_panel(exists=False)
-        self.toolbox
+        self.toolbox  # noqa: B018
         self.assert_integerated_tool_panel(exists=True)
 
     def test_groups_tools_in_section(self):
         self._init_tool()
         self._setup_two_versions_in_config(section=True)
         self._setup_two_versions()
-        self.toolbox
+        self.toolbox  # noqa: B018
         self.__verify_two_test_tools()
 
         # Assert only newer version of the tool loaded into the panel.
@@ -527,7 +536,9 @@ class TestToolBox(BaseToolBoxTestCase):
         stored_workflow.user = user
         self.app.model.context.add(workflow)
         self.app.model.context.add(stored_workflow)
-        self.app.model.context.flush()
+        session = self.app.model.context
+        with transaction(session):
+            session.commit()
         return stored_workflow
 
     def __verify_two_test_tools(self):
@@ -602,7 +613,7 @@ class TestToolBox(BaseToolBoxTestCase):
     def __setup_shed_tool_conf(self):
         self._add_config("""<toolbox tool_path="."></toolbox>""")
 
-        self.toolbox  # create toolbox
+        self.toolbox  # noqa: B018 create toolbox
         assert not self.reindexed
 
         os.remove(self.integrated_tool_panel_path)

@@ -14,6 +14,7 @@ from galaxy.exceptions import (
 )
 from galaxy.managers.base import decode_id
 from galaxy.managers.context import ProvidesAppContext
+from galaxy.model.base import transaction
 from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.fields import (
     DecodedDatabaseIdField,
@@ -58,7 +59,8 @@ class GroupsManager:
         encoded_role_ids = payload.get("role_ids", [])
         roles = self._get_roles_by_encoded_ids(sa_session, encoded_role_ids)
         trans.app.security_agent.set_entity_group_associations(groups=[group], roles=roles, users=users)
-        sa_session.flush()
+        with transaction(sa_session):
+            sa_session.commit()
 
         encoded_id = DecodedDatabaseIdField.encode(group.id)
         item = group.to_dict(view="element", value_mapper={"id": DecodedDatabaseIdField.encode})
@@ -95,7 +97,8 @@ class GroupsManager:
         self._app.security_agent.set_entity_group_associations(
             groups=[group], roles=roles, users=users, delete_existing_assocs=False
         )
-        sa_session.flush()
+        with transaction(sa_session):
+            sa_session.commit()
 
     def _check_duplicated_group_name(self, sa_session: galaxy_scoped_session, group_name: str) -> None:
         if sa_session.query(model.Group).filter(model.Group.name == group_name).first():

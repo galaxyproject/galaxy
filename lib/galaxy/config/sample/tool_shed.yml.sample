@@ -288,6 +288,16 @@ tool_shed:
   # store this information.
   #citation_cache_lock_dir: database/citations/lock
 
+  # Url to database used by beaker for citation related caching.
+  #citation_cache_url: null
+
+  # Database table used by beaker for citation related caching.
+  #citation_cache_table_name: beaker_cache
+
+  # Schema of database table used by beaker for citation related
+  # caching.
+  #citation_cache_schema_name: null
+
   # Turn on logging of user actions to the database.  Actions currently
   # logged are grid views, tool searches, and use of "recently" used
   # tools menu.  The log_events and log_actions functionality will

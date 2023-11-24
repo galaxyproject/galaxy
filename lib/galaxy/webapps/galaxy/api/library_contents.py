@@ -28,6 +28,7 @@ from galaxy.model import (
     LibraryDataset,
     tags,
 )
+from galaxy.model.base import transaction
 from galaxy.structured_app import StructuredApp
 from galaxy.web import expose_api
 from galaxy.webapps.base.controller import (
@@ -182,7 +183,7 @@ class LibraryContentsController(
             rval["parent_library_id"] = trans.security.encode_id(rval["parent_library_id"])
 
             tag_manager = tags.GalaxyTagHandler(trans.sa_session)
-            rval["tags"] = tag_manager.get_tags_str(content.library_dataset_dataset_association.tags)
+            rval["tags"] = tag_manager.get_tags_list(content.library_dataset_dataset_association.tags)
         return rval
 
     @expose_api
@@ -317,11 +318,13 @@ class LibraryContentsController(
                     trans.sa_session.add(ex_meta)
                     v.extended_metadata = ex_meta
                     trans.sa_session.add(v)
-                    trans.sa_session.flush()
+                    with transaction(trans.sa_session):
+                        trans.sa_session.commit()
                     for path, value in self._scan_json_block(ex_meta_payload):
                         meta_i = ExtendedMetadataIndex(ex_meta, path, value)
                         trans.sa_session.add(meta_i)
-                    trans.sa_session.flush()
+                    with transaction(trans.sa_session):
+                        trans.sa_session.commit()
                 if type(v) == trans.app.model.LibraryDatasetDatasetAssociation:
                     v = v.library_dataset
                 encoded_id = trans.security.encode_id(v.id)
@@ -432,7 +435,8 @@ class LibraryContentsController(
                 metadata_safe=True,
             )
             trans.sa_session.add(assoc)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
 
     def _decode_library_content_id(self, content_id):
         if len(content_id) % 16 == 0:
@@ -482,7 +486,8 @@ class LibraryContentsController(
             if purge:
                 ld.purged = True
                 trans.sa_session.add(ld)
-                trans.sa_session.flush()
+                with transaction(trans.sa_session):
+                    trans.sa_session.commit()
 
                 # TODO: had to change this up a bit from Dataset.user_can_purge
                 dataset = ld.library_dataset_dataset_association.dataset
@@ -497,9 +502,11 @@ class LibraryContentsController(
                     except Exception:
                         pass
                     # flush now to preserve deleted state in case of later interruption
-                    trans.sa_session.flush()
+                    with transaction(trans.sa_session):
+                        trans.sa_session.commit()
                 rval["purged"] = True
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
             rval["deleted"] = True
 
         except exceptions.httpexceptions.HTTPInternalServerError:

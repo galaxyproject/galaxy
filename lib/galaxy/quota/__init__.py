@@ -1,7 +1,11 @@
 """Galaxy Quotas"""
 import logging
+from typing import Optional
+
+from sqlalchemy.sql import text
 
 import galaxy.util
+from galaxy.model.base import transaction
 
 log = logging.getLogger(__name__)
 
@@ -21,12 +25,12 @@ class QuotaAgent:  # metaclass=abc.ABCMeta
     """
 
     # TODO: make abstractmethod after they work better with mypy
-    def get_quota(self, user):
+    def get_quota(self, user, quota_source_label=None) -> Optional[int]:
         """Return quota in bytes or None if no quota is set."""
 
-    def get_quota_nice_size(self, user):
+    def get_quota_nice_size(self, user, quota_source_label=None) -> Optional[str]:
         """Return quota as a human-readable string or 'unlimited' if no quota is set."""
-        quota_bytes = self.get_quota(user)
+        quota_bytes = self.get_quota(user, quota_source_label=quota_source_label)
         if quota_bytes is not None:
             quota_str = galaxy.util.nice_size(quota_bytes)
         else:
@@ -34,10 +38,12 @@ class QuotaAgent:  # metaclass=abc.ABCMeta
         return quota_str
 
     # TODO: make abstractmethod after they work better with mypy
-    def get_percent(self, trans=None, user=False, history=False, usage=False, quota=False):
+    def get_percent(
+        self, trans=None, user=False, history=False, usage=False, quota=False, quota_source_label=None
+    ) -> Optional[int]:
         """Return the percentage of any storage quota applicable to the user/transaction."""
 
-    def get_usage(self, trans=None, user=False, history=False):
+    def get_usage(self, trans=None, user=False, history=False, quota_source_label=None) -> Optional[float]:
         if trans:
             user = trans.user
             history = trans.history
@@ -46,7 +52,14 @@ class QuotaAgent:  # metaclass=abc.ABCMeta
             assert history, "Could not determine anonymous user's history."
             usage = history.disk_size
         else:
-            usage = user.total_disk_usage
+            if quota_source_label is None:
+                usage = user.total_disk_usage
+            else:
+                quota_source_usage = user.quota_source_usage_for(quota_source_label)
+                if not quota_source_usage or quota_source_usage.disk_usage is None:
+                    usage = 0.0
+                else:
+                    usage = quota_source_usage.disk_usage
         return usage
 
     def is_over_quota(self, app, job, job_destination):
@@ -64,14 +77,16 @@ class NoQuotaAgent(QuotaAgent):
     def __init__(self):
         pass
 
-    def get_quota(self, user):
+    def get_quota(self, user, quota_source_label=None) -> Optional[int]:
         return None
 
     @property
     def default_quota(self):
         return None
 
-    def get_percent(self, trans=None, user=False, history=False, usage=False, quota=False):
+    def get_percent(
+        self, trans=None, user=False, history=False, usage=False, quota=False, quota_source_label=None
+    ) -> Optional[int]:
         return None
 
     def is_over_quota(self, app, job, job_destination):
@@ -85,7 +100,7 @@ class DatabaseQuotaAgent(QuotaAgent):
         self.model = model
         self.sa_session = model.context
 
-    def get_quota(self, user):
+    def get_quota(self, user, quota_source_label=None) -> Optional[int]:
         """
         Calculated like so:
 
@@ -98,62 +113,90 @@ class DatabaseQuotaAgent(QuotaAgent):
                quotas.
         """
         if not user:
-            return self.default_unregistered_quota
-        quotas = []
-        for group in [uga.group for uga in user.groups]:
-            for quota in [gqa.quota for gqa in group.quotas]:
-                if quota not in quotas:
-                    quotas.append(quota)
-        for quota in [uqa.quota for uqa in user.quotas]:
-            if quota not in quotas:
-                quotas.append(quota)
-        use_default = True
-        max = 0
-        adjustment = 0
-        rval = 0
-        for quota in quotas:
-            if quota.deleted:
-                continue
-            if quota.operation == "=" and quota.bytes == -1:
-                rval = None
-                break
-            elif quota.operation == "=":
-                use_default = False
-                if quota.bytes > max:
-                    max = quota.bytes
-            elif quota.operation == "+":
-                adjustment += quota.bytes
-            elif quota.operation == "-":
-                adjustment -= quota.bytes
-        if use_default:
-            max = self.default_registered_quota
-            if max is None:
-                rval = None
-        if rval is not None:
-            rval = max + adjustment
-            if rval <= 0:
-                rval = 0
-        return rval
-
-    @property
-    def default_unregistered_quota(self):
-        return self._default_quota(self.model.DefaultQuotaAssociation.types.UNREGISTERED)
-
-    @property
-    def default_registered_quota(self):
-        return self._default_quota(self.model.DefaultQuotaAssociation.types.REGISTERED)
-
-    def _default_quota(self, default_type):
-        dqa = (
-            self.sa_session.query(self.model.DefaultQuotaAssociation)
-            .filter(self.model.DefaultQuotaAssociation.type == default_type)
-            .first()
+            return self._default_unregistered_quota(quota_source_label)
+        query = text(
+            """
+SELECT (
+        COALESCE(MAX(CASE WHEN union_quota.operation = '='
+                          THEN union_quota.bytes
+                          ELSE NULL
+                          END),
+                 (SELECT default_quota.bytes
+                  FROM quota as default_quota
+                      LEFT JOIN default_quota_association on default_quota.id = default_quota_association.quota_id
+                      WHERE default_quota_association.type = 'registered'
+                          AND default_quota.deleted != :is_true
+                          AND default_quota.quota_source_label {label_cond}))
+        +
+        (CASE WHEN SUM(CASE WHEN union_quota.operation = '=' AND union_quota.bytes = -1
+                            THEN 1 ELSE 0
+                            END) > 0
+              THEN NULL
+              ELSE 0 END)
+        +
+        (COALESCE(SUM(
+                CASE WHEN union_quota.operation = '+' THEN union_quota.bytes
+                     WHEN union_quota.operation = '-' THEN -1 * union_quota.bytes
+                     ELSE 0
+                     END
+              ), 0))
+       )
+FROM (
+    SELECT user_quota.operation as operation, user_quota.bytes as bytes
+    FROM galaxy_user as guser
+        LEFT JOIN user_quota_association as uqa on guser.id = uqa.user_id
+        LEFT JOIN quota as user_quota on user_quota.id = uqa.quota_id
+    WHERE user_quota.deleted != :is_true
+        AND user_quota.quota_source_label {label_cond}
+        AND guser.id = :user_id
+    UNION ALL
+    SELECT group_quota.operation as operation, group_quota.bytes as bytes
+    FROM galaxy_user as guser
+        LEFT JOIN user_group_association as uga on guser.id = uga.user_id
+        LEFT JOIN galaxy_group on galaxy_group.id = uga.group_id
+        LEFT JOIN group_quota_association as gqa on galaxy_group.id = gqa.group_id
+        LEFT JOIN quota as group_quota on group_quota.id = gqa.quota_id
+    WHERE group_quota.deleted != :is_true
+        AND group_quota.quota_source_label {label_cond}
+        AND guser.id = :user_id
+) as union_quota
+""".format(
+                label_cond="IS NULL" if quota_source_label is None else " = :label"
+            )
         )
-        if not dqa:
-            return None
-        if dqa.quota.bytes < 0:
-            return None
-        return dqa.quota.bytes
+        conn = self.sa_session.connection()
+        with conn.begin():
+            res = conn.execute(query, is_true=True, user_id=user.id, label=quota_source_label).fetchone()
+            if res:
+                return int(res[0]) if res[0] else None
+            else:
+                return None
+
+    def _default_unregistered_quota(self, quota_source_label):
+        return self._default_quota(self.model.DefaultQuotaAssociation.types.UNREGISTERED, quota_source_label)
+
+    def _default_quota(self, default_type, quota_source_label):
+        label_condition = "IS NULL" if quota_source_label is None else "= :label"
+        query = text(
+            """
+SELECT bytes
+FROM quota as default_quota
+LEFT JOIN default_quota_association on default_quota.id = default_quota_association.quota_id
+WHERE default_quota_association.type = :default_type
+    AND default_quota.deleted != :is_true
+    AND default_quota.quota_source_label {label_condition}
+""".format(
+                label_condition=label_condition
+            )
+        )
+
+        conn = self.sa_session.connection()
+        with conn.begin():
+            res = conn.execute(query, is_true=True, label=quota_source_label, default_type=default_type).fetchone()
+            if res:
+                return res[0]
+            else:
+                return None
 
     def set_default_quota(self, default_type, quota):
         # Unset the current default(s) associated with this quota, if there are any
@@ -165,20 +208,28 @@ class DatabaseQuotaAgent(QuotaAgent):
         for gqa in quota.groups:
             self.sa_session.delete(gqa)
         # Find the old default, assign the new quota if it exists
-        dqa = (
+        label = quota.quota_source_label
+        dqas = (
             self.sa_session.query(self.model.DefaultQuotaAssociation)
-            .filter(self.model.DefaultQuotaAssociation.type == default_type)
-            .first()
+            .filter(self.model.DefaultQuotaAssociation.table.c.type == default_type)
+            .all()
         )
-        if dqa:
-            dqa.quota = quota
+        target_default = None
+        for dqa in dqas:
+            if dqa.quota.quota_source_label == label and not dqa.quota.deleted:
+                target_default = dqa
+        if target_default:
+            target_default.quota = quota
         # Or create if necessary
         else:
-            dqa = self.model.DefaultQuotaAssociation(default_type, quota)
-        self.sa_session.add(dqa)
-        self.sa_session.flush()
+            target_default = self.model.DefaultQuotaAssociation(default_type, quota)
+        self.sa_session.add(target_default)
+        with transaction(self.sa_session):
+            self.sa_session.commit()
 
-    def get_percent(self, trans=None, user=False, history=False, usage=False, quota=False):
+    def get_percent(
+        self, trans=None, user=False, history=False, usage=False, quota=False, quota_source_label=None
+    ) -> Optional[int]:
         """
         Return the percentage of any storage quota applicable to the user/transaction.
         """
@@ -188,13 +239,13 @@ class DatabaseQuotaAgent(QuotaAgent):
             history = trans.history
         # if quota wasn't passed, attempt to get the quota
         if quota is False:
-            quota = self.get_quota(user)
+            quota = self.get_quota(user, quota_source_label=quota_source_label)
         # return none if no applicable quotas or quotas disabled
         if quota is None:
             return None
         # get the usage, if it wasn't passed
         if usage is False:
-            usage = self.get_usage(trans, user, history)
+            usage = self.get_usage(trans, user, history, quota_source_label=quota_source_label)
         try:
             return min((int(float(usage) / quota * 100), 100))
         except ZeroDivisionError:
@@ -214,20 +265,31 @@ class DatabaseQuotaAgent(QuotaAgent):
                     self.sa_session.delete(a)
                     flush_needed = True
                 if flush_needed:
-                    self.sa_session.flush()
+                    with transaction(self.sa_session):
+                        self.sa_session.commit()
             for user in users:
                 uqa = self.model.UserQuotaAssociation(user, quota)
                 self.sa_session.add(uqa)
             for group in groups:
                 gqa = self.model.GroupQuotaAssociation(group, quota)
                 self.sa_session.add(gqa)
-            self.sa_session.flush()
+            with transaction(self.sa_session):
+                self.sa_session.commit()
 
     def is_over_quota(self, app, job, job_destination):
-        quota = self.get_quota(job.user)
+        # Doesn't work because job.object_store_id until inside handler :_(
+        # quota_source_label = job.quota_source_label
+        if job_destination is not None:
+            object_store_id = job_destination.params.get("object_store_id", None)
+            object_store = app.object_store
+            quota_source_map = object_store.get_quota_source_map()
+            quota_source_label = quota_source_map.get_quota_source_info(object_store_id).label
+        else:
+            quota_source_label = None
+        quota = self.get_quota(job.user, quota_source_label=quota_source_label)
         if quota is not None:
             try:
-                usage = self.get_usage(user=job.user, history=job.history)
+                usage = self.get_usage(user=job.user, history=job.history, quota_source_label=quota_source_label)
                 if usage > quota:
                     return True
             except AssertionError:

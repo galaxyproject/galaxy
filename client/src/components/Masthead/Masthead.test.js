@@ -4,7 +4,6 @@ import { mount } from "@vue/test-utils";
 import { getLocalVue, mockModule } from "tests/jest/helpers";
 import { WindowManager } from "layout/window-manager";
 import { loadWebhookMenuItems } from "./_webhooks";
-import { userStore, userFlagsStore } from "store/userStore";
 import { configStore } from "store/configStore";
 import { getActiveTab } from "./utilities";
 import { createTestingPinia } from "@pinia/testing";
@@ -42,9 +41,7 @@ describe("Masthead.vue", () => {
         testPinia = createTestingPinia();
         store = new Vuex.Store({
             modules: {
-                user: mockModule(userStore),
                 config: mockModule(configStore),
-                userFlags: mockModule(userFlagsStore),
             },
         });
 

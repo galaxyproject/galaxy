@@ -1,20 +1,17 @@
 import logging
 import tarfile
-from typing import TYPE_CHECKING
 
 from galaxy.datatypes.binary import CompressedArchive
 from galaxy.datatypes.data import (
     get_file_peek,
     Text,
 )
+from galaxy.datatypes.protocols import DatasetProtocol
 from galaxy.datatypes.sniff import (
     build_sniff_from_prefix,
     FilePrefix,
 )
 from galaxy.util import nice_size
-
-if TYPE_CHECKING:
-    from galaxy.model import DatasetInstance
 
 log = logging.getLogger(__name__)
 
@@ -24,7 +21,7 @@ class SnapHmm(Text):
     file_ext = "snaphmm"
     edam_data = "data_1364"
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = get_file_peek(dataset.file_name)
             dataset.blurb = "SNAP HMM model"
@@ -32,7 +29,7 @@ class SnapHmm(Text):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disc"
 
-    def display_peek(self, dataset: "DatasetInstance") -> str:
+    def display_peek(self, dataset: DatasetProtocol) -> str:
         try:
             return dataset.peek
         except Exception:
@@ -54,7 +51,7 @@ class Augustus(CompressedArchive):
     edam_data = "data_0950"
     compressed = True
 
-    def set_peek(self, dataset: "DatasetInstance", **kwd) -> None:
+    def set_peek(self, dataset: DatasetProtocol, **kwd) -> None:
         if not dataset.dataset.purged:
             dataset.peek = "Augustus model"
             dataset.blurb = nice_size(dataset.get_size())
@@ -62,7 +59,7 @@ class Augustus(CompressedArchive):
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
 
-    def display_peek(self, dataset: "DatasetInstance") -> str:
+    def display_peek(self, dataset: DatasetProtocol) -> str:
         try:
             return dataset.peek
         except Exception:

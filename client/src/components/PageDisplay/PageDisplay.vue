@@ -9,6 +9,7 @@
                         :enable_beta_markdown_export="config.enable_beta_markdown_export"
                         :download-endpoint="stsUrl(config)"
                         :export-link="exportUrl"
+                        :read-only="!userOwnsPage"
                         @onEdit="onEdit" />
                     <PageHtml v-else :page="page" />
                 </div>
@@ -22,6 +23,8 @@
 import { urlData } from "utils/url";
 import { withPrefix } from "utils/redirect";
 import ConfigProvider from "components/providers/ConfigProvider";
+import { mapState } from "pinia";
+import { useUserStore } from "@/stores/userStore";
 import Markdown from "components/Markdown/Markdown";
 import Published from "components/Common/Published";
 import PageHtml from "./PageHtml";
@@ -45,6 +48,10 @@ export default {
         };
     },
     computed: {
+        ...mapState(useUserStore, ["currentUser"]),
+        userOwnsPage() {
+            return this.currentUser.username === this.page.username;
+        },
         dataUrl() {
             return `/api/pages/${this.pageId}`;
         },

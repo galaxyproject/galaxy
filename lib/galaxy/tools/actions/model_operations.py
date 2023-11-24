@@ -1,10 +1,14 @@
 import logging
+from typing import TYPE_CHECKING
 
 from galaxy.tools.actions import (
     DefaultToolAction,
     OutputCollections,
     ToolExecutionCache,
 )
+
+if TYPE_CHECKING:
+    from galaxy.managers.context import ProvidesUserContext
 
 log = logging.getLogger(__name__)
 
@@ -35,6 +39,7 @@ class ModelOperationToolAction(DefaultToolAction):
         execution_cache=None,
         collection_info=None,
         job_callback=None,
+        skip=False,
         **kwargs,
     ):
         incoming = incoming or {}
@@ -89,12 +94,16 @@ class ModelOperationToolAction(DefaultToolAction):
             history=history,
             tags=preserved_tags,
             hdca_tags=preserved_hdca_tags,
+            skip=skip,
         )
         self._record_inputs(trans, tool, job, incoming, inp_data, inp_dataset_collections)
         self._record_outputs(job, out_data, output_collections)
         if job_callback:
             job_callback(job)
-        job.state = job.states.OK
+        if skip:
+            job.state = job.states.SKIPPED
+        else:
+            job.state = job.states.OK
         trans.sa_session.add(job)
 
         # Queue the job for execution
@@ -103,8 +112,10 @@ class ModelOperationToolAction(DefaultToolAction):
         log.info(f"Calling produce_outputs, tool is {tool}")
         return job, out_data, history
 
-    def _produce_outputs(self, trans, tool, out_data, output_collections, incoming, history, tags, hdca_tags):
-        tag_handler = trans.app.tag_handler.create_tag_handler_session()
+    def _produce_outputs(
+        self, trans: "ProvidesUserContext", tool, out_data, output_collections, incoming, history, tags, hdca_tags, skip
+    ):
+        tag_handler = trans.tag_handler
         tool.produce_outputs(
             trans,
             out_data,
@@ -121,5 +132,14 @@ class ModelOperationToolAction(DefaultToolAction):
                 if name in mapped_over_elements:
                     value.visible = False
                     mapped_over_elements[name].hda = value
+
+        # We probably need to mark all outputs as skipped, not just the outputs of whatever the database op tools do ?
+        # This is probably not exactly right, but it might also work in most cases
+        if skip:
+            for output_collection in output_collections.out_collections.values():
+                output_collection.mark_as_populated()
+            for hdca in output_collections.out_collection_instances.values():
+                hdca.visible = False
+        # Would we also need to replace the datasets with skipped datasets?
 
         trans.sa_session.add_all(out_data.values())

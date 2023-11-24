@@ -12,12 +12,18 @@ import {
     type PostJobActions,
     type PostJobAction,
 } from "@/stores/workflowStepStore";
-
+import { assertDefined, ensureDefined } from "@/utils/assertions";
 import type { UseElementBoundingReturn, UseScrollReturn } from "@vueuse/core";
 import { useRelativePosition } from "./composables/relativePosition";
 import { NULL_COLLECTION_TYPE_DESCRIPTION, type CollectionTypeDescriptor } from "./modules/collectionTypeDescription";
+import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
+import { faPlus, faMinus } from "@fortawesome/free-solid-svg-icons";
+import { library } from "@fortawesome/fontawesome-svg-core";
+import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 type ElementBounding = UnwrapRef<UseElementBoundingReturn>;
+
+library.add(faPlus, faMinus);
 
 const props = defineProps<{
     output: OutputTerminalSource;
@@ -84,9 +90,9 @@ const visibleHint = computed(() => {
     }
 });
 const label = computed(() => {
-    const activeLabel = workflowOutput.value?.label || props.output.name;
-    return `${activeLabel} (${extensions.value.join(", ")})`;
+    return workflowOutput.value?.label || props.output.name;
 });
+
 const rowClass = computed(() => {
     const classes = ["form-row", "dataRow", "output-data-row"];
     if ("valid" in props.output && props.output?.valid === false) {
@@ -116,20 +122,21 @@ async function toggleChildComponent() {
 
 function onToggleActive() {
     const step = stepStore.getStep(stepId.value);
+    assertDefined(step);
     let stepWorkflowOutputs = [...(step.workflow_outputs || [])];
     if (workflowOutput.value) {
         stepWorkflowOutputs = stepWorkflowOutputs.filter(
             (workflowOutput) => workflowOutput.output_name !== output.value.name
         );
     } else {
-        stepWorkflowOutputs.push({ output_name: output.value.name });
+        stepWorkflowOutputs.push({ output_name: output.value.name, label: output.value.name });
     }
     stepStore.updateStep({ ...step, workflow_outputs: stepWorkflowOutputs });
 }
 
 function onToggleVisible() {
     const actionKey = `HideDatasetAction${props.output.name}`;
-    const step = { ...stepStore.getStep(stepId.value) };
+    const step = { ...ensureDefined(stepStore.getStep(stepId.value)) };
     if (isVisible.value) {
         step.post_job_actions = {
             ...step.post_job_actions,
@@ -141,7 +148,7 @@ function onToggleVisible() {
         };
     } else {
         if (step.post_job_actions) {
-            const { [actionKey]: ignoreUnused, ...newPostJobActions } = step.post_job_actions;
+            const { [actionKey]: _unused, ...newPostJobActions } = step.post_job_actions;
             step.post_job_actions = newPostJobActions;
         } else {
             step.post_job_actions = {};
@@ -262,31 +269,89 @@ const outputDetails = computed(() => {
     return outputType;
 });
 
+const isDuplicateLabel = computed(() => {
+    const duplicateLabels = stepStore.duplicateLabels;
+    return Boolean(label.value && duplicateLabels.has(label.value));
+});
+
+const labelClass = computed(() => {
+    if (isDuplicateLabel.value) {
+        return "alert-info";
+    }
+    return null;
+});
+
+const labelToolTipTitle = computed(() => {
+    return `Output label '${workflowOutput.value?.label}' is not unique`;
+});
+
 onBeforeUnmount(() => {
     stateStore.deleteOutputTerminalPosition(props.stepId, props.output.name);
 });
+
+const addTagsAction = computed(() => {
+    return props.postJobActions[`TagDatasetAction${props.output.name}`]?.action_arguments?.tags?.split(",") ?? [];
+});
+
+const removeTagsAction = computed(() => {
+    return props.postJobActions[`RemoveTagDatasetAction${props.output.name}`]?.action_arguments?.tags?.split(",") ?? [];
+});
 </script>
+
 <template>
-    <div :class="rowClass" :data-output-name="output.name">
-        <div
-            v-if="showCalloutActiveOutput"
-            v-b-tooltip
-            class="callout-terminal"
-            title="Checked outputs will become primary workflow outputs and are available as subworkflow outputs."
-            @keyup="onToggleActive"
-            @click="onToggleActive">
-            <i :class="['mark-terminal', activeClass]" />
+    <div class="d-flex" :class="rowClass" :data-output-name="output.name">
+        <div class="d-flex flex-column w-100">
+            <div class="d-flex flex-row">
+                <div
+                    v-if="showCalloutActiveOutput"
+                    v-b-tooltip
+                    class="callout-terminal"
+                    title="Checked outputs will become primary workflow outputs and are available as subworkflow outputs."
+                    @keyup="onToggleActive"
+                    @click="onToggleActive">
+                    <i :class="['mark-terminal', activeClass]" />
+                </div>
+                <div
+                    v-if="showCalloutVisible"
+                    v-b-tooltip
+                    class="callout-terminal"
+                    :title="visibleHint"
+                    @keyup="onToggleVisible"
+                    @click="onToggleVisible">
+                    <i :class="['mark-terminal', visibleClass]" />
+                </div>
+                <span>
+                    <span
+                        v-b-tooltip
+                        :title="labelToolTipTitle"
+                        class="d-inline-block rounded"
+                        :class="labelClass"
+                        :disabled="!isDuplicateLabel">
+                        {{ label }}
+                    </span>
+                    <span> ({{ extensions.join(", ") }}) </span>
+                </span>
+            </div>
+
+            <div
+                v-if="addTagsAction.length > 0"
+                v-b-tooltip.left
+                class="d-flex align-items-center overflow-x-hidden"
+                title="These tags will be added to the output dataset">
+                <FontAwesomeIcon icon="fa-plus" class="mr-1" />
+                <StatelessTags disabled no-padding :value="addTagsAction" />
+            </div>
+
+            <div
+                v-if="removeTagsAction.length > 0"
+                v-b-tooltip.left
+                class="d-flex align-items-center overflow-x-hidden"
+                title="These tags will be removed from the output dataset">
+                <FontAwesomeIcon icon="fa-minus" class="mr-1" />
+                <StatelessTags disabled no-padding :value="removeTagsAction" />
+            </div>
         </div>
-        <div
-            v-if="showCalloutVisible"
-            v-b-tooltip
-            class="callout-terminal"
-            :title="visibleHint"
-            @keyup="onToggleVisible"
-            @click="onToggleVisible">
-            <i :class="['mark-terminal', visibleClass]" />
-        </div>
-        {{ label }}
+
         <draggable-wrapper
             :id="id"
             ref="el"

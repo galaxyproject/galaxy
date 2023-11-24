@@ -859,14 +859,11 @@ class RepositoriesWithInvalidToolsGrid(RepositoryGrid):
             invalid_tools = metadata.get("invalid_tools", [])
             if invalid_tools:
                 for invalid_tool_config in invalid_tools:
-                    href_str = (
-                        '<a href="load_invalid_tool?repository_id=%s&tool_config=%s&changeset_revision=%s">%s</a>'
-                        % (
-                            trans.security.encode_id(repository.id),
-                            invalid_tool_config,
-                            repository_metadata.changeset_revision,
-                            invalid_tool_config,
-                        )
+                    href_str = '<a href="load_invalid_tool?repository_id={}&tool_config={}&changeset_revision={}">{}</a>'.format(
+                        trans.security.encode_id(repository.id),
+                        invalid_tool_config,
+                        repository_metadata.changeset_revision,
+                        invalid_tool_config,
                     )
                     val += href_str
                     val += "<br/>"
@@ -1421,10 +1418,7 @@ class ValidRepositoryGrid(RepositoryGrid):
             rval = "<ul>"
             if repository.categories:
                 for rca in repository.categories:
-                    rval += (
-                        '<li><a href="browse_repositories?operation=valid_repositories_by_category&id=%s">%s</a></li>'
-                        % (trans.security.encode_id(rca.category.id), rca.category.name)
-                    )
+                    rval += f'<li><a href="browse_repositories?operation=valid_repositories_by_category&id={trans.security.encode_id(rca.category.id)}">{rca.category.name}</a></li>'
             else:
                 rval += "<li>not set</li>"
             rval += "</ul>"

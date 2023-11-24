@@ -9,8 +9,6 @@
                 :toolbox="currentPanel"
                 :panel-views="config.panel_views"
                 :current-panel-view="currentPanelView"
-                :stored-workflow-menu-entries="storedWorkflowMenuEntries"
-                :workflow-title="workflowTitle"
                 @updatePanelView="updatePanelView">
             </ToolBox>
         </ToolPanelViewProvider>
@@ -21,7 +19,6 @@
 import ToolBox from "./ToolBox";
 import ConfigProvider from "components/providers/ConfigProvider";
 import ToolPanelViewProvider from "components/providers/ToolPanelViewProvider";
-import _l from "utils/localization";
 import { mapActions } from "vuex";
 
 export default {
@@ -29,16 +26,6 @@ export default {
         ConfigProvider,
         ToolBox,
         ToolPanelViewProvider,
-    },
-    props: {
-        storedWorkflowMenuEntries: {
-            type: Array,
-            required: true,
-        },
-        workflowTitle: {
-            type: String,
-            default: _l("Workflows"),
-        },
     },
     methods: {
         updatePanelView(panelView) {

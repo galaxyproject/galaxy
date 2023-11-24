@@ -45,6 +45,7 @@ from galaxy.managers.workflows import (
     WorkflowCreateOptions,
     WorkflowUpdateOptions,
 )
+from galaxy.model.base import transaction
 from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.model.store import BcoExportOptions
 from galaxy.schema.fields import DecodedDatabaseIdField
@@ -172,7 +173,8 @@ class WorkflowsAPIController(
             m = model.StoredWorkflowMenuEntry()
             m.stored_workflow = q.get(wf_id)
             user.stored_workflow_menu_entries.append(m)
-        sess.flush()
+        with transaction(sess):
+            sess.commit()
         message = "Menu updated."
         trans.set_message(message)
         return {"message": message, "status": "done"}
@@ -522,12 +524,15 @@ class WorkflowsAPIController(
                         require_flush = True
             # set tags
             if "tags" in workflow_dict:
-                trans.app.tag_handler.set_tags_from_list(
-                    user=trans.user, item=stored_workflow, new_tags_list=workflow_dict["tags"]
+                trans.tag_handler.set_tags_from_list(
+                    user=trans.user,
+                    item=stored_workflow,
+                    new_tags_list=workflow_dict["tags"],
                 )
 
             if require_flush:
-                trans.sa_session.flush()
+                with transaction(trans.sa_session):
+                    trans.sa_session.commit()
 
             if "steps" in workflow_dict:
                 try:
@@ -574,6 +579,7 @@ class WorkflowsAPIController(
         POST /api/workflows/build_module
         Builds module models for the workflow editor.
         """
+        # payload is tool state
         if payload is None:
             payload = {}
         inputs = payload.get("inputs", {})
@@ -583,9 +589,7 @@ class WorkflowsAPIController(
             module_state: Dict[str, Any] = {}
             populate_state(trans, module.get_inputs(), inputs, module_state, check=False)
             module.recover_state(module_state, from_tool_form=True)
-        return {
-            "label": inputs.get("__label", ""),
-            "annotation": inputs.get("__annotation", ""),
+        step_dict = {
             "name": module.get_name(),
             "tool_state": module.get_state(),
             "content_id": module.get_content_id(),
@@ -593,6 +597,9 @@ class WorkflowsAPIController(
             "outputs": module.get_all_outputs(),
             "config_form": module.get_config_form(),
         }
+        if payload["type"] == "tool":
+            step_dict["tool_version"] = module.get_version()
+        return step_dict
 
     @expose_api
     def get_tool_predictions(self, trans: ProvidesUserContext, payload, **kwd):
@@ -765,7 +772,8 @@ class WorkflowsAPIController(
             )
             invocations.append(workflow_invocation)
 
-        trans.sa_session.flush()
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
         encoded_invocations = []
         for invocation in invocations:
             as_dict = workflow_invocation.to_dict()
@@ -1048,7 +1056,8 @@ class WorkflowsAPIController(
         )
         if importable:
             self._make_item_accessible(trans.sa_session, created_workflow.stored_workflow)
-            trans.sa_session.flush()
+            with transaction(trans.sa_session):
+                trans.sa_session.commit()
 
         self._import_tools_if_needed(trans, workflow_create_options, raw_workflow_description)
         return created_workflow.stored_workflow, created_workflow.missing_tools

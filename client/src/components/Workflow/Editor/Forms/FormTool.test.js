@@ -3,10 +3,8 @@ import { getLocalVue, mockModule } from "tests/jest/helpers";
 import axios from "axios";
 import MockAdapter from "axios-mock-adapter";
 import FormTool from "./FormTool";
-import MockCurrentUser from "components/providers/MockCurrentUser";
 import MockConfigProvider from "components/providers/MockConfigProvider";
 import Vuex from "vuex";
-import { userStore } from "store/userStore";
 import { configStore } from "store/configStore";
 import { createTestingPinia } from "@pinia/testing";
 
@@ -19,7 +17,6 @@ describe("FormTool", () => {
     function mountTarget() {
         const store = new Vuex.Store({
             modules: {
-                user: mockModule(userStore),
                 config: mockModule(configStore),
             },
         });
@@ -47,7 +44,6 @@ describe("FormTool", () => {
             },
             localVue,
             stubs: {
-                CurrentUser: MockCurrentUser({ id: "fakeuser" }),
                 ConfigProvider: MockConfigProvider({ id: "fakeconfig" }),
                 ToolFooter: { template: "<div>tool-footer</div>" },
             },

@@ -1,4 +1,5 @@
 from .framework import (
+    managed_history,
     selenium_test,
     SeleniumTestCase,
 )
@@ -21,6 +22,7 @@ class TestHistoryMultiView(SeleniumTestCase):
         self.screenshot("multi_history_collection")
 
     @selenium_test
+    @managed_history
     def test_list_list_display(self):
         history_id = self.current_history_id()
         method = self.dataset_collection_populator.create_list_of_list_in_history(history_id, wait=True).json

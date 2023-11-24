@@ -6,6 +6,7 @@ import { Toast } from "composables/toast";
 import { withPrefix } from "utils/redirect";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import ExternalLink from "components/ExternalLink";
+import { wait } from "@/utils/utils";
 
 const sendBCOModal = ref(null);
 const generatingBCO = ref(false);
@@ -55,12 +56,12 @@ async function generateBcoContent() {
         let pollingResponse = await axios.get(pollUrl);
         let maxRetries = 120;
         while (!pollingResponse.data && maxRetries) {
-            await wait();
+            await wait(2000);
             pollingResponse = await axios.get(pollUrl);
             maxRetries -= 1;
         }
         if (!pollingResponse.data) {
-            throw "Timeout waiting for BioCompute Object export result!";
+            throw Error("Timeout waiting for BioCompute Object export result!");
         } else {
             const resultResponse = await axios.get(resultUrl);
             return resultResponse.data;
@@ -71,12 +72,6 @@ async function generateBcoContent() {
         generatingBCO.value = false;
     }
 }
-
-const wait = function (ms = 2000) {
-    return new Promise((resolve) => {
-        setTimeout(resolve, ms);
-    });
-};
 
 async function sendBco(bcoContent) {
     const bcoData = {

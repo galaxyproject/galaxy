@@ -16,13 +16,25 @@
         </div>
         <div class="unified-panel-controls">
             <tool-search
+                v-b-tooltip.hover
+                aria-haspopup="true"
                 :current-panel-view="currentPanelView"
                 placeholder="search tools"
                 :toolbox="workflowTools"
                 :query="query"
+                :query-pending="queryPending"
                 @onQuery="onQuery"
                 @onResults="onResults" />
-            <div v-if="queryTooShort" class="pb-2">
+            <div v-if="closestTerm" class="pb-2">
+                <b-badge class="alert-danger w-100">
+                    Did you mean:
+                    <i>
+                        <a href="javascript:void(0)" @click="onQuery(closestTerm)">{{ closestTerm }}</a>
+                    </i>
+                    ?
+                </b-badge>
+            </div>
+            <div v-else-if="queryTooShort" class="pb-2">
                 <b-badge class="alert-danger w-100">Search string too short!</b-badge>
             </div>
             <div v-else-if="noResults" class="pb-2">
@@ -38,21 +50,21 @@
                     :category="category"
                     tool-key="name"
                     :section-name="category.name"
-                    :query-filter="query"
+                    :query-filter="queryFilter"
                     :disable-filter="true"
                     @onClick="onInsertModule" />
                 <tool-section
                     v-if="hasDataManagerSection"
                     :key="dataManagerSection.id"
                     :category="dataManagerSection"
-                    :query-filter="query"
+                    :query-filter="queryFilter"
                     :disable-filter="true"
                     @onClick="onInsertTool" />
                 <tool-section
                     v-for="section in sections"
                     :key="section.id"
                     :category="section"
-                    :query-filter="query"
+                    :query-filter="queryFilter"
                     @onClick="onInsertTool" />
                 <tool-section
                     v-if="hasWorkflowSection"
@@ -62,7 +74,7 @@
                     :sort-items="false"
                     operation-icon="fa fa-files-o"
                     operation-title="Insert individual steps."
-                    :query-filter="query"
+                    :query-filter="queryFilter"
                     :disable-filter="true"
                     @onClick="onInsertWorkflow"
                     @onOperation="onInsertWorkflowSteps" />
@@ -111,7 +123,10 @@ export default {
     },
     data() {
         return {
+            closestTerm: null,
             query: null,
+            queryPending: false,
+            queryFilter: null,
             results: null,
         };
     },
@@ -164,9 +179,13 @@ export default {
     methods: {
         onQuery(query) {
             this.query = query;
+            this.queryPending = true;
         },
-        onResults(results) {
+        onResults(results, closestTerm = null) {
             this.results = results;
+            this.closestTerm = closestTerm;
+            this.queryFilter = !this.noResults ? this.query : null;
+            this.queryPending = false;
         },
         onInsertTool(tool, evt) {
             evt.preventDefault();

@@ -5,6 +5,7 @@ from typing import Optional
 from sqlalchemy import false
 
 from galaxy import util
+from galaxy.model.base import transaction
 from galaxy.structured_app import MinimalManagerApp
 from galaxy.tool_shed.galaxy_install.tools import tool_panel_manager
 from galaxy.tool_shed.metadata.metadata_generator import MetadataGenerator
@@ -124,8 +125,12 @@ class InstalledRepositoryMetadataManager(MetadataGenerator):
             if self.metadata_dict != original_metadata_dict:
                 self.repository.metadata_ = self.metadata_dict
                 self.update_in_shed_tool_config()
-                self.app.install_model.context.add(self.repository)
-                self.app.install_model.context.flush()
+
+                session = self.app.install_model.context
+                session.add(self.repository)
+                with transaction(session):
+                    session.commit()
+
                 log.debug(f"Metadata has been reset on repository {self.repository.name}.")
             else:
                 log.debug(f"Metadata did not need to be reset on repository {self.repository.name}.")
@@ -156,8 +161,9 @@ class InstalledRepositoryMetadataManager(MetadataGenerator):
                         unsuccessful_count += 1
                     else:
                         log.debug(
-                            "Successfully reset metadata on repository %s owned by %s"
-                            % (str(repository.name), str(repository.owner))
+                            "Successfully reset metadata on repository %s owned by %s",
+                            repository.name,
+                            repository.owner,
                         )
                         successful_count += 1
                 except Exception:
