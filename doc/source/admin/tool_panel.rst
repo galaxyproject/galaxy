@@ -104,16 +104,16 @@ A tool configuration file is an XML file containing mainly four elements:
     containing the tools.
   - ``monitor`` is a boolean that decides if Galaxy should monitor
     changes to the file.
-2. ``tool`` defines a tool. 
+2. ``section`` defines a section in the tool panel. It needs to have
+   an ``id`` attribute which should have no spaces and has an optional
+   ``name`` attribute which defines the text shown to the user (otherwise ``id`` is used.)
+3. ``label`` adds a header line to the tool panel. It needs to have an ``id`` attribute
+   and optionally define a ``text`` attribute which gives the text shown to the user.
+4. ``tool`` defines a tool. 
   - The ``file`` attribute gives the path to the tool XML file (relative to the
     ``tool_path`` of the toolbox).
   - An optional ``labels`` render a label next to the tool in the tool panel, e.g. ``labels="updated"``.
   - An additional ``guid`` attribute is set by Galaxy for tools installed from a ToolShed.
-3. ``section`` defines a section in the tool panel. It needs to have
-   an ``id`` attribute which should have no spaces and has an optional
-   ``name`` attribute which defines the text shown to the user (otherwise ``id`` is used.)
-4. ``label`` adds a header line to the tool panel. It needs to have an ``id`` attribute
-   and optionally define a ``text`` attribute which gives the text shown to the user.
 
 Typically ``section`` and ``label`` tags are used as child of ``toolbox`` and
 ``tools`` are used as child of ``section``. In the following two examples are shown.
