@@ -872,13 +872,9 @@ class WorkflowContentsManager(UsesAnnotations):
         if style == "editor":
             wf_dict = self._workflow_to_dict_editor(trans, stored, workflow)
         elif style == "legacy":
-            wf_dict = self._workflow_to_dict_instance(
-                stored, workflow=workflow, legacy=True, url_builder=trans.url_builder
-            )
+            wf_dict = self._workflow_to_dict_instance(trans, stored, workflow=workflow, legacy=True)
         elif style == "instance":
-            wf_dict = self._workflow_to_dict_instance(
-                stored, workflow=workflow, legacy=False, url_builder=trans.url_builder
-            )
+            wf_dict = self._workflow_to_dict_instance(trans, stored, workflow=workflow, legacy=False)
         elif style == "run":
             wf_dict = self._workflow_to_dict_run(trans, stored, workflow=workflow, history=history or trans.history)
         elif style == "preview":
@@ -1587,12 +1583,12 @@ class WorkflowContentsManager(UsesAnnotations):
             steps[step.order_index] = step_dict
         return data
 
-    def _workflow_to_dict_instance(self, stored, workflow, legacy=True, url_builder=None):
+    def _workflow_to_dict_instance(self, trans, stored, workflow, legacy=True):
         encode = self.app.security.encode_id
         sa_session = self.app.model.context
         item = stored.to_dict(view="element", value_mapper={"id": encode})
         item["name"] = workflow.name
-        item["url"] = url_builder("workflow", id=item["id"]) if url_builder else None
+        item["url"] = trans.url_builder("workflow", id=item["id"])
         item["owner"] = stored.user.username
         item["email_hash"] = md5_hash_str(stored.user.email)
         item["slug"] = stored.slug
