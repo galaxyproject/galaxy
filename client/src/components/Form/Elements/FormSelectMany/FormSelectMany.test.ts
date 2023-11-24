@@ -5,8 +5,6 @@ import { getLocalVue } from "@tests/jest/helpers";
 import { mount } from "@vue/test-utils";
 import { PropType } from "vue";
 
-import { wait } from "@/utils/utils";
-
 import type { SelectOption } from "./worker/selectMany";
 
 import FormSelectMany from "./FormSelectMany.vue";
@@ -74,10 +72,13 @@ async function emittedInput(wrapper: ReturnType<typeof mountSelectMany>) {
     return latestValue;
 }
 
+// circumvent input debounce
+jest.useFakeTimers();
+
 async function search(wrapper: ReturnType<typeof mountSelectMany>, value: string) {
     const searchInput = wrapper.find(selectors.search);
     await searchInput.setValue(value);
-    await wait(310); // outwait input debounce
+    jest.runAllTimers();
 }
 
 describe("FormSelectMany", () => {
