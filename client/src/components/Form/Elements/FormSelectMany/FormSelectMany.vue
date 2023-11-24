@@ -381,7 +381,7 @@ const selectedCount = computed(() => {
 .form-select-many {
     .search-bar {
         display: grid;
-        grid-template-columns: 1fr 2.25rem 2.25rem;
+        grid-template-columns: 1fr 2.125rem 2.125rem;
 
         > *:not(:first-child):not(:last-child) {
             border-radius: 0;
