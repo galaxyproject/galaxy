@@ -1,6 +1,10 @@
 from logging import getLogger
+from typing import cast
 
-from galaxy.util import parse_xml_string
+from galaxy.util import (
+    etree,
+    parse_xml_string,
+)
 from . import (
     BaseJobExec,
     job_states,
@@ -80,11 +84,11 @@ class Torque(BaseJobExec):
             return None
         else:
             for job in tree.findall("Job"):
-                id = job.find("Job_Id").text
-                if id in job_ids:
-                    state = job.find("job_state").text
+                id_ = cast(etree._Element, job.find("Job_Id")).text
+                if id_ in job_ids:
+                    state = cast(etree._Element, job.find("job_state")).text
                     # map PBS job states to Galaxy job states.
-                    rval[id] = self._get_job_state(state)
+                    rval[id_] = self._get_job_state(state)
         return rval
 
     def parse_single_status(self, status, job_id):

@@ -17,7 +17,7 @@ from pydantic import (
 
 from galaxy.util import (
     asbool,
-    Element,
+    etree,
 )
 
 DEFAULT_VALUE_TRANSLATION_TYPE = "template"
@@ -170,7 +170,9 @@ class DataTableBundle(BaseModel):
     repo_info: Optional[RepoInfo] = None
 
 
-def _xml_to_data_table_output_column_move(move_elem: Element) -> DataTableBundleProcessorDataTableOutputColumnMove:
+def _xml_to_data_table_output_column_move(
+    move_elem: etree._Element,
+) -> DataTableBundleProcessorDataTableOutputColumnMove:
     move_type = move_elem.get("type", "directory")
     relativize_symlinks = move_elem.get(
         "relativize_symlinks", False
@@ -178,14 +180,14 @@ def _xml_to_data_table_output_column_move(move_elem: Element) -> DataTableBundle
     source_elem = move_elem.find("source")
     if source_elem is None:
         source_base = None
-        source_value = ""
+        source_value: Optional[str] = ""
     else:
         source_base = source_elem.get("base", None)
         source_value = source_elem.text
     target_elem = move_elem.find("target")
     if target_elem is None:
         target_base = None
-        target_value = ""
+        target_value: Optional[str] = ""
     else:
         target_base = target_elem.get("base", None)
         target_value = target_elem.text
@@ -200,7 +202,7 @@ def _xml_to_data_table_output_column_move(move_elem: Element) -> DataTableBundle
 
 
 def _xml_to_data_table_output_column_translation(
-    value_translation_elem: Element,
+    value_translation_elem: etree._Element,
 ) -> Optional[DataTableBundleProcessorDataTableOutputColumnTranslation]:
     value_translation = value_translation_elem.text
     if value_translation is not None:
@@ -212,7 +214,7 @@ def _xml_to_data_table_output_column_translation(
         return None
 
 
-def _xml_to_data_table_output_column(column_elem: Element) -> DataTableBundleProcessorDataTableOutputColumn:
+def _xml_to_data_table_output_column(column_elem: etree._Element) -> DataTableBundleProcessorDataTableOutputColumn:
     column_name = column_elem.get("name", None)
     assert column_name is not None, "Name is required for column entry"
     data_table_column_name = column_elem.get("data_table_name", column_name)
@@ -239,7 +241,9 @@ def _xml_to_data_table_output_column(column_elem: Element) -> DataTableBundlePro
     )
 
 
-def _xml_to_data_table_output(output_elem: Optional[Element]) -> Optional[DataTableBundleProcessorDataTableOutput]:
+def _xml_to_data_table_output(
+    output_elem: Optional[etree._Element],
+) -> Optional[DataTableBundleProcessorDataTableOutput]:
     if output_elem is not None:
         columns = []
         for column_elem in output_elem.findall("column"):
@@ -249,7 +253,7 @@ def _xml_to_data_table_output(output_elem: Optional[Element]) -> Optional[DataTa
         return None
 
 
-def _xml_to_data_table(data_table_elem: Element) -> DataTableBundleProcessorDataTable:
+def _xml_to_data_table(data_table_elem: etree._Element) -> DataTableBundleProcessorDataTable:
     data_table_name = data_table_elem.get("name")
     assert data_table_name is not None, "A name is required for a data table entry"
 
@@ -258,7 +262,7 @@ def _xml_to_data_table(data_table_elem: Element) -> DataTableBundleProcessorData
     return DataTableBundleProcessorDataTable(name=data_table_name, output=output)
 
 
-def convert_data_tables_xml(elem: Element) -> DataTableBundleProcessorDescription:
+def convert_data_tables_xml(elem: etree._Element) -> DataTableBundleProcessorDescription:
     undeclared_tables = asbool(elem.get("undeclared_tables", False))
     data_tables = []
     for data_table_elem in elem.findall("data_table"):

@@ -21,8 +21,7 @@ from galaxy.tool_util.parser.util import (
     DEFAULT_DELTA_FRAC,
 )
 from galaxy.util import (
-    Element,
-    ElementTree,
+    etree,
     string_as_bool,
     xml_text,
     xml_to_string,
@@ -90,12 +89,12 @@ def destroy_tree(tree):
     del tree
 
 
-def parse_change_format(change_format: Iterable[Element]) -> List[ChangeFormatModel]:
+def parse_change_format(change_format: Iterable[etree._Element]) -> List[ChangeFormatModel]:
     change_models: List[ChangeFormatModel] = []
     for change_elem in change_format:
-        change_elem = cast(Element, change_elem)
+        change_elem = cast(etree._Element, change_elem)
         for when_elem in change_elem.findall("when"):
-            when_elem = cast(Element, when_elem)
+            when_elem = cast(etree._Element, when_elem)
             value: Optional[str] = when_elem.get("value", None)
             format_: Optional[str] = when_elem.get("format", None)
             check: Optional[str] = when_elem.get("input", None)
@@ -123,9 +122,9 @@ class XmlToolSource(ToolSource):
     """Responsible for parsing a tool from classic Galaxy representation."""
 
     language = "xml"
-    root: Element
+    root: etree._Element
 
-    def __init__(self, xml_tree: ElementTree, source_path=None, macro_paths=None):
+    def __init__(self, xml_tree: etree._ElementTree, source_path=None, macro_paths=None):
         self.xml_tree = xml_tree
         self.root = self.xml_tree.getroot()
         self._source_path = source_path

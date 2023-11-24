@@ -8,6 +8,7 @@ from collections import namedtuple
 from errno import ENOENT
 from typing import (
     Any,
+    cast,
     Dict,
     List,
     Optional,
@@ -660,7 +661,7 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
             elif elem.tag == "section":
                 section = ToolSection(elem)
                 for section_elem in elem:
-                    section_id = section_elem.get("id")
+                    section_id = cast(str, section_elem.get("id"))
                     if section_elem.tag == "tool":
                         section.elems.stub_tool(section_id)
                     elif section_elem.tag == "workflow":

@@ -35,6 +35,7 @@ from hashlib import md5
 from os.path import relpath
 from typing import (
     Any,
+    cast,
     Iterable,
     Iterator,
     List,
@@ -75,8 +76,8 @@ try:
     # __init__() method, so we can add a __new__() constructor that mimicks
     # xml.etree.ElementTree.ElementTree initialization.
     class ElementTree(etree._ElementTree):
-        def __new__(cls, element=None, file=None) -> etree.ElementTree:
-            return etree.ElementTree(element, file=file)
+        def __new__(cls, element=None, file=None) -> "ElementTree":
+            return cast("ElementTree", etree.ElementTree(element, file=file))
 
 except ImportError:
     LXML_AVAILABLE = False
@@ -103,6 +104,8 @@ except AttributeError:
     def shlex_join(split_command):
         return " ".join(map(shlex.quote, split_command))
 
+
+__all__ = ["etree"]
 
 inflector = Inflector()
 
@@ -294,7 +297,7 @@ def unique_id(KEY_SIZE=128):
     return md5(random_bits).hexdigest()
 
 
-def parse_xml(fname: StrPath, strip_whitespace=True, remove_comments=True) -> ElementTree:
+def parse_xml(fname: StrPath, strip_whitespace=True, remove_comments=True) -> etree._ElementTree:
     """Returns a parsed xml tree"""
     parser = None
     if remove_comments and LXML_AVAILABLE:

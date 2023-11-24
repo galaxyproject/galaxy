@@ -5,6 +5,12 @@ from inspect import (
     getmembers,
 )
 from tempfile import NamedTemporaryFile
+from typing import (
+    Any,
+    List,
+    Optional,
+    Union,
+)
 
 from galaxy.util import unicodify
 from galaxy.util.compression_utils import get_fileobj
@@ -32,11 +38,14 @@ for assertion_module_name in assertion_module_names:
             assertion_functions[member] = value
 
 
-def verify_assertions(data: bytes, assertion_description_list, decompress=None):
+def verify_assertions(
+    data: Union[bytes, str], assertion_description_list: List[Any], decompress: Optional[bool] = None
+) -> None:
     """This function takes a list of assertions and a string to check
     these assertions against."""
     if decompress:
-        with NamedTemporaryFile() as tmpfh:
+        mode = "wb" if isinstance(data, bytes) else "wt"
+        with NamedTemporaryFile(mode) as tmpfh:
             tmpfh.write(data)
             tmpfh.flush()
             with get_fileobj(tmpfh.name, mode="rb", compressed_formats=None) as fh:
@@ -45,7 +54,7 @@ def verify_assertions(data: bytes, assertion_description_list, decompress=None):
         verify_assertion(data, assertion_description)
 
 
-def verify_assertion(data: bytes, assertion_description):
+def verify_assertion(data: Union[bytes, str], assertion_description) -> None:
     tag = assertion_description["tag"]
     assert_function_name = "assert_" + tag
     assert_function = assertion_functions.get(assert_function_name)

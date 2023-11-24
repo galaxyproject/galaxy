@@ -14,7 +14,6 @@ from galaxy.tool_shed.galaxy_install.client import (
     InstallationTarget,
 )
 from galaxy.util import (
-    Element,
     etree,
     parse_xml_string,
     xml_to_string,
@@ -34,7 +33,7 @@ SHED_DATA_MANAGER_CONF_XML = """<?xml version="1.0"?>
 
 class DataManagerHandler:
     app: InstallationTarget
-    root: Optional[Element] = None
+    root: Optional[etree._Element] = None
 
     def __init__(self, app: InstallationTarget):
         self.app = app
@@ -47,7 +46,9 @@ class DataManagerHandler:
             return root.get("tool_path", None)
         return None
 
-    def _data_manager_config_elems_to_xml_file(self, config_elems: List[Element], config_filename: StrPath) -> None:
+    def _data_manager_config_elems_to_xml_file(
+        self, config_elems: List[etree._Element], config_filename: StrPath
+    ) -> None:
         """
         Persist the current in-memory list of config_elems to a file named by the value
         of config_filename.
@@ -171,7 +172,7 @@ class DataManagerHandler:
                     )
                     if data_manager:
                         rval.append(data_manager)
-                elif elem.tag is etree.Comment:
+                elif isinstance(elem, etree._Comment):
                     pass
                 else:
                     log.warning(f"Encountered unexpected element '{elem.tag}':\n{xml_to_string(elem)}")

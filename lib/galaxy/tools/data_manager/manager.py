@@ -21,7 +21,7 @@ from galaxy.tool_util.data.bundles.models import (
     convert_data_tables_xml,
     RepoInfo,
 )
-from galaxy.util import Element
+from galaxy.util import etree
 
 log = logging.getLogger(__name__)
 
@@ -35,7 +35,7 @@ class DataManagers(DataManagersInterface):
         self.app = app
         self.data_managers = {}
         self.managed_data_tables = {}
-        self.tool_path = None
+        self.tool_path: Optional[str] = None
         self.__reload_count = reload_count or 0
         self.filename = xml_filename or self.app.config.data_manager_config_file
         for filename in util.listify(self.filename):
@@ -143,20 +143,22 @@ class DataManager:
 
     tool: Optional[Tool]
 
-    def __init__(self, data_managers: DataManagers, elem: Element = None, tool_path: Optional[str] = None):
+    def __init__(
+        self, data_managers: DataManagers, elem: Optional[etree._Element] = None, tool_path: Optional[str] = None
+    ):
         self.data_managers = data_managers
-        self.declared_id = None
-        self.name = None
-        self.description = None
+        self.declared_id: Optional[str] = None
+        self.name: Optional[str] = None
+        self.description: Optional[str] = None
         self.version = self.DEFAULT_VERSION
-        self.guid = None
+        self.guid: Optional[str] = None
         self.tool = None
         self.tool_shed_repository_info: Optional[RepoInfo] = None
         self.undeclared_tables = False
         if elem is not None:
             self._load_from_element(elem, tool_path or self.data_managers.tool_path)
 
-    def _load_from_element(self, elem: Element, tool_path: Optional[str]) -> None:
+    def _load_from_element(self, elem: etree._Element, tool_path: Optional[str]) -> None:
         assert (
             elem.tag == "data_manager"
         ), f'A data manager configuration must have a "data_manager" tag as the root. "{elem.tag}" is present'

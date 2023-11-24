@@ -4,6 +4,7 @@ from typing import (
     Any,
     Dict,
     List,
+    Optional,
 )
 
 from galaxy.exceptions import RequestParameterInvalidException
@@ -298,7 +299,7 @@ class ToolPanelManager:
         owner="",
     ):
         """Generate a list of ElementTree Element objects for each section or tool."""
-        elem_list: List[etree.Element] = []
+        elem_list: List[Optional[etree._Element]] = []
         tool_elem = None
         cleaned_repository_clone_url = remove_protocol_and_user_from_clone_url(repository_clone_url)
         if not owner:
@@ -313,6 +314,7 @@ class ToolPanelManager:
                     inside_section = True
                     # Create a new section element only if we haven't already created it.
                     for index, elem in enumerate(elem_list):
+                        assert elem is not None
                         if elem.tag == "section":
                             section_id = elem.get("id", None)
                             if section_id == tool_section_dict["id"]:

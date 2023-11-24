@@ -42,7 +42,7 @@ from typing_extensions import (
 from galaxy import util
 from galaxy.exceptions import MessageException
 from galaxy.util import (
-    Element,
+    etree,
     RW_R__R__,
 )
 from galaxy.util.compression_utils import decompress_path_to_directory
@@ -133,12 +133,12 @@ class FileNameInfoT(TypedDict):
     filename: str
     from_shed_config: bool
     tool_data_path: Optional[StrPath]
-    config_element: Optional[Element]
+    config_element: Optional[etree._Element]
     tool_shed_repository: Optional[Dict[str, Any]]
     errors: ErrorListT
 
 
-LoadInfoT = Tuple[Tuple[Element, Optional[StrPath]], Dict[str, Any]]
+LoadInfoT = Tuple[Tuple[etree._Element, Optional[StrPath]], Dict[str, Any]]
 
 
 class ToolDataTable(Dictifiable):
@@ -162,7 +162,7 @@ class ToolDataTable(Dictifiable):
 
     def __init__(
         self,
-        config_element: Element,
+        config_element: etree._Element,
         tool_data_path: Optional[StrPath],
         tool_data_path_files: ToolDataPathFiles,
         from_shed_config: bool = False,
@@ -179,7 +179,7 @@ class ToolDataTable(Dictifiable):
         self.tool_data_path = tool_data_path
         self.tool_data_path_files = tool_data_path_files
         self.other_config_dict = other_config_dict or {}
-        self.missing_index_file = None
+        self.missing_index_file: Optional[str] = None
         # increment this variable any time a new entry is added, or when the table is totally reloaded
         # This value has no external meaning, and does not represent an abstract version of the underlying data
         self._loaded_content_version = 1
@@ -192,7 +192,9 @@ class ToolDataTable(Dictifiable):
                 "filename": filename,
             },
         )
-        self._merged_load_info: List[Tuple[Type[ToolDataTable], Tuple[Tuple[Element, StrPath], Dict[str, Any]]]] = []
+        self._merged_load_info: List[
+            Tuple[Type[ToolDataTable], Tuple[Tuple[etree._Element, StrPath], Dict[str, Any]]]
+        ] = []
 
     def _update_version(self, version: Optional[int] = None) -> int:
         if version is not None:
@@ -303,6 +305,7 @@ class TabularToolDataTable(ToolDataTable):
 
     """
 
+    comment_char: str
     dict_collection_visible_keys = ["name"]
     dict_element_visible_keys = ["name", "fields"]
     dict_export_visible_keys = ["name", "data", "largest_index", "columns", "missing_index_file"]
@@ -311,7 +314,7 @@ class TabularToolDataTable(ToolDataTable):
 
     def __init__(
         self,
-        config_element: Element,
+        config_element: etree._Element,
         tool_data_path: Optional[StrPath],
         tool_data_path_files: ToolDataPathFiles,
         from_shed_config: bool = False,
@@ -332,7 +335,7 @@ class TabularToolDataTable(ToolDataTable):
 
     def configure_and_load(
         self,
-        config_element: Element,
+        config_element: etree._Element,
         tool_data_path: Optional[StrPath],
         from_shed_config: bool = False,
         url_timeout: float = 10,
@@ -349,10 +352,10 @@ class TabularToolDataTable(ToolDataTable):
         repo_elem = config_element.find("tool_shed_repository")
         if repo_elem is not None:
             repo_info = dict(
-                tool_shed=repo_elem.find("tool_shed").text,
-                name=repo_elem.find("repository_name").text,
-                owner=repo_elem.find("repository_owner").text,
-                installed_changeset_revision=repo_elem.find("installed_changeset_revision").text,
+                tool_shed=cast(etree._Element, repo_elem.find("tool_shed")).text,
+                name=cast(etree._Element, repo_elem.find("repository_name")).text,
+                owner=cast(etree._Element, repo_elem.find("repository_owner")).text,
+                installed_changeset_revision=cast(etree._Element, repo_elem.find("installed_changeset_revision")).text,
             )
         else:
             repo_info = None
@@ -387,6 +390,7 @@ class TabularToolDataTable(ToolDataTable):
                     self.name,
                 )
                 continue
+            assert filename is not None
 
             # FIXME: splitting on and merging paths from a configuration file when loading is wonky
             # Data should exist on disk in the state needed, i.e. the xml configuration should
@@ -507,7 +511,7 @@ class TabularToolDataTable(ToolDataTable):
     def get_version_fields(self):
         return (self._loaded_content_version, self.get_fields())
 
-    def parse_column_spec(self, config_element: Element) -> None:
+    def parse_column_spec(self, config_element: etree._Element) -> None:
         """
         Parse column definitions, which can either be a set of 'column' elements
         with a name and index (as in dynamic options config), or a shorthand
@@ -528,12 +532,12 @@ class TabularToolDataTable(ToolDataTable):
             for column_elem in config_element.findall("column"):
                 name = column_elem.get("name", None)
                 assert name is not None, "Required 'name' attribute missing from column def"
-                index = column_elem.get("index", None)
+                index2 = column_elem.get("index", None)
                 assert index is not None, "Required 'index' attribute missing from column def"
-                index = int(index)
-                self.columns[name] = index
-                if index > self.largest_index:
-                    self.largest_index = index
+                index3 = int(cast(str, index2))
+                self.columns[name] = index3
+                if index3 > self.largest_index:
+                    self.largest_index = index3
                 empty_field_value = column_elem.get("empty_field_value", None)
                 if empty_field_value is not None:
                     self.empty_field_values[name] = empty_field_value
@@ -562,8 +566,8 @@ class TabularToolDataTable(ToolDataTable):
                 if line.lstrip().startswith(self.comment_char):
                     continue
                 line = line.rstrip("\n\r")
-                if line:
-                    line = _expand_here_template(line, here=here)
+                if line != "":
+                    line = cast(str, _expand_here_template(line, here=here))
                     fields = line.split(self.separator)
                     if self.largest_index < len(fields):
                         rval.append(fields)
@@ -869,7 +873,7 @@ class TabularToolDataField(Dictifiable):
         return rval
 
 
-def _expand_here_template(content: str, here: Optional[str]) -> str:
+def _expand_here_template(content: Optional[str], here: Optional[str]) -> Optional[str]:
     if here and content:
         content = string.Template(content).safe_substitute({"__HERE__": here})
     return content
@@ -965,7 +969,7 @@ class ToolDataTableManager(Dictifiable):
 
     def load_from_config_file(
         self, config_filename: StrPath, tool_data_path: Optional[StrPath], from_shed_config: bool = False
-    ) -> List[Element]:
+    ) -> List[etree._Element]:
         """
         This method is called under 3 conditions:
 
@@ -989,6 +993,7 @@ class ToolDataTableManager(Dictifiable):
             )
             table_elems.append(table_elem)
             if table.name not in self.data_tables:
+                assert table.name is not None
                 self.data_tables[table.name] = table
                 log.debug("Loaded tool data table '%s' from file '%s'", table.name, config_filename)
             else:
@@ -1005,7 +1010,7 @@ class ToolDataTableManager(Dictifiable):
 
     def from_elem(
         self,
-        table_elem: Element,
+        table_elem: etree._Element,
         tool_data_path: Optional[StrPath],
         from_shed_config: bool,
         filename: StrPath,
@@ -1029,7 +1034,7 @@ class ToolDataTableManager(Dictifiable):
         tool_data_path: Optional[StrPath],
         shed_tool_data_table_config: StrPath,
         persist: bool = False,
-    ) -> Tuple[List[Element], str]:
+    ) -> Tuple[List[etree._Element], str]:
         """
         This method is called when a tool shed repository that includes a tool_data_table_conf.xml.sample file is being
         installed into a local galaxy instance.  We have 2 cases to handle, files whose root tag is <tables>, for example::
@@ -1070,8 +1075,8 @@ class ToolDataTableManager(Dictifiable):
     def to_xml_file(
         self,
         shed_tool_data_table_config: StrPath,
-        new_elems: Optional[List[Element]] = None,
-        remove_elems: Optional[List[Element]] = None,
+        new_elems: Optional[List[etree._Element]] = None,
+        remove_elems: Optional[List[etree._Element]] = None,
     ) -> None:
         """
         Write the current in-memory version of the shed_tool_data_table_conf.xml file to disk.

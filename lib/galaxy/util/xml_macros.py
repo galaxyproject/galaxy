@@ -9,7 +9,7 @@ from typing import (
 
 from galaxy.util import (
     Element,
-    ElementTree,
+    etree,
     parse_xml,
 )
 from galaxy.util.path import StrPath
@@ -17,7 +17,7 @@ from galaxy.util.path import StrPath
 REQUIRED_PARAMETER = object()
 
 
-def load_with_references(path: StrPath) -> Tuple[ElementTree, Optional[List[str]]]:
+def load_with_references(path: StrPath) -> Tuple[etree._ElementTree, Optional[List[str]]]:
     """Load XML documentation from file system and preprocesses XML macros.
 
     Return the XML representation of the expanded tree and paths to
@@ -53,7 +53,7 @@ def load_with_references(path: StrPath) -> Tuple[ElementTree, Optional[List[str]
     return tree, macro_paths
 
 
-def load(path: StrPath) -> ElementTree:
+def load(path: StrPath) -> etree._ElementTree:
     tree, _ = load_with_references(path)
     return tree
 
@@ -71,7 +71,7 @@ def template_macro_params(root):
     return param_dict
 
 
-def raw_xml_tree(path: StrPath) -> ElementTree:
+def raw_xml_tree(path: StrPath) -> etree._ElementTree:
     """Load raw (no macro expansion) tree representation of XML represented
     at the specified path.
     """

@@ -25,6 +25,7 @@ def test_xml_parsing() -> None:
     tree = parse_xml(path)
     data_managers_el = tree.getroot()
     data_manager_el = data_managers_el.find("data_manager")
+    assert data_manager_el is not None
     description = convert_data_tables_xml(data_manager_el)
     assert not description.undeclared_tables
     assert len(description.data_tables) == 1
@@ -55,6 +56,7 @@ def test_parsing_manual() -> None:
     tree = parse_xml(path)
     data_managers_el = tree.getroot()
     data_manager_el = data_managers_el.find("data_manager")
+    assert data_manager_el is not None
     description = convert_data_tables_xml(data_manager_el)
     assert description.undeclared_tables
     assert len(description.data_tables) == 0
@@ -65,6 +67,7 @@ def test_parsing_mothur() -> None:
     tree = parse_xml(path)
     data_managers_el = tree.getroot()
     data_manager_el = data_managers_el.find("data_manager")
+    assert data_manager_el is not None
     description = convert_data_tables_xml(data_manager_el)
     assert not description.undeclared_tables
     assert len(description.data_tables) == 4

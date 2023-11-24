@@ -65,8 +65,7 @@ class XMLDataProvider(HierarchalDataProvider):
         # TODO: add more flexibility here w/o re-implementing xpath
         # TODO: fails with '#' - browser thinks it's an anchor - use urlencode
         # TODO: need removal/replacement of etree namespacing here - then move to string match
-        Element = getattr(etree, "_Element", etree.Element)
-        return bool((selector is None) or (isinstance(element, Element) and selector in element.tag))
+        return bool((selector is None) or (isinstance(element, etree._Element) and selector in element.tag))
 
     def element_as_dict(self, element):
         """

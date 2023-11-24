@@ -24,7 +24,7 @@ from galaxy.tool_util.linters import (
 from galaxy.tool_util.loader_directory import load_tool_sources_from_path
 from galaxy.tool_util.parser.xml import XmlToolSource
 from galaxy.util import (
-    ElementTree,
+    etree,
     parse_xml,
 )
 from galaxy.util.xml_macros import load_with_references
@@ -899,7 +899,7 @@ def lint_ctx_xpath():
     return LintContext("all", lint_message_class=XMLLintMessageXPath)
 
 
-def get_xml_tree(xml_string: str) -> ElementTree:
+def get_xml_tree(xml_string: str) -> etree._ElementTree:
     with tempfile.NamedTemporaryFile(mode="w", suffix="tool.xml") as tmp:
         tmp.write(xml_string)
         tmp.flush()

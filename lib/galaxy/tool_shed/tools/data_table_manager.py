@@ -29,7 +29,7 @@ class ShedToolDataTableManager:
 
     def generate_repository_info_elem(
         self, tool_shed: str, repository_name: str, changeset_revision: str, owner: str, parent_elem=None, **kwd
-    ) -> etree.Element:
+    ) -> etree._Element:
         """Create and return an ElementTree repository info Element."""
         if parent_elem is None:
             elem = etree.Element("tool_shed_repository")

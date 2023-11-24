@@ -12,7 +12,7 @@ from yaml import safe_load
 
 from galaxy.tool_util.loader import load_tool_with_refereces
 from galaxy.util import (
-    ElementTree,
+    etree,
     parse_xml_string_to_etree,
 )
 from galaxy.util.yaml_util import ordered_load
@@ -60,7 +60,7 @@ TOOL_SOURCE_FACTORIES: Dict[str, Callable[[str], ToolSource]] = {
 
 def get_tool_source(
     config_file: Optional[str] = None,
-    xml_tree: Optional[ElementTree] = None,
+    xml_tree: Optional[etree._ElementTree] = None,
     enable_beta_formats: bool = True,
     tool_location_fetcher: Optional[ToolLocationFetcher] = None,
     macro_paths: Optional[List[str]] = None,

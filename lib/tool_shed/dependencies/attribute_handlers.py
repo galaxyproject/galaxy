@@ -228,7 +228,7 @@ def _create_element(
     tag: str,
     attributes: Optional[Dict[str, str]] = None,
     sub_elements: Optional[Dict[str, List[Tuple[str, str]]]] = None,
-) -> Optional[etree.Element]:
+) -> Optional[etree._Element]:
     """
     Create a new element whose tag is the value of the received tag, and whose attributes are all
     key / value pairs in the received attributes and sub_elements.

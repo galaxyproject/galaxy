@@ -1317,6 +1317,7 @@ if h5py is not None:
 def run_assertions(assertion_xml, data, decompress=None):
     assertion = etree.fromstring(assertion_xml)
     assertion_description = __parse_assert_list_from_elem(assertion)
+    assert assertion_description is not None
     try:
         asserts.verify_assertions(data, assertion_description, decompress=decompress)
     except AssertionError as e:

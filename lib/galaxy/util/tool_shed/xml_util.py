@@ -17,7 +17,7 @@ from galaxy.util.path import StrPath
 log = logging.getLogger(__name__)
 
 
-def create_and_write_tmp_file(elem: etree.Element) -> str:
+def create_and_write_tmp_file(elem: etree._Element) -> str:
     tmp_str = xml_to_string(elem, pretty=True)
     with tempfile.NamedTemporaryFile(prefix="tmp-toolshed-cawrf", delete=False) as fh:
         tmp_filename = fh.name
@@ -26,7 +26,7 @@ def create_and_write_tmp_file(elem: etree.Element) -> str:
     return tmp_filename
 
 
-def parse_xml(file_name: StrPath, check_exists=True) -> Tuple[Optional[etree.ElementTree], str]:
+def parse_xml(file_name: StrPath, check_exists=True) -> Tuple[Optional[etree._ElementTree], str]:
     """Returns a parsed xml tree with comments intact."""
     error_message = ""
     if check_exists and not os.path.exists(file_name):

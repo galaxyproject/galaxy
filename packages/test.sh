@@ -63,7 +63,7 @@ while read -r package_dir || [ -n "$package_dir" ]; do  # https://stackoverflow.
     # Ignore exit code 5 (no tests ran)
     pytest "${unit_extra[@]}" . || test $? -eq 5
     if [ $FOR_PULSAR -eq 0 ]; then
-        make mypy
+        MYPYPATH=../../mypy-stubs make mypy
     fi
     cd ..
 done < $PACKAGE_LIST_FILE

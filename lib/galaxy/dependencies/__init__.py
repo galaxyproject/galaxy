@@ -68,9 +68,13 @@ class ConditionalDependencies:
             if ".xml" in job_conf_path:
                 try:
                     try:
-                        for plugin in parse_xml(job_conf_path).find("plugins").findall("plugin"):
-                            if "load" in plugin.attrib:
-                                self.job_runners.append(plugin.attrib["load"])
+                        plugins = parse_xml(job_conf_path).find("plugins")
+                        if plugins is not None:
+                            for plugin in plugins.findall("plugin"):
+                                if "load" in plugin.attrib:
+                                    self.job_runners.append(plugin.attrib["load"])
+                        else:
+                            pass
                     except OSError:
                         pass
                     try:

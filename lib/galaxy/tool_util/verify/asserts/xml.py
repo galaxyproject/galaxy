@@ -1,5 +1,6 @@
 import re
 from typing import (
+    cast,
     Optional,
     Union,
 )
@@ -74,7 +75,11 @@ def assert_attribute_is(output: str, path: str, attribute: str, text, negate: Un
 
 
 def assert_element_text(
-    output: str, path: str, verify_assertions_function, children, negate: Union[bool, str] = False
+    output: str,
+    path: str,
+    verify_assertions_function,
+    children,
+    negate: Union[bool, str] = False,
 ) -> None:
     """Recursively checks the specified assertions against the text of
     the first element matching the specified path."""
@@ -127,7 +132,7 @@ def assert_xml_element(
         return
     for occ in xml.findall(path):
         if attribute is None or attribute == "":
-            content = occ.text
+            content: Union[str, bytes] = cast(str, occ.text)
         else:
             content = occ.attrib[attribute]
         try:
