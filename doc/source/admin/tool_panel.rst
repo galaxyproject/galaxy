@@ -8,11 +8,11 @@ Configuration
 -------------
 The contents of the tool panel are defined by the following configuration files.
 
-By default three XML files define the content of the toolbox:
+By default three configuration options define the content of the toolbox:
 
-- ``tool_conf.xml`` (``tool_config_file``)
-- ``shed_tool_conf.xml`` (``shed_tool_config_file``)
-- ``migrated_tools_conf.xml`` (``migrated_tools_config``)
+- ``tool_config_file`` (default: ``tool_conf.xml``)
+- ``shed_tool_config_file`` (default: ``shed_tool_conf.xml``)
+- ``migrated_tools_config`` (default ``migrated_tools_conf.xml``)
 
 Built-in and custom tools
 ~~~~~~~~~~~~~~~~~~~~~~~~~
