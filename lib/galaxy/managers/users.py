@@ -499,7 +499,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         """
         activation_token = self.__get_activation_token(trans, email)
         activation_link = trans.url_builder(
-            "/activate",
+            "/user/activate",
             activation_token=activation_token,
             email=escape(email),
             qualified=True,
