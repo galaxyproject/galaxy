@@ -148,7 +148,7 @@ describe("FormSelectMany", () => {
         }
     });
 
-    it("shows the amount to selected options", async () => {
+    it("shows the amount of selected options", async () => {
         const options = generateOptionsFromArrays([["foo", "bar", "baz"], ["@"], ["galaxy"], [".com", ".org"]]);
         const wrapper = mountSelectMany({ options, value: ["foo@galaxy.com", "foo@galaxy.org"] });
 
