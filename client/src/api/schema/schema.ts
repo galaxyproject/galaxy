@@ -6415,10 +6415,7 @@ export interface components {
              */
             workflow_step_uuid?: string;
         };
-        /**
-         * InvocationStepCollectionOutput
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** InvocationStepCollectionOutput */
         InvocationStepCollectionOutput: {
             /**
              * Dataset Collection ID
@@ -6434,10 +6431,7 @@ export interface components {
              */
             src?: "hdca";
         };
-        /**
-         * InvocationStepOutput
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** InvocationStepOutput */
         InvocationStepOutput: {
             /**
              * Dataset ID
@@ -6465,10 +6459,7 @@ export interface components {
          * @enum {string}
          */
         InvocationStepState: "new" | "ready" | "scheduled";
-        /**
-         * InvocationUpdatePayload
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** InvocationUpdatePayload */
         InvocationUpdatePayload: {
             /**
              * Action
@@ -6476,10 +6467,7 @@ export interface components {
              */
             action: boolean;
         };
-        /**
-         * ItemTagsPayload
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** ItemTagsPayload */
         ItemTagsPayload: {
             /**
              * Item class
@@ -6504,10 +6492,7 @@ export interface components {
          * @enum {string}
          */
         ItemsFromSrc: "url" | "files" | "path" | "ftp_import" | "server_dir";
-        /**
-         * JobBaseModel
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** JobBaseModel */
         JobBaseModel: {
             /**
              * Create Time
@@ -6562,15 +6547,6 @@ export interface components {
              */
             update_time: string;
         };
-        /**
-         * JobExportHistoryArchiveListResponse
-         * @description Base model definition with common configuration used by all derived models.
-         */
-        JobExportHistoryArchiveListResponse: components["schemas"]["JobExportHistoryArchiveModel"][];
-        /**
-         * JobExportHistoryArchiveModel
-         * @description Base model definition with common configuration used by all derived models.
-         */
         /** JobDestinationParams */
         JobDestinationParams: {
             /**
@@ -15065,7 +15041,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["InvocationReport"];
+                    "application/json": Record<string, never>;
                 };
             };
             /** @description Validation Error */
@@ -15152,7 +15128,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["InvocationStep"];
+                    "application/json": Record<string, never>;
                 };
             };
             /** @description Validation Error */
@@ -15230,7 +15206,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["InvocationStep"];
+                    "application/json": Record<string, never>;
                 };
             };
             /** @description Validation Error */
@@ -15289,7 +15265,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["InvocationReport"];
                 };
             };
             /** @description Validation Error */
@@ -15377,7 +15353,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["InvocationStep"];
                 };
             };
             /** @description Validation Error */
@@ -15411,7 +15387,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["InvocationStep"];
                 };
             };
             /** @description Validation Error */
@@ -19595,7 +19571,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["InvocationReport"];
+                    "application/json": Record<string, never>;
                 };
             };
             /** @description Validation Error */
@@ -19838,7 +19814,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["InvocationStep"];
+                    "application/json": Record<string, never>;
                 };
             };
             /** @description Validation Error */
@@ -19881,7 +19857,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["InvocationStep"];
+                    "application/json": Record<string, never>;
                 };
             };
             /** @description Validation Error */
@@ -19924,7 +19900,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["InvocationReport"];
+                    "application/json": Record<string, never>;
                 };
             };
             /** @description Validation Error */
@@ -19956,7 +19932,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["InvocationStep"];
+                    "application/json": Record<string, never>;
                 };
             };
             /** @description Validation Error */
@@ -19988,7 +19964,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": components["schemas"]["InvocationStep"];
+                    "application/json": components["schemas"]["InvocationReport"];
                 };
             };
             /** @description Validation Error */
@@ -20082,7 +20058,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["InvocationStep"];
                 };
             };
             /** @description Validation Error */
@@ -20121,7 +20097,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["InvocationStep"];
                 };
             };
             /** @description Validation Error */
@@ -20302,7 +20278,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["InvocationReport"];
                 };
             };
             /** @description Validation Error */
@@ -20399,7 +20375,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["InvocationStep"];
                 };
             };
             /** @description Validation Error */
@@ -20439,7 +20415,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["InvocationStep"];
                 };
             };
             /** @description Validation Error */
