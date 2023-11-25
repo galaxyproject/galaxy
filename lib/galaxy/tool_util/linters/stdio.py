@@ -2,6 +2,8 @@
 import re
 from typing import TYPE_CHECKING
 
+from packaging.version import Version
+
 from galaxy.tool_util.lint import Linter
 
 if TYPE_CHECKING:
@@ -19,11 +21,11 @@ class StdIOAbsenceLegacy(Linter):
             return
         stdios = tool_xml.findall("./stdio") if tool_xml else []
         if stdios:
-            continue
+            return
         tool_node = tool_xml.getroot()
         command = tool_xml.find("./command")
         if command is None or not command.get("detect_errors"):
-            if tool_source.parse_profile() <= "16.01":
+            if Version(tool_source.parse_profile()) <= Version("16.01"):
                 lint_ctx.info(
                     "No stdio definition found, tool indicates error conditions with output written to stderr.",
                     node=tool_node,
@@ -40,11 +42,11 @@ class StdIOAbsence(Linter):
             return
         stdios = tool_xml.findall("./stdio") if tool_xml else []
         if stdios:
-            continue
+            return
         tool_node = tool_xml.getroot()
         command = tool_xml.find("./command")
         if command is None or not command.get("detect_errors"):
-            if tool_source.parse_profile() > 16.01:
+            if Version(tool_source.parse_profile()) > Version("16.01"):
                 lint_ctx.info(
                     "No stdio definition found, tool indicates error conditions with non-zero exit codes.",
                     node=tool_node,

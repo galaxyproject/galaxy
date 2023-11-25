@@ -85,11 +85,6 @@ class Linter(ABC):
     optionally a fix method can be given
     """
 
-    @property
-    @abstractmethod
-    def code(self) -> str:
-        pass
-
     @classmethod
     @abstractmethod
     def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
@@ -105,7 +100,7 @@ class LintMessage:
     a message from the linter
     """
 
-    def __init__(self, level: str, message: str, **kwargs):
+    def __init__(self, level: str, message: str):
         self.level = level
         self.message = message
 
