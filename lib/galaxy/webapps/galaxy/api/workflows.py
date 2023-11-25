@@ -51,6 +51,7 @@ from galaxy.schema.invocation import (
     InvocationReport,
     InvocationStep,
     InvocationUpdatePayload,
+    ShowInvocationResponse,
 )
 from galaxy.schema.schema import (
     AsyncFile,
@@ -1285,7 +1286,7 @@ class FastAPIInvocations:
             step_details=step_details, legacy_job_state=legacy_job_state
         )
         rval = self.invocations_service.show(trans, invocation_id, serialization_params, eager=True)
-        return rval
+        return ShowInvocationResponse(**rval)
 
     @router.get(
         "/api/workflows/{workflow_id}/invocations/{invocation_id}",
