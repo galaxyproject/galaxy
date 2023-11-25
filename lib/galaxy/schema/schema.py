@@ -56,6 +56,7 @@ HISTORY_MODEL_CLASS = Literal["History"]
 JOB_MODEL_CLASS = Literal["Job"]
 STORED_WORKFLOW_MODEL_CLASS = Literal["StoredWorkflow"]
 PAGE_MODEL_CLASS = Literal["Page"]
+INVOCATION_MODEL_CLASS = Literal["WorkflowInvocation"]
 INVOCATION_STEP_MODEL_CLASS = Literal["WorkflowInvocationStep"]
 INVOCATION_REPORT_MODEL_CLASS = Literal["Report"]
 

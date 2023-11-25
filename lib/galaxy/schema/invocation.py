@@ -14,6 +14,7 @@ from pydantic import (
     BaseModel,
     Extra,
     Field,
+    Required,
     UUID4,
 )
 from pydantic.generics import GenericModel
@@ -29,13 +30,24 @@ from galaxy.schema.fields import (
     literal_to_value,
     ModelClassField,
 )
-from galaxy.schema.schema import Model
+from galaxy.schema.schema import (
+    CreateTimeField,
+    DataItemSourceType,
+    Model,
+    UpdateTimeField,
+)
 
 INVOCATION_STEP_OUTPUT_SRC = Literal["hda"]
 INVOCATION_STEP_COLLECTION_OUTPUT_SRC = Literal["hdca"]
 REPORT_RENDER_FORMAT_MARKDOWN = Literal["markdown"]
 
-InvocationStepActionField: bool = Field(
+# InvocationStepActionField: bool = Field(
+#     title="Action",
+#     description="Whether to take action on the invocation step.",
+# )
+
+InvocationStepActionField: Optional[bool] = Field(
+    default=Required,
     title="Action",
     description="Whether to take action on the invocation step.",
 )
@@ -303,7 +315,12 @@ class InvocationStep(Model):
         title="Workflow step ID",
         description="The encoded ID of the workflow step associated with this workflow invocation step.",
     )
-    subworkflow_invocation_id: EncodedDatabaseIdField = Field(
+    # subworkflow_invocation_id: EncodedDatabaseIdField = Field(
+    #     title="Subworkflow invocation ID",
+    #     description="The encoded ID of the subworkflow invocation.",
+    # )
+    subworkflow_invocation_id: Optional[EncodedDatabaseIdField] = Field(
+        default=Required,
         title="Subworkflow invocation ID",
         description="The encoded ID of the subworkflow invocation.",
     )
@@ -312,13 +329,19 @@ class InvocationStep(Model):
         title="State of the invocation step",
         description="Describes where in the scheduling process the workflow invocation step is.",
     )
-    action: bool = InvocationStepActionField
+    # action: bool = InvocationStepActionField
+    action: Optional[bool] = InvocationStepActionField
     order_index: int = Field(
         ...,
         title="Order index",
         description="The index of the workflow step in the workflow.",
     )
-    workflow_step_label: str = Field(
+    # workflow_step_label: str = Field(
+    #     title="Step label",
+    #     description="The label of the workflow step",
+    # )
+    workflow_step_label: Optional[str] = Field(
+        default=Required,
         title="Step label",
         description="The label of the workflow step",
     )
@@ -389,3 +412,94 @@ class InvocationReport(Model):
 
 class InvocationUpdatePayload(Model):
     action: bool = InvocationStepActionField
+
+
+class InvocationIOBase(Model):
+    id: EncodedDatabaseIdField = Field(
+        default=Required, title="ID", description="The encoded ID of the dataset/dataset collection."
+    )
+    workflow_step_id: EncodedDatabaseIdField = Field(
+        ...,
+        title="Workflow step ID",
+        description="The encoded ID of the workflow step associated with the dataset/dataset collection.",
+    )
+
+
+class InvocationInput(InvocationIOBase):
+    label: Optional[str] = Field(
+        default=Required,
+        title="Label",
+        description="Label of the workflow step associated with the input dataset/dataset collection.",
+    )
+    src: Union[Literal[DataItemSourceType.hda], Literal[DataItemSourceType.hdca]] = Field(
+        default=Required, title="Source", description="Source type of the input dataset/dataset collection."
+    )
+
+
+class InvocationInputParameter(Model):
+    parameter_value: str = Field(default=Required, title="Parameter value", description="Value of the input parameter.")
+    label: str = Field(
+        default=Required, title="Label", description="Label of the workflow step associated with the input parameter."
+    )
+    workflow_step_id: EncodedDatabaseIdField = Field(
+        default=Required,
+        title="Workflow step ID",
+        description="The encoded ID of the workflow step associated with the input parameter.",
+    )
+
+
+class InvocationOutput(InvocationIOBase):
+    src: Literal[DataItemSourceType.hda] = Field(
+        default=Required, title="Source", description="Source model of the output dataset."
+    )
+
+
+class InvocationOutputCollection(InvocationIOBase):
+    src: Literal[DataItemSourceType.hdca] = Field(
+        default=Required, title="Source", description="Source model of the output dataset collection."
+    )
+
+
+class ShowInvocationResponse(BaseModel):
+    id: EncodedDatabaseIdField = Field(
+        default=Required, title="ID", description="The encoded ID of the workflow invocation."
+    )
+    create_time: datetime = CreateTimeField
+    update_time: datetime = UpdateTimeField
+    workflow_id: EncodedDatabaseIdField = Field(
+        title="Workflow ID", description="The encoded Workflow ID associated with the invocation."
+    )
+    history_id: EncodedDatabaseIdField = Field(
+        default=Required,
+        title="History ID",
+        description="The encoded ID of the history associated with the invocation.",
+    )
+    # TODO Using the UUID4 type fails here... why?
+    uuid: Any = Field(..., title="UUID", description="Universal unique identifier of the workflow invocation.")
+    state: InvocationState = Field(
+        default=Required, title="Invocation state", description="State of workflow invocation."
+    )
+    # TODO - I do not know what this does and only copied it. Is this right and what does it do?
+    model_class: schema.INVOCATION_MODEL_CLASS = ModelClassField(schema.INVOCATION_MODEL_CLASS)
+    steps: List[InvocationStep] = Field(
+        default=Required, title="Steps", description="Steps of the workflow invocation."
+    )
+    inputs: Dict[str, InvocationInput] = Field(
+        default=Required, title="Inputs", description="Input datasets/dataset collections of the workflow invocation."
+    )
+    input_step_parameters: Dict[str, InvocationInputParameter] = Field(
+        default=Required, title="Input step parameters", description="Input step parameters of the workflow invocation."
+    )
+    outputs: Dict[str, InvocationOutput] = Field(
+        default=Required, title="Outputs", description="Output datasets of the workflow invocation."
+    )
+    output_collections: Dict[str, InvocationOutputCollection] = Field(
+        default=Required,
+        title="Output collections",
+        description="Output dataset collections of the workflow invocation.",
+    )
+    output_values: Dict[str, Any] = Field(
+        default=Required, title="Output values", description="Output values of the workflow invocation."
+    )
+    # TODO Use proper message type here. 
+    messages: Optional[Any] = Field(default=None, title="Message", description="Message of the workflow invocation.")
