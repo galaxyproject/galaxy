@@ -273,12 +273,13 @@ class JobHandlerQueue(BaseJobHandlerQueue):
         In case the activation is enforced it will filter out the jobs of inactive users.
         """
         stmt = self._build_check_jobs_at_startup_statement()
-        with self.sa_session() as session, session.begin():
-            try:
-                for job in session.scalars(stmt):
-                    with session.begin_nested():
-                        self._check_job_at_startup(job)
-            finally:
+        with self.sa_session() as session:
+            for job in session.scalars(stmt):
+                try:
+                    self._check_job_at_startup(job)
+                except Exception:
+                    log.exception("Error while recovering job %s during application startup.", job.id)
+            with transaction(session):
                 session.commit()
 
     def _check_job_at_startup(self, job):
