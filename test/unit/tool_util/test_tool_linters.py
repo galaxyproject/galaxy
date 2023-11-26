@@ -1802,13 +1802,11 @@ def test_tests_compare_attrib_incompatibility(lint_ctx):
 
 
 def test_xml_order(lint_ctx):
-    tool_xml_tree = get_xml_tree(XML_ORDER)
-    run_lint_module(lint_ctx, xml_order, tool_xml_tree)
-    assert "Unknown tag [wrong_tag] encountered, this may result in a warning in the future." in lint_ctx.info_messages
-    assert "Best practice violation [stdio] elements should come before [command]" in lint_ctx.warn_messages
-    assert len(lint_ctx.info_messages) == 1
+    tool_source = get_xml_tool_source(XML_ORDER)
+    run_lint_module(lint_ctx, xml_order, tool_source)
+    assert lint_ctx.warn_messages == ["Best practice violation [stdio] elements should come before [command]"]
+    assert not lint_ctx.info_messages
     assert not lint_ctx.valid_messages
-    assert len(lint_ctx.warn_messages) == 1
     assert not lint_ctx.error_messages
 
 
