@@ -1063,18 +1063,17 @@ def test_general_valid_new_profile_fmt(lint_ctx):
 
 
 def test_help_multiple(lint_ctx):
-    tool_xml_tree = get_xml_tree(HELP_MULTIPLE)
-    run_lint_module(lint_ctx, help, tool_xml_tree)
-    assert "More than one help section found, behavior undefined." in lint_ctx.error_messages
+    tool_source = get_xml_tool_source(HELP_MULTIPLE)
+    run_lint_module(lint_ctx, help, tool_source)
     assert not lint_ctx.info_messages
-    assert not lint_ctx.valid_messages
+    assert len(lint_ctx.valid_messages) == 2  # has help and valid rst
     assert not lint_ctx.warn_messages
-    assert len(lint_ctx.error_messages) == 1
+    assert lint_ctx.error_messages == ["More than one help section found, behavior undefined."]
 
 
 def test_help_absent(lint_ctx):
-    tool_xml_tree = get_xml_tree(HELP_ABSENT)
-    run_lint_module(lint_ctx, help, tool_xml_tree)
+    tool_source = get_xml_tool_source(HELP_ABSENT)
+    run_lint_module(lint_ctx, help, tool_source)
     assert "No help section found, consider adding a help section to your tool." in lint_ctx.warn_messages
     assert not lint_ctx.info_messages
     assert not lint_ctx.valid_messages
@@ -1083,8 +1082,8 @@ def test_help_absent(lint_ctx):
 
 
 def test_help_empty(lint_ctx):
-    tool_xml_tree = get_xml_tree(HELP_EMPTY)
-    run_lint_module(lint_ctx, help, tool_xml_tree)
+    tool_source = get_xml_tool_source(HELP_EMPTY)
+    run_lint_module(lint_ctx, help, tool_source)
     assert "Help section appears to be empty." in lint_ctx.warn_messages
     assert not lint_ctx.info_messages
     assert not lint_ctx.valid_messages
@@ -1093,8 +1092,8 @@ def test_help_empty(lint_ctx):
 
 
 def test_help_todo(lint_ctx):
-    tool_xml_tree = get_xml_tree(HELP_TODO)
-    run_lint_module(lint_ctx, help, tool_xml_tree)
+    tool_source = get_xml_tool_source(HELP_TODO)
+    run_lint_module(lint_ctx, help, tool_source)
     assert "Tool contains help section." in lint_ctx.valid_messages
     assert "Help contains valid reStructuredText." in lint_ctx.valid_messages
     assert "Help contains TODO text." in lint_ctx.warn_messages
@@ -1105,8 +1104,8 @@ def test_help_todo(lint_ctx):
 
 
 def test_help_invalid_rst(lint_ctx):
-    tool_xml_tree = get_xml_tree(HELP_INVALID_RST)
-    run_lint_module(lint_ctx, help, tool_xml_tree)
+    tool_source = get_xml_tool_source(HELP_INVALID_RST)
+    run_lint_module(lint_ctx, help, tool_source)
     assert "Tool contains help section." in lint_ctx.valid_messages
     assert (
         "Invalid reStructuredText found in help - [<string>:2: (WARNING/2) Inline strong start-string without end-string.\n]."
