@@ -62,8 +62,8 @@ CITATIONS_VALID = """
 # tests tool xml for command linter
 COMMAND_MULTIPLE = """
 <tool>
-    <command/>
-    <command/>
+    <command>ls</command>
+    <command>df</command>
 </tool>
 """
 COMMAND_MISSING = """
@@ -967,35 +967,39 @@ def test_citations_valid(lint_ctx):
 
 
 def test_command_multiple(lint_ctx):
-    tool_xml_tree = get_xml_tree(COMMAND_MULTIPLE)
-    run_lint_module(lint_ctx, command, tool_xml_tree)
-    assert "More than one command tag found, behavior undefined." in lint_ctx.error_messages
-    assert len(lint_ctx.error_messages) == 1
-    assert not lint_ctx.info_messages
+    tool_source = get_xml_tool_source(COMMAND_MULTIPLE)
+    run_lint_module(lint_ctx, command, tool_source)
+    assert lint_ctx.error_messages == ["More than one command tag found, behavior undefined."]
+    assert lint_ctx.info_messages == ["Tool contains a command."]
     assert not lint_ctx.valid_messages
     assert not lint_ctx.warn_messages
 
 
 def test_command_missing(lint_ctx):
-    tool_xml_tree = get_xml_tree(COMMAND_MISSING)
-    run_lint_module(lint_ctx, command, tool_xml_tree)
-    assert "No command tag found, must specify a command template to execute." in lint_ctx.error_messages
+    tool_source = get_xml_tool_source(COMMAND_MISSING)
+    run_lint_module(lint_ctx, command, tool_source)
+    assert lint_ctx.error_messages == ["No command tag found, must specify a command template to execute."]
+    assert not lint_ctx.info_messages
+    assert not lint_ctx.valid_messages
+    assert not lint_ctx.warn_messages
 
 
 def test_command_todo(lint_ctx):
-    tool_xml_tree = get_xml_tree(COMMAND_TODO)
-    run_lint_module(lint_ctx, command, tool_xml_tree)
-    assert "Tool contains a command." in lint_ctx.info_messages
-    assert "Command template contains TODO text." in lint_ctx.warn_messages
+    tool_source = get_xml_tool_source(COMMAND_TODO)
+    run_lint_module(lint_ctx, command, tool_source)
+    assert not lint_ctx.error_messages
+    assert lint_ctx.info_messages == ["Tool contains a command."]
+    assert lint_ctx.warn_messages == ["Command template contains TODO text."]
+    assert not lint_ctx.valid_messages
 
 
 def test_command_detect_errors_interpreter(lint_ctx):
-    tool_xml_tree = get_xml_tree(COMMAND_DETECT_ERRORS_INTERPRETER)
-    run_lint_module(lint_ctx, command, tool_xml_tree)
-    assert "Command uses deprecated 'interpreter' attribute." in lint_ctx.warn_messages
-    assert "Tool contains a command with interpreter of type [python]." in lint_ctx.info_messages
-    assert "Unknown detect_errors attribute [nonsense]" in lint_ctx.warn_messages
-    assert "Command is empty." in lint_ctx.error_messages
+    tool_source = get_xml_tool_source(COMMAND_DETECT_ERRORS_INTERPRETER)
+    run_lint_module(lint_ctx, command, tool_source)
+    assert lint_ctx.error_messages == ["Command is empty."]
+    assert lint_ctx.warn_messages == ["Command uses deprecated 'interpreter' attribute."]
+    assert lint_ctx.info_messages == ["Tool contains a command with interpreter of type [python]."]
+    assert not lint_ctx.valid_messages
 
 
 def test_general_missing_tool_id_name_version(lint_ctx):
