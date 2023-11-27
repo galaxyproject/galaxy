@@ -1,25 +1,45 @@
 <tool id="select_from_url" name="select_from_url" version="0.1.0" profile="23.1">
-    <command>
-echo '$url_param_value' > '$the_value'
-    </command>
+    <command><![CDATA[
+echo '$url_param_value' > '$param_value' &&
+echo '$url_param_value_postprocessed' > '$param_value_postprocessed'
+    ]]></command>
     <inputs>
         <param name="url_param_value" type="select">
-            <options from_url="http://localhost:8000/data">
+            <options from_url="https://usegalaxy.org/api/genomes">
             </options>
         </param>
+        <!--
         <param name="url_param_value_templated" type="select">
             <options from_url="http://localhost:8000/data?user=$__user_id__">
             </options>
         </param>
-        <param name="url_param_value_templated_and_postprocessed" type="select">
-            <options from_url="http://localhost:8000/data_paginated?user=$__user_id__">
+        -->
+        <param name="url_param_value_postprocessed" type="select">
+            <options from_url="https://usegalaxy.org/api/genomes/dm6">
                 <postprocess_expression><![CDATA[
-                    $( inputs.map((v) => [`name: ${v[0]}`, `value: ${v[1]}`]) )
+                    $( Object.values(inputs.chrom_info).map((v) => [v.chrom, v.len]) )
                 ]]></postprocess_expression>
             </options>
         </param>
     </inputs>
     <outputs>
-        <data format="txt" name="the_value"></data>
+        <data format="txt" label="url param value" name="param_value"></data>
+        <data format="txt" label="url param value postprocessed" name="param_value_postprocessed"></data>
     </outputs>
+    <tests>
+        <test>
+            <param name="url_param_value" value="dm6" />
+            <param name="url_param_value_postprocessed" value="chr2L" />
+            <output name="param_value">
+                <assert_contents>
+                    <has_text text="dm6"></has_text>
+                </assert_contents>
+            </output>
+            <output name="param_value_postprocessed">
+                <assert_contents>
+                    <has_text text="23513712"></has_text>
+                </assert_contents>
+            </output>
+        </test>
+    </tests>
 </tool>

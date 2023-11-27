@@ -9,6 +9,8 @@ import os
 import re
 from io import StringIO
 
+import requests
+
 from galaxy.model import (
     DatasetCollectionElement,
     HistoryDatasetAssociation,
@@ -781,11 +783,15 @@ class DynamicOptions:
                 return [str(values[0]), str(values[1]), bool(values[2])]
 
         if self.from_url:
-            import requests
-
             context = User.user_template_environment(trans.user)
             url = fill_template(self.from_url, context)
-            data = requests.get(url).json()
+            try:
+                response = requests.get(url)
+                response.raise_for_status()
+            except Exception as e:
+                log.warning("Fetching from url '%s' failed: %s", url, str(e))
+                return []
+            data = response.json()
 
             if self.from_url_postprocess:
                 data = do_eval(
