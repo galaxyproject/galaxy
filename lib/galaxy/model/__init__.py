@@ -6740,11 +6740,11 @@ class HistoryDatasetCollectionAssociation(
     def dataset_dbkeys_and_extensions_summary(self):
         if not hasattr(self, "_dataset_dbkeys_and_extensions_summary"):
             stmt = self.collection._build_nested_collection_attributes_stmt(hda_attributes=("_metadata", "extension"))
-            col_attrs = object_session(self).execute(stmt)
+            tuples = object_session(self).execute(stmt)
 
             extensions = set()
             dbkeys = set()
-            for row in col_attrs:
+            for row in tuples:
                 if row is not None:
                     dbkey_field = row._metadata.get("dbkey")
                     if isinstance(dbkey_field, list):
