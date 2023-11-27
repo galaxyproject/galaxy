@@ -6383,7 +6383,8 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
         db_session = object_session(self)
         if db_session and self.id:
             stmt = self._build_nested_collection_attributes_stmt(return_entities=(DatasetCollectionElement,))
-            return db_session.scalars(stmt).all()
+            tuples = db_session.execute(stmt).all()
+            return [tuple[0] for tuple in tuples]
         elements = []
         for element in self.elements:
             if element.is_collection:
