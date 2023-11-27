@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faStar, faTrash } from "@fortawesome/free-solid-svg-icons";
+import { faGlobe, faStar, faTrash, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BNav, BNavItem, BOverlay } from "bootstrap-vue";
 import { filter } from "underscore";
@@ -22,7 +22,7 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 import WorkflowCard from "@/components/Workflow/WorkflowCard.vue";
 import WorkflowListActions from "@/components/Workflow/WorkflowListActions.vue";
 
-library.add(faStar, faTrash);
+library.add(faGlobe, faStar, faTrash, faUpload);
 
 type ListView = "grid" | "list";
 type WorkflowsList = Record<string, never>[];
@@ -89,6 +89,7 @@ const filterText = ref("");
 const showAdvanced = ref(false);
 const showBookmarked = ref(false);
 const WorkflowFilters = new Filtering(validFilters.value);
+const showHighlight = ref<"published" | "imported" | "">("");
 const published = computed(() => props.activeList === "published");
 const scrolledTop = computed(() => !isScrollable.value || arrived.top);
 const sharedWithMe = computed(() => props.activeList === "shared_with_me");
@@ -162,6 +163,14 @@ function onToggleDeleted() {
 
 function onToggleBookmarked() {
     showBookmarked.value = !showBookmarked.value;
+}
+
+function onToggleShowHighlight(h: "published" | "imported") {
+    if (showHighlight.value === h) {
+        showHighlight.value = "";
+    } else {
+        showHighlight.value = h;
+    }
 }
 
 watch([filterText, sortBy, sortDesc, showBookmarked], () => {
@@ -246,6 +255,41 @@ onMounted(() => {
                             Show bookmarked
                         </BButton>
                     </div>
+
+                    <div v-if="activeList !== 'published'">
+                        Highlights:
+                        <BButton
+                            id="highlight-published-workflows"
+                            v-b-tooltip.hover
+                            size="sm"
+                            :title="
+                                showHighlight === 'published'
+                                    ? 'Highlight published workflows'
+                                    : 'Hide published workflows highlight'
+                            "
+                            :pressed="showHighlight === 'published'"
+                            variant="outline-primary"
+                            @click="onToggleShowHighlight('published')">
+                            <FontAwesomeIcon :icon="faGlobe" />
+                            Published
+                        </BButton>
+
+                        <BButton
+                            id="highlight-imported-workflows"
+                            v-b-tooltip.hover
+                            size="sm"
+                            :title="
+                                showHighlight === 'imported'
+                                    ? 'Highlight imported workflows'
+                                    : 'Hide imported workflows highlight'
+                            "
+                            :pressed="showHighlight === 'imported'"
+                            variant="outline-primary"
+                            @click="onToggleShowHighlight('imported')">
+                            <FontAwesomeIcon :icon="faUpload" />
+                            Imported
+                        </BButton>
+                    </div>
                 </template>
             </ListHeader>
         </div>
@@ -274,6 +318,7 @@ onMounted(() => {
                 :key="workflow.id"
                 :class="view === 'grid' ? 'grid-view ' : ''"
                 :workflow="workflow"
+                :show-highlight="showHighlight"
                 :published-view="published"
                 :grid-view="view === 'grid'"
                 @refreshList="load"

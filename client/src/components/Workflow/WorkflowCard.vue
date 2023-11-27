@@ -25,12 +25,14 @@ library.add(faEdit, faEye, faPen, faUpload);
 interface Props {
     workflow: any;
     gridView?: boolean;
+    showHighlight?: string;
     publishedView?: boolean;
 }
 
 const props = withDefaults(defineProps<Props>(), {
     gridView: false,
     publishedView: false,
+    showHighlight: "",
 });
 
 const emit = defineEmits<{
@@ -58,6 +60,16 @@ const description = computed(() => {
     } else {
         return null;
     }
+});
+const showHighlightComputed = computed(() => {
+    if (!props.publishedView && props.showHighlight) {
+        if (props.showHighlight === "published") {
+            return workflow.value.published;
+        } else if (props.showHighlight === "imported") {
+            return workflow.value.source_metadata;
+        }
+    }
+    return false;
 });
 
 function onEdit() {
@@ -93,7 +105,9 @@ async function onTagClick(tag: string) {
     <div class="workflow-card" :data-workflow-id="workflow.id">
         <div
             class="workflow-card-container"
-            :class="{ 'workflow-shared-trs': !publishedView && (workflow.source_metadata || workflow.published) }">
+            :class="{
+                'workflow-shared-trs': showHighlightComputed,
+            }">
             <div>
                 <div class="d-flex justify-content-between align-items-center mb-1">
                     <div>
