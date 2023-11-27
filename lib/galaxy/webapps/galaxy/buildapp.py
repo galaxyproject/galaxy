@@ -308,12 +308,6 @@ def postfork_setup():
 def populate_api_routes(webapp, app):
     webapp.add_api_controllers("galaxy.webapps.galaxy.api", app)
 
-    _add_item_tags_controller(
-        webapp, name_prefix="history_content_", path_prefix="/api/histories/{history_id}/contents/{history_content_id}"
-    )
-
-    _add_item_tags_controller(webapp, name_prefix="history_", path_prefix="/api/histories/{history_id}")
-    _add_item_tags_controller(webapp, name_prefix="workflow_", path_prefix="/api/workflows/{workflow_id}")
     _add_item_annotation_controller(
         webapp, name_prefix="history_content_", path_prefix="/api/histories/{history_id}/contents/{history_content_id}"
     )
@@ -1046,48 +1040,6 @@ def populate_api_routes(webapp, app):
     # Connect logger from app
     if app.trace_logger:
         webapp.trace_logger = app.trace_logger
-
-
-def _add_item_tags_controller(webapp, name_prefix, path_prefix, **kwd):
-    # Not just using map.resources because actions should be based on name not id
-    controller = f"{name_prefix}tags"
-    name = f"{name_prefix}tag"
-    path = f"{path_prefix}/tags"
-    map = webapp.mapper
-    # Allow view items' tags.
-    map.connect(name, path, controller=controller, action="index", conditions=dict(method=["GET"]))
-    # Allow remove tag from item
-    map.connect(
-        f"{name}_delete",
-        "%s/tags/{tag_name}" % path_prefix,
-        controller=controller,
-        action="delete",
-        conditions=dict(method=["DELETE"]),
-    )
-    # Allow create a new tag with from name
-    map.connect(
-        f"{name}_create",
-        "%s/tags/{tag_name}" % path_prefix,
-        controller=controller,
-        action="create",
-        conditions=dict(method=["POST"]),
-    )
-    # Allow update tag value
-    map.connect(
-        f"{name}_update",
-        "%s/tags/{tag_name}" % path_prefix,
-        controller=controller,
-        action="update",
-        conditions=dict(method=["PUT"]),
-    )
-    # Allow show tag by name
-    map.connect(
-        f"{name}_show",
-        "%s/tags/{tag_name}" % path_prefix,
-        controller=controller,
-        action="show",
-        conditions=dict(method=["GET"]),
-    )
 
 
 def _add_item_extended_metadata_controller(webapp, name_prefix, path_prefix, **kwd):
