@@ -356,7 +356,22 @@ class TestMappings(BaseModelTestCase):
         # assert len(loaded_dataset_collection.datasets) == 2
         # assert loaded_dataset_collection.collection_type == "pair"
 
-    # TODO breakup this test into separate tests that test the model's public attributes, not the internal query-building logic
+    def test_dataset_action_tuples(self):
+        u = model.User(email="foo", password="foo")
+        h1 = model.History(user=u)
+        hda1 = model.HistoryDatasetAssociation(history=h1, create_dataset=True, sa_session=self.model.session)
+        hda2 = model.HistoryDatasetAssociation(history=h1, create_dataset=True, sa_session=self.model.session)
+        r1 = model.Role()
+        dp1 = model.DatasetPermissions(action="action1", dataset=hda1.dataset, role=r1)
+        dp2 = model.DatasetPermissions(action=None, dataset=hda1.dataset, role=r1)
+        dp3 = model.DatasetPermissions(action="action3", dataset=hda1.dataset, role=r1)
+        c1 = model.DatasetCollection(collection_type="type1")
+        dce1 = model.DatasetCollectionElement(collection=c1, element=hda1)
+        dce2 = model.DatasetCollectionElement(collection=c1, element=hda2)
+        self.model.session.add_all([u, h1, hda1, hda2, r1, dp1, dp2, dp3, c1, dce1, dce2])
+        self.model.session.flush()
+        assert c1.dataset_action_tuples == [("action1", r1.id), ("action3", r1.id)]
+
     def test_nested_collection_attributes(self):
         u = model.User(email="mary2@example.com", password="password")
         h1 = model.History(name="History 1", user=u)
@@ -399,25 +414,25 @@ class TestMappings(BaseModelTestCase):
         )
         result = self.model.session.execute(stmt).all()
         assert [(r._fields) for r in result] == [
-            ("element_identifier_0", "element_identifier_1", "extension", "state"),
-            ("element_identifier_0", "element_identifier_1", "extension", "state"),
+            ("element_identifier_0", "element_identifier_1", "extension", "state", "element_index", "element_index_1"),
+            ("element_identifier_0", "element_identifier_1", "extension", "state", "element_index", "element_index_1"),
         ]
 
         stmt = c2._build_nested_collection_attributes_stmt(
             element_attributes=("element_identifier",), hda_attributes=("extension",), dataset_attributes=("state",)
         )
         result = self.model.session.execute(stmt).all()
-        assert result == [("inner_list", "forward", "bam", "new"), ("inner_list", "reverse", "txt", "new")]
+        assert result == [("inner_list", "forward", "bam", "new", 0, 0), ("inner_list", "reverse", "txt", "new", 0, 1)]
 
         stmt = c2._build_nested_collection_attributes_stmt(return_entities=(model.HistoryDatasetAssociation,))
-        result = self.model.session.scalars(stmt).all()
-        assert result == [d1, d2]
+        result = self.model.session.execute(stmt).all()
+        assert result == [(d1, 0, 0), (d2, 0, 1)]
 
         stmt = c2._build_nested_collection_attributes_stmt(
             return_entities=(model.HistoryDatasetAssociation, model.Dataset)
         )
         result = self.model.session.execute(stmt).all()
-        assert result == [(d1, d1.dataset), (d2, d2.dataset)]
+        assert result == [(d1, d1.dataset, 0, 0), (d2, d2.dataset, 0, 1)]
         # Assert properties that use _get_nested_collection_attributes return correct content
         assert c2.dataset_instances == [d1, d2]
         assert c2.dataset_elements == [dce1, dce2]
@@ -439,12 +454,11 @@ class TestMappings(BaseModelTestCase):
 
         stmt = c4._build_nested_collection_attributes_stmt(element_attributes=("element_identifier",))
         result = self.model.session.execute(stmt).all()
-        assert result == [("outer_list", "inner_list", "forward"), ("outer_list", "inner_list", "reverse")]
-        assert c4.dataset_elements == [dce1, dce2]
-        assert c4.element_identifiers_extensions_and_paths == [
-            (("outer_list", "inner_list", "forward"), "bam", "mock_dataset_14.dat"),
-            (("outer_list", "inner_list", "reverse"), "txt", "mock_dataset_14.dat"),
+        assert result == [
+            ("outer_list", "inner_list", "forward", 0, 0, 0),
+            ("outer_list", "inner_list", "reverse", 0, 0, 1),
         ]
+        assert c4.dataset_elements == [dce1, dce2]
 
     def test_dataset_dbkeys_and_extensions_summary(self):
         u = model.User(email="mary2@example.com", password="password")
