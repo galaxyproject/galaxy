@@ -3,7 +3,6 @@ API operations on Notification objects.
 """
 
 import logging
-from datetime import datetime
 from typing import Optional
 
 from fastapi import (
@@ -33,6 +32,7 @@ from galaxy.schema.notifications import (
     UserNotificationsBatchUpdateRequest,
     UserNotificationUpdateRequest,
 )
+from galaxy.schema.types import OffsetNaiveDatetime
 from galaxy.webapps.galaxy.services.notifications import NotificationService
 from . import (
     depends,
@@ -56,7 +56,7 @@ class FastAPINotifications:
     def get_notifications_status(
         self,
         trans: ProvidesUserContext = DependsOnTrans,
-        since: datetime = Query(),
+        since: OffsetNaiveDatetime = Query(),
     ) -> NotificationStatusSummary:
         """Anonymous users cannot receive personal notifications, only broadcasted notifications."""
         return self.service.get_notifications_status(trans, since)
