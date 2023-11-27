@@ -6465,8 +6465,9 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
         stmt = self._build_nested_collection_attributes_stmt(
             return_entities=[DatasetCollectionElement], hda_attributes=["id"]
         )
-        col_attrs = object_session(self).execute(stmt).all()
-        hda_id_to_element = dict(col_attrs)
+        tuples = object_session(self).execute(stmt).all()
+        tuples = [(element, id) for element, id, *_ in tuples]
+        hda_id_to_element = dict(tuples)
         for failed, replacement in replacements.items():
             element = hda_id_to_element.get(failed.id)
             if element:
