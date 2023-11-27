@@ -6287,16 +6287,8 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
     def dataset_action_tuples(self):
         if not hasattr(self, "_dataset_action_tuples"):
             stmt = self._build_nested_collection_attributes_stmt(dataset_permission_attributes=("action", "role_id"))
-            col_attrs = object_session(self).execute(stmt)
-
-            _dataset_action_tuples = []
-            for _dataset_action_tuple in col_attrs:
-                if _dataset_action_tuple[0] is None:
-                    continue
-                _dataset_action_tuples.append(_dataset_action_tuple)
-
-            self._dataset_action_tuples = _dataset_action_tuples
-
+            tuples = object_session(self).execute(stmt)
+            self._dataset_action_tuples = [(action, role_id) for action, role_id, *_ in tuples if action is not None]
         return self._dataset_action_tuples
 
     @property
