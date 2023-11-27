@@ -6204,6 +6204,8 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
                 q = q.filter(entity.id == dce.c.id)
 
         q = q.distinct().order_by(*order_by_columns)
+        # With DISTINCT, all columns that appear in the ORDER BY clause must appear in the SELECT clause.
+        q = q.add_columns(*order_by_columns)
         return q
 
     @property
