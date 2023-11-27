@@ -6285,14 +6285,6 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
         return self._dataset_action_tuples
 
     @property
-    def element_identifiers_extensions_and_paths(self):
-        stmt = self._build_nested_collection_attributes_stmt(
-            element_attributes=("element_identifier",), hda_attributes=("extension",), return_entities=(Dataset,)
-        )
-        col_attrs = object_session(self).execute(stmt)
-        return [(row[:-2], row.extension, row.Dataset.get_file_name()) for row in col_attrs]
-
-    @property
     def element_identifiers_extensions_paths_and_metadata_files(
         self,
     ) -> List[List[Any]]:
