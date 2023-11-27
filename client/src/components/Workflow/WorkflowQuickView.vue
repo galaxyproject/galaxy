@@ -14,7 +14,6 @@ import Heading from "@/components/Common/Heading.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
 import WorkflowGraph from "@/components/Workflow/Editor/WorkflowGraph.vue";
 import WorkflowInformation from "@/components/Workflow/Published/WorkflowInformation.vue";
-import WorkflowActions from "@/components/Workflow/WorkflowActions.vue";
 import WorkflowRunButton from "@/components/Workflow/WorkflowRunButton.vue";
 
 const props = defineProps<{
@@ -89,8 +88,6 @@ watch(
             <div class="w-100">
                 <span class="d-flex mb-2">
                     <Heading h1 separator inline size="xl" class="flex-grow-1 mb-0"> Workflow Preview </Heading>
-
-                    <WorkflowActions :workflow="workflowInfo" button-size="md" show-controls />
 
                     <WorkflowRunButton :id="props.id" full />
                 </span>
