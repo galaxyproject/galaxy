@@ -6288,6 +6288,21 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
     def element_identifiers_extensions_paths_and_metadata_files(
         self,
     ) -> List[List[Any]]:
+        def find_identifiers(row):
+            # Assume row has this structure: [id1, id2, ..., idn, extension, model, anything];
+            # model is an instance of a Dataset or a HistoryDatasetAssociation;
+            # extension is a string that always preceeds the model;
+            # we look for the first model, then pick the preceeding items minus the extention.
+            identifiers = []
+            i = 0
+            while i + 1 < len(row):
+                item, next_item = row[i], row[i + 1]
+                if isinstance(next_item, HistoryDatasetAssociation) or isinstance(next_item, Dataset):
+                    break
+                identifiers.append(item)
+                i += 1
+            return tuple(identifiers)
+
         results = []
         if object_session(self):
             stmt = self._build_nested_collection_attributes_stmt(
@@ -6295,10 +6310,10 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
                 hda_attributes=("extension",),
                 return_entities=(HistoryDatasetAssociation, Dataset),
             )
-            col_attrs = object_session(self).execute(stmt)
+            tuples = object_session(self).execute(stmt)
             # element_identifiers, extension, path
-            for row in col_attrs:
-                result = [row[:-3], row.extension, row.Dataset.get_file_name()]
+            for row in tuples:
+                result = [find_identifiers(row), row.extension, row.Dataset.get_file_name()]
                 hda = row.HistoryDatasetAssociation
                 result.append(hda.get_metadata_file_paths_and_extensions())
                 results.append(result)
