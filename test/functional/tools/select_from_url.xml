@@ -16,7 +16,7 @@ echo '$url_param_value_postprocessed' > '$param_value_postprocessed'
         -->
         <param name="url_param_value_postprocessed" type="select">
             <options from_url="https://usegalaxy.org/api/genomes/dm6">
-                <postprocess_expression><![CDATA[
+                <postprocess_expression type="ecma5.1"><![CDATA[
                     $( Object.values(inputs.chrom_info).map((v) => [v.chrom, v.len]) )
                 ]]></postprocess_expression>
             </options>

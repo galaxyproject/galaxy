@@ -4449,6 +4449,7 @@ used to generate dynamic options.
       <xs:element name="filter" type="Filter" minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="column" type="Column" minOccurs="0" maxOccurs="unbounded"/>
       <xs:element name="validator" type="Validator" minOccurs="0" maxOccurs="1"/>
+      <xs:element name="postprocess_expression" type="Expression" minOccurs="0" maxOccurs="1"/>
       <xs:element name="file" type="xs:string" minOccurs="0" maxOccurs="unbounded">
         <xs:annotation>
           <xs:documentation xml:lang="en">Documentation for file</xs:documentation>
