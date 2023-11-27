@@ -315,10 +315,6 @@ class InvocationStep(Model):
         title="Workflow step ID",
         description="The encoded ID of the workflow step associated with this workflow invocation step.",
     )
-    # subworkflow_invocation_id: EncodedDatabaseIdField = Field(
-    #     title="Subworkflow invocation ID",
-    #     description="The encoded ID of the subworkflow invocation.",
-    # )
     subworkflow_invocation_id: Optional[EncodedDatabaseIdField] = Field(
         default=Required,
         title="Subworkflow invocation ID",
@@ -329,17 +325,12 @@ class InvocationStep(Model):
         title="State of the invocation step",
         description="Describes where in the scheduling process the workflow invocation step is.",
     )
-    # action: bool = InvocationStepActionField
     action: Optional[bool] = InvocationStepActionField
     order_index: int = Field(
         ...,
         title="Order index",
         description="The index of the workflow step in the workflow.",
     )
-    # workflow_step_label: str = Field(
-    #     title="Step label",
-    #     description="The label of the workflow step",
-    # )
     workflow_step_label: Optional[str] = Field(
         default=Required,
         title="Step label",
@@ -501,5 +492,5 @@ class ShowInvocationResponse(BaseModel):
     output_values: Dict[str, Any] = Field(
         default=Required, title="Output values", description="Output values of the workflow invocation."
     )
-    # TODO Use proper message type here. 
+    # TODO Use proper message type here.
     messages: Optional[Any] = Field(default=None, title="Message", description="Message of the workflow invocation.")
