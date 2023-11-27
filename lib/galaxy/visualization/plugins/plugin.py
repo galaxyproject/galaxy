@@ -16,7 +16,6 @@ from galaxy.visualization.plugins import (
     resource_parser,
     utils,
 )
-from galaxy.web import url_for
 
 log = logging.getLogger(__name__)
 
@@ -113,7 +112,7 @@ class VisualizationPlugin(ServesTemplatesPluginMixin):
         )
         return self._render(render_vars, trans=trans, embedded=embedded)
 
-    def to_dict(self):
+    def to_dict(self, url_builder=None):
         return {
             "name": self.name,
             "html": self.config.get("name"),
@@ -126,13 +125,15 @@ class VisualizationPlugin(ServesTemplatesPluginMixin):
             "settings": self.config.get("settings"),
             "groups": self.config.get("groups"),
             "specs": self.config.get("specs"),
-            "href": self._get_url(),
+            "href": self._get_url(url_builder),
         }
 
-    def _get_url(self):
+    def _get_url(self, url_builder=None):
+        url_builder = None
+        url_builder = url_builder or self.app.url_for
         if self.name in self.app.visualizations_registry.BUILT_IN_VISUALIZATIONS:
-            return url_for(controller="visualization", action=self.name)
-        return url_for("visualization_plugin", visualization_name=self.name)
+            return url_builder(controller="visualization", action=self.name)
+        return url_builder("visualization_plugin", visualization_name=self.name)
 
     def _get_static_path(self, path):
         if "/config/" in path:
@@ -255,7 +256,7 @@ class ScriptVisualizationPlugin(VisualizationPlugin):
         template.
         """
         render_vars["embedded"] = self._parse_embedded(embedded)
-        render_vars["static_url"] = url_for(f"/{self.static_path}/")
+        render_vars["static_url"] = trans.url_builder(f"/{self.static_path}/")
         render_vars.update(vars={})
         render_vars.update({"script_attributes": self.config["entry_point"]["attr"]})
         template_filename = os.path.join(self.MAKO_TEMPLATE)
