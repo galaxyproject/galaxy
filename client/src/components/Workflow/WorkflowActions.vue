@@ -269,8 +269,6 @@ const menuActions: ComputedRef<BAction[]> = computed(() => {
 <style scoped lang="scss">
 .workflow-actions {
     display: flex;
-    align-items: baseline;
-    flex-wrap: nowrap;
-    justify-content: flex-end;
+    align-items: center;
 }
 </style>

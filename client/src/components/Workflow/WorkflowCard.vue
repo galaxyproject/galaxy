@@ -251,6 +251,7 @@ async function onTagClick(tag: string) {
         .workflow-count-actions {
             display: flex;
             align-self: baseline;
+            align-items: center;
             gap: 0.5rem;
             flex-direction: row;
         }
