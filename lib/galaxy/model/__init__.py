@@ -6238,9 +6238,9 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
             if object_session(self):
                 # TODO: Optimize by just querying without returning the states...
                 stmt = self._build_nested_collection_attributes_stmt(dataset_attributes=("state",))
-                col_attrs = object_session(self).execute(stmt)
+                tuples = object_session(self).execute(stmt)
 
-                for (state,) in col_attrs:
+                for state, *_ in tuples:
                     if state == Dataset.states.DEFERRED:
                         has_deferred_data = True
                         break
