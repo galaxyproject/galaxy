@@ -22,6 +22,7 @@ from galaxy.schema.fields import (
     EncodedDatabaseIdField,
 )
 from galaxy.schema.schema import Model
+from galaxy.schema.types import OffsetNaiveDatetime
 
 
 class NotificationVariant(str, Enum):
@@ -244,12 +245,12 @@ class NotificationCreateData(Model):
     category: NotificationCategory = NotificationCategoryField
     variant: NotificationVariant = NotificationVariantField
     content: AnyNotificationContent
-    publication_time: Optional[datetime] = Field(
+    publication_time: Optional[OffsetNaiveDatetime] = Field(
         None,
         title="Publication time",
         description="The time when the notification should be published. Notifications can be created and then scheduled to be published at a later time.",
     )
-    expiration_time: Optional[datetime] = Field(
+    expiration_time: Optional[OffsetNaiveDatetime] = Field(
         None,
         title="Expiration time",
         description="The time when the notification should expire. By default it will expire after 6 months. Expired notifications will be permanently deleted.",
@@ -349,12 +350,12 @@ class NotificationBroadcastUpdateRequest(NotificationUpdateRequest):
         title="Variant",
         description="The variant of the notification. Used to express the importance of the notification.",
     )
-    publication_time: Optional[datetime] = Field(
+    publication_time: Optional[OffsetNaiveDatetime] = Field(
         None,
         title="Publication time",
         description="The time when the notification should be published. Notifications can be created and then scheduled to be published at a later time.",
     )
-    expiration_time: Optional[datetime] = Field(
+    expiration_time: Optional[OffsetNaiveDatetime] = Field(
         None,
         title="Expiration time",
         description="The time when the notification should expire. By default it will expire after 6 months. Expired notifications will be permanently deleted.",

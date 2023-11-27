@@ -268,6 +268,16 @@ class TestNotificationsIntegration(IntegrationTestCase):
         assert "Scheduled" in subjects
         assert "Expired" in subjects
 
+    def test_notification_input_dates_consider_timezone(self):
+        payload = notification_broadcast_test_data(subject="Test", message="Test")
+        payload["publication_time"] = "2021-01-01T12:00:00+02:00"
+        payload["expiration_time"] = "2021-01-01T12:00:00Z"
+        response = self._post("notifications/broadcast", data=payload, admin=True, json=True)
+        self._assert_status_code_is_ok(response)
+        notification = response.json()["notification"]
+        assert notification["publication_time"] == "2021-01-01T10:00:00"
+        assert notification["expiration_time"] == "2021-01-01T12:00:00"
+
     def test_sharing_items_creates_notifications_when_expected(self):
         user1 = self._create_test_user()
         user2 = self._create_test_user()
