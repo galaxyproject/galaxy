@@ -36,7 +36,7 @@ function onDrop(event) {
 
 function onDropCancel(event) {
     if (event.dataTransfer?.files?.length > 0) {
-        toast.error("Please try again", "Upload cancelled");
+        toast.error("Upload cancelled", "Drop file in the center to upload it");
     }
 }
 
