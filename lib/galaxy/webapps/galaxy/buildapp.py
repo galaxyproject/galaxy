@@ -1061,6 +1061,14 @@ def populate_api_routes(webapp, app):
         parent_resources=dict(member_name="job", collection_name="jobs"),
     )
 
+    webapp.mapper.connect(
+        "index",
+        "/api/jobs/{job_id}/files",
+        controller="job_files",
+        action="index",
+        conditions=dict(method=["HEAD"]),
+    )
+
     webapp.mapper.resource(
         "port",
         "ports",

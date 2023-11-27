@@ -61,6 +61,10 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
         job_id, job_key = self._api_job_keys(job)
         data = {"path": self.input_hda.file_name, "job_key": job_key}
         get_url = self._api_url(f"jobs/{job_id}/files", use_key=True)
+        head_response = requests.head(get_url, params=data)
+        api_asserts.assert_status_code_is_ok(head_response)
+        assert head_response.text == ""
+        assert head_response.headers["content-length"] == str(len(TEST_INPUT_TEXT))
         response = requests.get(get_url, params=data)
         api_asserts.assert_status_code_is_ok(response)
         assert response.text == TEST_INPUT_TEXT
