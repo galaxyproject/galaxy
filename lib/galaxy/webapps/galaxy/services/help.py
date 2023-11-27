@@ -28,6 +28,10 @@ class HelpService(ServiceBase):
 
     def search_forum(self, query: str) -> HelpForumSearchResponse:
         """Search the Galaxy Help forum using the Discourse API."""
+        if not self.config.enable_help_forum_tool_panel_integration:
+            raise ServerNotConfiguredForRequest(
+                "Integration with the Galaxy Help Forum is not enabled in the configuration."
+            )
         if not self.config.help_forum_api_url:
             raise ServerNotConfiguredForRequest("Help forum API URL is not configured.")
         forum_search_url = f"{self.config.help_forum_api_url}/search.json"
