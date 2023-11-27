@@ -7,12 +7,14 @@ export type FileDropHandler = (event: DragEvent) => void;
  * Custom File-Drop composable
  * @param dropZone Element which files should be dropped on
  * @param onDrop callback function called when drop occurs
+ * @param onDropCancel callback function called when drop cancelled
  * @param solo when true, only reacts if no modal is open
  * @param idleTime how long to wait until state resets
  */
 export function useFileDrop(
     dropZone: MaybeRefOrGetter<EventTarget | null | undefined>,
     onDrop: Ref<FileDropHandler> | FileDropHandler,
+    onDropCancel: Ref<FileDropHandler> | FileDropHandler,
     solo: MaybeRefOrGetter<boolean>,
     idleTime = 800
 ) {
@@ -72,6 +74,9 @@ export function useFileDrop(
                     if (isFileOverDropZone.value) {
                         const dropHandler = unref(onDrop);
                         dropHandler(event as DragEvent);
+                    } else {
+                        const dropCancelHandler = unref(onDropCancel);
+                        dropCancelHandler(event as DragEvent);
                     }
                     return "idle";
                 case "dragend":

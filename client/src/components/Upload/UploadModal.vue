@@ -1,4 +1,5 @@
 <script setup>
+import { setIframeEvents } from "components/Upload/utils";
 import { useConfig } from "composables/config";
 import { useUserHistories } from "composables/userHistories";
 import { storeToRefs } from "pinia";
@@ -59,16 +60,9 @@ async function open(overrideOptions) {
     }
 }
 
-function setIframeEvents(disableEvents) {
-    const element = document.getElementById("galaxy_main");
-    if (element) {
-        element.style["pointer-events"] = disableEvents ? "none" : "auto";
-    }
-}
-
 watch(
     () => showModal.value,
-    (modalShown) => setIframeEvents(modalShown)
+    (modalShown) => setIframeEvents(["galaxy_main"], modalShown)
 );
 
 defineExpose({
