@@ -1,8 +1,6 @@
 import { type MaybeRefOrGetter, useEventListener } from "@vueuse/core";
 import { computed, type Ref, ref, unref } from "vue";
 
-import { setIframeEvents } from "../components/Upload/utils";
-
 export type FileDropHandler = (event: DragEvent) => void;
 
 /**
@@ -20,8 +18,6 @@ export function useFileDrop(
     solo: MaybeRefOrGetter<boolean>,
     idleTime = 800
 ) {
-    const iframesNoInteract = ["galaxy_main", "frame.center-frame"];
-
     /** returns if any bootstrap modal is open */
     function isAnyModalOpen() {
         return document.querySelectorAll(".modal.show").length > 0;
@@ -47,7 +43,6 @@ export function useFileDrop(
                 case "dragstart":
                     return "blocked";
                 case "dragenter":
-                    setIframeEvents(iframesNoInteract, true);
                     if (!(unref(solo) && isAnyModalOpen())) {
                         return "fileDragging";
                     }
@@ -129,7 +124,6 @@ export function useFileDrop(
         "dragleave",
         () => {
             isFileOverDropZone.value = false;
-            setIframeEvents(iframesNoInteract, false);
         },
         true
     );

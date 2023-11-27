@@ -1,4 +1,5 @@
 <script setup>
+import { setIframeEvents } from "components/Upload/utils";
 import { useConfig } from "composables/config";
 import { useUserHistories } from "composables/userHistories";
 import { storeToRefs } from "pinia";
@@ -6,8 +7,6 @@ import { ref, watch } from "vue";
 
 import { useUserStore } from "@/stores/userStore";
 import { wait } from "@/utils/utils";
-
-import { setIframeEvents } from "components/Upload/utils";
 
 import UploadContainer from "./UploadContainer.vue";
 
@@ -60,7 +59,6 @@ async function open(overrideOptions) {
         content.value.immediateUpload(options.value.immediateFiles);
     }
 }
-
 
 watch(
     () => showModal.value,

@@ -1,7 +1,8 @@
 <script setup>
+import { setIframeEvents } from "components/Upload/utils";
 import { useFileDrop } from "composables/fileDrop";
 import { useGlobalUploadModal } from "composables/globalUploadModal";
-import { computed, ref } from "vue";
+import { computed, ref, watch } from "vue";
 
 import { useToast } from "@/composables/toast";
 
@@ -20,6 +21,8 @@ const { openGlobalUploadModal } = useGlobalUploadModal();
 
 const toast = useToast();
 
+const iframesNoInteract = ["galaxy_main", "frame.center-frame"];
+
 function onDrop(event) {
     console.debug(event.dataTransfer);
 
@@ -36,6 +39,14 @@ function onDropCancel(event) {
         toast.error("Please try again", "Upload cancelled");
     }
 }
+
+watch(isFileOverDocument, (newValue, oldValue) => {
+    if (!oldValue && newValue) {
+        setIframeEvents(iframesNoInteract, true);
+    } else {
+        setIframeEvents(iframesNoInteract, false);
+    }
+});
 </script>
 
 <template>
