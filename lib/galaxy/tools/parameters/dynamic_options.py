@@ -788,16 +788,20 @@ class DynamicOptions:
             try:
                 response = requests.get(url)
                 response.raise_for_status()
+                data = response.json()
             except Exception as e:
                 log.warning("Fetching from url '%s' failed: %s", url, str(e))
-                return []
-            data = response.json()
+                data = None
 
             if self.from_url_postprocess:
-                data = do_eval(
-                    self.from_url_postprocess,
-                    data,
-                )
+                try:
+                    data = do_eval(
+                        self.from_url_postprocess,
+                        data,
+                    )
+                except Exception as eval_error:
+                    log.warning("Failed to evaluate postprocess_expression: %s", str(eval_error))
+                    data = []
 
             # We only support the very specific ["name", "value", "selected"] format for now.
             return [to_triple(d) for d in data]
