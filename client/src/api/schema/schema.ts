@@ -5836,10 +5836,7 @@ export interface components {
          * @description Model for a user in the help forum.
          */
         HelpForumUser: Record<string, never>;
-        /**
-         * HistoryContentBulkOperationPayload
-         * @description Base model definition with common configuration used by all derived models.
-         */
+        /** HistoryContentBulkOperationPayload */
         HistoryContentBulkOperationPayload: {
             /** Items */
             items?: components["schemas"]["HistoryContentItem"][];
