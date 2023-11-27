@@ -110,8 +110,8 @@ class SearchJobsPayload(Model):
         title="Inputs",
         description="The inputs of the job.",
     )
-    state: JobState = Field(
-        default=Required,
+    state: Optional[JobState] = Field(
+        default=None,
         title="State",
         description="Current state of the job.",
     )
