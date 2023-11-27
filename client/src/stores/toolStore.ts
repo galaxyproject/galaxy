@@ -181,9 +181,10 @@ export const useToolStore = defineStore("toolStore", () => {
     }
 
     async function fetchPanelViews() {
-        if (defaultPanelView.value && Object.keys(panelViews.value).length > 0) {
+        if (loading.value || (defaultPanelView.value && Object.keys(panelViews.value).length > 0)) {
             return;
         }
+        loading.value = true;
         try {
             const { data } = await axios.get(`${getAppRoot()}api/tool_panels`);
             const { default_panel_view, views } = data;
@@ -191,6 +192,8 @@ export const useToolStore = defineStore("toolStore", () => {
             panelViews.value = views;
         } catch (e) {
             rethrowSimple(e);
+        } finally {
+            loading.value = false;
         }
     }
 
