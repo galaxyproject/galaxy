@@ -84,9 +84,9 @@ class TestHistoriesApi(integration_util.IntegrationTestCase):
         history_id = self._create_history()
         history_content_id = self._create_history_contents(history_id)
         prefixs = {
-            "workflows": "workflows/" + workflow_id,
-            "histories": "histories/" + history_id,
-            "histories_content": "histories/" + history_id + "/contents/" + history_content_id,
+            "workflows": f"workflows/{workflow_id}",
+            "histories": f"histories/{history_id}",
+            "histories_content": f"histories/{history_id}/contents/{history_content_id}",
         }
         return prefixs
 
