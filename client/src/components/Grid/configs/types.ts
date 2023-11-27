@@ -1,12 +1,11 @@
 import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
-import type Router from "vue-router";
 
 import Filtering from "@/utils/filtering";
 
 export interface Action {
     title: string;
     icon?: IconDefinition;
-    handler: (router: Router) => void;
+    handler: () => void;
 }
 
 export type ActionArray = Array<Action>;
@@ -30,19 +29,19 @@ export interface FieldEntry {
     title: string;
     condition?: (data: RowData) => boolean;
     disabled?: boolean;
-    type: string;
+    type: validTypes;
     operations?: Array<Operation>;
     handler?: FieldHandler;
     width?: number;
 }
 
-export type FieldHandler = (data: RowData, router?: Router) => void;
+export type FieldHandler = (data: RowData) => void;
 
 export interface Operation {
     title: string;
     icon: IconDefinition;
     condition?: (data: RowData) => boolean;
-    handler: (data: RowData, router: Router) => OperationHandlerReturn;
+    handler: (data: RowData) => OperationHandlerReturn;
 }
 
 interface OperationHandlerMessage {
@@ -53,3 +52,5 @@ interface OperationHandlerMessage {
 type OperationHandlerReturn = Promise<OperationHandlerMessage> | void;
 
 export type RowData = Record<string, unknown>;
+
+type validTypes = "date" | "link" | "operations" | "sharing" | "tags" | "text";

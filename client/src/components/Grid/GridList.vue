@@ -2,9 +2,9 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faCaretDown, faCaretUp } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { useDebounceFn } from "@vueuse/core";
+import { useDebounceFn, useEventBus } from "@vueuse/core";
 import { BAlert, BButton, BLink, BPagination } from "bootstrap-vue";
-import { computed, onMounted, ref, watch } from "vue";
+import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { Config, FieldHandler, Operation, RowData } from "./configs/types";
@@ -18,8 +18,10 @@ import LoadingSpan from "@/components/LoadingSpan.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 import UtcDate from "@/components/UtcDate.vue";
 
-library.add(faCaretDown, faCaretUp);
+const eventBus = useEventBus<string>("grid-router-push");
 const router = useRouter();
+
+library.add(faCaretDown, faCaretUp);
 
 interface Props {
     // provide a grid configuration
@@ -107,12 +109,19 @@ async function getGridData() {
  * Execute grid operation and display message if available
  */
 async function onOperation(operation: Operation, rowData: RowData) {
-    const response = await operation.handler(rowData, router);
+    const response = await operation.handler(rowData);
     if (response) {
         await getGridData();
         operationMessage.value = response.message;
         operationStatus.value = response.status || "success";
     }
+}
+
+/**
+ * Handle router push request emitted by grid module
+ */
+function onRouterPush(route: string) {
+    router.push(route);
 }
 
 /**
@@ -147,11 +156,17 @@ function onFilter(filter?: string) {
         applyFilter(filter, true);
     }
 }
+
 /**
  * Initialize grid data
  */
 onMounted(() => {
     getGridData();
+    eventBus.on(onRouterPush);
+});
+
+onUnmounted(() => {
+    eventBus.off(onRouterPush);
 });
 
 /**
@@ -195,7 +210,7 @@ watch(operationMessage, () => {
                     size="sm"
                     variant="primary"
                     :data-description="`grid action ${action.title.toLowerCase()}`"
-                    @click="action.handler(router)">
+                    @click="action.handler()">
                     <Icon :icon="action.icon" class="mr-1" />
                     <span v-localize>{{ action.title }}</span>
                 </BButton>
@@ -244,7 +259,7 @@ watch(operationMessage, () => {
                     <GridLink
                         v-else-if="fieldEntry.type == 'link'"
                         :text="rowData[fieldEntry.key]"
-                        @click="fieldEntry.handler && fieldEntry.handler(rowData, router)" />
+                        @click="fieldEntry.handler && fieldEntry.handler(rowData)" />
                     <SharingIndicators
                         v-else-if="fieldEntry.type == 'sharing'"
                         :object="rowData"
