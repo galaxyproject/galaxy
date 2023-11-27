@@ -6212,11 +6212,11 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
             stmt = self._build_nested_collection_attributes_stmt(
                 hda_attributes=("extension",), dataset_attributes=("state",)
             )
-            col_attrs = object_session(self).execute(stmt)
+            tuples = object_session(self).execute(stmt)
 
             extensions = set()
             states = set()
-            for extension, state in col_attrs:
+            for extension, state, *_ in tuples:
                 states.add(state)
                 extensions.add(extension)
 
