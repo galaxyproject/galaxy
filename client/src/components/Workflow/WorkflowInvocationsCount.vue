@@ -59,7 +59,9 @@ function onInvocations() {
 </template>
 
 <style scoped lang="scss">
-@container (max-width: 376px) {
+@import "breakpoints.scss";
+
+@container (max-width: #{$breakpoint-md}) {
     .compact-view {
         display: none;
     }

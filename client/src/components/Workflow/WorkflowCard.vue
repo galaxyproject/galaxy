@@ -134,7 +134,7 @@ async function onTagClick(tag: string) {
             </div>
 
             <div class="workflow-card-footer">
-                <div>
+                <div class="workflow-card-tags">
                     <StatelessTags
                         clickable
                         :value="workflow.tags"
@@ -157,8 +157,12 @@ async function onTagClick(tag: string) {
                             v-b-tooltip.hover
                             :disabled="workflow.deleted"
                             size="sm"
-                            class="workflow-edit-button mr-2"
-                            :title="workflow.deleted ? 'You cannot edit a deleted workflow' : 'Edit'"
+                            class="workflow-edit-button"
+                            :title="
+                                workflow.deleted
+                                    ? 'You cannot edit a deleted workflow. Restore it first.'
+                                    : 'Edit workflow'
+                            "
                             variant="outline-primary"
                             @click="onEdit">
                             <FontAwesomeIcon :icon="faEdit" />
@@ -169,7 +173,6 @@ async function onTagClick(tag: string) {
                             v-else
                             v-b-tooltip.hover
                             size="sm"
-                            class="mr-2"
                             title="Import this workflow to edit"
                             variant="outline-primary"
                             @click="onImport">
@@ -205,6 +208,7 @@ async function onTagClick(tag: string) {
 
 <style scoped lang="scss">
 @import "theme/blue.scss";
+@import "breakpoints.scss";
 
 .workflow-card {
     container: workflow-card / inline-size;
@@ -234,6 +238,7 @@ async function onTagClick(tag: string) {
             display: flex;
             align-self: baseline;
             gap: 0.5rem;
+            flex-direction: row;
         }
 
         .text-summary {
@@ -255,14 +260,27 @@ async function onTagClick(tag: string) {
             justify-content: end;
         }
 
-        @container (max-width: 576px) {
+        .workflow-card-footer {
+            display: flex;
+            justify-content: space-between;
+            align-items: end;
+        }
+
+        .workflow-card-tags {
+            max-width: 60%;
+        }
+
+        @container (max-width: #{$breakpoint-sm}) {
             .workflow-card-footer {
-                gap: 0.5rem;
-                flex-wrap: wrap;
-                align-items: center;
-                justify-content: space-between;
+                display: inline-block;
             }
 
+            .workflow-card-tags {
+                max-width: 100%;
+            }
+        }
+
+        @container (max-width: #{$breakpoint-sm}) {
             .workflow-card-actions {
                 display: flex;
                 gap: 0.5rem;
@@ -271,7 +289,7 @@ async function onTagClick(tag: string) {
             }
         }
 
-        @container (min-width: 576px, max-width: 768px) {
+        @container (min-width: #{$breakpoint-sm}, max-width: #{$breakpoint-md}) {
             .workflow-card-actions {
                 justify-content: end;
             }
@@ -282,7 +300,7 @@ async function onTagClick(tag: string) {
         border-left: 0.25rem solid $brand-primary;
     }
 
-    @container (max-width: 768px) {
+    @container (max-width: #{$breakpoint-md}) {
         .hide-in-card {
             display: none !important;
         }
@@ -297,7 +315,7 @@ async function onTagClick(tag: string) {
         }
     }
 
-    @container (min-width: 768px) {
+    @container (min-width: #{$breakpoint-md}) {
         .workflow-count-actions {
             align-items: end;
             flex-direction: column-reverse;

@@ -125,6 +125,8 @@ watch(
 </template>
 
 <style scoped lang="scss">
+@import "breakpoints.scss";
+
 .workflow-quick-view {
     .workflow-preview-container {
         display: flex;
@@ -151,7 +153,7 @@ watch(
         }
     }
 
-    @media only screen and (max-width: 1100px) {
+    @media only screen and (max-width: $breakpoint-xl) {
         flex-direction: column;
         height: unset;
 
