@@ -291,12 +291,13 @@ class JobHandlerQueue(BaseJobHandlerQueue):
         the database and requeues or cleans up as necessary. Only run as the job handler starts.
         In case the activation is enforced it will filter out the jobs of inactive users.
         """
-        with self.sa_session() as session, session.begin():
-            try:
-                for job in get_jobs_to_check_at_startup(session, self.track_jobs_in_database, self.app.config):
-                    with session.begin_nested():
-                        self._check_job_at_startup(job)
-            finally:
+        with self.sa_session() as session:
+            for job in get_jobs_to_check_at_startup(session, self.track_jobs_in_database, self.app.config):
+                try:
+                    self._check_job_at_startup(job)
+                except Exception:
+                    log.exception("Error while recovering job %s during application startup.", job.id)
+            with transaction(session):
                 session.commit()
 
     def _check_job_at_startup(self, job):
