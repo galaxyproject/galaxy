@@ -283,38 +283,47 @@ onMounted(() => {
 </template>
 
 <style scoped lang="scss">
+@import "breakpoints.scss";
+
 .workflows-list {
     container: workflow-list / inline-size;
     overflow: auto;
 
     .workflows-list-header {
-        position: sticky;
         top: 0;
         z-index: 100;
         background-color: white;
 
-        &:after {
-            position: absolute;
-            content: "";
-            opacity: 0;
-            z-index: 10;
-            width: 100%;
-            height: 20px;
-            bottom: -25px;
-            pointer-events: none;
-            border-radius: 0.5rem;
-            transition: opacity 0.4s;
-            background-repeat: no-repeat;
-        }
-
-        &:after {
-            right: 0;
-            background-image: linear-gradient(to bottom, rgba(3, 0, 48, 0.1), rgba(3, 0, 48, 0.02), rgba(3, 0, 48, 0));
-        }
-
-        &:not(.scrolled-top) {
+        @container (min-width: #{$breakpoint-sm}) {
+            position: sticky;
             &:after {
-                opacity: 1;
+                position: absolute;
+                content: "";
+                opacity: 0;
+                z-index: 10;
+                width: 100%;
+                height: 20px;
+                bottom: -25px;
+                pointer-events: none;
+                border-radius: 0.5rem;
+                transition: opacity 0.4s;
+                background-repeat: no-repeat;
+            }
+
+            &:after {
+                right: 0;
+                background-image: linear-gradient(
+                    to bottom,
+                    rgba(3, 0, 48, 0.1),
+                    rgba(3, 0, 48, 0.02),
+                    rgba(3, 0, 48, 0)
+                );
+            }
+
+            &:not(.scrolled-top) {
+                &:after {
+                    opacity: 1;
+                }
             }
         }
     }
@@ -328,14 +337,14 @@ onMounted(() => {
         display: inline-grid;
     }
 
-    @container (max-width: 1200px) {
+    @container (max-width: #{$breakpoint-xl}) {
         .grid-view {
             width: calc(100% / 2);
             display: inline-grid;
         }
     }
 
-    @container (max-width: 576px) {
+    @container (max-width: #{$breakpoint-sm}) {
         .grid-view {
             width: 100%;
             display: inline-grid;

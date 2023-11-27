@@ -47,7 +47,7 @@ defineExpose({
 
 <template>
     <div class="list-header">
-        <div class="list-header-sort">
+        <div class="list-header-filters">
             Sort by:
             <BButtonGroup>
                 <BButton
@@ -113,9 +113,10 @@ defineExpose({
     justify-content: space-between;
     align-items: center;
 
-    .list-header-sort {
+    .list-header-filters {
         display: flex;
         gap: 0.25rem;
+        flex-wrap: wrap;
         align-items: center;
     }
 }

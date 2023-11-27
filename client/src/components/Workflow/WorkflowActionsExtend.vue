@@ -80,7 +80,7 @@ async function onRestore() {
 </script>
 
 <template>
-    <div class="workflow-actions flex-gapx-1">
+    <div class="workflow-actions-extend flex-gapx-1">
         <BButtonGroup>
             <BButton
                 v-if="!isAnonymous && !shared && !workflow.deleted"
@@ -134,13 +134,15 @@ async function onRestore() {
 </template>
 
 <style scoped lang="scss">
-.workflow-actions {
+@import "breakpoints.scss";
+
+.workflow-actions-extend {
     display: flex;
     align-items: baseline;
     flex-wrap: wrap;
     justify-content: flex-end;
 
-    @container (max-width: 576px) {
+    @container (max-width: #{$breakpoint-md}) {
         .compact-view {
             display: none;
         }

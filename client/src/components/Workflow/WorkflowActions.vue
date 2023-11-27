@@ -270,7 +270,7 @@ const menuActions: ComputedRef<BAction[]> = computed(() => {
 .workflow-actions {
     display: flex;
     align-items: baseline;
-    flex-wrap: wrap;
+    flex-wrap: nowrap;
     justify-content: flex-end;
 }
 </style>
