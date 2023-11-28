@@ -10,14 +10,16 @@ import {
     faUser,
     faUsers,
 } from "@fortawesome/free-solid-svg-icons";
+import { useEventBus } from "@vueuse/core";
 import axios from "axios";
-import type Router from "vue-router";
 
 import { createApiKey, deleteUser, recalculateDiskUsageByUserId, sendActivationEmail, undeleteUser } from "@/api/users";
 import type { ConfigType } from "@/composables/config";
 import Filtering, { contains, equals, toBool, type ValidFilter } from "@/utils/filtering";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
+
+const { emit } = useEventBus<string>("grid-router-push");
 
 /**
  * Local types
@@ -54,24 +56,24 @@ const fields = [
                 title: "Manage Information",
                 icon: faUser,
                 condition: (data: UserEntry) => !data.deleted,
-                handler: (data: UserEntry, router: Router) => {
-                    router.push(`/user/information?id=${data.id}`);
+                handler: (data: UserEntry) => {
+                    emit(`/user/information?id=${data.id}`);
                 },
             },
             {
                 title: "Manage Roles and Groups",
                 icon: faUsers,
                 condition: (data: UserEntry) => !data.deleted,
-                handler: (data: UserEntry, router: Router) => {
-                    router.push(`/admin/form/manage_roles_and_groups_for_user?id=${data.id}`);
+                handler: (data: UserEntry) => {
+                    emit(`/admin/form/manage_roles_and_groups_for_user?id=${data.id}`);
                 },
             },
             {
                 title: "Reset Password",
                 icon: faUnlock,
                 condition: (data: UserEntry) => !data.deleted,
-                handler: (data: UserEntry, router: Router) => {
-                    router.push(`/admin/form/reset_user_password?id=${data.id}`);
+                handler: (data: UserEntry) => {
+                    emit(`/admin/form/reset_user_password?id=${data.id}`);
                 },
             },
             {
