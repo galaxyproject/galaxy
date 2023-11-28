@@ -115,6 +115,16 @@ loadBroadcastsList();
 <template>
     <div>
         <Heading h2 class="mb-2"> Broadcasts list </Heading>
+        <p v-localize class="mb-2">
+            Broadcasts are notifications that are displayed to all users. They can be scheduled to be published at a
+            specific time and can be set to expire at a specific time. They can also be marked as urgent to make them
+            stand out.
+        </p>
+        <p class="mb-2">
+            <b>NOTE:</b> Expired broadcasts are completely removed from the database in a periodic cleanup process. The
+            cleanup interval is defined in the Galaxy configuration file under the
+            <code>expired_notifications_cleanup_interval</code> key.
+        </p>
 
         <div class="list-operations mb-2">
             <BRow class="align-items-center" no-gutters>
