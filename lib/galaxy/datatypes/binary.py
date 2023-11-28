@@ -3689,7 +3689,7 @@ class Fast5ArchiveGz(Fast5Archive):
     >>> Fast5ArchiveGz().sniff(fname)
     True
     >>> fname = get_test_fname('test.fast5.tar.xz')
-    >>> Fast5ArchiveXz().sniff(fname)
+    >>> Fast5ArchiveGz().sniff(fname)
     False
     >>> fname = get_test_fname('test.fast5.tar.bz2')
     >>> Fast5ArchiveGz().sniff(fname)
@@ -3743,7 +3743,7 @@ class Fast5ArchiveBz2(Fast5Archive):
     >>> Fast5ArchiveBz2().sniff(fname)
     True
     >>> fname = get_test_fname('test.fast5.tar.xz')
-    >>> Fast5ArchiveXz().sniff(fname)
+    >>> Fast5ArchiveBz2().sniff(fname)
     False
     >>> fname = get_test_fname('test.fast5.tar.gz')
     >>> Fast5ArchiveBz2().sniff(fname)
