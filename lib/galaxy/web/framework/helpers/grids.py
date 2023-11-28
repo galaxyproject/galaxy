@@ -57,6 +57,7 @@ class GridColumn:
         label_id_prefix=None,
         target=None,
         delayed=False,
+        escape=True,
     ):
         """Create a grid column."""
         self.label = label
@@ -71,6 +72,7 @@ class GridColumn:
         self.visible = visible
         self.filterable = filterable
         self.delayed = delayed
+        self.escape = escape
         # Column must have a key to be sortable.
         self.sortable = self.key is not None and sortable
         self.label_id_prefix = label_id_prefix or ""
@@ -84,7 +86,10 @@ class GridColumn:
             value = None
         if self.format:
             value = self.format(value)
-        return escape(unicodify(value))
+        if self.escape:
+            return escape(unicodify(value))
+        else:
+            return value
 
     def get_link(self, trans, grid, item):
         if self.link and self.link(item):
@@ -1095,7 +1100,7 @@ class GridData:
                 "id": trans.security.encode_id(row.id),
             }
             for column in self.columns:
-                value = unicodify(column.get_value(trans, self, row))
+                value = column.get_value(trans, self, row)
                 row_dict[column.key] = value
             grid_config["rows"].append(row_dict)
         grid_config["total_row_count"] = total_row_count

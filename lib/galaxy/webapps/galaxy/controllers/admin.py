@@ -48,16 +48,6 @@ log = logging.getLogger(__name__)
 
 
 class UserListGrid(grids.GridData):
-    class EmailColumn(grids.TextColumn):
-        def get_value(self, trans, grid, user):
-            return escape(user.email)
-
-    class UserNameColumn(grids.TextColumn):
-        def get_value(self, trans, grid, user):
-            if user.username:
-                return escape(user.username)
-            return "not set"
-
     class StatusColumn(grids.GridColumn):
         def get_value(self, trans, grid, user):
             if user.purged:
@@ -77,12 +67,6 @@ class UserListGrid(grids.GridData):
             if user.roles:
                 return len(user.roles)
             return 0
-
-    class ExternalColumn(grids.GridColumn):
-        def get_value(self, trans, grid, user):
-            if user.external:
-                return "yes"
-            return "no"
 
     class LastLoginColumn(grids.GridColumn):
         def get_value(self, trans, grid, user):
@@ -107,17 +91,6 @@ class UserListGrid(grids.GridData):
                 query = query.order_by((last_login_subquery.c.last_login).asc().nullsfirst())
             return query
 
-    class TimeCreatedColumn(grids.GridColumn):
-        def get_value(self, trans, grid, user):
-            return user.create_time
-
-    class ActivatedColumn(grids.GridColumn):
-        def get_value(self, trans, grid, user):
-            if user.active:
-                return "Y"
-            else:
-                return "N"
-
     class DiskUsageColumn(grids.GridColumn):
         def get_value(self, trans, grid, user):
             return user.get_disk_usage(nice_size=True)
@@ -134,32 +107,24 @@ class UserListGrid(grids.GridData):
                 query = query.order_by(func.coalesce(column, 0).desc())
             return query
 
-    class DeletedColumn(grids.GridColumn):
-        def get_value(self, trans, grid, user):
-            return user.deleted
-
-    class PurgedColumn(grids.GridColumn):
-        def get_value(self, trans, grid, user):
-            return user.purged
-
     # Grid definition
     title = "Users"
     title_id = "users-grid"
     model_class = model.User
     default_sort_key = "email"
     columns = [
-        EmailColumn("Email", key="email"),
-        UserNameColumn("User Name", key="username"),
+        grids.GridColumn("Email", key="email"),
+        grids.GridColumn("User Name", key="username"),
         LastLoginColumn("Last Login", key="last_login", format=time_ago),
         DiskUsageColumn("Disk Usage", key="disk_usage"),
         StatusColumn("Status", key="status"),
-        TimeCreatedColumn("Created", key="create_time"),
-        ActivatedColumn("Activated", key="active"),
+        grids.GridColumn("Created", key="create_time"),
+        grids.GridColumn("Activated", key="active", escape=False),
         GroupsColumn("Groups", key="groups"),
         RolesColumn("Roles", key="roles"),
-        ExternalColumn("External", key="external"),
-        DeletedColumn("Deleted", key="deleted"),
-        PurgedColumn("Purged", key="purged"),
+        grids.GridColumn("External", key="external", escape=False),
+        grids.GridColumn("Deleted", key="deleted", escape=False),
+        grids.GridColumn("Purged", key="purged", escape=False),
     ]
 
     def apply_query_filter(self, query, **kwargs):
@@ -169,10 +134,10 @@ class UserListGrid(grids.GridData):
             "is": "is",
         }
         search_query = kwargs.get("search")
-        if search_query is None:
+        parsed_search = parse_filters_structured(search_query, INDEX_SEARCH_FILTERS)
+        if len(parsed_search.terms) == 0:
             query = query.filter(self.model_class.deleted == false())
         else:
-            parsed_search = parse_filters_structured(search_query, INDEX_SEARCH_FILTERS)
             for term in parsed_search.terms:
                 if isinstance(term, FilteredTerm):
                     key = term.filter
