@@ -1,7 +1,7 @@
 <template>
     <div
         :id="contentId"
-        :class="['content-item m-1 p-0 rounded btn-transparent-background', contentCls]"
+        :class="['content-item m-1 p-0 rounded btn-transparent-background', contentCls, isBeingUsed]"
         :data-hid="id"
         :data-state="state"
         tabindex="0"
@@ -89,7 +89,7 @@
         <!-- collections are not expandable, so we only need the DatasetDetails component here -->
         <b-collapse :visible="expandDataset">
             <DatasetDetails
-                v-if="expandDataset"
+                v-if="expandDataset && item.id"
                 :id="item.id"
                 :writable="writable"
                 :show-highlight="(isHistoryItem && filterable) || addHighlightBtn"
@@ -211,6 +211,9 @@ export default {
                 visualize: `/visualizations?dataset_id=${id}`,
             };
         },
+        isBeingUsed() {
+            return Object.values(this.itemUrls).includes(this.$route.path) ? "being-used" : "";
+        },
     },
     methods: {
         onKeyDown(event) {
@@ -288,6 +291,11 @@ export default {
     // improve focus visibility
     &:deep(.btn:focus) {
         box-shadow: 0 0 0 0.2rem transparentize($brand-primary, 0.75);
+    }
+
+    &.being-used {
+        border-left: 0.25rem solid $brand-primary;
+        margin-left: 0rem !important;
     }
 }
 </style>

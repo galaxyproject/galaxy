@@ -1,9 +1,14 @@
 import { mount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
+import VueRouter from "vue-router";
 
 import GenericElement from "./GenericElement";
 
+jest.mock("components/History/model/queries");
+
 const localVue = getLocalVue();
+localVue.use(VueRouter);
+const router = new VueRouter();
 
 describe("GenericElement", () => {
     let wrapper;
@@ -54,6 +59,7 @@ describe("GenericElement", () => {
                 },
             },
             localVue,
+            router,
         });
     });
 
