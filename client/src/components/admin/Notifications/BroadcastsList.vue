@@ -15,7 +15,6 @@ import { computed, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { fetchAllBroadcasts, updateBroadcast } from "@/api/notifications.broadcast";
-import { type components } from "@/api/schema";
 import { useConfirmDialog } from "@/composables/confirmDialog";
 import { useMarkdown } from "@/composables/markdown";
 import { Toast } from "@/composables/toast";
@@ -27,8 +26,6 @@ import UtcDate from "@/components/UtcDate.vue";
 
 library.add(faBroadcastTower, faClock, faEdit, faHourglassHalf, faInfoCircle, faRedo, faTrash);
 
-type BroadcastNotificationResponse = components["schemas"]["BroadcastNotificationResponse"];
-
 const router = useRouter();
 const { confirm } = useConfirmDialog();
 const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });
@@ -38,7 +35,7 @@ const loading = ref(false);
 const showActive = ref(true);
 const showExpired = ref(true);
 const showScheduled = ref(true);
-const broadcasts = ref<BroadcastNotificationResponse[]>([]);
+const broadcasts = ref<BroadcastNotification[]>([]);
 
 const filteredBroadcasts = computed(() => {
     return broadcasts.value.filter(filterBroadcasts);
