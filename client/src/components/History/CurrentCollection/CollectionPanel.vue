@@ -123,7 +123,7 @@ watch(
                         class="m-2"
                         :variant="populatedStateMsg ? 'danger' : 'info'"
                         show>
-                        {{ populatedStateMsg || "This is an empty list/collection." }}
+                        {{ populatedStateMsg || "This is an empty collection." }}
                     </b-alert>
                     <ListingLayout
                         v-else
