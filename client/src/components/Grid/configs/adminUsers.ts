@@ -4,6 +4,7 @@ import {
     faEnvelope,
     faKey,
     faMask,
+    faPlus,
     faTrash,
     faTrashRestore,
     faUnlock,
@@ -18,6 +19,8 @@ import type { ConfigType } from "@/composables/config";
 import Filtering, { contains, equals, toBool, type ValidFilter } from "@/utils/filtering";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
+
+import type { ActionArray } from "./types";
 
 const { emit } = useEventBus<string>("grid-router-push");
 
@@ -41,6 +44,19 @@ async function getData(offset: number, limit: number, search: string, sort_by: s
     const { data } = await axios.get(withPrefix(`/admin/users_list?${queryString}`));
     return [data.rows, data.total_row_count];
 }
+
+/**
+ * Actions are grid-wide operations
+ */
+const actions: ActionArray = [
+    {
+        title: "Create",
+        icon: faPlus,
+        handler: () => {
+            emit("/admin/users/create");
+        },
+    },
+];
 
 /**
  * Declare columns to be displayed
@@ -307,6 +323,7 @@ const validFilters: Record<string, ValidFilter<string | boolean | undefined>> = 
  * Grid configuration
  */
 export default {
+    actions: actions,
     fields: fields,
     filtering: new Filtering(validFilters, undefined, false, false),
     getData: getData,
