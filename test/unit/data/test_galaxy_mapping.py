@@ -414,25 +414,25 @@ class TestMappings(BaseModelTestCase):
         )
         result = self.model.session.execute(stmt).all()
         assert [(r._fields) for r in result] == [
-            ("element_identifier_0", "element_identifier_1", "extension", "state", "element_index", "element_index_1"),
-            ("element_identifier_0", "element_identifier_1", "extension", "state", "element_index", "element_index_1"),
+            ("element_identifier_0", "element_identifier_1", "extension", "state"),
+            ("element_identifier_0", "element_identifier_1", "extension", "state"),
         ]
 
         stmt = c2._build_nested_collection_attributes_stmt(
             element_attributes=("element_identifier",), hda_attributes=("extension",), dataset_attributes=("state",)
         )
         result = self.model.session.execute(stmt).all()
-        assert result == [("inner_list", "forward", "bam", "new", 0, 0), ("inner_list", "reverse", "txt", "new", 0, 1)]
+        assert result == [("inner_list", "forward", "bam", "new"), ("inner_list", "reverse", "txt", "new")]
 
         stmt = c2._build_nested_collection_attributes_stmt(return_entities=(model.HistoryDatasetAssociation,))
         result = self.model.session.execute(stmt).all()
-        assert result == [(d1, 0, 0), (d2, 0, 1)]
+        assert result == [(d1,), (d2,)]
 
         stmt = c2._build_nested_collection_attributes_stmt(
             return_entities=(model.HistoryDatasetAssociation, model.Dataset)
         )
         result = self.model.session.execute(stmt).all()
-        assert result == [(d1, d1.dataset, 0, 0), (d2, d2.dataset, 0, 1)]
+        assert result == [(d1, d1.dataset), (d2, d2.dataset)]
         # Assert properties that use _get_nested_collection_attributes return correct content
         assert c2.dataset_instances == [d1, d2]
         assert c2.dataset_elements == [dce1, dce2]
@@ -455,8 +455,8 @@ class TestMappings(BaseModelTestCase):
         stmt = c4._build_nested_collection_attributes_stmt(element_attributes=("element_identifier",))
         result = self.model.session.execute(stmt).all()
         assert result == [
-            ("outer_list", "inner_list", "forward", 0, 0, 0),
-            ("outer_list", "inner_list", "reverse", 0, 0, 1),
+            ("outer_list", "inner_list", "forward"),
+            ("outer_list", "inner_list", "reverse"),
         ]
         assert c4.dataset_elements == [dce1, dce2]
 
