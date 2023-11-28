@@ -156,10 +156,14 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
                 rval = self.handle_dataset_name(line, hda)
             elif container == "workflow_display":
                 stored_workflow = workflow_manager.get_stored_accessible_workflow(trans, encoded_id)
-                rval = self.handle_workflow_display(line, stored_workflow)
+                workflow_version_str = _parse_directive_argument_value("workflow_checkpoint", line)
+                workflow_version = None if not workflow_version_str else int(workflow_version_str)
+                rval = self.handle_workflow_display(line, stored_workflow, workflow_version)
             elif container == "workflow_image":
                 stored_workflow = workflow_manager.get_stored_accessible_workflow(trans, encoded_id)
-                rval = self.handle_workflow_image(line, stored_workflow)
+                workflow_version_str = _parse_directive_argument_value("workflow_checkpoint", line)
+                workflow_version = None if not workflow_version_str else int(workflow_version_str)
+                rval = self.handle_workflow_image(line, stored_workflow, workflow_version)
             elif container == "workflow_license":
                 stored_workflow = workflow_manager.get_stored_accessible_workflow(trans, encoded_id)
                 rval = self.handle_workflow_license(line, stored_workflow)
@@ -270,11 +274,11 @@ class GalaxyInternalMarkdownDirectiveHandler(metaclass=abc.ABCMeta):
         pass
 
     @abc.abstractmethod
-    def handle_workflow_display(self, line, stored_workflow):
+    def handle_workflow_display(self, line, stored_workflow, workflow_version: Optional[int]):
         pass
 
     @abc.abstractmethod
-    def handle_workflow_image(self, line, stored_workflow):
+    def handle_workflow_image(self, line, stored_workflow, workflow_version: Optional[int]):
         pass
 
     @abc.abstractmethod
@@ -377,10 +381,10 @@ class ReadyForExportMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHand
     def handle_dataset_info(self, line, hda):
         self.extend_history_dataset_rendering_data(hda, "info", hda.info, "*No Dataset Info Available*")
 
-    def handle_workflow_display(self, line, stored_workflow):
+    def handle_workflow_display(self, line, stored_workflow, workflow_version: Optional[int]):
         self.ensure_rendering_data_for("workflows", stored_workflow)["name"] = stored_workflow.name
 
-    def handle_workflow_image(self, line, stored_workflow):
+    def handle_workflow_image(self, line, stored_workflow, workflow_version: Optional[int]):
         pass
 
     def handle_workflow_license(self, line, stored_workflow):
@@ -558,7 +562,7 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
             content = "*No Dataset Info Available*"
         return (content, True)
 
-    def handle_workflow_display(self, line, stored_workflow):
+    def handle_workflow_display(self, line, stored_workflow, workflow_version: Optional[int]):
         # simple markdown
         markdown = "---\n"
         markdown += f"**Workflow:** {stored_workflow.name}\n\n"
@@ -567,7 +571,8 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
         markdown += "|----|----------|\n"
         # Pass two should add tool information, labels, etc.. but
         # it requires module_injector and such.
-        for order_index, step in enumerate(stored_workflow.latest_workflow.steps):
+        workflow = stored_workflow.get_internal_version(workflow_version)
+        for order_index, step in enumerate(workflow.steps):
             annotation = get_item_annotation_str(self.trans.sa_session, self.trans.user, step) or ""
             markdown += "|{}|{}|\n".format(step.label or "Step %d" % (order_index + 1), annotation)
         markdown += "\n---\n"
@@ -586,9 +591,10 @@ class ToBasicMarkdownDirectiveHandler(GalaxyInternalMarkdownDirectiveHandler):
                 markdown = f"Unknown license ({license_id})"
         return (f"\n\n{markdown}\n\n", True)
 
-    def handle_workflow_image(self, line, stored_workflow):
+    def handle_workflow_image(self, line, stored_workflow, workflow_version: Optional[int]):
         workflow_manager = self.trans.app.workflow_manager
-        image_data = workflow_manager.get_workflow_svg(self.trans, stored_workflow.latest_workflow, for_embed=True)
+        workflow = stored_workflow.get_internal_version(workflow_version)
+        image_data = workflow_manager.get_workflow_svg(self.trans, workflow, for_embed=True)
         rval = (self._embed_image("Workflow", "svg+xml", image_data), True)
         return rval
 
@@ -867,10 +873,20 @@ history_dataset_collection_display(input={})
         return section_markdown, True
 
     def _remap(container, line):
-        if container == "workflow_display":
-            # TODO: this really should be workflow id not stored workflow id but the API
-            # it consumes wants the stored id.
-            return (f"workflow_display(workflow_id={invocation.workflow.stored_workflow.id})\n", False)
+        for workflow_instance_directive in ["workflow_display", "workflow_image"]:
+            if container == workflow_instance_directive:
+                stored_workflow_id = invocation.workflow.stored_workflow.id
+                workflow_version = invocation.workflow.version
+                return (
+                    f"{workflow_instance_directive}(workflow_id={stored_workflow_id},workflow_checkpoint={workflow_version})\n",
+                    False,
+                )
+        if container == "workflow_license":
+            stored_workflow_id = invocation.workflow.stored_workflow.id
+            return (
+                f"workflow_license(workflow_id={stored_workflow_id})\n",
+                False,
+            )
         if container == "history_link":
             return (f"history_link(history_id={invocation.history.id})\n", False)
         if container == "invocation_time":
@@ -946,6 +962,15 @@ def _remap_galaxy_markdown_containers(func, markdown):
             break
 
     return new_markdown
+
+
+def _parse_directive_argument_value(arg_name: str, line: str) -> Optional[str]:
+    arg_pattern = re.compile(rf"{arg_name}=\s*{ARG_VAL_CAPTURED_REGEX}\s*")
+    match = re.search(arg_pattern, line)
+    if not match:
+        return None
+    value = match.group(1)
+    return value
 
 
 def _remap_galaxy_markdown_calls(func, markdown):

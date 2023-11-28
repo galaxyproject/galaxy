@@ -326,10 +326,16 @@ class WorkflowController(BaseUIController, SharableMixin, UsesStoredWorkflowMixi
 
     @web.expose
     @web.require_login("use Galaxy workflows")
-    def gen_image(self, trans, id, embed="false", **kwargs):
+    def gen_image(self, trans, id, embed="false", version="", **kwargs):
         embed = util.asbool(embed)
+        if version:
+            version_int_or_none = int(version)
+        else:
+            version_int_or_none = None
         try:
-            s = trans.app.workflow_manager.get_workflow_svg_from_id(trans, id, for_embed=embed)
+            s = trans.app.workflow_manager.get_workflow_svg_from_id(
+                trans, id, version=version_int_or_none, for_embed=embed
+            )
             trans.response.set_content_type("image/svg+xml")
             return s
         except Exception as e:
