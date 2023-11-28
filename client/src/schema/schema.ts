@@ -1640,7 +1640,6 @@ export interface components {
             action_name: string;
             /**
              * Link
-             * Format: uri
              * @description The link to be opened when the button is clicked.
              */
             link: string;

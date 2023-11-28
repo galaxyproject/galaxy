@@ -7,6 +7,9 @@ from typing_extensions import Literal
 # Making them an alias of `str` for now
 RelativeUrl = str
 
+# TODO: we may want to add a custom validator for this and for RelativeUrl
+AbsoluteOrRelativeUrl = RelativeUrl
+
 LatestLiteral = Literal["latest"]
 
 
