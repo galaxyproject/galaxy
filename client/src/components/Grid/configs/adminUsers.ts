@@ -50,7 +50,7 @@ async function getData(offset: number, limit: number, search: string, sort_by: s
  */
 const actions: ActionArray = [
     {
-        title: "Create",
+        title: "Create New User",
         icon: faPlus,
         handler: () => {
             emit("/admin/users/create");
