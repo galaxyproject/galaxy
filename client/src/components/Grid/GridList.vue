@@ -9,6 +9,7 @@ import { useRouter } from "vue-router/composables";
 
 import { Config, FieldHandler, Operation, RowData } from "./configs/types";
 
+import GridBoolean from "./GridElements/GridBoolean.vue";
 import GridLink from "./GridElements/GridLink.vue";
 import GridOperations from "./GridElements/GridOperations.vue";
 import GridText from "./GridElements/GridText.vue";
@@ -256,6 +257,7 @@ watch(operationMessage, () => {
                         :row-data="rowData"
                         :title="rowData[fieldEntry.key]"
                         @execute="onOperation($event, rowData)" />
+                    <GridBoolean v-else-if="fieldEntry.type == 'boolean'" :value="rowData[fieldEntry.key]" />
                     <GridText v-else-if="fieldEntry.type == 'text'" :text="rowData[fieldEntry.key]" />
                     <GridLink
                         v-else-if="fieldEntry.type == 'link'"

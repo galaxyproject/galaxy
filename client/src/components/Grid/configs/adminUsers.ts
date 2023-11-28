@@ -264,8 +264,8 @@ const fields = [
     },
     {
         key: "active",
-        title: "Activated",
-        type: "text",
+        title: "Active",
+        type: "boolean",
     },
     {
         key: "groups",
@@ -280,7 +280,7 @@ const fields = [
     {
         key: "external",
         title: "External",
-        type: "text",
+        type: "boolean",
     },
 ];
 

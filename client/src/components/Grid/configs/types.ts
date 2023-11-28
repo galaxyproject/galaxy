@@ -54,4 +54,4 @@ type OperationHandlerReturn = Promise<OperationHandlerMessage> | void;
 
 export type RowData = Record<string, unknown>;
 
-type validTypes = "date" | "link" | "operations" | "sharing" | "tags" | "text";
+type validTypes = "boolean" | "date" | "link" | "operations" | "sharing" | "tags" | "text";
