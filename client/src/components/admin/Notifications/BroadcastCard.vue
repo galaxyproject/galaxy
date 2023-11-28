@@ -55,6 +55,23 @@ const notificationVariant = computed(() => {
     }
 });
 
+const publicationTimePrefix = computed(() => {
+    if (hasBeenPublished.value) {
+        return "Published";
+    }
+    return "Scheduled to be published";
+});
+
+const expirationTimePrefix = computed(() => {
+    if (notification.value.expiration_time) {
+        if (hasExpired.value) {
+            return "Expired";
+        }
+        return "Expires";
+    }
+    return "Does not expire";
+});
+
 function onEditClick() {
     emit("edit", notification.value);
 }
@@ -71,25 +88,6 @@ async function onForceExpirationClick() {
 
 function onActionClick(link: string) {
     emit("go-to-link", link);
-}
-
-function getBroadcastPublicity(item: BroadcastNotification) {
-    if (hasBeenPublished.value) {
-        return `Published on ${new Date(item.publication_time + "Z").toLocaleString()}`;
-    } else {
-        return `Scheduled to publish on ${new Date(item.publication_time + "Z").toLocaleString()}`;
-    }
-}
-
-function getBroadcastExpiry(item: BroadcastNotification) {
-    if (item.expiration_time) {
-        if (hasExpired.value) {
-            return `Expired on ${new Date(item.expiration_time + "Z").toLocaleString()}`;
-        }
-        return `Expires on ${new Date(item.expiration_time + "Z").toLocaleString()}`;
-    } else {
-        return "Does not expire";
-    }
 }
 </script>
 
@@ -156,16 +154,22 @@ function getBroadcastExpiry(item: BroadcastNotification) {
                         :icon="hasBeenPublished ? faBroadcastTower : faClock"
                         :class="hasBeenPublished ? 'published' : 'scheduled'"
                         class="mx-1" />
-                    {{ getBroadcastPublicity(notification) }}
+                    {{ publicationTimePrefix }}
+                    <UtcDate class="ml-1" :date="notification.publication_time" mode="elapsed" />
                 </BRow>
 
                 <BRow align-v="center" align-h="end" no-gutters>
                     <FontAwesomeIcon
                         variant="danger"
-                        :icon="hasExpired ? faTrash : faHourglassHalf"
+                        :icon="faHourglassHalf"
                         :class="hasExpired ? 'expired' : 'expires'"
                         class="mx-1" />
-                    {{ getBroadcastExpiry(notification) }}
+                    {{ expirationTimePrefix }}
+                    <UtcDate
+                        v-if="notification.expiration_time"
+                        class="ml-1"
+                        :date="notification.expiration_time"
+                        mode="elapsed" />
                 </BRow>
             </BCol>
         </BRow>
