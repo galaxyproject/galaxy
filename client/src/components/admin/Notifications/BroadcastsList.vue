@@ -150,7 +150,7 @@ loadBroadcastsList();
                         <span class="mx-2"> Filters: </span>
                         <BButtonGroup>
                             <BButton
-                                id="show-active-filter"
+                                id="show-active-filter-button"
                                 size="sm"
                                 :pressed="showActive"
                                 title="Show active broadcasts"
@@ -160,7 +160,7 @@ loadBroadcastsList();
                                 Active
                             </BButton>
                             <BButton
-                                id="show-scheduled-filter"
+                                id="show-scheduled-filter-button"
                                 size="sm"
                                 :pressed="showScheduled"
                                 title="Show scheduled broadcasts"
@@ -170,7 +170,7 @@ loadBroadcastsList();
                                 Scheduled
                             </BButton>
                             <BButton
-                                id="show-expired-filter"
+                                id="show-expired-filter-button"
                                 size="sm"
                                 :pressed="showExpired"
                                 title="Show expired broadcasts"
@@ -202,7 +202,7 @@ loadBroadcastsList();
             <LoadingSpan message="Loading broadcasts" />
         </BAlert>
 
-        <BAlert v-else-if="filteredBroadcasts.length === 0" variant="info" show>
+        <BAlert v-else-if="filteredBroadcasts.length === 0" id="empty-broadcast-list-alert" variant="info" show>
             No broadcasts to show. Use the button above to create a new broadcast. Or change the filters.
         </BAlert>
 
