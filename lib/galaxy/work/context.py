@@ -1,5 +1,7 @@
 import abc
 from typing import (
+    Any,
+    Dict,
     List,
     Optional,
 )
@@ -42,8 +44,15 @@ class WorkRequestContext(ProvidesHistoryContext):
         self.__user_current_roles: Optional[List[Role]] = None
         self.__history = history
         self._url_builder = url_builder
+        self._short_term_cache: Dict[str, Any] = {}
         self.workflow_building_mode = workflow_building_mode
         self.galaxy_session = galaxy_session
+
+    def set_cache_value(self, key: str, value: Any):
+        self._short_term_cache[key] = value
+
+    def get_cache_value(self, key: str, default: Any = None) -> Any:
+        return self._short_term_cache.get(key, default)
 
     @property
     def app(self):

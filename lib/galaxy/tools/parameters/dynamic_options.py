@@ -9,8 +9,6 @@ import os
 import re
 from io import StringIO
 
-import requests
-
 from galaxy.model import (
     DatasetCollectionElement,
     HistoryDatasetAssociation,
@@ -22,6 +20,7 @@ from galaxy.tools.expressions import do_eval
 from galaxy.util import string_as_bool
 from galaxy.util.template import fill_template
 from . import validation
+from .cancelable_request import request
 
 log = logging.getLogger(__name__)
 
@@ -786,9 +785,13 @@ class DynamicOptions:
             context = User.user_template_environment(trans.user)
             url = fill_template(self.from_url, context)
             try:
-                response = requests.get(url)
-                response.raise_for_status()
-                data = response.json()
+                unset_value = object()
+                cached_value = trans.get_cache_value(url, unset_value)
+                if cached_value is unset_value:
+                    data = request(url, timeout=10)
+                    trans.set_cache_value(url, data)
+                else:
+                    data = cached_value
             except Exception as e:
                 log.warning("Fetching from url '%s' failed: %s", url, str(e))
                 data = None
