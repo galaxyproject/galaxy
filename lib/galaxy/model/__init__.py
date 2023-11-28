@@ -6210,9 +6210,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
             if entity == DatasetCollectionElement:
                 q = q.filter(entity.id == dce.c.id)
 
-        q = q.distinct().order_by(*order_by_columns)
-        # With DISTINCT, all columns that appear in the ORDER BY clause must appear in the SELECT clause.
-        q = q.add_columns(*order_by_columns)
+        q = q.order_by(*order_by_columns)
         return q
 
     @property
@@ -6221,11 +6219,15 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
             stmt = self._build_nested_collection_attributes_stmt(
                 hda_attributes=("extension",), dataset_attributes=("state",)
             )
+            # With DISTINCT, all columns that appear in the ORDER BY clause must appear in the SELECT clause.
+            stmt = stmt.add_columns(*stmt._order_by_clauses)
+            stmt = stmt.distinct()
+
             tuples = object_session(self).execute(stmt)
 
             extensions = set()
             states = set()
-            for extension, state, *_ in tuples:
+            for extension, state, *_ in tuples:  # we discard the added columns from the order-by clause
                 states.add(state)
                 extensions.add(extension)
 
@@ -6241,8 +6243,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
                 # TODO: Optimize by just querying without returning the states...
                 stmt = self._build_nested_collection_attributes_stmt(dataset_attributes=("state",))
                 tuples = object_session(self).execute(stmt)
-
-                for state, *_ in tuples:
+                for (state,) in tuples:
                     if state == Dataset.states.DEFERRED:
                         has_deferred_data = True
                         break
@@ -6290,28 +6291,13 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
         if not hasattr(self, "_dataset_action_tuples"):
             stmt = self._build_nested_collection_attributes_stmt(dataset_permission_attributes=("action", "role_id"))
             tuples = object_session(self).execute(stmt)
-            self._dataset_action_tuples = [(action, role_id) for action, role_id, *_ in tuples if action is not None]
+            self._dataset_action_tuples = [(action, role_id) for action, role_id in tuples if action is not None]
         return self._dataset_action_tuples
 
     @property
     def element_identifiers_extensions_paths_and_metadata_files(
         self,
     ) -> List[List[Any]]:
-        def find_identifiers(row):
-            # Assume row has this structure: [id1, id2, ..., idn, extension, model, anything];
-            # model is an instance of a Dataset or a HistoryDatasetAssociation;
-            # extension is a string that always preceeds the model;
-            # we look for the first model, then pick the preceeding items minus the extention.
-            identifiers = []
-            i = 0
-            while i + 1 < len(row):
-                item, next_item = row[i], row[i + 1]
-                if isinstance(next_item, HistoryDatasetAssociation) or isinstance(next_item, Dataset):
-                    break
-                identifiers.append(item)
-                i += 1
-            return tuple(identifiers)
-
         results = []
         if object_session(self):
             stmt = self._build_nested_collection_attributes_stmt(
@@ -6322,7 +6308,7 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
             tuples = object_session(self).execute(stmt)
             # element_identifiers, extension, path
             for row in tuples:
-                result = [find_identifiers(row), row.extension, row.Dataset.get_file_name()]
+                result = [row[:-3], row.extension, row.Dataset.get_file_name()]
                 hda = row.HistoryDatasetAssociation
                 result.append(hda.get_metadata_file_paths_and_extensions())
                 results.append(result)
@@ -6475,7 +6461,6 @@ class DatasetCollection(Base, Dictifiable, UsesAnnotations, Serializable):
             return_entities=[DatasetCollectionElement], hda_attributes=["id"]
         )
         tuples = object_session(self).execute(stmt).all()
-        tuples = [(element, id) for element, id, *_ in tuples]
         hda_id_to_element = dict(tuples)
         for failed, replacement in replacements.items():
             element = hda_id_to_element.get(failed.id)
