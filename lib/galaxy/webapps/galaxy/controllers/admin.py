@@ -593,26 +593,6 @@ class AdminGalaxy(controller.JSAppLauncher):
     @web.json
     @web.require_admin
     def users_list(self, trans, **kwd):
-        if "operation" in kwd:
-            id = kwd.get("id")
-            if not id:
-                message, status = (f"Invalid user id ({str(id)}) received.", "error")
-            ids = util.listify(id)
-            operation = kwd["operation"].lower()
-            if operation == "delete":
-                message, status = self._delete_user(trans, ids)
-            elif operation == "undelete":
-                message, status = self._undelete_user(trans, ids)
-            elif operation == "purge":
-                message, status = self._purge_user(trans, ids)
-            elif operation == "recalculate disk usage":
-                message, status = self._recalculate_user(trans, id)
-            elif operation == "generate new api key":
-                message, status = self._new_user_apikey(trans, id)
-            elif operation == "activate user":
-                message, status = self._activate_user(trans, id)
-            elif operation == "resend activation email":
-                message, status = self._resend_activation_email(trans, id)
         return self.user_list_grid(trans, **kwd)
 
     @web.legacy_expose_api
@@ -1434,89 +1414,6 @@ class AdminGalaxy(controller.JSAppLauncher):
                 return {"message": "Passwords reset for %d user(s)." % len(users)}
         else:
             return self.message_exception(trans, "Please specify user ids.")
-
-    def _delete_user(self, trans, ids):
-        message = "Deleted %d users: " % len(ids)
-        for user_id in ids:
-            user = get_user(trans, user_id)
-            # Actually do the delete
-            self.user_manager.delete(user)
-            # Accumulate messages for the return message
-            message += f" {user.email} "
-        return (message, "done")
-
-    def _undelete_user(self, trans, ids):
-        count = 0
-        undeleted_users = ""
-        for user_id in ids:
-            user = get_user(trans, user_id)
-            # Actually do the undelete
-            self.user_manager.undelete(user)
-            # Count and accumulate messages to return to the admin panel
-            count += 1
-            undeleted_users += f" {user.email}"
-        message = "Undeleted %d users: %s" % (count, undeleted_users)
-        return (message, "done")
-
-    def _purge_user(self, trans, ids):
-        # This method should only be called for a User that has previously been deleted.
-        # We keep the User in the database ( marked as purged ), and stuff associated
-        # with the user's private role in case we want the ability to unpurge the user
-        # some time in the future.
-        # Purging a deleted User deletes all of the following:
-        # - History where user_id = User.id
-        #    - HistoryDatasetAssociation where history_id = History.id
-        # - UserGroupAssociation where user_id == User.id
-        # - UserRoleAssociation where user_id == User.id EXCEPT FOR THE PRIVATE ROLE
-        # - UserAddress where user_id == User.id
-        # Purging Histories and Datasets must be handled via the cleanup_datasets.py script
-        message = "Purged %d users: " % len(ids)
-        for user_id in ids:
-            user = get_user(trans, user_id)
-            self.user_manager.purge(user)
-            message += f"\t{user.email}\n "
-        return (message, "done")
-
-    def _recalculate_user(self, trans, user_id):
-        user = trans.sa_session.query(trans.model.User).get(trans.security.decode_id(user_id))
-        if not user:
-            return (f"User not found for id ({sanitize_text(str(user_id))})", "error")
-        current = user.get_disk_usage()
-        user.calculate_and_set_disk_usage()
-        new = user.get_disk_usage()
-        if new in (current, None):
-            message = f"Usage is unchanged at {nice_size(current)}."
-        else:
-            message = f"Usage has changed by {nice_size(new - current)} to {nice_size(new)}."
-        return (message, "done")
-
-    def _new_user_apikey(self, trans, user_id):
-        user = trans.sa_session.query(trans.model.User).get(trans.security.decode_id(user_id))
-        if not user:
-            return (f"User not found for id ({sanitize_text(str(user_id))})", "error")
-        new_key = trans.app.model.APIKeys(
-            user_id=trans.security.decode_id(user_id), key=trans.app.security.get_new_guid()
-        )
-        trans.sa_session.add(new_key)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
-        return (f"New key '{new_key.key}' generated for requested user '{user.email}'.", "done")
-
-    def _activate_user(self, trans, user_id):
-        user = trans.sa_session.query(trans.model.User).get(trans.security.decode_id(user_id))
-        if not user:
-            return (f"User not found for id ({sanitize_text(str(user_id))})", "error")
-        self.user_manager.activate(user)
-        return (f"Activated user: {user.email}.", "done")
-
-    def _resend_activation_email(self, trans, user_id):
-        user = trans.sa_session.query(trans.model.User).get(trans.security.decode_id(user_id))
-        if not user:
-            return (f"User not found for id ({sanitize_text(str(user_id))})", "error")
-        if self.user_manager.send_activation_email(trans, user.email, user.username):
-            return (f"Activation email has been sent to user: {user.email}.", "done")
-        else:
-            return (f"Unable to send activation email to user: {user.email}.", "error")
 
     @web.legacy_expose_api
     @web.require_admin
