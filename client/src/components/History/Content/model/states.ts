@@ -109,7 +109,7 @@ export const STATES: StateMap = {
     /** the `populated_state: failed`. This state is only visual and transitional, it does not exist in the database. */
     failed_populated_state: {
         status: "danger",
-        text: "Failed to populate the list/collection.",
+        text: "Failed to populate the collection.",
         icon: "exclamation-triangle",
         nonDb: true,
     },
