@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCaretDown, faCaretUp } from "@fortawesome/free-solid-svg-icons";
+import { faCaretDown, faCaretUp, faShieldAlt } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useDebounceFn, useEventBus } from "@vueuse/core";
 import { BAlert, BButton, BLink, BPagination } from "bootstrap-vue";
@@ -22,7 +22,7 @@ import UtcDate from "@/components/UtcDate.vue";
 const eventBus = useEventBus<string>("grid-router-push");
 const router = useRouter();
 
-library.add(faCaretDown, faCaretUp);
+library.add(faCaretDown, faCaretUp, faShieldAlt);
 
 interface Props {
     // provide a grid configuration
@@ -251,31 +251,34 @@ watch(operationMessage, () => {
                     class="px-2 py-3"
                     :style="{ width: `${fieldEntry.width}%` }"
                     :data-description="`grid cell ${rowIndex}-${fieldIndex}`">
-                    <GridOperations
-                        v-if="fieldEntry.type == 'operations' && fieldEntry.operations"
-                        :operations="fieldEntry.operations"
-                        :row-data="rowData"
-                        :title="rowData[fieldEntry.key]"
-                        @execute="onOperation($event, rowData)" />
-                    <GridBoolean v-else-if="fieldEntry.type == 'boolean'" :value="rowData[fieldEntry.key]" />
-                    <GridText v-else-if="fieldEntry.type == 'text'" :text="rowData[fieldEntry.key]" />
-                    <GridLink
-                        v-else-if="fieldEntry.type == 'link'"
-                        :text="rowData[fieldEntry.key]"
-                        @click="fieldEntry.handler && fieldEntry.handler(rowData)" />
-                    <SharingIndicators
-                        v-else-if="fieldEntry.type == 'sharing'"
-                        :object="rowData"
-                        @filter="onFilter($event)" />
-                    <UtcDate v-else-if="fieldEntry.type == 'date'" :date="rowData[fieldEntry.key]" mode="elapsed" />
-                    <StatelessTags
-                        v-else-if="fieldEntry.type == 'tags'"
-                        clickable
-                        :value="rowData[fieldEntry.key]"
-                        :disabled="fieldEntry.disabled"
-                        @input="onTagInput(rowData, $event, fieldEntry.handler)"
-                        @tag-click="applyFilter('tag', $event, true)" />
-                    <span v-else v-localize> Data not available. </span>
+                    <div v-if="!fieldEntry.condition || fieldEntry.condition(rowData)">
+                        <GridOperations
+                            v-if="fieldEntry.type == 'operations' && fieldEntry.operations"
+                            :operations="fieldEntry.operations"
+                            :row-data="rowData"
+                            :title="rowData[fieldEntry.key]"
+                            @execute="onOperation($event, rowData)" />
+                        <GridBoolean v-else-if="fieldEntry.type == 'boolean'" :value="rowData[fieldEntry.key]" />
+                        <GridText v-else-if="fieldEntry.type == 'text'" :text="rowData[fieldEntry.key]" />
+                        <GridLink
+                            v-else-if="fieldEntry.type == 'link'"
+                            :text="rowData[fieldEntry.key]"
+                            @click="fieldEntry.handler && fieldEntry.handler(rowData)" />
+                        <SharingIndicators
+                            v-else-if="fieldEntry.type == 'sharing'"
+                            :object="rowData"
+                            @filter="onFilter($event)" />
+                        <UtcDate v-else-if="fieldEntry.type == 'date'" :date="rowData[fieldEntry.key]" mode="elapsed" />
+                        <StatelessTags
+                            v-else-if="fieldEntry.type == 'tags'"
+                            clickable
+                            :value="rowData[fieldEntry.key]"
+                            :disabled="fieldEntry.disabled"
+                            @input="onTagInput(rowData, $event, fieldEntry.handler)"
+                            @tag-click="applyFilter('tag', $event, true)" />
+                        <span v-else v-localize> Not available. </span>
+                    </div>
+                    <FontAwesomeIcon v-else icon="fa-shield-alt" />
                 </td>
             </tr>
         </table>

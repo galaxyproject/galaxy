@@ -66,7 +66,7 @@ const fields = [
         key: "email",
         title: "Email",
         type: "operations",
-        condition: (data: UserEntry) => !data.deleted,
+        condition: (data: UserEntry) => !data.deleted && !data.purged,
         operations: [
             {
                 title: "Manage Information",
@@ -257,6 +257,7 @@ const fields = [
         key: "username",
         title: "Username",
         type: "text",
+        condition: (data: UserEntry) => !data.purged,
     },
     {
         key: "last_login",
