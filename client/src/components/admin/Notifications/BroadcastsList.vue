@@ -11,7 +11,7 @@ import {
 } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { BAlert, BButton, BCol, BInputGroup, BRow } from "bootstrap-vue";
-import { ref } from "vue";
+import { computed, ref } from "vue";
 import { useRouter } from "vue-router/composables";
 
 import { fetchAllBroadcasts, updateBroadcast } from "@/api/notifications.broadcast";
@@ -35,10 +35,27 @@ const { renderMarkdown } = useMarkdown({ openLinksInNewPage: true });
 
 const overlay = ref(false);
 const loading = ref(false);
+const showActive = ref(true);
+const showExpired = ref(true);
+const showScheduled = ref(true);
 const broadcasts = ref<BroadcastNotificationResponse[]>([]);
+
+const filteredBroadcasts = computed(() => {
+    return broadcasts.value.filter(filterBroadcasts);
+});
 
 const broadcastExpired = (item: BroadcastNotification) =>
     item.expiration_time && new Date(item.expiration_time) < new Date();
+
+function filterBroadcasts(item: BroadcastNotification) {
+    if (broadcastExpired(item)) {
+        return showExpired.value;
+    }
+    if (broadcastPublished(item)) {
+        return showActive.value;
+    }
+    return showScheduled.value;
+}
 
 function getBroadcastVariant(item: BroadcastNotification) {
     switch (item.variant) {
@@ -128,6 +145,43 @@ loadBroadcastsList();
 
         <div class="list-operations mb-2">
             <BRow class="align-items-center" no-gutters>
+                <BCol class="ml-2">
+                    <BRow align-h="start" align-v="center">
+                        <span class="mx-2"> Filters: </span>
+                        <BButtonGroup>
+                            <BButton
+                                id="show-active-filter"
+                                size="sm"
+                                :pressed="showActive"
+                                title="Show active broadcasts"
+                                variant="outline-primary"
+                                @click="showActive = !showActive">
+                                <FontAwesomeIcon icon="check" />
+                                Active
+                            </BButton>
+                            <BButton
+                                id="show-scheduled-filter"
+                                size="sm"
+                                :pressed="showScheduled"
+                                title="Show scheduled broadcasts"
+                                variant="outline-primary"
+                                @click="showScheduled = !showScheduled">
+                                <FontAwesomeIcon icon="clock" />
+                                Scheduled
+                            </BButton>
+                            <BButton
+                                id="show-expired-filter"
+                                size="sm"
+                                :pressed="showExpired"
+                                title="Show expired broadcasts"
+                                variant="outline-primary"
+                                @click="showExpired = !showExpired">
+                                <FontAwesomeIcon icon="hourglass-half" />
+                                Expired
+                            </BButton>
+                        </BButtonGroup>
+                    </BRow>
+                </BCol>
                 <BCol>
                     <BRow align-h="end" align-v="center" no-gutters>
                         <BButton
@@ -148,12 +202,12 @@ loadBroadcastsList();
             <LoadingSpan message="Loading broadcasts" />
         </BAlert>
 
-        <BAlert v-else-if="broadcasts.length === 0" variant="info" show>
-            No broadcasts to show. Use the button above to create a new broadcast.
+        <BAlert v-else-if="filteredBroadcasts.length === 0" variant="info" show>
+            No broadcasts to show. Use the button above to create a new broadcast. Or change the filters.
         </BAlert>
 
         <BOverlay v-else :show="overlay" rounded="sm">
-            <div v-for="broadcast in broadcasts" :key="broadcast.id" class="broadcast-card mb-2">
+            <div v-for="broadcast in filteredBroadcasts" :key="broadcast.id" class="broadcast-card mb-2">
                 <BRow align-v="center" align-h="between" no-gutters>
                     <Heading size="md" class="mb-0" :class="broadcastExpired(broadcast) ? 'expired-broadcast' : ''">
                         <FontAwesomeIcon :class="`text-${getBroadcastVariant(broadcast)}`" :icon="faInfoCircle" />
