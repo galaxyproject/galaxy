@@ -46,6 +46,9 @@ const dsc = computed(() => {
 const collectionElements = computed(() => collectionElementsStore.getCollectionElements(dsc.value, offset.value));
 const loading = computed(() => collectionElementsStore.isLoadingCollectionElements(dsc.value));
 const jobState = computed(() => ("job_state_summary" in dsc.value ? dsc.value.job_state_summary : undefined));
+const populatedStateMsg = computed(() =>
+    "populated_state_message" in dsc.value ? dsc.value.populated_state_message : undefined
+);
 const rootCollection = computed(() => {
     if (isHDCA(props.selectedCollections[0])) {
         return props.selectedCollections[0];
@@ -115,7 +118,15 @@ watch(
             </section>
             <section class="position-relative flex-grow-1 scroller">
                 <div>
+                    <b-alert
+                        v-if="collectionElements.length === 0"
+                        class="m-2"
+                        :variant="populatedStateMsg ? 'danger' : 'info'"
+                        show>
+                        {{ populatedStateMsg || "This is an empty collection." }}
+                    </b-alert>
                     <ListingLayout
+                        v-else
                         data-key="element_index"
                         :items="collectionElements"
                         :loading="loading"

@@ -179,7 +179,7 @@ async function load() {
 
 onMounted(async () => {
     if (props.fUsername) {
-        filterText.value = filters.getFilterText({ "user_eq:": props.fUsername });
+        filterText.value = filters.getFilterText({ user_eq: props.fUsername });
     }
     await load();
     useInfiniteScroll(scrollableDiv.value, () => load());
