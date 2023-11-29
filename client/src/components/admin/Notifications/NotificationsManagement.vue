@@ -19,24 +19,27 @@ function goToCreateNewBroadcast() {
 
 <template>
     <div aria-labelledby="notifications-managements">
-        <div class="d-flex justify-content-between">
-            <Heading id="notifications-title" h1 separator inline class="flex-grow-1">
-                Notifications and Broadcasts
-            </Heading>
+        <Heading id="notifications-title" h1 separator inline class="flex-grow-1">
+            Notifications and Broadcasts
+        </Heading>
 
-            <div>
-                <BButton class="mb-2" variant="outline-primary" @click="goToCreateNewNotification">
-                    <FontAwesomeIcon icon="plus" />
-                    Send new notification
-                </BButton>
+        <p>
+            As an admin, you can send individual notifications to users (groups or roles), or display
+            <i>broadcast notifications</i> to all users (even anonymous users).
+        </p>
 
-                <BButton class="mb-2" variant="outline-primary" @click="goToCreateNewBroadcast">
-                    <FontAwesomeIcon icon="plus" />
-                    Create new broadcast
-                </BButton>
-            </div>
+        <div>
+            <BButton class="mb-2" variant="outline-primary" @click="goToCreateNewNotification">
+                <FontAwesomeIcon icon="plus" />
+                Send new notification
+            </BButton>
+
+            <BButton class="mb-2" variant="outline-primary" @click="goToCreateNewBroadcast">
+                <FontAwesomeIcon icon="plus" />
+                Create new broadcast
+            </BButton>
         </div>
 
-        <BroadcastsList />
+        <BroadcastsList class="mt-2" />
     </div>
 </template>
