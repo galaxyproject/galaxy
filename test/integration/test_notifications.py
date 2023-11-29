@@ -269,6 +269,16 @@ class TestNotificationsIntegration(IntegrationTestCase):
         assert "Scheduled" in subjects
         assert "Expired" in subjects
 
+    def test_notification_input_dates_consider_timezone(self):
+        payload = notification_broadcast_test_data(subject="Test", message="Test")
+        payload["publication_time"] = "2021-01-01T12:00:00+02:00"
+        payload["expiration_time"] = "2021-01-01T12:00:00Z"
+        response = self._post("notifications/broadcast", data=payload, admin=True, json=True)
+        self._assert_status_code_is_ok(response)
+        notification = response.json()["notification"]
+        assert notification["publication_time"] == "2021-01-01T10:00:00"
+        assert notification["expiration_time"] == "2021-01-01T12:00:00"
+
     def test_broadcast_notification_action_links(self):
         # Broadcast notifications can have relative and absolute links
         response = self._send_broadcast_notification(

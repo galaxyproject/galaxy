@@ -880,6 +880,8 @@ class GalaxyTestDriver(TestDriver):
         """Setup various variables used to launch a Galaxy server."""
         config_object = self._ensure_config_object(config_object)
         self.external_galaxy = os.environ.get("GALAXY_TEST_EXTERNAL", None)
+        if not self.external_galaxy:
+            os.environ["GALAXY_TEST_STRICT_CHECKS"] = "1"
 
         # Allow controlling the log format
         self.log_format = os.environ.get("GALAXY_TEST_LOG_FORMAT")

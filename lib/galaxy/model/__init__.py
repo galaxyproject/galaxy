@@ -4943,6 +4943,20 @@ class HistoryDatasetAssociation(DatasetInstance, HasTags, Dictifiable, UsesAnnot
         self.copied_from_history_dataset_association = copied_from_history_dataset_association
         self.copied_from_library_dataset_dataset_association = copied_from_library_dataset_dataset_association
 
+    def __strict_check_before_flush__(self):
+        if self.extension != "len":
+            # TODO: Custom builds (with .len extension) do not get a history or a HID.
+            # These should get some other type of permanent storage, perhaps UserDatasetAssociation ?
+            # Everything else needs to have a hid and a history
+            if not self.history and not getattr(self, "history_id", None):
+                raise Exception(f"HistoryDatasetAssociation {self} without history detected, this is not valid")
+            elif not self.hid:
+                raise Exception(f"HistoryDatasetAssociation {self} without hid, this is not valid")
+            elif self.dataset.file_size is None and self.dataset.state not in self.dataset.no_data_states:
+                raise Exception(
+                    f"HistoryDatasetAssociation {self} in state {self.dataset.state} with null file size, this is not valid"
+                )
+
     @property
     def user(self):
         if self.history:
@@ -7020,6 +7034,9 @@ class DatasetCollectionElement(Base, Dictifiable, Serializable):
         self.collection = collection
         self.element_index = element_index
         self.element_identifier = element_identifier or str(element_index)
+
+    def __strict_check_before_flush__(self):
+        assert self.element_object, "Dataset Collection Element without child entity detected, this is not valid"
 
     @property
     def element_type(self):
