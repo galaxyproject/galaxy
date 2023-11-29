@@ -2,7 +2,10 @@
     <div class="d-flex" :data-step="workflowStep.id">
         <div class="ui-portlet-section" style="width: 100%">
             <div class="portlet-header portlet-title portlet-operations cursor-pointer" @click="toggleStep">
-                <WorkflowStepIcon class="portlet-title-icon" :step-type="workflowStepType" />
+                <span :id="`step-icon-${workflowStep.id}`">
+                    <WorkflowStepIcon class="portlet-title-icon" :step-type="workflowStepType" />
+                </span>
+                <ToolLinkPopover :target="`step-icon-${workflowStep.id}`" v-bind="toolProps(workflowStep.id)" />
                 <span class="portlet-title-text">
                     <u class="step-title">
                         <WorkflowStepTitle v-bind="titleProps(workflowStep.id)" />
@@ -93,6 +96,7 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import GenericHistoryItem from "components/History/Content/GenericItem";
 import LoadingSpan from "components/LoadingSpan";
 import { InvocationStepProvider } from "components/providers";
+import ToolLinkPopover from "components/Tool/ToolLinkPopover";
 import { mapActions, mapState } from "pinia";
 import { useToolStore } from "stores/toolStore";
 import { useWorkflowStore } from "stores/workflowStore";
@@ -112,6 +116,7 @@ export default {
         ParameterStep,
         InvocationStepProvider,
         GenericHistoryItem,
+        ToolLinkPopover,
         WorkflowStepIcon,
         WorkflowStepTitle,
         WorkflowInvocationState: () => import("components/WorkflowInvocationState/WorkflowInvocationState"),
@@ -161,6 +166,13 @@ export default {
         },
         toggleStep() {
             this.expanded = !this.expanded;
+        },
+        toolProps(stepIndex) {
+            const workflowStep = this.workflow.steps[stepIndex];
+            return {
+                toolId: workflowStep.tool_id,
+                toolVersion: workflowStep.tool_version,
+            };
         },
         titleProps(stepIndex) {
             const invocationStep = this.invocation.steps[stepIndex];

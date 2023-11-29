@@ -12,6 +12,8 @@ import { getAppRoot } from "@/onload/loadConfig";
 /* interfaces */
 interface Job {
     id: string;
+    tool_id: string;
+    tool_version: string;
 }
 interface JobDef {
     tool_id: string;

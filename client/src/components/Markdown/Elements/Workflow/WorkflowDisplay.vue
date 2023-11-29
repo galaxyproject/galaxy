@@ -7,6 +7,7 @@ import { isEmpty } from "@/utils/utils";
 
 import WorkflowTree from "./WorkflowTree.vue";
 import LoadingSpan from "@/components/LoadingSpan.vue";
+import ToolLinkPopover from "@/components/Tool/ToolLinkPopover.vue";
 import WorkflowStepIcon from "@/components/WorkflowInvocationState/WorkflowStepIcon.vue";
 import WorkflowStepTitle from "@/components/WorkflowInvocationState/WorkflowStepTitle.vue";
 
@@ -104,7 +105,14 @@ onMounted(async () => {
                 </b-alert>
                 <div v-if="itemContent !== null">
                     <div v-for="step in itemContent?.steps" :key="step.order_index" class="mb-2">
-                        <WorkflowStepIcon v-if="step.type" :step-type="step.type" />
+                        <span :id="`step-icon-${step.order_index}`">
+                            <WorkflowStepIcon v-if="step.type" :step-type="step.type" />
+                        </span>
+                        <ToolLinkPopover
+                            v-if="step.type == 'tool'"
+                            :target="`step-icon-${step.order_index}`"
+                            :tool-id="step.tool_id"
+                            :tool-version="step.tool_version" />
                         <WorkflowStepTitle
                             :step-tool-id="step.tool_id"
                             :step-subworkflow-id="step.subworkflow_id"
