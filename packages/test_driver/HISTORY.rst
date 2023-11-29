@@ -4,10 +4,21 @@ History
 .. to_doc
 
 ---------
-23.2.dev0
+23.3.dev0
 ---------
 
 
+
+-------------------
+23.1.2 (2023-11-29)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Assert that ``DatasetCollectioElement`` has an associated object by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17071 <https://github.com/galaxyproject/galaxy/pull/17071>`_
 
 -------------------
 23.1.1 (2023-10-23)

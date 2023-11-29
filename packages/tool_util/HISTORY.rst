@@ -4,10 +4,29 @@ History
 .. to_doc
 
 ---------
-23.2.dev0
+23.3.dev0
 ---------
 
 
+
+-------------------
+23.1.2 (2023-11-29)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Change log level for duplicate data table entries to warning by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16988 <https://github.com/galaxyproject/galaxy/pull/16988>`_
+* Upgrade minimum conda to be compatible with latest conda-build by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#17013 <https://github.com/galaxyproject/galaxy/pull/17013>`_
+* Fix duplicated tools in tool panel view section copying by `@jmchilton <https://github.com/jmchilton>`_ in `#17036 <https://github.com/galaxyproject/galaxy/pull/17036>`_
+
+============
+Enhancements
+============
+
+* Adds `biii` as supported xref reference type by `@kostrykin <https://github.com/kostrykin>`_ in `#16952 <https://github.com/galaxyproject/galaxy/pull/16952>`_
 
 -------------------
 23.1.1 (2023-10-23)
@@ -75,6 +94,7 @@ Other changes
 Bug fixes
 =========
 
+* 
 * Fixes for extra files handling and cached object stores  by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16595 <https://github.com/galaxyproject/galaxy/pull/16595>`_
 * Fix create/install commands for conda 23.9.0 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#16831 <https://github.com/galaxyproject/galaxy/pull/16831>`_
 
@@ -87,6 +107,7 @@ Bug fixes
 Bug fixes
 =========
 
+* 
 * 
 * Allow duplicate labels in linter if outputs contain filters  by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#15933 <https://github.com/galaxyproject/galaxy/pull/15933>`_
 * Fix parsing tool metadata from bio.tools by `@kysrpex <https://github.com/kysrpex>`_ in `#16449 <https://github.com/galaxyproject/galaxy/pull/16449>`_
@@ -110,6 +131,7 @@ Bug fixes
 
 * 
 * 
+* 
 * xsd: add missing `sep` attribute for `has_n_columns` by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#16262 <https://github.com/galaxyproject/galaxy/pull/16262>`_
 * Missing init prevents models.py being bundled into tool_util by `@nuwang <https://github.com/nuwang>`_ in `#16308 <https://github.com/galaxyproject/galaxy/pull/16308>`_
 
@@ -117,6 +139,7 @@ Bug fixes
 Enhancements
 ============
 
+* 
 * When importing tool data bundles, use the first loc file for the matching table by `@natefoo <https://github.com/natefoo>`_ in `#16247 <https://github.com/galaxyproject/galaxy/pull/16247>`_
 
 -------------------
@@ -128,6 +151,7 @@ Enhancements
 Bug fixes
 =========
 
+* 
 * 
 * 
 * 
@@ -149,6 +173,7 @@ Bug fixes
 * 
 * 
 * 
+* 
 * Fix assertion linting to not fail on byte suffixes by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#15873 <https://github.com/galaxyproject/galaxy/pull/15873>`_
 * Fix ``get_test_from_anaconda()`` and ``base_image_for_targets()`` functions by `@nsoranzo <https://github.com/nsoranzo>`_ in `#16125 <https://github.com/galaxyproject/galaxy/pull/16125>`_
 * Fix test search for mulled container hashes by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16170 <https://github.com/galaxyproject/galaxy/pull/16170>`_
@@ -157,6 +182,7 @@ Bug fixes
 Enhancements
 ============
 
+* 
 * 
 * 
 * 

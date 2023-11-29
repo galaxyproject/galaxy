@@ -4,10 +4,21 @@ History
 .. to_doc
 
 ---------
-23.2.dev0
+23.3.dev0
 ---------
 
 
+
+-------------------
+23.1.2 (2023-11-29)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Implement missing upload for S3 file sources by `@davelopez <https://github.com/davelopez>`_ in `#17100 <https://github.com/galaxyproject/galaxy/pull/17100>`_
 
 -------------------
 23.1.1 (2023-10-23)
@@ -62,6 +73,7 @@ No recorded changes since last release
 Bug fixes
 =========
 
+* 
 * Fix dropbox import to support newer versions by `@nuwang <https://github.com/nuwang>`_ in `#16239 <https://github.com/galaxyproject/galaxy/pull/16239>`_
 
 -------------------

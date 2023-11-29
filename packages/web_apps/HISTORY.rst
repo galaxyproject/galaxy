@@ -4,10 +4,28 @@ History
 .. to_doc
 
 ---------
-23.2.dev0
+23.3.dev0
 ---------
 
 
+
+-------------------
+23.1.2 (2023-11-29)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Provide error message instead of internal server error by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16905 <https://github.com/galaxyproject/galaxy/pull/16905>`_
+* Fix input dates in notifications: consider timezone offset by `@davelopez <https://github.com/davelopez>`_ in `#17088 <https://github.com/galaxyproject/galaxy/pull/17088>`_
+
+============
+Enhancements
+============
+
+* Add HEAD route to job_files endpoint by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17072 <https://github.com/galaxyproject/galaxy/pull/17072>`_
 
 -------------------
 23.1.1 (2023-10-23)
@@ -95,6 +113,7 @@ Other changes
 Bug fixes
 =========
 
+* 
 * Fix incorrect ASGI request host by `@davelopez <https://github.com/davelopez>`_ in `#16574 <https://github.com/galaxyproject/galaxy/pull/16574>`_
 * Allow the legacy DELETE dataset endpoint to accept any string for the history_id by `@assuntad23 <https://github.com/assuntad23>`_ in `#16593 <https://github.com/galaxyproject/galaxy/pull/16593>`_
 
@@ -108,6 +127,7 @@ Bug fixes
 =========
 
 * 
+* 
 * Fix active step display in workflow editor side panel by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16364 <https://github.com/galaxyproject/galaxy/pull/16364>`_
 
 -------------------
@@ -119,6 +139,7 @@ Bug fixes
 Bug fixes
 =========
 
+* 
 * 
 * 
 * Fix folder access for anonymous user by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16330 <https://github.com/galaxyproject/galaxy/pull/16330>`_
@@ -135,12 +156,14 @@ Bug fixes
 * 
 * 
 * 
+* 
 * Fix converting Enum value to str for Python 3.11 by `@nsoranzo <https://github.com/nsoranzo>`_ in `#16284 <https://github.com/galaxyproject/galaxy/pull/16284>`_
 
 ============
 Enhancements
 ============
 
+* 
 * When importing tool data bundles, use the first loc file for the matching table by `@natefoo <https://github.com/natefoo>`_ in `#16247 <https://github.com/galaxyproject/galaxy/pull/16247>`_
 
 -------------------
@@ -158,6 +181,7 @@ No recorded changes since last release
 Bug fixes
 =========
 
+* 
 * 
 * 
 * 
