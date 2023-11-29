@@ -7009,7 +7009,7 @@ stderr are checked. If ``Branch A`` is at the beginning of stdout or stderr, the
 a warning will be registered and the source that contained ``Branch A`` will be
 prepended with the warning ``Warning: Branch A was taken in execution``.
 
-Since Galaxy 24.0 groups defined in the regular expression are expanded in the
+Since Galaxy 23.2 groups defined in the regular expression are expanded in the
 description (using the syntax of the [``expand`` function](https://docs.python.org/3/library/re.html#re.Match.expand)).
 For the first ``regex`` in the following example the ``\1`` will be replaced
 by the content of the text matching ``.*`` that follows on ``INFO: ``,
