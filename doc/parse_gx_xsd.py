@@ -107,8 +107,7 @@ def _build_tag(tag, hide_attributes):
                     assertions_buffer.write(f"#### ``{element.attrib['name']}``:\n\n{doc}\n\n")
             text = text.replace(line, assertions_buffer.getvalue())
     tag_help.write(text)
-    best_practices = _get_bp_link(annotation_el)
-    if best_practices:
+    if best_practices := _get_bp_link(annotation_el):
         tag_help.write("\n\n### Best Practices\n")
         tag_help.write(
             """

@@ -458,8 +458,7 @@ def create_repository(trans: ProvidesUserContext, request: CreateRepositoryReque
     assert user
     category_ids = listify(request.category_ids)
     name = request.name
-    invalid_message = validate_repository_name(app, name, user)
-    if invalid_message:
+    if invalid_message := validate_repository_name(app, name, user):
         raise RequestParameterInvalidException(invalid_message)
 
     repo, _ = low_level_create_repository(

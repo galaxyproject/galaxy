@@ -140,8 +140,7 @@ def execute(
             execution_tracker.record_error(result)
 
     tool_action = tool.tool_action
-    check_inputs_ready = getattr(tool_action, "check_inputs_ready", None)
-    if check_inputs_ready:
+    if check_inputs_ready := getattr(tool_action, "check_inputs_ready", None):
         for params in execution_tracker.param_combinations:
             # This will throw an exception if the tool is not ready.
             try:

@@ -568,8 +568,7 @@ class HistoryContentsFilters(
                     return sql.column("state").in_(states)
                 raise_filter_err(attr, op, val, "bad op in filter")
 
-        column_filter = get_filter(attr, op, val)
-        if column_filter is not None:
+        if (column_filter := get_filter(attr, op, val)) is not None:
             return self.parsed_filter(filter_type="orm", filter=column_filter)
         return super()._parse_orm_filter(attr, op, val)
 

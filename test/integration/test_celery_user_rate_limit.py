@@ -24,7 +24,7 @@ def mock_user_id_task(task_user_id: int):
     return task_user_id
 
 
-@lru_cache()
+@lru_cache
 def sqlite_url():
     path = tempfile.NamedTemporaryFile().name
     dburl = f"sqlite:///{path}"
@@ -32,7 +32,7 @@ def sqlite_url():
     return dburl
 
 
-@lru_cache()
+@lru_cache
 def setup_users(dburl: str, num_users: int = 2):
     """
     Setup test users in galaxy_user table with user id's starting from 2.

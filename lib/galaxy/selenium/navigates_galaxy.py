@@ -564,10 +564,9 @@ class NavigatesGalaxy(HasDriver):
         )
 
     def get_logged_in_user(self) -> Optional[Dict[str, Any]]:
-        user_dict = self.api_get("users/current")
         # for user's not logged in - this just returns a {} so lets
         # key this on an id being available?
-        if "id" in user_dict:
+        if "id" in (user_dict := self.api_get("users/current")):
             return user_dict
         else:
             return None
@@ -586,8 +585,7 @@ class NavigatesGalaxy(HasDriver):
             return self.api_post(f"users/{user_id}/api_key")
 
     def get_user_id(self) -> Optional[str]:
-        user = self.get_logged_in_user()
-        if user is not None:
+        if (user := self.get_logged_in_user()) is not None:
             return user["id"]
         else:
             return None
@@ -2076,8 +2074,7 @@ class NavigatesGalaxy(HasDriver):
             element = self.tour_wait_for_element_present(element_str)
             assert element is not None
 
-        textinsert = step.get("textinsert", None)
-        if textinsert is not None:
+        if (textinsert := step.get("textinsert", None)) is not None:
             element.send_keys(textinsert)
 
         tour_callback.handle_step(step, step_index)

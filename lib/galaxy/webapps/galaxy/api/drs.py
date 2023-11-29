@@ -63,9 +63,8 @@ class DrsApi:
             artifact="drs",
             version="1.2.0",
         )
-        environment = config.ga4gh_service_environment
         extra_kwds = {}
-        if environment:
+        if environment := config.ga4gh_service_environment:
             extra_kwds["environment"] = environment
         return Service(
             id=organization_id + ".drs",

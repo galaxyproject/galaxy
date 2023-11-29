@@ -82,8 +82,7 @@ class GroupsManager:
         """
         sa_session = trans.sa_session
         group = self._get_group(sa_session, group_id)
-        name = payload.name
-        if name:
+        if name := payload.name:
             self._check_duplicated_group_name(sa_session, name)
             group.name = name
             sa_session.add(group)

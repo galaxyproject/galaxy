@@ -130,8 +130,7 @@ class IntegrationInstance(UsesApiTestCaseMixin, UsesCeleryTasks):
         cls._app_available = False
 
     def tearDown(self):
-        logs = self._test_driver.get_logs()
-        if logs:
+        if logs := self._test_driver.get_logs():
             print(logs)
         return super().tearDown()
 

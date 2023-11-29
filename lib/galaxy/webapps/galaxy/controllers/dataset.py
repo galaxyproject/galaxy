@@ -137,8 +137,7 @@ class DatasetInterface(BaseUIController, UsesAnnotations, UsesItemRatings, UsesE
             return data
         if "hdca" in kwd:
             raise RequestParameterInvalidException("Invalid request parameter 'hdca' encountered.")
-        hdca_id = kwd.get("hdca_id", None)
-        if hdca_id:
+        if hdca_id := kwd.get("hdca_id", None):
             hdca = self.app.dataset_collection_manager.get_dataset_collection_instance(trans, "history", hdca_id)
             del kwd["hdca_id"]
             kwd["hdca"] = hdca

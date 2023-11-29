@@ -522,8 +522,7 @@ class JobLike:
 
     def log_str(self):
         extra = ""
-        safe_id = getattr(self, "id", None)
-        if safe_id is not None:
+        if (safe_id := getattr(self, "id", None)) is not None:
             extra += f"id={safe_id}"
         else:
             extra += "unflushed"
@@ -782,8 +781,7 @@ class User(Base, Dictifiable, RepresentById):
     @property
     def extra_preferences(self):
         data = defaultdict(lambda: None)
-        extra_user_preferences = self.preferences.get("extra_user_preferences")
-        if extra_user_preferences:
+        if extra_user_preferences := self.preferences.get("extra_user_preferences"):
             try:
                 data.update(json.loads(extra_user_preferences))
             except Exception:
@@ -794,8 +792,7 @@ class User(Base, Dictifiable, RepresentById):
         """
         Set user password to the digest of `cleartext`.
         """
-        message = validate_password_str(cleartext)
-        if message:
+        if message := validate_password_str(cleartext):
             raise Exception(f"Invalid password: {message}")
         if User.use_pbkdf2:
             self.password = galaxy.security.passwords.hash_password(cleartext)
@@ -3819,8 +3816,7 @@ class DefaultHistoryPermissions(Base, RepresentById):
 
 class StorableObject:
     def flush(self):
-        sa_session = object_session(self)
-        if sa_session:
+        if sa_session := object_session(self):
             with transaction(sa_session):
                 sa_session.commit()
 
@@ -4034,8 +4030,7 @@ class Dataset(Base, StorableObject, Serializable):
         return store_by
 
     def extra_files_path_name_from(self, object_store):
-        store_by = self.store_by
-        if store_by is not None:
+        if (store_by := self.store_by) is not None:
             return f"dataset_{getattr(self, store_by)}_files"
         else:
             return None
@@ -4107,8 +4102,7 @@ class Dataset(Base, StorableObject, Serializable):
         if self.file_size is None:
             self.set_size()
         self.total_size = self.file_size or 0
-        rel_path = self._extra_files_rel_path
-        if rel_path is not None:
+        if (rel_path := self._extra_files_rel_path) is not None:
             if self.object_store.exists(self, extra_dir=rel_path, dir_only=True):
                 for root, _, files in os.walk(self.extra_files_path):
                     self.total_size += sum(
@@ -4145,8 +4139,7 @@ class Dataset(Base, StorableObject, Serializable):
             self.object_store.delete(self)
         except galaxy.exceptions.ObjectNotFound:
             pass
-        rel_path = self._extra_files_rel_path
-        if rel_path is not None:
+        if (rel_path := self._extra_files_rel_path) is not None:
             if self.object_store.exists(self, extra_dir=rel_path, dir_only=True):
                 self.object_store.delete(self, entire_dir=True, extra_dir=rel_path, dir_only=True)
         # TODO: purge metadata files
@@ -7863,8 +7856,7 @@ class WorkflowStep(Base, RepresentById):
                 annotations.append(association)
             copied_step.annotations = annotations
 
-        subworkflow = self.subworkflow
-        if subworkflow:
+        if subworkflow := self.subworkflow:
             copied_subworkflow = subworkflow.copy()
             copied_step.subworkflow = copied_subworkflow
             for subworkflow_step, copied_subworkflow_step in zip(subworkflow.steps, copied_subworkflow.steps):
@@ -8676,8 +8668,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
 
     def log_str(self):
         extra = ""
-        safe_id = getattr(self, "id", None)
-        if safe_id is not None:
+        if (safe_id := getattr(self, "id", None)) is not None:
             extra += f"id={safe_id}"
         else:
             extra += "unflushed"
@@ -9622,8 +9613,7 @@ class PSAPartial(Base, PartialMixin, RepresentById):
 
     @classmethod
     def destroy(cls, token):
-        partial = cls.load(token)
-        if partial:
+        if partial := cls.load(token):
             session = cls.sa_session
             session.execute(delete(partial))
             with transaction(session):

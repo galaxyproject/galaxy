@@ -631,9 +631,8 @@ class DatasetCollectionManager:
             message = message_template % element_identifier
             raise RequestParameterInvalidException(message)
 
-        tags = element_identifier.pop("tags", None)
         tag_str = ""
-        if tags:
+        if tags := element_identifier.pop("tags", None):
             tag_str = ",".join(str(_) for _ in tags)
         if src_type == "hda":
             hda = self.hda_manager.get_accessible(element_id, trans.user)

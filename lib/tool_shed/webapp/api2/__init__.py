@@ -291,7 +291,6 @@ def ensure_valid_session(trans: SessionRequestContext) -> None:
     sa_session = app.model.context
     request = trans.request
     # Try to load an existing session
-    secure_id = request.get_cookie(AUTH_COOKIE_NAME)
     galaxy_session = None
     prev_galaxy_session = None
     user_for_new_session = None
@@ -299,7 +298,7 @@ def ensure_valid_session(trans: SessionRequestContext) -> None:
     # Track whether the session has changed so we can avoid calling flush
     # in the most common case (session exists and is valid).
     galaxy_session_requires_flush = False
-    if secure_id:
+    if secure_id := request.get_cookie(AUTH_COOKIE_NAME):
         session_key: Optional[str] = app.security.decode_guid(secure_id)
         if session_key:
             # We do NOT catch exceptions here, if the database is down the request should fail,

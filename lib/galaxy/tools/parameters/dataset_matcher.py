@@ -246,8 +246,7 @@ class DatasetCollectionMatcher:
         if element.ldda:
             return False
 
-        child_collection = element.child_collection
-        if child_collection:
+        if child_collection := element.child_collection:
             return self.dataset_collection_match(child_collection)
 
         hda = element.hda

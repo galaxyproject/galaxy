@@ -214,9 +214,8 @@ class GalaxyASGIRequest(GalaxyAbstractRequest):
     @property
     def url_path(self) -> str:
         scope = self.__request.scope
-        root_path = scope.get("root_path")
         url = self.base
-        if root_path:
+        if root_path := scope.get("root_path"):
             url = urljoin(url, root_path)
         return url
 
@@ -558,8 +557,7 @@ class IndexQueryTag(NamedTuple):
 
     def as_markdown(self):
         desc = self.description
-        alias = self.alias
-        if alias:
+        if alias := self.alias:
             desc += f" (The tag `{alias}` can be used a short hand alias for this tag to filter on this attribute.)"
         if self.admin_only:
             desc += " This tag is only available for requests using admin keys and/or sessions."

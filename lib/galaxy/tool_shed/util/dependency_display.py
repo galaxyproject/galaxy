@@ -197,8 +197,7 @@ class DependencyDisplayer:
         when displaying repository dependencies for installed repositories and when displaying
         them for uninstalled repositories that are being reinstalled.
         """
-        metadata = repository.metadata_
-        if metadata:
+        if metadata := repository.metadata_:
             irm = InstalledRepositoryManager(self.app)
             # Handle repository dependencies.
             (

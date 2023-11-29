@@ -216,9 +216,8 @@ def reload_sanitize_allowlist(app):
 
 
 def recalculate_user_disk_usage(app, **kwargs):
-    user_id = kwargs.get("user_id", None)
     sa_session = app.model.context
-    if user_id:
+    if user_id := kwargs.get("user_id", None):
         user = sa_session.get(User, user_id)
         if user:
             user.calculate_and_set_disk_usage(app.object_store)

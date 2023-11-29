@@ -184,8 +184,7 @@ class BlockDataProvider(base.LimitedOffsetDataProvider):
         parent_gen = super().__iter__()
         yield from parent_gen
 
-        last_block = self.handle_last_block()
-        if last_block is not None:
+        if (last_block := self.handle_last_block()) is not None:
             self.num_data_returned += 1
             yield last_block
 

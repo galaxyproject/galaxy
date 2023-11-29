@@ -6,6 +6,7 @@ import json
 import logging
 import os
 import re
+import shlex
 import subprocess
 import tempfile
 from typing import (
@@ -38,7 +39,6 @@ from galaxy.datatypes.sniff import (
 )
 from galaxy.util import (
     nice_size,
-    shlex_join,
     string_as_bool,
     unicodify,
 )
@@ -242,7 +242,7 @@ class Ipynb(Json):
                 ofilename = dataset.get_file_name()
                 log.exception(
                     'Command "%s" failed. Could not convert the Jupyter Notebook to HTML, defaulting to plain text.',
-                    shlex_join(cmd),
+                    shlex.join(cmd),
                 )
             return open(ofilename, mode="rb"), headers
 

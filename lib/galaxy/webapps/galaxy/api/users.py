@@ -276,8 +276,7 @@ class FastAPIUsers:
         trans: ProvidesUserContext = DependsOnTrans,
         user_id: FlexibleUserIdType = FlexibleUserIdPathParam,
     ) -> List[UserQuotaUsage]:
-        user = self.service.get_user_full(trans, user_id, False)
-        if user:
+        if user := self.service.get_user_full(trans, user_id, False):
             rval = self.user_serializer.serialize_disk_usage(user)
             return rval
         else:
@@ -294,11 +293,10 @@ class FastAPIUsers:
         user_id: FlexibleUserIdType = FlexibleUserIdPathParam,
         label: str = QuotaSourceLabelPathParam,
     ) -> Optional[UserQuotaUsage]:
-        user = self.service.get_user_full(trans, user_id, False)
         effective_label: Optional[str] = label
         if label == "__null__":
             effective_label = None
-        if user:
+        if user := self.service.get_user_full(trans, user_id, False):
             rval = self.user_serializer.serialize_disk_usage_for(user, effective_label)
             return rval
         else:
@@ -907,8 +905,7 @@ class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController
             if user.username != username:
                 user.username = username
         # Update user custom form
-        user_info_form_id = payload.get("info|form_id")
-        if user_info_form_id:
+        if user_info_form_id := payload.get("info|form_id"):
             prefix = "info|"
             user_info_form = trans.sa_session.get(FormDefinition, trans.security.decode_id(user_info_form_id))
             user_info_values = {}

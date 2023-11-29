@@ -352,9 +352,8 @@ class MatchedRepositoryGrid(grids.Grid):
     use_paging = False
 
     def build_initial_query(self, trans, **kwd):
-        match_tuples = kwd.get("match_tuples", [])
         clause_list = []
-        if match_tuples:
+        if match_tuples := kwd.get("match_tuples", []):
             for match_tuple in match_tuples:
                 repository_id, changeset_revision = match_tuple
                 clause_list.append(
@@ -856,8 +855,7 @@ class RepositoriesWithInvalidToolsGrid(RepositoryGrid):
                 trans, repository
             )
             metadata = repository_metadata.metadata
-            invalid_tools = metadata.get("invalid_tools", [])
-            if invalid_tools:
+            if invalid_tools := metadata.get("invalid_tools", []):
                 for invalid_tool_config in invalid_tools:
                     href_str = '<a href="load_invalid_tool?repository_id={}&tool_config={}&changeset_revision={}">{}</a>'.format(
                         trans.security.encode_id(repository.id),

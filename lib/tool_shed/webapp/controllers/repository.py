@@ -199,8 +199,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
 
     @web.expose
     def browse_my_writable_repositories(self, trans, **kwd):
-        _redir = self._redirect_if_necessary(trans, **kwd)
-        if _redir is not None:
+        if (_redir := self._redirect_if_necessary(trans, **kwd)) is not None:
             return _redir
 
         selected_changeset_revision, repository = suc.get_repository_from_refresh_on_change(trans.app, **kwd)
@@ -218,8 +217,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
 
     @web.expose
     def browse_my_writable_repositories_missing_tool_test_components(self, trans, **kwd):
-        _redir = self._redirect_if_necessary(trans, **kwd)
-        if _redir is not None:
+        if (_redir := self._redirect_if_necessary(trans, **kwd)) is not None:
             return _redir
 
         if "message" not in kwd:
@@ -237,8 +235,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
 
     @web.expose
     def browse_my_writable_repositories_with_invalid_tools(self, trans, **kwd):
-        _redir = self._redirect_if_necessary(trans, **kwd)
-        if _redir is not None:
+        if (_redir := self._redirect_if_necessary(trans, **kwd)) is not None:
             return _redir
 
         if "message" not in kwd:
@@ -360,8 +357,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
 
     @web.expose
     def browse_repositories_i_can_administer(self, trans, **kwd):
-        _redir = self._redirect_if_necessary(trans, **kwd)
-        if _redir is not None:
+        if (_redir := self._redirect_if_necessary(trans, **kwd)) is not None:
             return _redir
 
         selected_changeset_revision, repository = suc.get_repository_from_refresh_on_change(trans.app, **kwd)
@@ -379,8 +375,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
 
     @web.expose
     def browse_repositories_i_own(self, trans, **kwd):
-        _redir = self._redirect_if_necessary(trans, **kwd)
-        if _redir is not None:
+        if (_redir := self._redirect_if_necessary(trans, **kwd)) is not None:
             return _redir
 
         selected_changeset_revision, repository = suc.get_repository_from_refresh_on_change(trans.app, **kwd)
@@ -427,8 +422,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
                     changeset_revision=selected_changeset_revision,
                 )
             )
-        category_id = kwd.get("id", None)
-        if category_id:
+        if category_id := kwd.get("id", None):
             category = suc.get_category(trans.app, category_id)
             if category:
                 trailing_string = f"in Category {str(category.name)}"
@@ -444,8 +438,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
 
     @web.expose
     def browse_repositories_missing_tool_test_components(self, trans, **kwd):
-        _redir = self._redirect_if_necessary(trans, **kwd)
-        if _redir is not None:
+        if (_redir := self._redirect_if_necessary(trans, **kwd)) is not None:
             return _redir
 
         if "message" not in kwd:
@@ -462,8 +455,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
 
     @web.expose
     def browse_repositories_with_invalid_tools(self, trans, **kwd):
-        _redir = self._redirect_if_necessary(trans, **kwd)
-        if _redir is not None:
+        if (_redir := self._redirect_if_necessary(trans, **kwd)) is not None:
             return _redir
 
         if "message" not in kwd:
@@ -557,8 +549,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
     def browse_valid_categories(self, trans, **kwd):
         """Filter repositories per category by those that are valid for installing into Galaxy."""
         # The request came from Galaxy, so restrict category links to display only valid repository changeset revisions.
-        galaxy_url = common_util.handle_galaxy_url(trans, **kwd)
-        if galaxy_url:
+        if galaxy_url := common_util.handle_galaxy_url(trans, **kwd):
             kwd["galaxy_url"] = galaxy_url
         if "f-free-text-search" in kwd:
             if kwd["f-free-text-search"] == "All":
@@ -595,8 +586,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
     @web.expose
     def browse_valid_repositories(self, trans, **kwd):
         """Filter repositories to those that are installable into Galaxy."""
-        galaxy_url = common_util.handle_galaxy_url(trans, **kwd)
-        if galaxy_url:
+        if galaxy_url := common_util.handle_galaxy_url(trans, **kwd):
             kwd["galaxy_url"] = galaxy_url
         repository_id = kwd.get("id", None)
         if "f-free-text-search" in kwd:
@@ -1152,8 +1142,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         changeset_revision = kwd["changeset_revision"]
         repository = repository_util.get_repository_by_name_and_owner(trans.app, repository_name, repository_owner)
         repo = repository.hg_repo
-        ctx = hg_util.get_changectx_for_changeset(repo, changeset_revision)
-        if ctx:
+        if ctx := hg_util.get_changectx_for_changeset(repo, changeset_revision):
             return str(ctx.rev())
         return ""
 
@@ -1428,8 +1417,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         includes_tools_for_display_in_tool_panel = False
         includes_workflows = False
         readme_files_dict = None
-        metadata = repository_metadata.metadata
-        if metadata:
+        if metadata := repository_metadata.metadata:
             if "data_manager" in metadata:
                 includes_data_managers = True
             if "datatypes" in metadata:
@@ -1505,12 +1493,11 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         status = kwd.get("status", "done")
         # See if there are any RepositoryMetadata records since menu items require them.
         repository_metadata = get_first_repository_metadata(trans.sa_session)
-        current_user = trans.user
         # TODO: move the following to some in-memory register so these queries can be done once
         # at startup.  The in-memory register can then be managed during the current session.
         can_administer_repositories = False
         has_deprecated_repositories = False
-        if current_user:
+        if current_user := trans.user:
             # See if the current user has any repositories that have been marked as deprecated.
             for repository in current_user.active_repositories:
                 if repository.deprecated:
@@ -1727,8 +1714,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         if error:
             status = "error"
         allow_push_select_field = SelectField(name="allow_push", multiple=True)
-        current_allow_push = repository.allow_push()
-        if current_allow_push:
+        if current_allow_push := repository.allow_push():
             current_allow_push_list = current_allow_push.split(",")
         else:
             current_allow_push_list = []
@@ -2118,8 +2104,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         )
         rmm.reset_all_metadata_on_repository_in_tool_shed()
         rmm_metadata_dict = rmm.get_metadata_dict()
-        rmm_invalid_file_tups = rmm.get_invalid_file_tups()
-        if rmm_invalid_file_tups:
+        if rmm_invalid_file_tups := rmm.get_invalid_file_tups():
             message = tool_util.generate_message_for_invalid_tools(
                 trans.app, rmm_invalid_file_tups, repository, rmm_metadata_dict
             )
@@ -2155,8 +2140,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
         """Set email alerts for selected repositories."""
         # This method is called from multiple grids, so the caller must be passed.
         caller = kwd["caller"]
-        user = trans.user
-        if user:
+        if user := trans.user:
             repository_ids = util.listify(kwd.get("id", ""))
             total_alerts_added = 0
             total_alerts_removed = 0
@@ -2450,8 +2434,7 @@ class RepositoryController(BaseUIController, ratings_util.ItemRatings):
 
     @web.expose
     def view_or_manage_repository(self, trans, **kwd):
-        repository_id = kwd.get("id", None)
-        if repository_id:
+        if repository_id := kwd.get("id", None):
             repository = repository_util.get_repository_in_tool_shed(trans.app, repository_id)
             user = trans.user
             if repository:

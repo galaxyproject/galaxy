@@ -15,7 +15,7 @@ variables:
 jobs:
   get_code:
     docker:
-      - image: cimg/python:3.7
+      - image: cimg/python:3.8
     <<: *set_workdir
     steps:
       # Replace standard code checkout with shallow clone to speed things up.
@@ -73,7 +73,7 @@ jobs:
             - ~/repo
   validate_test_tools:
     docker:
-      - image: cimg/python:3.7
+      - image: cimg/python:3.8
     <<: *set_workdir
     steps:
       - *restore_repo_cache

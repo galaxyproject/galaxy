@@ -1250,8 +1250,7 @@ class DefaultJobDispatcher:
             from galaxy.celery import celery_app
 
             celery_app.control.revoke(job.job_runner_external_id)
-        job_runner_name = job.get_job_runner_name()
-        if job_runner_name is not None:
+        if (job_runner_name := job.get_job_runner_name()) is not None:
             runner_name = job_runner_name.split(":", 1)[0]
             log.debug(f"Stopping job {job_wrapper.get_id_tag()} in {runner_name} runner")
             try:
