@@ -3,11 +3,23 @@ History
 
 .. to_doc
 
------------
-23.1.2.dev0
------------
+-------------------
+23.1.2 (2023-11-29)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Prevent Singular external auth users from disconnecting identity by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#16961 <https://github.com/galaxyproject/galaxy/pull/16961>`_
+* Set correct tool_path for packaged galaxy by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17102 <https://github.com/galaxyproject/galaxy/pull/17102>`_
+
+============
+Enhancements
+============
+
+* Add support for larch datatypes by `@patrick-austin <https://github.com/patrick-austin>`_ in `#17080 <https://github.com/galaxyproject/galaxy/pull/17080>`_
 
 -------------------
 23.1.1 (2023-10-23)
@@ -71,6 +83,7 @@ No recorded changes since last release
 Bug fixes
 =========
 
+* 
 * Minor bug fix for default mail templates by `@neoformit <https://github.com/neoformit>`_ in `#16362 <https://github.com/galaxyproject/galaxy/pull/16362>`_
 
 -------------------
@@ -102,12 +115,14 @@ Bug fixes
 
 * 
 * 
+* 
 * Change default watchdog inotify_buffer log level to info by `@mvdbeek <https://github.com/mvdbeek>`_ in `#15967 <https://github.com/galaxyproject/galaxy/pull/15967>`_
 
 ============
 Enhancements
 ============
 
+* 
 * Add ``ca_certs`` option for sentry client by `@mvdbeek <https://github.com/mvdbeek>`_ in `#15943 <https://github.com/galaxyproject/galaxy/pull/15943>`_
 
 -------------------

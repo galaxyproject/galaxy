@@ -3,11 +3,16 @@ History
 
 .. to_doc
 
------------
-23.1.2.dev0
------------
+-------------------
+23.1.2 (2023-11-29)
+-------------------
 
 
+============
+Enhancements
+============
+
+* Improve invocation error reporting by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16917 <https://github.com/galaxyproject/galaxy/pull/16917>`_
 
 -------------------
 23.1.1 (2023-10-23)
@@ -83,6 +88,7 @@ No recorded changes since last release
 Bug fixes
 =========
 
+* 
 * Replace httpbin service with pytest-httpserver by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16042 <https://github.com/galaxyproject/galaxy/pull/16042>`_
 
 -------------------

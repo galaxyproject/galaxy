@@ -3,11 +3,28 @@ History
 
 .. to_doc
 
------------
-23.1.2.dev0
------------
+-------------------
+23.1.2 (2023-11-29)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Skip change_datatype things if we're not actually changing the extension by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16931 <https://github.com/galaxyproject/galaxy/pull/16931>`_
+* Fix copying metadata to copied job outputs by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17007 <https://github.com/galaxyproject/galaxy/pull/17007>`_
+* Update tar_to_directory dependency by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17009 <https://github.com/galaxyproject/galaxy/pull/17009>`_
+* Assert that ``DatasetCollectioElement`` has an associated object by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17071 <https://github.com/galaxyproject/galaxy/pull/17071>`_
+* Fix input dates in notifications: consider timezone offset by `@davelopez <https://github.com/davelopez>`_ in `#17088 <https://github.com/galaxyproject/galaxy/pull/17088>`_
+* Allow relative URLs in broadcasts action links by `@davelopez <https://github.com/davelopez>`_ in `#17093 <https://github.com/galaxyproject/galaxy/pull/17093>`_
+
+============
+Enhancements
+============
+
+* Improve invocation error reporting by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16917 <https://github.com/galaxyproject/galaxy/pull/16917>`_
+* Add support for larch datatypes by `@patrick-austin <https://github.com/patrick-austin>`_ in `#17080 <https://github.com/galaxyproject/galaxy/pull/17080>`_
 
 -------------------
 23.1.1 (2023-10-23)
@@ -106,6 +123,7 @@ Other changes
 Bug fixes
 =========
 
+* 
 * Fix extra files path handling by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16541 <https://github.com/galaxyproject/galaxy/pull/16541>`_
 * Don't fail invocation message without dependent_workflow_step_id by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16628 <https://github.com/galaxyproject/galaxy/pull/16628>`_
 
@@ -118,6 +136,7 @@ Bug fixes
 Bug fixes
 =========
 
+* 
 * 
 * Copy when_expression when copying workflow step by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16377 <https://github.com/galaxyproject/galaxy/pull/16377>`_
 
@@ -148,6 +167,7 @@ No recorded changes since last release
 Bug fixes
 =========
 
+* 
 * 
 * 
 * Display DCE in job parameter component, allow rerunning with DCE input by `@mvdbeek <https://github.com/mvdbeek>`_ in `#15744 <https://github.com/galaxyproject/galaxy/pull/15744>`_
