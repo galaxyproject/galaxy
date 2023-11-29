@@ -450,6 +450,10 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
     def is_collection(self) -> bool:
         return False
 
+    @property
+    def file_name(self) -> str:
+        return self.get_file_name()
+
     def is_of_type(self, *exts: str) -> bool:
         datatypes = []
         if not self.datatypes_registry:
