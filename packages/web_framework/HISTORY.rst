@@ -3,11 +3,28 @@ History
 
 .. to_doc
 
----------
-23.2.dev0
----------
+-------
+23.2rc1
+-------
 
 
+
+-------------------
+23.1.2 (2023-11-29)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Workaround issue in Routes by `@nsoranzo <https://github.com/nsoranzo>`_ in `#16981 <https://github.com/galaxyproject/galaxy/pull/16981>`_
+
+============
+Enhancements
+============
+
+* Add HEAD route to job_files endpoint by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17072 <https://github.com/galaxyproject/galaxy/pull/17072>`_
 
 -------------------
 23.1.1 (2023-10-23)
@@ -37,6 +54,7 @@ Enhancements
 Bug fixes
 =========
 
+* 
 * Don't read request body into memory by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16585 <https://github.com/galaxyproject/galaxy/pull/16585>`_
 
 -------------------
@@ -48,6 +66,7 @@ Bug fixes
 Bug fixes
 =========
 
+* 
 * 
 * Media player fix issue 16415 by `@bdwheele <https://github.com/bdwheele>`_ in `#16443 <https://github.com/galaxyproject/galaxy/pull/16443>`_
 * Fix static file serving for ``robots.txt`` and ``favicon.ico`` when using per_host settings by `@mira-miracoli <https://github.com/mira-miracoli>`_ in `#16459 <https://github.com/galaxyproject/galaxy/pull/16459>`_
@@ -79,6 +98,7 @@ No recorded changes since last release
 Bug fixes
 =========
 
+* 
 * 
 * 
 * Various fixes to path prefix handling by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16033 <https://github.com/galaxyproject/galaxy/pull/16033>`_

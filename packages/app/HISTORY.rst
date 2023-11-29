@@ -3,11 +3,35 @@ History
 
 .. to_doc
 
----------
-23.2.dev0
----------
+-------
+23.2rc1
+-------
 
 
+
+-------------------
+23.1.2 (2023-11-29)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Fix unbound ``runner`` variable when there is an error in the job config by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16906 <https://github.com/galaxyproject/galaxy/pull/16906>`_
+* Fix discarded dataset ordering in Storage Dashboard by `@davelopez <https://github.com/davelopez>`_ in `#16929 <https://github.com/galaxyproject/galaxy/pull/16929>`_
+* Include owner's annotation when exporting workflow by `@dannon <https://github.com/dannon>`_ in `#16930 <https://github.com/galaxyproject/galaxy/pull/16930>`_
+* Skip state filtering in ``__MERGE_COLLECTION__`` tool  by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16937 <https://github.com/galaxyproject/galaxy/pull/16937>`_
+* Prevent Singular external auth users from disconnecting identity by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#16961 <https://github.com/galaxyproject/galaxy/pull/16961>`_
+* Prevent workflow submission with missing input values by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17048 <https://github.com/galaxyproject/galaxy/pull/17048>`_
+* Fix extra files collection if using ``store_by="id"`` and `outputs_to_working_directory` by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17067 <https://github.com/galaxyproject/galaxy/pull/17067>`_
+* Remove rollback from ``__check_jobs_at_startup`` by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17085 <https://github.com/galaxyproject/galaxy/pull/17085>`_
+
+============
+Enhancements
+============
+
+* Improve invocation error reporting by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16917 <https://github.com/galaxyproject/galaxy/pull/16917>`_
 
 -------------------
 23.1.1 (2023-10-23)
@@ -158,6 +182,7 @@ Other changes
 Bug fixes
 =========
 
+* 
 * Fix upload paramfile handling (for real user setups) by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#16504 <https://github.com/galaxyproject/galaxy/pull/16504>`_
 * Fix extra files path handling by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16541 <https://github.com/galaxyproject/galaxy/pull/16541>`_
 * Make sure job_wrapper uses a consistent metadata strategy by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16569 <https://github.com/galaxyproject/galaxy/pull/16569>`_
@@ -171,6 +196,7 @@ Bug fixes
 Enhancements
 ============
 
+* 
 * Update pulsar client library to 0.15.5 by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16701 <https://github.com/galaxyproject/galaxy/pull/16701>`_
 
 -------------------
@@ -182,6 +208,7 @@ Enhancements
 Bug fixes
 =========
 
+* 
 * 
 * Skip installing npm/yarn if available, fix conditional dependency parsing, create virtualenv via conda when conda active by `@bernt-matthias <https://github.com/bernt-matthias>`_ in `#16403 <https://github.com/galaxyproject/galaxy/pull/16403>`_
 * Fix test discovery in vscode by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16413 <https://github.com/galaxyproject/galaxy/pull/16413>`_
@@ -196,6 +223,7 @@ Bug fixes
 Bug fixes
 =========
 
+* 
 * 
 * 
 * Fix default when statement evaluation by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16332 <https://github.com/galaxyproject/galaxy/pull/16332>`_
@@ -213,6 +241,7 @@ Bug fixes
 * 
 * 
 * 
+* 
 * Bump galaxy-release-util version to 0.1.2 by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16241 <https://github.com/galaxyproject/galaxy/pull/16241>`_
 
 ============
@@ -220,12 +249,14 @@ Enhancements
 ============
 
 * 
+* 
 * When importing tool data bundles, use the first loc file for the matching table by `@natefoo <https://github.com/natefoo>`_ in `#16247 <https://github.com/galaxyproject/galaxy/pull/16247>`_
 
 =============
 Other changes
 =============
 
+* 
 * Forward port of slugify username received from oidc by `@nuwang <https://github.com/nuwang>`_ in `#16271 <https://github.com/galaxyproject/galaxy/pull/16271>`_
 
 -------------------
@@ -241,12 +272,14 @@ Bug fixes
 * 
 * 
 * 
+* 
 * Fix ``Text File Busy`` errors at the source by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16212 <https://github.com/galaxyproject/galaxy/pull/16212>`_
 
 ============
 Enhancements
 ============
 
+* 
 * 
 * 
 * 
@@ -263,6 +296,7 @@ Enhancements
 Bug fixes
 =========
 
+* 
 * 
 * 
 * 
@@ -291,6 +325,7 @@ Bug fixes
 Other changes
 =============
 
+* 
 * 
 * 
 * 
