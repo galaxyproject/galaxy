@@ -850,7 +850,14 @@ class GalaxyAppConfiguration(BaseAppConfiguration, CommonConfigurationMixin):
         self.install_database_engine_options = get_database_engine_options(kwargs, model_prefix="install_")
         self.shared_home_dir = kwargs.get("shared_home_dir")
         self.cookie_path = kwargs.get("cookie_path")
-        self.tool_path = self._in_root_dir(self.tool_path)
+        if not running_from_source and kwargs.get("tool_path") is None:
+            try:
+                self.tool_path = str(files("galaxy.tools") / "bundled")
+            except ModuleNotFoundError:
+                # Might not be a full galaxy installation
+                self.tool_path = self._in_root_dir(self.tool_path)
+        else:
+            self.tool_path = self._in_root_dir(self.tool_path)
         self.tool_data_path = self._in_root_dir(self.tool_data_path)
         if not running_from_source and kwargs.get("tool_data_path") is None:
             self.tool_data_path = self._in_data_dir(self.schema.defaults["tool_data_path"])
