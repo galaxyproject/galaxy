@@ -118,7 +118,7 @@ def get_fileobj_raw(
         compressed_format = "bz2"
     elif "xz" in compressed_formats and is_xz(filename):
         mode = cast(Literal["a", "ab", "r", "rb", "w", "wb", "x", "xb"], mode)
-        fh =  lzma.LZMAFile(filename, mode)
+        fh = lzma.LZMAFile(filename, mode)
         compressed_format = "xz"
     elif "zip" in compressed_formats and zipfile.is_zipfile(filename):
         # Return fileobj for the first file in a zip file.
