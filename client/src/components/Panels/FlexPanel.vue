@@ -1,10 +1,11 @@
-<script setup>
+<script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faChevronLeft, faChevronRight, faGripLinesVertical } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useDraggable } from "@vueuse/core";
-import { LastQueue } from "utils/promise-queue";
 import { computed, ref, watch } from "vue";
+
+import { LastQueue } from "@/utils/lastQueue";
 
 import { determineWidth } from "./utilities";
 
@@ -121,14 +122,17 @@ watch(position, () => {
     </div>
 </template>
 
-<style>
+<style scoped lang="scss">
 @import "theme/blue.scss";
+
 .cursor-grab {
     cursor: grab;
 }
+
 .cursor-grabbing {
     cursor: grabbing;
 }
+
 .flex-panel-expand {
     background: $panel-footer-bg-color;
     border: $border-default;
@@ -136,31 +140,38 @@ watch(position, () => {
     position: absolute;
     z-index: 1;
 }
+
 .flex-panel-footer {
     background: $panel-footer-bg-color;
 }
+
 .flex-panel-left {
     border-right: $border-default;
 }
+
 .flex-panel-right {
     border-left: $border-default;
 }
+
 .flex-panel-left-expand {
     @extend .flex-panel-expand;
     border-top-right-radius: $border-radius-base;
     left: 0;
 }
+
 .flex-panel-right-expand {
     @extend .flex-panel-expand;
     border-top-left-radius: $border-radius-base;
     right: 0;
 }
+
 .interaction-area {
     margin: -1.5rem;
     padding: 1.5rem;
     position: absolute;
     z-index: 2;
 }
+
 .interaction-overlay {
     height: 100%;
     position: fixed;

@@ -177,7 +177,7 @@ import { provideScopedWorkflowStores } from "@/composables/workflowStores";
 import { hide_modal } from "@/layout/modal";
 import { getAppRoot } from "@/onload/loadConfig";
 import { useScopePointerStore } from "@/stores/scopePointerStore";
-import { LastQueue } from "@/utils/promise-queue";
+import { LastQueue } from "@/utils/lastQueue";
 
 import { defaultPosition } from "./composables/useDefaultStepPosition";
 import { fromSimple, toSimple } from "./modules/model";
@@ -846,3 +846,4 @@ export default {
     width: 100%;
 }
 </style>
+@/utils/lastQueue
