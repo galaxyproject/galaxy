@@ -50,7 +50,7 @@ const testGrid = {
             key: "operation",
             title: "operation",
             type: "operations",
-            condition: jest.fn(),
+            condition: jest.fn(() => true),
             operations: [
                 {
                     title: "operation-title-1",
