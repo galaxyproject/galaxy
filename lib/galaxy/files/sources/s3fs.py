@@ -71,7 +71,8 @@ class S3FsFilesSource(BaseFilesSource):
         self._open_fs(user_context=user_context, opts=opts).download(bucket_path, native_path)
 
     def _write_from(self, target_path, native_path, user_context=None, opts: Optional[FilesSourceOptions] = None):
-        raise NotImplementedError()
+        bucket_path = self._bucket_path(target_path)
+        self._open_fs(user_context=user_context, opts=opts).upload(native_path, bucket_path)
 
     def _bucket_path(self, path: str):
         if path.startswith("s3://"):
