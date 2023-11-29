@@ -219,9 +219,9 @@ watch(operationMessage, () => {
         </div>
         <LoadingSpan v-if="loading" />
         <BAlert v-else-if="!isAvailable" variant="info" show>
-            <span v-if="searchTerm" v-localize>
-                No entries found for: <b>{{ searchTerm }}</b
-                >.
+            <span v-if="searchTerm">
+                <span v-localize>Nothing found with:</span>
+                <b>{{ searchTerm }}</b>
             </span>
             <span v-else v-localize> No entries found. </span>
         </BAlert>
@@ -249,9 +249,10 @@ watch(operationMessage, () => {
                     v-for="(fieldEntry, fieldIndex) in config.fields"
                     :key="fieldIndex"
                     class="px-2 py-3"
-                    :style="{ width: `${fieldEntry.width}%` }"
-                    :data-description="`grid cell ${rowIndex}-${fieldIndex}`">
-                    <div v-if="!fieldEntry.condition || fieldEntry.condition(rowData)">
+                    :style="{ width: `${fieldEntry.width}%` }">
+                    <div
+                        v-if="!fieldEntry.condition || fieldEntry.condition(rowData)"
+                        :data-description="`grid cell ${rowIndex}-${fieldIndex}`">
                         <GridOperations
                             v-if="fieldEntry.type == 'operations' && fieldEntry.operations"
                             :operations="fieldEntry.operations"
