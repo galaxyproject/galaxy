@@ -9,7 +9,7 @@ import { LastQueue } from "@/utils/lastQueue";
 
 import { determineWidth } from "./utilities";
 
-const lastQueue = new LastQueue(10);
+const lastQueue = new LastQueue<() => void>(10);
 
 library.add({
     faChevronLeft,
@@ -30,8 +30,8 @@ const props = defineProps({
 
 const draggable = ref();
 const root = ref();
-const rangeWidth = [200, 300, 600];
-const panelWidth = ref(rangeWidth[1]);
+const rangeWidth = [200, 300, 600] as const;
+const panelWidth = ref(rangeWidth[1] as number);
 const show = ref(true);
 
 const { position, isDragging } = useDraggable(draggable, {
@@ -40,7 +40,7 @@ const { position, isDragging } = useDraggable(draggable, {
 });
 
 const style = computed(() => {
-    return show.value ? { width: `${panelWidth.value}px` } : null;
+    return show.value ? { width: `${panelWidth.value}px` } : {};
 });
 
 function toggle() {
@@ -60,7 +60,7 @@ watch(position, () => {
             props.side,
             position.value.x
         );
-    });
+    }, []);
 });
 </script>
 
