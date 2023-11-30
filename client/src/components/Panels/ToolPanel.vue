@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCaretDown, faSpinner } from "@fortawesome/free-solid-svg-icons";
+import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref, watch } from "vue";
@@ -16,7 +16,7 @@ import PanelViewMenu from "./Menus/PanelViewMenu.vue";
 import ToolBox from "./ToolBox.vue";
 import Heading from "@/components/Common/Heading.vue";
 
-library.add(faCaretDown, faSpinner);
+library.add(faCaretDown);
 
 const props = defineProps({
     workflow: { type: Boolean, default: false },
@@ -36,6 +36,7 @@ const arePanelsFetched = ref(false);
 const toolStore = useToolStore();
 const { currentPanelView, defaultPanelView, isPanelPopulated, loading, panelViews } = storeToRefs(toolStore);
 
+const loadingView = ref<string | undefined>(undefined);
 const query = ref("");
 const showAdvanced = ref(false);
 
@@ -70,6 +71,8 @@ watch(
 const toolPanelHeader = computed(() => {
     if (showAdvanced.value) {
         return localize("Advanced Tool Search");
+    } else if (loading.value && loadingView.value) {
+        return localize(loadingView.value);
     } else if (
         currentPanelView.value !== "default" &&
         panelViews.value &&
@@ -106,7 +109,9 @@ async function initializeTools() {
 }
 
 async function updatePanelView(panelView: string) {
+    loadingView.value = panelViews.value[panelView]?.name;
     await toolStore.setCurrentPanelView(panelView);
+    loadingView.value = undefined;
 }
 
 function onInsertTool(toolId: string, toolName: string) {
@@ -139,9 +144,8 @@ function onInsertWorkflowSteps(workflowId: string, workflowStepCount: number | u
                     <template v-slot:panel-view-selector>
                         <div class="d-flex justify-content-between panel-view-selector">
                             <div>
-                                <FontAwesomeIcon v-if="loading" icon="spinner" spin />
                                 <span
-                                    v-else-if="viewIcon"
+                                    v-if="viewIcon && !loading"
                                     :class="['fas', `fa-${viewIcon}`, 'mr-1']"
                                     data-description="panel view header icon" />
                                 <Heading
@@ -149,8 +153,11 @@ function onInsertWorkflowSteps(workflowId: string, workflowStepCount: number | u
                                     :class="!showAdvanced && toolPanelHeader !== 'Tools' && 'font-italic'"
                                     h2
                                     inline
-                                    size="sm"
-                                    >{{ toolPanelHeader }}
+                                    size="sm">
+                                    <span v-if="loading && loadingView">
+                                        <LoadingSpan :message="toolPanelHeader" />
+                                    </span>
+                                    <span v-else>{{ toolPanelHeader }}</span>
                                 </Heading>
                             </div>
                             <div v-if="!showAdvanced" class="panel-header-buttons">
