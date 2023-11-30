@@ -158,7 +158,7 @@ class GodockerJobRunner(AsynchronousJobRunner):
             log.error("Job creation failure.  No Response from GoDocker")
             job_wrapper.fail("Not submitted")
         else:
-            log.debug(f"Starting queue_job for job {job_id}")
+            log.debug("Starting queue_job for job %s", job_id)
             # Create an object of AsynchronousJobState and add it to the monitor queue.
             ajs = AsynchronousJobState(
                 files_dir=job_wrapper.working_directory,
@@ -186,7 +186,7 @@ class GodockerJobRunner(AsynchronousJobRunner):
         # Get task from GoDocker
         job_persisted_state = job_state.job_wrapper.get_state()
         job_status_god = self.get_task(job_state.job_id)
-        log.debug(f"Job ID: {str(job_state.job_id)} Job Status: {str(job_status_god['status']['primary'])}")
+        log.debug("Job ID: %s Job Status: %s", str(job_state.job_id), str(job_status_god["status"]["primary"]))
 
         if job_status_god["status"]["primary"] == "over" or job_persisted_state == model.Job.states.STOPPED:
             job_state.running = False
@@ -238,7 +238,7 @@ class GodockerJobRunner(AsynchronousJobRunner):
         # This function is called by fail_job()
         # No Return data expected
         job_id = job_wrapper.job_id
-        log.debug(f"STOP JOB EXECUTION OF JOB ID: {str(job_id)}")
+        log.debug("STOP JOB EXECUTION OF JOB ID: %s", str(job_id))
         # Get task status from GoDocker.
         job_status_god = self.get_task_status(job_id)
         if job_status_god["status"]["primary"] != "over":
@@ -261,7 +261,10 @@ class GodockerJobRunner(AsynchronousJobRunner):
         job_wrapper.command_line = job.command_line
         if job.state in (model.Job.states.RUNNING, model.Job.states.STOPPED):
             log.debug(
-                f"({job.id}/{job.get_job_runner_external_id()}) is still in {job.state} state, adding to the god queue"
+                "(%s/%s) is still in %s state, adding to the god queue",
+                job.id,
+                job.get_job_runner_external_id(),
+                job.state,
             )
             ajs.old_state = "R"
             ajs.running = True
@@ -269,7 +272,9 @@ class GodockerJobRunner(AsynchronousJobRunner):
 
         elif job.state == model.Job.states.QUEUED:
             log.debug(
-                f"({job.id}/{job.get_job_runner_external_id()}) is still in god queued state, adding to the god queue"
+                "(%s/%s) is still in god queued state, adding to the god queue",
+                job.id,
+                job.get_job_runner_external_id(),
             )
             ajs.old_state = "Q"
             ajs.running = False
@@ -309,9 +314,9 @@ class GodockerJobRunner(AsynchronousJobRunner):
                 log_file.write(out_log)
                 log_file.close()
                 f.close()
-                log.debug(f"CREATE OUTPUT FILE: {job_state.output_file}")
-                log.debug(f"CREATE ERROR FILE: {job_state.error_file}")
-                log.debug(f"CREATE EXIT CODE FILE: {job_state.exit_code_file}")
+                log.debug("CREATE OUTPUT FILE: %s", job_state.output_file)
+                log.debug("CREATE ERROR FILE: %s", job_state.error_file)
+                log.debug("CREATE EXIT CODE FILE: %s", job_state.exit_code_file)
             except OSError as e:
                 log.error("Could not access task log file: %s", unicodify(e))
                 log.debug("IO Error occurred when accessing the files.")
@@ -325,7 +330,7 @@ class GodockerJobRunner(AsynchronousJobRunner):
         Create Login model schema of GoDocker and call the http_post_request method.
         """
         log.debug("LOGIN TASK TO BE EXECUTED \n")
-        log.debug(f"GODOCKER LOGIN: {str(login)}")
+        log.debug("GODOCKER LOGIN: %s", str(login))
         data = json.dumps({"user": login, "apikey": apikey})
         # Create object of Godocker class
         g_auth = Godocker(server, login, apikey, noCert)
@@ -360,7 +365,7 @@ class GodockerJobRunner(AsynchronousJobRunner):
                 docker_image = self._find_container(job_wrapper).container_id
                 log.debug("GoDocker runner using container %s.", docker_image)
             except Exception:
-                log.error(f"Unable to find docker_image for job {job_wrapper.job_id}, failing.")
+                log.error("Unable to find docker_image for job %s, failing.", job_wrapper.job_id)
                 return False
 
             volumes = []

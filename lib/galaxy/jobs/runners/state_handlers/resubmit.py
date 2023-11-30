@@ -98,7 +98,7 @@ def _handle_resubmit_definitions(resubmit_definitions, app, job_runner, job_stat
                 float(delay)
                 new_destination.params["__resubmit_delay_seconds"] = str(delay)
             except ValueError:
-                log.warning(f"Cannot delay job with delay [{delay}], does not appear to be a number.")
+                log.warning("Cannot delay job with delay [%s], does not appear to be a number.", delay)
         job_state.job_wrapper.set_job_destination(new_destination)
         # Clear external ID (state change below flushes the change)
         job.job_runner_external_id = None

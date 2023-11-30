@@ -36,7 +36,7 @@ class LSF(BaseJobExec):
                     k = argmap[k]
                 scriptargs[k] = v
             except Exception:
-                log.warning(f"Unrecognized long argument passed to LSF CLI plugin: {k}")
+                log.warning("Unrecognized long argument passed to LSF CLI plugin: %s", k)
 
         # Generated template.
         template_scriptargs = ""
@@ -81,7 +81,7 @@ class LSF(BaseJobExec):
             # which would be badly handled here. So this only works well when Galaxy
             # is constantly monitoring the jobs. The logic here is that DONE jobs get forgotten
             # faster than failed jobs.
-            log.warning(f"Job id '{job_id}' not found LSF status check")
+            log.warning("Job id '%s' not found LSF status check", job_id)
             return job_states.OK
         return self._get_job_state(status)
 

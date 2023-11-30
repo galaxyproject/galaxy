@@ -76,7 +76,7 @@ class Torque(BaseJobExec):
             except Exception:
                 tree = None
         if tree is None:
-            log.warning(f"No valid qstat XML return from `qstat -x`, got the following: {status}")
+            log.warning("No valid qstat XML return from `qstat -x`, got the following: %s", status)
             return None
         else:
             for job in tree.findall("Job"):

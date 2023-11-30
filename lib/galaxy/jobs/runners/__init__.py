@@ -116,7 +116,7 @@ class BaseJobRunner:
         """Start ``nworkers`` worker threads."""
         self.work_queue = Queue()
         self.work_threads = []
-        log.debug(f"Starting {self.nworkers} {self.runner_name} workers")
+        log.debug("Starting %s %s workers", self.nworkers, self.runner_name)
         for i in range(self.nworkers):
             worker = threading.Thread(name="%s.work_thread-%d" % (self.runner_name, i), target=self.run_next)
             worker.daemon = True
@@ -201,11 +201,11 @@ class BaseJobRunner:
             # Required for exceptions thrown by object store incompatiblity.
             # tested by test/integration/objectstore/test_private_handling.py
             job_wrapper.fail(str(e), exception=e)
-            log.debug(f"Job [{job_wrapper.job_id}] failed to queue {put_timer}")
+            log.debug("Job [%s] failed to queue %s", job_wrapper.job_id, put_timer)
             return
         if queue_job:
             self.mark_as_queued(job_wrapper)
-            log.debug(f"Job [{job_wrapper.job_id}] queued {put_timer}")
+            log.debug("Job [%s] queued %s", job_wrapper.job_id, put_timer)
 
     def mark_as_queued(self, job_wrapper: "MinimalJobWrapper"):
         self.work_queue.put((self.queue_job, job_wrapper))
@@ -277,12 +277,12 @@ class BaseJobRunner:
 
         # Make sure the job hasn't been deleted
         if job_state == model.Job.states.DELETED:
-            log.debug(f"({job_id}) Job deleted by user before it entered the {self.runner_name} queue")
+            log.debug("(%s) Job deleted by user before it entered the %s queue", job_id, self.runner_name)
             if self.app.config.cleanup_job in ("always", "onsuccess"):
                 job_wrapper.cleanup()
             return False
         elif job_state != model.Job.states.QUEUED:
-            log.info(f"({job_id}) Job is in state {job_state}, skipping execution")
+            log.info("(%s) Job is in state %s, skipping execution", job_id, job_state)
             # cleanup may not be safe in all states
             return False
 
@@ -474,7 +474,7 @@ class BaseJobRunner:
                     env=os.environ,
                     preexec_fn=os.setpgrp,
                 )
-            log.debug("execution of external set_meta for job %d finished" % job_wrapper.job_id)
+            log.debug("execution of external set_meta for job %d finished", job_wrapper.job_id)
 
     def get_job_file(self, job_wrapper: "MinimalJobWrapper", **kwds) -> str:
         job_metrics = job_wrapper.app.job_metrics
@@ -503,7 +503,7 @@ class BaseJobRunner:
         # Additional logging to enable if debugging from_work_dir handling, metadata
         # commands, etc... (or just peak in the job script.)
         job_id = job_wrapper.job_id
-        log.debug(f"({job_id}) command is: {command_line}")
+        log.debug("(%s) command is: %s", job_id, command_line)
         options.update(**kwds)
         return job_script(**options)
 
@@ -712,7 +712,7 @@ class JobState:
                     prefix = f"({self.job_wrapper.get_id_tag()})"
                 else:
                     prefix = f"({self.job_wrapper.get_id_tag()}/{self.job_id})"
-                log.debug(f"{prefix} Unable to cleanup {file}: {unicodify(e)}")
+                log.debug("%s Unable to cleanup %s: %s", prefix, file, unicodify(e))
 
 
 class AsynchronousJobState(JobState):
@@ -839,7 +839,7 @@ class AsynchronousJobRunner(BaseJobRunner, Monitors):
 
     def shutdown(self):
         """Attempts to gracefully shut down the monitor thread"""
-        log.info(f"{self.runner_name}: Sending stop signal to monitor thread")
+        log.info("%s: Sending stop signal to monitor thread", self.runner_name)
         self.monitor_queue.put(STOP_SIGNAL)
         # Call the parent's shutdown method to stop workers
         self.shutdown_monitor()

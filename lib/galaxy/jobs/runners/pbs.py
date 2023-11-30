@@ -113,7 +113,7 @@ class PBSJobRunner(AsynchronousJobRunner):
     def default_pbs_server(self):
         if self.__default_pbs_server is None:
             self.__default_pbs_server = pbs.pbs_default()
-            log.debug(f"Set default PBS server to {self.default_pbs_server}")
+            log.debug("Set default PBS server to %s", self.default_pbs_server)
         return self.__default_pbs_server
 
     def url_to_destination(self, url):
@@ -150,7 +150,7 @@ class PBSJobRunner(AsynchronousJobRunner):
             param, value = opt.split(None, 1)
             params[param] = value
 
-        log.debug(f"Converted URL '{url}' to destination runner=pbs, params={params}")
+        log.debug("Converted URL '%s' to destination runner=pbs, params=%s", url, params)
 
         # Create a dynamic JobDestination
         return JobDestination(runner="pbs", params=params)
@@ -170,7 +170,7 @@ class PBSJobRunner(AsynchronousJobRunner):
                 arg = arg.lstrip("-")
                 args[arg] = value
             except Exception:
-                log.warning(f"Unrecognized long argument in destination params: {arg}")
+                log.warning("Unrecognized long argument in destination params: %s", arg)
         return self.__args_to_attrs(args)
 
     # Internal stuff
@@ -233,7 +233,7 @@ class PBSJobRunner(AsynchronousJobRunner):
         if c <= 0:
             errno, text = pbs.error()
             job_wrapper.fail("Unable to queue job for execution.  Resubmitting the job may succeed.")
-            log.error(f"Connection to PBS server for submit failed: {errno}: {text}")
+            log.error("Connection to PBS server for submit failed: %s: %s", errno, text)
             return
 
         # define job attributes
@@ -296,7 +296,7 @@ class PBSJobRunner(AsynchronousJobRunner):
         self.write_executable_script(job_file, script, job_io=job_wrapper.job_io)
         # job was deleted while we were preparing it
         if job_wrapper.get_state() in (model.Job.states.DELETED, model.Job.states.STOPPED):
-            log.debug(f"Job {job_wrapper.job_id} deleted/stopped by user before it entered the PBS queue")
+            log.debug("Job %s deleted/stopped by user before it entered the PBS queue", job_wrapper.job_id)
             pbs.pbs_disconnect(c)
             if job_wrapper.cleanup_job in ("always", "onsuccess"):
                 self.cleanup((ofile, efile, ecfile, job_file))
@@ -307,7 +307,7 @@ class PBSJobRunner(AsynchronousJobRunner):
         # The job tag includes the job and the task identifier
         # (if a TaskWrapper was passed in):
         galaxy_job_id = job_wrapper.get_id_tag()
-        log.debug(f"({galaxy_job_id}) submitting file {job_file}")
+        log.debug("(%s) submitting file %s", galaxy_job_id, job_file)
 
         tries = 0
         while tries < 5:
@@ -317,17 +317,17 @@ class PBSJobRunner(AsynchronousJobRunner):
                 pbs.pbs_disconnect(c)
                 break
             errno, text = pbs.error()
-            log.warning("(%s) pbs_submit failed (try %d/5), PBS error %d: %s" % (galaxy_job_id, tries, errno, text))
+            log.warning("(%s) pbs_submit failed (try %d/5), PBS error %d: %s", galaxy_job_id, tries, errno, text)
             time.sleep(2)
         else:
-            log.error(f"({galaxy_job_id}) All attempts to submit job failed")
+            log.error("(%s) All attempts to submit job failed", galaxy_job_id)
             job_wrapper.fail("Unable to run this job due to a cluster error, please retry it later")
             return
 
         if pbs_queue_name is None:
-            log.debug(f"({galaxy_job_id}) queued in default queue as {job_id}")
+            log.debug("(%s) queued in default queue as %s", galaxy_job_id, job_id)
         else:
-            log.debug(f"({galaxy_job_id}) queued in {pbs_queue_name} queue as {job_id}")
+            log.debug("(%s) queued in %s queue as %s", galaxy_job_id, pbs_queue_name, job_id)
 
         # persist destination
         job_wrapper.set_job_destination(job_destination, job_id)
@@ -362,7 +362,7 @@ class PBSJobRunner(AsynchronousJobRunner):
             old_state = pbs_job_state.old_state
             pbs_server_name = self.__get_pbs_server(pbs_job_state.job_destination.params)
             if pbs_server_name in failures:
-                log.debug(f"({galaxy_job_id}/{job_id}) Skipping state check because PBS server connection failed")
+                log.debug("(%s/%s) Skipping state check because PBS server connection failed", galaxy_job_id, job_id)
                 new_watched.append(pbs_job_state)
                 continue
             try:
@@ -374,24 +374,28 @@ class PBSJobRunner(AsynchronousJobRunner):
                     # Recheck to make sure it wasn't a communication problem
                     self.check_single_job(pbs_server_name, job_id)
                     log.warning(
-                        f"({galaxy_job_id}/{job_id}) PBS job was not in state check list, but was found with individual state check"
+                        "(%s/%s) PBS job was not in state check list, but was found with individual state check",
+                        galaxy_job_id,
+                        job_id,
                     )
                     new_watched.append(pbs_job_state)
                 except Exception:
                     errno, text = pbs.error()
                     if errno == 15001:
                         # 15001 == job not in queue
-                        log.debug(f"({galaxy_job_id}/{job_id}) PBS job has left queue")
+                        log.debug("(%s/%s) PBS job has left queue", galaxy_job_id, job_id)
                         self.work_queue.put((self.finish_job, pbs_job_state))
                     else:
                         # Unhandled error, continue to monitor
                         log.info(
-                            "(%s/%s) PBS state check resulted in error (%d): %s" % (galaxy_job_id, job_id, errno, text)
+                            "(%s/%s) PBS state check resulted in error (%d): %s", galaxy_job_id, job_id, errno, text
                         )
                         new_watched.append(pbs_job_state)
                 continue
             if status.job_state != old_state:
-                log.debug(f"({galaxy_job_id}/{job_id}) PBS job state changed from {old_state} to {status.job_state}")
+                log.debug(
+                    "(%s/%s) PBS job state changed from %s to %s", galaxy_job_id, job_id, old_state, status.job_state
+                )
             if status.job_state == "R" and not pbs_job_state.running:
                 pbs_job_state.running = True
                 pbs_job_state.job_wrapper.change_state(model.Job.states.RUNNING)
@@ -409,18 +413,18 @@ class PBSJobRunner(AsynchronousJobRunner):
                         int(status.exit_status) == 0
                         or pbs_job_state.job_wrapper.get_state() == model.Job.states.STOPPED
                     )
-                    log.debug(f"({galaxy_job_id}/{job_id}) PBS job has completed successfully")
+                    log.debug("(%s/%s) PBS job has completed successfully", galaxy_job_id, job_id)
                 except AssertionError:
                     exit_status = int(status.exit_status)
                     error_message = JOB_EXIT_STATUS.get(exit_status, f"Unknown error: {status.exit_status}")
                     pbs_job_state.fail_message = CLUSTER_ERROR_MESSAGE % error_message
-                    log.error(f"({galaxy_job_id}/{job_id}) PBS job failed: {error_message}")
+                    log.error("(%s/%s) PBS job failed: %s", galaxy_job_id, job_id, error_message)
                     pbs_job_state.stop_job = False
                     self.work_queue.put((self.fail_job, pbs_job_state))
                     continue
                 except AttributeError:
                     # No exit_status, can't verify proper completion so we just have to assume success.
-                    log.debug(f"({galaxy_job_id}/{job_id}) PBS job has completed")
+                    log.debug("(%s/%s) PBS job has completed", galaxy_job_id, job_id)
                 self.work_queue.put((self.finish_job, pbs_job_state))
                 continue
             pbs_job_state.old_state = status.job_state
@@ -445,7 +449,7 @@ class PBSJobRunner(AsynchronousJobRunner):
         for pbs_server_name in servers:
             c = pbs.pbs_connect(util.smart_str(pbs_server_name))
             if c <= 0:
-                log.debug(f"connection to PBS server {pbs_server_name} for state check failed")
+                log.debug("connection to PBS server %s for state check failed", pbs_server_name)
                 failures.append(pbs_server_name)
                 continue
             stat_attrl = pbs.new_attrl(3)
@@ -478,7 +482,7 @@ class PBSJobRunner(AsynchronousJobRunner):
         """
         c = pbs.pbs_connect(util.smart_str(pbs_server_name))
         if c <= 0:
-            log.debug(f"connection to PBS server {pbs_server_name} for state check failed")
+            log.debug("connection to PBS server %s for state check failed", pbs_server_name)
             return None
         stat_attrl = pbs.new_attrl(1)
         stat_attrl[0].name = pbs.ATTR_state
@@ -506,7 +510,7 @@ class PBSJobRunner(AsynchronousJobRunner):
         job = job_wrapper.get_job()
         job_id = job.get_job_runner_external_id().encode("utf-8")
         job_tag = f"({job.get_id_tag()}/{job_id})"
-        log.debug(f"{job_tag} Stopping PBS job")
+        log.debug("%s Stopping PBS job", job_tag)
 
         # Declare the connection handle c so that it can be cleaned up:
         c = None
@@ -514,17 +518,17 @@ class PBSJobRunner(AsynchronousJobRunner):
         try:
             pbs_server_name = self.__get_pbs_server(job.destination_params)
             if pbs_server_name is None:
-                log.debug("(%s) Job queued but no destination stored in job params, cannot delete" % job_tag)
+                log.debug("(%s) Job queued but no destination stored in job params, cannot delete", job_tag)
                 return
             c = pbs.pbs_connect(util.smart_str(pbs_server_name))
             if c <= 0:
-                log.debug(f"({job_tag}) Connection to PBS server for job delete failed")
+                log.debug("(%s) Connection to PBS server for job delete failed", job_tag)
                 return
             pbs.pbs_deljob(c, job_id, "")
-            log.debug(f"{job_tag} Removed from PBS queue before job completion")
+            log.debug("%s Removed from PBS queue before job completion", job_tag)
         except Exception:
             e = traceback.format_exc()
-            log.debug(f"{job_tag} Unable to stop job: {e}")
+            log.debug("%s Unable to stop job: %s", job_tag, e)
         finally:
             # Cleanup: disconnect from the server.
             if None is not c:
@@ -546,14 +550,19 @@ class PBSJobRunner(AsynchronousJobRunner):
         job_wrapper.command_line = job.command_line
         if job.state in (model.Job.states.RUNNING, model.Job.states.STOPPED):
             log.debug(
-                f"({job.id}/{job.get_job_runner_external_id()}) is still in {job.state} state, adding to the PBS queue"
+                "(%s/%s) is still in %s state, adding to the PBS queue",
+                job.id,
+                job.get_job_runner_external_id(),
+                job.state,
             )
             pbs_job_state.old_state = "R"
             pbs_job_state.running = True
             self.monitor_queue.put(pbs_job_state)
         elif job.state == model.Job.states.QUEUED:
             log.debug(
-                f"({job.id}/{job.get_job_runner_external_id()}) is still in PBS queued state, adding to the PBS queue"
+                "(%s/%s) is still in PBS queued state, adding to the PBS queue",
+                job.id,
+                job.get_job_runner_external_id(),
             )
             pbs_job_state.old_state = "Q"
             pbs_job_state.running = False

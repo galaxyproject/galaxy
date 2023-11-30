@@ -216,9 +216,9 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         self._batch_client = session.client("batch")
 
     def queue_job(self, job_wrapper):
-        log.debug(f"Starting queue_job for job {job_wrapper.get_id_tag()}")
+        log.debug("Starting queue_job for job %s", job_wrapper.get_id_tag())
         if not self.prepare_job(job_wrapper, include_metadata=False, modify_command_for_container=False):
-            log.debug(f"Not ready {job_wrapper.get_id_tag()}")
+            log.debug("Not ready %s", job_wrapper.get_id_tag())
             return
 
         job_destination = job_wrapper.job_destination
@@ -251,7 +251,7 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
             jd_arn = self._register_job_definition(jd_name, container_image, destination_params)
         else:
             jd_arn = res["jobDefinitions"][0]["jobDefinitionArn"]
-            log.debug(f"Found existing job definition: {jd_name}.")
+            log.debug("Found existing job definition: %s.", jd_name)
 
         return jd_arn
 
@@ -323,7 +323,7 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         return strategy
 
     def _register_job_definition(self, jd_name, container_image, destination_params):
-        log.debug(f"Registering a new job definition: {jd_name}.")
+        log.debug("Registering a new job definition: %s.", jd_name)
         platform = destination_params.get("platform")
         volumes, mount_points = self._get_mount_volumes(destination_params)
 
@@ -372,7 +372,7 @@ class AWSBatchJobRunner(AsynchronousJobRunner):
         job_name = self.JOB_NAME_PREFIX + job_wrapper.get_id_tag()
         command_script_path = self.write_command(job_wrapper)
 
-        log.info(f"Submitting job {job_name} to AWS Batch.")
+        log.info("Submitting job %s to AWS Batch.", job_name)
         res = self._batch_client.submit_job(
             jobName=job_name,
             jobQueue=destination_params.get("job_queue"),

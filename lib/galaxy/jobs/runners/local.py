@@ -95,7 +95,7 @@ class LocalJobRunner(BaseJobRunner):
         try:
             stdout_file = tempfile.NamedTemporaryFile(mode="wb+", suffix="_stdout", dir=job_wrapper.working_directory)
             stderr_file = tempfile.NamedTemporaryFile(mode="wb+", suffix="_stderr", dir=job_wrapper.working_directory)
-            log.debug(f"({job_id}) executing job script: {job_file}")
+            log.debug("(%s) executing job script: %s", job_id, job_file)
             # The preexec_fn argument of Popen() is used to call os.setpgrp() in
             # the child process just before the child is executed. This will set
             # the PGID of the child process to its PID (i.e. ensures that it is
@@ -140,7 +140,7 @@ class LocalJobRunner(BaseJobRunner):
             stderr = self._job_io_for_db(stderr_file)
             stdout_file.close()
             stderr_file.close()
-            log.debug(f"execution finished: {job_file}")
+            log.debug("execution finished: %s", job_file)
         except Exception:
             log.exception("failure running job %d", job_wrapper.job_id)
             self._fail_job_local(job_wrapper, "failure running job")
@@ -166,11 +166,11 @@ class LocalJobRunner(BaseJobRunner):
             # metadata internal or job not complete yet
             pid = job.get_job_runner_external_id()
         if pid in [None, ""]:
-            log.warning(f"stop_job(): {job.id}: no PID in database for job, unable to stop")
+            log.warning("stop_job(): %s: no PID in database for job, unable to stop", job.id)
             return
         pid = int(pid)
         if not check_pg(pid):
-            log.warning("stop_job(): %s: Process group %d was already dead or can't be signaled" % (job.id, pid))
+            log.warning("stop_job(): %s: Process group %d was already dead or can't be signaled", job.id, pid)
             return
         log.debug("stop_job(): %s: Terminating process group %d", job.id, pid)
         kill_pg(pid)
