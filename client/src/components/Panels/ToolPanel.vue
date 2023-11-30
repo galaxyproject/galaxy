@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import { library } from "@fortawesome/fontawesome-svg-core";
-import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
+import { faCaretDown, faSpinner } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { storeToRefs } from "pinia";
 import { computed, onMounted, ref, watch } from "vue";
@@ -16,7 +16,7 @@ import PanelViewMenu from "./Menus/PanelViewMenu.vue";
 import ToolBox from "./ToolBox.vue";
 import Heading from "@/components/Common/Heading.vue";
 
-library.add(faCaretDown);
+library.add(faCaretDown, faSpinner);
 
 const props = defineProps({
     workflow: { type: Boolean, default: false },
@@ -34,7 +34,7 @@ const emit = defineEmits<{
 
 const arePanelsFetched = ref(false);
 const toolStore = useToolStore();
-const { currentPanelView, defaultPanelView, isPanelPopulated, panelViews } = storeToRefs(toolStore);
+const { currentPanelView, defaultPanelView, isPanelPopulated, loading, panelViews } = storeToRefs(toolStore);
 
 const query = ref("");
 const showAdvanced = ref(false);
@@ -134,12 +134,14 @@ function onInsertWorkflowSteps(workflowId: string, workflowStepCount: number | u
                     v-if="panelViews && Object.keys(panelViews).length > 1"
                     :panel-views="panelViews"
                     :current-panel-view="currentPanelView"
+                    :store-loading="loading"
                     @updatePanelView="updatePanelView">
                     <template v-slot:panel-view-selector>
                         <div class="d-flex justify-content-between panel-view-selector">
                             <div>
+                                <FontAwesomeIcon v-if="loading" icon="spinner" spin />
                                 <span
-                                    v-if="viewIcon"
+                                    v-else-if="viewIcon"
                                     :class="['fas', `fa-${viewIcon}`, 'mr-1']"
                                     data-description="panel view header icon" />
                                 <Heading

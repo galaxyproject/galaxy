@@ -4,7 +4,8 @@
         right
         block
         no-caret
-        title="Show panel options"
+        :disabled="storeLoading"
+        :title="!storeLoading ? 'Show panel options' : 'Loading panel view'"
         variant="link"
         toggle-class="text-decoration-none"
         role="menu"
@@ -57,6 +58,10 @@ export default {
         },
         currentPanelView: {
             type: String,
+        },
+        storeLoading: {
+            type: Boolean,
+            default: false,
         },
     },
     computed: {
