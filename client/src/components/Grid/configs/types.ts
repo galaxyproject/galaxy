@@ -12,6 +12,7 @@ export interface Action {
 export type ActionArray = Array<Action>;
 
 export interface Config {
+    id: string;
     actions?: ActionArray;
     fields: FieldArray;
     filtering: Filtering<any>;

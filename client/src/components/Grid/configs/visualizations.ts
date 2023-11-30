@@ -238,6 +238,7 @@ const validFilters: Record<string, ValidFilter<string | boolean | undefined>> = 
  * Grid configuration
  */
 const config: Config = {
+    id: "visualizations-grid",
     actions: actions,
     fields: fields,
     filtering: new Filtering(validFilters, undefined, false, false),

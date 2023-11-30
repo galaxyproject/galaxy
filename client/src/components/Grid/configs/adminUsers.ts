@@ -20,7 +20,7 @@ import Filtering, { contains, equals, toBool, type ValidFilter } from "@/utils/f
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 
-import type { ActionArray } from "./types";
+import type { ActionArray, Config, FieldArray } from "./types";
 
 const { emit } = useEventBus<string>("grid-router-push");
 
@@ -61,7 +61,7 @@ const actions: ActionArray = [
 /**
  * Declare columns to be displayed
  */
-const fields = [
+const fields: FieldArray = [
     {
         key: "email",
         title: "Email",
@@ -184,7 +184,7 @@ const fields = [
                 condition: (data: UserEntry, config: ConfigType) => {
                     return config.value.allow_user_impersonation && !data.deleted;
                 },
-                handler: async (data: UserEntry) => {
+                handler: (data: UserEntry) => {
                     window.location.href = withPrefix(`/admin/impersonate?id=${String(data.id)}`);
                 },
             },
@@ -323,7 +323,8 @@ const validFilters: Record<string, ValidFilter<string | boolean | undefined>> = 
 /**
  * Grid configuration
  */
-export default {
+const config: Config = {
+    id: "users-grid",
     actions: actions,
     fields: fields,
     filtering: new Filtering(validFilters, undefined, false, false),
@@ -334,3 +335,5 @@ export default {
     sortKeys: ["active", "create_time", "disk_usage", "email", "external", "last_login", "status", "username"],
     title: "Users",
 };
+
+export default config;
