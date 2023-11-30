@@ -696,6 +696,7 @@ class FastAPIUsers:
         "/api/users/{user_id}/send_activation_email",
         name="send_activation_email",
         summary="Sends activation email to user.",
+        require_admin=True,
     )
     def send_activation_email(
         self,
