@@ -4,8 +4,8 @@ import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 import type { Operation, RowData } from "@/components/Grid/configs/types";
-import type { ConfigType } from "@/composables/config";
 import { useConfig } from "@/composables/config";
+import type { GalaxyConfiguration } from "@/stores/configurationStore";
 
 library.add(faCaretDown);
 
@@ -26,7 +26,7 @@ const emit = defineEmits<{
 /**
  * Availibility of operations might required certain conditions
  */
-function hasCondition(conditionHandler: (rowData: RowData, config: ConfigType) => Boolean) {
+function hasCondition(conditionHandler: (rowData: RowData, config: GalaxyConfiguration) => Boolean) {
     return conditionHandler ? conditionHandler(props.rowData, config) : true;
 }
 </script>

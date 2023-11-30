@@ -15,7 +15,7 @@ import { useEventBus } from "@vueuse/core";
 import axios from "axios";
 
 import { createApiKey, deleteUser, recalculateDiskUsageByUserId, sendActivationEmail, undeleteUser } from "@/api/users";
-import type { ConfigType } from "@/composables/config";
+import type { GalaxyConfiguration } from "@/stores/configurationStore";
 import Filtering, { contains, equals, toBool, type ValidFilter } from "@/utils/filtering";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -116,7 +116,7 @@ const fields: FieldArray = [
             {
                 title: "Activate",
                 icon: faBolt,
-                condition: (data: UserEntry, config: ConfigType) => {
+                condition: (data: UserEntry, config: GalaxyConfiguration) => {
                     return config.value.user_activation_on && !data.deleted;
                 },
                 handler: async (data: UserEntry) => {
@@ -137,7 +137,7 @@ const fields: FieldArray = [
             {
                 title: "Send Activation Email",
                 icon: faEnvelope,
-                condition: (data: UserEntry, config: ConfigType) => {
+                condition: (data: UserEntry, config: GalaxyConfiguration) => {
                     return config.value.user_activation_on && !data.deleted;
                 },
                 handler: async (data: UserEntry) => {
@@ -181,7 +181,7 @@ const fields: FieldArray = [
             {
                 title: "Impersonate User",
                 icon: faMask,
-                condition: (data: UserEntry, config: ConfigType) => {
+                condition: (data: UserEntry, config: GalaxyConfiguration) => {
                     return config.value.allow_user_impersonation && !data.deleted;
                 },
                 handler: (data: UserEntry) => {
@@ -191,7 +191,7 @@ const fields: FieldArray = [
             {
                 title: "Delete",
                 icon: faTrash,
-                condition: (data: UserEntry, config: ConfigType) => {
+                condition: (data: UserEntry, config: GalaxyConfiguration) => {
                     return config.value.allow_user_deletion && !data.deleted;
                 },
                 handler: async (data: UserEntry) => {
@@ -212,7 +212,7 @@ const fields: FieldArray = [
             {
                 title: "Purge",
                 icon: faTrash,
-                condition: (data: UserEntry, config: ConfigType) => {
+                condition: (data: UserEntry, config: GalaxyConfiguration) => {
                     return config.value.allow_user_deletion && data.deleted && !data.purged;
                 },
                 handler: async (data: UserEntry) => {
@@ -233,7 +233,7 @@ const fields: FieldArray = [
             {
                 title: "Restore",
                 icon: faTrashRestore,
-                condition: (data: UserEntry, config: ConfigType) => {
+                condition: (data: UserEntry, config: GalaxyConfiguration) => {
                     return config.value.allow_user_deletion && data.deleted && !data.purged;
                 },
                 handler: async (data: UserEntry) => {
