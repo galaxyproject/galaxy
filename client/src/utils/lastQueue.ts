@@ -20,9 +20,6 @@ export class LastQueue<T extends (...args: any) => R, R = unknown> {
         this.throttlePeriod = throttlePeriod;
     }
 
-    /**
-     * @param {String | Number} key
-     */
     async enqueue(action: T, args: Parameters<T> | Parameters<T>[0], key: string | number = 0) {
         return new Promise((resolve, reject) => {
             this.queuedPromises[key] = { action, args, resolve, reject };

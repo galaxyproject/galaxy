@@ -5,17 +5,13 @@ import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 import { useDraggable } from "@vueuse/core";
 import { computed, ref, watch } from "vue";
 
-import { LastQueue } from "@/utils/lastQueue";
+import { useTimeoutThrottle } from "@/composables/throttle";
 
 import { determineWidth } from "./utilities";
 
-const lastQueue = new LastQueue<() => void>(10);
+const { throttle } = useTimeoutThrottle(10);
 
-library.add({
-    faChevronLeft,
-    faChevronRight,
-    faGripLinesVertical,
-});
+library.add(faChevronLeft, faChevronRight, faGripLinesVertical);
 
 const props = defineProps({
     collapsible: {
@@ -28,10 +24,14 @@ const props = defineProps({
     },
 });
 
-const draggable = ref();
-const root = ref();
-const rangeWidth = [200, 300, 600] as const;
-const panelWidth = ref(rangeWidth[1] as number);
+const minWidth = 200;
+const maxWidth = 600;
+const defaultWidth = 300;
+
+const draggable = ref<HTMLElement | null>(null);
+const root = ref<HTMLElement | null>(null);
+
+const panelWidth = ref(defaultWidth);
 const show = ref(true);
 
 const { position, isDragging } = useDraggable(draggable, {
@@ -49,18 +49,15 @@ function toggle() {
 
 /** Watch position changes and adjust width accordingly */
 watch(position, () => {
-    lastQueue.enqueue(() => {
+    throttle(() => {
+        if (!root.value || !draggable.value) {
+            return;
+        }
+
         const rectRoot = root.value.getBoundingClientRect();
         const rectDraggable = draggable.value.getBoundingClientRect();
-        panelWidth.value = determineWidth(
-            rectRoot,
-            rectDraggable,
-            rangeWidth[0],
-            rangeWidth[2],
-            props.side,
-            position.value.x
-        );
-    }, []);
+        panelWidth.value = determineWidth(rectRoot, rectDraggable, minWidth, maxWidth, props.side, position.value.x);
+    });
 });
 </script>
 
