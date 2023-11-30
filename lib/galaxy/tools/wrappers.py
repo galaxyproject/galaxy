@@ -450,10 +450,6 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
     def is_collection(self) -> bool:
         return False
 
-    @property
-    def file_name(self) -> str:
-        return self.get_file_name()
-
     def is_of_type(self, *exts: str) -> bool:
         datatypes = []
         if not self.datatypes_registry:
@@ -475,7 +471,7 @@ class DatasetFilenameWrapper(ToolParameterValueWrapper):
             return str(self.unsanitized.get_file_name())
 
     def __getattr__(self, key: Any) -> Any:
-        if self.false_path is not None and key == "get_file_name":
+        if self.false_path is not None and key in ("get_file_name", "file_name"):
             # Path to dataset was rewritten for this job.
             return lambda *args, **kwargs: self.false_path
         elif key in ("extra_files_path", "files_path"):
