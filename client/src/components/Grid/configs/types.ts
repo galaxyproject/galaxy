@@ -1,6 +1,6 @@
 import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 
-import type { ConfigType } from "@/composables/config";
+import type { GalaxyConfiguration } from "@/stores/configurationStore";
 import Filtering from "@/utils/filtering";
 
 export interface Action {
@@ -42,7 +42,7 @@ export type FieldHandler = (data: RowData) => void;
 export interface Operation {
     title: string;
     icon: IconDefinition;
-    condition?: (data: RowData, config: ConfigType) => boolean;
+    condition?: (data: RowData, config: GalaxyConfiguration) => boolean;
     handler: (data: RowData) => OperationHandlerReturn;
 }
 

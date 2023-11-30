@@ -1,8 +1,6 @@
 import { computed, onMounted } from "vue";
 
-import { GalaxyConfiguration, useConfigStore } from "@/stores/configurationStore";
-
-export type ConfigType = GalaxyConfiguration;
+import { useConfigStore } from "@/stores/configurationStore";
 
 /* composable config wrapper */
 export function useConfig(fetchOnce = false) {
