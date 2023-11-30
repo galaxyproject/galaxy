@@ -151,11 +151,13 @@ function argToBoolean(args, name, booleanDefault) {
             <JobMetrics
                 v-else-if="name == 'job_metrics'"
                 :job-id="args.job_id"
+                :implicit-collection-jobs-id="args.implicit_collection_jobs_id"
                 :title="args.title"
                 :footer="args.footer" />
             <JobParameters
                 v-else-if="name == 'job_parameters'"
                 :job-id="args.job_id"
+                :implicit-collection-jobs-id="args.implicit_collection_jobs_id"
                 :param="args.param || undefined"
                 :title="args.title"
                 :footer="args.footer" />

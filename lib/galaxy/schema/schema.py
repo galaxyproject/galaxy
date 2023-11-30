@@ -1057,6 +1057,10 @@ class HDCADetailed(HDCASummary):
     elements_datatypes: Set[str] = Field(
         ..., description="A set containing all the different element datatypes in the collection."
     )
+    implicit_collection_jobs_id: Optional[EncodedDatabaseIdField] = Field(
+        None,
+        description="Encoded ID for the ICJ object describing the collection of jobs corresponding to this collection",
+    )
 
 
 class HistoryBase(Model):
@@ -1411,6 +1415,7 @@ class JobIndexQueryPayload(Model):
     history_id: Optional[DecodedDatabaseIdField] = None
     workflow_id: Optional[DecodedDatabaseIdField] = None
     invocation_id: Optional[DecodedDatabaseIdField] = None
+    implicit_collection_jobs_id: Optional[DecodedDatabaseIdField] = None
     order_by: JobIndexSortByEnum = JobIndexSortByEnum.update_time
     search: Optional[str] = None
     limit: int = 500

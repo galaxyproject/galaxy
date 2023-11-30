@@ -741,6 +741,22 @@ steps:
         search_payload = self._search_payload(history_id=history_id, tool_id="cat1", inputs=inputs)
         self._search(search_payload, expected_search_count=0)
 
+    def test_implicit_collection_jobs(self, history_id):
+        run_response = self._run_map_over_error(history_id)
+        implicit_collection_id = run_response["implicit_collections"][0]["id"]
+        failed_hdca = self.dataset_populator.get_history_collection_details(
+            history_id=history_id,
+            content_id=implicit_collection_id,
+            assert_ok=False,
+        )
+        job_id = run_response["jobs"][0]["id"]
+        icj_id = failed_hdca["implicit_collection_jobs_id"]
+        assert icj_id
+        index = self.__jobs_index(data=dict(implicit_collection_jobs_id=icj_id))
+        assert len(index) == 1
+        assert index[0]["id"] == job_id
+        assert index[0]["state"] == "error", index
+
     @pytest.mark.require_new_history
     def test_search_with_hdca_list_input(self, history_id):
         list_id_a = self.__history_with_ok_collection(collection_type="list", history_id=history_id)
