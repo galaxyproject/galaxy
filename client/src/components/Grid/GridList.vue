@@ -184,7 +184,7 @@ watch(operationMessage, () => {
 </script>
 
 <template>
-    <div class="d-flex flex-column overflow-auto">
+    <div :id="config.id" class="d-flex flex-column overflow-auto">
         <BAlert v-if="!!errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
         <BAlert v-if="!!operationMessage" :variant="operationStatus" fade show>{{ operationMessage }}</BAlert>
         <div class="grid-header d-flex justify-content-between pb-2">

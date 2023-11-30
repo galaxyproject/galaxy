@@ -2,6 +2,8 @@ import { fetcher } from "@/api/schema";
 import Filtering, { contains, expandNameTag, type ValidFilter } from "@/utils/filtering";
 import { withPrefix } from "@/utils/redirect";
 
+import type { Config, FieldArray } from "./types";
+
 /**
  * Api endpoint handlers
  */
@@ -34,12 +36,12 @@ async function getData(offset: number, limit: number, search: string, sort_by: s
 /**
  * Declare columns to be displayed
  */
-const fields = [
+const fields: FieldArray = [
     {
         title: "Title",
         key: "title",
         type: "link",
-        width: "30%",
+        width: 30,
         handler: (data: VisualizationEntry) => {
             window.location.href = withPrefix(`/plugins/visualizations/${data.type}/saved?id=${data.id}`);
         },
@@ -84,7 +86,8 @@ const validFilters: Record<string, ValidFilter<string | boolean | undefined>> = 
 /**
  * Grid configuration
  */
-export default {
+const config: Config = {
+    id: "visualizations-published-grid",
     fields: fields,
     filtering: new Filtering(validFilters, undefined, false, false),
     getData: getData,
@@ -94,3 +97,5 @@ export default {
     sortKeys: ["create_time", "title", "update_time"],
     title: "Published Visualizations",
 };
+
+export default config;
