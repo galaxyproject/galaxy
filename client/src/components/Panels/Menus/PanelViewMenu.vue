@@ -99,3 +99,11 @@ export default {
     },
 };
 </script>
+
+<style lang="scss">
+.dropdown-menu {
+    overflow: auto;
+    max-height: 50vh;
+    min-width: 100%;
+}
+</style>
