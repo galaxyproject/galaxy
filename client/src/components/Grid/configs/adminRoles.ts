@@ -35,7 +35,7 @@ async function getData(offset: number, limit: number, search: string, sort_by: s
     };
     const queryString = new URLSearchParams(query).toString();
     const { data } = await axios.get(withPrefix(`/admin/roles_list?${queryString}`));
-    return [data.rows, data.total_row_count];
+    return [data.rows, data.rows_total];
 }
 
 /**
@@ -59,7 +59,6 @@ const fields: FieldArray = [
         key: "name",
         title: "Name",
         type: "operations",
-        condition: (data: RoleEntry) => !data.deleted && !data.purged,
         operations: [
             {
                 title: "Edit Details",
@@ -157,9 +156,9 @@ const fields: FieldArray = [
         type: "text",
     },
     {
-        key: "status",
-        title: "Status",
-        type: "text",
+        key: "deleted",
+        title: "Deleted",
+        type: "boolean",
     },
     {
         key: "update_time",
