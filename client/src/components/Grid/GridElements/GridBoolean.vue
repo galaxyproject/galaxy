@@ -2,7 +2,7 @@
 import { faCheck, faTimes } from "@fortawesome/free-solid-svg-icons";
 
 interface Props {
-    value?: string;
+    value?: boolean;
 }
 
 defineProps<Props>();

@@ -1,6 +1,6 @@
 <script setup lang="ts">
 interface Props {
-    text?: string;
+    text?: string | number;
 }
 defineProps<Props>();
 </script>

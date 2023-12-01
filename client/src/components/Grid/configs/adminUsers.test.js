@@ -7,8 +7,8 @@ describe("AdminUsers", () => {
         const fieldEmail = fields[0];
         expect(fieldEmail.key).toBe("email");
         expect(fieldEmail.type).toBe("operations");
-        for (const deleted of [true, false]) {
-            expect(fieldEmail.condition({ deleted })).toBe(!deleted);
+        for (const purged of [true, false]) {
+            expect(fieldEmail.condition({ purged })).toBe(!purged);
         }
         const ops = fieldEmail.operations;
         const titles = [
