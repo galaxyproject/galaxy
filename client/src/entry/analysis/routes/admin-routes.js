@@ -18,7 +18,7 @@ import NotificationsManagement from "components/admin/Notifications/Notification
 import ResetMetadata from "components/admin/ResetMetadata";
 import SanitizeAllow from "components/admin/SanitizeAllow";
 import FormGeneric from "components/Form/FormGeneric";
-import adminUsersGrid from "components/Grid/configs/adminUsers";
+import adminUsersGridConfig from "components/Grid/configs/adminUsers";
 import Grid from "components/Grid/Grid";
 import GridList from "components/Grid/GridList";
 import RegisterForm from "components/Login/RegisterForm";
@@ -157,7 +157,7 @@ export default [
                 path: "users",
                 component: GridList,
                 props: {
-                    gridConfig: adminUsersGrid,
+                    gridConfig: adminUsersGridConfig,
                 },
             },
             {
