@@ -1,5 +1,4 @@
 import { getGalaxyInstance } from "app";
-import adminRolesGrid from "components/Grid/configs/adminRoles";
 import ActiveInvocations from "components/admin/ActiveInvocations";
 import DataManager from "components/admin/DataManager/DataManager";
 import DataManagerJob from "components/admin/DataManager/DataManagerJob";
@@ -20,6 +19,7 @@ import ResetMetadata from "components/admin/ResetMetadata";
 import SanitizeAllow from "components/admin/SanitizeAllow";
 import FormGeneric from "components/Form/FormGeneric";
 import adminUsersGridConfig from "components/Grid/configs/adminUsers";
+import adminRolesGrid from "components/Grid/configs/adminRoles";
 import Grid from "components/Grid/Grid";
 import GridList from "components/Grid/GridList";
 import RegisterForm from "components/Login/RegisterForm";
