@@ -1361,6 +1361,8 @@ export interface paths {
     "/api/roles/{id}": {
         /** Show */
         get: operations["show_api_roles__id__get"];
+        /** Delete */
+        delete: operations["delete_api_roles__id__delete"];
     };
     "/api/short_term_storage/{storage_request_id}": {
         /** Serve the staged download specified by request ID. */
@@ -17598,6 +17600,32 @@ export interface operations {
     };
     show_api_roles__id__get: {
         /** Show */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["RoleModelResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_api_roles__id__delete: {
+        /** Delete */
         parameters: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {

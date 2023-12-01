@@ -37,6 +37,13 @@ class RoleManager(base.ModelManager[model.Role]):
     user_assoc = model.UserRoleAssociation
     group_assoc = model.GroupRoleAssociation
 
+    def delete(self, trans: ProvidesUserContext, role: model.Role) -> model.Role:
+        role.deleted = True
+        trans.sa_session.add(role)
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
+        return role
+
     def get(self, trans: ProvidesUserContext, role_id: int) -> model.Role:
         """
         Method loads the role from the DB based on the given role id.
