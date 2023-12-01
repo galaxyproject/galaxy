@@ -9937,6 +9937,7 @@ class Visualization(Base, HasTags, Dictifiable, RepresentById):
         back_populates="visualization",
         cascade="all, delete-orphan",
         primaryjoin=(lambda: Visualization.id == VisualizationRevision.visualization_id),
+        cascade_backrefs=False,
     )
     latest_revision = relationship(
         "VisualizationRevision",
