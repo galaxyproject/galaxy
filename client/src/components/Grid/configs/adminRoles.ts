@@ -55,7 +55,7 @@ const fields: FieldArray = [
         type: "operations",
         operations: [
             {
-                title: "Edit Details",
+                title: "Edit Name/Description",
                 icon: faEdit,
                 condition: (data: RoleEntry) => !data.deleted,
                 handler: (data: RoleEntry) => {
@@ -148,11 +148,6 @@ const fields: FieldArray = [
         key: "users",
         title: "Users",
         type: "text",
-    },
-    {
-        key: "deleted",
-        title: "Deleted",
-        type: "boolean",
     },
     {
         key: "update_time",
