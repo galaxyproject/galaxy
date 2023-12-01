@@ -1,4 +1,4 @@
-import { shallowMount, Wrapper } from "@vue/test-utils";
+import { shallowMount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
 import { createPinia } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
@@ -18,47 +18,40 @@ const localVue = getLocalVue();
 
 const jobDestinationResponse = jobDestinationResponseData as Record<string, string | null>;
 
+async function mountJobDestinationParams() {
+    mockFetcher.path("/api/jobs/{job_id}/destination_params").method("get").mock({ data: jobDestinationResponse });
+
+    const pinia = createPinia();
+    const wrapper = shallowMount(JobDestinationParams as object, {
+        propsData: {
+            jobId: JOB_ID,
+        },
+        localVue,
+        pinia,
+    });
+
+    const userStore = useUserStore();
+    userStore.currentUser = {
+        email: "admin@email",
+        id: "1",
+        tags_used: [],
+        isAnonymous: false,
+        total_disk_usage: 1048576,
+        is_admin: true,
+    };
+
+    await flushPromises();
+
+    return wrapper;
+}
+
 describe("JobDestinationParams/JobDestinationParams.vue", () => {
     const responseKeys = Object.keys(jobDestinationResponse);
     expect(responseKeys.length > 0).toBeTruthy();
 
-    let wrapper: Wrapper<Vue>;
-
-    beforeEach(async () => {
-        const propsData = {
-            jobId: JOB_ID,
-        };
-
-        mockFetcher.path("/api/jobs/{job_id}/destination_params").method("get").mock({ data: jobDestinationResponse });
-
-        const pinia = createPinia();
-        wrapper = shallowMount(JobDestinationParams as object, {
-            propsData,
-            localVue,
-            pinia,
-        });
-
-        const userStore = useUserStore();
-        userStore.currentUser = {
-            email: "admin@email",
-            id: "1",
-            tags_used: [],
-            isAnonymous: false,
-            total_disk_usage: 1048576,
-            is_admin: true,
-        };
-
-        await flushPromises();
-    });
-
-    it("destination parameters should exist", async () => {
-        expect(Object.keys(wrapper.vm.jobDestinationParams).length).toBe(responseKeys.length);
-        expect(wrapper.vm.jobId).toBe(JOB_ID);
-        expect(wrapper.vm.jobDestinationParams["docker_net"]).toBe("bridge");
-        expect(wrapper.vm.jobDestinationParams["docker_set_user"]).toBeNull();
-    });
-
     it("should render destination parameters", async () => {
+        const wrapper = await mountJobDestinationParams();
+
         const paramsTable = wrapper.find("#destination_parameters");
         expect(paramsTable.exists()).toBe(true);
         const params = paramsTable.findAll("tbody > tr");
