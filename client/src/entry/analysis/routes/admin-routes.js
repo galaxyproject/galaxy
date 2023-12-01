@@ -1,4 +1,5 @@
 import { getGalaxyInstance } from "app";
+import adminRolesGrid from "components/Grid/configs/adminRoles";
 import ActiveInvocations from "components/admin/ActiveInvocations";
 import DataManager from "components/admin/DataManager/DataManager";
 import DataManagerJob from "components/admin/DataManager/DataManagerJob";
@@ -148,9 +149,9 @@ export default [
             },
             {
                 path: "roles",
-                component: Grid,
+                component: GridList,
                 props: {
-                    urlBase: "admin/roles_list",
+                    config: adminRolesGrid,
                 },
             },
             {
