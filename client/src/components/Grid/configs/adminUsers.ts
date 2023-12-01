@@ -42,7 +42,7 @@ async function getData(offset: number, limit: number, search: string, sort_by: s
     };
     const queryString = new URLSearchParams(query).toString();
     const { data } = await axios.get(withPrefix(`/admin/users_list?${queryString}`));
-    return [data.rows, data.total_row_count];
+    return [data.rows, data.rows_total];
 }
 
 /**
