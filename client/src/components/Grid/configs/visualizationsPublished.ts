@@ -2,7 +2,7 @@ import { fetcher } from "@/api/schema";
 import Filtering, { contains, expandNameTag, type ValidFilter } from "@/utils/filtering";
 import { withPrefix } from "@/utils/redirect";
 
-import type { Config, FieldArray } from "./types";
+import type { FieldArray, GridConfig } from "./types";
 
 /**
  * Api endpoint handlers
@@ -86,7 +86,7 @@ const validFilters: Record<string, ValidFilter<string | boolean | undefined>> = 
 /**
  * Grid configuration
  */
-const config: Config = {
+const gridConfig: GridConfig = {
     id: "visualizations-published-grid",
     fields: fields,
     filtering: new Filtering(validFilters, undefined, false, false),
@@ -98,4 +98,4 @@ const config: Config = {
     title: "Published Visualizations",
 };
 
-export default config;
+export default gridConfig;

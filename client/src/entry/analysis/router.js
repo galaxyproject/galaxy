@@ -466,14 +466,14 @@ export function getRouter(Galaxy) {
                         path: "visualizations/list",
                         component: GridList,
                         props: {
-                            config: visualizationsGrid,
+                            gridConfig: visualizationsGrid,
                         },
                     },
                     {
                         path: "visualizations/list_published",
                         component: GridList,
                         props: {
-                            config: visualizationsPublishedGrid,
+                            gridConfig: visualizationsPublishedGrid,
                         },
                     },
                     {

@@ -8,7 +8,7 @@ import Filtering, { contains, equals, expandNameTag, toBool, type ValidFilter } 
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
 
-import type { ActionArray, Config, FieldArray } from "./types";
+import type { ActionArray, FieldArray, GridConfig } from "./types";
 
 const { emit } = useEventBus<string>("grid-router-push");
 
@@ -237,7 +237,7 @@ const validFilters: Record<string, ValidFilter<string | boolean | undefined>> = 
 /**
  * Grid configuration
  */
-const config: Config = {
+const gridConfig: GridConfig = {
     id: "visualizations-grid",
     actions: actions,
     fields: fields,
@@ -249,4 +249,5 @@ const config: Config = {
     sortKeys: ["create_time", "title", "update_time"],
     title: "Saved Visualizations",
 };
-export default config;
+
+export default gridConfig;

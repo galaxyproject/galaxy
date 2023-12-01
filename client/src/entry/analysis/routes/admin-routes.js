@@ -157,7 +157,7 @@ export default [
                 path: "users",
                 component: GridList,
                 props: {
-                    config: adminUsersGrid,
+                    gridConfig: adminUsersGrid,
                 },
             },
             {
