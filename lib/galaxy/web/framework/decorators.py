@@ -14,6 +14,7 @@ from galaxy.exceptions import (
     RequestParameterInvalidException,
     RequestParameterMissingException,
 )
+from galaxy.exceptions.utils import api_error_to_dict
 from galaxy.util import (
     parse_non_hex_float,
     unicodify,
@@ -394,38 +395,8 @@ def validation_error_to_message_exception(e: ValidationError) -> MessageExceptio
         return RequestParameterInvalidException(str(e), validation_errors=loads(e.json()))
 
 
-def api_error_message(trans, **kwds):
-    if exception := kwds.get("exception", None):
-        # If we are passed a MessageException use err_msg.
-        default_error_code = getattr(exception, "err_code", error_codes.UNKNOWN)
-        default_error_message = getattr(exception, "err_msg", default_error_code.default_error_message)
-        extra_error_info = getattr(exception, "extra_error_info", {})
-        if not isinstance(extra_error_info, dict):
-            extra_error_info = {}
-    else:
-        default_error_message = "Error processing API request."
-        default_error_code = error_codes.UNKNOWN
-        extra_error_info = {}
-    traceback_string = kwds.get("traceback", "No traceback available.")
-    err_msg = kwds.get("err_msg", default_error_message)
-    error_code_object = kwds.get("err_code", default_error_code)
-    try:
-        error_code = error_code_object.code
-    except AttributeError:
-        # Some sort of bad error code sent in, logic failure on part of
-        # Galaxy developer.
-        error_code = error_codes.UNKNOWN.code
-    # Would prefer the terminology of error_code and error_message, but
-    # err_msg used a good number of places already. Might as well not change
-    # it?
-    error_response = dict(err_msg=err_msg, err_code=error_code, **extra_error_info)
-    if trans and trans.debug:  # TODO: Should admins get to see traceback as well?
-        error_response["traceback"] = traceback_string
-    return error_response
-
-
 def __api_error_dict(trans, **kwds):
-    error_dict = api_error_message(trans, **kwds)
+    error_dict = api_error_to_dict(debug=trans.debug, **kwds)
     exception = kwds.get("exception", None)
     # If we are given an status code directly - use it - otherwise check
     # the exception for a status_code attribute.

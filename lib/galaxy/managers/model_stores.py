@@ -39,12 +39,12 @@ from galaxy.schema.tasks import (
     WriteHistoryTo,
     WriteInvocationTo,
 )
-from galaxy.structured_app import MinimalManagerApp
-from galaxy.version import VERSION
-from galaxy.web.short_term_storage import (
+from galaxy.short_term_storage import (
     ShortTermStorageMonitor,
     storage_context,
 )
+from galaxy.structured_app import MinimalManagerApp
+from galaxy.version import VERSION
 
 
 class ModelStoreUserContext(ProvidesUserContext):

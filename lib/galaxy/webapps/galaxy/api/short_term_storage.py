@@ -1,9 +1,9 @@
 """
-API operations around galaxy.web.short_term_storage infrastructure.
+API operations around galaxy.short_term_storage infrastructure.
 """
 from uuid import UUID
 
-from galaxy.web.short_term_storage import (
+from galaxy.short_term_storage import (
     ShortTermStorageMonitor,
     ShortTermStorageServeCancelledInformation,
     ShortTermStorageServeCompletedInformation,

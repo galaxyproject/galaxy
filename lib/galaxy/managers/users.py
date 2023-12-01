@@ -56,7 +56,6 @@ from galaxy.structured_app import (
     MinimalManagerApp,
 )
 from galaxy.util.hash_util import new_secure_hash_v2
-from galaxy.web import url_for
 
 log = logging.getLogger(__name__)
 
@@ -499,8 +498,11 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         Send the verification email containing the activation link to the user's email.
         """
         activation_token = self.__get_activation_token(trans, email)
-        activation_link = url_for(
-            controller="user", action="activate", activation_token=activation_token, email=escape(email), qualified=True
+        activation_link = trans.url_builder(
+            "/user/activate",
+            activation_token=activation_token,
+            email=escape(email),
+            qualified=True,
         )
         template_context = {
             "name": escape(username),
@@ -553,7 +555,7 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         else:
             reset_user, prt = self.get_reset_token(trans, email)
             if prt:
-                reset_url = url_for(controller="login", action="start", token=prt.token)
+                reset_url = trans.url_builder("/login/start", token=prt.token)
                 body = PASSWORD_RESET_TEMPLATE % (
                     trans.app.config.hostname,
                     prt.expiration_time.strftime(trans.app.config.pretty_datetime_format),
