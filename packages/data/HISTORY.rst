@@ -3,11 +3,16 @@ History
 
 .. to_doc
 
------------
-23.1.3.dev0
------------
+-------------------
+23.1.3 (2023-12-01)
+-------------------
 
 
+=========
+Bug fixes
+=========
+
+* Add missing optional description field, fixes ephemeris data library example by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17116 <https://github.com/galaxyproject/galaxy/pull/17116>`_
 
 -------------------
 23.1.2 (2023-11-29)
@@ -41,6 +46,7 @@ Enhancements
 Bug fixes
 =========
 
+* 
 * Fix bad auto-merge of dev. by `@jmchilton <https://github.com/jmchilton>`_ in `#15386 <https://github.com/galaxyproject/galaxy/pull/15386>`_
 * Merge conflicting db migration branches into one by `@jdavcs <https://github.com/jdavcs>`_ in `#15771 <https://github.com/galaxyproject/galaxy/pull/15771>`_
 * Enable ``strict_equality`` mypy option by `@nsoranzo <https://github.com/nsoranzo>`_ in `#15808 <https://github.com/galaxyproject/galaxy/pull/15808>`_
@@ -71,6 +77,7 @@ Bug fixes
 Enhancements
 ============
 
+* 
 * Empower Users to Select Storage Destination by `@jmchilton <https://github.com/jmchilton>`_ in `#14073 <https://github.com/galaxyproject/galaxy/pull/14073>`_
 * Add Storage Dashboard visualizations for histories by `@davelopez <https://github.com/davelopez>`_ in `#14820 <https://github.com/galaxyproject/galaxy/pull/14820>`_
 * Towards decoupling datatypes and model by `@jdavcs <https://github.com/jdavcs>`_ in `#15186 <https://github.com/galaxyproject/galaxy/pull/15186>`_
@@ -130,6 +137,7 @@ Bug fixes
 =========
 
 * 
+* 
 * Fix extra files path handling by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16541 <https://github.com/galaxyproject/galaxy/pull/16541>`_
 * Don't fail invocation message without dependent_workflow_step_id by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16628 <https://github.com/galaxyproject/galaxy/pull/16628>`_
 
@@ -142,6 +150,7 @@ Bug fixes
 Bug fixes
 =========
 
+* 
 * 
 * 
 * Copy when_expression when copying workflow step by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16377 <https://github.com/galaxyproject/galaxy/pull/16377>`_
@@ -173,6 +182,7 @@ No recorded changes since last release
 Bug fixes
 =========
 
+* 
 * 
 * 
 * 
