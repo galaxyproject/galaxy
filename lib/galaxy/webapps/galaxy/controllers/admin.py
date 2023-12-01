@@ -832,8 +832,6 @@ class AdminGalaxy(controller.JSAppLauncher):
                 message, status = self._delete_role(trans, ids)
             elif operation == "undelete":
                 message, status = self._undelete_role(trans, ids)
-            elif operation == "purge":
-                message, status = self._purge_role(trans, ids)
         if message and status:
             kwargs["message"] = util.sanitize_text(message)
             kwargs["status"] = status
@@ -1059,43 +1057,6 @@ class AdminGalaxy(controller.JSAppLauncher):
             count += 1
             undeleted_roles += f" {role.name}"
         return ("Undeleted %d roles: %s" % (count, undeleted_roles), "done")
-
-    def _purge_role(self, trans, ids):
-        # This method should only be called for a Role that has previously been deleted.
-        # Purging a deleted Role deletes all of the following from the database:
-        # - UserRoleAssociations where role_id == Role.id
-        # - DefaultUserPermissions where role_id == Role.id
-        # - DefaultHistoryPermissions where role_id == Role.id
-        # - GroupRoleAssociations where role_id == Role.id
-        # - DatasetPermissionss where role_id == Role.id
-        message = "Purged %d roles: " % len(ids)
-        for role_id in ids:
-            role = get_role(trans, role_id)
-            if not role.deleted:
-                return (f"Role '{role.name}' has not been deleted, so it cannot be purged.", "error")
-            # Delete UserRoleAssociations
-            for ura in role.users:
-                user = trans.sa_session.query(trans.app.model.User).get(ura.user_id)
-                # Delete DefaultUserPermissions for associated users
-                for dup in user.default_permissions:
-                    if role == dup.role:
-                        trans.sa_session.delete(dup)
-                # Delete DefaultHistoryPermissions for associated users
-                for history in user.histories:
-                    for dhp in history.default_permissions:
-                        if role == dhp.role:
-                            trans.sa_session.delete(dhp)
-                trans.sa_session.delete(ura)
-            # Delete GroupRoleAssociations
-            for gra in role.groups:
-                trans.sa_session.delete(gra)
-            # Delete DatasetPermissionss
-            for dp in role.dataset_actions:
-                trans.sa_session.delete(dp)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
-            message += f" {role.name} "
-        return (message, "done")
 
     @web.legacy_expose_api
     @web.require_admin
