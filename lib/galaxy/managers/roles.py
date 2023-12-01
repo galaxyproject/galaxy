@@ -37,13 +37,6 @@ class RoleManager(base.ModelManager[model.Role]):
     user_assoc = model.UserRoleAssociation
     group_assoc = model.GroupRoleAssociation
 
-    def delete(self, trans: ProvidesUserContext, role: model.Role) -> model.Role:
-        role.deleted = True
-        trans.sa_session.add(role)
-        with transaction(trans.sa_session):
-            trans.sa_session.commit()
-        return role
-
     def get(self, trans: ProvidesUserContext, role_id: int) -> model.Role:
         """
         Method loads the role from the DB based on the given role id.
@@ -108,6 +101,21 @@ class RoleManager(base.ModelManager[model.Role]):
             trans.sa_session.commit()
         return role
 
+    def delete(self, trans: ProvidesUserContext, role: model.Role) -> model.Role:
+        role.deleted = True
+        trans.sa_session.add(role)
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
+        return role
+
+    def undelete(self, trans: ProvidesUserContext, role: model.Role) -> model.Role:
+        if not role.deleted:
+            return (f"Role '{role.name}' has not been deleted, so it cannot be undeleted.", "error")
+        role.deleted = False
+        trans.sa_session.add(role)
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
+        return role
 
 def get_roles_by_ids(session: Session, role_ids):
     stmt = select(Role).where(Role.id.in_(role_ids))

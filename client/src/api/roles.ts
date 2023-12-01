@@ -7,3 +7,4 @@ export async function getAllRoles() {
 }
 
 export const deleteRole = fetcher.path("/api/roles/{id}").method("delete").create();
+export const undeleteRole = fetcher.path("/api/roles/{id}/undelete").method("post").create();

@@ -2,7 +2,7 @@ import { faEdit, faKey, faPlus, faTrash, faTrashRestore } from "@fortawesome/fre
 import { useEventBus } from "@vueuse/core";
 import axios from "axios";
 
-import { deleteRole } from "@/api/roles";
+import { deleteRole, undeleteRole } from "@/api/roles";
 import Filtering, { contains, equals, toBool, type ValidFilter } from "@/utils/filtering";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -114,15 +114,15 @@ const fields: FieldArray = [
                 condition: (data: RoleEntry) => !!data.deleted && !data.purged,
                 handler: async (data: RoleEntry) => {
                     try {
-                        //await undeleteUser({ user_id: String(data.id) });
+                        await undeleteRole({ id: String(data.id) });
                         return {
                             status: "success",
-                            message: `'${data.username}' has been restored.`,
+                            message: `'${data.name}' has been restored.`,
                         };
                     } catch (e) {
                         return {
                             status: "danger",
-                            message: `Failed to restore '${data.username}': ${errorMessageAsString(e)}`,
+                            message: `Failed to restore '${data.name}': ${errorMessageAsString(e)}`,
                         };
                     }
                 },
