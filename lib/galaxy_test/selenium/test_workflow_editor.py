@@ -1300,8 +1300,10 @@ steps:
 
     def workflow_editor_maximize_center_pane(self, collapse_left=True, collapse_right=True):
         if collapse_left:
+            self.hover_over(self.components._.left_panel_drag.wait_for_visible())
             self.components._.left_panel_collapse.wait_for_and_click()
         if collapse_right:
+            self.hover_over(self.components._.right_panel_drag.wait_for_visible())
             self.components._.right_panel_collapse.wait_for_and_click()
         self.sleep_for(self.wait_types.UX_RENDER)
 
