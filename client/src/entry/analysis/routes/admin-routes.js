@@ -151,7 +151,7 @@ export default [
                 path: "roles",
                 component: GridList,
                 props: {
-                    config: adminRolesGrid,
+                    gridConfig: adminRolesGrid,
                 },
             },
             {
