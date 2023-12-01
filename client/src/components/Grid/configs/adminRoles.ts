@@ -2,7 +2,7 @@ import { faEdit, faKey, faPlus, faTrash, faTrashRestore } from "@fortawesome/fre
 import { useEventBus } from "@vueuse/core";
 import axios from "axios";
 
-import { deleteRole, undeleteRole } from "@/api/roles";
+import { deleteRole, purgeRole, undeleteRole } from "@/api/roles";
 import Filtering, { contains, equals, toBool, type ValidFilter } from "@/utils/filtering";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -92,18 +92,18 @@ const fields: FieldArray = [
             {
                 title: "Purge",
                 icon: faTrash,
-                condition: (data: RoleEntry) => !!data.deleted && !data.purged,
+                condition: (data: RoleEntry) => !!data.deleted,
                 handler: async (data: RoleEntry) => {
                     try {
-                        await deleteRole({ id: String(data.id) });
+                        await purgeRole({ id: String(data.id) });
                         return {
                             status: "success",
-                            message: `'${data.username}' has been purged.`,
+                            message: `'${data.name}' has been purged.`,
                         };
                     } catch (e) {
                         return {
                             status: "danger",
-                            message: `Failed to purge '${data.username}': ${errorMessageAsString(e)}`,
+                            message: `Failed to purge '${data.name}': ${errorMessageAsString(e)}`,
                         };
                     }
                 },
@@ -111,7 +111,7 @@ const fields: FieldArray = [
             {
                 title: "Restore",
                 icon: faTrashRestore,
-                condition: (data: RoleEntry) => !!data.deleted && !data.purged,
+                condition: (data: RoleEntry) => !!data.deleted,
                 handler: async (data: RoleEntry) => {
                     try {
                         await undeleteRole({ id: String(data.id) });
