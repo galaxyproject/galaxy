@@ -1,13 +1,67 @@
 """This module contains a linting functions for tool tests."""
-import typing
 from inspect import (
     Parameter,
     signature,
 )
+from typing import TYPE_CHECKING, Union
 
+from galaxy.tool_util.lint import Linter
 from galaxy.util import asbool
 from ._util import is_datasource
 from ..verify import asserts
+
+
+if TYPE_CHECKING:
+    from galaxy.tool_util.lint import LintContext
+    from galaxy.tool_util.parser.interface import ToolSource
+
+lint_tool_types = ["default", "data_source", "manage_data"]
+
+
+class TestsMissing(Linter):
+    @classmethod
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+        tool_xml = getattr(tool_source, "xml_tree", None)
+        if not tool_xml:
+            return
+        tests = tool_xml.findall("./tests/test")
+        root = tool_xml.find("./tests") or tool_xml.getroot()
+        if len(tests) == 0 and not is_datasource(tool_xml):
+            lint_ctx.warn("No tests found, most tools should define test cases.", node=root)
+
+
+class TestsMissingDatasource(Linter):
+    @classmethod
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+        tool_xml = getattr(tool_source, "xml_tree", None)
+        if not tool_xml:
+            return
+        tests = tool_xml.findall("./tests/test")
+        root = tool_xml.find("./tests") or tool_xml.getroot()
+        if len(tests) == 0 and is_datasource(tool_xml):
+            lint_ctx.info("No tests found, that should be OK for data_sources.", node=root)
+
+
+# TEST_ASSERT_TAGS = ("assert_stdout", "assert_stderr", "assert_command")
+# class TestsHas(Linter):
+#     @classmethod
+#     def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+#         tool_xml = getattr(tool_source, "xml_tree", None)
+#         if not tool_xml:
+#             return
+#         tests = tool_xml.findall("./tests/test")
+#         root = tool_xml.find("./tests") or tool_xml.getroot()
+
+#         for test_idx, test in enumerate(tests, start=1):
+#             valid = False
+#             if len(set(test.attrib) & set(("expect_failure", "expect_exit_code", "expect_num_outputs"))):
+#                 valid = True
+#             for ta in TEST_ASSERT_TAGS:
+#                 if test.findall(ta) is not None:
+#                     valid = True
+#                     break
+#             has_output_test = test.find("output") is not None or test.find("output_collection") is not None
+
 
 
 def check_compare_attribs(element, lint_ctx, test_idx):
@@ -34,10 +88,6 @@ def lint_tests(tool_xml, lint_ctx):
         general_node = tool_xml.getroot()
     datasource = is_datasource(tool_xml)
     if not tests:
-        if not datasource:
-            lint_ctx.warn("No tests found, most tools should define test cases.", node=general_node)
-        elif datasource:
-            lint_ctx.info("No tests found, that should be OK for data_sources.", node=general_node)
         return
 
     num_valid_tests = 0
@@ -209,7 +259,7 @@ def _check_asserts(test_idx, assertions, lint_ctx):
 
 def _handle_optionals(annotation):
     as_dict = annotation.__dict__
-    if "__origin__" in as_dict and as_dict["__origin__"] == typing.Union:
+    if "__origin__" in as_dict and as_dict["__origin__"] == Union:
         return as_dict["__args__"][0]
     return annotation
 

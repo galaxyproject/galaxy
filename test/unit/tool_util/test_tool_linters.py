@@ -1646,8 +1646,8 @@ def test_stdio_invalid_match(lint_ctx):
 
 
 def test_tests_absent(lint_ctx):
-    tool_xml_tree = get_xml_tree(TESTS_ABSENT)
-    run_lint_module(lint_ctx, tests, tool_xml_tree)
+    tool_source = get_xml_tool_source(TESTS_ABSENT)
+    run_lint_module(lint_ctx, tests, tool_source)
     assert "No tests found, most tools should define test cases." in lint_ctx.warn_messages
     assert not lint_ctx.info_messages
     assert not lint_ctx.valid_messages
@@ -1656,8 +1656,8 @@ def test_tests_absent(lint_ctx):
 
 
 def test_tests_data_source(lint_ctx):
-    tool_xml_tree = get_xml_tree(TESTS_ABSENT_DATA_SOURCE)
-    run_lint_module(lint_ctx, tests, tool_xml_tree)
+    tool_source = get_xml_tool_source(TESTS_ABSENT_DATA_SOURCE)
+    run_lint_module(lint_ctx, tests, tool_source)
     assert "No tests found, that should be OK for data_sources." in lint_ctx.info_messages
     assert len(lint_ctx.info_messages) == 1
     assert not lint_ctx.valid_messages
@@ -1666,8 +1666,8 @@ def test_tests_data_source(lint_ctx):
 
 
 def test_tests_param_output_names(lint_ctx):
-    tool_xml_tree = get_xml_tree(TESTS_PARAM_OUTPUT_NAMES)
-    run_lint_module(lint_ctx, tests, tool_xml_tree)
+    tool_source = get_xml_tool_source(TESTS_PARAM_OUTPUT_NAMES)
+    run_lint_module(lint_ctx, tests, tool_source)
     assert "1 test(s) found." in lint_ctx.valid_messages
     assert "Test 1: Found test param tag without a name defined." in lint_ctx.error_messages
     assert "Test 1: Test param non_existent_test_name not found in the inputs" in lint_ctx.error_messages
@@ -1688,8 +1688,8 @@ def test_tests_param_output_names(lint_ctx):
 
 
 def test_tests_expect_failure_output(lint_ctx):
-    tool_xml_tree = get_xml_tree(TESTS_EXPECT_FAILURE_OUTPUT)
-    run_lint_module(lint_ctx, tests, tool_xml_tree)
+    tool_source = get_xml_tool_source(TESTS_EXPECT_FAILURE_OUTPUT)
+    run_lint_module(lint_ctx, tests, tool_source)
     assert "No valid test(s) found." in lint_ctx.warn_messages
     assert "Test 1: Cannot specify outputs in a test expecting failure." in lint_ctx.error_messages
     assert (
@@ -1703,8 +1703,8 @@ def test_tests_expect_failure_output(lint_ctx):
 
 
 def test_tests_without_expectations(lint_ctx):
-    tool_xml_tree = get_xml_tree(TESTS_WO_EXPECTATIONS)
-    run_lint_module(lint_ctx, tests, tool_xml_tree)
+    tool_source = get_xml_tool_source(TESTS_WO_EXPECTATIONS)
+    run_lint_module(lint_ctx, tests, tool_source)
     assert (
         "Test 1: No outputs or expectations defined for tests, this test is likely invalid." in lint_ctx.warn_messages
     )
@@ -1716,8 +1716,8 @@ def test_tests_without_expectations(lint_ctx):
 
 
 def test_tests_valid(lint_ctx):
-    tool_xml_tree = get_xml_tree(TESTS_VALID)
-    run_lint_module(lint_ctx, tests, tool_xml_tree)
+    tool_source = get_xml_tool_source(TESTS_VALID)
+    run_lint_module(lint_ctx, tests, tool_source)
     assert "1 test(s) found." in lint_ctx.valid_messages
     assert not lint_ctx.info_messages
     assert len(lint_ctx.valid_messages) == 1
@@ -1726,8 +1726,8 @@ def test_tests_valid(lint_ctx):
 
 
 def test_tests_asserts(lint_ctx):
-    tool_xml_tree = get_xml_tree(ASSERTS)
-    run_lint_module(lint_ctx, tests, tool_xml_tree)
+    tool_source = get_xml_tool_source(ASSERTS)
+    run_lint_module(lint_ctx, tests, tool_source)
     assert "Test 1: unknown assertion 'invalid'" in lint_ctx.error_messages
     assert "Test 1: unknown attribute 'invalid_attrib' for 'has_text'" in lint_ctx.error_messages
     assert "Test 1: missing attribute 'text' for 'has_text'" in lint_ctx.error_messages
@@ -1744,8 +1744,8 @@ def test_tests_asserts(lint_ctx):
 
 
 def test_tests_output_type_mismatch(lint_ctx):
-    tool_xml_tree = get_xml_tree(TESTS_OUTPUT_TYPE_MISMATCH)
-    run_lint_module(lint_ctx, tests, tool_xml_tree)
+    tool_source = get_xml_tool_source(TESTS_OUTPUT_TYPE_MISMATCH)
+    run_lint_module(lint_ctx, tests, tool_source)
     assert (
         "Test 1: test output collection_name does not correspond to a 'data' output, but a 'collection'"
         in lint_ctx.error_messages
@@ -1759,8 +1759,8 @@ def test_tests_output_type_mismatch(lint_ctx):
 
 
 def test_tests_discover_outputs(lint_ctx):
-    tool_xml_tree = get_xml_tree(TESTS_DISCOVER_OUTPUTS)
-    run_lint_module(lint_ctx, tests, tool_xml_tree)
+    tool_source = get_xml_tool_source(TESTS_DISCOVER_OUTPUTS)
+    run_lint_module(lint_ctx, tests, tool_source)
     assert (
         "Test 3: test output 'data_name' must have a 'count' attribute and/or 'discovered_dataset' children"
         in lint_ctx.error_messages
@@ -1782,16 +1782,16 @@ def test_tests_discover_outputs(lint_ctx):
 
 
 def test_tests_expect_num_outputs_filter(lint_ctx):
-    tool_xml_tree = get_xml_tree(TESTS_EXPECT_NUM_OUTPUTS_FILTER)
-    run_lint_module(lint_ctx, tests, tool_xml_tree)
+    tool_source = get_xml_tool_source(TESTS_EXPECT_NUM_OUTPUTS_FILTER)
+    run_lint_module(lint_ctx, tests, tool_source)
     assert "Test should specify 'expect_num_outputs' if outputs have filters" in lint_ctx.warn_messages
     assert len(lint_ctx.warn_messages) == 1
     assert len(lint_ctx.error_messages) == 0
 
 
 def test_tests_compare_attrib_incompatibility(lint_ctx):
-    tool_xml_tree = get_xml_tree(TESTS_COMPARE_ATTRIB_INCOMPATIBILITY)
-    run_lint_module(lint_ctx, tests, tool_xml_tree)
+    tool_source = get_xml_tool_source(TESTS_COMPARE_ATTRIB_INCOMPATIBILITY)
+    run_lint_module(lint_ctx, tests, tool_source)
     assert 'Test 1: Attribute decompress is incompatible with compare="re_match".' in lint_ctx.error_messages
     assert 'Test 1: Attribute sort is incompatible with compare="contains".' in lint_ctx.error_messages
     assert not lint_ctx.info_messages

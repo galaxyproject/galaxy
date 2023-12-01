@@ -100,7 +100,7 @@ class LintMessage:
     a message from the linter
     """
 
-    def __init__(self, level: str, message: str):
+    def __init__(self, level: str, message: str, **kwargs):
         self.level = level
         self.message = message
 
