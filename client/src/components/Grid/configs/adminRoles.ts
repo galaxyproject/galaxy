@@ -1,10 +1,4 @@
-import {
-    faPlus,
-    faTrash,
-    faTrashRestore,
-    faKey,
-    faEdit,
-} from "@fortawesome/free-solid-svg-icons";
+import { faEdit, faKey, faPlus, faTrash, faTrashRestore } from "@fortawesome/free-solid-svg-icons";
 import { useEventBus } from "@vueuse/core";
 import axios from "axios";
 
@@ -168,20 +162,13 @@ const fields: FieldArray = [
 ];
 
 const validFilters: Record<string, ValidFilter<string | boolean | undefined>> = {
-    email: { placeholder: "email", type: String, handler: contains("email"), menuItem: true },
-    username: { placeholder: "username", type: String, handler: contains("username"), menuItem: true },
+    name: { placeholder: "name", type: String, handler: contains("name"), menuItem: true },
+    description: { placeholder: "description", type: String, handler: contains("description"), menuItem: true },
     deleted: {
         placeholder: "Filter on deleted entries",
         type: Boolean,
         boolType: "is",
         handler: equals("deleted", "deleted", toBool),
-        menuItem: true,
-    },
-    purged: {
-        placeholder: "Filter on purged entries",
-        type: Boolean,
-        boolType: "is",
-        handler: equals("purged", "purged", toBool),
         menuItem: true,
     },
 };
