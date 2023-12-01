@@ -41,13 +41,8 @@ INVOCATION_STEP_OUTPUT_SRC = Literal["hda"]
 INVOCATION_STEP_COLLECTION_OUTPUT_SRC = Literal["hdca"]
 REPORT_RENDER_FORMAT_MARKDOWN = Literal["markdown"]
 
-# InvocationStepActionField: bool = Field(
-#     title="Action",
-#     description="Whether to take action on the invocation step.",
-# )
 
-InvocationStepActionField: Optional[bool] = Field(
-    default=Required,
+InvocationStepActionField: bool = Field(
     title="Action",
     description="Whether to take action on the invocation step.",
 )
@@ -320,12 +315,24 @@ class InvocationStep(Model):
         title="Subworkflow invocation ID",
         description="The encoded ID of the subworkflow invocation.",
     )
-    state: InvocationStepState = Field(
+    # TODO Apparently this field is allowed to be None or "ok". Is this intended?
+    # See lib/galaxy/model/__init__.py:
+    #        WorkflowInvocationStep - line 8785
+    # and lib/galaxy_test/api/test_workflows.py:
+    #       test_invocation_with_collection_mapping - line 7010
+    # state: Optional[InvocationStepState]
+    state: Optional[str] = Field(
         ...,
         title="State of the invocation step",
         description="Describes where in the scheduling process the workflow invocation step is.",
     )
-    action: Optional[bool] = InvocationStepActionField
+    # TODO I would like to use InvocationStepActionField here to avoid code
+    # duplication, but it is not allowed to be None. So is this ok?
+    action: Optional[bool] = Field(
+        default=Required,
+        title="Action",
+        description="Whether to take action on the invocation step.",
+    )
     order_index: int = Field(
         ...,
         title="Order index",
