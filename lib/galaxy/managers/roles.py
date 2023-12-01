@@ -117,7 +117,9 @@ class RoleManager(base.ModelManager[model.Role]):
         # - GroupRoleAssociations where role_id == Role.id
         # - DatasetPermissionss where role_id == Role.id
         if not role.deleted:
-            return (f"Role '{role.name}' has not been deleted, so it cannot be purged.", "error")
+            raise galaxy.exceptions.RequestParameterInvalidException(
+                f"Role '{role.name}' has not been deleted, so it cannot be purged."
+            )
         # Delete UserRoleAssociations
         for ura in role.users:
             user = trans.sa_session.query(trans.app.model.User).get(ura.user_id)
@@ -143,7 +145,9 @@ class RoleManager(base.ModelManager[model.Role]):
 
     def undelete(self, trans: ProvidesUserContext, role: model.Role) -> model.Role:
         if not role.deleted:
-            return (f"Role '{role.name}' has not been deleted, so it cannot be undeleted.", "error")
+            raise galaxy.exceptions.RequestParameterInvalidException(
+                f"Role '{role.name}' has not been deleted, so it cannot be undeleted."
+            )
         role.deleted = False
         trans.sa_session.add(role)
         with transaction(trans.sa_session):
