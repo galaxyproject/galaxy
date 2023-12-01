@@ -131,32 +131,31 @@ class UserListGrid(grids.GridData):
         }
         search_query = kwargs.get("search")
         parsed_search = parse_filters_structured(search_query, INDEX_SEARCH_FILTERS)
-        if len(parsed_search.terms) == 0:
-            query = query.filter(self.model_class.deleted == false())
-        else:
-            for term in parsed_search.terms:
-                if isinstance(term, FilteredTerm):
-                    key = term.filter
-                    q = term.text
-                    if key == "email":
-                        query = query.filter(text_column_filter(self.model_class.email, term))
-                    elif key == "username":
-                        query = query.filter(text_column_filter(self.model_class.username, term))
-                    elif key == "is":
-                        if q == "deleted":
-                            query = query.filter(self.model_class.deleted == true())
-                        elif q == "purged":
-                            query = query.filter(self.model_class.purged == true())
-                elif isinstance(term, RawTextTerm):
-                    query = query.filter(
-                        raw_text_column_filter(
-                            [
-                                self.model_class.email,
-                                self.model_class.username,
-                            ],
-                            term,
-                        )
+        deleted = False
+        for term in parsed_search.terms:
+            if isinstance(term, FilteredTerm):
+                key = term.filter
+                q = term.text
+                if key == "email":
+                    query = query.filter(text_column_filter(self.model_class.email, term))
+                elif key == "username":
+                    query = query.filter(text_column_filter(self.model_class.username, term))
+                elif key == "is":
+                    if q == "deleted":
+                        deleted = True
+                    elif q == "purged":
+                        query = query.filter(self.model_class.purged == true())
+            elif isinstance(term, RawTextTerm):
+                query = query.filter(
+                    raw_text_column_filter(
+                        [
+                            self.model_class.email,
+                            self.model_class.username,
+                        ],
+                        term,
                     )
+                )
+        query = query.filter(self.model_class.deleted == (true() if deleted else false()))
         return query
 
 
