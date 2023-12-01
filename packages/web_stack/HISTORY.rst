@@ -10,6 +10,12 @@ History
 
 
 -------------------
+23.1.3 (2023-12-01)
+-------------------
+
+No recorded changes since last release
+
+-------------------
 23.1.2 (2023-11-29)
 -------------------
 
@@ -55,6 +61,7 @@ No recorded changes since last release
 Bug fixes
 =========
 
+* 
 * 
 * Don't attempt to call a bool when using mem-self handler assignment. by `@natefoo <https://github.com/natefoo>`_ in `#16359 <https://github.com/galaxyproject/galaxy/pull/16359>`_
 

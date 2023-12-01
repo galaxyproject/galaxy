@@ -10,6 +10,12 @@ History
 
 
 -------------------
+23.1.3 (2023-12-01)
+-------------------
+
+No recorded changes since last release
+
+-------------------
 23.1.2 (2023-11-29)
 -------------------
 
@@ -55,6 +61,7 @@ Other changes
 Bug fixes
 =========
 
+* 
 * 
 * Fix extra files path handling by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16541 <https://github.com/galaxyproject/galaxy/pull/16541>`_
 * Fixes for extra files handling and cached object stores  by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16595 <https://github.com/galaxyproject/galaxy/pull/16595>`_

@@ -10,6 +10,12 @@ History
 
 
 -------------------
+23.1.3 (2023-12-01)
+-------------------
+
+No recorded changes since last release
+
+-------------------
 23.1.2 (2023-11-29)
 -------------------
 
@@ -29,6 +35,7 @@ Bug fixes
 Bug fixes
 =========
 
+* 
 * Backport tool mem fixes by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16601 <https://github.com/galaxyproject/galaxy/pull/16601>`_
 * Fix allowlist deserialization in file sources by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16729 <https://github.com/galaxyproject/galaxy/pull/16729>`_
 
