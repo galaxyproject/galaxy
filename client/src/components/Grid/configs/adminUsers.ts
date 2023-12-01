@@ -66,7 +66,7 @@ const fields: FieldArray = [
         key: "email",
         title: "Email",
         type: "operations",
-        condition: (data: UserEntry) => !data.deleted && !data.purged,
+        condition: (data: UserEntry) => !data.purged,
         operations: [
             {
                 title: "Manage Information",
