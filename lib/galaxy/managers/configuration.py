@@ -182,7 +182,7 @@ class ConfigSerializer(base.ModelSerializer):
             "message_box_content": _use_config,
             "message_box_visible": _use_config,
             "message_box_class": _use_config,
-            "server_startttime": lambda item, key, **context: self.app.start_timestamp,
+            "server_starttime": lambda item, key, **context: self.app.server_starttime,
             "mailing_join_addr": _defaults_to("galaxy-announce-join@bx.psu.edu"),  # should this be the schema default?
             "server_mail_configured": lambda item, key, **context: bool(item.smtp_server),
             "registration_warning_message": _use_config,

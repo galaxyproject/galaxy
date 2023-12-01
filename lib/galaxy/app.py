@@ -800,7 +800,7 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
         self.url_for = url_for
         self.legacy_url_for = legacy_url_for
 
-        self.start_timestamp = self.server_starttime = server_starttime  # used for cachebusting
+        self.server_starttime = server_starttime  # used for cachebusting
         # Limit lifetime of tool shed repository cache to app startup
         self.tool_shed_repository_cache = None
         self.api_spec = None
