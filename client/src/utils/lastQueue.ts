@@ -1,6 +1,6 @@
 type QueuedAction<T extends (...args: any) => R, R = unknown> = {
     action: T;
-    args: Parameters<T> | Parameters<T>[0];
+    arg: Parameters<T>[0];
     resolve: (value: R) => void;
     reject: (e: Error) => void;
 };
@@ -11,7 +11,7 @@ type QueuedAction<T extends (...args: any) => R, R = unknown> = {
  * This is useful when promises earlier enqueued become obsolete.
  * See also: https://stackoverflow.com/questions/53540348/js-async-await-tasks-queue
  */
-export class LastQueue<T extends (...args: any) => R, R = unknown> {
+export class LastQueue<T extends (arg: any) => R, R = unknown> {
     throttlePeriod: number;
     private queuedPromises: Record<string | number, QueuedAction<T, R>> = {};
     private pendingPromise = false;
@@ -20,9 +20,9 @@ export class LastQueue<T extends (...args: any) => R, R = unknown> {
         this.throttlePeriod = throttlePeriod;
     }
 
-    async enqueue(action: T, args: Parameters<T> | Parameters<T>[0], key: string | number = 0) {
+    async enqueue(action: T, arg: Parameters<T>[0], key: string | number = 0) {
         return new Promise((resolve, reject) => {
-            this.queuedPromises[key] = { action, args, resolve, reject };
+            this.queuedPromises[key] = { action, arg, resolve, reject };
             this.dequeue();
         });
     }
@@ -36,15 +36,7 @@ export class LastQueue<T extends (...args: any) => R, R = unknown> {
             this.pendingPromise = true;
 
             try {
-                let payload;
-                const args = item.args;
-
-                if (Array.isArray(args)) {
-                    payload = await item.action(...(args as Array<unknown>));
-                } else {
-                    payload = await item.action(args);
-                }
-
+                const payload = await item.action(item.arg);
                 item.resolve(payload);
             } catch (e) {
                 item.reject(e as Error);
