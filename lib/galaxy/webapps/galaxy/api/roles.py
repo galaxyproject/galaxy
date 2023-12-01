@@ -57,25 +57,19 @@ class FastAPIRoles:
         return role_to_model(role)
 
     @router.delete("/api/roles/{id}", require_admin=True)
-    def delete(
-        self, id: DecodedDatabaseIdField, trans: ProvidesUserContext = DependsOnTrans
-    ) -> RoleModelResponse:
+    def delete(self, id: DecodedDatabaseIdField, trans: ProvidesUserContext = DependsOnTrans) -> RoleModelResponse:
         role = self.role_manager.get(trans, id)
         role = self.role_manager.delete(trans, role)
         return role_to_model(role)
 
     @router.post("/api/roles/{id}/purge", require_admin=True)
-    def purge(
-        self, id: DecodedDatabaseIdField, trans: ProvidesUserContext = DependsOnTrans
-    ) -> RoleModelResponse:
+    def purge(self, id: DecodedDatabaseIdField, trans: ProvidesUserContext = DependsOnTrans) -> RoleModelResponse:
         role = self.role_manager.get(trans, id)
         role = self.role_manager.purge(trans, role)
         return role_to_model(role)
 
     @router.post("/api/roles/{id}/undelete", require_admin=True)
-    def undelete(
-        self, id: DecodedDatabaseIdField, trans: ProvidesUserContext = DependsOnTrans
-    ) -> RoleModelResponse:
+    def undelete(self, id: DecodedDatabaseIdField, trans: ProvidesUserContext = DependsOnTrans) -> RoleModelResponse:
         role = self.role_manager.get(trans, id)
         role = self.role_manager.undelete(trans, role)
         return role_to_model(role)
