@@ -243,7 +243,14 @@ export default {
                 const url = entryPointsForHda[0].target;
                 window.open(url, "_blank");
             } else {
-                this.$router.push(this.itemUrls.display, { title: this.name });
+                // vue-router 4 supports a native force push with clean URLs,
+                // but we're using a workaround with a __vkey__ bit as a workaround
+                // Only conditionally force to keep urls clean most of the time.
+                if (this.$router.currentRoute.path === this.itemUrls.display) {
+                    this.$router.push(this.itemUrls.display, { title: this.name, force: true });
+                } else {
+                    this.$router.push(this.itemUrls.display, { title: this.name });
+                }
             }
         },
         onDelete(recursive = false) {
