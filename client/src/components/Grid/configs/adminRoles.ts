@@ -2,7 +2,7 @@ import { faEdit, faKey, faPlus, faTrash, faTrashRestore } from "@fortawesome/fre
 import { useEventBus } from "@vueuse/core";
 import axios from "axios";
 
-//import { createApiKey, deleteUser, recalculateDiskUsageByUserId, sendActivationEmail, undeleteUser } from "@/api/users";
+import { deleteRole } from "@/api/roles";
 import Filtering, { contains, equals, toBool, type ValidFilter } from "@/utils/filtering";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -76,15 +76,15 @@ const fields: FieldArray = [
                 condition: (data: RoleEntry) => !data.deleted,
                 handler: async (data: RoleEntry) => {
                     try {
-                        //await deleteRole({ user_id: String(data.id), purge: false });
+                        await deleteRole({ id: String(data.id) });
                         return {
                             status: "success",
-                            message: `'${data.username}' has been deleted.`,
+                            message: `'${data.name}' has been deleted.`,
                         };
                     } catch (e) {
                         return {
                             status: "danger",
-                            message: `Failed to delete '${data.username}': ${errorMessageAsString(e)}`,
+                            message: `Failed to delete '${data.name}': ${errorMessageAsString(e)}`,
                         };
                     }
                 },
@@ -95,7 +95,7 @@ const fields: FieldArray = [
                 condition: (data: RoleEntry) => !!data.deleted && !data.purged,
                 handler: async (data: RoleEntry) => {
                     try {
-                        //await deleteUser({ user_id: String(data.id), purge: true });
+                        await deleteRole({ id: String(data.id) });
                         return {
                             status: "success",
                             message: `'${data.username}' has been purged.`,
