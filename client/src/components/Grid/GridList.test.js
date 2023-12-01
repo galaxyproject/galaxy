@@ -110,7 +110,7 @@ function createTarget(propsData) {
 describe("GridList", () => {
     it("basic rendering", async () => {
         const wrapper = createTarget({
-            config: testGrid,
+            gridConfig: testGrid,
         });
         const findInput = wrapper.find("[data-description='filter text input']");
         expect(findInput.attributes().placeholder).toBe("search tests");
@@ -142,7 +142,7 @@ describe("GridList", () => {
 
     it("header rendering", async () => {
         const wrapper = createTarget({
-            config: testGrid,
+            gridConfig: testGrid,
         });
         await wrapper.vm.$nextTick();
         for (const [fieldIndex, field] of Object.entries(testGrid.fields)) {
@@ -152,7 +152,7 @@ describe("GridList", () => {
 
     it("operation handling", async () => {
         const wrapper = createTarget({
-            config: testGrid,
+            gridConfig: testGrid,
         });
         await wrapper.vm.$nextTick();
         const dropdown = wrapper.find("[data-description='grid cell 0-2']");
@@ -174,7 +174,7 @@ describe("GridList", () => {
 
     it("filter handling", async () => {
         const wrapper = createTarget({
-            config: testGrid,
+            gridConfig: testGrid,
         });
         await wrapper.vm.$nextTick();
         const filterInput = wrapper.find("[data-description='filter text input']");
@@ -187,7 +187,7 @@ describe("GridList", () => {
 
     it("pagination", async () => {
         const wrapper = createTarget({
-            config: testGrid,
+            gridConfig: testGrid,
             limit: 2,
         });
         await wrapper.vm.$nextTick();

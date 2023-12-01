@@ -11,7 +11,7 @@ export interface Action {
 
 export type ActionArray = Array<Action>;
 
-export interface Config {
+export interface GridConfig {
     id: string;
     actions?: ActionArray;
     fields: FieldArray;

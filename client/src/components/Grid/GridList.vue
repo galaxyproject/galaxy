@@ -7,7 +7,7 @@ import { BAlert, BButton, BLink, BPagination } from "bootstrap-vue";
 import { computed, onMounted, onUnmounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
 
-import { Config, FieldHandler, Operation, RowData } from "./configs/types";
+import { FieldHandler, GridConfig, Operation, RowData } from "./configs/types";
 
 import GridBoolean from "./GridElements/GridBoolean.vue";
 import GridLink from "./GridElements/GridLink.vue";
@@ -26,7 +26,7 @@ library.add(faCaretDown, faCaretUp, faShieldAlt);
 
 interface Props {
     // provide a grid configuration
-    config: Config;
+    gridConfig: GridConfig;
     // debounce delay
     delay?: number;
     // rows per page to be shown
@@ -57,8 +57,8 @@ const loading = ref(true);
 const isAvailable = computed(() => !loading.value && totalRows.value > 0);
 
 // sort references
-const sortBy = ref(props.config ? props.config.sortBy : "");
-const sortDesc = ref(props.config ? props.config.sortDesc : false);
+const sortBy = ref(props.gridConfig ? props.gridConfig.sortBy : "");
+const sortDesc = ref(props.gridConfig ? props.gridConfig.sortDesc : false);
 
 // filtering refs and handlers
 const filterText = ref("");
@@ -74,7 +74,7 @@ const hideMessage = useDebounceFn(() => {
  * Manually set filter value, used for tags and `SharingIndicators`
  */
 function applyFilter(filter: string, value: string | boolean, quoted = false) {
-    const filtering = props.config?.filtering;
+    const filtering = props.gridConfig?.filtering;
     const quotedValue = quoted ? `'${value}'` : value;
     if (filtering) {
         filterText.value = filtering.setFilterValue(filterText.value, filter, quotedValue.toString()) || "";
@@ -85,10 +85,10 @@ function applyFilter(filter: string, value: string | boolean, quoted = false) {
  * Request grid data
  */
 async function getGridData() {
-    if (props.config) {
+    if (props.gridConfig) {
         try {
             const offset = props.limit * (currentPage.value - 1);
-            const [responseData, responseTotal] = await props.config.getData(
+            const [responseData, responseTotal] = await props.gridConfig.getData(
                 offset,
                 props.limit,
                 searchTerm.value,
@@ -184,19 +184,19 @@ watch(operationMessage, () => {
 </script>
 
 <template>
-    <div :id="config.id" class="d-flex flex-column overflow-auto">
+    <div :id="gridConfig.id" class="d-flex flex-column overflow-auto">
         <BAlert v-if="!!errorMessage" variant="danger" show>{{ errorMessage }}</BAlert>
         <BAlert v-if="!!operationMessage" :variant="operationStatus" fade show>{{ operationMessage }}</BAlert>
         <div class="grid-header d-flex justify-content-between pb-2">
             <div>
                 <h1 class="m-0" data-description="grid title">
-                    {{ config.title }}
+                    {{ gridConfig.title }}
                 </h1>
                 <FilterMenu
                     class="py-2"
-                    :name="config.plural"
-                    :placeholder="`search ${config.plural.toLowerCase()}`"
-                    :filter-class="config.filtering"
+                    :name="gridConfig.plural"
+                    :placeholder="`search ${gridConfig.plural.toLowerCase()}`"
+                    :filter-class="gridConfig.filtering"
                     :filter-text.sync="filterText"
                     :loading="loading"
                     :show-advanced.sync="showAdvanced"
@@ -205,7 +205,7 @@ watch(operationMessage, () => {
             </div>
             <div v-if="!showAdvanced" class="py-3">
                 <BButton
-                    v-for="(action, actionIndex) in config.actions"
+                    v-for="(action, actionIndex) in gridConfig.actions"
                     :key="actionIndex"
                     class="m-1"
                     size="sm"
@@ -228,11 +228,11 @@ watch(operationMessage, () => {
         <table v-else class="grid-table">
             <thead>
                 <th
-                    v-for="(fieldEntry, fieldIndex) in config.fields"
+                    v-for="(fieldEntry, fieldIndex) in gridConfig.fields"
                     :key="fieldIndex"
                     class="text-nowrap px-2"
                     :data-description="`grid header ${fieldIndex}`">
-                    <span v-if="config.sortKeys.includes(fieldEntry.key)">
+                    <span v-if="gridConfig.sortKeys.includes(fieldEntry.key)">
                         <BLink @click="onSort(fieldEntry.key)">
                             <span>{{ fieldEntry.title || fieldEntry.key }}</span>
                             <span v-if="sortBy === fieldEntry.key">
@@ -246,7 +246,7 @@ watch(operationMessage, () => {
             </thead>
             <tr v-for="(rowData, rowIndex) in gridData" :key="rowIndex" :class="{ 'grid-dark-row': rowIndex % 2 }">
                 <td
-                    v-for="(fieldEntry, fieldIndex) in config.fields"
+                    v-for="(fieldEntry, fieldIndex) in gridConfig.fields"
                     :key="fieldIndex"
                     class="px-2 py-3"
                     :style="{ width: `${fieldEntry.width}%` }">

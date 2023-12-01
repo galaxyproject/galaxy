@@ -20,7 +20,7 @@ import Filtering, { contains, equals, toBool, type ValidFilter } from "@/utils/f
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 
-import type { ActionArray, Config, FieldArray } from "./types";
+import type { ActionArray, FieldArray, GridConfig } from "./types";
 
 const { emit } = useEventBus<string>("grid-router-push");
 
@@ -323,7 +323,7 @@ const validFilters: Record<string, ValidFilter<string | boolean | undefined>> = 
 /**
  * Grid configuration
  */
-const config: Config = {
+const gridConfig: GridConfig = {
     id: "users-grid",
     actions: actions,
     fields: fields,
@@ -336,4 +336,4 @@ const config: Config = {
     title: "Users",
 };
 
-export default config;
+export default gridConfig;
