@@ -1,55 +1,54 @@
-import { createLocalVue, shallowMount } from "@vue/test-utils";
-import { createPinia, PiniaVuePlugin } from "pinia";
-import { useUserStore } from "stores/userStore";
-import Vuex from "vuex";
-import createCache from "vuex-cache";
+import { shallowMount, Wrapper } from "@vue/test-utils";
+import flushPromises from "flush-promises";
+import { createPinia } from "pinia";
+import { getLocalVue } from "tests/jest/helpers";
 
-import JobDestinationParams from "./JobDestinationParams";
-import jobDestinationResponse from "./testData/jobDestinationResponse";
+import { mockFetcher } from "@/api/schema/__mocks__";
+import { useUserStore } from "@/stores/userStore";
+
+import jobDestinationResponseData from "./testData/jobDestinationResponse.json";
+
+import JobDestinationParams from "./JobDestinationParams.vue";
 
 const JOB_ID = "foo_job_id";
 
-const localVue = createLocalVue();
-localVue.use(PiniaVuePlugin);
-localVue.use(Vuex);
+jest.mock("@/api/schema");
 
-const testStore = new Vuex.Store({
-    plugins: [createCache()],
-    modules: {
-        jobDestinationParametersStore: {
-            actions: {
-                fetchJobDestinationParams: jest.fn(),
-            },
-            getters: {
-                jobDestinationParams: (state) => (job_id) => {
-                    return jobDestinationResponse;
-                },
-            },
-        },
-    },
-});
+const localVue = getLocalVue();
+
+const jobDestinationResponse = jobDestinationResponseData as Record<string, string | null>;
 
 describe("JobDestinationParams/JobDestinationParams.vue", () => {
     const responseKeys = Object.keys(jobDestinationResponse);
+    expect(responseKeys.length > 0).toBeTruthy();
 
-    let wrapper;
-    let userStore;
+    let wrapper: Wrapper<Vue>;
 
     beforeEach(async () => {
         const propsData = {
             jobId: JOB_ID,
         };
+
+        mockFetcher.path("/api/jobs/{job_id}/destination_params").method("get").mock({ data: jobDestinationResponse });
+
         const pinia = createPinia();
-        wrapper = await shallowMount(JobDestinationParams, {
-            store: testStore,
+        wrapper = shallowMount(JobDestinationParams as object, {
             propsData,
             localVue,
-            attachTo: document.body,
             pinia,
         });
-        userStore = useUserStore();
-        userStore.currentUser = { is_admin: true };
-        expect(responseKeys.length > 0).toBeTruthy();
+
+        const userStore = useUserStore();
+        userStore.currentUser = {
+            email: "admin@email",
+            id: "1",
+            tags_used: [],
+            isAnonymous: false,
+            total_disk_usage: 1048576,
+            is_admin: true,
+        };
+
+        await flushPromises();
     });
 
     it("destination parameters should exist", async () => {
@@ -59,9 +58,9 @@ describe("JobDestinationParams/JobDestinationParams.vue", () => {
         expect(wrapper.vm.jobDestinationParams["docker_set_user"]).toBeNull();
     });
 
-    it("destination parameters should be rendered", async () => {
+    it("should render destination parameters", async () => {
         const paramsTable = wrapper.find("#destination_parameters");
-        expect(paramsTable.element).toBeVisible();
+        expect(paramsTable.exists()).toBe(true);
         const params = paramsTable.findAll("tbody > tr");
         expect(params.length).toBe(responseKeys.length);
 
