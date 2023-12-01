@@ -170,6 +170,7 @@ const sideClasses = computed(() => ({
 @import "theme/blue.scss";
 
 .flex-panel {
+    z-index: 100;
     flex-shrink: 0;
     display: flex;
     width: var(--width);
@@ -225,6 +226,7 @@ const sideClasses = computed(() => ({
 
 .collapse-button {
     position: absolute;
+    z-index: 100;
 
     --width: 0px;
 
@@ -260,8 +262,17 @@ const sideClasses = computed(() => ({
     }
 
     &.closed {
-        --width: 1.5rem;
+        --width: 0.75rem;
         border-style: solid;
+
+        > * {
+            transform: translateX(-0.15rem);
+        }
+
+        &:hover,
+        &:focus {
+            --width: 1.5rem;
+        }
 
         &.right {
             left: unset;
