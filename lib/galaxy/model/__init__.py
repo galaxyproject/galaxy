@@ -3873,7 +3873,7 @@ class Dataset(Base, StorableObject, Serializable):
         ),
         viewonly=True,
     )
-    hashes = relationship("DatasetHash", back_populates="dataset")
+    hashes = relationship("DatasetHash", back_populates="dataset", cascade_backrefs=False)
     sources = relationship("DatasetSource", back_populates="dataset")
     history_associations = relationship("HistoryDatasetAssociation", back_populates="dataset")
     library_associations = relationship(
