@@ -2273,6 +2273,8 @@ export interface components {
              * @default false
              */
             deferred?: boolean;
+            /** Description */
+            description?: string;
             elements_from?: components["schemas"]["ElementsFromType"];
             /**
              * Ext
@@ -3723,6 +3725,8 @@ export interface components {
              * @default false
              */
             deferred?: boolean;
+            /** Description */
+            description?: string;
             elements_from?: components["schemas"]["ElementsFromType"];
             /**
              * Ext
@@ -3952,6 +3956,8 @@ export interface components {
              * @default false
              */
             deferred?: boolean;
+            /** Description */
+            description?: string;
             elements_from?: components["schemas"]["ElementsFromType"];
             /**
              * Ext
@@ -6457,6 +6463,8 @@ export interface components {
              * @default false
              */
             deferred?: boolean;
+            /** Description */
+            description?: string;
             /** Elements */
             elements: (
                 | (
@@ -7074,6 +7082,8 @@ export interface components {
              * @default false
              */
             deferred?: boolean;
+            /** Description */
+            description?: string;
             elements_from?: components["schemas"]["ElementsFromType"];
             /**
              * Ext
@@ -7135,6 +7145,8 @@ export interface components {
              * @default false
              */
             deferred?: boolean;
+            /** Description */
+            description?: string;
             elements_from?: components["schemas"]["ElementsFromType"];
             /**
              * Ext
@@ -7497,6 +7509,8 @@ export interface components {
              * @default false
              */
             deferred?: boolean;
+            /** Description */
+            description?: string;
             elements_from?: components["schemas"]["ElementsFromType"];
             /**
              * Ext
@@ -8384,6 +8398,8 @@ export interface components {
              * @default false
              */
             deferred?: boolean;
+            /** Description */
+            description?: string;
             elements_from?: components["schemas"]["ElementsFromType"];
             /**
              * Ext
