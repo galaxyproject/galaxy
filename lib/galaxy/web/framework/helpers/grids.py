@@ -1087,13 +1087,13 @@ class GridData:
                 break
 
         # Process limit and offset.
-        total_row_count = query.count()
+        rows_total = query.count()
         query = query.limit(limit).offset(offset)
 
         # Populate and return response
         grid_config = {
             "rows": [],
-            "total_rows": 0,
+            "rows_total": rows_total,
         }
         for row in query:
             row_dict = {
@@ -1103,7 +1103,6 @@ class GridData:
                 value = column.get_value(trans, self, row)
                 row_dict[column.key] = value
             grid_config["rows"].append(row_dict)
-        grid_config["total_row_count"] = total_row_count
         return grid_config
 
     # ---- Override these ----------------------------------------------------
