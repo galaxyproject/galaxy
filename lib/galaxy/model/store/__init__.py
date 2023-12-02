@@ -1048,6 +1048,9 @@ class ModelImportStore(metaclass=abc.ABCMeta):
             for step_attrs in invocation_attrs["steps"]:
                 imported_invocation_step = model.WorkflowInvocationStep()
                 imported_invocation_step.workflow_invocation = imported_invocation
+                # Safeguard: imported_invocation_step was implicitly merged into this Session prior to SQLAlchemy 2.0.
+                if object_session(imported_invocation):
+                    object_session(imported_invocation).add(imported_invocation_step)
                 attach_workflow_step(imported_invocation_step, step_attrs)
                 restore_times(imported_invocation_step, step_attrs)
                 imported_invocation_step.action = step_attrs["action"]
