@@ -493,6 +493,15 @@ class UserManager(base.ModelManager, deletable.PurgableManagerMixin):
         else:
             return "Failed to determine user, access denied."
 
+    def impersonate(self, trans, user):
+        if not trans.app.config.allow_user_impersonation:
+            raise exceptions.Message("User impersonation is not enabled in this instance of Galaxy.")
+        if user:
+            trans.handle_user_logout()
+            trans.handle_user_login(user)
+        else:
+            raise exceptions.Message("Please provide a valid user.")
+
     def send_activation_email(self, trans, email, username):
         """
         Send the verification email containing the activation link to the user's email.
@@ -759,11 +768,12 @@ class UserDeserializer(base.ModelDeserializer):
 
     def add_deserializers(self):
         super().add_deserializers()
-        history_deserializers: Dict[str, base.Deserializer] = {
+        user_deserializers: Dict[str, base.Deserializer] = {
+            "active": self.default_deserializer,
             "username": self.deserialize_username,
             "preferred_object_store_id": self.deserialize_preferred_object_store_id,
         }
-        self.deserializers.update(history_deserializers)
+        self.deserializers.update(user_deserializers)
 
     def deserialize_preferred_object_store_id(self, item: Any, key: Any, val: Any, **context):
         preferred_object_store_id = val

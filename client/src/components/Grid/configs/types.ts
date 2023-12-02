@@ -1,5 +1,6 @@
 import { IconDefinition } from "@fortawesome/fontawesome-svg-core";
 
+import type { GalaxyConfiguration } from "@/stores/configurationStore";
 import Filtering from "@/utils/filtering";
 
 export interface Action {
@@ -10,7 +11,8 @@ export interface Action {
 
 export type ActionArray = Array<Action>;
 
-export interface Config {
+export interface GridConfig {
+    id: string;
     actions?: ActionArray;
     fields: FieldArray;
     filtering: Filtering<any>;
@@ -40,7 +42,7 @@ export type FieldHandler = (data: RowData) => void;
 export interface Operation {
     title: string;
     icon: IconDefinition;
-    condition?: (data: RowData) => boolean;
+    condition?: (data: RowData, config: GalaxyConfiguration) => boolean;
     handler: (data: RowData) => OperationHandlerReturn;
 }
 
@@ -53,4 +55,4 @@ type OperationHandlerReturn = Promise<OperationHandlerMessage> | void;
 
 export type RowData = Record<string, unknown>;
 
-type validTypes = "date" | "link" | "operations" | "sharing" | "tags" | "text";
+type validTypes = "boolean" | "date" | "link" | "operations" | "sharing" | "tags" | "text";

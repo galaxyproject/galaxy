@@ -1592,6 +1592,14 @@ export interface paths {
         /** Remove the object from user's favorites */
         delete: operations["remove_favorite_api_users__user_id__favorites__object_type___object_id__delete"];
     };
+    "/api/users/{user_id}/recalculate_disk_usage": {
+        /** Triggers a recalculation of the current user disk usage. */
+        put: operations["recalculate_disk_usage_by_user_id_api_users__user_id__recalculate_disk_usage_put"];
+    };
+    "/api/users/{user_id}/send_activation_email": {
+        /** Sends activation email to user. */
+        post: operations["send_activation_email_api_users__user_id__send_activation_email_post"];
+    };
     "/api/users/{user_id}/theme/{theme}": {
         /** Set the user's theme choice */
         put: operations["set_theme_api_users__user_id__theme__theme__put"];
@@ -18978,6 +18986,62 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["FavoriteObjectsSummary"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    recalculate_disk_usage_by_user_id_api_users__user_id__recalculate_disk_usage_put: {
+        /** Triggers a recalculation of the current user disk usage. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The ID of the user to get. */
+            path: {
+                user_id: string;
+            };
+        };
+        responses: {
+            /** @description The asynchronous task summary to track the task state. */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["AsyncTaskResultSummary"];
+                };
+            };
+            /** @description The background task was submitted but there is no status tracking ID available. */
+            204: never;
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    send_activation_email_api_users__user_id__send_activation_email_post: {
+        /** Sends activation email to user. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The ID of the user to get. */
+            path: {
+                user_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": Record<string, never>;
                 };
             };
             /** @description Validation Error */
