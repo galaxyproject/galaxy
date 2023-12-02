@@ -2465,6 +2465,9 @@ class PostJobAction(Base, RepresentById):
         self.output_name = output_name
         self.action_arguments = action_arguments
         self.workflow_step = workflow_step
+        # Safeguard: self was implicitly merged into this Session prior to SQLAlchemy 2.0.
+        if object_session(workflow_step):
+            object_session(workflow_step).add(self)
 
 
 class PostJobActionAssociation(Base, RepresentById):
@@ -7658,7 +7661,7 @@ class WorkflowStep(Base, RepresentById):
         order_by=lambda: WorkflowStepAnnotationAssociation.id,
         back_populates="workflow_step",
     )
-    post_job_actions = relationship("PostJobAction", back_populates="workflow_step")
+    post_job_actions = relationship("PostJobAction", back_populates="workflow_step", cascade_backrefs=False)
     inputs = relationship("WorkflowStepInput", back_populates="workflow_step")
     workflow_outputs = relationship("WorkflowOutput", back_populates="workflow_step")
     output_connections = relationship(
