@@ -47,6 +47,12 @@ InvocationStepActionField: bool = Field(
     description="Whether to take action on the invocation step.",
 )
 
+InvocationIdField: EncodedDatabaseIdField = Field(
+    default=Required,
+    title="ID",
+    description="The encoded ID of the workflow invocation.",
+)
+
 
 class WarningReason(str, Enum):
     workflow_output_not_found = "workflow_output_not_found"
@@ -315,12 +321,11 @@ class InvocationStep(Model):
         title="Subworkflow invocation ID",
         description="The encoded ID of the subworkflow invocation.",
     )
-    # TODO Apparently this field is allowed to be None or "ok". Is this intended?
-    # See lib/galaxy/model/__init__.py:
-    #        WorkflowInvocationStep - line 8785
-    # and lib/galaxy_test/api/test_workflows.py:
+    # TODO Apparently this field is allowed to be None or "ok".
+    # See lib/galaxy_test/api/test_workflows.py:
     #       test_invocation_with_collection_mapping - line 7010
-    # state: Optional[InvocationStepState]
+    # As such InvocationStepState, does not cover all possible values.
+    # Should I define a new enum class for this or expand the existing one?
     state: Optional[str] = Field(
         ...,
         title="State of the invocation step",
@@ -462,9 +467,7 @@ class InvocationOutputCollection(InvocationIOBase):
 
 
 class WorkflowInvocationResponse(BaseModel):
-    id: EncodedDatabaseIdField = Field(
-        default=Required, title="ID", description="The encoded ID of the workflow invocation."
-    )
+    id: EncodedDatabaseIdField = InvocationIdField
     create_time: datetime = CreateTimeField
     update_time: datetime = UpdateTimeField
     workflow_id: EncodedDatabaseIdField = Field(
@@ -503,3 +506,23 @@ class WorkflowInvocationResponse(BaseModel):
     )
     # TODO Use proper message type here.
     messages: Optional[Any] = Field(default=None, title="Message", description="Message of the workflow invocation.")
+
+
+class InvocationJobState(str, Enum):
+    NEW = "new"  # TODO add description
+    FAILED = "failed"  # TODO add description
+    OK = "ok"  # TODO add description
+
+
+class InvocationJobsSummaryBaseModel(BaseModel):
+    id: EncodedDatabaseIdField = InvocationIdField
+    states: Dict[str, int]  # TODO add field description
+    populated_state: InvocationJobState  # TODO add field description
+
+
+class InvocationJobsResponse(InvocationJobsSummaryBaseModel):
+    model: schema.INVOCATION_MODEL_CLASS = ModelClassField(schema.INVOCATION_MODEL_CLASS)
+
+
+class InvocationStepJobsResponse(InvocationJobsSummaryBaseModel):
+    model: Any  # TODO choose appropriate model class
