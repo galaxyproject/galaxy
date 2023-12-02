@@ -47,9 +47,11 @@ from galaxy.model.item_attrs import UsesAnnotations
 from galaxy.model.store import BcoExportOptions
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.invocation import (
+    InvocationJobsResponse,
     InvocationMessageResponseModel,
     InvocationReport,
     InvocationStep,
+    InvocationStepJobsResponse,
     InvocationUpdatePayload,
     WorkflowInvocationResponse,
 )
@@ -1495,14 +1497,15 @@ class FastAPIInvocations:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
-    ):
+    ) -> List[InvocationStepJobsResponse]:
         """
         Warning: We allow anyone to fetch job state information about any object they
         can guess an encoded ID for - it isn't considered protected data. This keeps
         polling IDs as part of state calculation for large histories and collections as
         efficient as possible.
         """
-        return self.invocations_service.show_invocation_step_jobs_summary(trans, invocation_id)
+        step_jobs_summary = self.invocations_service.show_invocation_step_jobs_summary(trans, invocation_id)
+        return [InvocationStepJobsResponse(**summary) for summary in step_jobs_summary]
 
     @router.get(
         "/api/workflows/{workflow_id}/invocations/{invocation_id}/step_jobs_summary",
@@ -1518,7 +1521,7 @@ class FastAPIInvocations:
         trans: ProvidesUserContext = DependsOnTrans,
         workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
         invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
-    ):
+    ) -> List[InvocationStepJobsResponse]:
         """An alias for `GET /api/invocations/{invocation_id}/step_jobs_summary`. `workflow_id` is ignored."""
         return self.invocation_step_jobs_summary(trans, invocation_id)
 
@@ -1530,14 +1533,15 @@ class FastAPIInvocations:
         self,
         trans: ProvidesUserContext = DependsOnTrans,
         invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
-    ):
+    ) -> InvocationJobsResponse:
         """
         Warning: We allow anyone to fetch job state information about any object they
         can guess an encoded ID for - it isn't considered protected data. This keeps
         polling IDs as part of state calculation for large histories and collections as
         efficient as possible.
         """
-        return self.invocations_service.show_invocation_jobs_summary(trans, invocation_id)
+        jobs_summary = self.invocations_service.show_invocation_jobs_summary(trans, invocation_id)
+        return InvocationJobsResponse(**jobs_summary)
 
     @router.get(
         "/api/workflows/{workflow_id}/invocations/{invocation_id}/jobs_summary",
@@ -1553,7 +1557,7 @@ class FastAPIInvocations:
         trans: ProvidesUserContext = DependsOnTrans,
         workflow_id: DecodedDatabaseIdField = StoredWorkflowIDPathParam,
         invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
-    ):
+    ) -> InvocationJobsResponse:
         """An alias for `GET /api/invocations/{invocation_id}/jobs_summary`. `workflow_id` is ignored."""
         return self.invocation_jobs_summary(trans, invocation_id)
 
