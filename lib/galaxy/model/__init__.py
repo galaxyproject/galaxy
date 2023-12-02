@@ -3712,6 +3712,9 @@ class LibraryPermissions(Base, RepresentById):
         self.action = action
         if isinstance(library_item, Library):
             self.library = library_item
+            # Safeguard: self was implicitly merged into this Session prior to SQLAlchemy 2.0.
+            if object_session(library_item):
+                object_session(library_item).add(self)
         else:
             raise Exception(f"Invalid Library specified: {library_item.__class__.__name__}")
         self.role = role
@@ -3733,6 +3736,9 @@ class LibraryFolderPermissions(Base, RepresentById):
         self.action = action
         if isinstance(library_item, LibraryFolder):
             self.folder = library_item
+            # Safeguard: self was implicitly merged into this Session prior to SQLAlchemy 2.0.
+            if object_session(library_item):
+                object_session(library_item).add(self)
         else:
             raise Exception(f"Invalid LibraryFolder specified: {library_item.__class__.__name__}")
         self.role = role
@@ -5376,7 +5382,7 @@ class Library(Base, Dictifiable, HasName, Serializable):
     description = Column(TEXT)
     synopsis = Column(TEXT)
     root_folder = relationship("LibraryFolder", back_populates="library_root")
-    actions = relationship("LibraryPermissions", back_populates="library")
+    actions = relationship("LibraryPermissions", back_populates="library", cascade_backrefs=False)
 
     permitted_actions = get_permitted_actions(filter="LIBRARY")
     dict_collection_visible_keys = ["id", "name"]
