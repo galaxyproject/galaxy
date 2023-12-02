@@ -2466,7 +2466,7 @@ class PostJobAction(Base, RepresentById):
         self.action_arguments = action_arguments
         self.workflow_step = workflow_step
         # Safeguard: self was implicitly merged into this Session prior to SQLAlchemy 2.0.
-        if object_session(workflow_step):
+        if workflow_step and object_session(workflow_step):
             object_session(workflow_step).add(self)
 
 
@@ -2483,7 +2483,7 @@ class PostJobActionAssociation(Base, RepresentById):
         if job is not None:
             self.job = job
             # Safeguard: self was implicitly merged into this Session prior to SQLAlchemy 2.0.
-            if object_session(job):
+            if job and object_session(job):
                 object_session(job).add(self)
         elif job_id is not None:
             self.job_id = job_id
@@ -2856,7 +2856,7 @@ class UserNotificationAssociation(Base, RepresentById):
     def __init__(self, user, notification):
         self.user = user
         # Safeguard: self was implicitly merged into this Session prior to SQLAlchemy 2.0.
-        if object_session(user):
+        if user and object_session(user):
             object_session(user).add(self)
         self.notification = notification
 
@@ -3512,7 +3512,7 @@ class GroupRoleAssociation(Base, RepresentById):
     def __init__(self, group, role):
         self.group = group
         # Safeguard: self was implicitly merged into this Session prior to SQLAlchemy 2.0.
-        if object_session(group):
+        if group and object_session(group):
             object_session(group).add(self)
         self.role = role
 
@@ -3685,7 +3685,7 @@ class DefaultQuotaAssociation(Base, Dictifiable, RepresentById):
         self.type = type
         self.quota = quota
         # Safeguard: self was implicitly merged into this Session prior to SQLAlchemy 2.0.
-        if object_session(quota):
+        if quota and object_session(quota):
             object_session(quota).add(self)
 
 
@@ -3728,7 +3728,7 @@ class LibraryPermissions(Base, RepresentById):
         if isinstance(library_item, Library):
             self.library = library_item
             # Safeguard: self was implicitly merged into this Session prior to SQLAlchemy 2.0.
-            if object_session(library_item):
+            if library_item and object_session(library_item):
                 object_session(library_item).add(self)
         else:
             raise Exception(f"Invalid Library specified: {library_item.__class__.__name__}")
@@ -3752,7 +3752,7 @@ class LibraryFolderPermissions(Base, RepresentById):
         if isinstance(library_item, LibraryFolder):
             self.folder = library_item
             # Safeguard: self was implicitly merged into this Session prior to SQLAlchemy 2.0.
-            if object_session(library_item):
+            if library_item and object_session(library_item):
                 object_session(library_item).add(self)
         else:
             raise Exception(f"Invalid LibraryFolder specified: {library_item.__class__.__name__}")
@@ -3776,7 +3776,7 @@ class LibraryDatasetPermissions(Base, RepresentById):
         if isinstance(library_item, LibraryDataset):
             self.library_dataset = library_item
             # Safeguard: self was implicitly merged into this Session prior to SQLAlchemy 2.0.
-            if object_session(library_item):
+            if library_item and object_session(library_item):
                 object_session(library_item).add(self)
         else:
             raise Exception(f"Invalid LibraryDataset specified: {library_item.__class__.__name__}")
@@ -4401,7 +4401,7 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
         self.dataset = dataset
 
         # Safeguard: self was implicitly merged into this Session prior to SQLAlchemy 2.0.
-        if object_session(dataset):
+        if dataset and object_session(dataset):
             object_session(dataset).add(self)
 
         self.parent_id = parent_id
@@ -7274,7 +7274,7 @@ class GalaxySessionToHistoryAssociation(Base, RepresentById):
     def __init__(self, galaxy_session, history):
         self.galaxy_session = galaxy_session
         # Safeguard: self was implicitly merged into this Session prior to SQLAlchemy 2.0.
-        if object_session(galaxy_session):
+        if galaxy_session and object_session(galaxy_session):
             object_session(galaxy_session).add(self)
         add_object_to_object_session(self, history)
         self.history = history
