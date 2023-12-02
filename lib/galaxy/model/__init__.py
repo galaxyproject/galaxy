@@ -1331,7 +1331,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     )
     output_dataset_collection_instances = relationship("JobToOutputDatasetCollectionAssociation", back_populates="job")
     output_dataset_collections = relationship("JobToImplicitOutputDatasetCollectionAssociation", back_populates="job")
-    post_job_actions = relationship("PostJobActionAssociation", back_populates="job")
+    post_job_actions = relationship("PostJobActionAssociation", back_populates="job", cascade_backrefs=False)
     input_library_datasets = relationship("JobToInputLibraryDatasetAssociation", back_populates="job")
     output_library_datasets = relationship("JobToOutputLibraryDatasetAssociation", back_populates="job")
     external_output_metadata = relationship("JobExternalOutputMetadata", back_populates="job")
@@ -2482,6 +2482,9 @@ class PostJobActionAssociation(Base, RepresentById):
     def __init__(self, pja, job=None, job_id=None):
         if job is not None:
             self.job = job
+            # Safeguard: self was implicitly merged into this Session prior to SQLAlchemy 2.0.
+            if object_session(job):
+                object_session(job).add(self)
         elif job_id is not None:
             self.job_id = job_id
         else:
