@@ -51,7 +51,7 @@ from galaxy.schema.invocation import (
     InvocationReport,
     InvocationStep,
     InvocationUpdatePayload,
-    ShowInvocationResponse,
+    WorkflowInvocationResponse,
 )
 from galaxy.schema.schema import (
     AsyncFile,
@@ -1281,12 +1281,12 @@ class FastAPIInvocations:
         invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
         step_details: StepDetailQueryParam = False,
         legacy_job_state: LegacyJobStateQueryParam = False,
-    ):
+    ) -> WorkflowInvocationResponse:
         serialization_params = InvocationSerializationParams(
             step_details=step_details, legacy_job_state=legacy_job_state
         )
         rval = self.invocations_service.show(trans, invocation_id, serialization_params, eager=True)
-        return ShowInvocationResponse(**rval)
+        return WorkflowInvocationResponse(**rval)
 
     @router.get(
         "/api/workflows/{workflow_id}/invocations/{invocation_id}",
@@ -1304,7 +1304,7 @@ class FastAPIInvocations:
         invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
         step_details: StepDetailQueryParam = False,
         legacy_job_state: LegacyJobStateQueryParam = False,
-    ):
+    ) -> WorkflowInvocationResponse:
         """An alias for `GET /api/invocations/{invocation_id}`. `workflow_id` is ignored."""
         return self.show_invocation(trans, invocation_id, step_details, legacy_job_state)
 
@@ -1315,12 +1315,12 @@ class FastAPIInvocations:
         invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
         step_details: StepDetailQueryParam = False,
         legacy_job_state: LegacyJobStateQueryParam = False,
-    ):
+    ) -> WorkflowInvocationResponse:
         serialization_params = InvocationSerializationParams(
             step_details=step_details, legacy_job_state=legacy_job_state
         )
         rval = self.invocations_service.cancel(trans, invocation_id, serialization_params)
-        return rval
+        return WorkflowInvocationResponse(**rval)
 
     @router.delete(
         "/api/workflows/{workflow_id}/invocations/{invocation_id}", summary="Cancel the specified workflow invocation."
@@ -1337,7 +1337,7 @@ class FastAPIInvocations:
         invocation_id: DecodedDatabaseIdField = InvocationIDPathParam,
         step_details: StepDetailQueryParam = False,
         legacy_job_state: LegacyJobStateQueryParam = False,
-    ):
+    ) -> WorkflowInvocationResponse:
         """An alias for `DELETE /api/invocations/{invocation_id}`. `workflow_id` is ignored."""
 
         return self.cancel_invocation(trans, invocation_id, step_details, legacy_job_state)
@@ -1557,6 +1557,7 @@ class FastAPIInvocations:
         """An alias for `GET /api/invocations/{invocation_id}/jobs_summary`. `workflow_id` is ignored."""
         return self.invocation_jobs_summary(trans, invocation_id)
 
+    # TODO - Can I delete these now, as we are on 23.2?
     # TODO: remove this endpoint after 23.1 release
     @router.get(
         "/api/invocations/{invocation_id}/biocompute",

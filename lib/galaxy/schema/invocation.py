@@ -461,7 +461,7 @@ class InvocationOutputCollection(InvocationIOBase):
     )
 
 
-class ShowInvocationResponse(BaseModel):
+class WorkflowInvocationResponse(BaseModel):
     id: EncodedDatabaseIdField = Field(
         default=Required, title="ID", description="The encoded ID of the workflow invocation."
     )
