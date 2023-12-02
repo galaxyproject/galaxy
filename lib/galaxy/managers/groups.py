@@ -101,6 +101,39 @@ class GroupsManager:
         item["url"] = self._url_for(trans, "show_group", group_id=encoded_id)
         return item
 
+    def delete(self, trans: ProvidesAppContext, group_id: int):
+        group = self._get_group(trans.sa_session, group_id)
+        group.deleted = True
+        trans.sa_session.add(group)
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
+
+    def purge(self, trans: ProvidesAppContext, group_id: int):
+        group = self._get_group(trans.sa_session, group_id)
+        if not group.deleted:
+            raise galaxy.exceptions.RequestParameterInvalidException(
+                f"Group '{groups.name}' has not been deleted, so it cannot be purged."
+            )
+        # Delete UserGroupAssociations
+        for uga in group.users:
+            trans.sa_session.delete(uga)
+        # Delete GroupRoleAssociations
+        for gra in group.roles:
+            trans.sa_session.delete(gra)
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
+
+    def undelete(self, trans: ProvidesAppContext, group_id: int):
+        group = self._get_group(trans.sa_session, group_id)
+        if not group.deleted:
+            raise galaxy.exceptions.RequestParameterInvalidException(
+                f"Group '{groups.name}' has not been deleted, so it cannot be undeleted."
+            )
+        group.deleted = False
+        trans.sa_session.add(group)
+        with transaction(trans.sa_session):
+            trans.sa_session.commit()
+
     def _url_for(self, trans, name, **kwargs):
         return trans.url_builder(name, **kwargs)
 

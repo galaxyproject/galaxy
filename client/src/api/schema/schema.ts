@@ -451,6 +451,18 @@ export interface paths {
          */
         delete: operations["delete_api_groups__group_id__users__user_id__delete"];
     };
+    "/api/groups/{id}": {
+        /** Delete */
+        delete: operations["delete_api_groups__id__delete"];
+    };
+    "/api/groups/{id}/purge": {
+        /** Purge */
+        post: operations["purge_api_groups__id__purge_post"];
+    };
+    "/api/groups/{id}/undelete": {
+        /** Undelete */
+        post: operations["undelete_api_groups__id__undelete_post"];
+    };
     "/api/help/forum/search": {
         /**
          * Search the Galaxy Help forum.
@@ -12375,6 +12387,84 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["GroupUserResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    delete_api_groups__id__delete: {
+        /** Delete */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    purge_api_groups__id__purge_post: {
+        /** Purge */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    undelete_api_groups__id__undelete_post: {
+        /** Undelete */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": Record<string, never>;
                 };
             };
             /** @description Validation Error */

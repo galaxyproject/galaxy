@@ -1002,23 +1002,6 @@ class AdminGalaxy(controller.JSAppLauncher):
     @web.legacy_expose_api
     @web.require_admin
     def groups_list(self, trans, **kwargs):
-        message = kwargs.get("message")
-        status = kwargs.get("status")
-        if "operation" in kwargs:
-            id = kwargs.get("id")
-            if not id:
-                return self.message_exception(trans, f"Invalid group id ({str(id)}) received.")
-            ids = util.listify(id)
-            operation = kwargs["operation"].lower().replace("+", " ")
-            if operation == "delete":
-                message, status = self._delete_group(trans, ids)
-            elif operation == "undelete":
-                message, status = self._undelete_group(trans, ids)
-            elif operation == "purge":
-                message, status = self._purge_group(trans, ids)
-        if message and status:
-            kwargs["message"] = util.sanitize_text(message)
-            kwargs["status"] = status
         return self.group_list_grid(trans, **kwargs)
 
     @web.legacy_expose_api
@@ -1200,49 +1183,6 @@ class AdminGalaxy(controller.JSAppLauncher):
                         "One of the roles associated with this group is the newly created role with the same name."
                     )
                 return {"message": message}
-
-    def _delete_group(self, trans, ids):
-        message = "Deleted %d groups: " % len(ids)
-        for group_id in ids:
-            group = get_group(trans, group_id)
-            group.deleted = True
-            trans.sa_session.add(group)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
-            message += f" {group.name} "
-        return (message, "done")
-
-    def _undelete_group(self, trans, ids):
-        count = 0
-        undeleted_groups = ""
-        for group_id in ids:
-            group = get_group(trans, group_id)
-            if not group.deleted:
-                return (f"Group '{group.name}' has not been deleted, so it cannot be undeleted.", "error")
-            group.deleted = False
-            trans.sa_session.add(group)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
-            count += 1
-            undeleted_groups += f" {group.name}"
-        return ("Undeleted %d groups: %s" % (count, undeleted_groups), "done")
-
-    def _purge_group(self, trans, ids):
-        message = "Purged %d groups: " % len(ids)
-        for group_id in ids:
-            group = get_group(trans, group_id)
-            if not group.deleted:
-                return (f"Group '{group.name}' has not been deleted, so it cannot be purged.", "error")
-            # Delete UserGroupAssociations
-            for uga in group.users:
-                trans.sa_session.delete(uga)
-            # Delete GroupRoleAssociations
-            for gra in group.roles:
-                trans.sa_session.delete(gra)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
-            message += f" {group.name} "
-        return (message, "done")
 
     @web.expose
     @web.require_admin
