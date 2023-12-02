@@ -194,31 +194,32 @@ class RoleListGrid(grids.GridData):
             "name": "name",
             "is": "is",
         }
-        search_query = kwargs.get("search")
-        parsed_search = parse_filters_structured(search_query, INDEX_SEARCH_FILTERS)
-        query = query.filter(self.model_class.type != self.model_class.types.PRIVATE)
         deleted = False
-        for term in parsed_search.terms:
-            if isinstance(term, FilteredTerm):
-                key = term.filter
-                q = term.text
-                if key == "name":
-                    query = query.filter(text_column_filter(self.model_class.name, term))
-                if key == "description":
-                    query = query.filter(text_column_filter(self.model_class.description, term))
-                elif key == "is":
-                    if q == "deleted":
-                        deleted = True
-            elif isinstance(term, RawTextTerm):
-                query = query.filter(
-                    raw_text_column_filter(
-                        [
-                            self.model_class.description,
-                            self.model_class.name,
-                        ],
-                        term,
+        query = query.filter(self.model_class.type != self.model_class.types.PRIVATE)
+        search_query = kwargs.get("search")
+        if search_query:
+            parsed_search = parse_filters_structured(search_query, INDEX_SEARCH_FILTERS)
+            for term in parsed_search.terms:
+                if isinstance(term, FilteredTerm):
+                    key = term.filter
+                    q = term.text
+                    if key == "name":
+                        query = query.filter(text_column_filter(self.model_class.name, term))
+                    if key == "description":
+                        query = query.filter(text_column_filter(self.model_class.description, term))
+                    elif key == "is":
+                        if q == "deleted":
+                            deleted = True
+                elif isinstance(term, RawTextTerm):
+                    query = query.filter(
+                        raw_text_column_filter(
+                            [
+                                self.model_class.description,
+                                self.model_class.name,
+                            ],
+                            term,
+                        )
                     )
-                )
         query = query.filter(self.model_class.deleted == (true() if deleted else false()))
         return query
 
