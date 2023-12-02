@@ -1024,6 +1024,9 @@ class ModelImportStore(metaclass=abc.ABCMeta):
             imported_invocation = model.WorkflowInvocation()
             imported_invocation.user = self.user
             imported_invocation.history = history
+            # Safeguard: imported_invocation was implicitly merged into this Session prior to SQLAlchemy 2.0.
+            if object_session(history):
+                object_session(history).add(imported_invocation)
             workflow_key = invocation_attrs["workflow"]
             if workflow_key not in object_import_tracker.workflows_by_key:
                 raise Exception(f"Failed to find key {workflow_key} in {object_import_tracker.workflows_by_key.keys()}")
