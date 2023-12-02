@@ -7234,7 +7234,7 @@ class GalaxySession(Base, RepresentById):
     disk_usage = Column(Numeric(15, 0), index=True)
     last_action = Column(DateTime)
     current_history = relationship("History")
-    histories = relationship("GalaxySessionToHistoryAssociation", back_populates="galaxy_session")
+    histories = relationship("GalaxySessionToHistoryAssociation", back_populates="galaxy_session", cascade_backrefs=False)
     user = relationship("User", back_populates="galaxy_sessions")
 
     def __init__(self, is_valid=False, **kwd):
@@ -7271,6 +7271,9 @@ class GalaxySessionToHistoryAssociation(Base, RepresentById):
 
     def __init__(self, galaxy_session, history):
         self.galaxy_session = galaxy_session
+        # Safeguard: self was implicitly merged into this Session prior to SQLAlchemy 2.0.
+        if object_session(galaxy_session):
+            object_session(galaxy_session).add(self)
         add_object_to_object_session(self, history)
         self.history = history
 
