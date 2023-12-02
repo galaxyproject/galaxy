@@ -85,15 +85,12 @@ class FastAPIGroups:
 
     @router.delete("/api/groups/{id}", require_admin=True)
     def delete(self, id: DecodedDatabaseIdField, trans: ProvidesAppContext = DependsOnTrans):
-        group = self.manager.get(trans, id)
-        self.manager.delete(trans, group)
+        self.manager.delete(trans, id)
 
     @router.post("/api/groups/{id}/purge", require_admin=True)
     def purge(self, id: DecodedDatabaseIdField, trans: ProvidesAppContext = DependsOnTrans):
-        group = self.manager.get(trans, id)
-        self.manager.purge(trans, group)
+        self.manager.purge(trans, id)
 
     @router.post("/api/groups/{id}/undelete", require_admin=True)
     def undelete(self, id: DecodedDatabaseIdField, trans: ProvidesAppContext = DependsOnTrans):
-        group = self.manager.get(trans, id)
-        self.manager.undelete(trans, group)
+        self.manager.undelete(trans, id)

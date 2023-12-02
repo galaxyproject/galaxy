@@ -247,7 +247,7 @@ class GroupListGrid(grids.GridData):
         UsersColumn("Users", key="users"),
         RolesColumn("Roles", key="roles"),
         grids.DeletedColumn("Deleted", key="deleted", escape=False),
-        grids.GridColumn("Last Updated", key="update_time", format=pretty_print_time_interval),
+        grids.GridColumn("Last Updated", key="update_time"),
     ]
 
     def apply_query_filter(self, query, **kwargs):

@@ -55,7 +55,7 @@ const fields: FieldArray = [
         type: "operations",
         operations: [
             {
-                title: "Edit Name/Description",
+                title: "Edit Name",
                 icon: faEdit,
                 condition: (data: GroupEntry) => !data.deleted,
                 handler: (data: GroupEntry) => {
@@ -67,7 +67,7 @@ const fields: FieldArray = [
                 icon: faKey,
                 condition: (data: GroupEntry) => !data.deleted,
                 handler: (data: GroupEntry) => {
-                    emit(`/admin/form/manage_users_and_groups_for_role?id=${data.id}`);
+                    emit(`/admin/form/manage_users_and_roles_for_group?id=${data.id}`);
                 },
             },
             {

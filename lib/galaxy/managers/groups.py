@@ -9,6 +9,7 @@ from galaxy.exceptions import (
     Conflict,
     ObjectAttributeMissingException,
     ObjectNotFound,
+    RequestParameterInvalidException,
 )
 from galaxy.managers.context import ProvidesAppContext
 from galaxy.managers.roles import get_roles_by_ids
@@ -111,8 +112,8 @@ class GroupsManager:
     def purge(self, trans: ProvidesAppContext, group_id: int):
         group = self._get_group(trans.sa_session, group_id)
         if not group.deleted:
-            raise galaxy.exceptions.RequestParameterInvalidException(
-                f"Group '{groups.name}' has not been deleted, so it cannot be purged."
+            raise RequestParameterInvalidException(
+                f"Group '{group.name}' has not been deleted, so it cannot be purged."
             )
         # Delete UserGroupAssociations
         for uga in group.users:
@@ -126,8 +127,8 @@ class GroupsManager:
     def undelete(self, trans: ProvidesAppContext, group_id: int):
         group = self._get_group(trans.sa_session, group_id)
         if not group.deleted:
-            raise galaxy.exceptions.RequestParameterInvalidException(
-                f"Group '{groups.name}' has not been deleted, so it cannot be undeleted."
+            raise RequestParameterInvalidException(
+                f"Group '{group.name}' has not been deleted, so it cannot be undeleted."
             )
         group.deleted = False
         trans.sa_session.add(group)
