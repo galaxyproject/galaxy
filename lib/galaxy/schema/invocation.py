@@ -435,7 +435,10 @@ class InvocationInput(InvocationIOBase):
 
 
 class InvocationInputParameter(Model):
-    parameter_value: str = Field(default=Required, title="Parameter value", description="Value of the input parameter.")
+    # TODO - Is it ok to set parameter value to Any here? It was set to str,
+    # but that seems wrong, as it can also be an int - see test:
+    # TestWorkflowsApi::test_run_with_int_parameter
+    parameter_value: Any = Field(default=Required, title="Parameter value", description="Value of the input parameter.")
     label: str = Field(
         default=Required, title="Label", description="Label of the workflow step associated with the input parameter."
     )
@@ -477,7 +480,6 @@ class ShowInvocationResponse(BaseModel):
     state: InvocationState = Field(
         default=Required, title="Invocation state", description="State of workflow invocation."
     )
-    # TODO - I do not know what this does and only copied it. Is this right and what does it do?
     model_class: schema.INVOCATION_MODEL_CLASS = ModelClassField(schema.INVOCATION_MODEL_CLASS)
     steps: List[InvocationStep] = Field(
         default=Required, title="Steps", description="Steps of the workflow invocation."
