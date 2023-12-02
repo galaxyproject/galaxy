@@ -224,17 +224,7 @@ class RoleListGrid(grids.GridData):
         return query
 
 
-class GroupListGrid(grids.Grid):
-    class NameColumn(grids.TextColumn):
-        def get_value(self, trans, grid, group):
-            return escape(group.name)
-
-    class StatusColumn(grids.GridColumn):
-        def get_value(self, trans, grid, group):
-            if group.deleted:
-                return "deleted"
-            return ""
-
+class GroupListGrid(grids.GridData):
     class RolesColumn(grids.GridColumn):
         def get_value(self, trans, grid, group):
             if group.roles:
@@ -253,51 +243,42 @@ class GroupListGrid(grids.Grid):
     model_class = model.Group
     default_sort_key = "name"
     columns = [
-        NameColumn(
-            "Name",
-            key="name",
-            link=(lambda item: dict(action="form/manage_users_and_roles_for_group", id=item.id, webapp="galaxy")),
-            model_class=model.Group,
-            attach_popup=True,
-            filterable="advanced",
-        ),
-        UsersColumn("Users", attach_popup=False),
-        RolesColumn("Roles", attach_popup=False),
-        StatusColumn("Status", attach_popup=False),
-        # Columns that are valid for filtering but are not visible.
-        grids.DeletedColumn("Deleted", key="deleted", visible=False, filterable="advanced"),
+        grids.GridColumn("Name", key="name"),
+        UsersColumn("Users", key="users"),
+        RolesColumn("Roles", key="roles"),
+        grids.DeletedColumn("Deleted", key="deleted", escape=False),
         grids.GridColumn("Last Updated", key="update_time", format=pretty_print_time_interval),
     ]
-    columns.append(
-        grids.MulticolFilterColumn(
-            "Search", cols_to_filter=[columns[0]], key="free-text-search", visible=False, filterable="standard"
-        )
-    )
-    global_actions = [grids.GridAction("Add new group", url_args=dict(action="form/create_group"))]
-    operations = [
-        grids.GridOperation(
-            "Edit Name",
-            condition=(lambda item: not item.deleted),
-            allow_multiple=False,
-            url_args=dict(action="form/rename_group"),
-        ),
-        grids.GridOperation(
-            "Edit Permissions",
-            condition=(lambda item: not item.deleted),
-            allow_multiple=False,
-            url_args=dict(action="form/manage_users_and_roles_for_group", webapp="galaxy"),
-        ),
-        grids.GridOperation("Delete", condition=(lambda item: not item.deleted), allow_multiple=True),
-        grids.GridOperation("Undelete", condition=(lambda item: item.deleted), allow_multiple=True),
-        grids.GridOperation("Purge", condition=(lambda item: item.deleted), allow_multiple=True),
-    ]
-    standard_filters = [
-        grids.GridColumnFilter("Active", args=dict(deleted=False)),
-        grids.GridColumnFilter("Deleted", args=dict(deleted=True)),
-        grids.GridColumnFilter("All", args=dict(deleted="All")),
-    ]
-    num_rows_per_page = 50
-    use_paging = True
+
+    def apply_query_filter(self, query, **kwargs):
+        INDEX_SEARCH_FILTERS = {
+            "name": "name",
+            "is": "is",
+        }
+        deleted = False
+        search_query = kwargs.get("search")
+        if search_query:
+            parsed_search = parse_filters_structured(search_query, INDEX_SEARCH_FILTERS)
+            for term in parsed_search.terms:
+                if isinstance(term, FilteredTerm):
+                    key = term.filter
+                    q = term.text
+                    if key == "name":
+                        query = query.filter(text_column_filter(self.model_class.name, term))
+                    elif key == "is":
+                        if q == "deleted":
+                            deleted = True
+                elif isinstance(term, RawTextTerm):
+                    query = query.filter(
+                        raw_text_column_filter(
+                            [
+                                self.model_class.name,
+                            ],
+                            term,
+                        )
+                    )
+        query = query.filter(self.model_class.deleted == (true() if deleted else false()))
+        return query
 
 
 class QuotaListGrid(grids.Grid):
