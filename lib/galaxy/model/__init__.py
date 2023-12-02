@@ -2774,7 +2774,7 @@ class Group(Base, Dictifiable, RepresentById):
     name = Column(String(255), index=True, unique=True)
     deleted = Column(Boolean, index=True, default=False)
     quotas = relationship("GroupQuotaAssociation", back_populates="group")
-    roles = relationship("GroupRoleAssociation", back_populates="group")
+    roles = relationship("GroupRoleAssociation", back_populates="group", cascade_backrefs=False)
     users = relationship("UserGroupAssociation", back_populates="group")
 
     dict_collection_visible_keys = ["id", "name"]
@@ -3502,6 +3502,9 @@ class GroupRoleAssociation(Base, RepresentById):
 
     def __init__(self, group, role):
         self.group = group
+        # Safeguard: self was implicitly merged into this Session prior to SQLAlchemy 2.0.
+        if object_session(group):
+                object_session(group).add(self)
         self.role = role
 
 
