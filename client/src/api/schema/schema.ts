@@ -6545,6 +6545,92 @@ export interface components {
             /** Uninstalled */
             uninstalled: boolean;
         };
+        /** InvocationInput */
+        InvocationInput: {
+            /**
+             * ID
+             * @description The encoded ID of the dataset/dataset collection.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Label
+             * @description Label of the workflow step associated with the input dataset/dataset collection.
+             */
+            label: string;
+            /**
+             * Source
+             * @description Source type of the input dataset/dataset collection.
+             */
+            src: "hda" | "hdca";
+            /**
+             * Workflow step ID
+             * @description The encoded ID of the workflow step associated with the dataset/dataset collection.
+             * @example 0123456789ABCDEF
+             */
+            workflow_step_id: string;
+        };
+        /** InvocationInputParameter */
+        InvocationInputParameter: {
+            /**
+             * Label
+             * @description Label of the workflow step associated with the input parameter.
+             */
+            label: string;
+            /**
+             * Parameter value
+             * @description Value of the input parameter.
+             */
+            parameter_value: Record<string, never>;
+            /**
+             * Workflow step ID
+             * @description The encoded ID of the workflow step associated with the input parameter.
+             * @example 0123456789ABCDEF
+             */
+            workflow_step_id: string;
+        };
+        /** InvocationOutput */
+        InvocationOutput: {
+            /**
+             * ID
+             * @description The encoded ID of the dataset/dataset collection.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Source
+             * @description Source model of the output dataset.
+             * @enum {string}
+             */
+            src: "hda";
+            /**
+             * Workflow step ID
+             * @description The encoded ID of the workflow step associated with the dataset/dataset collection.
+             * @example 0123456789ABCDEF
+             */
+            workflow_step_id: string;
+        };
+        /** InvocationOutputCollection */
+        InvocationOutputCollection: {
+            /**
+             * ID
+             * @description The encoded ID of the dataset/dataset collection.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Source
+             * @description Source model of the output dataset collection.
+             * @enum {string}
+             */
+            src: "hdca";
+            /**
+             * Workflow step ID
+             * @description The encoded ID of the workflow step associated with the dataset/dataset collection.
+             * @example 0123456789ABCDEF
+             */
+            workflow_step_id: string;
+        };
         /**
          * InvocationReport
          * @description Report describing workflow invocation
@@ -6603,6 +6689,12 @@ export interface components {
              */
             username: string;
         };
+        /**
+         * InvocationState
+         * @description An enumeration.
+         * @enum {string}
+         */
+        InvocationState: "new" | "ready" | "scheduled" | "cancelled" | "cancelling" | "failed";
         /**
          * InvocationStep
          * @description Information about workflow invocation step
@@ -6663,7 +6755,7 @@ export interface components {
              * State of the invocation step
              * @description Describes where in the scheduling process the workflow invocation step is.
              */
-            state: components["schemas"]["InvocationStepState"];
+            state: string;
             /**
              * Subworkflow invocation ID
              * @description The encoded ID of the subworkflow invocation.
@@ -6732,12 +6824,6 @@ export interface components {
              */
             uuid?: string;
         };
-        /**
-         * InvocationStepState
-         * @description An enumeration.
-         * @enum {string}
-         */
-        InvocationStepState: "new" | "ready" | "scheduled";
         /** InvocationUpdatePayload */
         InvocationUpdatePayload: {
             /**
@@ -10299,6 +10385,100 @@ export interface components {
          * @default []
          */
         VisualizationSummaryList: components["schemas"]["VisualizationSummary"][];
+        /** WorkflowInvocationResponse */
+        WorkflowInvocationResponse: {
+            /**
+             * Create Time
+             * Format: date-time
+             * @description The time and date this item was created.
+             */
+            create_time: string;
+            /**
+             * History ID
+             * @description The encoded ID of the history associated with the invocation.
+             * @example 0123456789ABCDEF
+             */
+            history_id: string;
+            /**
+             * ID
+             * @description The encoded ID of the workflow invocation.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Input step parameters
+             * @description Input step parameters of the workflow invocation.
+             */
+            input_step_parameters: {
+                [key: string]: components["schemas"]["InvocationInputParameter"] | undefined;
+            };
+            /**
+             * Inputs
+             * @description Input datasets/dataset collections of the workflow invocation.
+             */
+            inputs: {
+                [key: string]: components["schemas"]["InvocationInput"] | undefined;
+            };
+            /**
+             * Message
+             * @description Message of the workflow invocation.
+             */
+            messages?: Record<string, never>;
+            /**
+             * Model class
+             * @description The name of the database model class.
+             * @default WorkflowInvocation
+             * @constant
+             * @enum {string}
+             */
+            model_class?: "WorkflowInvocation";
+            /**
+             * Output collections
+             * @description Output dataset collections of the workflow invocation.
+             */
+            output_collections: {
+                [key: string]: components["schemas"]["InvocationOutputCollection"] | undefined;
+            };
+            /**
+             * Output values
+             * @description Output values of the workflow invocation.
+             */
+            output_values: Record<string, never>;
+            /**
+             * Outputs
+             * @description Output datasets of the workflow invocation.
+             */
+            outputs: {
+                [key: string]: components["schemas"]["InvocationOutput"] | undefined;
+            };
+            /**
+             * Invocation state
+             * @description State of workflow invocation.
+             */
+            state: components["schemas"]["InvocationState"];
+            /**
+             * Steps
+             * @description Steps of the workflow invocation.
+             */
+            steps: components["schemas"]["InvocationStep"][];
+            /**
+             * Update Time
+             * Format: date-time
+             * @description The last time and date this item was updated.
+             */
+            update_time: string;
+            /**
+             * UUID
+             * @description Universal unique identifier of the workflow invocation.
+             */
+            uuid: Record<string, never>;
+            /**
+             * Workflow ID
+             * @description The encoded Workflow ID associated with the invocation.
+             * @example 0123456789ABCDEF
+             */
+            workflow_id: string;
+        };
         /** WorkflowInvocationStateSummary */
         WorkflowInvocationStateSummary: {
             /**
@@ -15681,7 +15861,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["WorkflowInvocationResponse"];
                 };
             };
             /** @description Validation Error */
@@ -15719,7 +15899,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["WorkflowInvocationResponse"];
                 };
             };
             /** @description Validation Error */
@@ -20497,7 +20677,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["WorkflowInvocationResponse"];
                 };
             };
             /** @description Validation Error */
@@ -20540,7 +20720,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["WorkflowInvocationResponse"];
                 };
             };
             /** @description Validation Error */
@@ -20952,7 +21132,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["WorkflowInvocationResponse"];
                 };
             };
             /** @description Validation Error */
@@ -20996,7 +21176,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["WorkflowInvocationResponse"];
                 };
             };
             /** @description Validation Error */
