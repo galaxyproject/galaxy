@@ -3775,6 +3775,9 @@ class LibraryDatasetPermissions(Base, RepresentById):
         self.action = action
         if isinstance(library_item, LibraryDataset):
             self.library_dataset = library_item
+            # Safeguard: self was implicitly merged into this Session prior to SQLAlchemy 2.0.
+            if object_session(library_item):
+                object_session(library_item).add(self)
         else:
             raise Exception(f"Invalid LibraryDataset specified: {library_item.__class__.__name__}")
         self.role = role
@@ -5642,7 +5645,7 @@ class LibraryDataset(Base, Serializable):
         viewonly=True,
         uselist=True,
     )
-    actions = relationship("LibraryDatasetPermissions", back_populates="library_dataset")
+    actions = relationship("LibraryDatasetPermissions", back_populates="library_dataset", cascade_backrefs=False)
 
     # This class acts as a proxy to the currently selected LDDA
     upload_options = [
