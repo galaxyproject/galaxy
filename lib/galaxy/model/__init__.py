@@ -3614,7 +3614,7 @@ class Quota(Base, Dictifiable, RepresentById):
     operation = Column(String(8))
     deleted = Column(Boolean, index=True, default=False)
     quota_source_label = Column(String(32), default=None)
-    default = relationship("DefaultQuotaAssociation", back_populates="quota")
+    default = relationship("DefaultQuotaAssociation", back_populates="quota", cascade_backrefs=False)
     groups = relationship("GroupQuotaAssociation", back_populates="quota")
     users = relationship("UserQuotaAssociation", back_populates="quota")
 
@@ -3684,6 +3684,9 @@ class DefaultQuotaAssociation(Base, Dictifiable, RepresentById):
         assert type in self.types.__members__.values(), "Invalid type"
         self.type = type
         self.quota = quota
+        # Safeguard: self was implicitly merged into this Session prior to SQLAlchemy 2.0.
+        if object_session(quota):
+            object_session(quota).add(self)
 
 
 class DatasetPermissions(Base, RepresentById):
