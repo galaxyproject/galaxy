@@ -1561,7 +1561,7 @@ class FastAPIInvocations:
         """An alias for `GET /api/invocations/{invocation_id}/jobs_summary`. `workflow_id` is ignored."""
         return self.invocation_jobs_summary(trans, invocation_id)
 
-    # TODO - Can I delete these now, as we are on 23.2?
+    # Should I even create models for those as they will be removed?
     # TODO: remove this endpoint after 23.1 release
     @router.get(
         "/api/invocations/{invocation_id}/biocompute",
