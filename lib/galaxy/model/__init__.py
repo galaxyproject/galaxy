@@ -3513,7 +3513,7 @@ class GroupRoleAssociation(Base, RepresentById):
         self.group = group
         # Safeguard: self was implicitly merged into this Session prior to SQLAlchemy 2.0.
         if object_session(group):
-                object_session(group).add(self)
+            object_session(group).add(self)
         self.role = role
 
 
@@ -7234,7 +7234,9 @@ class GalaxySession(Base, RepresentById):
     disk_usage = Column(Numeric(15, 0), index=True)
     last_action = Column(DateTime)
     current_history = relationship("History")
-    histories = relationship("GalaxySessionToHistoryAssociation", back_populates="galaxy_session", cascade_backrefs=False)
+    histories = relationship(
+        "GalaxySessionToHistoryAssociation", back_populates="galaxy_session", cascade_backrefs=False
+    )
     user = relationship("User", back_populates="galaxy_sessions")
 
     def __init__(self, is_valid=False, **kwd):
@@ -8199,7 +8201,9 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
     history_id = Column(Integer, ForeignKey("history.id"), index=True)
 
     history = relationship("History", back_populates="workflow_invocations")
-    input_parameters = relationship("WorkflowRequestInputParameter", back_populates="workflow_invocation")
+    input_parameters = relationship(
+        "WorkflowRequestInputParameter", back_populates="workflow_invocation", cascade_backrefs=False
+    )
     step_states = relationship("WorkflowRequestStepState", back_populates="workflow_invocation")
     input_step_parameters = relationship("WorkflowRequestInputStepParameter", back_populates="workflow_invocation")
     input_datasets = relationship("WorkflowRequestToInputDatasetAssociation", back_populates="workflow_invocation")
