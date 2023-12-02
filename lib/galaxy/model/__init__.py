@@ -744,7 +744,7 @@ class User(Base, Dictifiable, RepresentById):
         primaryjoin=(lambda: User.id == StoredWorkflow.user_id),  # type: ignore[has-type]
         cascade_backrefs=False,
     )
-    all_notifications = relationship("UserNotificationAssociation", back_populates="user")
+    all_notifications = relationship("UserNotificationAssociation", back_populates="user", cascade_backrefs=False)
     non_private_roles = relationship(
         "UserRoleAssociation",
         viewonly=True,
@@ -2855,6 +2855,9 @@ class UserNotificationAssociation(Base, RepresentById):
 
     def __init__(self, user, notification):
         self.user = user
+        # Safeguard: self was implicitly merged into this Session prior to SQLAlchemy 2.0.
+        if object_session(user):
+            object_session(user).add(self)
         self.notification = notification
 
 
