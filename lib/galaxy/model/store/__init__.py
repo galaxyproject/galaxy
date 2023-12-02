@@ -40,7 +40,10 @@ from rocrate.model.computationalworkflow import (
 )
 from rocrate.rocrate import ROCrate
 from sqlalchemy import select
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import (
+    joinedload,
+    object_session,
+)
 from sqlalchemy.orm.scoping import scoped_session
 from sqlalchemy.sql import expression
 from typing_extensions import Protocol
@@ -1105,6 +1108,9 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 input_parameter.name = input_parameter_attrs["name"]
                 input_parameter.type = input_parameter_attrs["type"]
                 input_parameter.workflow_invocation = imported_invocation
+                # Safeguard: input_parameter was implicitly merged into this Session prior to SQLAlchemy 2.0.
+                if object_session(imported_invocation):
+                    object_session(imported_invocation).add(input_parameter)
                 self._session_add(input_parameter)
                 input_parameters.append(input_parameter)
 
