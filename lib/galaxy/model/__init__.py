@@ -3878,7 +3878,7 @@ class Dataset(Base, StorableObject, Serializable):
     )
     hashes = relationship("DatasetHash", back_populates="dataset", cascade_backrefs=False)
     sources = relationship("DatasetSource", back_populates="dataset")
-    history_associations = relationship("HistoryDatasetAssociation", back_populates="dataset")
+    history_associations = relationship("HistoryDatasetAssociation", back_populates="dataset", cascade_backrefs=False)
     library_associations = relationship(
         "LibraryDatasetDatasetAssociation",
         primaryjoin=(lambda: LibraryDatasetDatasetAssociation.table.c.dataset_id == Dataset.id),
@@ -4374,6 +4374,11 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
         elif dataset:
             add_object_to_object_session(self, dataset)
         self.dataset = dataset
+
+        # Safeguard: self was implicitly merged into this Session prior to SQLAlchemy 2.0.
+        if object_session(dataset):
+            object_session(dataset).add(self)
+
         self.parent_id = parent_id
 
     @property
