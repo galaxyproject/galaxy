@@ -1052,8 +1052,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 imported_invocation_step = model.WorkflowInvocationStep()
                 imported_invocation_step.workflow_invocation = imported_invocation
                 # Safeguard: imported_invocation_step was implicitly merged into this Session prior to SQLAlchemy 2.0.
-                if imported_invocation and object_session(imported_invocation):
-                    object_session(imported_invocation).add(imported_invocation_step)
+                self.sa_session.add(imported_invocation_step)
                 attach_workflow_step(imported_invocation_step, step_attrs)
                 restore_times(imported_invocation_step, step_attrs)
                 imported_invocation_step.action = step_attrs["action"]
@@ -1109,8 +1108,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 input_parameter.type = input_parameter_attrs["type"]
                 input_parameter.workflow_invocation = imported_invocation
                 # Safeguard: input_parameter was implicitly merged into this Session prior to SQLAlchemy 2.0.
-                if imported_invocation and object_session(imported_invocation):
-                    object_session(imported_invocation).add(input_parameter)
+                self.sa_session.add(input_parameter)
                 self._session_add(input_parameter)
                 input_parameters.append(input_parameter)
 
