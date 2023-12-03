@@ -76,7 +76,7 @@ const fields: FieldArray = [
                 condition: (data: GroupEntry) => !data.deleted,
                 handler: async (data: GroupEntry) => {
                     try {
-                        await deleteGroup({ id: String(data.id) });
+                        await deleteGroup({ group_id: String(data.id) });
                         return {
                             status: "success",
                             message: `'${data.name}' has been deleted.`,
@@ -95,7 +95,7 @@ const fields: FieldArray = [
                 condition: (data: GroupEntry) => !!data.deleted,
                 handler: async (data: GroupEntry) => {
                     try {
-                        await purgeGroup({ id: String(data.id) });
+                        await purgeGroup({ group_id: String(data.id) });
                         return {
                             status: "success",
                             message: `'${data.name}' has been purged.`,
@@ -114,7 +114,7 @@ const fields: FieldArray = [
                 condition: (data: GroupEntry) => !!data.deleted,
                 handler: async (data: GroupEntry) => {
                     try {
-                        await undeleteGroup({ id: String(data.id) });
+                        await undeleteGroup({ group_id: String(data.id) });
                         return {
                             status: "success",
                             message: `'${data.name}' has been restored.`,

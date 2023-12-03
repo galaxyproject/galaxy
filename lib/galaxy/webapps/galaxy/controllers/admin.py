@@ -26,7 +26,6 @@ from galaxy.model.index_filter_util import (
 )
 from galaxy.security.validate_user_input import validate_password
 from galaxy.structured_app import StructuredApp
-from galaxy.util import pretty_print_time_interval
 from galaxy.util.search import (
     FilteredTerm,
     parse_filters_structured,

@@ -392,6 +392,12 @@ export interface paths {
         get: operations["show_group_api_groups__group_id__get"];
         /** Modifies a group. */
         put: operations["update_api_groups__group_id__put"];
+        /** Delete */
+        delete: operations["delete_api_groups__group_id__delete"];
+    };
+    "/api/groups/{group_id}/purge": {
+        /** Purge */
+        post: operations["purge_api_groups__group_id__purge_post"];
     };
     "/api/groups/{group_id}/roles": {
         /** Displays a collection (list) of groups. */
@@ -404,6 +410,10 @@ export interface paths {
         put: operations["update_api_groups__group_id__roles__role_id__put"];
         /** Removes a role from a group */
         delete: operations["delete_api_groups__group_id__roles__role_id__delete"];
+    };
+    "/api/groups/{group_id}/undelete": {
+        /** Undelete */
+        post: operations["undelete_api_groups__group_id__undelete_post"];
     };
     "/api/groups/{group_id}/user/{user_id}": {
         /**
@@ -450,18 +460,6 @@ export interface paths {
          * Removes a user from a group
          */
         delete: operations["delete_api_groups__group_id__users__user_id__delete"];
-    };
-    "/api/groups/{id}": {
-        /** Delete */
-        delete: operations["delete_api_groups__id__delete"];
-    };
-    "/api/groups/{id}/purge": {
-        /** Purge */
-        post: operations["purge_api_groups__id__purge_post"];
-    };
-    "/api/groups/{id}/undelete": {
-        /** Undelete */
-        post: operations["undelete_api_groups__id__undelete_post"];
     };
     "/api/help/forum/search": {
         /**
@@ -12056,6 +12054,58 @@ export interface operations {
             };
         };
     };
+    delete_api_groups__group_id__delete: {
+        /** Delete */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                group_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    purge_api_groups__group_id__purge_post: {
+        /** Purge */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                group_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     group_roles_api_groups__group_id__roles_get: {
         /** Displays a collection (list) of groups. */
         parameters: {
@@ -12160,6 +12210,32 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["GroupRoleResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    undelete_api_groups__group_id__undelete_post: {
+        /** Undelete */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                group_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": Record<string, never>;
                 };
             };
             /** @description Validation Error */
@@ -12387,84 +12463,6 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["GroupUserResponse"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    delete_api_groups__id__delete: {
-        /** Delete */
-        parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string;
-            };
-            path: {
-                id: string;
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json": Record<string, never>;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    purge_api_groups__id__purge_post: {
-        /** Purge */
-        parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string;
-            };
-            path: {
-                id: string;
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json": Record<string, never>;
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
-                };
-            };
-        };
-    };
-    undelete_api_groups__id__undelete_post: {
-        /** Undelete */
-        parameters: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string;
-            };
-            path: {
-                id: string;
-            };
-        };
-        responses: {
-            /** @description Successful Response */
-            200: {
-                content: {
-                    "application/json": Record<string, never>;
                 };
             };
             /** @description Validation Error */

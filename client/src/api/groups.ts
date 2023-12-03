@@ -8,6 +8,6 @@ export async function getAllGroups(): Promise<GroupModel[]> {
     return data;
 }
 
-export const deleteGroup = fetcher.path("/api/groups/{id}").method("delete").create();
-export const purgeGroup = fetcher.path("/api/groups/{id}/purge").method("post").create();
-export const undeleteGroup = fetcher.path("/api/groups/{id}/undelete").method("post").create();
+export const deleteGroup = fetcher.path("/api/groups/{group_id}").method("delete").create();
+export const purgeGroup = fetcher.path("/api/groups/{group_id}/purge").method("post").create();
+export const undeleteGroup = fetcher.path("/api/groups/{group_id}/undelete").method("post").create();
