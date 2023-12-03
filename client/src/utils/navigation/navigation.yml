@@ -956,7 +956,7 @@ admin:
     dm_table_card: '#data-table-card'
     users_grid: '#users-grid'
     users_grid_create_button: '[data-description="grid action create new user"]'
-    groups_grid_create_button: '.manage-table-actions .action-button'
+    groups_grid_create_button: '[data-description="grid action create new group"]'
     registration_form: 'form#registration'
     groups_grid: '#groups-grid'
     roles_grid: '#roles-grid'
