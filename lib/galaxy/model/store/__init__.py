@@ -1155,6 +1155,8 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 input_dataset_collection = model.WorkflowRequestToInputDatasetCollectionAssociation()
                 attach_workflow_step(input_dataset_collection, input_dataset_collection_attrs)
                 input_dataset_collection.workflow_invocation = imported_invocation
+                # Safeguard: input_dataset_collection was implicitly merged into this Session prior to SQLAlchemy 2.0.
+                self.sa_session.add(input_dataset_collection)
                 input_dataset_collection.name = input_dataset_collection_attrs["name"]
                 dataset_collection_link_attrs = input_dataset_collection_attrs["dataset_collection"]
                 if dataset_collection_link_attrs:
@@ -1169,6 +1171,8 @@ class ModelImportStore(metaclass=abc.ABCMeta):
             for output_dataset_collection_attrs in invocation_attrs["output_dataset_collections"]:
                 output_dataset_collection = model.WorkflowInvocationOutputDatasetCollectionAssociation()
                 output_dataset_collection.workflow_invocation = imported_invocation
+                # Safeguard: output_dataset_collection was implicitly merged into this Session prior to SQLAlchemy 2.0.
+                self.sa_session.add(output_dataset_collection)
                 attach_workflow_step(output_dataset_collection, output_dataset_collection_attrs)
                 workflow_output = output_dataset_collection_attrs["workflow_output"]
                 label = workflow_output.get("label")

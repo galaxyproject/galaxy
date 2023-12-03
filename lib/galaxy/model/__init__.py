@@ -8210,7 +8210,9 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         "WorkflowRequestToInputDatasetAssociation", back_populates="workflow_invocation", cascade_backrefs=False
     )
     input_dataset_collections = relationship(
-        "WorkflowRequestToInputDatasetCollectionAssociation", back_populates="workflow_invocation"
+        "WorkflowRequestToInputDatasetCollectionAssociation",
+        back_populates="workflow_invocation",
+        cascade_backrefs=False,
     )
     subworkflow_invocations = relationship(
         "WorkflowInvocationToSubworkflowInvocationAssociation",
@@ -8228,7 +8230,9 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
     )
     workflow: Workflow = relationship("Workflow")
     output_dataset_collections = relationship(
-        "WorkflowInvocationOutputDatasetCollectionAssociation", back_populates="workflow_invocation"
+        "WorkflowInvocationOutputDatasetCollectionAssociation",
+        back_populates="workflow_invocation",
+        cascade_backrefs=False,
     )
     output_datasets = relationship("WorkflowInvocationOutputDatasetAssociation", back_populates="workflow_invocation")
     output_values = relationship("WorkflowInvocationOutputValue", back_populates="workflow_invocation")
@@ -8454,6 +8458,8 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         elif output_object.history_content_type == "dataset_collection":
             output_assoc = WorkflowInvocationOutputDatasetCollectionAssociation()
             output_assoc.workflow_invocation = self
+            if object_session(self):
+                object_session(self).add(output_assoc)
             output_assoc.workflow_output = workflow_output
             output_assoc.workflow_step = step
             output_assoc.dataset_collection = output_object
