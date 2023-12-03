@@ -1185,6 +1185,8 @@ class ModelImportStore(metaclass=abc.ABCMeta):
             for output_dataset_attrs in invocation_attrs["output_datasets"]:
                 output_dataset = model.WorkflowInvocationOutputDatasetAssociation()
                 output_dataset.workflow_invocation = imported_invocation
+                # Safeguard: output_dataset was implicitly merged into this Session prior to SQLAlchemy 2.0.
+                self.sa_session.add(output_dataset)
                 attach_workflow_step(output_dataset, output_dataset_attrs)
                 workflow_output = output_dataset_attrs["workflow_output"]
                 label = workflow_output.get("label")
