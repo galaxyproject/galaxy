@@ -1199,6 +1199,8 @@ class ModelImportStore(metaclass=abc.ABCMeta):
             for output_value_attrs in invocation_attrs["output_values"]:
                 output_value = model.WorkflowInvocationOutputValue()
                 output_value.workflow_invocation = imported_invocation
+                # Safeguard: output_value was implicitly merged into this Session prior to SQLAlchemy 2.0.
+                self.sa_session.add(output_value)
                 output_value.value = output_value_attrs["value"]
                 attach_workflow_step(output_value, output_value_attrs)
                 workflow_output = output_value_attrs["workflow_output"]
