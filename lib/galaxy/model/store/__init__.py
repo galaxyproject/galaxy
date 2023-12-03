@@ -1141,6 +1141,8 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 input_dataset = model.WorkflowRequestToInputDatasetAssociation()
                 attach_workflow_step(input_dataset, input_dataset_attrs)
                 input_dataset.workflow_invocation = imported_invocation
+                # Safeguard: input_dataset was implicitly merged into this Session prior to SQLAlchemy 2.0.
+                self.sa_session.add(input_dataset)
                 input_dataset.name = input_dataset_attrs["name"]
                 dataset_link_attrs = input_dataset_attrs["dataset"]
                 if dataset_link_attrs:
