@@ -1122,6 +1122,8 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 step_state.value = step_state_attrs["value"]
                 attach_workflow_step(step_state, step_state_attrs)
                 step_state.workflow_invocation = imported_invocation
+                # Safeguard: step_state was implicitly merged into this Session prior to SQLAlchemy 2.0.
+                self.sa_session.add(step_state)
                 self._session_add(step_state)
                 step_states.append(step_state)
 

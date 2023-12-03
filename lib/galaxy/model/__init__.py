@@ -8204,7 +8204,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
     input_parameters = relationship(
         "WorkflowRequestInputParameter", back_populates="workflow_invocation", cascade_backrefs=False
     )
-    step_states = relationship("WorkflowRequestStepState", back_populates="workflow_invocation")
+    step_states = relationship("WorkflowRequestStepState", back_populates="workflow_invocation", cascade_backrefs=False)
     input_step_parameters = relationship("WorkflowRequestInputStepParameter", back_populates="workflow_invocation")
     input_datasets = relationship("WorkflowRequestToInputDatasetAssociation", back_populates="workflow_invocation")
     input_dataset_collections = relationship(
