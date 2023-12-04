@@ -8873,7 +8873,9 @@ class WorkflowInvocationStep(Base, Dictifiable, Serializable):
     job = relationship("Job", back_populates="workflow_invocation_step", uselist=False)
     implicit_collection_jobs = relationship("ImplicitCollectionJobs", uselist=False)
     output_dataset_collections = relationship(
-        "WorkflowInvocationStepOutputDatasetCollectionAssociation", back_populates="workflow_invocation_step"
+        "WorkflowInvocationStepOutputDatasetCollectionAssociation",
+        back_populates="workflow_invocation_step",
+        cascade_backrefs=False,
     )
     output_datasets = relationship(
         "WorkflowInvocationStepOutputDatasetAssociation",
@@ -8942,6 +8944,9 @@ class WorkflowInvocationStep(Base, Dictifiable, Serializable):
         elif output_object.history_content_type == "dataset_collection":
             output_assoc = WorkflowInvocationStepOutputDatasetCollectionAssociation()
             output_assoc.workflow_invocation_step = self
+            # Safeguard: output_assoc was implicitly merged into this Session prior to SQLAlchemy 2.0.
+            if object_session(self):
+                object_session(self).add(output_assoc)
             output_assoc.dataset_collection = output_object
             output_assoc.output_name = output_name
             self.output_dataset_collections.append(output_assoc)
