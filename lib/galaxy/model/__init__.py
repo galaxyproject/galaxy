@@ -8876,7 +8876,9 @@ class WorkflowInvocationStep(Base, Dictifiable, Serializable):
         "WorkflowInvocationStepOutputDatasetCollectionAssociation", back_populates="workflow_invocation_step"
     )
     output_datasets = relationship(
-        "WorkflowInvocationStepOutputDatasetAssociation", back_populates="workflow_invocation_step"
+        "WorkflowInvocationStepOutputDatasetAssociation",
+        back_populates="workflow_invocation_step",
+        cascade_backrefs=False,
     )
     workflow_invocation = relationship("WorkflowInvocation", back_populates="steps")
     output_value = relationship(
@@ -8931,6 +8933,9 @@ class WorkflowInvocationStep(Base, Dictifiable, Serializable):
         if output_object.history_content_type == "dataset":
             output_assoc = WorkflowInvocationStepOutputDatasetAssociation()
             output_assoc.workflow_invocation_step = self
+            # Safeguard: output_assoc was implicitly merged into this Session prior to SQLAlchemy 2.0.
+            if object_session(self):
+                object_session(self).add(output_assoc)
             output_assoc.dataset = output_object
             output_assoc.output_name = output_name
             self.output_datasets.append(output_assoc)
