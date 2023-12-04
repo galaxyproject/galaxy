@@ -7790,6 +7790,9 @@ class WorkflowStep(Base, RepresentById):
 
         conn = WorkflowStepConnection()
         conn.input_step_input = step_input
+        # Safeguard: conn was implicitly merged into this Session prior to SQLAlchemy 2.0.
+        if step_input and object_session(step_input):
+            object_session(step_input).add(conn)
         conn.output_name = output_name
         add_object_to_object_session(conn, output_step)
         conn.output_step = output_step
@@ -7979,6 +7982,7 @@ class WorkflowStepInput(Base, RepresentById):
         "WorkflowStepConnection",
         back_populates="input_step_input",
         primaryjoin=(lambda: WorkflowStepConnection.input_step_input_id == WorkflowStepInput.id),
+        cascade_backrefs=False,
     )
 
     def __init__(self, workflow_step):
