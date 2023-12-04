@@ -1770,11 +1770,11 @@ def test_tests_discover_outputs(lint_ctx):
         in lint_ctx.error_messages
     )
     assert (
-        "Test 3: test collection 'collection_name' must contain nested 'element' tags and/or element childen with a 'count' attribute"
+        "Test 3: test collection 'collection_name' must contain nested 'element' tags and/or element children with a 'count' attribute"
         in lint_ctx.error_messages
     )
     assert (
-        "Test 5: test collection 'collection_name' must contain nested 'element' tags and/or element childen with a 'count' attribute"
+        "Test 5: test collection 'collection_name' must contain nested 'element' tags and/or element children with a 'count' attribute"
         in lint_ctx.error_messages
     )
     assert not lint_ctx.warn_messages
