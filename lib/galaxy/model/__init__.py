@@ -1345,7 +1345,9 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         "ImplicitCollectionJobsJobAssociation", back_populates="job", uselist=False
     )
     container = relationship("JobContainerAssociation", back_populates="job", uselist=False)
-    data_manager_association = relationship("DataManagerJobAssociation", back_populates="job", uselist=False)
+    data_manager_association = relationship(
+        "DataManagerJobAssociation", back_populates="job", uselist=False, cascade_backrefs=False
+    )
     history_dataset_collection_associations = relationship("HistoryDatasetCollectionAssociation", back_populates="job")
     workflow_invocation_step = relationship("WorkflowInvocationStep", back_populates="job", uselist=False)
 
