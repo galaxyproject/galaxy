@@ -20,6 +20,7 @@ import tempfile
 
 import requests
 from sqlalchemy import select
+from sqlalchemy.orm import object_session
 
 from galaxy import model
 from galaxy.model.base import transaction
@@ -138,6 +139,8 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
             sa_session.commit()
         job = model.Job()
         job.history = history
+        # Safeguard: job was implicitly merged into this Session prior to SQLAlchemy 2.0.
+        object_session(history).add(job)
         job.user = user
         job.handler = "unknown-handler"
         job.state = state

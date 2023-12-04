@@ -2999,7 +2999,7 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
     galaxy_sessions = relationship("GalaxySessionToHistoryAssociation", back_populates="history")
     workflow_invocations = relationship("WorkflowInvocation", back_populates="history", cascade_backrefs=False)
     user = relationship("User", back_populates="histories")
-    jobs = relationship("Job", back_populates="history")
+    jobs = relationship("Job", back_populates="history", cascade_backrefs=False)
 
     update_time = column_property(
         select(func.max(HistoryAudit.update_time)).where(HistoryAudit.history_id == id).scalar_subquery(),
