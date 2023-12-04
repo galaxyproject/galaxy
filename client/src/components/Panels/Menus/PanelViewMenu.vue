@@ -106,7 +106,7 @@ export default {
 </script>
 
 <style lang="scss">
-.dropdown-menu {
+.tool-panel-dropdown .dropdown-menu {
     overflow: auto;
     max-height: 50vh;
     min-width: 100%;
