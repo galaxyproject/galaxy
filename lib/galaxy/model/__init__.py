@@ -2413,7 +2413,9 @@ class ImplicitCollectionJobs(Base, Serializable):
 
     id = Column(Integer, primary_key=True)
     populated_state = Column(TrimmedString(64), default="new", nullable=False)
-    jobs = relationship("ImplicitCollectionJobsJobAssociation", back_populates="implicit_collection_jobs")
+    jobs = relationship(
+        "ImplicitCollectionJobsJobAssociation", back_populates="implicit_collection_jobs", cascade_backrefs=False
+    )
 
     class populated_states(str, Enum):
         NEW = "new"  # New implicit jobs object, unpopulated job associations
