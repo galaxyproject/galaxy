@@ -1472,7 +1472,7 @@ def test_inputs_repeats(lint_ctx):
 
 def test_outputs_missing(lint_ctx):
     tool_source = get_xml_tool_source(OUTPUTS_MISSING)
-    run_lint(lint_ctx, outputs.lint_output, tool_source)
+    run_lint_module(lint_ctx, outputs, tool_source)
     assert "Tool contains no outputs section, most tools should produce outputs." in lint_ctx.warn_messages
     assert not lint_ctx.info_messages
     assert not lint_ctx.valid_messages
@@ -1482,7 +1482,7 @@ def test_outputs_missing(lint_ctx):
 
 def test_outputs_multiple(lint_ctx):
     tool_source = get_xml_tool_source(OUTPUTS_MULTIPLE)
-    run_lint(lint_ctx, outputs.lint_output, tool_source)
+    run_lint_module(lint_ctx, outputs, tool_source)
     assert "0 outputs found." in lint_ctx.info_messages
     assert "Tool contains multiple output sections, behavior undefined." in lint_ctx.warn_messages
     assert len(lint_ctx.info_messages) == 1
@@ -1493,7 +1493,7 @@ def test_outputs_multiple(lint_ctx):
 
 def test_outputs_unknown_tag(lint_ctx):
     tool_source = get_xml_tool_source(OUTPUTS_UNKNOWN_TAG)
-    run_lint(lint_ctx, outputs.lint_output, tool_source)
+    run_lint_module(lint_ctx, outputs, tool_source)
     assert "0 outputs found." in lint_ctx.info_messages
     assert "Unknown element found in outputs [output]" in lint_ctx.warn_messages
     assert len(lint_ctx.info_messages) == 1
@@ -1504,7 +1504,7 @@ def test_outputs_unknown_tag(lint_ctx):
 
 def test_outputs_unnamed_invalid_name(lint_ctx):
     tool_source = get_xml_tool_source(OUTPUTS_UNNAMED_INVALID_NAME)
-    run_lint(lint_ctx, outputs.lint_output, tool_source)
+    run_lint_module(lint_ctx, outputs, tool_source)
     assert "2 outputs found." in lint_ctx.info_messages
     assert "Tool output doesn't define a name - this is likely a problem." in lint_ctx.warn_messages
     assert "Tool data output with missing name doesn't define an output format." in lint_ctx.warn_messages
@@ -1519,7 +1519,7 @@ def test_outputs_unnamed_invalid_name(lint_ctx):
 
 def test_outputs_format_input_legacy(lint_ctx):
     tool_source = get_xml_tool_source(OUTPUTS_FORMAT_INPUT_LEGACY)
-    run_lint(lint_ctx, outputs.lint_output, tool_source)
+    run_lint_module(lint_ctx, outputs, tool_source)
     assert "1 outputs found." in lint_ctx.info_messages
     assert "Using format='input' on data is deprecated. Use the format_source attribute." in lint_ctx.warn_messages
     assert len(lint_ctx.info_messages) == 1
@@ -1530,7 +1530,7 @@ def test_outputs_format_input_legacy(lint_ctx):
 
 def test_outputs_format_input(lint_ctx):
     tool_source = get_xml_tool_source(OUTPUTS_FORMAT_INPUT)
-    run_lint(lint_ctx, outputs.lint_output, tool_source)
+    run_lint_module(lint_ctx, outputs, tool_source)
     assert "1 outputs found." in lint_ctx.info_messages
     assert "Using format='input' on data is deprecated. Use the format_source attribute." in lint_ctx.error_messages
     assert len(lint_ctx.info_messages) == 1
@@ -1541,7 +1541,7 @@ def test_outputs_format_input(lint_ctx):
 
 def test_outputs_collection_format_source(lint_ctx):
     tool_source = get_xml_tool_source(OUTPUTS_COLLECTION_FORMAT_SOURCE)
-    run_lint(lint_ctx, outputs.lint_output, tool_source)
+    run_lint_module(lint_ctx, outputs, tool_source)
     assert "Tool data output 'reverse' should use either format_source or format/ext" in lint_ctx.warn_messages
     assert len(lint_ctx.info_messages) == 1
     assert not lint_ctx.valid_messages
@@ -1551,7 +1551,7 @@ def test_outputs_collection_format_source(lint_ctx):
 
 def test_outputs_format_action(lint_ctx):
     tool_source = get_xml_tool_source(OUTPUTS_FORMAT_ACTION)
-    run_lint(lint_ctx, outputs.lint_output, tool_source)
+    run_lint_module(lint_ctx, outputs, tool_source)
     assert len(lint_ctx.info_messages) == 1
     assert not lint_ctx.valid_messages
     assert not lint_ctx.warn_messages
@@ -1560,7 +1560,7 @@ def test_outputs_format_action(lint_ctx):
 
 def test_outputs_discover_tool_provided_metadata(lint_ctx):
     tool_source = get_xml_tool_source(OUTPUTS_DISCOVER_TOOL_PROVIDED_METADATA)
-    run_lint(lint_ctx, outputs.lint_output, tool_source)
+    run_lint_module(lint_ctx, outputs, tool_source)
     assert "1 outputs found." in lint_ctx.info_messages
     assert len(lint_ctx.info_messages) == 1
     assert not lint_ctx.valid_messages
@@ -1570,7 +1570,7 @@ def test_outputs_discover_tool_provided_metadata(lint_ctx):
 
 def test_outputs_duplicated_name_label(lint_ctx):
     tool_source = get_xml_tool_source(OUTPUTS_DUPLICATED_NAME_LABEL)
-    run_lint(lint_ctx, outputs.lint_output, tool_source)
+    run_lint_module(lint_ctx, outputs, tool_source)
     assert "4 outputs found." in lint_ctx.info_messages
     assert len(lint_ctx.info_messages) == 1
     assert not lint_ctx.valid_messages
@@ -1784,7 +1784,7 @@ def test_tests_discover_outputs(lint_ctx):
 def test_tests_expect_num_outputs_filter(lint_ctx):
     tool_source = get_xml_tool_source(TESTS_EXPECT_NUM_OUTPUTS_FILTER)
     run_lint_module(lint_ctx, tests, tool_source)
-    assert "Test should specify 'expect_num_outputs' if outputs have filters" in lint_ctx.warn_messages
+    assert "Test 1: should specify 'expect_num_outputs' if outputs have filters" in lint_ctx.warn_messages
     assert len(lint_ctx.warn_messages) == 1
     assert len(lint_ctx.error_messages) == 0
 
