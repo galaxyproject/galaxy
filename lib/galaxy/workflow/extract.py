@@ -71,6 +71,8 @@ def extract_workflow(
     workflow.stored_workflow = stored
     stored.latest_workflow = workflow
     trans.sa_session.add(stored)
+    # Safeguard: workflow was implicitly merged into this Session prior to SQLAlchemy 2.0.
+    trans.sa_session.add(workflow)
     with transaction(trans.sa_session):
         trans.sa_session.commit()
     return stored

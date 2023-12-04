@@ -7328,6 +7328,7 @@ class StoredWorkflow(Base, HasTags, Dictifiable, RepresentById):
         cascade="all, delete-orphan",
         primaryjoin=(lambda: StoredWorkflow.id == Workflow.stored_workflow_id),  # type: ignore[has-type]
         order_by=lambda: -Workflow.id,  # type: ignore[has-type]
+        cascade_backrefs=False,
     )
     latest_workflow = relationship(
         "Workflow",
