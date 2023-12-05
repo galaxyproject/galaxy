@@ -157,7 +157,7 @@ class EncodedDatasetJobInfo(EncodedDataItemSourceId):
 
 
 class EncodedJobDetails(JobSummary):
-    command_version: str = Field(
+    command_version: Optional[str] = Field(
         ...,
         title="Command Version",
         description="Tool version indicated during job execution.",
