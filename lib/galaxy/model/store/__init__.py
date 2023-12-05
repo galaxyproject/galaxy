@@ -1107,8 +1107,6 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 input_parameter.name = input_parameter_attrs["name"]
                 input_parameter.type = input_parameter_attrs["type"]
                 input_parameter.workflow_invocation = imported_invocation
-                # Safeguard: input_parameter was implicitly merged into this Session prior to SQLAlchemy 2.0.
-                self.sa_session.add(input_parameter)
                 self._session_add(input_parameter)
                 input_parameters.append(input_parameter)
 
@@ -1120,8 +1118,6 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 step_state.value = step_state_attrs["value"]
                 attach_workflow_step(step_state, step_state_attrs)
                 step_state.workflow_invocation = imported_invocation
-                # Safeguard: step_state was implicitly merged into this Session prior to SQLAlchemy 2.0.
-                self.sa_session.add(step_state)
                 self._session_add(step_state)
                 step_states.append(step_state)
 
@@ -1139,8 +1135,6 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 input_dataset = model.WorkflowRequestToInputDatasetAssociation()
                 attach_workflow_step(input_dataset, input_dataset_attrs)
                 input_dataset.workflow_invocation = imported_invocation
-                # Safeguard: input_dataset was implicitly merged into this Session prior to SQLAlchemy 2.0.
-                self.sa_session.add(input_dataset)
                 input_dataset.name = input_dataset_attrs["name"]
                 dataset_link_attrs = input_dataset_attrs["dataset"]
                 if dataset_link_attrs:
@@ -1155,8 +1149,6 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 input_dataset_collection = model.WorkflowRequestToInputDatasetCollectionAssociation()
                 attach_workflow_step(input_dataset_collection, input_dataset_collection_attrs)
                 input_dataset_collection.workflow_invocation = imported_invocation
-                # Safeguard: input_dataset_collection was implicitly merged into this Session prior to SQLAlchemy 2.0.
-                self.sa_session.add(input_dataset_collection)
                 input_dataset_collection.name = input_dataset_collection_attrs["name"]
                 dataset_collection_link_attrs = input_dataset_collection_attrs["dataset_collection"]
                 if dataset_collection_link_attrs:
@@ -1171,8 +1163,6 @@ class ModelImportStore(metaclass=abc.ABCMeta):
             for output_dataset_collection_attrs in invocation_attrs["output_dataset_collections"]:
                 output_dataset_collection = model.WorkflowInvocationOutputDatasetCollectionAssociation()
                 output_dataset_collection.workflow_invocation = imported_invocation
-                # Safeguard: output_dataset_collection was implicitly merged into this Session prior to SQLAlchemy 2.0.
-                self.sa_session.add(output_dataset_collection)
                 attach_workflow_step(output_dataset_collection, output_dataset_collection_attrs)
                 workflow_output = output_dataset_collection_attrs["workflow_output"]
                 label = workflow_output.get("label")
@@ -1185,8 +1175,6 @@ class ModelImportStore(metaclass=abc.ABCMeta):
             for output_dataset_attrs in invocation_attrs["output_datasets"]:
                 output_dataset = model.WorkflowInvocationOutputDatasetAssociation()
                 output_dataset.workflow_invocation = imported_invocation
-                # Safeguard: output_dataset was implicitly merged into this Session prior to SQLAlchemy 2.0.
-                self.sa_session.add(output_dataset)
                 attach_workflow_step(output_dataset, output_dataset_attrs)
                 workflow_output = output_dataset_attrs["workflow_output"]
                 label = workflow_output.get("label")
@@ -1199,8 +1187,6 @@ class ModelImportStore(metaclass=abc.ABCMeta):
             for output_value_attrs in invocation_attrs["output_values"]:
                 output_value = model.WorkflowInvocationOutputValue()
                 output_value.workflow_invocation = imported_invocation
-                # Safeguard: output_value was implicitly merged into this Session prior to SQLAlchemy 2.0.
-                self.sa_session.add(output_value)
                 output_value.value = output_value_attrs["value"]
                 attach_workflow_step(output_value, output_value_attrs)
                 workflow_output = output_value_attrs["workflow_output"]
