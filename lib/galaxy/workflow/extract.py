@@ -8,8 +8,10 @@ from galaxy import (
     exceptions,
     model,
 )
-from galaxy.model.base import transaction
-from galaxy.model.database_utils import ensure_object_added_to_session
+from galaxy.model.base import (
+    ensure_object_added_to_session,
+    transaction,
+)
 from galaxy.tool_util.parser import ToolOutputCollectionPart
 from galaxy.tools.parameters.basic import (
     DataCollectionToolParameter,

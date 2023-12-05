@@ -20,6 +20,7 @@ from typing import (
 
 from sqlalchemy import event
 from sqlalchemy.orm import (
+    object_session,
     scoped_session,
     Session,
     sessionmaker,
@@ -167,3 +168,22 @@ def versioned_session(session):
             obj.__create_version__(session)
         for obj in versioned_objects(session.deleted):
             obj.__create_version__(session, deleted=True)
+
+
+def ensure_object_added_to_session(object_to_add, *, object_in_session=None, session=None) -> bool:
+    """
+    This function is intended as a safeguard to mimic pre-SQLAlchemy 2.0 behavior.
+    `object_to_add` was implicitly merged into a Session prior to SQLAlchemy 2.0, which was indicated
+    by `RemovedIn20Warning` warnings logged while running Galaxy's tests. (See https://github.com/galaxyproject/galaxy/issues/12541)
+    As part of the upgrade to 2.0, the `cascade_backrefs=False` argument was added to the relevant relationships that turned off this behavior.
+    This function is called from the code that triggered these warnings, thus emulating the cascading behavior.
+    The intention is to remove all such calls, as well as this function definition, after the move to SQLAlchemy 2.0.
+    # Ref: https://docs.sqlalchemy.org/en/14/changelog/migration_14.html#cascade-backrefs-behavior-deprecated-for-removal-in-2-0
+    """
+    if session:
+        session.add(object_to_add)
+        return True
+    if object_in_session and object_session(object_in_session):
+        object_session(object_in_session).add(object_to_add)
+        return True
+    return False

@@ -65,8 +65,10 @@ from galaxy.model import (
     WorkflowInvocation,
     WorkflowInvocationStep,
 )
-from galaxy.model.base import transaction
-from galaxy.model.database_utils import ensure_object_added_to_session
+from galaxy.model.base import (
+    ensure_object_added_to_session,
+    transaction,
+)
 from galaxy.model.index_filter_util import (
     append_user_filter,
     raw_text_column_filter,

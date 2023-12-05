@@ -56,8 +56,10 @@ from galaxy.files import (
     ProvidesUserFileSourcesUserContext,
 )
 from galaxy.files.uris import stream_url_to_file
-from galaxy.model.base import transaction
-from galaxy.model.database_utils import ensure_object_added_to_session
+from galaxy.model.base import (
+    ensure_object_added_to_session,
+    transaction,
+)
 from galaxy.model.mapping import GalaxyModelMapping
 from galaxy.model.metadata import MetadataCollection
 from galaxy.model.orm.util import (

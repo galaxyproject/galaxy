@@ -22,8 +22,10 @@ import requests
 from sqlalchemy import select
 
 from galaxy import model
-from galaxy.model.base import transaction
-from galaxy.model.database_utils import ensure_object_added_to_session
+from galaxy.model.base import (
+    ensure_object_added_to_session,
+    transaction,
+)
 from galaxy_test.base import api_asserts
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
