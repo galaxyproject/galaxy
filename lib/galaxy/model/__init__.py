@@ -7693,7 +7693,10 @@ class WorkflowStep(Base, RepresentById):
         "WorkflowStepConnection", primaryjoin=(lambda: WorkflowStepConnection.output_step_id == WorkflowStep.id)
     )
     workflow = relationship(
-        "Workflow", primaryjoin=(lambda: Workflow.id == WorkflowStep.workflow_id), back_populates="steps"
+        "Workflow",
+        primaryjoin=(lambda: Workflow.id == WorkflowStep.workflow_id),
+        back_populates="steps",
+        cascade_backrefs=False,
     )
 
     # Injected attributes

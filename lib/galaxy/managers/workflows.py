@@ -35,6 +35,7 @@ from sqlalchemy import (
 from sqlalchemy.orm import (
     aliased,
     joinedload,
+    object_session,
     Query,
     subqueryload,
 )
@@ -818,6 +819,12 @@ class WorkflowContentsManager(UsesAnnotations):
 
         workflow.has_cycles = True
         workflow.steps = steps
+        # Safeguard: workflow was implicitly merged into this Session prior to SQLAlchemy 2.0.
+        # when AT LEAST ONE step in steps belonged to a session.
+        for step in steps:
+            if step and object_session(step):
+                object_session(step).add(workflow)
+                break
 
         comments: List[model.WorkflowComment] = []
         comments_by_external_id: Dict[str, model.WorkflowComment] = {}
