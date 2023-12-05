@@ -1,10 +1,6 @@
 import ast
 from collections import defaultdict
 from importlib.resources import files
-from typing import (
-    Dict,
-    Set,
-)
 
 import generated
 
@@ -35,11 +31,17 @@ LIST_TO_UNION_LIST_ELEMENT = [
     "TestAssertions.has_h5_keys",
     "TestAssertions.has_h5_attribute",
 ]
+ATTRIBUTES_TO_DELETE = [
+    "TestOutputCollection.name",
+]
 
-MODIFICATION_BY_MODULE: Dict[str, Set[str]] = defaultdict(set)
+MODIFICATION_BY_MODULE: dict[str, dict[str, str]] = defaultdict(dict)
 for element in LIST_TO_UNION_LIST_ELEMENT:
     node_name, target_id = element.split(".")
-    MODIFICATION_BY_MODULE[node_name].add(target_id)
+    MODIFICATION_BY_MODULE[node_name][target_id] = "to_union"
+for element in ATTRIBUTES_TO_DELETE:
+    node_name, target_id = element.split(".")
+    MODIFICATION_BY_MODULE[node_name][target_id] = "delete"
 
 
 def modify_tree(tree: ast.Module):
@@ -57,20 +59,27 @@ def modify_tree(tree: ast.Module):
 
             if node.name in MODIFICATION_BY_MODULE:
                 target_ids = MODIFICATION_BY_MODULE[node.name]
+                new_body = []
                 for field in node.body:
                     if isinstance(field, ast.AnnAssign) and field.target.id in target_ids:
-                        original_slice = field.annotation.slice
-                        list_type = ast.Subscript(
-                            value=ast.Name(id="List", ctx=ast.Load()),
-                            slice=original_slice,
-                            ctx=ast.Load(),
-                        )
+                        modification = target_ids[field.target.id]
+                        if modification == "to_union":
+                            original_slice = field.annotation.slice
+                            list_type = ast.Subscript(
+                                value=ast.Name(id="List", ctx=ast.Load()),
+                                slice=original_slice,
+                                ctx=ast.Load(),
+                            )
 
-                        field.annotation = ast.Subscript(
-                            value=ast.Name(id="Union", ctx=ast.Load()),
-                            slice=ast.Index(value=ast.Tuple(elts=[list_type, original_slice], ctx=ast.Load())),
-                            ctx=ast.Load(),
-                        )
+                            field.annotation = ast.Subscript(
+                                value=ast.Name(id="Union", ctx=ast.Load()),
+                                slice=ast.Index(value=ast.Tuple(elts=[list_type, original_slice], ctx=ast.Load())),
+                                ctx=ast.Load(),
+                            )
+                        elif modification == "delete":
+                            continue
+                    new_body.append(field)
+                node.body = new_body
     return ast.unparse(tree)
 
 

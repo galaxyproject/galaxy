@@ -2568,11 +2568,6 @@
           ],
           "title": "Element Tests"
         },
-        "name": {
-          "description": "This value is the same as the value of the ``name`` attribute of the\n``&lt;collection&gt;`` tag set contained within the tool's ``&lt;outputs&gt;`` tag set.",
-          "title": "Name",
-          "type": "string"
-        },
         "type_value": {
           "anyOf": [
             {
@@ -2600,9 +2595,6 @@
           "title": "Count"
         }
       },
-      "required": [
-        "name"
-      ],
       "title": "TestOutputCollection",
       "type": "object"
     },

@@ -5532,13 +5532,6 @@ class TestOutputCollection(BaseSetting):
     """
 
     element: Union[List[TestOutput], TestOutput] = field(default_factory=list, metadata={"type": "Element"})
-    name: str = field(
-        metadata={
-            "type": "Attribute",
-            "required": True,
-            "description": "This value is the same as the value of the ``name`` attribute of the\n``&lt;collection&gt;`` tag set contained within the tool's ``&lt;outputs&gt;`` tag set.",
-        }
-    )
     type_value: Optional[str] = field(
         default=None,
         metadata={

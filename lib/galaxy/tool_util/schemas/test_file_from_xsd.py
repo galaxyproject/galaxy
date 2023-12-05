@@ -1,9 +1,7 @@
 from __future__ import annotations
 
 import json
-from typing import (
-    Union,
-)
+from typing import Union
 
 # bug with pydantic, need everything in namespace
 from generated.galaxy import *  # noqa: F403
