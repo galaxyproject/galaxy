@@ -18,7 +18,6 @@ from typing import (
 )
 
 from cwl_utils.expression import do_eval
-from sqlalchemy.orm import object_session
 from typing_extensions import TypedDict
 
 from galaxy import (
@@ -36,6 +35,7 @@ from galaxy.model import (
     WorkflowStep,
     WorkflowStepConnection,
 )
+from galaxy.model.database_utils import ensure_object_added_to_session
 from galaxy.model.dataset_collections import matching
 from galaxy.schema.invocation import (
     CancelReason,
@@ -645,9 +645,7 @@ class SubWorkflowModule(WorkflowModule):
     def save_to_step(self, step, **kwd):
         step.type = self.type
         step.subworkflow = self.subworkflow
-        # Safeguard: step was implicitly merged into this Session prior to SQLAlchemy 2.0.
-        if self.subworkflow and object_session(self.subworkflow):
-            object_session(self.subworkflow).add(step)
+        ensure_object_added_to_session(step, object_in_session=self.subworkflow)
 
     def get_name(self):
         if hasattr(self.subworkflow, "name"):

@@ -10,7 +10,6 @@ from typing import (
     Union,
 )
 
-from sqlalchemy.orm import object_session
 from typing_extensions import Protocol
 
 from galaxy import model
@@ -20,6 +19,7 @@ from galaxy.model import (
     WorkflowInvocationStep,
 )
 from galaxy.model.base import transaction
+from galaxy.model.database_utils import ensure_object_added_to_session
 from galaxy.schema.invocation import (
     CancelReason,
     FailureReason,
@@ -226,9 +226,7 @@ class WorkflowInvoker:
                     workflow_invocation_step = WorkflowInvocationStep()
                     assert workflow_invocation_step
                     workflow_invocation_step.workflow_invocation = workflow_invocation
-                    # Safeguard: workflow_invocation_step was implicitly merged into this Session prior to SQLAlchemy 2.0.
-                    if workflow_invocation and object_session(workflow_invocation):
-                        object_session(workflow_invocation).add(workflow_invocation_step)
+                    ensure_object_added_to_session(workflow_invocation_step, object_in_session=workflow_invocation)
                     workflow_invocation_step.workflow_step = step
                     workflow_invocation_step.state = "new"
 

@@ -40,10 +40,7 @@ from rocrate.model.computationalworkflow import (
 )
 from rocrate.rocrate import ROCrate
 from sqlalchemy import select
-from sqlalchemy.orm import (
-    joinedload,
-    object_session,
-)
+from sqlalchemy.orm import joinedload
 from sqlalchemy.orm.scoping import scoped_session
 from sqlalchemy.sql import expression
 from typing_extensions import Protocol
@@ -60,6 +57,7 @@ from galaxy.files import (
 )
 from galaxy.files.uris import stream_url_to_file
 from galaxy.model.base import transaction
+from galaxy.model.database_utils import ensure_object_added_to_session
 from galaxy.model.mapping import GalaxyModelMapping
 from galaxy.model.metadata import MetadataCollection
 from galaxy.model.orm.util import (
@@ -1027,9 +1025,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
             imported_invocation = model.WorkflowInvocation()
             imported_invocation.user = self.user
             imported_invocation.history = history
-            # Safeguard: imported_invocation was implicitly merged into this Session prior to SQLAlchemy 2.0.
-            if history and object_session(history):
-                object_session(history).add(imported_invocation)
+            ensure_object_added_to_session(imported_invocation, object_in_session=history)
             workflow_key = invocation_attrs["workflow"]
             if workflow_key not in object_import_tracker.workflows_by_key:
                 raise Exception(f"Failed to find key {workflow_key} in {object_import_tracker.workflows_by_key.keys()}")
@@ -1051,8 +1047,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
             for step_attrs in invocation_attrs["steps"]:
                 imported_invocation_step = model.WorkflowInvocationStep()
                 imported_invocation_step.workflow_invocation = imported_invocation
-                # Safeguard: imported_invocation_step was implicitly merged into this Session prior to SQLAlchemy 2.0.
-                self.sa_session.add(imported_invocation_step)
+                ensure_object_added_to_session(imported_invocation, session=self.sa_session)
                 attach_workflow_step(imported_invocation_step, step_attrs)
                 restore_times(imported_invocation_step, step_attrs)
                 imported_invocation_step.action = step_attrs["action"]

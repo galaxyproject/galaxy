@@ -9,6 +9,7 @@ from galaxy import (
     model,
 )
 from galaxy.model.base import transaction
+from galaxy.model.database_utils import ensure_object_added_to_session
 from galaxy.tool_util.parser import ToolOutputCollectionPart
 from galaxy.tools.parameters.basic import (
     DataCollectionToolParameter,
@@ -71,8 +72,7 @@ def extract_workflow(
     workflow.stored_workflow = stored
     stored.latest_workflow = workflow
     trans.sa_session.add(stored)
-    # Safeguard: workflow was implicitly merged into this Session prior to SQLAlchemy 2.0.
-    trans.sa_session.add(workflow)
+    ensure_object_added_to_session(workflow, session=trans.sa_session)
     with transaction(trans.sa_session):
         trans.sa_session.commit()
     return stored

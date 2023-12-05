@@ -129,6 +129,7 @@ from galaxy.model.custom_types import (
     UUIDType,
 )
 from galaxy.model.database_object_names import NAMING_CONVENTION
+from galaxy.model.database_utils import ensure_object_added_to_session
 from galaxy.model.item_attrs import (
     get_item_annotation_str,
     UsesAnnotations,
@@ -2471,9 +2472,7 @@ class PostJobAction(Base, RepresentById):
         self.output_name = output_name
         self.action_arguments = action_arguments
         self.workflow_step = workflow_step
-        # Safeguard: self was implicitly merged into this Session prior to SQLAlchemy 2.0.
-        if workflow_step and object_session(workflow_step):
-            object_session(workflow_step).add(self)
+        ensure_object_added_to_session(self, object_in_session=workflow_step)
 
 
 class PostJobActionAssociation(Base, RepresentById):
@@ -2488,9 +2487,7 @@ class PostJobActionAssociation(Base, RepresentById):
     def __init__(self, pja, job=None, job_id=None):
         if job is not None:
             self.job = job
-            # Safeguard: self was implicitly merged into this Session prior to SQLAlchemy 2.0.
-            if job and object_session(job):
-                object_session(job).add(self)
+            ensure_object_added_to_session(self, object_in_session=job)
         elif job_id is not None:
             self.job_id = job_id
         else:
@@ -2861,9 +2858,7 @@ class UserNotificationAssociation(Base, RepresentById):
 
     def __init__(self, user, notification):
         self.user = user
-        # Safeguard: self was implicitly merged into this Session prior to SQLAlchemy 2.0.
-        if user and object_session(user):
-            object_session(user).add(self)
+        ensure_object_added_to_session(self, object_in_session=user)
         self.notification = notification
 
 
@@ -3517,9 +3512,7 @@ class GroupRoleAssociation(Base, RepresentById):
 
     def __init__(self, group, role):
         self.group = group
-        # Safeguard: self was implicitly merged into this Session prior to SQLAlchemy 2.0.
-        if group and object_session(group):
-            object_session(group).add(self)
+        ensure_object_added_to_session(self, object_in_session=group)
         self.role = role
 
 
@@ -3690,9 +3683,7 @@ class DefaultQuotaAssociation(Base, Dictifiable, RepresentById):
         assert type in self.types.__members__.values(), "Invalid type"
         self.type = type
         self.quota = quota
-        # Safeguard: self was implicitly merged into this Session prior to SQLAlchemy 2.0.
-        if quota and object_session(quota):
-            object_session(quota).add(self)
+        ensure_object_added_to_session(self, object_in_session=quota)
 
 
 class DatasetPermissions(Base, RepresentById):
@@ -3733,9 +3724,7 @@ class LibraryPermissions(Base, RepresentById):
         self.action = action
         if isinstance(library_item, Library):
             self.library = library_item
-            # Safeguard: self was implicitly merged into this Session prior to SQLAlchemy 2.0.
-            if library_item and object_session(library_item):
-                object_session(library_item).add(self)
+            ensure_object_added_to_session(self, object_in_session=library_item)
         else:
             raise Exception(f"Invalid Library specified: {library_item.__class__.__name__}")
         self.role = role
@@ -3757,9 +3746,7 @@ class LibraryFolderPermissions(Base, RepresentById):
         self.action = action
         if isinstance(library_item, LibraryFolder):
             self.folder = library_item
-            # Safeguard: self was implicitly merged into this Session prior to SQLAlchemy 2.0.
-            if library_item and object_session(library_item):
-                object_session(library_item).add(self)
+            ensure_object_added_to_session(self, object_in_session=library_item)
         else:
             raise Exception(f"Invalid LibraryFolder specified: {library_item.__class__.__name__}")
         self.role = role
@@ -3781,9 +3768,7 @@ class LibraryDatasetPermissions(Base, RepresentById):
         self.action = action
         if isinstance(library_item, LibraryDataset):
             self.library_dataset = library_item
-            # Safeguard: self was implicitly merged into this Session prior to SQLAlchemy 2.0.
-            if library_item and object_session(library_item):
-                object_session(library_item).add(self)
+            ensure_object_added_to_session(self, object_in_session=library_item)
         else:
             raise Exception(f"Invalid LibraryDataset specified: {library_item.__class__.__name__}")
         self.role = role
@@ -4405,11 +4390,7 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
         elif dataset:
             add_object_to_object_session(self, dataset)
         self.dataset = dataset
-
-        # Safeguard: self was implicitly merged into this Session prior to SQLAlchemy 2.0.
-        if dataset and object_session(dataset):
-            object_session(dataset).add(self)
-
+        ensure_object_added_to_session(self, object_in_session=dataset)
         self.parent_id = parent_id
 
     @property
@@ -7279,9 +7260,7 @@ class GalaxySessionToHistoryAssociation(Base, RepresentById):
 
     def __init__(self, galaxy_session, history):
         self.galaxy_session = galaxy_session
-        # Safeguard: self was implicitly merged into this Session prior to SQLAlchemy 2.0.
-        if galaxy_session and object_session(galaxy_session):
-            object_session(galaxy_session).add(self)
+        ensure_object_added_to_session(self, object_in_session=galaxy_session)
         add_object_to_object_session(self, history)
         self.history = history
 
@@ -7793,9 +7772,7 @@ class WorkflowStep(Base, RepresentById):
 
         conn = WorkflowStepConnection()
         conn.input_step_input = step_input
-        # Safeguard: conn was implicitly merged into this Session prior to SQLAlchemy 2.0.
-        if step_input and object_session(step_input):
-            object_session(step_input).add(conn)
+        ensure_object_added_to_session(conn, object_in_session=step_input)
         conn.output_name = output_name
         add_object_to_object_session(conn, output_step)
         conn.output_step = output_step
@@ -8077,9 +8054,7 @@ class WorkflowOutput(Base, Serializable):
 
     def __init__(self, workflow_step, output_name=None, label=None, uuid=None):
         self.workflow_step = workflow_step
-        # Safeguard: self was implicitly merged into this Session prior to SQLAlchemy 2.0.
-        if object_session(workflow_step):
-            object_session(workflow_step).add(self)
+        ensure_object_added_to_session(self, object_in_session=workflow_step)
         self.output_name = output_name
         self.label = label
         self.uuid = get_uuid(uuid)
@@ -8468,9 +8443,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
             # dispatch on actual object and not step type.
             output_assoc = WorkflowInvocationOutputValue()
             output_assoc.workflow_invocation = self
-            # Safeguard: output_assoc was implicitly merged into this Session prior to SQLAlchemy 2.0.
-            if object_session(self):
-                object_session(self).add(output_assoc)
+            ensure_object_added_to_session(output_assoc, object_in_session=self)
             output_assoc.workflow_output = workflow_output
             output_assoc.workflow_step = step
             output_assoc.value = output_object
@@ -8478,9 +8451,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         elif output_object.history_content_type == "dataset":
             output_assoc = WorkflowInvocationOutputDatasetAssociation()
             output_assoc.workflow_invocation = self
-            # Safeguard: output_assoc was implicitly merged into this Session prior to SQLAlchemy 2.0.
-            if object_session(self):
-                object_session(self).add(output_assoc)
+            ensure_object_added_to_session(output_assoc, object_in_session=self)
             output_assoc.workflow_output = workflow_output
             output_assoc.workflow_step = step
             output_assoc.dataset = output_object
@@ -8488,8 +8459,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         elif output_object.history_content_type == "dataset_collection":
             output_assoc = WorkflowInvocationOutputDatasetCollectionAssociation()
             output_assoc.workflow_invocation = self
-            if object_session(self):
-                object_session(self).add(output_assoc)
+            ensure_object_added_to_session(output_assoc, object_in_session=self)
             output_assoc.workflow_output = workflow_output
             output_assoc.workflow_step = step
             output_assoc.dataset_collection = output_object
@@ -8943,18 +8913,14 @@ class WorkflowInvocationStep(Base, Dictifiable, Serializable):
         if output_object.history_content_type == "dataset":
             output_assoc = WorkflowInvocationStepOutputDatasetAssociation()
             output_assoc.workflow_invocation_step = self
-            # Safeguard: output_assoc was implicitly merged into this Session prior to SQLAlchemy 2.0.
-            if object_session(self):
-                object_session(self).add(output_assoc)
+            ensure_object_added_to_session(output_assoc, object_in_session=self)
             output_assoc.dataset = output_object
             output_assoc.output_name = output_name
             self.output_datasets.append(output_assoc)
         elif output_object.history_content_type == "dataset_collection":
             output_assoc = WorkflowInvocationStepOutputDatasetCollectionAssociation()
             output_assoc.workflow_invocation_step = self
-            # Safeguard: output_assoc was implicitly merged into this Session prior to SQLAlchemy 2.0.
-            if object_session(self):
-                object_session(self).add(output_assoc)
+            ensure_object_added_to_session(output_assoc, object_in_session=self)
             output_assoc.dataset_collection = output_object
             output_assoc.output_name = output_name
             self.output_dataset_collections.append(output_assoc)

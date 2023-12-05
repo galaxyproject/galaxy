@@ -24,7 +24,6 @@ from sqlalchemy import (
     select,
     true,
 )
-from sqlalchemy.orm import object_session
 from sqlalchemy.orm.exc import NoResultFound
 
 from galaxy import util
@@ -39,6 +38,7 @@ from galaxy.managers import context
 from galaxy.managers.session import GalaxySessionManager
 from galaxy.managers.users import UserManager
 from galaxy.model.base import transaction
+from galaxy.model.database_utils import ensure_object_added_to_session
 from galaxy.structured_app import (
     BasicSharedApp,
     MinimalApp,
@@ -1120,9 +1120,7 @@ def create_new_session(trans, prev_galaxy_session=None, user_for_new_session=Non
     if user_for_new_session:
         # The new session should be associated with the user
         galaxy_session.user = user_for_new_session
-        # Safeguard: galaxy_session was implicitly merged into this Session prior to SQLAlchemy 2.0.
-        if user_for_new_session and object_session(user_for_new_session):
-            object_session(user_for_new_session).add(galaxy_session)
+        ensure_object_added_to_session(galaxy_session, object_in_session=user_for_new_session)
     return galaxy_session
 
 
