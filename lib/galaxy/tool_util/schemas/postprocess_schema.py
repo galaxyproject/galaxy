@@ -33,6 +33,7 @@ LIST_TO_UNION_LIST_ELEMENT = [
 ]
 ATTRIBUTES_TO_DELETE = [
     "TestOutputCollection.name",
+    "TestOutputCollection.type_value",
     "TestOutput.element",
 ]
 

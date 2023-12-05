@@ -10,7 +10,11 @@ from typing import (
     Union,
 )
 
-from .config import BaseSetting
+from .config import (
+    BaseSetting,
+    ClassCollectionField,
+    ClassFileField,
+)
 
 
 class ActionType(Enum):
@@ -4966,7 +4970,7 @@ class ConditionalWhen(BaseSetting):
 
 
 @dataclass(kw_only=True)
-class TestOutput(BaseSetting):
+class TestOutput(BaseSetting, ClassFileField):
     """This tag set defines the variable that names the output dataset for the
     functional test framework. The functional test framework will execute the tool
     using the parameters defined in the ``&lt;param&gt;`` tag sets and generate a
@@ -5425,7 +5429,7 @@ class TestExtraFile(TestOutput, BaseSetting):
 
 
 @dataclass(kw_only=True)
-class TestOutputCollection(BaseSetting):
+class TestOutputCollection(BaseSetting, ClassCollectionField):
     """Define tests for extra datasets and metadata corresponding to an output
     collection.
 
@@ -5531,14 +5535,6 @@ class TestOutputCollection(BaseSetting):
     """
 
     element: Union[List[TestOutput], TestOutput] = field(default_factory=list, metadata={"type": "Element"})
-    type_value: Optional[str] = field(
-        default=None,
-        metadata={
-            "name": "type",
-            "type": "Attribute",
-            "description": "Expected collection type (``list`` or ``paired``), nested collections are specified as colon separated list (the most common types are ``list``, ``paired``, ``list:paired``, or ``list:list``).",
-        },
-    )
     count: Optional[int] = field(
         default=None, metadata={"type": "Attribute", "description": "Number of elements in output collection."}
     )

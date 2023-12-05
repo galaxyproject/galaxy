@@ -1443,6 +1443,645 @@
       "title": "AssertXmlelement",
       "type": "object"
     },
+    "Collection": {
+      "properties": {
+        "class": {
+          "const": "Collection",
+          "title": "Class"
+        },
+        "collection_type": {
+          "default": "list",
+          "title": "Collection Type",
+          "type": "string"
+        },
+        "elements": {
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/CollectionElement"
+              },
+              {
+                "$ref": "#/$defs/LocationFileElement"
+              },
+              {
+                "$ref": "#/$defs/PathFileElement"
+              }
+            ]
+          },
+          "title": "Elements",
+          "type": "array"
+        }
+      },
+      "required": [
+        "class",
+        "elements"
+      ],
+      "title": "Collection",
+      "type": "object"
+    },
+    "CollectionElement": {
+      "properties": {
+        "class": {
+          "const": "Collection",
+          "title": "Class"
+        },
+        "identifier": {
+          "title": "Identifier",
+          "type": "string"
+        },
+        "elements": {
+          "items": {
+            "anyOf": [
+              {
+                "$ref": "#/$defs/CollectionElement"
+              },
+              {
+                "$ref": "#/$defs/LocationFileElement"
+              },
+              {
+                "$ref": "#/$defs/PathFileElement"
+              }
+            ]
+          },
+          "title": "Elements",
+          "type": "array"
+        },
+        "type": {
+          "default": "list",
+          "title": "Type",
+          "type": "string"
+        }
+      },
+      "required": [
+        "class",
+        "identifier",
+        "elements"
+      ],
+      "title": "CollectionElement",
+      "type": "object"
+    },
+    "Job": {
+      "additionalProperties": {
+        "anyOf": [
+          {
+            "type": "string"
+          },
+          {
+            "type": "integer"
+          },
+          {
+            "type": "number"
+          },
+          {
+            "type": "boolean"
+          },
+          {
+            "$ref": "#/$defs/Collection"
+          },
+          {
+            "$ref": "#/$defs/LocationFile"
+          },
+          {
+            "$ref": "#/$defs/PathFile"
+          },
+          {
+            "type": "null"
+          }
+        ]
+      },
+      "title": "Job",
+      "type": "object"
+    },
+    "LocationFile": {
+      "additionalProperties": false,
+      "properties": {
+        "class": {
+          "const": "File",
+          "title": "Class"
+        },
+        "filetype": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Filetype"
+        },
+        "dbkey": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dbkey"
+        },
+        "decompress": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": false,
+          "title": "Decompress"
+        },
+        "to_posix_line": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "To Posix Line"
+        },
+        "space_to_tab": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Space To Tab"
+        },
+        "deferred": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Deferred"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "info": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Info"
+        },
+        "tags": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tags"
+        },
+        "location": {
+          "title": "Location",
+          "type": "string"
+        }
+      },
+      "required": [
+        "class",
+        "location"
+      ],
+      "title": "LocationFile",
+      "type": "object"
+    },
+    "LocationFileElement": {
+      "additionalProperties": false,
+      "properties": {
+        "class": {
+          "const": "File",
+          "title": "Class"
+        },
+        "filetype": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Filetype"
+        },
+        "dbkey": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dbkey"
+        },
+        "decompress": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": false,
+          "title": "Decompress"
+        },
+        "to_posix_line": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "To Posix Line"
+        },
+        "space_to_tab": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Space To Tab"
+        },
+        "deferred": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Deferred"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "info": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Info"
+        },
+        "tags": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tags"
+        },
+        "identifier": {
+          "title": "Identifier",
+          "type": "string"
+        },
+        "location": {
+          "title": "Location",
+          "type": "string"
+        }
+      },
+      "required": [
+        "class",
+        "identifier",
+        "location"
+      ],
+      "title": "LocationFileElement",
+      "type": "object"
+    },
+    "PathFile": {
+      "additionalProperties": false,
+      "properties": {
+        "class": {
+          "const": "File",
+          "title": "Class"
+        },
+        "filetype": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Filetype"
+        },
+        "dbkey": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dbkey"
+        },
+        "decompress": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": false,
+          "title": "Decompress"
+        },
+        "to_posix_line": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "To Posix Line"
+        },
+        "space_to_tab": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Space To Tab"
+        },
+        "deferred": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Deferred"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "info": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Info"
+        },
+        "tags": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tags"
+        },
+        "path": {
+          "title": "Path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "class",
+        "path"
+      ],
+      "title": "PathFile",
+      "type": "object"
+    },
+    "PathFileElement": {
+      "additionalProperties": false,
+      "properties": {
+        "class": {
+          "const": "File",
+          "title": "Class"
+        },
+        "filetype": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Filetype"
+        },
+        "dbkey": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dbkey"
+        },
+        "decompress": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": false,
+          "title": "Decompress"
+        },
+        "to_posix_line": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "To Posix Line"
+        },
+        "space_to_tab": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Space To Tab"
+        },
+        "deferred": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Deferred"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Name"
+        },
+        "info": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Info"
+        },
+        "tags": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Tags"
+        },
+        "identifier": {
+          "title": "Identifier",
+          "type": "string"
+        },
+        "path": {
+          "title": "Path",
+          "type": "string"
+        }
+      },
+      "required": [
+        "class",
+        "identifier",
+        "path"
+      ],
+      "title": "PathFileElement",
+      "type": "object"
+    },
     "PermissiveBooleanValue": {
       "enum": [
         "0",
@@ -1465,8 +2104,7 @@
           "type": "string"
         },
         "job": {
-          "title": "Job",
-          "type": "string"
+          "$ref": "#/$defs/Job"
         },
         "outputs": {
           "additionalProperties": {
@@ -1479,6 +2117,18 @@
               },
               {
                 "$ref": "#/$defs/TestOutputCollection"
+              },
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
               }
             ]
           },
@@ -1805,6 +2455,30 @@
     "TestDiscoveredDataset": {
       "additionalProperties": false,
       "properties": {
+        "class": {
+          "anyOf": [
+            {
+              "const": "File"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "File",
+          "title": "Class"
+        },
+        "path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Path"
+        },
         "discovered_dataset": {
           "items": {
             "$ref": "#/$defs/TestDiscoveredDataset"
@@ -2053,6 +2727,30 @@
     "TestExtraFile": {
       "additionalProperties": false,
       "properties": {
+        "class": {
+          "anyOf": [
+            {
+              "const": "File"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "File",
+          "title": "Class"
+        },
+        "path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Path"
+        },
         "discovered_dataset": {
           "items": {
             "$ref": "#/$defs/TestDiscoveredDataset"
@@ -2301,6 +2999,30 @@
     "TestOutput": {
       "additionalProperties": false,
       "properties": {
+        "class": {
+          "anyOf": [
+            {
+              "const": "File"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "File",
+          "title": "Class"
+        },
+        "path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Path"
+        },
         "discovered_dataset": {
           "items": {
             "$ref": "#/$defs/TestDiscoveredDataset"
@@ -2550,6 +3272,30 @@
           "title": "Element Tests",
           "type": "object"
         },
+        "collection_type": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Collection Type"
+        },
+        "class": {
+          "anyOf": [
+            {
+              "const": "Collection"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "Collection",
+          "title": "Class"
+        },
         "element": {
           "anyOf": [
             {
@@ -2563,19 +3309,6 @@
             }
           ],
           "title": "Element"
-        },
-        "type_value": {
-          "anyOf": [
-            {
-              "type": "string"
-            },
-            {
-              "type": "null"
-            }
-          ],
-          "default": null,
-          "description": "Expected collection type (``list`` or ``paired``), nested collections are specified as colon separated list (the most common types are ``list``, ``paired``, ``list:paired``, or ``list:list``).",
-          "title": "Type Value"
         },
         "count": {
           "anyOf": [
@@ -2625,6 +3358,30 @@
           },
           "title": "Element Tests",
           "type": "object"
+        },
+        "class": {
+          "anyOf": [
+            {
+              "const": "File"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "File",
+          "title": "Class"
+        },
+        "path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Path"
         },
         "discovered_dataset": {
           "items": {

@@ -13,6 +13,7 @@ from generated.galaxy import (
     TestOutput,
     TestOutputCollection as TestOutputCollection_,
 )
+from job import Job
 from pydantic import (
     BaseModel,
     ConfigDict,
@@ -30,16 +31,17 @@ class TestOutputElement(TestOutput):
 @dataclass
 class TestOutputCollection(TestOutputCollection_):
     element_tests: dict[str, TestOutputElement | TestOutput]
+    collection_type: str | None = None
 
 
-AnyOutput = Union[TestOutputElement, TestOutput, TestOutputCollection]  # noqa: F405
+AnyOutput = Union[TestOutputElement, TestOutput, TestOutputCollection, str, int, float, bool]  # noqa: F405
 
 
 class Test(BaseModel):
     model_config = extra_forbidden
 
     doc: str
-    job: str
+    job: Job
     outputs: dict[str, AnyOutput]
 
 
