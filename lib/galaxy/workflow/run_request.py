@@ -9,8 +9,6 @@ from typing import (
     TYPE_CHECKING,
 )
 
-from sqlalchemy.orm import object_session
-
 from galaxy import exceptions
 from galaxy.model import (
     EffectiveOutput,
@@ -24,6 +22,7 @@ from galaxy.model import (
     WorkflowRequestStepState,
 )
 from galaxy.model.base import transaction
+from galaxy.model.database_utils import ensure_object_added_to_session
 from galaxy.tools.parameters.meta import expand_workflow_inputs
 from galaxy.workflow.resources import get_resource_mapper_function
 
@@ -488,9 +487,7 @@ def workflow_run_config_to_request(
     workflow_invocation = WorkflowInvocation()
     workflow_invocation.uuid = uuid.uuid1()
     workflow_invocation.history = run_config.target_history
-    # Safeguard: workflow_invocation was implicitly merged into this Session prior to SQLAlchemy 2.0.
-    if run_config.target_history and object_session(run_config.target_history):
-        object_session(run_config.target_history).add(workflow_invocation)
+    ensure_object_added_to_session(workflow_invocation, object_in_session=run_config.target_history)
 
     def add_parameter(name: str, value: str, type: WorkflowRequestInputParameter.types) -> None:
         parameter = WorkflowRequestInputParameter(

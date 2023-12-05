@@ -35,7 +35,6 @@ from sqlalchemy import (
 from sqlalchemy.orm import (
     aliased,
     joinedload,
-    object_session,
     Query,
     subqueryload,
 )
@@ -67,6 +66,7 @@ from galaxy.model import (
     WorkflowInvocationStep,
 )
 from galaxy.model.base import transaction
+from galaxy.model.database_utils import ensure_object_added_to_session
 from galaxy.model.index_filter_util import (
     append_user_filter,
     raw_text_column_filter,
@@ -822,8 +822,7 @@ class WorkflowContentsManager(UsesAnnotations):
         # Safeguard: workflow was implicitly merged into this Session prior to SQLAlchemy 2.0.
         # when AT LEAST ONE step in steps belonged to a session.
         for step in steps:
-            if step and object_session(step):
-                object_session(step).add(workflow)
+            if ensure_object_added_to_session(workflow, object_in_session=step):
                 break
 
         comments: List[model.WorkflowComment] = []
