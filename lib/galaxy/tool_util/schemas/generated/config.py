@@ -2,7 +2,6 @@ from pydantic import ConfigDict
 
 alias_lookup = {
     "assert_contents": "asserts",
-    "element": "element_tests",
 }
 
 
