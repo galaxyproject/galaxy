@@ -4998,7 +4998,6 @@ class TestOutput(BaseSetting):
     content assertion should be preferred, because this avoids storing the test file.
     """
 
-    element: List["TestOutput"] = field(default_factory=list, metadata={"type": "Element"})
     discovered_dataset: List["TestDiscoveredDataset"] = field(default_factory=list, metadata={"type": "Element"})
     assert_contents: Union[List[TestAssertions], TestAssertions] = field(
         default_factory=list,

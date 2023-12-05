@@ -33,6 +33,7 @@ LIST_TO_UNION_LIST_ELEMENT = [
 ]
 ATTRIBUTES_TO_DELETE = [
     "TestOutputCollection.name",
+    "TestOutput.element",
 ]
 
 MODIFICATION_BY_MODULE: dict[str, dict[str, str]] = defaultdict(dict)

@@ -1802,13 +1802,6 @@
     "TestDiscoveredDataset": {
       "additionalProperties": false,
       "properties": {
-        "element_tests": {
-          "items": {
-            "$ref": "#/$defs/TestOutput"
-          },
-          "title": "Element Tests",
-          "type": "array"
-        },
         "discovered_dataset": {
           "items": {
             "$ref": "#/$defs/TestDiscoveredDataset"
@@ -2057,13 +2050,6 @@
     "TestExtraFile": {
       "additionalProperties": false,
       "properties": {
-        "element_tests": {
-          "items": {
-            "$ref": "#/$defs/TestOutput"
-          },
-          "title": "Element Tests",
-          "type": "array"
-        },
         "discovered_dataset": {
           "items": {
             "$ref": "#/$defs/TestDiscoveredDataset"
@@ -2312,13 +2298,6 @@
     "TestOutput": {
       "additionalProperties": false,
       "properties": {
-        "element_tests": {
-          "items": {
-            "$ref": "#/$defs/TestOutput"
-          },
-          "title": "Element Tests",
-          "type": "array"
-        },
         "discovered_dataset": {
           "items": {
             "$ref": "#/$defs/TestDiscoveredDataset"
