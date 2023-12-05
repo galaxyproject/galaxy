@@ -167,7 +167,7 @@ FROM (
         )
         conn = self.sa_session.connection()
         with conn.begin():
-            res = conn.execute(query, is_true=True, user_id=user.id, label=quota_source_label).fetchone()
+            res = conn.execute(query, {"is_true": True, "user_id": user.id, "label": quota_source_label}).fetchone()
             if res:
                 return int(res[0]) if res[0] else None
             else:
@@ -191,7 +191,9 @@ WHERE default_quota_association.type = :default_type
 
         conn = self.sa_session.connection()
         with conn.begin():
-            res = conn.execute(query, is_true=True, label=quota_source_label, default_type=default_type).fetchone()
+            res = conn.execute(
+                query, {"is_true": True, "label": quota_source_label, "default_type": default_type}
+            ).fetchone()
             if res:
                 return res[0]
             else:
