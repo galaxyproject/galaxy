@@ -2157,8 +2157,12 @@
             },
             {
               "$ref": "#/$defs/AssertHasSize"
+            },
+            {
+              "type": "null"
             }
           ],
+          "default": null,
           "title": "Has Size"
         },
         "has_text": {
@@ -2171,8 +2175,12 @@
             },
             {
               "$ref": "#/$defs/AssertHasText"
+            },
+            {
+              "type": "null"
             }
           ],
+          "default": null,
           "title": "Has Text"
         },
         "not_has_text": {
@@ -2185,8 +2193,12 @@
             },
             {
               "$ref": "#/$defs/AssertNotHasText"
+            },
+            {
+              "type": "null"
             }
           ],
+          "default": null,
           "title": "Not Has Text"
         },
         "has_text_matching": {
@@ -2199,8 +2211,12 @@
             },
             {
               "$ref": "#/$defs/AssertHasTextMatching"
+            },
+            {
+              "type": "null"
             }
           ],
+          "default": null,
           "title": "Has Text Matching"
         },
         "has_line": {
@@ -2213,8 +2229,12 @@
             },
             {
               "$ref": "#/$defs/AssertHasLine"
+            },
+            {
+              "type": "null"
             }
           ],
+          "default": null,
           "title": "Has Line"
         },
         "has_line_matching": {
@@ -2227,8 +2247,12 @@
             },
             {
               "$ref": "#/$defs/AssertHasLineMatching"
+            },
+            {
+              "type": "null"
             }
           ],
+          "default": null,
           "title": "Has Line Matching"
         },
         "has_n_lines": {
@@ -2241,8 +2265,12 @@
             },
             {
               "$ref": "#/$defs/AssertHasNlines"
+            },
+            {
+              "type": "null"
             }
           ],
+          "default": null,
           "title": "Has N Lines"
         },
         "has_n_columns": {
@@ -2255,8 +2283,12 @@
             },
             {
               "$ref": "#/$defs/AssertHasNcolumns"
+            },
+            {
+              "type": "null"
             }
           ],
+          "default": null,
           "title": "Has N Columns"
         },
         "has_archive_member": {
@@ -2276,8 +2308,12 @@
             },
             {
               "$ref": "#/$defs/AssertIsValidXml"
+            },
+            {
+              "type": "null"
             }
           ],
+          "default": null,
           "title": "Is Valid Xml"
         },
         "xml_element": {
@@ -2290,8 +2326,12 @@
             },
             {
               "$ref": "#/$defs/AssertXmlelement"
+            },
+            {
+              "type": "null"
             }
           ],
+          "default": null,
           "title": "Xml Element"
         },
         "has_element_with_path": {
@@ -2304,8 +2344,12 @@
             },
             {
               "$ref": "#/$defs/AssertHasElementWithPath"
+            },
+            {
+              "type": "null"
             }
           ],
+          "default": null,
           "title": "Has Element With Path"
         },
         "has_n_elements_with_path": {
@@ -2318,8 +2362,12 @@
             },
             {
               "$ref": "#/$defs/AssertHasNelementsWithPath"
+            },
+            {
+              "type": "null"
             }
           ],
+          "default": null,
           "title": "Has N Elements With Path"
         },
         "element_text_matches": {
@@ -2332,8 +2380,12 @@
             },
             {
               "$ref": "#/$defs/AssertElementTextMatches"
+            },
+            {
+              "type": "null"
             }
           ],
+          "default": null,
           "title": "Element Text Matches"
         },
         "element_text_is": {
@@ -2346,8 +2398,12 @@
             },
             {
               "$ref": "#/$defs/AssertElementTextIs"
+            },
+            {
+              "type": "null"
             }
           ],
+          "default": null,
           "title": "Element Text Is"
         },
         "attribute_matches": {
@@ -2360,8 +2416,12 @@
             },
             {
               "$ref": "#/$defs/AssertAttributeMatches"
+            },
+            {
+              "type": "null"
             }
           ],
+          "default": null,
           "title": "Attribute Matches"
         },
         "attribute_is": {
@@ -2374,8 +2434,12 @@
             },
             {
               "$ref": "#/$defs/AssertAttributeIs"
+            },
+            {
+              "type": "null"
             }
           ],
+          "default": null,
           "title": "Attribute Is"
         },
         "element_text": {
@@ -2388,8 +2452,12 @@
             },
             {
               "$ref": "#/$defs/AssertElementText"
+            },
+            {
+              "type": "null"
             }
           ],
+          "default": null,
           "title": "Element Text"
         },
         "has_json_property_with_value": {
@@ -2402,8 +2470,12 @@
             },
             {
               "$ref": "#/$defs/AssertHasJsonPropertyWithValue"
+            },
+            {
+              "type": "null"
             }
           ],
+          "default": null,
           "title": "Has Json Property With Value"
         },
         "has_json_property_with_text": {
@@ -2416,8 +2488,12 @@
             },
             {
               "$ref": "#/$defs/AssertHasJsonPropertyWithText"
+            },
+            {
+              "type": "null"
             }
           ],
+          "default": null,
           "title": "Has Json Property With Text"
         },
         "has_h5_keys": {
@@ -2430,8 +2506,12 @@
             },
             {
               "$ref": "#/$defs/AssertHasH5Keys"
+            },
+            {
+              "type": "null"
             }
           ],
+          "default": null,
           "title": "Has H5 Keys"
         },
         "has_h5_attribute": {
@@ -2444,8 +2524,12 @@
             },
             {
               "$ref": "#/$defs/AssertHasH5Attribute"
+            },
+            {
+              "type": "null"
             }
           ],
+          "default": null,
           "title": "Has H5 Attribute"
         }
       },
@@ -2496,8 +2580,12 @@
             },
             {
               "$ref": "#/$defs/TestAssertions"
+            },
+            {
+              "type": "null"
             }
           ],
+          "default": null,
           "description": "$assertions\n### Examples\nThe following demonstrates a wide variety of text-based and tabular\nassertion statements.\n```xml\n&lt;output name=\"out_file1\"&gt;\n&lt;assert_contents&gt;\n&lt;has_text text=\"chr7\" /&gt;\n&lt;not_has_text text=\"chr8\" /&gt;\n&lt;has_text_matching expression=\"1274\\d+53\" /&gt;\n&lt;has_line_matching expression=\".*\\s+127489808\\s+127494553\" /&gt;\n&lt;!-- &amp;#009; is XML escape code for tab --&gt;\n&lt;has_line line=\"chr7&amp;#009;127471195&amp;#009;127489808\" /&gt;\n&lt;has_n_columns n=\"3\" /&gt;\n&lt;/assert_contents&gt;\n&lt;/output&gt;\n```\nThe following demonstrates a wide variety of XML assertion statements.\n```xml\n&lt;output name=\"out_file1\"&gt;\n&lt;assert_contents&gt;\n&lt;is_valid_xml /&gt;\n&lt;has_element_with_path path=\"BlastOutput_param/Parameters/Parameters_matrix\" /&gt;\n&lt;has_n_elements_with_path n=\"9\" path=\"BlastOutput_iterations/Iteration/Iteration_hits/Hit/Hit_num\" /&gt;\n&lt;element_text_matches path=\"BlastOutput_version\" expression=\"BLASTP\\s+2\\.2.*\" /&gt;\n&lt;element_text_is path=\"BlastOutput_program\" text=\"blastp\" /&gt;\n&lt;element_text path=\"BlastOutput_iterations/Iteration/Iteration_hits/Hit/Hit_def\"&gt;\n&lt;not_has_text text=\"EDK72998.1\" /&gt;\n&lt;has_text_matching expression=\"ABK[\\d\\.]+\" /&gt;\n&lt;/element_text&gt;\n&lt;/assert_contents&gt;\n&lt;/output&gt;\n```\nThe following demonstrates verifying XML content with XPath-like expressions.\n```xml\n&lt;output name=\"out_file1\"&gt;\n&lt;assert_contents&gt;\n&lt;attribute_is path=\"outerElement/innerElement1\" attribute=\"foo\" text=\"bar\" /&gt;\n&lt;attribute_matches path=\"outerElement/innerElement2\" attribute=\"foo2\" expression=\"bar\\d+\" /&gt;\n&lt;/assert_contents&gt;\n&lt;/output&gt;\n```",
           "title": "Asserts"
         },
@@ -2768,8 +2856,12 @@
             },
             {
               "$ref": "#/$defs/TestAssertions"
+            },
+            {
+              "type": "null"
             }
           ],
+          "default": null,
           "description": "$assertions\n### Examples\nThe following demonstrates a wide variety of text-based and tabular\nassertion statements.\n```xml\n&lt;output name=\"out_file1\"&gt;\n&lt;assert_contents&gt;\n&lt;has_text text=\"chr7\" /&gt;\n&lt;not_has_text text=\"chr8\" /&gt;\n&lt;has_text_matching expression=\"1274\\d+53\" /&gt;\n&lt;has_line_matching expression=\".*\\s+127489808\\s+127494553\" /&gt;\n&lt;!-- &amp;#009; is XML escape code for tab --&gt;\n&lt;has_line line=\"chr7&amp;#009;127471195&amp;#009;127489808\" /&gt;\n&lt;has_n_columns n=\"3\" /&gt;\n&lt;/assert_contents&gt;\n&lt;/output&gt;\n```\nThe following demonstrates a wide variety of XML assertion statements.\n```xml\n&lt;output name=\"out_file1\"&gt;\n&lt;assert_contents&gt;\n&lt;is_valid_xml /&gt;\n&lt;has_element_with_path path=\"BlastOutput_param/Parameters/Parameters_matrix\" /&gt;\n&lt;has_n_elements_with_path n=\"9\" path=\"BlastOutput_iterations/Iteration/Iteration_hits/Hit/Hit_num\" /&gt;\n&lt;element_text_matches path=\"BlastOutput_version\" expression=\"BLASTP\\s+2\\.2.*\" /&gt;\n&lt;element_text_is path=\"BlastOutput_program\" text=\"blastp\" /&gt;\n&lt;element_text path=\"BlastOutput_iterations/Iteration/Iteration_hits/Hit/Hit_def\"&gt;\n&lt;not_has_text text=\"EDK72998.1\" /&gt;\n&lt;has_text_matching expression=\"ABK[\\d\\.]+\" /&gt;\n&lt;/element_text&gt;\n&lt;/assert_contents&gt;\n&lt;/output&gt;\n```\nThe following demonstrates verifying XML content with XPath-like expressions.\n```xml\n&lt;output name=\"out_file1\"&gt;\n&lt;assert_contents&gt;\n&lt;attribute_is path=\"outerElement/innerElement1\" attribute=\"foo\" text=\"bar\" /&gt;\n&lt;attribute_matches path=\"outerElement/innerElement2\" attribute=\"foo2\" expression=\"bar\\d+\" /&gt;\n&lt;/assert_contents&gt;\n&lt;/output&gt;\n```",
           "title": "Asserts"
         },
@@ -3040,8 +3132,12 @@
             },
             {
               "$ref": "#/$defs/TestAssertions"
+            },
+            {
+              "type": "null"
             }
           ],
+          "default": null,
           "description": "$assertions\n### Examples\nThe following demonstrates a wide variety of text-based and tabular\nassertion statements.\n```xml\n&lt;output name=\"out_file1\"&gt;\n&lt;assert_contents&gt;\n&lt;has_text text=\"chr7\" /&gt;\n&lt;not_has_text text=\"chr8\" /&gt;\n&lt;has_text_matching expression=\"1274\\d+53\" /&gt;\n&lt;has_line_matching expression=\".*\\s+127489808\\s+127494553\" /&gt;\n&lt;!-- &amp;#009; is XML escape code for tab --&gt;\n&lt;has_line line=\"chr7&amp;#009;127471195&amp;#009;127489808\" /&gt;\n&lt;has_n_columns n=\"3\" /&gt;\n&lt;/assert_contents&gt;\n&lt;/output&gt;\n```\nThe following demonstrates a wide variety of XML assertion statements.\n```xml\n&lt;output name=\"out_file1\"&gt;\n&lt;assert_contents&gt;\n&lt;is_valid_xml /&gt;\n&lt;has_element_with_path path=\"BlastOutput_param/Parameters/Parameters_matrix\" /&gt;\n&lt;has_n_elements_with_path n=\"9\" path=\"BlastOutput_iterations/Iteration/Iteration_hits/Hit/Hit_num\" /&gt;\n&lt;element_text_matches path=\"BlastOutput_version\" expression=\"BLASTP\\s+2\\.2.*\" /&gt;\n&lt;element_text_is path=\"BlastOutput_program\" text=\"blastp\" /&gt;\n&lt;element_text path=\"BlastOutput_iterations/Iteration/Iteration_hits/Hit/Hit_def\"&gt;\n&lt;not_has_text text=\"EDK72998.1\" /&gt;\n&lt;has_text_matching expression=\"ABK[\\d\\.]+\" /&gt;\n&lt;/element_text&gt;\n&lt;/assert_contents&gt;\n&lt;/output&gt;\n```\nThe following demonstrates verifying XML content with XPath-like expressions.\n```xml\n&lt;output name=\"out_file1\"&gt;\n&lt;assert_contents&gt;\n&lt;attribute_is path=\"outerElement/innerElement1\" attribute=\"foo\" text=\"bar\" /&gt;\n&lt;attribute_matches path=\"outerElement/innerElement2\" attribute=\"foo2\" expression=\"bar\\d+\" /&gt;\n&lt;/assert_contents&gt;\n&lt;/output&gt;\n```",
           "title": "Asserts"
         },
@@ -3306,8 +3402,12 @@
             },
             {
               "$ref": "#/$defs/TestOutput"
+            },
+            {
+              "type": "null"
             }
           ],
+          "default": null,
           "title": "Element"
         },
         "count": {
@@ -3400,8 +3500,12 @@
             },
             {
               "$ref": "#/$defs/TestAssertions"
+            },
+            {
+              "type": "null"
             }
           ],
+          "default": null,
           "description": "$assertions\n### Examples\nThe following demonstrates a wide variety of text-based and tabular\nassertion statements.\n```xml\n&lt;output name=\"out_file1\"&gt;\n&lt;assert_contents&gt;\n&lt;has_text text=\"chr7\" /&gt;\n&lt;not_has_text text=\"chr8\" /&gt;\n&lt;has_text_matching expression=\"1274\\d+53\" /&gt;\n&lt;has_line_matching expression=\".*\\s+127489808\\s+127494553\" /&gt;\n&lt;!-- &amp;#009; is XML escape code for tab --&gt;\n&lt;has_line line=\"chr7&amp;#009;127471195&amp;#009;127489808\" /&gt;\n&lt;has_n_columns n=\"3\" /&gt;\n&lt;/assert_contents&gt;\n&lt;/output&gt;\n```\nThe following demonstrates a wide variety of XML assertion statements.\n```xml\n&lt;output name=\"out_file1\"&gt;\n&lt;assert_contents&gt;\n&lt;is_valid_xml /&gt;\n&lt;has_element_with_path path=\"BlastOutput_param/Parameters/Parameters_matrix\" /&gt;\n&lt;has_n_elements_with_path n=\"9\" path=\"BlastOutput_iterations/Iteration/Iteration_hits/Hit/Hit_num\" /&gt;\n&lt;element_text_matches path=\"BlastOutput_version\" expression=\"BLASTP\\s+2\\.2.*\" /&gt;\n&lt;element_text_is path=\"BlastOutput_program\" text=\"blastp\" /&gt;\n&lt;element_text path=\"BlastOutput_iterations/Iteration/Iteration_hits/Hit/Hit_def\"&gt;\n&lt;not_has_text text=\"EDK72998.1\" /&gt;\n&lt;has_text_matching expression=\"ABK[\\d\\.]+\" /&gt;\n&lt;/element_text&gt;\n&lt;/assert_contents&gt;\n&lt;/output&gt;\n```\nThe following demonstrates verifying XML content with XPath-like expressions.\n```xml\n&lt;output name=\"out_file1\"&gt;\n&lt;assert_contents&gt;\n&lt;attribute_is path=\"outerElement/innerElement1\" attribute=\"foo\" text=\"bar\" /&gt;\n&lt;attribute_matches path=\"outerElement/innerElement2\" attribute=\"foo2\" expression=\"bar\\d+\" /&gt;\n&lt;/assert_contents&gt;\n&lt;/output&gt;\n```",
           "title": "Asserts"
         },

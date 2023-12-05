@@ -2,9 +2,7 @@ from __future__ import annotations
 
 import json
 from dataclasses import dataclass
-from typing import (
-    Union,
-)
+from typing import Union
 
 # bug with pydantic, need everything in namespace, otherwise fails with
 # `pydantic.errors.PydanticUserError: `ListOfTests` is not fully defined; you should define `TestDiscoveredDataset`, then call `ListOfTests.model_rebuild()`.`

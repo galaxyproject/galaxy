@@ -4859,63 +4859,59 @@ class TestAssertions(BaseSetting):
     module.
     """
 
-    has_size: Union[List[AssertHasSize], AssertHasSize] = field(default_factory=list, metadata={"type": "Element"})
-    has_text: Union[List[AssertHasText], AssertHasText] = field(default_factory=list, metadata={"type": "Element"})
-    not_has_text: Union[List[AssertNotHasText], AssertNotHasText] = field(
-        default_factory=list, metadata={"type": "Element"}
+    has_size: Union[List[AssertHasSize], AssertHasSize, None] = field(default=None, metadata={"type": "Element"})
+    has_text: Union[List[AssertHasText], AssertHasText, None] = field(default=None, metadata={"type": "Element"})
+    not_has_text: Union[List[AssertNotHasText], AssertNotHasText, None] = field(
+        default=None, metadata={"type": "Element"}
     )
-    has_text_matching: Union[List[AssertHasTextMatching], AssertHasTextMatching] = field(
-        default_factory=list, metadata={"type": "Element"}
+    has_text_matching: Union[List[AssertHasTextMatching], AssertHasTextMatching, None] = field(
+        default=None, metadata={"type": "Element"}
     )
-    has_line: Union[List[AssertHasLine], AssertHasLine] = field(default_factory=list, metadata={"type": "Element"})
-    has_line_matching: Union[List[AssertHasLineMatching], AssertHasLineMatching] = field(
-        default_factory=list, metadata={"type": "Element"}
+    has_line: Union[List[AssertHasLine], AssertHasLine, None] = field(default=None, metadata={"type": "Element"})
+    has_line_matching: Union[List[AssertHasLineMatching], AssertHasLineMatching, None] = field(
+        default=None, metadata={"type": "Element"}
     )
-    has_n_lines: Union[List[AssertHasNlines], AssertHasNlines] = field(
-        default_factory=list, metadata={"type": "Element"}
-    )
-    has_n_columns: Union[List[AssertHasNcolumns], AssertHasNcolumns] = field(
-        default_factory=list, metadata={"type": "Element"}
+    has_n_lines: Union[List[AssertHasNlines], AssertHasNlines, None] = field(default=None, metadata={"type": "Element"})
+    has_n_columns: Union[List[AssertHasNcolumns], AssertHasNcolumns, None] = field(
+        default=None, metadata={"type": "Element"}
     )
     has_archive_member: List[AssertHasArchiveMember] = field(default_factory=list, metadata={"type": "Element"})
-    is_valid_xml: Union[List[AssertIsValidXml], AssertIsValidXml] = field(
-        default_factory=list, metadata={"type": "Element"}
+    is_valid_xml: Union[List[AssertIsValidXml], AssertIsValidXml, None] = field(
+        default=None, metadata={"type": "Element"}
     )
-    xml_element: Union[List[AssertXmlelement], AssertXmlelement] = field(
-        default_factory=list, metadata={"type": "Element"}
+    xml_element: Union[List[AssertXmlelement], AssertXmlelement, None] = field(
+        default=None, metadata={"type": "Element"}
     )
-    has_element_with_path: Union[List[AssertHasElementWithPath], AssertHasElementWithPath] = field(
-        default_factory=list, metadata={"type": "Element"}
+    has_element_with_path: Union[List[AssertHasElementWithPath], AssertHasElementWithPath, None] = field(
+        default=None, metadata={"type": "Element"}
     )
-    has_n_elements_with_path: Union[List[AssertHasNelementsWithPath], AssertHasNelementsWithPath] = field(
-        default_factory=list, metadata={"type": "Element"}
+    has_n_elements_with_path: Union[List[AssertHasNelementsWithPath], AssertHasNelementsWithPath, None] = field(
+        default=None, metadata={"type": "Element"}
     )
-    element_text_matches: Union[List[AssertElementTextMatches], AssertElementTextMatches] = field(
-        default_factory=list, metadata={"type": "Element"}
+    element_text_matches: Union[List[AssertElementTextMatches], AssertElementTextMatches, None] = field(
+        default=None, metadata={"type": "Element"}
     )
-    element_text_is: Union[List[AssertElementTextIs], AssertElementTextIs] = field(
-        default_factory=list, metadata={"type": "Element"}
+    element_text_is: Union[List[AssertElementTextIs], AssertElementTextIs, None] = field(
+        default=None, metadata={"type": "Element"}
     )
-    attribute_matches: Union[List[AssertAttributeMatches], AssertAttributeMatches] = field(
-        default_factory=list, metadata={"type": "Element"}
+    attribute_matches: Union[List[AssertAttributeMatches], AssertAttributeMatches, None] = field(
+        default=None, metadata={"type": "Element"}
     )
-    attribute_is: Union[List[AssertAttributeIs], AssertAttributeIs] = field(
-        default_factory=list, metadata={"type": "Element"}
+    attribute_is: Union[List[AssertAttributeIs], AssertAttributeIs, None] = field(
+        default=None, metadata={"type": "Element"}
     )
-    element_text: Union[List[AssertElementText], AssertElementText] = field(
-        default_factory=list, metadata={"type": "Element"}
+    element_text: Union[List[AssertElementText], AssertElementText, None] = field(
+        default=None, metadata={"type": "Element"}
     )
-    has_json_property_with_value: Union[List[AssertHasJsonPropertyWithValue], AssertHasJsonPropertyWithValue] = field(
-        default_factory=list, metadata={"type": "Element"}
-    )
-    has_json_property_with_text: Union[List[AssertHasJsonPropertyWithText], AssertHasJsonPropertyWithText] = field(
-        default_factory=list, metadata={"type": "Element"}
-    )
-    has_h5_keys: Union[List[AssertHasH5Keys], AssertHasH5Keys] = field(
-        default_factory=list, metadata={"type": "Element"}
-    )
-    has_h5_attribute: Union[List[AssertHasH5Attribute], AssertHasH5Attribute] = field(
-        default_factory=list, metadata={"type": "Element"}
+    has_json_property_with_value: Union[
+        List[AssertHasJsonPropertyWithValue], AssertHasJsonPropertyWithValue, None
+    ] = field(default=None, metadata={"type": "Element"})
+    has_json_property_with_text: Union[
+        List[AssertHasJsonPropertyWithText], AssertHasJsonPropertyWithText, None
+    ] = field(default=None, metadata={"type": "Element"})
+    has_h5_keys: Union[List[AssertHasH5Keys], AssertHasH5Keys, None] = field(default=None, metadata={"type": "Element"})
+    has_h5_attribute: Union[List[AssertHasH5Attribute], AssertHasH5Attribute, None] = field(
+        default=None, metadata={"type": "Element"}
     )
 
 
@@ -5003,8 +4999,8 @@ class TestOutput(BaseSetting, ClassFileField):
     """
 
     discovered_dataset: List["TestDiscoveredDataset"] = field(default_factory=list, metadata={"type": "Element"})
-    assert_contents: Union[List[TestAssertions], TestAssertions] = field(
-        default_factory=list,
+    assert_contents: Union[List[TestAssertions], TestAssertions, None] = field(
+        default=None,
         metadata={
             "type": "Element",
             "description": '$assertions\n### Examples\nThe following demonstrates a wide variety of text-based and tabular\nassertion statements.\n```xml\n&lt;output name="out_file1"&gt;\n&lt;assert_contents&gt;\n&lt;has_text text="chr7" /&gt;\n&lt;not_has_text text="chr8" /&gt;\n&lt;has_text_matching expression="1274\\d+53" /&gt;\n&lt;has_line_matching expression=".*\\s+127489808\\s+127494553" /&gt;\n&lt;!-- &amp;#009; is XML escape code for tab --&gt;\n&lt;has_line line="chr7&amp;#009;127471195&amp;#009;127489808" /&gt;\n&lt;has_n_columns n="3" /&gt;\n&lt;/assert_contents&gt;\n&lt;/output&gt;\n```\nThe following demonstrates a wide variety of XML assertion statements.\n```xml\n&lt;output name="out_file1"&gt;\n&lt;assert_contents&gt;\n&lt;is_valid_xml /&gt;\n&lt;has_element_with_path path="BlastOutput_param/Parameters/Parameters_matrix" /&gt;\n&lt;has_n_elements_with_path n="9" path="BlastOutput_iterations/Iteration/Iteration_hits/Hit/Hit_num" /&gt;\n&lt;element_text_matches path="BlastOutput_version" expression="BLASTP\\s+2\\.2.*" /&gt;\n&lt;element_text_is path="BlastOutput_program" text="blastp" /&gt;\n&lt;element_text path="BlastOutput_iterations/Iteration/Iteration_hits/Hit/Hit_def"&gt;\n&lt;not_has_text text="EDK72998.1" /&gt;\n&lt;has_text_matching expression="ABK[\\d\\.]+" /&gt;\n&lt;/element_text&gt;\n&lt;/assert_contents&gt;\n&lt;/output&gt;\n```\nThe following demonstrates verifying XML content with XPath-like expressions.\n```xml\n&lt;output name="out_file1"&gt;\n&lt;assert_contents&gt;\n&lt;attribute_is path="outerElement/innerElement1" attribute="foo" text="bar" /&gt;\n&lt;attribute_matches path="outerElement/innerElement2" attribute="foo2" expression="bar\\d+" /&gt;\n&lt;/assert_contents&gt;\n&lt;/output&gt;\n```',
@@ -5534,7 +5530,7 @@ class TestOutputCollection(BaseSetting, ClassCollectionField):
     ```
     """
 
-    element: Union[List[TestOutput], TestOutput] = field(default_factory=list, metadata={"type": "Element"})
+    element: Union[List[TestOutput], TestOutput, None] = field(default=None, metadata={"type": "Element"})
     count: Optional[int] = field(
         default=None, metadata={"type": "Attribute", "description": "Number of elements in output collection."}
     )

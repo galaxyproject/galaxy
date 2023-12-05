@@ -75,9 +75,17 @@ def modify_tree(tree: ast.Module):
 
                             field.annotation = ast.Subscript(
                                 value=ast.Name(id="Union", ctx=ast.Load()),
-                                slice=ast.Index(value=ast.Tuple(elts=[list_type, original_slice], ctx=ast.Load())),
+                                slice=ast.Index(
+                                    value=ast.Tuple(
+                                        elts=[list_type, original_slice, ast.NameConstant(value=None)], ctx=ast.Load()
+                                    )
+                                ),
                                 ctx=ast.Load(),
                             )
+                            for keyword in field.value.keywords:
+                                if keyword.arg == "default_factory":
+                                    keyword.arg = "default"
+                                    keyword.value = ast.NameConstant(value=None)
                         elif modification == "delete":
                             continue
                     new_body.append(field)
