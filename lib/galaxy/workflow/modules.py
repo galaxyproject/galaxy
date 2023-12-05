@@ -35,7 +35,7 @@ from galaxy.model import (
     WorkflowStep,
     WorkflowStepConnection,
 )
-from galaxy.model.database_utils import ensure_object_added_to_session
+from galaxy.model.base import ensure_object_added_to_session
 from galaxy.model.dataset_collections import matching
 from galaxy.schema.invocation import (
     CancelReason,

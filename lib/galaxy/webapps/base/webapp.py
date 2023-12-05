@@ -37,8 +37,10 @@ from galaxy.exceptions import (
 from galaxy.managers import context
 from galaxy.managers.session import GalaxySessionManager
 from galaxy.managers.users import UserManager
-from galaxy.model.base import transaction
-from galaxy.model.database_utils import ensure_object_added_to_session
+from galaxy.model.base import (
+    ensure_object_added_to_session,
+    transaction,
+)
 from galaxy.structured_app import (
     BasicSharedApp,
     MinimalApp,

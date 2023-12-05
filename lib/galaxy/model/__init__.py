@@ -119,7 +119,10 @@ import galaxy.model.metadata
 import galaxy.model.tags
 import galaxy.security.passwords
 import galaxy.util
-from galaxy.model.base import transaction
+from galaxy.model.base import (
+    ensure_object_added_to_session,
+    transaction,
+)
 from galaxy.model.custom_types import (
     DoubleEncodedJsonType,
     JSONType,
@@ -129,7 +132,6 @@ from galaxy.model.custom_types import (
     UUIDType,
 )
 from galaxy.model.database_object_names import NAMING_CONVENTION
-from galaxy.model.database_utils import ensure_object_added_to_session
 from galaxy.model.item_attrs import (
     get_item_annotation_str,
     UsesAnnotations,
