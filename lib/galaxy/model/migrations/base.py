@@ -434,7 +434,7 @@ def get_url_string(engine: Engine) -> str:
 
 
 def load_metadata(metadata: MetaData, engine: Engine) -> None:
-    with engine.connect() as conn:
+    with engine.begin() as conn:
         metadata.create_all(bind=conn)
 
 
