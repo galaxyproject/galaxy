@@ -2,10 +2,16 @@
     <div class="mb-3 workflow-invocation-state-component">
         <div v-if="invocationAndJobTerminal">
             <span>
-                <b-button v-b-tooltip.hover size="sm" class="invocation-report-link" :href="invocationLink">
+                <b-button
+                    v-if="invocationStateSuccess"
+                    v-b-tooltip.hover
+                    size="sm"
+                    class="invocation-report-link"
+                    :href="invocationLink">
                     View Report
                 </b-button>
                 <b-button
+                    v-if="invocationStateSuccess"
                     v-b-tooltip.hover
                     size="sm"
                     class="invocation-pdf-link"
@@ -125,6 +131,15 @@ export default {
         },
         invocationState: function () {
             return this.invocation?.state || "new";
+        },
+        invocationStateSuccess: function () {
+            return (
+                this.invocationState !== "failed" &&
+                this.invocationState !== "cancelled" &&
+                this.errorCount === 0 &&
+                this.runningCount === 0 &&
+                this.stepStates.scheduled === this.stepCount
+            );
         },
         stepCount: function () {
             return this.invocation?.steps.length;
