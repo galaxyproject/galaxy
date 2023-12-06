@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import json
-from dataclasses import dataclass
 from typing import Union
 
 # bug with pydantic, need everything in namespace, otherwise fails with
@@ -17,6 +16,7 @@ from pydantic import (
     ConfigDict,
     RootModel,
 )
+from pydantic.dataclasses import dataclass
 
 extra_forbidden = ConfigDict(extra="forbid")
 

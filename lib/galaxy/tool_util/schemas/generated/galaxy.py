@@ -1,7 +1,4 @@
-from dataclasses import (
-    dataclass,
-    field,
-)
+from dataclasses import field
 from decimal import Decimal
 from enum import Enum
 from typing import (
@@ -9,6 +6,8 @@ from typing import (
     Optional,
     Union,
 )
+
+from pydantic.dataclasses import dataclass
 
 from .config import (
     BaseSetting,

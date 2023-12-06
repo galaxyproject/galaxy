@@ -2,6 +2,7 @@
   "$defs": {
     "AssertAttributeIs": {
       "additionalProperties": false,
+      "description": "Asserts the XML ``attribute`` for the element (or tag) with the specified\nXPath-like ``path`` is the specified ``text``, e.g. ```xml &lt;attribute_is\npath=\"outerElement/innerElement1\" attribute=\"foo\" text=\"bar\" /&gt; ``` The\nassertion implicitly also asserts that an element matching ``path`` exists.\n\nWith ``negate`` the result of the assertion (on the equality) can be inverted (the\nimplicit assertion on the existence of the path is not affected).\n$attribute_list::5",
       "properties": {
         "path": {
           "description": "Path to check for. Valid paths are the simplified subsets of XPath implemented by lxml.etree; https://lxml.de/xpathxslt.html for more information.",
@@ -36,6 +37,7 @@
     },
     "AssertAttributeMatches": {
       "additionalProperties": false,
+      "description": "Asserts the XML ``attribute`` for the element (or tag) with the specified\nXPath-like ``path`` matches the regular expression specified by ``expression``,\ne.g. ```xml &lt;attribute_matches path=\"outerElement/innerElement2\"\nattribute=\"foo2\" expression=\"bar\\d+\" /&gt; ``` The assertion implicitly also\nasserts that an element matching ``path`` exists.\n\nWith ``negate`` the result of the assertion (on the matching) can be inverted (the\nimplicit assertion on the existence of the path is not affected).\n$attribute_list::5",
       "properties": {
         "path": {
           "description": "Path to check for. Valid paths are the simplified subsets of XPath implemented by lxml.etree; https://lxml.de/xpathxslt.html for more information.",
@@ -70,6 +72,7 @@
     },
     "AssertElementText": {
       "additionalProperties": false,
+      "description": "This tag allows the developer to recurisively specify additional assertions\nas child elements about just the text contained in the element specified by the\nXPath-like ``path``, e.g. ```xml &lt;element_text\npath=\"BlastOutput_iterations/Iteration/Iteration_hits/Hit/Hit_def\"&gt;\n&lt;not_has_text text=\"EDK72998.1\" /&gt; &lt;/element_text&gt; ``` The\nassertion implicitly also asserts that an element matching ``path`` exists.\n\nWith ``negate`` the result of the implicit assertions can be inverted.\nThe sub-assertions, which have their own ``negate`` attribute, are not affected\nby ``negate``.\n$attribute_list::5",
       "properties": {
         "has_text": {
           "items": {
@@ -140,6 +143,7 @@
     },
     "AssertElementTextIs": {
       "additionalProperties": false,
+      "description": "Asserts the text of the XML element with the specified XPath-like ``path``\nis the specified ``text``, e.g. ```xml &lt;element_text_is\npath=\"BlastOutput_program\" text=\"blastp\" /&gt; ``` The assertion implicitly\nalso asserts that an element matching ``path`` exists.\n\nWith ``negate`` the result of the assertion (on the equality) can be inverted (the\nimplicit assertion on the existence of the path is not affected).\n$attribute_list::5",
       "properties": {
         "path": {
           "description": "Path to check for. Valid paths are the simplified subsets of XPath implemented by lxml.etree; https://lxml.de/xpathxslt.html for more information.",
@@ -174,6 +178,7 @@
     },
     "AssertElementTextMatches": {
       "additionalProperties": false,
+      "description": "Asserts the text of the XML element with the specified XPath-like ``path``\nmatches the regular expression defined by ``expression``, e.g. ```xml\n&lt;element_text_matches path=\"BlastOutput_version\"\nexpression=\"BLASTP\\s+2\\.2.*\"/&gt; ``` The assertion implicitly also asserts\nthat an element matching ``path`` exists.\n\nWith ``negate`` the result of the assertion (on the matching) can be inverted (the\nimplicit assertion on the existence of the path is not affected).\n$attribute_list::5",
       "properties": {
         "path": {
           "description": "Path to check for. Valid paths are the simplified subsets of XPath implemented by lxml.etree; https://lxml.de/xpathxslt.html for more information.",
@@ -208,6 +213,7 @@
     },
     "AssertHasArchiveMember": {
       "additionalProperties": false,
+      "description": "This tag allows to check if ``path`` is contained in a compressed file. The\npath is a regular expression that is matched against the full paths of the\nobjects in the compressed file (remember that \"matching\" means it is checked if\na prefix of the full path of an archive member is described by the regular\nexpression). Valid archive formats include ``.zip``, ``.tar``, and ``.tar.gz``.\nNote that.\n\ndepending on the archive creation method:\n- full paths of the members may be prefixed with ``./``\n- directories may be treated as empty files\n```xml\n&lt;has_archive_member path=\"./path/to/my-file.txt\"/&gt;\n```\nWith ``n`` and ``delta`` (or ``min`` and ``max``) assertions on the number of\narchive members matching ``path`` can be expressed. The following could be used,\ne.g., to assert an archive containing n&amp;plusmn;1 elements out of which at least\n4 need to have a ``txt`` extension.\n```xml\n&lt;has_archive_member path=\".*\" n=\"10\" delta=\"1\"/&gt;\n&lt;has_archive_member path=\".*\\.txt\" min=\"4\"/&gt;\n```\nIn addition the tag can contain additional assertions as child elements about\nthe first member in the archive matching the regular expression ``path``. For\ninstance\n```xml\n&lt;has_archive_member path=\".*/my-file.txt\"&gt;\n&lt;not_has_text text=\"EDK72998.1\"/&gt;\n&lt;/has_archive_member&gt;\n```\nIf the ``all`` attribute is set to ``true`` then all archive members are subject\nto the assertions. Note that, archive members matching the ``path`` are sorted\nalphabetically.\nThe ``negate`` attribute of the ``has_archive_member`` assertion only affects\nthe asserts on the presence and number of matching archive members, but not any\nsub-assertions (which can offer the ``negate`` attribute on their own).  The\ncheck if the file is an archive at all, which is also done by the function, is\nnot affected.\n$attribute_list::5",
       "properties": {
         "has_size": {
           "items": {
@@ -452,6 +458,7 @@
     },
     "AssertHasElementWithPath": {
       "additionalProperties": false,
+      "description": "Asserts the XML output contains at least one element (or tag) with the\nspecified XPath-like ``path``, e.g. ```xml &lt;has_element_with_path\npath=\"BlastOutput_param/Parameters/Parameters_matrix\" /&gt; ``` With ``negate``\nthe result of the assertion can be inverted.\n\n$attribute_list::5",
       "properties": {
         "path": {
           "description": "Path to check for. Valid paths are the simplified subsets of XPath implemented by lxml.etree; https://lxml.de/xpathxslt.html for more information.",
@@ -480,6 +487,7 @@
     },
     "AssertHasH5Attribute": {
       "additionalProperties": false,
+      "description": "Asserts HDF5 output contains the specified ``value`` for an attribute (``key``), e.g.\n```xml\n&lt;has_h5_attribute key=\"nchroms\" value=\"15\" /&gt;\n```\n$attribute_list::5",
       "properties": {
         "key": {
           "anyOf": [
@@ -513,6 +521,7 @@
     },
     "AssertHasH5Keys": {
       "additionalProperties": false,
+      "description": "Asserts HDF5 output has a set of attributes (``keys``), specified as a\ncomma-separated list, e.g.\n```xml\n&lt;has_h5_keys keys=\"bins,chroms,indexes,pixels,chroms/lengths\" /&gt;\n```\n$attribute_list::5",
       "properties": {
         "keys": {
           "anyOf": [
@@ -533,6 +542,7 @@
     },
     "AssertHasJsonPropertyWithText": {
       "additionalProperties": false,
+      "description": "Asserts the JSON document contains a property or key with the specified text\n(i.e. string) value.\n\n```xml\n&lt;has_json_property_with_text property=\"color\" text=\"red\" /&gt;\n```\n$attribute_list::5",
       "properties": {
         "property": {
           "description": "JSON property to search the target for.",
@@ -554,6 +564,7 @@
     },
     "AssertHasJsonPropertyWithValue": {
       "additionalProperties": false,
+      "description": "Asserts the JSON document contains a property or key with the specified JSON\nvalue.\n\n```xml\n&lt;has_json_property_with_value property=\"skipped_columns\" value=\"[1, 3, 5]\" /&gt;\n```\n$attribute_list::5",
       "properties": {
         "property": {
           "description": "JSON property to search the target for.",
@@ -575,6 +586,7 @@
     },
     "AssertHasLine": {
       "additionalProperties": false,
+      "description": "Asserts a line matching the specified string (``line``) appears in the\noutput (e.g. ``&lt;has_line line=\"A full example line.\" /&gt;``).\n\nIf the ``line`` is expected\nto occur a particular number of times, this value can be specified using ``n``.\nOptionally also with a certain ``delta``. Alternatively the range of expected\noccurences can be specified by ``min`` and/or ``max``.\n$attribute_list::5",
       "properties": {
         "line": {
           "description": "The line to check for",
@@ -667,6 +679,7 @@
     },
     "AssertHasLineMatching": {
       "additionalProperties": false,
+      "description": "Asserts a line matching the specified regular expression (``expression``)\nappears in the output (e.g. ``&lt;has_line_matching\nexpression=\".*\\s+127489808\\s+127494553\" /&gt;``).\n\nIf a particular number of matching lines is expected, this value can be\nspecified using ``n``.  Optionally also with ``delta``. Alternatively the range\nof expected occurences can be specified by ``min`` and/or ``max``.\n$attribute_list::5",
       "properties": {
         "expression": {
           "description": "Regular expression to check for",
@@ -759,6 +772,7 @@
     },
     "AssertHasNcolumns": {
       "additionalProperties": false,
+      "description": "Asserts tabular output (actually only the first line) contains the specified\nnumber (``n``) of columns (e.g. ``&lt;has_n_columns n=\"3\"/&gt;``) optionally\nalso with ``delta``.\n\nAlternatively the range of expected occurences can be specified by\n``min`` and/or ``max``.  Optionally a column separator (``sep``, default is\n``\\t``) `and comment character(s) can be specified (``comment``, default is\nempty string), then the first non-comment line is used for determining the\nnumber of columns.\n$attribute_list::5",
       "properties": {
         "n": {
           "anyOf": [
@@ -862,6 +876,7 @@
     },
     "AssertHasNelementsWithPath": {
       "additionalProperties": false,
+      "description": "Asserts the XML output contains the specified number (``n``, optionally with\n``delta``) of elements (or tags) with the specified XPath-like ``path``, e.g.\n```xml &lt;has_n_elements_with_path n=\"9\"\npath=\"BlastOutput_iterations/Iteration/Iteration_hits/Hit/Hit_num\" /&gt; ```\nAlternatively to ``n`` and ``delta`` also the ``min`` and ``max`` attributes\ncan be used to specify the range of the expected number of occurences.\n\nWith ``negate`` the result of the assertion can be inverted.\n$attribute_list::5",
       "properties": {
         "path": {
           "description": "Path to check for. Valid paths are the simplified subsets of XPath implemented by lxml.etree; https://lxml.de/xpathxslt.html for more information.",
@@ -954,6 +969,7 @@
     },
     "AssertHasNlines": {
       "additionalProperties": false,
+      "description": "Asserts that an output contains ``n`` lines, allowing for a difference of\n``delta`` (default is 0), e.g. ``&lt;has_n_lines n=\"3\" delta=\"1\"/&gt;``.\n\nAlternatively the range of expected occurences can be specified by ``min``\nand/or ``max``.\n$attribute_list::5",
       "properties": {
         "n": {
           "anyOf": [
@@ -1038,6 +1054,7 @@
     },
     "AssertHasSize": {
       "additionalProperties": false,
+      "description": "Asserts the output has a specific size (in bytes) of ``value`` plus minus\n``delta``, e.g. ``&lt;has_size value=\"10000\" delta=\"100\" /&gt;``.\n\nAlternatively the range of the expected size can be specified by ``min`` and/or\n``max``.\n$attribute_list::5",
       "properties": {
         "value": {
           "anyOf": [
@@ -1122,6 +1139,7 @@
     },
     "AssertHasText": {
       "additionalProperties": false,
+      "description": "Asserts the specified ``text`` appears in the output (e.g. ``&lt;has_text\ntext=\"chr7\"&gt;``).\n\nIf the ``text`` is expected to occur a particular number of\ntimes, this value can be specified using ``n``. Optionally also with a certain\n``delta``. Alternatively the range of expected occurences can be specified by\n``min`` and/or ``max``.\n$attribute_list::5",
       "properties": {
         "text": {
           "description": "Text to check for",
@@ -1214,6 +1232,7 @@
     },
     "AssertHasTextMatching": {
       "additionalProperties": false,
+      "description": "Asserts text matching the specified regular expression (``expression``)\nappears in the output (e.g. ``&lt;has_text_matching expression=\"1274\\d+53\"\n/&gt;`` ).\n\nIf the\nregular expression is expected to match a particular number of times, this value\ncan be specified using ``n``.  Note only non-overlapping occurences are counted.\nOptionally also with a certain ``delta``. Alternatively the range of expected\noccurences can be specified by ``min`` and/or ``max``.\n$attribute_list::5",
       "properties": {
         "expression": {
           "description": "Regular expression to check for",
@@ -1306,12 +1325,14 @@
     },
     "AssertIsValidXml": {
       "additionalProperties": false,
+      "description": "Asserts the output is a valid XML file (e.g. ``&lt;is_valid_xml /&gt;``).\n\n$attribute_list::5",
       "properties": {},
       "title": "AssertIsValidXml",
       "type": "object"
     },
     "AssertNotHasText": {
       "additionalProperties": false,
+      "description": "Asserts the specified ``text`` does not appear in the output (e.g.\n``&lt;not_has_text text=\"chr8\" /&gt;``).\n\n$attribute_list::5",
       "properties": {
         "text": {
           "description": "Text to check for",
@@ -1327,6 +1348,7 @@
     },
     "AssertXmlelement": {
       "additionalProperties": false,
+      "description": "Assert if the XML file contains element(s) or tag(s) with the specified\n[XPath-like ``path``](https://lxml.de/xpathxslt.html).  If ``n`` and ``delta``\nor ``min`` and ``max`` are given also the number of occurences is checked.\n```xml\n&lt;assert_contents&gt;\n&lt;xml_element path=\"./elem\"/&gt;\n&lt;xml_element path=\"./elem/more[2]\"/&gt;\n&lt;xml_element path=\".//more\" n=\"3\" delta=\"1\"/&gt;\n&lt;/assert_contents&gt;\n```\nWith ``negate=\"true\"`` the outcome of the assertions wrt the precence and number\nof ``path`` can be negated. If there are any sub assertions then check them against\n- the content of the attribute ``attribute``\n- the element's text if no attribute is given\n```xml\n&lt;assert_contents&gt;\n&lt;xml_element path=\"./elem/more[2]\" attribute=\"name\"&gt;\n&lt;has_text_matching expression=\"foo$\"/&gt;\n&lt;/xml_element&gt;\n&lt;/assert_contents&gt;\n```\nSub-assertions are not subject to the ``negate`` attribute of ``xml_element``.\nIf ``all`` is ``true`` then the sub assertions are checked for all occurences.\nNote that all other XML assertions can be expressed by this assertion (Galaxy\nalso implements the other assertions by calling this one).\n$attribute_list::5",
       "properties": {
         "path": {
           "description": "Path to check for. Valid paths are the simplified subsets of XPath implemented by lxml.etree; https://lxml.de/xpathxslt.html for more information.",
@@ -2146,6 +2168,7 @@
     },
     "TestAssertions": {
       "additionalProperties": false,
+      "description": "This tag set defines a sequence of checks or assertions to run against the\ntarget output.\n\nThis tag requires no attributes, but child tags should be used to\ndefine the assertions to make about the output. The functional test framework\nmakes it easy to extend Galaxy with such tags, the following table summarizes\nmany of the default assertion tags that come with Galaxy and examples of each\ncan be found below.\nThe implementation of these tags are simply Python functions defined in the\n[/lib/galaxy/tool_util/verify/asserts](https://github.com/galaxyproject/galaxy/tree/dev/lib/galaxy/tool_util/verify/asserts)\nmodule.",
       "properties": {
         "has_size": {
           "anyOf": [
@@ -2538,6 +2561,7 @@
     },
     "TestDiscoveredDataset": {
       "additionalProperties": false,
+      "description": "This directive specifies a test for an output's discovered dataset.\n\nIt acts as an\n``output`` test tag in many ways and can define any tests of that tag (e.g.\n``assert_contents``, ``value``, ``compare``, ``md5``, ``checksum``, ``metadata``, etc...).\n### Example\nThe functional test tool\n[multi_output_assign_primary.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/multi_output_assign_primary.xml)\nprovides a demonstration of using this tag.\n```xml\n&lt;outputs&gt;\n&lt;data format=\"tabular\" name=\"sample\"&gt;\n&lt;discover_datasets pattern=\"(?P&amp;lt;designation&amp;gt;.+)\\.report\\.tsv\" ext=\"tabular\" visible=\"true\" assign_primary_output=\"true\" /&gt;\n&lt;/data&gt;\n&lt;/outputs&gt;\n&lt;test&gt;\n&lt;param name=\"num_param\" value=\"7\" /&gt;\n&lt;param name=\"input\" ftype=\"txt\" value=\"simple_line.txt\"/&gt;\n&lt;output name=\"sample\"&gt;\n&lt;assert_contents&gt;\n&lt;has_line line=\"1\" /&gt;\n&lt;/assert_contents&gt;\n&lt;!-- no sample1 it was consumed by named output \"sample\" --&gt;\n&lt;discovered_dataset designation=\"sample2\" ftype=\"tabular\"&gt;\n&lt;assert_contents&gt;&lt;has_line line=\"2\" /&gt;&lt;/assert_contents&gt;\n&lt;/discovered_dataset&gt;\n&lt;discovered_dataset designation=\"sample3\" ftype=\"tabular\"&gt;\n&lt;assert_contents&gt;&lt;has_line line=\"3\" /&gt;&lt;/assert_contents&gt;\n&lt;/discovered_dataset&gt;\n&lt;/output&gt;\n&lt;/test&gt;\n```\nNote that this tool uses ``assign_primary_output=\"true\"`` for ``&lt;discover_datasets&gt;``. Hence, the content of the first discovered dataset (which is the first in the alphabetically sorted list of discovered designations) is checked directly in the ``&lt;output&gt;`` tag of the test.",
       "properties": {
         "class": {
           "anyOf": [
@@ -2814,6 +2838,7 @@
     },
     "TestExtraFile": {
       "additionalProperties": false,
+      "description": "Define test for extra files on corresponding output.",
       "properties": {
         "class": {
           "anyOf": [
@@ -3090,6 +3115,7 @@
     },
     "TestOutput": {
       "additionalProperties": false,
+      "description": "This tag set defines the variable that names the output dataset for the\nfunctional test framework. The functional test framework will execute the tool\nusing the parameters defined in the ``&lt;param&gt;`` tag sets and generate a\ntemporary file, which will either be compared with the file named in the\n``file`` attribute value or checked against assertions made by a child\n``assert_contents`` tag to verify that the tool is functionally correct.\nDifferent methods can be chosen for the comparison with the local file\nspecified.\n\nby ``file`` using the ``compare`` attribute:\n- ``diff``: uses diff to compare the history data set and the file provided by\n``file``. Compressed files are decompressed before the compariopm if\n``decompress`` is set to ``true``. BAM files are converted to SAM before the\ncomparision and for pdf some special rules are implemented. The number of\nallowed differences can be set with ``lines_diff``.  If ``sort=\"true\"`` history\nand local data is sorted before the comparison.\n- ``re_match``: each line of the history data set is compared to the regular\nexpression specified in the corresponding line of the ``file``. The allowed\nnumber of non matching lines can be set with ``lines_diff`` and the history\ndataset is sorted if ``sort`` is set to ``true``.\n- ``re_match_multiline``: it is checked if the history data sets matches the\nmulti line regular expression given in ``file``. The history dataset is sorted\nbefore the comparison if the ``sort`` atrribute is set to ``true``.\n- ``contains``: check if each line in ``file`` is contained in the history data set.\nThe allowed number of lines that are not contained in the history dataset\ncan be set with ``lines_diff``.\n- ``sim_size``: compares the size of the history dataset and the ``file`` subject to\nthe values of the ``delta`` and ``delta_frac`` attributes. Note that a ``has_size``\ncontent assertion should be preferred, because this avoids storing the test file.",
       "properties": {
         "class": {
           "anyOf": [
@@ -3724,6 +3750,7 @@
     },
     "TestOutputMetadata": {
       "additionalProperties": false,
+      "description": "This directive specifies a test for an output's metadata as an expected key-\nvalue pair.\n\n### Example\nThe functional test tool\n[tool_provided_metadata_1.xml](https://github.com/galaxyproject/galaxy/blob/dev/test/functional/tools/tool_provided_metadata_1.xml)\nprovides a demonstration of using this tag.\n```xml\n&lt;test&gt;\n&lt;param name=\"input1\" value=\"simple_line.txt\" /&gt;\n&lt;output name=\"out1\" file=\"simple_line.txt\" ftype=\"txt\"&gt;\n&lt;metadata name=\"name\" value=\"my dynamic name\" /&gt;\n&lt;metadata name=\"info\" value=\"my dynamic info\" /&gt;\n&lt;metadata name=\"dbkey\" value=\"cust1\" /&gt;\n&lt;/output&gt;\n&lt;/test&gt;\n```",
       "properties": {
         "name": {
           "description": "Name of the metadata element to check.",
