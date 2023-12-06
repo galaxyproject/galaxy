@@ -4,12 +4,25 @@ import logging
 import re
 
 from markupsafe import escape
+from sqlalchemy import (
+    false,
+    true,
+)
 
 from galaxy import (
     model,
     util,
 )
 from galaxy.model.base import transaction
+from galaxy.model.index_filter_util import (
+    raw_text_column_filter,
+    text_column_filter,
+)
+from galaxy.util.search import (
+    FilteredTerm,
+    parse_filters_structured,
+    RawTextTerm,
+)
 from galaxy.web.framework.helpers import (
     grids,
     iff,
@@ -25,67 +38,70 @@ log = logging.getLogger(__name__)
 VALID_FIELDNAME_RE = re.compile(r"^[a-zA-Z0-9\_]+$")
 
 
-class FormsGrid(grids.Grid):
+class FormsGrid(grids.GridData):
     # Custom column types
     class NameColumn(grids.TextColumn):
         def get_value(self, trans, grid, form):
-            return escape(form.latest_form.name)
+            return form.latest_form.name
 
     class DescriptionColumn(grids.TextColumn):
         def get_value(self, trans, grid, form):
-            return escape(form.latest_form.desc)
+            return form.latest_form.desc
 
     class TypeColumn(grids.TextColumn):
         def get_value(self, trans, grid, form):
             return form.latest_form.type
 
-    class StatusColumn(grids.GridColumn):
-        def get_value(self, trans, grid, user):
-            if user.deleted:
-                return "deleted"
-            return "active"
-
     # Grid definition
     title = "Forms"
     model_class = model.FormDefinitionCurrent
-    default_sort_key = "-update_time"
-    num_rows_per_page = 50
-    use_paging = True
-    default_filter = dict(deleted="False")
+    default_sort_key = "update_time"
     columns = [
         NameColumn(
             "Name",
             key="name",
             model_class=model.FormDefinition,
-            link=(lambda item: iff(item.deleted, None, dict(controller="admin", action="form/edit_form", id=item.id))),
-            attach_popup=True,
-            filterable="advanced",
         ),
-        DescriptionColumn("Description", key="desc", model_class=model.FormDefinition, filterable="advanced"),
-        TypeColumn("Type"),
-        grids.GridColumn("Last Updated", key="update_time", format=time_ago),
-        StatusColumn("Status"),
-        grids.DeletedColumn("Deleted", key="deleted", visible=False, filterable="advanced"),
+        DescriptionColumn("Description", key="desc", model_class=model.FormDefinition),
+        TypeColumn("Type", key="type", model_class=model.FormDefinition),
+        grids.GridColumn("Last Updated", key="update_time"),
+        grids.GridColumn("Deleted", key="deleted", escape=False),
     ]
-    columns.append(
-        grids.MulticolFilterColumn(
-            "Search",
-            cols_to_filter=[columns[0], columns[1]],
-            key="free-text-search",
-            visible=False,
-            filterable="standard",
-        )
-    )
-    operations = [
-        grids.GridOperation("Delete", allow_multiple=True, condition=(lambda item: not item.deleted)),
-        grids.GridOperation("Undelete", condition=(lambda item: item.deleted)),
-    ]
-    global_actions = [grids.GridAction("Create new form", dict(controller="admin", action="form/create_form"))]
 
-    def build_initial_query(self, trans, **kwargs):
-        return trans.sa_session.query(self.model_class).join(
-            model.FormDefinition, self.model_class.latest_form_id == model.FormDefinition.id
-        )
+    def apply_query_filter(self, query, **kwargs):
+        INDEX_SEARCH_FILTERS = {
+            "name": "name",
+            "description": "description",
+            "is": "is",
+        }
+        deleted = False
+        query = query.join(model.FormDefinition, self.model_class.latest_form_id == model.FormDefinition.id)
+        search_query = kwargs.get("search")
+        if search_query:
+            parsed_search = parse_filters_structured(search_query, INDEX_SEARCH_FILTERS)
+            for term in parsed_search.terms:
+                if isinstance(term, FilteredTerm):
+                    key = term.filter
+                    q = term.text
+                    if key == "name":
+                        query = query.filter(text_column_filter(model.FormDefinition.name, term))
+                    elif key == "description":
+                        query = query.filter(text_column_filter(model.FormDefinition.desc, term))
+                    elif key == "is":
+                        if q == "deleted":
+                            deleted = True
+                elif isinstance(term, RawTextTerm):
+                    query = query.filter(
+                        raw_text_column_filter(
+                            [
+                                model.FormDefinition.name,
+                                model.FormDefinition.desc,
+                            ],
+                            term,
+                        )
+                    )
+        query = query.filter(self.model_class.deleted == (true() if deleted else false()))
+        return query
 
 
 class Forms(BaseUIController):
