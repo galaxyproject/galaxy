@@ -953,6 +953,7 @@
     <datatype extension="castep" type="galaxy.datatypes.text:Castep" display_in_upload="true"/>
     <datatype extension="param" type="galaxy.datatypes.text:Param" display_in_upload="true"/>
     <datatype extension="den_fmt" type="galaxy.datatypes.text:FormattedDensity" display_in_upload="true"/>
+    <datatype extension="magres" type="galaxy.datatypes.text:Magres" display_in_upload="true"/>
     <!-- Larch types -->
     <datatype extension="prj" type="galaxy.datatypes.larch:AthenaProject" display_in_upload="true" description="Athena project file."/>
     <datatype extension="inp" type="galaxy.datatypes.larch:FEFFInput" display_in_upload="true" description="FEFF input file."/>
@@ -1226,6 +1227,7 @@
     <sniffer type="galaxy.datatypes.text:CTLresult"/>
     <sniffer type="galaxy.datatypes.text:FormattedDensity" />
     <sniffer type="galaxy.datatypes.text:Param" />
+    <sniffer type="galaxy.datatypes.text:Magres" />
     <sniffer type="galaxy.datatypes.text:Yaml" />
     <!--
     Keep this commented until the sniff method in the assembly.py

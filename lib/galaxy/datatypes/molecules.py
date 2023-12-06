@@ -1767,3 +1767,27 @@ class GRO(GenericMolFile):
         else:
             dataset.peek = "file does not exist"
             dataset.blurb = "file purged from disk"
+
+@build_sniff_from_prefix
+class Magres(GenericMolFile):
+    """Report on a MAGRES calculation"""
+
+    file_ext = "magres"
+
+    def sniff_prefix(self, file_prefix: FilePrefix) -> bool:
+        """Determines whether the file is a MAGRES log
+
+        >>> from galaxy.datatypes.sniff import get_test_fname
+        >>> fname = get_test_fname('ethanol.magres')
+        >>> Magres().sniff(fname)
+        True
+        >>> fname = get_test_fname('<file>.param')
+        >>> Magres().sniff(fname)
+        False
+        """
+        fh = file_prefix.string_io()
+
+        for lines in fh:
+            if not re.search(r'\#\$magres-abinitio-v([0-9]+).([0-9]+)', lines[0]):
+                return False        
+        return True
