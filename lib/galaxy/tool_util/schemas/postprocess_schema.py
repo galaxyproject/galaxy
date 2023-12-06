@@ -50,7 +50,7 @@ def modify_tree(tree: ast.Module):
     for node in ast.walk(tree):
         if isinstance(node, ast.ClassDef):
             for field in node.body:
-                if isinstance(field, ast.AnnAssign):
+                if isinstance(field, ast.AnnAssign) and field.value and hasattr(field.value, "keywords"):
                     # Replace the "doc" key in the metadata for each field with "description"
                     for keyword in field.value.keywords:
                         if keyword.arg == "metadata":
@@ -63,9 +63,13 @@ def modify_tree(tree: ast.Module):
                 target_ids = MODIFICATION_BY_MODULE[node.name]
                 new_body = []
                 for field in node.body:
-                    if isinstance(field, ast.AnnAssign) and field.target.id in target_ids:
+                    if (
+                        isinstance(field, ast.AnnAssign)
+                        and hasattr(field.target, "id")
+                        and field.target.id in target_ids
+                    ):
                         modification = target_ids[field.target.id]
-                        if modification == "to_union":
+                        if modification == "to_union" and hasattr(field.annotation, "slice"):
                             original_slice = field.annotation.slice
                             list_type = ast.Subscript(
                                 value=ast.Name(id="List", ctx=ast.Load()),
@@ -82,10 +86,11 @@ def modify_tree(tree: ast.Module):
                                 ),
                                 ctx=ast.Load(),
                             )
-                            for keyword in field.value.keywords:
-                                if keyword.arg == "default_factory":
-                                    keyword.arg = "default"
-                                    keyword.value = ast.NameConstant(value=None)
+                            if field.value and hasattr(field.value, "keywords"):
+                                for keyword in field.value.keywords:
+                                    if keyword.arg == "default_factory":
+                                        keyword.arg = "default"
+                                        keyword.value = ast.NameConstant(value=None)
                         elif modification == "delete":
                             continue
                     new_body.append(field)
