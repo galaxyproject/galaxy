@@ -159,27 +159,7 @@ class UserListGrid(grids.GridData):
         return query
 
 
-class RoleListGrid(grids.Grid):
-    class NameColumn(grids.TextColumn):
-        def get_value(self, trans, grid, role):
-            return escape(role.name)
-
-    class DescriptionColumn(grids.TextColumn):
-        def get_value(self, trans, grid, role):
-            if role.description:
-                return escape(role.description)
-            return ""
-
-    class TypeColumn(grids.TextColumn):
-        def get_value(self, trans, grid, role):
-            return role.type
-
-    class StatusColumn(grids.GridColumn):
-        def get_value(self, trans, grid, role):
-            if role.deleted:
-                return "deleted"
-            return ""
-
+class RoleListGrid(grids.GridData):
     class GroupsColumn(grids.GridColumn):
         def get_value(self, trans, grid, role):
             if role.groups:
@@ -198,63 +178,50 @@ class RoleListGrid(grids.Grid):
     model_class = model.Role
     default_sort_key = "name"
     columns = [
-        NameColumn(
-            "Name",
-            key="name",
-            link=(lambda item: dict(action="form/manage_users_and_groups_for_role", id=item.id, webapp="galaxy")),
-            model_class=model.Role,
-            attach_popup=True,
-            filterable="advanced",
-            target="top",
-        ),
-        DescriptionColumn(
-            "Description", key="description", model_class=model.Role, attach_popup=False, filterable="advanced"
-        ),
-        TypeColumn("Type", key="type", model_class=model.Role, attach_popup=False, filterable="advanced"),
-        GroupsColumn("Groups", attach_popup=False),
-        UsersColumn("Users", attach_popup=False),
-        StatusColumn("Status", attach_popup=False),
-        # Columns that are valid for filtering but are not visible.
-        grids.DeletedColumn("Deleted", key="deleted", visible=False, filterable="advanced"),
+        grids.GridColumn("Name", key="name"),
+        grids.GridColumn("Description", key="description"),
+        grids.GridColumn("Type", key="type"),
+        GroupsColumn("Groups", key="groups"),
+        UsersColumn("Users", key="users"),
+        grids.GridColumn("Deleted", key="deleted", escape=False),
+        grids.GridColumn("Purged", key="purged", escape=False),
         grids.GridColumn("Last Updated", key="update_time"),
     ]
-    columns.append(
-        grids.MulticolFilterColumn(
-            "Search",
-            cols_to_filter=[columns[0], columns[1], columns[2]],
-            key="free-text-search",
-            visible=False,
-            filterable="standard",
-        )
-    )
-    global_actions = [grids.GridAction("Add new role", url_args=dict(action="form/create_role"))]
-    operations = [
-        grids.GridOperation(
-            "Edit Name/Description",
-            condition=(lambda item: not item.deleted),
-            allow_multiple=False,
-            url_args=dict(action="form/rename_role"),
-        ),
-        grids.GridOperation(
-            "Edit Permissions",
-            condition=(lambda item: not item.deleted),
-            allow_multiple=False,
-            url_args=dict(action="form/manage_users_and_groups_for_role", webapp="galaxy"),
-        ),
-        grids.GridOperation("Delete", condition=(lambda item: not item.deleted), allow_multiple=True),
-        grids.GridOperation("Undelete", condition=(lambda item: item.deleted), allow_multiple=True),
-        grids.GridOperation("Purge", condition=(lambda item: item.deleted), allow_multiple=True),
-    ]
-    standard_filters = [
-        grids.GridColumnFilter("Active", args=dict(deleted=False)),
-        grids.GridColumnFilter("Deleted", args=dict(deleted=True)),
-        grids.GridColumnFilter("All", args=dict(deleted="All")),
-    ]
-    num_rows_per_page = 50
-    use_paging = True
 
-    def apply_query_filter(self, trans, query, **kwargs):
-        return query.filter(model.Role.type != model.Role.types.PRIVATE)
+    def apply_query_filter(self, query, **kwargs):
+        INDEX_SEARCH_FILTERS = {
+            "description": "description",
+            "name": "name",
+            "is": "is",
+        }
+        deleted = False
+        query = query.filter(self.model_class.type != self.model_class.types.PRIVATE)
+        search_query = kwargs.get("search")
+        if search_query:
+            parsed_search = parse_filters_structured(search_query, INDEX_SEARCH_FILTERS)
+            for term in parsed_search.terms:
+                if isinstance(term, FilteredTerm):
+                    key = term.filter
+                    q = term.text
+                    if key == "name":
+                        query = query.filter(text_column_filter(self.model_class.name, term))
+                    if key == "description":
+                        query = query.filter(text_column_filter(self.model_class.description, term))
+                    elif key == "is":
+                        if q == "deleted":
+                            deleted = True
+                elif isinstance(term, RawTextTerm):
+                    query = query.filter(
+                        raw_text_column_filter(
+                            [
+                                self.model_class.description,
+                                self.model_class.name,
+                            ],
+                            term,
+                        )
+                    )
+        query = query.filter(self.model_class.deleted == (true() if deleted else false()))
+        return query
 
 
 class GroupListGrid(grids.Grid):
@@ -854,23 +821,6 @@ class AdminGalaxy(controller.JSAppLauncher):
     @web.json
     @web.require_admin
     def roles_list(self, trans, **kwargs):
-        message = kwargs.get("message")
-        status = kwargs.get("status")
-        if "operation" in kwargs:
-            id = kwargs.get("id", None)
-            if not id:
-                message, status = (f"Invalid role id ({str(id)}) received.", "error")
-            ids = util.listify(id)
-            operation = kwargs["operation"].lower().replace("+", " ")
-            if operation == "delete":
-                message, status = self._delete_role(trans, ids)
-            elif operation == "undelete":
-                message, status = self._undelete_role(trans, ids)
-            elif operation == "purge":
-                message, status = self._purge_role(trans, ids)
-        if message and status:
-            kwargs["message"] = util.sanitize_text(message)
-            kwargs["status"] = status
         return self.role_list_grid(trans, **kwargs)
 
     @web.legacy_expose_api
@@ -1067,69 +1017,6 @@ class AdminGalaxy(controller.JSAppLauncher):
             return {
                 "message": f"Role '{role.name}' has been updated with {len(in_users)} associated users and {len(in_groups)} associated groups."
             }
-
-    def _delete_role(self, trans, ids):
-        message = "Deleted %d roles: " % len(ids)
-        for role_id in ids:
-            role = get_role(trans, role_id)
-            role.deleted = True
-            trans.sa_session.add(role)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
-            message += f" {role.name} "
-        return (message, "done")
-
-    def _undelete_role(self, trans, ids):
-        count = 0
-        undeleted_roles = ""
-        for role_id in ids:
-            role = get_role(trans, role_id)
-            if not role.deleted:
-                return (f"Role '{role.name}' has not been deleted, so it cannot be undeleted.", "error")
-            role.deleted = False
-            trans.sa_session.add(role)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
-            count += 1
-            undeleted_roles += f" {role.name}"
-        return ("Undeleted %d roles: %s" % (count, undeleted_roles), "done")
-
-    def _purge_role(self, trans, ids):
-        # This method should only be called for a Role that has previously been deleted.
-        # Purging a deleted Role deletes all of the following from the database:
-        # - UserRoleAssociations where role_id == Role.id
-        # - DefaultUserPermissions where role_id == Role.id
-        # - DefaultHistoryPermissions where role_id == Role.id
-        # - GroupRoleAssociations where role_id == Role.id
-        # - DatasetPermissionss where role_id == Role.id
-        message = "Purged %d roles: " % len(ids)
-        for role_id in ids:
-            role = get_role(trans, role_id)
-            if not role.deleted:
-                return (f"Role '{role.name}' has not been deleted, so it cannot be purged.", "error")
-            # Delete UserRoleAssociations
-            for ura in role.users:
-                user = trans.sa_session.query(trans.app.model.User).get(ura.user_id)
-                # Delete DefaultUserPermissions for associated users
-                for dup in user.default_permissions:
-                    if role == dup.role:
-                        trans.sa_session.delete(dup)
-                # Delete DefaultHistoryPermissions for associated users
-                for history in user.histories:
-                    for dhp in history.default_permissions:
-                        if role == dhp.role:
-                            trans.sa_session.delete(dhp)
-                trans.sa_session.delete(ura)
-            # Delete GroupRoleAssociations
-            for gra in role.groups:
-                trans.sa_session.delete(gra)
-            # Delete DatasetPermissionss
-            for dp in role.dataset_actions:
-                trans.sa_session.delete(dp)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
-            message += f" {role.name} "
-        return (message, "done")
 
     @web.legacy_expose_api
     @web.require_admin

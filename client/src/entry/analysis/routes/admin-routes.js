@@ -18,6 +18,7 @@ import NotificationsManagement from "components/admin/Notifications/Notification
 import ResetMetadata from "components/admin/ResetMetadata";
 import SanitizeAllow from "components/admin/SanitizeAllow";
 import FormGeneric from "components/Form/FormGeneric";
+import adminRolesGridConfig from "components/Grid/configs/adminRoles";
 import adminUsersGridConfig from "components/Grid/configs/adminUsers";
 import Grid from "components/Grid/Grid";
 import GridList from "components/Grid/GridList";
@@ -148,9 +149,9 @@ export default [
             },
             {
                 path: "roles",
-                component: Grid,
+                component: GridList,
                 props: {
-                    urlBase: "admin/roles_list",
+                    gridConfig: adminRolesGridConfig,
                 },
             },
             {
