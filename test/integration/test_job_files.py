@@ -22,7 +22,10 @@ import requests
 from sqlalchemy import select
 
 from galaxy import model
-from galaxy.model.base import transaction
+from galaxy.model.base import (
+    ensure_object_added_to_session,
+    transaction,
+)
 from galaxy_test.base import api_asserts
 from galaxy_test.base.populators import DatasetPopulator
 from galaxy_test.driver import integration_util
@@ -138,6 +141,7 @@ class TestJobFilesIntegration(integration_util.IntegrationTestCase):
             sa_session.commit()
         job = model.Job()
         job.history = history
+        ensure_object_added_to_session(job, object_in_session=history)
         job.user = user
         job.handler = "unknown-handler"
         job.state = state

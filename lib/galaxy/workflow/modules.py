@@ -35,6 +35,7 @@ from galaxy.model import (
     WorkflowStep,
     WorkflowStepConnection,
 )
+from galaxy.model.base import ensure_object_added_to_session
 from galaxy.model.dataset_collections import matching
 from galaxy.schema.invocation import (
     CancelReason,
@@ -644,6 +645,7 @@ class SubWorkflowModule(WorkflowModule):
     def save_to_step(self, step, **kwd):
         step.type = self.type
         step.subworkflow = self.subworkflow
+        ensure_object_added_to_session(step, object_in_session=self.subworkflow)
 
     def get_name(self):
         if hasattr(self.subworkflow, "name"):

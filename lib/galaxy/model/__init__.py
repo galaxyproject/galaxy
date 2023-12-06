@@ -119,7 +119,10 @@ import galaxy.model.metadata
 import galaxy.model.tags
 import galaxy.security.passwords
 import galaxy.util
-from galaxy.model.base import transaction
+from galaxy.model.base import (
+    ensure_object_added_to_session,
+    transaction,
+)
 from galaxy.model.custom_types import (
     DoubleEncodedJsonType,
     JSONType,
@@ -689,13 +692,15 @@ class User(Base, Dictifiable, RepresentById):
     active = Column(Boolean, index=True, default=True, nullable=False)
     activation_token = Column(TrimmedString(64), nullable=True, index=True)
 
-    addresses = relationship("UserAddress", back_populates="user", order_by=lambda: desc(UserAddress.update_time))
+    addresses = relationship(
+        "UserAddress", back_populates="user", order_by=lambda: desc(UserAddress.update_time), cascade_backrefs=False
+    )
     cloudauthz = relationship("CloudAuthz", back_populates="user")
     custos_auth = relationship("CustosAuthnzToken", back_populates="user")
     default_permissions = relationship("DefaultUserPermissions", back_populates="user")
     groups = relationship("UserGroupAssociation", back_populates="user")
     histories = relationship(
-        "History", back_populates="user", order_by=lambda: desc(History.update_time)  # type: ignore[has-type]
+        "History", back_populates="user", order_by=lambda: desc(History.update_time), cascade_backrefs=False  # type: ignore[has-type]
     )
     active_histories = relationship(
         "History",
@@ -704,7 +709,7 @@ class User(Base, Dictifiable, RepresentById):
         order_by=lambda: desc(History.update_time),  # type: ignore[has-type]
     )
     galaxy_sessions = relationship(
-        "GalaxySession", back_populates="user", order_by=lambda: desc(GalaxySession.update_time)  # type: ignore[has-type]
+        "GalaxySession", back_populates="user", order_by=lambda: desc(GalaxySession.update_time), cascade_backrefs=False  # type: ignore[has-type]
     )
     quotas = relationship("UserQuotaAssociation", back_populates="user")
     quota_source_usages = relationship("UserQuotaSourceUsage", back_populates="user")
@@ -739,9 +744,12 @@ class User(Base, Dictifiable, RepresentById):
     data_manager_histories = relationship("DataManagerHistoryAssociation", back_populates="user")
     roles = relationship("UserRoleAssociation", back_populates="user")
     stored_workflows = relationship(
-        "StoredWorkflow", back_populates="user", primaryjoin=(lambda: User.id == StoredWorkflow.user_id)  # type: ignore[has-type]
+        "StoredWorkflow",
+        back_populates="user",
+        primaryjoin=(lambda: User.id == StoredWorkflow.user_id),  # type: ignore[has-type]
+        cascade_backrefs=False,
     )
-    all_notifications = relationship("UserNotificationAssociation", back_populates="user")
+    all_notifications = relationship("UserNotificationAssociation", back_populates="user", cascade_backrefs=False)
     non_private_roles = relationship(
         "UserRoleAssociation",
         viewonly=True,
@@ -1328,7 +1336,7 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     )
     output_dataset_collection_instances = relationship("JobToOutputDatasetCollectionAssociation", back_populates="job")
     output_dataset_collections = relationship("JobToImplicitOutputDatasetCollectionAssociation", back_populates="job")
-    post_job_actions = relationship("PostJobActionAssociation", back_populates="job")
+    post_job_actions = relationship("PostJobActionAssociation", back_populates="job", cascade_backrefs=False)
     input_library_datasets = relationship("JobToInputLibraryDatasetAssociation", back_populates="job")
     output_library_datasets = relationship("JobToOutputLibraryDatasetAssociation", back_populates="job")
     external_output_metadata = relationship("JobExternalOutputMetadata", back_populates="job")
@@ -1339,10 +1347,12 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
     numeric_metrics = relationship("JobMetricNumeric")
     interactivetool_entry_points = relationship("InteractiveToolEntryPoint", back_populates="job", uselist=True)
     implicit_collection_jobs_association = relationship(
-        "ImplicitCollectionJobsJobAssociation", back_populates="job", uselist=False
+        "ImplicitCollectionJobsJobAssociation", back_populates="job", uselist=False, cascade_backrefs=False
     )
     container = relationship("JobContainerAssociation", back_populates="job", uselist=False)
-    data_manager_association = relationship("DataManagerJobAssociation", back_populates="job", uselist=False)
+    data_manager_association = relationship(
+        "DataManagerJobAssociation", back_populates="job", uselist=False, cascade_backrefs=False
+    )
     history_dataset_collection_associations = relationship("HistoryDatasetCollectionAssociation", back_populates="job")
     workflow_invocation_step = relationship("WorkflowInvocationStep", back_populates="job", uselist=False)
 
@@ -2408,7 +2418,9 @@ class ImplicitCollectionJobs(Base, Serializable):
 
     id = Column(Integer, primary_key=True)
     populated_state = Column(TrimmedString(64), default="new", nullable=False)
-    jobs = relationship("ImplicitCollectionJobsJobAssociation", back_populates="implicit_collection_jobs")
+    jobs = relationship(
+        "ImplicitCollectionJobsJobAssociation", back_populates="implicit_collection_jobs", cascade_backrefs=False
+    )
 
     class populated_states(str, Enum):
         NEW = "new"  # New implicit jobs object, unpopulated job associations
@@ -2462,6 +2474,7 @@ class PostJobAction(Base, RepresentById):
         self.output_name = output_name
         self.action_arguments = action_arguments
         self.workflow_step = workflow_step
+        ensure_object_added_to_session(self, object_in_session=workflow_step)
 
 
 class PostJobActionAssociation(Base, RepresentById):
@@ -2476,6 +2489,7 @@ class PostJobActionAssociation(Base, RepresentById):
     def __init__(self, pja, job=None, job_id=None):
         if job is not None:
             self.job = job
+            ensure_object_added_to_session(self, object_in_session=job)
         elif job_id is not None:
             self.job_id = job_id
         else:
@@ -2771,7 +2785,7 @@ class Group(Base, Dictifiable, RepresentById):
     name = Column(String(255), index=True, unique=True)
     deleted = Column(Boolean, index=True, default=False)
     quotas = relationship("GroupQuotaAssociation", back_populates="group")
-    roles = relationship("GroupRoleAssociation", back_populates="group")
+    roles = relationship("GroupRoleAssociation", back_populates="group", cascade_backrefs=False)
     users = relationship("UserGroupAssociation", back_populates="group")
 
     dict_collection_visible_keys = ["id", "name"]
@@ -2846,6 +2860,7 @@ class UserNotificationAssociation(Base, RepresentById):
 
     def __init__(self, user, notification):
         self.user = user
+        ensure_object_added_to_session(self, object_in_session=user)
         self.notification = notification
 
 
@@ -2979,9 +2994,9 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
     default_permissions = relationship("DefaultHistoryPermissions", back_populates="history")
     users_shared_with = relationship("HistoryUserShareAssociation", back_populates="history")
     galaxy_sessions = relationship("GalaxySessionToHistoryAssociation", back_populates="history")
-    workflow_invocations = relationship("WorkflowInvocation", back_populates="history")
+    workflow_invocations = relationship("WorkflowInvocation", back_populates="history", cascade_backrefs=False)
     user = relationship("User", back_populates="histories")
-    jobs = relationship("Job", back_populates="history")
+    jobs = relationship("Job", back_populates="history", cascade_backrefs=False)
 
     update_time = column_property(
         select(func.max(HistoryAudit.update_time)).where(HistoryAudit.history_id == id).scalar_subquery(),
@@ -3499,6 +3514,7 @@ class GroupRoleAssociation(Base, RepresentById):
 
     def __init__(self, group, role):
         self.group = group
+        ensure_object_added_to_session(self, object_in_session=group)
         self.role = role
 
 
@@ -3599,7 +3615,7 @@ class Quota(Base, Dictifiable, RepresentById):
     operation = Column(String(8))
     deleted = Column(Boolean, index=True, default=False)
     quota_source_label = Column(String(32), default=None)
-    default = relationship("DefaultQuotaAssociation", back_populates="quota")
+    default = relationship("DefaultQuotaAssociation", back_populates="quota", cascade_backrefs=False)
     groups = relationship("GroupQuotaAssociation", back_populates="quota")
     users = relationship("UserQuotaAssociation", back_populates="quota")
 
@@ -3669,6 +3685,7 @@ class DefaultQuotaAssociation(Base, Dictifiable, RepresentById):
         assert type in self.types.__members__.values(), "Invalid type"
         self.type = type
         self.quota = quota
+        ensure_object_added_to_session(self, object_in_session=quota)
 
 
 class DatasetPermissions(Base, RepresentById):
@@ -3709,6 +3726,7 @@ class LibraryPermissions(Base, RepresentById):
         self.action = action
         if isinstance(library_item, Library):
             self.library = library_item
+            ensure_object_added_to_session(self, object_in_session=library_item)
         else:
             raise Exception(f"Invalid Library specified: {library_item.__class__.__name__}")
         self.role = role
@@ -3730,6 +3748,7 @@ class LibraryFolderPermissions(Base, RepresentById):
         self.action = action
         if isinstance(library_item, LibraryFolder):
             self.folder = library_item
+            ensure_object_added_to_session(self, object_in_session=library_item)
         else:
             raise Exception(f"Invalid LibraryFolder specified: {library_item.__class__.__name__}")
         self.role = role
@@ -3751,6 +3770,7 @@ class LibraryDatasetPermissions(Base, RepresentById):
         self.action = action
         if isinstance(library_item, LibraryDataset):
             self.library_dataset = library_item
+            ensure_object_added_to_session(self, object_in_session=library_item)
         else:
             raise Exception(f"Invalid LibraryDataset specified: {library_item.__class__.__name__}")
         self.role = role
@@ -3873,13 +3893,14 @@ class Dataset(Base, StorableObject, Serializable):
         ),
         viewonly=True,
     )
-    hashes = relationship("DatasetHash", back_populates="dataset")
+    hashes = relationship("DatasetHash", back_populates="dataset", cascade_backrefs=False)
     sources = relationship("DatasetSource", back_populates="dataset")
-    history_associations = relationship("HistoryDatasetAssociation", back_populates="dataset")
+    history_associations = relationship("HistoryDatasetAssociation", back_populates="dataset", cascade_backrefs=False)
     library_associations = relationship(
         "LibraryDatasetDatasetAssociation",
         primaryjoin=(lambda: LibraryDatasetDatasetAssociation.table.c.dataset_id == Dataset.id),
         back_populates="dataset",
+        cascade_backrefs=False,
     )
 
     # failed_metadata is only valid as DatasetInstance state currently
@@ -4371,6 +4392,7 @@ class DatasetInstance(RepresentById, UsesCreateAndUpdateTime, _HasTable):
         elif dataset:
             add_object_to_object_session(self, dataset)
         self.dataset = dataset
+        ensure_object_added_to_session(self, object_in_session=dataset)
         self.parent_id = parent_id
 
     @property
@@ -5368,7 +5390,7 @@ class Library(Base, Dictifiable, HasName, Serializable):
     description = Column(TEXT)
     synopsis = Column(TEXT)
     root_folder = relationship("LibraryFolder", back_populates="library_root")
-    actions = relationship("LibraryPermissions", back_populates="library")
+    actions = relationship("LibraryPermissions", back_populates="library", cascade_backrefs=False)
 
     permitted_actions = get_permitted_actions(filter="LIBRARY")
     dict_collection_visible_keys = ["id", "name"]
@@ -5487,7 +5509,7 @@ class LibraryFolder(Base, Dictifiable, HasName, Serializable):
     )
 
     library_root = relationship("Library", back_populates="root_folder")
-    actions = relationship("LibraryFolderPermissions", back_populates="folder")
+    actions = relationship("LibraryFolderPermissions", back_populates="folder", cascade_backrefs=False)
 
     dict_element_visible_keys = [
         "id",
@@ -5612,7 +5634,7 @@ class LibraryDataset(Base, Serializable):
         viewonly=True,
         uselist=True,
     )
-    actions = relationship("LibraryDatasetPermissions", back_populates="library_dataset")
+    actions = relationship("LibraryDatasetPermissions", back_populates="library_dataset", cascade_backrefs=False)
 
     # This class acts as a proxy to the currently selected LDDA
     upload_options = [
@@ -7201,7 +7223,9 @@ class GalaxySession(Base, RepresentById):
     disk_usage = Column(Numeric(15, 0), index=True)
     last_action = Column(DateTime)
     current_history = relationship("History")
-    histories = relationship("GalaxySessionToHistoryAssociation", back_populates="galaxy_session")
+    histories = relationship(
+        "GalaxySessionToHistoryAssociation", back_populates="galaxy_session", cascade_backrefs=False
+    )
     user = relationship("User", back_populates="galaxy_sessions")
 
     def __init__(self, is_valid=False, **kwd):
@@ -7238,6 +7262,7 @@ class GalaxySessionToHistoryAssociation(Base, RepresentById):
 
     def __init__(self, galaxy_session, history):
         self.galaxy_session = galaxy_session
+        ensure_object_added_to_session(self, object_in_session=galaxy_session)
         add_object_to_object_session(self, history)
         self.history = history
 
@@ -7284,6 +7309,7 @@ class StoredWorkflow(Base, HasTags, Dictifiable, RepresentById):
         cascade="all, delete-orphan",
         primaryjoin=(lambda: StoredWorkflow.id == Workflow.stored_workflow_id),  # type: ignore[has-type]
         order_by=lambda: -Workflow.id,  # type: ignore[has-type]
+        cascade_backrefs=False,
     )
     latest_workflow = relationship(
         "Workflow",
@@ -7452,6 +7478,7 @@ class Workflow(Base, Dictifiable, RepresentById):
         "WorkflowStep",
         primaryjoin=(lambda: Workflow.id == WorkflowStep.subworkflow_id),  # type: ignore[has-type]
         back_populates="subworkflow",
+        cascade_backrefs=False,
     )
     stored_workflow = relationship(
         "StoredWorkflow",
@@ -7640,14 +7667,17 @@ class WorkflowStep(Base, RepresentById):
         order_by=lambda: WorkflowStepAnnotationAssociation.id,
         back_populates="workflow_step",
     )
-    post_job_actions = relationship("PostJobAction", back_populates="workflow_step")
+    post_job_actions = relationship("PostJobAction", back_populates="workflow_step", cascade_backrefs=False)
     inputs = relationship("WorkflowStepInput", back_populates="workflow_step")
-    workflow_outputs = relationship("WorkflowOutput", back_populates="workflow_step")
+    workflow_outputs = relationship("WorkflowOutput", back_populates="workflow_step", cascade_backrefs=False)
     output_connections = relationship(
         "WorkflowStepConnection", primaryjoin=(lambda: WorkflowStepConnection.output_step_id == WorkflowStep.id)
     )
     workflow = relationship(
-        "Workflow", primaryjoin=(lambda: Workflow.id == WorkflowStep.workflow_id), back_populates="steps"
+        "Workflow",
+        primaryjoin=(lambda: Workflow.id == WorkflowStep.workflow_id),
+        back_populates="steps",
+        cascade_backrefs=False,
     )
 
     # Injected attributes
@@ -7744,6 +7774,7 @@ class WorkflowStep(Base, RepresentById):
 
         conn = WorkflowStepConnection()
         conn.input_step_input = step_input
+        ensure_object_added_to_session(conn, object_in_session=step_input)
         conn.output_name = output_name
         add_object_to_object_session(conn, output_step)
         conn.output_step = output_step
@@ -7933,6 +7964,7 @@ class WorkflowStepInput(Base, RepresentById):
         "WorkflowStepConnection",
         back_populates="input_step_input",
         primaryjoin=(lambda: WorkflowStepConnection.input_step_input_id == WorkflowStepInput.id),
+        cascade_backrefs=False,
     )
 
     def __init__(self, workflow_step):
@@ -8024,6 +8056,7 @@ class WorkflowOutput(Base, Serializable):
 
     def __init__(self, workflow_step, output_name=None, label=None, uuid=None):
         self.workflow_step = workflow_step
+        ensure_object_added_to_session(self, object_in_session=workflow_step)
         self.output_name = output_name
         self.label = label
         self.uuid = get_uuid(uuid)
@@ -8163,12 +8196,20 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
     history_id = Column(Integer, ForeignKey("history.id"), index=True)
 
     history = relationship("History", back_populates="workflow_invocations")
-    input_parameters = relationship("WorkflowRequestInputParameter", back_populates="workflow_invocation")
-    step_states = relationship("WorkflowRequestStepState", back_populates="workflow_invocation")
-    input_step_parameters = relationship("WorkflowRequestInputStepParameter", back_populates="workflow_invocation")
-    input_datasets = relationship("WorkflowRequestToInputDatasetAssociation", back_populates="workflow_invocation")
+    input_parameters = relationship(
+        "WorkflowRequestInputParameter", back_populates="workflow_invocation", cascade_backrefs=False
+    )
+    step_states = relationship("WorkflowRequestStepState", back_populates="workflow_invocation", cascade_backrefs=False)
+    input_step_parameters = relationship(
+        "WorkflowRequestInputStepParameter", back_populates="workflow_invocation", cascade_backrefs=False
+    )
+    input_datasets = relationship(
+        "WorkflowRequestToInputDatasetAssociation", back_populates="workflow_invocation", cascade_backrefs=False
+    )
     input_dataset_collections = relationship(
-        "WorkflowRequestToInputDatasetCollectionAssociation", back_populates="workflow_invocation"
+        "WorkflowRequestToInputDatasetCollectionAssociation",
+        back_populates="workflow_invocation",
+        cascade_backrefs=False,
     )
     subworkflow_invocations = relationship(
         "WorkflowInvocationToSubworkflowInvocationAssociation",
@@ -8182,13 +8223,20 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         "WorkflowInvocationStep",
         back_populates="workflow_invocation",
         order_by=lambda: WorkflowInvocationStep.order_index,
+        cascade_backrefs=False,
     )
     workflow: Workflow = relationship("Workflow")
     output_dataset_collections = relationship(
-        "WorkflowInvocationOutputDatasetCollectionAssociation", back_populates="workflow_invocation"
+        "WorkflowInvocationOutputDatasetCollectionAssociation",
+        back_populates="workflow_invocation",
+        cascade_backrefs=False,
     )
-    output_datasets = relationship("WorkflowInvocationOutputDatasetAssociation", back_populates="workflow_invocation")
-    output_values = relationship("WorkflowInvocationOutputValue", back_populates="workflow_invocation")
+    output_datasets = relationship(
+        "WorkflowInvocationOutputDatasetAssociation", back_populates="workflow_invocation", cascade_backrefs=False
+    )
+    output_values = relationship(
+        "WorkflowInvocationOutputValue", back_populates="workflow_invocation", cascade_backrefs=False
+    )
     messages = relationship("WorkflowInvocationMessage", back_populates="workflow_invocation")
 
     dict_collection_visible_keys = [
@@ -8397,6 +8445,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
             # dispatch on actual object and not step type.
             output_assoc = WorkflowInvocationOutputValue()
             output_assoc.workflow_invocation = self
+            ensure_object_added_to_session(output_assoc, object_in_session=self)
             output_assoc.workflow_output = workflow_output
             output_assoc.workflow_step = step
             output_assoc.value = output_object
@@ -8404,6 +8453,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         elif output_object.history_content_type == "dataset":
             output_assoc = WorkflowInvocationOutputDatasetAssociation()
             output_assoc.workflow_invocation = self
+            ensure_object_added_to_session(output_assoc, object_in_session=self)
             output_assoc.workflow_output = workflow_output
             output_assoc.workflow_step = step
             output_assoc.dataset = output_object
@@ -8411,6 +8461,7 @@ class WorkflowInvocation(Base, UsesCreateAndUpdateTime, Dictifiable, Serializabl
         elif output_object.history_content_type == "dataset_collection":
             output_assoc = WorkflowInvocationOutputDatasetCollectionAssociation()
             output_assoc.workflow_invocation = self
+            ensure_object_added_to_session(output_assoc, object_in_session=self)
             output_assoc.workflow_output = workflow_output
             output_assoc.workflow_step = step
             output_assoc.dataset_collection = output_object
@@ -8802,10 +8853,14 @@ class WorkflowInvocationStep(Base, Dictifiable, Serializable):
     job = relationship("Job", back_populates="workflow_invocation_step", uselist=False)
     implicit_collection_jobs = relationship("ImplicitCollectionJobs", uselist=False)
     output_dataset_collections = relationship(
-        "WorkflowInvocationStepOutputDatasetCollectionAssociation", back_populates="workflow_invocation_step"
+        "WorkflowInvocationStepOutputDatasetCollectionAssociation",
+        back_populates="workflow_invocation_step",
+        cascade_backrefs=False,
     )
     output_datasets = relationship(
-        "WorkflowInvocationStepOutputDatasetAssociation", back_populates="workflow_invocation_step"
+        "WorkflowInvocationStepOutputDatasetAssociation",
+        back_populates="workflow_invocation_step",
+        cascade_backrefs=False,
     )
     workflow_invocation = relationship("WorkflowInvocation", back_populates="steps")
     output_value = relationship(
@@ -8860,12 +8915,14 @@ class WorkflowInvocationStep(Base, Dictifiable, Serializable):
         if output_object.history_content_type == "dataset":
             output_assoc = WorkflowInvocationStepOutputDatasetAssociation()
             output_assoc.workflow_invocation_step = self
+            ensure_object_added_to_session(output_assoc, object_in_session=self)
             output_assoc.dataset = output_object
             output_assoc.output_name = output_name
             self.output_datasets.append(output_assoc)
         elif output_object.history_content_type == "dataset_collection":
             output_assoc = WorkflowInvocationStepOutputDatasetCollectionAssociation()
             output_assoc.workflow_invocation_step = self
+            ensure_object_added_to_session(output_assoc, object_in_session=self)
             output_assoc.dataset_collection = output_object
             output_assoc.output_name = output_name
             self.output_dataset_collections.append(output_assoc)
@@ -9937,6 +9994,7 @@ class Visualization(Base, HasTags, Dictifiable, RepresentById):
         back_populates="visualization",
         cascade="all, delete-orphan",
         primaryjoin=(lambda: Visualization.id == VisualizationRevision.visualization_id),
+        cascade_backrefs=False,
     )
     latest_revision = relationship(
         "VisualizationRevision",

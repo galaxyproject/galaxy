@@ -18,7 +18,10 @@ from galaxy.model import (
     WorkflowInvocation,
     WorkflowInvocationStep,
 )
-from galaxy.model.base import transaction
+from galaxy.model.base import (
+    ensure_object_added_to_session,
+    transaction,
+)
 from galaxy.schema.invocation import (
     CancelReason,
     FailureReason,
@@ -225,6 +228,7 @@ class WorkflowInvoker:
                     workflow_invocation_step = WorkflowInvocationStep()
                     assert workflow_invocation_step
                     workflow_invocation_step.workflow_invocation = workflow_invocation
+                    ensure_object_added_to_session(workflow_invocation_step, object_in_session=workflow_invocation)
                     workflow_invocation_step.workflow_step = step
                     workflow_invocation_step.state = "new"
 

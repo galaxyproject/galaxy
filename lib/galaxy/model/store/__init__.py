@@ -56,7 +56,10 @@ from galaxy.files import (
     ProvidesUserFileSourcesUserContext,
 )
 from galaxy.files.uris import stream_url_to_file
-from galaxy.model.base import transaction
+from galaxy.model.base import (
+    ensure_object_added_to_session,
+    transaction,
+)
 from galaxy.model.mapping import GalaxyModelMapping
 from galaxy.model.metadata import MetadataCollection
 from galaxy.model.orm.util import (
@@ -1024,6 +1027,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
             imported_invocation = model.WorkflowInvocation()
             imported_invocation.user = self.user
             imported_invocation.history = history
+            ensure_object_added_to_session(imported_invocation, object_in_session=history)
             workflow_key = invocation_attrs["workflow"]
             if workflow_key not in object_import_tracker.workflows_by_key:
                 raise Exception(f"Failed to find key {workflow_key} in {object_import_tracker.workflows_by_key.keys()}")
@@ -1045,6 +1049,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
             for step_attrs in invocation_attrs["steps"]:
                 imported_invocation_step = model.WorkflowInvocationStep()
                 imported_invocation_step.workflow_invocation = imported_invocation
+                ensure_object_added_to_session(imported_invocation, session=self.sa_session)
                 attach_workflow_step(imported_invocation_step, step_attrs)
                 restore_times(imported_invocation_step, step_attrs)
                 imported_invocation_step.action = step_attrs["action"]
