@@ -57,6 +57,7 @@ from galaxy.webapps.galaxy.services.datasets import (
     ComputeDatasetHashPayload,
     ConvertedDatasetsMap,
     DatasetContentType,
+    DatasetExtraFiles,
     DatasetInheritanceChain,
     DatasetsService,
     DatasetStorageDetails,
@@ -249,7 +250,7 @@ class FastAPIDatasets:
         trans=DependsOnTrans,
         history_id: DecodedDatabaseIdField = HistoryIDPathParam,
         history_content_id: DecodedDatabaseIdField = DatasetIDPathParam,
-    ):
+    ) -> DatasetExtraFiles:
         return self.service.extra_files(trans, history_content_id)
 
     @router.get(

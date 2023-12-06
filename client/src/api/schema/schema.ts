@@ -3503,6 +3503,11 @@ export interface components {
             error_message: string;
         };
         /**
+         * DatasetExtraFiles
+         * @description A list of extra files associated with a dataset.
+         */
+        DatasetExtraFiles: components["schemas"]["ExtraFileEntry"][];
+        /**
          * DatasetInheritanceChain
          * @default []
          */
@@ -4370,6 +4375,16 @@ export interface components {
         };
         /** ExportTaskListResponse */
         ExportTaskListResponse: components["schemas"]["ObjectExportTaskResponse"][];
+        /** ExtraFileEntry */
+        ExtraFileEntry: {
+            /** @description The class of this entry, either File or Directory. */
+            class: components["schemas"]["ExtraFilesEntryClass"];
+            /**
+             * Path
+             * @description Relative path to the file or directory.
+             */
+            path: string;
+        };
         /** ExtraFiles */
         ExtraFiles: {
             /**
@@ -4382,6 +4397,12 @@ export interface components {
             items_from?: string;
             src: components["schemas"]["Src"];
         };
+        /**
+         * ExtraFilesEntryClass
+         * @description An enumeration.
+         * @enum {string}
+         */
+        ExtraFilesEntryClass: "Directory" | "File";
         /** FavoriteObject */
         FavoriteObject: {
             /**
@@ -13761,7 +13782,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["DatasetExtraFiles"];
                 };
             };
             /** @description Validation Error */
