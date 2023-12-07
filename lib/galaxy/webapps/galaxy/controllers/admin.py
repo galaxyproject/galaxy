@@ -414,27 +414,6 @@ class AdminGalaxy(controller.JSAppLauncher):
     group_list_grid = GroupListGrid()
     quota_list_grid = QuotaListGrid()
     tool_version_list_grid = ToolVersionListGrid()
-    delete_operation = grids.GridOperation(
-        "Delete", condition=(lambda item: not item.deleted and not item.purged), allow_multiple=True
-    )
-    undelete_operation = grids.GridOperation(
-        "Undelete", condition=(lambda item: item.deleted and not item.purged), allow_multiple=True
-    )
-    purge_operation = grids.GridOperation(
-        "Purge", condition=(lambda item: item.deleted and not item.purged), allow_multiple=True
-    )
-    impersonate_operation = grids.GridOperation(
-        "Impersonate",
-        url_args=dict(controller="admin", action="impersonate"),
-        condition=(lambda item: not item.deleted and not item.purged),
-        allow_multiple=False,
-    )
-    activate_operation = grids.GridOperation(
-        "Activate User", condition=(lambda item: not item.active), allow_multiple=False
-    )
-    resend_activation_email = grids.GridOperation(
-        "Resend Activation Email", condition=(lambda item: not item.active), allow_multiple=False
-    )
 
     def __init__(self, app: StructuredApp):
         super().__init__(app)
