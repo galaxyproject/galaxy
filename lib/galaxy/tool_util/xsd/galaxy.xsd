@@ -7322,24 +7322,39 @@ and ``contains``. In addition there is ``sim_size`` which is discouraged in favo
     <xs:annotation>
       <xs:documentation xml:lang="en">Documentation for PermissiveBoolean</xs:documentation>
     </xs:annotation>
-    <xs:restriction base="xs:string">
-      <xs:enumeration value="0"/>
-      <xs:enumeration value="1"/>
-      <xs:enumeration value="true"/>
-      <xs:enumeration value="false"/>
-      <xs:enumeration value="True"/>
-      <xs:enumeration value="False"/>
-      <xs:enumeration value="yes"/>
-      <xs:enumeration value="no"/>
-    </xs:restriction>
+    <xs:union>
+      <xs:simpleType>
+        <xs:restriction base="xs:boolean"/>
+      </xs:simpleType>
+      <xs:simpleType>
+        <xs:restriction base="xs:string">
+          <xs:enumeration value="0"/>
+          <xs:enumeration value="1"/>
+          <xs:enumeration value="true"/>
+          <xs:enumeration value="false"/>
+          <xs:enumeration value="True"/>
+          <xs:enumeration value="False"/>
+          <xs:enumeration value="yes"/>
+          <xs:enumeration value="no"/>
+        </xs:restriction>
+      </xs:simpleType>
+    </xs:union>
   </xs:simpleType>
   <xs:simpleType name="Bytes">
     <xs:annotation>
       <xs:documentation xml:lang="en">Number of bytes allowing for suffix (k|K|M|G|P|E)i? </xs:documentation>
     </xs:annotation>
-    <xs:restriction base="xs:string">
-      <xs:pattern value="(0|[1-9][0-9]*)([kKMGTPE]i?)?"></xs:pattern>
-    </xs:restriction>
+    <xs:union>
+       <xs:simpleType>
+         <xs:restriction base="xs:integer">
+         </xs:restriction>
+       </xs:simpleType>
+       <xs:simpleType>
+         <xs:restriction base="xs:string">
+          <xs:pattern value="(0|[1-9][0-9]*)([kKMGTPE]i?)?"></xs:pattern>
+         </xs:restriction>
+       </xs:simpleType>
+    </xs:union>
   </xs:simpleType>
   <xs:complexType name="EdamTopics">
     <xs:annotation>
