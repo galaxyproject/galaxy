@@ -1,50 +1,32 @@
 import { defineStore } from "pinia";
-import Vue, { computed, ref } from "vue";
+import { set } from "vue";
 
 import type { DatasetDetails, DatasetEntry, HistoryContentItemBase } from "@/api";
-import { fetchDatasetDetails } from "@/api/datasets";
+import { fetchDataset } from "@/api/datasets";
+import { ApiResponse } from "@/api/schema";
+import { useSimpleStore } from "@/composables/simpleStore";
+
+async function fetchDatasetDetails(params: { id: string }): Promise<ApiResponse<DatasetDetails>> {
+    const response = await fetchDataset({ dataset_id: params.id, view: "detailed" });
+    return response as unknown as ApiResponse<DatasetDetails>;
+}
 
 export const useDatasetStore = defineStore("datasetStore", () => {
-    const storedDatasets = ref<{ [key: string]: DatasetDetails }>({});
-    const loadingDatasets = ref<{ [key: string]: boolean }>({});
-
-    const getDataset = computed(() => {
-        return (datasetId: string) => {
-            const dataset = storedDatasets.value[datasetId];
-            if (needsUpdate(dataset)) {
-                fetchDataset({ id: datasetId });
-            }
-            return dataset ?? null;
-        };
-    });
-
-    const isLoadingDataset = computed(() => {
-        return (datasetId: string) => {
-            return loadingDatasets.value[datasetId] ?? false;
-        };
-    });
-
-    async function fetchDataset(params: { id: string }) {
-        Vue.set(loadingDatasets.value, params.id, true);
-        try {
-            const dataset = await fetchDatasetDetails(params);
-            Vue.set(storedDatasets.value, dataset.id, dataset);
-            return dataset;
-        } finally {
-            Vue.delete(loadingDatasets.value, params.id);
-        }
-    }
+    const { storedItems, getItemById, isLoadingItem, fetchItemById } = useSimpleStore<DatasetEntry>(
+        fetchDatasetDetails,
+        shouldFetch
+    );
 
     function saveDatasets(historyContentsPayload: HistoryContentItemBase[]) {
         const datasetList = historyContentsPayload.filter(
             (entry) => entry.history_content_type === "dataset"
         ) as DatasetEntry[];
         for (const dataset of datasetList) {
-            Vue.set(storedDatasets.value, dataset.id, dataset);
+            set(storedItems.value, dataset.id, dataset);
         }
     }
 
-    function needsUpdate(dataset?: DatasetEntry) {
+    function shouldFetch(dataset?: DatasetEntry) {
         if (!dataset) {
             return true;
         }
@@ -53,10 +35,10 @@ export const useDatasetStore = defineStore("datasetStore", () => {
     }
 
     return {
-        storedDatasets,
-        getDataset,
-        isLoadingDataset,
-        fetchDataset,
+        storedDatasets: storedItems,
+        getDataset: getItemById,
+        isLoadingDataset: isLoadingItem,
+        fetchDataset: fetchItemById,
         saveDatasets,
     };
 });
