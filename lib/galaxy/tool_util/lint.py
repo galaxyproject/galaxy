@@ -212,37 +212,18 @@ class LintContext:
         lint_func(lint_target, self)
 
         if self.level < LintLevel.SILENT:
-            # TODO: colorful emoji if in click CLI.
-            if self.error_messages:
-                status = "FAIL"
-            elif self.warn_messages:
-                status = "WARNING"
-            else:
-                status = "CHECK"
-
-            def print_linter_info(printed_linter_info):
-                if printed_linter_info:
-                    return True
-                print(f"Applying linter {name}... {status}")
-                return True
-
-            plf = False
             for message in self.error_messages:
-                plf = print_linter_info(plf)
                 print(f"{message}")
 
             if self.level <= LintLevel.WARN:
                 for message in self.warn_messages:
-                    plf = print_linter_info(plf)
                     print(f"{message}")
 
             if self.level <= LintLevel.INFO:
                 for message in self.info_messages:
-                    plf = print_linter_info(plf)
                     print(f"{message}")
             if self.level <= LintLevel.VALID:
                 for message in self.valid_messages:
-                    plf = print_linter_info(plf)
                     print(f"{message}")
             self.message_list = tmp_message_list + self.message_list
 
