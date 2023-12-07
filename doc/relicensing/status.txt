@@ -133,6 +133,11 @@ carlfeberhard, carlfeberhard@gmail.com, https://github.com/galaxyproject/galaxy/
 fescudie, fescudie@toulouse.inra.fr, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1726295851
 IyadKandalaft, ik@iyadk.com, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1754307673
 JanKanis, jan.code@jankanis.nl, https://github.com/galaxyproject/galaxy/pull/16970#pullrequestreview-1770191691
+ElectronicBlueberry, 44241786+ElectronicBlueberry@users.noreply.github.com, https://github.com/galaxyproject/galaxy/pull/14892
+Lain-inrae, lain.pavot@inrae.fr, https://github.com/galaxyproject/galaxy/pull/15265
+abueg, labueg@rockefeller.edu, https://github.com/galaxyproject/galaxy/pull/15096
+lldelisle, lucille.delisle@epfl.ch, https://github.com/galaxyproject/galaxy/pull/13411
+luke-c-sargent, luke.c.sargent@gmail.com, https://github.com/galaxyproject/galaxy/pull/12902
 
 # not yet agreed, needs research
 Evgeny Anatskiy <evgeny.anatskiy@gmail.com> # GH user: anatskiy
@@ -204,6 +209,12 @@ Kenzo-Hugo Hillion <hillion.kenzo@gmail.com>  # GH user: khillion
 Kidane M. Tekle <kidane.tekle@gmail.com>  # GH user: kidanem
 Kiran Telukunta saraswathi <kiran.telukunta@indiayouth.info>  # GH user: telukir
 Kyle Ellrott <kellrott@gmail.com>  # GH user: kellrott
+Lance Parsons <lance@lanceparsons.com> # GH user: lparsons
+Lawrence Nicastro <lawrence.nicastro1@gmail.com>  # GH user: lawrence1470
+Léo Biscassi <leo.biscassi@gmail.com>  # GH user: leobiscassi
+linnil1 <linnil1.886@gmail.com>  # GH user: linnil1
+Loraine Brillet-Guéguen <loraine-gueguen@users.noreply.github.com>  # GH user: loraine-gueguen
+Luca Pireddu <pireddu@gmail.com>  # GH user: ilveroluca
 
 # not agreed, but contributions no longer present
 Abdulrahman Azab <eng.azab@gmail.com> # GH user: abdulrahmanazab, one-line contribution, rewritten by John Chilton
