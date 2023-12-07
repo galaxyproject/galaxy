@@ -1,4 +1,4 @@
-import { faPlus, faTrash, faTrashRestore } from "@fortawesome/free-solid-svg-icons";
+import { faEdit, faPlus, faTrash, faTrashRestore } from "@fortawesome/free-solid-svg-icons";
 import { useEventBus } from "@vueuse/core";
 import axios from "axios";
 
@@ -54,6 +54,14 @@ const fields: FieldArray = [
         title: "Name",
         type: "operations",
         operations: [
+            {
+                title: "Edit",
+                icon: faEdit,
+                condition: (data: FormEntry) => !data.deleted,
+                handler: (data: FormEntry) => {
+                    emit(`/admin/form/edit_form?id=${data.id}`);
+                },
+            },
             {
                 title: "Delete",
                 icon: faTrash,
