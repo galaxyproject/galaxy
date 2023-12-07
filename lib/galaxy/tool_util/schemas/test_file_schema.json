@@ -1695,6 +1695,18 @@
         "location": {
           "title": "Location",
           "type": "string"
+        },
+        "path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Path"
         }
       },
       "required": [
@@ -1829,6 +1841,18 @@
         "location": {
           "title": "Location",
           "type": "string"
+        },
+        "path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Path"
         }
       },
       "required": [
