@@ -4,7 +4,7 @@ import { set } from "vue";
 import type { DatasetDetails, DatasetEntry, HistoryContentItemBase } from "@/api";
 import { fetchDataset } from "@/api/datasets";
 import { ApiResponse } from "@/api/schema";
-import { useSimpleKeyStore } from "@/composables/simpleStore";
+import { useSimpleKeyStore } from "@/composables/simpleKeyStore";
 
 async function fetchDatasetDetails(params: { id: string }): Promise<ApiResponse<DatasetDetails>> {
     const response = await fetchDataset({ dataset_id: params.id, view: "detailed" });
