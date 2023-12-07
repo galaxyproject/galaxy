@@ -55,19 +55,35 @@ const fields: FieldArray = [
         type: "operations",
         operations: [
             {
-                title: "Edit Name",
+                title: "Rename",
                 icon: faEdit,
                 condition: (data: QuotaEntry) => !data.deleted,
                 handler: (data: QuotaEntry) => {
-                    emit(`/admin/form/rename_group?id=${data.id}`);
+                    emit(`/admin/form/rename_quota?id=${data.id}`);
                 },
             },
             {
-                title: "Edit Permissions",
+                title: "Change amount",
                 icon: faKey,
                 condition: (data: QuotaEntry) => !data.deleted,
                 handler: (data: QuotaEntry) => {
-                    emit(`/admin/form/manage_users_and_roles_for_group?id=${data.id}`);
+                    emit(`/admin/form/edit_quota?id=${data.id}`);
+                },
+            },
+            {
+                title: "Manage users and groups",
+                icon: faKey,
+                condition: (data: QuotaEntry) => !data.deleted,
+                handler: (data: QuotaEntry) => {
+                    emit(`/admin/form/manage_users_and_groups_for_quota?id=${data.id}`);
+                },
+            },
+            {
+                title: "Set as default",
+                icon: faKey,
+                condition: (data: QuotaEntry) => !data.deleted,
+                handler: (data: QuotaEntry) => {
+                    emit(`/admin/form/set_quota_default?id=${data.id}`);
                 },
             },
             {
