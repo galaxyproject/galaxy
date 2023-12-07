@@ -21,6 +21,7 @@ from galaxy.tool_util.linters import (
     stdio,
     tests,
     xml_order,
+    xsd,
 )
 from galaxy.tool_util.loader_directory import load_tool_sources_from_path
 from galaxy.tool_util.parser.xml import XmlToolSource
@@ -183,7 +184,7 @@ INPUTS_PARAM_NAME = """
 """
 
 INPUTS_PARAM_TYPE = """
-<tool>
+<tool id="id" name="name">
     <inputs>
         <param name="valid_name"/>
         <param argument="--another-valid-name" type=""/>
@@ -364,7 +365,7 @@ INPUTS_SELECT_DEPRECATIONS = """
 """
 
 INPUTS_SELECT_OPTION_DEFINITIONS = """
-<tool>
+<tool id="id" name="name">
     <inputs>
         <param name="select_noopt" type="select"/>
         <param name="select_noopts" type="select">
@@ -390,7 +391,7 @@ INPUTS_SELECT_OPTION_DEFINITIONS = """
 """
 
 INPUTS_SELECT_FILTER = """
-<tool>
+<tool id="id" name="name">
     <inputs>
         <param name="select_filter_types" type="select">
             <options from_data_table="xyz">
@@ -525,9 +526,9 @@ OUTPUTS_MULTIPLE = """
 </tool>
 """
 OUTPUTS_UNKNOWN_TAG = """
-<tool>
+<tool id="id" name="name">
     <outputs>
-        <output/>
+        <output name="name"/>
     </outputs>
 </tool>
 """
@@ -613,7 +614,7 @@ OUTPUTS_DUPLICATED_NAME_LABEL = """
 
 # tool xml for repeats linter
 REPEATS = """
-<tool>
+<tool id="id" name="name">
     <inputs>
         <repeat>
             <param name="another_param_name" type="data" format="bed"/>
@@ -641,11 +642,11 @@ STDIO_MULTIPLE_STDIO = """
 """
 
 STDIO_INVALID_CHILD_OR_ATTRIB = """
-<tool>
+<tool id="id" name="name">
     <stdio>
-        <reqex/>
         <regex descriptio="blah" level="fatal" match="error" source="stdio"/>
         <exit_code descriptio="blah" level="fatal" range="1:"/>
+        <reqex/>
     </stdio>
 </tool>
 """
@@ -869,7 +870,7 @@ TESTS_COMPARE_ATTRIB_INCOMPATIBILITY = """
 
 # tool xml for xml_order linter
 XML_ORDER = """
-<tool>
+<tool id="id" name="name">
     <wrong_tag/>
     <command/>
     <stdio/>
@@ -1169,9 +1170,13 @@ def test_inputs_param_name(lint_ctx):
 def test_inputs_param_type(lint_ctx):
     tool_source = get_xml_tool_source(INPUTS_PARAM_TYPE)
     run_lint_module(lint_ctx, inputs, tool_source)
+    run_lint_module(lint_ctx, xsd, tool_source)
     assert "Found 2 input parameters." in lint_ctx.info_messages
-    assert "Param input [valid_name] input with no type specified." in lint_ctx.error_messages
-    assert "Param input [another_valid_name] with empty type specified." in lint_ctx.error_messages
+    assert "Invalid XML: Element 'param': The attribute 'type' is required but missing." in lint_ctx.error_messages
+    assert (
+        "Invalid XML: Element 'param', attribute 'type': [facet 'enumeration'] The value '' is not an element of the set {'text', 'integer', 'float', 'color', 'boolean', 'genomebuild', 'select', 'data_column', 'hidden', 'hidden_data', 'baseurl', 'file', 'data', 'drill_down', 'group_tag', 'data_collection', 'directory_uri'}."
+        in lint_ctx.error_messages
+    )
     assert len(lint_ctx.info_messages) == 1
     assert not lint_ctx.valid_messages
     assert not lint_ctx.warn_messages
@@ -1324,6 +1329,7 @@ def test_inputs_select_deprecations(lint_ctx):
 def test_inputs_select_option_definitions(lint_ctx):
     tool_source = get_xml_tool_source(INPUTS_SELECT_OPTION_DEFINITIONS)
     run_lint_module(lint_ctx, inputs, tool_source)
+    run_lint_module(lint_ctx, xsd, tool_source)
     assert "Found 6 input parameters." in lint_ctx.info_messages
     assert (
         "Select parameter [select_noopt] options have to be defined by either 'option' children elements, a 'options' element or the 'dynamic_options' attribute."
@@ -1357,10 +1363,11 @@ def test_inputs_select_option_definitions(lint_ctx):
 def test_inputs_select_filter(lint_ctx):
     tool_source = get_xml_tool_source(INPUTS_SELECT_FILTER)
     run_lint_module(lint_ctx, inputs, tool_source)
+    run_lint_module(lint_ctx, xsd, tool_source)
     assert "Found 1 input parameters." in lint_ctx.info_messages
-    assert "Select parameter [select_filter_types] contains filter without type." in lint_ctx.error_messages
+    assert "Invalid XML: Element 'filter': The attribute 'type' is required but missing." in lint_ctx.error_messages
     assert (
-        "Select parameter [select_filter_types] contains filter with unknown type 'unknown_filter_type'."
+        "Invalid XML: Element 'filter', attribute 'type': [facet 'enumeration'] The value 'unknown_filter_type' is not an element of the set {'data_meta', 'param_value', 'static_value', 'regexp', 'unique_value', 'multiple_splitter', 'attribute_value_splitter', 'add_value', 'remove_value', 'sort_by'}."
         in lint_ctx.error_messages
     )
     assert len(lint_ctx.info_messages) == 1
@@ -1460,13 +1467,17 @@ def test_inputs_duplicate_names(lint_ctx):
 
 
 def test_inputs_repeats(lint_ctx):
+    """
+    this was previously covered by a linter in inputs
+    """
     tool_source = get_xml_tool_source(REPEATS)
     run_lint_module(lint_ctx, inputs, tool_source)
-    assert "Repeat does not specify name attribute." in lint_ctx.error_messages
-    assert "Repeat does not specify title attribute." in lint_ctx.error_messages
+    run_lint_module(lint_ctx, xsd, tool_source)
     assert lint_ctx.info_messages == ["Found 1 input parameters."]
     assert not lint_ctx.valid_messages
     assert not lint_ctx.warn_messages
+    assert "Invalid XML: Element 'repeat': The attribute 'name' is required but missing." in lint_ctx.error_messages
+    assert "Invalid XML: Element 'repeat': The attribute 'title' is required but missing." in lint_ctx.error_messages
     assert len(lint_ctx.error_messages) == 2
 
 
@@ -1492,10 +1503,16 @@ def test_outputs_multiple(lint_ctx):
 
 
 def test_outputs_unknown_tag(lint_ctx):
+    """
+    In the past it has been assumed that output tags are not allowed, but only data.
+    But, actually they are covered by xsd which is also tested here.
+    Still output tags are not covered in the user facing xml schema docs and should
+    probably be avoided.
+    """
     tool_source = get_xml_tool_source(OUTPUTS_UNKNOWN_TAG)
-    run_lint_module(lint_ctx, outputs, tool_source)
+    lint_tool_source_with_modules(lint_ctx, tool_source, [outputs, xsd])
     assert "0 outputs found." in lint_ctx.info_messages
-    assert "Unknown element found in outputs [output]" in lint_ctx.warn_messages
+    assert "Avoid the use of 'output' and replace by 'data' or 'collection'" in lint_ctx.warn_messages
     assert len(lint_ctx.info_messages) == 1
     assert not lint_ctx.valid_messages
     assert len(lint_ctx.warn_messages) == 1
@@ -1620,17 +1637,28 @@ def test_stdio_multiple_stdio(lint_ctx):
 
 
 def test_stdio_invalid_child_or_attrib(lint_ctx):
+    """
+    note the test name is due to that this was previously covered by linting code in stdio
+    """
     tool_source = get_xml_tool_source(STDIO_INVALID_CHILD_OR_ATTRIB)
-    run_lint_module(lint_ctx, stdio, tool_source)
-    assert (
-        "Unknown stdio child tag discovered [reqex]. Valid options are exit_code and regex." in lint_ctx.warn_messages
-    )
-    assert "Unknown attribute [descriptio] encountered on exit_code tag." in lint_ctx.warn_messages
-    assert "Unknown attribute [descriptio] encountered on regex tag." in lint_ctx.warn_messages
+    run_lint_module(lint_ctx, xsd, tool_source)
     assert not lint_ctx.info_messages
     assert not lint_ctx.valid_messages
-    assert len(lint_ctx.warn_messages) == 3
-    assert not lint_ctx.error_messages
+    assert not len(lint_ctx.warn_messages) == 3
+    assert "Invalid XML: Element 'reqex': This element is not expected." in lint_ctx.error_messages
+    assert (
+        "Invalid XML: Element 'regex', attribute 'source': [facet 'enumeration'] The value 'stdio' is not an element of the set {'stdout', 'stderr', 'both'}."
+        in lint_ctx.error_messages
+    )
+    assert (
+        "Invalid XML: Element 'regex', attribute 'descriptio': The attribute 'descriptio' is not allowed."
+        in lint_ctx.error_messages
+    )
+    assert (
+        "Invalid XML: Element 'exit_code', attribute 'descriptio': The attribute 'descriptio' is not allowed."
+        in lint_ctx.error_messages
+    )
+    assert len(lint_ctx.error_messages) == 4
 
 
 def test_stdio_invalid_match(lint_ctx):
@@ -1803,13 +1831,14 @@ def test_tests_compare_attrib_incompatibility(lint_ctx):
 def test_xml_order(lint_ctx):
     tool_source = get_xml_tool_source(XML_ORDER)
     run_lint_module(lint_ctx, xml_order, tool_source)
-    assert lint_ctx.warn_messages == ["Best practice violation [stdio] elements should come before [command]"]
+    run_lint_module(lint_ctx, xsd, tool_source)
     assert not lint_ctx.info_messages
     assert not lint_ctx.valid_messages
-    assert not lint_ctx.error_messages
+    assert lint_ctx.warn_messages == ["Best practice violation [stdio] elements should come before [command]"]
+    assert lint_ctx.error_messages == ["Invalid XML: Element 'wrong_tag': This element is not expected."]
 
 
-DATA_MANAGER = """<tool id="test_dm" name="test dm" version="1" type="manage_data">
+DATA_MANAGER = """<tool id="test_dm" name="test dm" version="1" tool_type="manage_data">
     <inputs>
         <param name="select" type="select">
             <option value="a">a</option>
@@ -1839,7 +1868,7 @@ def test_data_manager(lint_ctx_xpath, lint_ctx):
     assert len(lint_ctx.error_messages) == 3
 
 
-COMPLETE = """<tool>
+COMPLETE = """<tool id="id" name="name">
     <macros>
         <import>macros.xml</import>
         <xml name="test_macro">
@@ -1851,7 +1880,7 @@ COMPLETE = """<tool>
     </macros>
     <inputs>
         <expand macro="test_macro"/>
-        <param/>
+        <param type="text"/>
         <expand macro="test_macro2"/>
     </inputs>
 </tool>
@@ -1891,10 +1920,13 @@ def test_tool_and_macro_xml(lint_ctx_xpath, lint_ctx):
     asserts = (
         ("Select parameter [select] has multiple options with the same value", 5, "/tool/inputs/param[1]"),
         ("Found param input with no name specified.", 13, "/tool/inputs/param[2]"),
-        ("Param input [No_type] input with no type specified.", 3, "/tool/inputs/param[3]"),
+        ("Invalid XML: Element 'param': The attribute 'type' is required but missing.", 3, "/tool/inputs/param[3]"),
     )
     for a in asserts:
         message, line, xpath = a
+        # check message + path combinations
+        # found = set([(lint_message.message, lint_message.xpath) for lint_message in lint_ctx_xpath.message_list])
+        # path_asserts = set([(a[0], a[2]) for a in asserts])
         found = False
         for lint_message in lint_ctx_xpath.message_list:
             if lint_message.message != message:

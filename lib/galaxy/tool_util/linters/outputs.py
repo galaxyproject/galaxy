@@ -38,6 +38,17 @@ class OutputsMultiple(Linter):
             lint_ctx.warn("Tool contains multiple output sections, behavior undefined.", node=outputs[1])
 
 
+class OutputsOutput(Linter):
+    @classmethod
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+        tool_xml = getattr(tool_source, "xml_tree", None)
+        if not tool_xml:
+            return
+        output = tool_xml.find("./outputs/output")
+        if output is not None:
+            lint_ctx.warn("Avoid the use of 'output' and replace by 'data' or 'collection'", node=output)
+
+
 class OutputsNameMissing(Linter):
     @classmethod
     def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):

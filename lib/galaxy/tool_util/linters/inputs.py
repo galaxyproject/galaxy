@@ -26,19 +26,6 @@ if TYPE_CHECKING:
 
 lint_tool_types = ["*"]
 
-FILTER_TYPES = [
-    "data_meta",
-    "param_value",
-    "static_value",
-    "regexp",
-    "unique_value",
-    "multiple_splitter",
-    "attribute_value_splitter",
-    "add_value",
-    "remove_value",
-    "sort_by",
-]
-
 ATTRIB_VALIDATOR_COMPATIBILITY = {
     "check": ["metadata"],
     "expression": ["substitute_value_in_message"],
@@ -287,37 +274,6 @@ class InputsNameValid(Linter):
         for param, param_name in _iter_param(tool_xml):
             if param_name != "" and not is_valid_cheetah_placeholder(param_name):
                 lint_ctx.warn(f"Param input [{param_name}] is not a valid Cheetah placeholder.", node=param)
-
-
-# TODO xsd
-class InputsType(Linter):
-    """
-    Lint params define a type
-    """
-
-    @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
-        tool_xml = getattr(tool_source, "xml_tree", None)
-        if not tool_xml:
-            return
-        for param, param_name in _iter_param(tool_xml):
-            if "type" not in param.attrib:
-                lint_ctx.error(f"Param input [{param_name}] input with no type specified.", node=param)
-
-
-class InputsTypeEmpty(Linter):
-    """
-    Lint params define a type
-    """
-
-    @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
-        tool_xml = getattr(tool_source, "xml_tree", None)
-        if not tool_xml:
-            return
-        for param, param_name in _iter_param(tool_xml):
-            if "type" in param.attrib and param.attrib["type"] == "":
-                lint_ctx.error(f"Param input [{param_name}] with empty type specified.", node=param)
 
 
 def _param_path(param: "Element", param_name: str) -> str:
@@ -705,48 +661,6 @@ class InputsSelectOptionsMultiple(Linter):
             options = param.findall("./options")
             if len(options) > 1:
                 lint_ctx.error(f"Select parameter [{param_name}] contains multiple options elements.", node=options[1])
-
-
-# TODO xsd
-class InputsSelectOptionsFilterTypeMissing(Linter):
-    """
-    Lint dynamic options select for filters wo type
-    """
-
-    @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
-        tool_xml = getattr(tool_source, "xml_tree", None)
-        if not tool_xml:
-            return
-        for param, param_name, param_type in _iter_param_type(tool_xml):
-            if param_type != "select":
-                continue
-            for filter in param.findall("./options/filter"):
-                ftype = filter.get("type", None)
-                if ftype is None:
-                    lint_ctx.error(f"Select parameter [{param_name}] contains filter without type.", node=filter)
-                    continue
-
-
-class InputsSelectOptionsFilterValidType(Linter):
-    """
-    Lint dynamic options select for filters with invalid type
-    """
-
-    @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
-        tool_xml = getattr(tool_source, "xml_tree", None)
-        if not tool_xml:
-            return
-        for param, param_name, param_type in _iter_param_type(tool_xml):
-            if param_type != "select":
-                continue
-            for filter in param.findall("./options/filter"):
-                ftype = filter.get("type", None)
-                if ftype and ftype not in FILTER_TYPES:
-                    lint_ctx.error(
-                        f"Select parameter [{param_name}] contains filter with unknown type '{ftype}'.", node=filter
-                    )
 
 
 class InputsSelectOptionsDefinesOptions(Linter):
@@ -1402,29 +1316,3 @@ class ConditionalOptionMissingBoolean(Linter):
                     f"Conditional [{conditional_name}] no truevalue/falsevalue found for when block '{when_id}'",
                     node=conditional,
                 )
-
-
-# TODO xsd
-class RepeatName(Linter):
-    @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
-        tool_xml = getattr(tool_source, "xml_tree", None)
-        if not tool_xml:
-            return
-        repeats = tool_xml.findall("./inputs//repeat")
-        for repeat in repeats:
-            if "name" not in repeat.attrib:
-                lint_ctx.error("Repeat does not specify name attribute.", node=repeat)
-
-
-# TODO xsd
-class RepeatTitle(Linter):
-    @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
-        tool_xml = getattr(tool_source, "xml_tree", None)
-        if not tool_xml:
-            return
-        repeats = tool_xml.findall("./inputs//repeat")
-        for repeat in repeats:
-            if "title" not in repeat.attrib:
-                lint_ctx.error("Repeat does not specify title attribute.", node=repeat)
