@@ -281,28 +281,16 @@ class GroupListGrid(grids.GridData):
         return query
 
 
-class QuotaListGrid(grids.Grid):
-    class NameColumn(grids.TextColumn):
-        def get_value(self, trans, grid, quota):
-            return escape(quota.name)
-
-    class DescriptionColumn(grids.TextColumn):
-        def get_value(self, trans, grid, quota):
-            if quota.description:
-                return escape(quota.description)
-            return ""
-
+class QuotaListGrid(grids.GridData):
     class AmountColumn(grids.TextColumn):
         def get_value(self, trans, grid, quota):
             return quota.operation + quota.display_amount
 
-    class StatusColumn(grids.GridColumn):
+    class DefaultTypeColumn(grids.GridColumn):
         def get_value(self, trans, grid, quota):
-            if quota.deleted:
-                return "deleted"
-            elif quota.default:
-                return f"<strong>default for {quota.default[0].type} users</strong>"
-            return ""
+            if quota.default:
+                return quota.default[0].type
+            return None
 
     class UsersColumn(grids.GridColumn):
         def get_value(self, trans, grid, quota):
@@ -316,97 +304,54 @@ class QuotaListGrid(grids.Grid):
                 return len(quota.groups)
             return 0
 
-    class QuotaSourceLabelColumn(grids.TextColumn):
-        def get_value(self, trans, grid, quota):
-            raw_label = quota.quota_source_label
-            if raw_label is None:
-                rval = "<i>unlabelled object stores</i>"
-            else:
-                rval = raw_label
-            return rval
-
     # Grid definition
     title = "Quotas"
     model_class = model.Quota
     default_sort_key = "name"
     columns = [
-        NameColumn(
-            "Name",
-            key="name",
-            link=(lambda item: dict(action="form/edit_quota", id=item.id)),
-            model_class=model.Quota,
-            attach_popup=True,
-            filterable="advanced",
-        ),
-        DescriptionColumn(
-            "Description", key="description", model_class=model.Quota, attach_popup=False, filterable="advanced"
-        ),
-        AmountColumn("Amount", key="amount", model_class=model.Quota, attach_popup=False),
-        UsersColumn("Users", attach_popup=False),
-        GroupsColumn("Groups", attach_popup=False),
-        QuotaSourceLabelColumn("Source Label", key="quota_source_label", visible=False, filterable="advanced"),
-        StatusColumn("Status", attach_popup=False),
-        # Columns that are valid for filtering but are not visible.
-        grids.DeletedColumn("Deleted", key="deleted", visible=False, filterable="advanced"),
+        grids.GridColumn("Name", key="name"),
+        grids.GridColumn("Description", key="description"),
+        AmountColumn("Amount", key="amount", model_class=model.Quota),
+        UsersColumn("Users", key="users"),
+        GroupsColumn("Groups", key="groups"),
+        grids.GridColumn("Source", key="quota_source_label", escape=False),
+        DefaultTypeColumn("Type", key="type"),
+        grids.GridColumn("Deleted", key="deleted", escape=False),
     ]
-    columns.append(
-        grids.MulticolFilterColumn(
-            "Search",
-            cols_to_filter=[columns[0], columns[1]],
-            key="free-text-search",
-            visible=False,
-            filterable="standard",
-        )
-    )
-    global_actions = [grids.GridAction("Add new quota", dict(action="form/create_quota"))]
-    operations = [
-        grids.GridOperation(
-            "Rename",
-            condition=(lambda item: not item.deleted),
-            allow_multiple=False,
-            url_args=dict(action="form/rename_quota"),
-        ),
-        grids.GridOperation(
-            "Change amount",
-            condition=(lambda item: not item.deleted),
-            allow_multiple=False,
-            url_args=dict(action="form/edit_quota"),
-        ),
-        grids.GridOperation(
-            "Manage users and groups",
-            condition=(lambda item: not item.default and not item.deleted),
-            allow_multiple=False,
-            url_args=dict(action="form/manage_users_and_groups_for_quota"),
-        ),
-        grids.GridOperation(
-            "Set as different type of default",
-            condition=(lambda item: item.default),
-            allow_multiple=False,
-            url_args=dict(action="form/set_quota_default"),
-        ),
-        grids.GridOperation(
-            "Set as default",
-            condition=(lambda item: not item.default and not item.deleted),
-            allow_multiple=False,
-            url_args=dict(action="form/set_quota_default"),
-        ),
-        grids.GridOperation(
-            "Unset as default", condition=(lambda item: item.default and not item.deleted), allow_multiple=False
-        ),
-        grids.GridOperation(
-            "Delete", condition=(lambda item: not item.deleted and not item.default), allow_multiple=True
-        ),
-        grids.GridOperation("Undelete", condition=(lambda item: item.deleted), allow_multiple=True),
-        grids.GridOperation("Purge", condition=(lambda item: item.deleted), allow_multiple=True),
-    ]
-    standard_filters = [
-        grids.GridColumnFilter("Active", args=dict(deleted=False)),
-        grids.GridColumnFilter("Deleted", args=dict(deleted=True)),
-        grids.GridColumnFilter("Purged", args=dict(purged=True)),
-        grids.GridColumnFilter("All", args=dict(deleted="All")),
-    ]
-    num_rows_per_page = 50
-    use_paging = True
+
+    def apply_query_filter(self, query, **kwargs):
+        INDEX_SEARCH_FILTERS = {
+            "name": "name",
+            "description": "description",
+            "is": "is",
+        }
+        deleted = False
+        search_query = kwargs.get("search")
+        if search_query:
+            parsed_search = parse_filters_structured(search_query, INDEX_SEARCH_FILTERS)
+            for term in parsed_search.terms:
+                if isinstance(term, FilteredTerm):
+                    key = term.filter
+                    q = term.text
+                    if key == "name":
+                        query = query.filter(text_column_filter(self.model_class.name, term))
+                    if key == "description":
+                        query = query.filter(text_column_filter(self.model_class.description, term))
+                    elif key == "is":
+                        if q == "deleted":
+                            deleted = True
+                elif isinstance(term, RawTextTerm):
+                    query = query.filter(
+                        raw_text_column_filter(
+                            [
+                                self.model_class.name,
+                                self.model_class.description,
+                            ],
+                            term,
+                        )
+                    )
+        query = query.filter(self.model_class.deleted == (true() if deleted else false()))
+        return query
 
 
 class ToolVersionListGrid(grids.Grid):
@@ -541,36 +486,6 @@ class AdminGalaxy(controller.JSAppLauncher):
     @web.legacy_expose_api
     @web.require_admin
     def quotas_list(self, trans, payload=None, **kwargs):
-        message = kwargs.get("message", "")
-        status = kwargs.get("status", "")
-        if "operation" in kwargs:
-            id = kwargs.get("id")
-            if not id:
-                return self.message_exception(trans, f"Invalid quota id ({str(id)}) received.")
-            quotas = []
-            for quota_id in util.listify(id):
-                try:
-                    quotas.append(get_quota(trans, quota_id))
-                except MessageException as e:
-                    return self.message_exception(trans, util.unicodify(e))
-            operation = kwargs.pop("operation").lower()
-            try:
-                if operation == "delete":
-                    message = self.quota_manager.delete_quota(quotas)
-                elif operation == "undelete":
-                    message = self.quota_manager.undelete_quota(quotas)
-                elif operation == "purge":
-                    message = self.quota_manager.purge_quota(quotas)
-                elif operation == "unset as default":
-                    message = self.quota_manager.unset_quota_default(quotas[0])
-            except ActionInputError as e:
-                message, status = (e.err_msg, "error")
-        if message:
-            kwargs["message"] = util.sanitize_text(message)
-            kwargs["status"] = status or "done"
-        labels = trans.app.object_store.get_quota_source_map().get_quota_source_labels()
-        if labels:
-            self.quota_list_grid.columns[5].visible = True
         return self.quota_list_grid(trans, **kwargs)
 
     @web.legacy_expose_api
