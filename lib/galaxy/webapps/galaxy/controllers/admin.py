@@ -315,8 +315,9 @@ class QuotaListGrid(grids.GridData):
         UsersColumn("Users", key="users"),
         GroupsColumn("Groups", key="groups"),
         grids.GridColumn("Source", key="quota_source_label", escape=False),
-        DefaultTypeColumn("Type", key="type"),
+        DefaultTypeColumn("Type", key="default_type"),
         grids.GridColumn("Deleted", key="deleted", escape=False),
+        grids.GridColumn("Updated", key="update_time"),
     ]
 
     def apply_query_filter(self, query, **kwargs):

@@ -21,6 +21,7 @@ import FormGeneric from "components/Form/FormGeneric";
 import adminFormsGridConfig from "components/Grid/configs/adminForms";
 import adminGroupsGridConfig from "components/Grid/configs/adminGroups";
 import adminRolesGridConfig from "components/Grid/configs/adminRoles";
+import adminQuotasGridConfig from "components/Grid/configs/adminQuotas";
 import adminUsersGridConfig from "components/Grid/configs/adminUsers";
 import Grid from "components/Grid/Grid";
 import GridList from "components/Grid/GridList";
@@ -145,9 +146,9 @@ export default [
             },
             {
                 path: "quotas",
-                component: Grid,
+                component: GridList,
                 props: {
-                    urlBase: "admin/quotas_list",
+                    gridConfig: adminQuotasGridConfig,
                 },
             },
             {
