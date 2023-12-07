@@ -137,9 +137,10 @@ export default [
             {
                 path: "groups",
                 component: GridList,
-                props: {
+                props: (route) => ({
                     gridConfig: adminGroupsGridConfig,
-                },
+                    gridMessage: route.query.message,
+                }),
             },
             {
                 path: "quotas",
@@ -151,16 +152,18 @@ export default [
             {
                 path: "roles",
                 component: GridList,
-                props: {
+                props: (route) => ({
                     gridConfig: adminRolesGridConfig,
-                },
+                    gridMessage: route.query.message,
+                }),
             },
             {
                 path: "users",
                 component: GridList,
-                props: {
+                props: (route) => ({
                     gridConfig: adminUsersGridConfig,
-                },
+                    gridMessage: route.query.message,
+                }),
             },
             {
                 path: "tool_versions",
