@@ -9,7 +9,6 @@ import Vuex from "vuex";
 import createCache from "vuex-cache";
 import VuexPersistence from "vuex-persist";
 
-import { datasetExtFilesStore } from "./datasetExtFilesStore";
 import { datasetPathDestinationStore } from "./datasetPathDestinationStore";
 import { gridSearchStore } from "./gridSearchStore";
 import { invocationStore } from "./invocationStore";
@@ -41,7 +40,6 @@ export function createStore() {
     const storeConfig = {
         plugins: [createCache(), panelsPersistence.plugin],
         modules: {
-            datasetExtFiles: datasetExtFilesStore,
             datasetPathDestination: datasetPathDestinationStore,
             invocations: invocationStore,
             gridSearch: gridSearchStore,
