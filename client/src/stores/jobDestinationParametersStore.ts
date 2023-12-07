@@ -1,10 +1,10 @@
 import { defineStore } from "pinia";
 
 import { fetchJobDestinationParams, type JobDestinationParams } from "@/api/jobs";
-import { useSimpleStore } from "@/composables/simpleStore";
+import { useSimpleKeyStore } from "@/composables/simpleStore";
 
 export const useJobDestinationParametersStore = defineStore("jobDestinationParametersStore", () => {
-    const { storedItems, getItemById, isLoadingItem } = useSimpleStore<JobDestinationParams>((params) =>
+    const { storedItems, getItemById, isLoadingItem } = useSimpleKeyStore<JobDestinationParams>((params) =>
         fetchJobDestinationParams({ job_id: params.id })
     );
 

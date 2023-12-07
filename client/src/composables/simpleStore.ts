@@ -14,7 +14,7 @@ interface ShouldFetch<T> {
     (item?: T): boolean;
 }
 
-export function useSimpleStore<T>(fetchItem: FetchFunction<T>, shouldFetch: ShouldFetch<T> = (item) => !item) {
+export function useSimpleKeyStore<T>(fetchItem: FetchFunction<T>, shouldFetch: ShouldFetch<T> = (item) => !item) {
     const storedItems = ref<{ [key: string]: T }>({});
     const loadingItem = ref<{ [key: string]: boolean }>({});
 
