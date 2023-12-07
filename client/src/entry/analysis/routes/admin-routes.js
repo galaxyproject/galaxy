@@ -195,7 +195,7 @@ export default [
                 component: FormGeneric,
                 props: (route) => ({
                     url: `/admin/manage_users_and_groups_for_role?id=${route.query.id}`,
-                    redirect: "/admin/users",
+                    redirect: "/admin/roles",
                 }),
             },
             {
@@ -203,7 +203,7 @@ export default [
                 component: FormGeneric,
                 props: (route) => ({
                     url: `/admin/manage_users_and_roles_for_group?id=${route.query.id}`,
-                    redirect: "/admin/users",
+                    redirect: "/admin/groups",
                 }),
             },
             {
