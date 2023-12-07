@@ -4,6 +4,7 @@ import axios from "axios";
 
 import { deleteGroup, purgeGroup, undeleteGroup } from "@/api/groups";
 import Filtering, { contains, equals, toBool, type ValidFilter } from "@/utils/filtering";
+import _l from "@/utils/localization";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 
@@ -75,17 +76,19 @@ const fields: FieldArray = [
                 icon: faTrash,
                 condition: (data: GroupEntry) => !data.deleted,
                 handler: async (data: GroupEntry) => {
-                    try {
-                        await deleteGroup({ group_id: String(data.id) });
-                        return {
-                            status: "success",
-                            message: `'${data.name}' has been deleted.`,
-                        };
-                    } catch (e) {
-                        return {
-                            status: "danger",
-                            message: `Failed to delete '${data.name}': ${errorMessageAsString(e)}`,
-                        };
+                    if (confirm(_l("Are you sure that you want to delete this group?"))) {
+                        try {
+                            await deleteGroup({ group_id: String(data.id) });
+                            return {
+                                status: "success",
+                                message: `'${data.name}' has been deleted.`,
+                            };
+                        } catch (e) {
+                            return {
+                                status: "danger",
+                                message: `Failed to delete '${data.name}': ${errorMessageAsString(e)}`,
+                            };
+                        }
                     }
                 },
             },
@@ -94,17 +97,19 @@ const fields: FieldArray = [
                 icon: faTrash,
                 condition: (data: GroupEntry) => !!data.deleted,
                 handler: async (data: GroupEntry) => {
-                    try {
-                        await purgeGroup({ group_id: String(data.id) });
-                        return {
-                            status: "success",
-                            message: `'${data.name}' has been purged.`,
-                        };
-                    } catch (e) {
-                        return {
-                            status: "danger",
-                            message: `Failed to purge '${data.name}': ${errorMessageAsString(e)}`,
-                        };
+                    if (confirm(_l("Are you sure that you want to purge this group?"))) {
+                        try {
+                            await purgeGroup({ group_id: String(data.id) });
+                            return {
+                                status: "success",
+                                message: `'${data.name}' has been purged.`,
+                            };
+                        } catch (e) {
+                            return {
+                                status: "danger",
+                                message: `Failed to purge '${data.name}': ${errorMessageAsString(e)}`,
+                            };
+                        }
                     }
                 },
             },

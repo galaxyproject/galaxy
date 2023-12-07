@@ -4,6 +4,7 @@ import axios from "axios";
 
 import { deleteRole, purgeRole, undeleteRole } from "@/api/roles";
 import Filtering, { contains, equals, toBool, type ValidFilter } from "@/utils/filtering";
+import _l from "@/utils/localization";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 
@@ -75,17 +76,19 @@ const fields: FieldArray = [
                 icon: faTrash,
                 condition: (data: RoleEntry) => !data.deleted,
                 handler: async (data: RoleEntry) => {
-                    try {
-                        await deleteRole({ id: String(data.id) });
-                        return {
-                            status: "success",
-                            message: `'${data.name}' has been deleted.`,
-                        };
-                    } catch (e) {
-                        return {
-                            status: "danger",
-                            message: `Failed to delete '${data.name}': ${errorMessageAsString(e)}`,
-                        };
+                    if (confirm(_l("Are you sure that you want to delete this role?"))) {
+                        try {
+                            await deleteRole({ id: String(data.id) });
+                            return {
+                                status: "success",
+                                message: `'${data.name}' has been deleted.`,
+                            };
+                        } catch (e) {
+                            return {
+                                status: "danger",
+                                message: `Failed to delete '${data.name}': ${errorMessageAsString(e)}`,
+                            };
+                        }
                     }
                 },
             },
@@ -94,17 +97,19 @@ const fields: FieldArray = [
                 icon: faTrash,
                 condition: (data: RoleEntry) => !!data.deleted,
                 handler: async (data: RoleEntry) => {
-                    try {
-                        await purgeRole({ id: String(data.id) });
-                        return {
-                            status: "success",
-                            message: `'${data.name}' has been purged.`,
-                        };
-                    } catch (e) {
-                        return {
-                            status: "danger",
-                            message: `Failed to purge '${data.name}': ${errorMessageAsString(e)}`,
-                        };
+                    if (confirm(_l("Are you sure that you want to purge this role?"))) {
+                        try {
+                            await purgeRole({ id: String(data.id) });
+                            return {
+                                status: "success",
+                                message: `'${data.name}' has been purged.`,
+                            };
+                        } catch (e) {
+                            return {
+                                status: "danger",
+                                message: `Failed to purge '${data.name}': ${errorMessageAsString(e)}`,
+                            };
+                        }
                     }
                 },
             },
