@@ -6,7 +6,7 @@ from galaxy_test.base.populators import (
 from galaxy_test.driver import integration_util
 
 
-class TestHistoriesApi(integration_util.IntegrationTestCase):
+class TestItemTagsApi(integration_util.IntegrationTestCase):
     dataset_populator: DatasetPopulator
 
     @classmethod
@@ -20,75 +20,77 @@ class TestHistoriesApi(integration_util.IntegrationTestCase):
         self.dataset_collection_populator = DatasetCollectionPopulator(self.galaxy_interactor)
 
     def test_get_tags_workflows(self):
-        response = self._test_get_tags(self._create_prefixes()["workflows"])
+        response = self._test_get_tags(self._create_prefix("workflows"))
         self._assert_status_code_is(response, 200)
 
     def test_create_tag_workflows(self):
-        response = self._test_create_tag(self._create_prefixes()["workflows"])
+        response = self._test_create_tag(self._create_prefix("workflows"))
         self._assert_status_code_is(response, 200)
 
     def test_update_tag_workflows(self):
-        response = self._test_update_tag(self._create_prefixes()["workflows"])
+        response = self._test_update_tag(self._create_prefix("workflows"))
         self._assert_status_code_is(response, 200)
 
     def test_get_tag_workflows(self):
-        response = self._test_get_tag(self._create_prefixes()["workflows"])
+        response = self._test_get_tag(self._create_prefix("workflows"))
         self._assert_status_code_is(response, 200)
 
     def test_delete_tag_workflows(self):
-        response = self._test_delete_tag(self._create_prefixes()["workflows"])
+        response = self._test_delete_tag(self._create_prefix("workflows"))
         self._assert_status_code_is(response, 200)
 
     def test_get_tags_histories(self):
-        response = self._test_get_tags(self._create_prefixes()["histories"])
+        response = self._test_get_tags(self._create_prefix("histories"))
         self._assert_status_code_is(response, 200)
 
     def test_create_tag_histories(self):
-        response = self._test_create_tag(self._create_prefixes()["histories"])
+        response = self._test_create_tag(self._create_prefix("histories"))
         self._assert_status_code_is(response, 200)
 
     def test_update_tag_histories(self):
-        response = self._test_update_tag(self._create_prefixes()["histories"])
+        response = self._test_update_tag(self._create_prefix("histories"))
         self._assert_status_code_is(response, 200)
 
     def test_get_tag_histories(self):
-        response = self._test_get_tag(self._create_prefixes()["histories"])
+        response = self._test_get_tag(self._create_prefix("histories"))
         self._assert_status_code_is(response, 200)
 
     def test_delete_tag_histories(self):
-        response = self._test_delete_tag(self._create_prefixes()["histories"])
+        response = self._test_delete_tag(self._create_prefix("histories"))
         self._assert_status_code_is(response, 200)
 
     def test_get_tags_histories_content(self):
-        response = self._test_get_tags(self._create_prefixes()["histories_content"])
+        response = self._test_get_tags(self._create_prefix("histories_content"))
         self._assert_status_code_is(response, 200)
 
     def test_create_tag_histories_content(self):
-        response = self._test_create_tag(self._create_prefixes()["histories_content"])
+        response = self._test_create_tag(self._create_prefix("histories_content"))
         self._assert_status_code_is(response, 200)
 
     def test_update_tag_histories_content(self):
-        response = self._test_update_tag(self._create_prefixes()["histories_content"])
+        response = self._test_update_tag(self._create_prefix("histories_content"))
         self._assert_status_code_is(response, 200)
 
     def test_get_tag_histories_content(self):
-        response = self._test_get_tag(self._create_prefixes()["histories_content"])
+        response = self._test_get_tag(self._create_prefix("histories_content"))
         self._assert_status_code_is(response, 200)
 
     def test_delete_tag_histories_content(self):
-        response = self._test_delete_tag(self._create_prefixes()["histories_content"])
+        response = self._test_delete_tag(self._create_prefix("histories_content"))
         self._assert_status_code_is(response, 200)
 
-    def _create_prefixes(self):
-        workflow_id = self._create_workflow()
+    def _create_prefix(self, type_: str) -> str:
+        if type_ == "workflows":
+            workflow_id = self._create_workflow()
+            return f"workflows/{workflow_id}"
         history_id = self._create_history()
-        history_content_id = self._create_history_contents(history_id)
-        prefixs = {
-            "workflows": f"workflows/{workflow_id}",
-            "histories": f"histories/{history_id}",
-            "histories_content": f"histories/{history_id}/contents/{history_content_id}",
-        }
-        return prefixs
+        if type_ == "histories":
+            return f"histories/{history_id}"
+        elif type_ == "histories_content":
+            history_content_id = self._create_history_contents(history_id)
+            return f"histories/{history_id}/contents/{history_content_id}"
+        else:
+            raise ValueError(f"Unrecognized type_ {type_}")
 
     def _test_get_tags(self, prefix):
         url = f"{prefix}/tags"
