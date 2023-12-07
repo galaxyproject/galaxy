@@ -1351,6 +1351,10 @@ export interface paths {
          */
         delete: operations["delete_api_quotas__id__delete"];
     };
+    "/api/quotas/{id}/purge": {
+        /** Purges a previously deleted quota. */
+        post: operations["purge_api_quotas__id__purge_post"];
+    };
     "/api/remote_files": {
         /**
          * Displays remote files available to the user.
@@ -17581,6 +17585,33 @@ export interface operations {
         requestBody?: {
             content: {
                 "application/json": components["schemas"]["DeleteQuotaPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    purge_api_quotas__id__purge_post: {
+        /** Purges a previously deleted quota. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The encoded identifier of the Quota. */
+            path: {
+                id: string;
             };
         };
         responses: {

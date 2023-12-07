@@ -2,7 +2,7 @@ import { faEdit, faKey, faPlus, faTrash, faTrashRestore } from "@fortawesome/fre
 import { useEventBus } from "@vueuse/core";
 import axios from "axios";
 
-import { deleteQuota, undeleteQuota } from "@/api/quotas";
+import { deleteQuota, purgeQuota, undeleteQuota } from "@/api/quotas";
 import Filtering, { contains, equals, toBool, type ValidFilter } from "@/utils/filtering";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -95,7 +95,7 @@ const fields: FieldArray = [
                 condition: (data: QuotaEntry) => !!data.deleted,
                 handler: async (data: QuotaEntry) => {
                     try {
-                        //await purgeGroup({ group_id: String(data.id) });
+                        await purgeQuota({ id: String(data.id) });
                         return {
                             status: "success",
                             message: `'${data.name}' has been purged.`,
