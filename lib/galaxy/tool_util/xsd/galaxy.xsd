@@ -115,8 +115,7 @@ the tool menu immediately following the hyperlink for the tool (based on the
           </xs:annotation>
         </xs:element>
         <xs:element name="parallelism" type="Parallelism" minOccurs="0"/>
-        <xs:element name="version_command" type="VersionCommand" minOccurs="0">
-        </xs:element>
+        <xs:element name="version_command" type="VersionCommand" minOccurs="0"/>
         <xs:element name="action" type="ToolAction" minOccurs="0" maxOccurs="1" />
         <xs:element name="environment_variables" type="EnvironmentVariables" minOccurs="0" maxOccurs="1"/>
         <xs:element name="command" type="Command" minOccurs="0" maxOccurs="1"/>
@@ -267,6 +266,11 @@ this tool is usable within a workflow (defaults to ``true`` for normal tools and
           <xs:documentation xml:lang="en">Only used if ``tool_type`` attribute value
 is ``data_source`` - this attribute defines the HTTP request method to use when
 communicating with an external data source application (the default is ``get``).</xs:documentation>
+        </xs:annotation>
+      </xs:attribute>
+      <xs:attribute name="require_login" type="xs:boolean">
+        <xs:annotation>
+          <xs:documentation xml:lang="en">Documentation needed</xs:documentation>
         </xs:annotation>
       </xs:attribute>
     </xs:complexType>
@@ -2980,10 +2984,10 @@ between paired inputs of single stranded inputs.
     <xs:complexContent>
       <xs:extension base="InputType">
         <xs:sequence>
-          <xs:group ref="InputElement" minOccurs="0" maxOccurs="1" />
+          <xs:element name="param" type="Param" minOccurs="1" maxOccurs="1" />
           <xs:element name="when" type="ConditionalWhen" minOccurs="0" maxOccurs="unbounded"/>
         </xs:sequence>
-        <xs:attribute name="name" type="xs:string">
+        <xs:attribute name="name" type="xs:string" use="required">
           <xs:annotation>
             <xs:documentation xml:lang="en">Name for this element</xs:documentation>
           </xs:annotation>
