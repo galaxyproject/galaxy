@@ -121,7 +121,7 @@ PARAMETER_VALIDATOR_TYPE_COMPATIBILITY = {
 PARAM_TYPE_CHILD_COMBINATIONS = [
     ("./options", ["data", "select", "drill_down"]),
     ("./options/option", ["drill_down"]),
-    ("./column", ["data_column"]),
+    ("./options/column", ["select"]),
 ]
 
 # TODO lint for valid param type - attribute combinations
@@ -1167,38 +1167,6 @@ def _iter_conditional(tool_xml: "ElementTree") -> Iterator[Tuple["Element", Opti
         yield conditional, conditional_name, first_param, first_param_type
 
 
-class ConditionalName(Linter):
-    @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
-        tool_xml = getattr(tool_source, "xml_tree", None)
-        if not tool_xml:
-            return
-        conditionals = tool_xml.findall("./inputs//conditional")
-        for conditional in conditionals:
-            conditional_name = conditional.get("name")
-            if not conditional_name:
-                lint_ctx.error("Conditional without a name", node=conditional)
-
-
-class ConditionalParamNumber(Linter):
-    @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
-        tool_xml = getattr(tool_source, "xml_tree", None)
-        if not tool_xml:
-            return
-        conditionals = tool_xml.findall("./inputs//conditional")
-        for conditional in conditionals:
-            conditional_name = conditional.get("name")
-            if conditional.get("value_from"):  # Probably only the upload tool use this, no children elements
-                continue
-            first_param = conditional.findall("param")
-            if len(first_param) != 1:
-                lint_ctx.error(
-                    f"Conditional [{conditional_name}] needs exactly one child <param> found {len(first_param)}",
-                    node=conditional,
-                )
-
-
 class ConditionalParamTypeBool(Linter):
     @classmethod
     def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
@@ -1240,20 +1208,6 @@ class ConditionalParamIncompatibleAttributes(Linter):
                     lint_ctx.warn(
                         f'Conditional [{conditional_name}] test parameter cannot be {incomp}="true"', node=first_param
                     )
-
-
-class ConditionalWhenValue(Linter):
-    @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
-        tool_xml = getattr(tool_source, "xml_tree", None)
-        if not tool_xml:
-            return
-        for conditional, conditional_name, _, first_param_type in _iter_conditional(tool_xml):
-            if first_param_type not in ["boolean", "select"]:
-                continue
-            whens = conditional.findall("./when")
-            if any("value" not in when.attrib for when in whens):
-                lint_ctx.error(f"Conditional [{conditional_name}] when without value", node=conditional)
 
 
 class ConditionalWhenMissing(Linter):

@@ -1,8 +1,4 @@
 """This module contains a linting functions for tool tests."""
-from inspect import (
-    Parameter,
-    signature,
-)
 from typing import (
     List,
     Optional,
@@ -12,7 +8,6 @@ from typing import (
 from galaxy.tool_util.lint import Linter
 from galaxy.util import asbool
 from ._util import is_datasource
-from ..verify import asserts
 
 if TYPE_CHECKING:
     from galaxy.tool_util.lint import LintContext
@@ -64,66 +59,6 @@ class TestsAssertsMultiple(Linter):
                     lint_ctx.error(
                         f"Test {test_idx}: More than one {ta} found. Only the first is considered.", node=test
                     )
-
-
-class TestsAssertsUnknown(Linter):
-    @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
-        tool_xml = getattr(tool_source, "xml_tree", None)
-        if not tool_xml:
-            return
-        tests = tool_xml.findall("./tests/test")
-        for test_idx, test in enumerate(tests, start=1):
-            for a in test.xpath(
-                ".//*[self::assert_contents or self::assert_stdout or self::assert_stderr or self::assert_command]//*"
-            ):
-                assert_function_name = "assert_" + a.tag
-                if assert_function_name not in asserts.assertion_functions:
-                    lint_ctx.error(f"Test {test_idx}: unknown assertion '{a.tag}'", node=a)
-
-
-class TestsAssertsUnknownAttrib(Linter):
-    @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
-        tool_xml = getattr(tool_source, "xml_tree", None)
-        if not tool_xml:
-            return
-        tests = tool_xml.findall("./tests/test")
-        for test_idx, test in enumerate(tests, start=1):
-            for a in test.xpath(
-                ".//*[self::assert_contents or self::assert_stdout or self::assert_stderr or self::assert_command]//*"
-            ):
-                assert_function_name = "assert_" + a.tag
-                if assert_function_name not in asserts.assertion_functions:
-                    continue
-                assert_function_sig = signature(asserts.assertion_functions[assert_function_name])
-                # check of the attributes
-                for attrib in a.attrib:
-                    if attrib not in assert_function_sig.parameters:
-                        lint_ctx.error(f"Test {test_idx}: unknown attribute '{attrib}' for '{a.tag}'", node=a)
-
-
-class TestsAssertsMissingAttrib(Linter):
-    @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
-        tool_xml = getattr(tool_source, "xml_tree", None)
-        if not tool_xml:
-            return
-        tests = tool_xml.findall("./tests/test")
-        for test_idx, test in enumerate(tests, start=1):
-            for a in test.xpath(
-                ".//*[self::assert_contents or self::assert_stdout or self::assert_stderr or self::assert_command]//*"
-            ):
-                assert_function_name = "assert_" + a.tag
-                if assert_function_name not in asserts.assertion_functions:
-                    continue
-                assert_function_sig = signature(asserts.assertion_functions[assert_function_name])
-                # check missing required attributes
-                for p in assert_function_sig.parameters:
-                    if p in ["output", "output_bytes", "verify_assertions_function", "children"]:
-                        continue
-                    if assert_function_sig.parameters[p].default is Parameter.empty and p not in a.attrib:
-                        lint_ctx.error(f"Test {test_idx}: missing attribute '{p}' for '{a.tag}'", node=a)
 
 
 class TestsAssertsHasNQuant(Linter):
@@ -181,19 +116,6 @@ class TestsExpectNumOutputs(Linter):
                 )
 
 
-class TestsParamName(Linter):
-    @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
-        tool_xml = getattr(tool_source, "xml_tree", None)
-        if not tool_xml:
-            return
-        tests = tool_xml.findall("./tests/test")
-        for test_idx, test in enumerate(tests, start=1):
-            for param in test.findall("param"):
-                if not param.attrib.get("name", None):
-                    lint_ctx.error(f"Test {test_idx}: Found test param tag without a name defined.", node=param)
-
-
 class TestsParamInInputs(Linter):
     """
     really simple linter that test parameters are also present in the inputs
@@ -233,7 +155,8 @@ class TestsOutputName(Linter):
             return
         tests = tool_xml.findall("./tests/test")
         for test_idx, test in enumerate(tests, start=1):
-            for output in test.findall("output") + test.findall("output_collection"):
+            # note output_collections are covered by xsd, but output is not required to have one by xsd
+            for output in test.findall("output"):
                 if not output.attrib.get("name", None):
                     lint_ctx.error(f"Test {test_idx}: Found {output.tag} tag without a name defined.", node=output)
 

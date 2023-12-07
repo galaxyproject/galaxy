@@ -26,17 +26,6 @@ class CitationsMissing(Linter):
             lint_ctx.warn("No citations found, consider adding citations to your tool.", node=root)
 
 
-class CitationsMultiple(Linter):
-    @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
-        tool_xml = getattr(tool_source, "xml_tree", None)
-        if not tool_xml:
-            return
-        citations = tool_xml.findall("citations")
-        if len(citations) > 1:
-            lint_ctx.error("More than one citation section found, behavior undefined.", node=citations[1])
-
-
 class CitationsNoText(Linter):
     @classmethod
     def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):

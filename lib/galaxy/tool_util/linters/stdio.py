@@ -53,21 +53,6 @@ class StdIOAbsence(Linter):
                 )
 
 
-class StdIOMultiple(Linter):
-    @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
-        tool_xml = getattr(tool_source, "xml_tree", None)
-        if not tool_xml:
-            # Can only lint XML tools at this point.
-            # Should probably use tool_source.parse_stdio() to abstract away XML details
-            return
-        stdios = tool_xml.findall("./stdio") if tool_xml else []
-
-        if len(stdios) > 1:
-            lint_ctx.error("More than one stdio tag found, behavior undefined.", node=stdios[1])
-            return
-
-
 class StdIORegex(Linter):
     @classmethod
     def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):

@@ -4,14 +4,16 @@ from typing import TYPE_CHECKING
 from packaging.version import Version
 
 from galaxy.tool_util.lint import Linter
-from galaxy.util import string_as_bool
 from ._util import is_valid_cheetah_placeholder
 from ..parser.output_collection_def import NAMED_PATTERNS
 
 if TYPE_CHECKING:
     from galaxy.tool_util.lint import LintContext
     from galaxy.tool_util.parser import ToolSource
-    from galaxy.util.etree import Element
+    from galaxy.util.etree import (
+        Element,
+        ElementTree,
+    )
 
 
 class OutputsMissing(Linter):
@@ -27,17 +29,6 @@ class OutputsMissing(Linter):
             lint_ctx.warn("Tool contains no outputs section, most tools should produce outputs.", node=tool_node)
 
 
-class OutputsMultiple(Linter):
-    @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
-        tool_xml = getattr(tool_source, "xml_tree", None)
-        if not tool_xml:
-            return
-        outputs = tool_xml.findall("./outputs")
-        if len(outputs) > 1:
-            lint_ctx.warn("Tool contains multiple output sections, behavior undefined.", node=outputs[1])
-
-
 class OutputsOutput(Linter):
     @classmethod
     def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
@@ -47,18 +38,6 @@ class OutputsOutput(Linter):
         output = tool_xml.find("./outputs/output")
         if output is not None:
             lint_ctx.warn("Avoid the use of 'output' and replace by 'data' or 'collection'", node=output)
-
-
-class OutputsNameMissing(Linter):
-    @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
-        tool_xml = getattr(tool_source, "xml_tree", None)
-        if not tool_xml:
-            return
-        for output in tool_xml.findall("./outputs/data") + tool_xml.findall("./outputs/collection"):
-            if "name" not in output.attrib:
-                # TODO make this an error if there is no discover_datasets / from_work_dir (is this then still a problem)
-                lint_ctx.warn("Tool output doesn't define a name - this is likely a problem.", node=output)
 
 
 class OutputsNameInvalidCheetah(Linter):
@@ -187,7 +166,7 @@ class OutputsFormat(Linter):
                 if "structured_like" in output.attrib and "inherit_format" in output.attrib:
                     format_set = True
             for sub in output:
-                if _check_pattern(sub):
+                if _check_pattern(sub) or _has_tool_provided_metadata(tool_xml):
                     format_set = True
                 elif _check_format(sub):
                     format_set = True
@@ -241,10 +220,6 @@ def _check_pattern(node):
     """
     if node.tag != "discover_datasets":
         return False
-    if "from_tool_provided_metadata" in node.attrib and string_as_bool(
-        node.attrib.get("from_tool_provided_metadata", "false")
-    ):
-        return True
     if "pattern" not in node.attrib:
         return False
     pattern = node.attrib["pattern"]
@@ -252,3 +227,18 @@ def _check_pattern(node):
     # TODO error on wrong pattern or non-regexp
     if "(?P<ext>" in regex_pattern:
         return True
+
+
+def _has_tool_provided_metadata(tool_xml: "ElementTree") -> bool:
+    outputs = tool_xml.find("./outputs")
+    if outputs is not None:
+        if "provided_metadata_file" in outputs.attrib or "provided_metadata_style" in outputs.attrib:
+            return True
+    command = tool_xml.find("./command")
+    if command is not None:
+        if "galaxy.json" in command.text:
+            return True
+    config = tool_xml.find("./configfiles/configfile[@filename='galaxy.json']")
+    if config is not None:
+        return True
+    return False

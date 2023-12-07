@@ -12,17 +12,6 @@ if TYPE_CHECKING:
     from galaxy.tool_util.parser.interface import ToolSource
 
 
-class CommandMultiple(Linter):
-    @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
-        tool_xml = getattr(tool_source, "xml_tree", None)
-        if not tool_xml:
-            return
-        commands = tool_xml.findall("./command")
-        if len(commands) > 1:
-            lint_ctx.error("More than one command tag found, behavior undefined.", node=commands[1])
-
-
 class CommandMissing(Linter):
     @classmethod
     def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):

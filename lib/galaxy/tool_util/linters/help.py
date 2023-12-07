@@ -15,17 +15,6 @@ if TYPE_CHECKING:
     from galaxy.tool_util.parser.interface import ToolSource
 
 
-class HelpMultiple(Linter):
-    @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
-        tool_xml = getattr(tool_source, "xml_tree", None)
-        if not tool_xml:
-            return
-        helps = tool_xml.findall("./help")
-        if len(helps) > 1:
-            lint_ctx.error("More than one help section found, behavior undefined.", node=helps[1])
-
-
 class HelpMissing(Linter):
     @classmethod
     def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
