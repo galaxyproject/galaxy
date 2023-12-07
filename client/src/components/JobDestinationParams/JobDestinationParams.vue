@@ -1,3 +1,24 @@
+<script setup lang="ts">
+import { storeToRefs } from "pinia";
+import { computed } from "vue";
+
+import { useJobDestinationParametersStore } from "@/stores/jobDestinationParametersStore";
+import { useUserStore } from "@/stores/userStore";
+
+const { currentUser } = storeToRefs(useUserStore());
+const jobDestinationParametersStore = useJobDestinationParametersStore();
+
+interface Props {
+    jobId: string;
+}
+
+const props = defineProps<Props>();
+
+const jobDestinationParams = computed(() => {
+    return jobDestinationParametersStore.getJobDestinationParams(props.jobId);
+});
+</script>
+
 <template>
     <div v-if="currentUser?.is_admin">
         <h2 class="h-md">Destination Parameters</h2>
@@ -11,31 +32,3 @@
         </table>
     </div>
 </template>
-
-<script>
-import { mapState } from "pinia";
-import { mapCacheActions } from "vuex-cache";
-
-import { useUserStore } from "@/stores/userStore";
-
-export default {
-    props: {
-        jobId: {
-            type: String,
-            required: true,
-        },
-    },
-    computed: {
-        ...mapState(useUserStore, ["currentUser"]),
-        jobDestinationParams: function () {
-            return this.$store.getters.jobDestinationParams(this.jobId);
-        },
-    },
-    created: function () {
-        this.fetchJobDestinationParams(this.jobId);
-    },
-    methods: {
-        ...mapCacheActions(["fetchJobDestinationParams"]),
-    },
-};
-</script>
