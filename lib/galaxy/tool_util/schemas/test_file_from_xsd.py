@@ -1,7 +1,10 @@
 from __future__ import annotations
 
 import json
-from typing import Union
+from typing import (
+    Optional,
+    Union,
+)
 
 # bug with pydantic, need everything in namespace, otherwise fails with
 # `pydantic.errors.PydanticUserError: `ListOfTests` is not fully defined; you should define `TestDiscoveredDataset`, then call `ListOfTests.model_rebuild()`.`
@@ -14,6 +17,7 @@ from job import Job
 from pydantic import (
     BaseModel,
     ConfigDict,
+    Field,
     RootModel,
 )
 from pydantic.dataclasses import dataclass
@@ -38,9 +42,16 @@ AnyOutput = Union[TestOutputElement, TestOutput, TestOutputCollection, str, int,
 class Test(BaseModel):
     model_config = extra_forbidden
 
-    doc: str
-    job: Job
-    outputs: dict[str, AnyOutput]
+    doc: Optional[str] = Field(None, description="Describes the purpose of the test.")
+    job: Job = Field(
+        ...,
+        description="Defines job to execute. Can be a path to a file or an line dictionary describing the job inputs.",
+    )
+
+    outputs: dict[str, AnyOutput] = Field(
+        ...,
+        description="Defines assertions about outputs (datasets, collections or parameters). Each key corresponds to a labeled output, values are dictionaries describing the expected output.",
+    )
 
 
 class ListOfTests(RootModel):

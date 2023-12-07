@@ -1543,36 +1543,43 @@
       "type": "object"
     },
     "Job": {
-      "additionalProperties": {
-        "anyOf": [
-          {
-            "type": "string"
+      "anyOf": [
+        {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "$ref": "#/$defs/Collection"
+              },
+              {
+                "$ref": "#/$defs/LocationFile"
+              },
+              {
+                "$ref": "#/$defs/PathFile"
+              },
+              {
+                "type": "null"
+              }
+            ]
           },
-          {
-            "type": "integer"
-          },
-          {
-            "type": "number"
-          },
-          {
-            "type": "boolean"
-          },
-          {
-            "$ref": "#/$defs/Collection"
-          },
-          {
-            "$ref": "#/$defs/LocationFile"
-          },
-          {
-            "$ref": "#/$defs/PathFile"
-          },
-          {
-            "type": "null"
-          }
-        ]
-      },
-      "title": "Job",
-      "type": "object"
+          "type": "object"
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "title": "Job"
     },
     "LocationFile": {
       "additionalProperties": false,
@@ -2146,11 +2153,25 @@
       "additionalProperties": false,
       "properties": {
         "doc": {
-          "title": "Doc",
-          "type": "string"
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Describes the purpose of the test.",
+          "title": "Doc"
         },
         "job": {
-          "$ref": "#/$defs/Job"
+          "allOf": [
+            {
+              "$ref": "#/$defs/Job"
+            }
+          ],
+          "description": "Defines job to execute. Can be a path to a file or an line dictionary describing the job inputs."
         },
         "outputs": {
           "additionalProperties": {
@@ -2178,12 +2199,12 @@
               }
             ]
           },
+          "description": "Defines assertions about outputs (datasets, collections or parameters). Each key corresponds to a labeled output, values are dictionaries describing the expected output.",
           "title": "Outputs",
           "type": "object"
         }
       },
       "required": [
-        "doc",
         "job",
         "outputs"
       ],
