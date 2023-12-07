@@ -2186,6 +2186,9 @@
                 "$ref": "#/$defs/TestOutputCollection"
               },
               {
+                "$ref": "#/$defs/TestOutputCollectionDeprecated"
+              },
+              {
                 "type": "string"
               },
               {
@@ -3425,6 +3428,56 @@
     "TestOutputCollection": {
       "additionalProperties": false,
       "properties": {
+        "class": {
+          "anyOf": [
+            {
+              "const": "Collection"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": "Collection",
+          "title": "Class"
+        },
+        "element": {
+          "anyOf": [
+            {
+              "items": {
+                "$ref": "#/$defs/TestOutput"
+              },
+              "type": "array"
+            },
+            {
+              "$ref": "#/$defs/TestOutput"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Element"
+        },
+        "count": {
+          "anyOf": [
+            {
+              "type": "integer"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Number of elements in output collection.",
+          "title": "Count"
+        }
+      },
+      "title": "TestOutputCollection",
+      "type": "object"
+    },
+    "TestOutputCollectionDeprecated": {
+      "additionalProperties": false,
+      "properties": {
         "element_tests": {
           "additionalProperties": {
             "anyOf": [
@@ -3435,6 +3488,10 @@
                 "$ref": "#/$defs/TestOutput"
               }
             ]
+          },
+          "description": "Deprecated field, please use elements to describe expectations about collection elements.",
+          "metadata": {
+            "deprecated": true
           },
           "title": "Element Tests",
           "type": "object"
@@ -3498,7 +3555,7 @@
       "required": [
         "element_tests"
       ],
-      "title": "TestOutputCollection",
+      "title": "TestOutputCollectionDeprecated",
       "type": "object"
     },
     "TestOutputCompareType": {
@@ -3516,7 +3573,7 @@
     "TestOutputElement": {
       "additionalProperties": false,
       "properties": {
-        "element_tests": {
+        "elements": {
           "additionalProperties": {
             "anyOf": [
               {
@@ -3527,7 +3584,7 @@
               }
             ]
           },
-          "title": "Element Tests",
+          "title": "Elements",
           "type": "object"
         },
         "class": {
@@ -3788,7 +3845,7 @@
         }
       },
       "required": [
-        "element_tests"
+        "elements"
       ],
       "title": "TestOutputElement",
       "type": "object"

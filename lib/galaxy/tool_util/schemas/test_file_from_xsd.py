@@ -27,16 +27,27 @@ extra_forbidden = ConfigDict(extra="forbid")
 
 @dataclass
 class TestOutputElement(TestOutput):
-    element_tests: dict[str, TestOutputElement | TestOutput]
+    elements: dict[str, TestOutputElement | TestOutput]
+
+
+class TestOutputCollection(TestOutputCollection_):
+    elements: dict[str, TestOutputElement | TestOutput]
+    collection_type: Optional[str] | None = None
 
 
 @dataclass
-class TestOutputCollection(TestOutputCollection_):
-    element_tests: dict[str, TestOutputElement | TestOutput]
-    collection_type: str | None = None
+class TestOutputCollectionDeprecated(TestOutputCollection_):
+    element_tests: dict[str, TestOutputElement | TestOutput] = Field(
+        ...,
+        description="Deprecated field, please use elements to describe expectations about collection elements.",
+        metadata={"deprecated": True},
+    )
+    collection_type: Optional[str] | None = None
 
 
-AnyOutput = Union[TestOutputElement, TestOutput, TestOutputCollection, str, int, float, bool]  # noqa: F405
+AnyOutput = Union[
+    TestOutputElement, TestOutput, TestOutputCollection, TestOutputCollectionDeprecated, str, int, float, bool
+]  # noqa: F405
 
 
 class Test(BaseModel):
