@@ -110,21 +110,6 @@ class Forms(BaseUIController):
     @web.legacy_expose_api
     @web.require_admin
     def forms_list(self, trans, payload=None, **kwd):
-        message = kwd.get("message", "")
-        status = kwd.get("status", "")
-        if "operation" in kwd:
-            id = kwd.get("id")
-            if not id:
-                return self.message_exception(trans, f"Invalid form id ({str(id)}) received.")
-            ids = util.listify(id)
-            operation = kwd["operation"].lower()
-            if operation == "delete":
-                message, status = self._delete_form(trans, ids)
-            elif operation == "undelete":
-                message, status = self._undelete_form(trans, ids)
-        if message and status:
-            kwd["message"] = util.sanitize_text(message)
-            kwd["status"] = status
         return self.forms_grid(trans, **kwd)
 
     @web.legacy_expose_api
@@ -318,28 +303,6 @@ class Forms(BaseUIController):
         with transaction(trans.sa_session):
             trans.sa_session.commit()
         return form_definition, None
-
-    @web.expose
-    @web.require_admin
-    def _delete_form(self, trans, ids):
-        for form_id in ids:
-            form = get_form(trans, form_id)
-            form.deleted = True
-            trans.sa_session.add(form)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
-        return ("Deleted %i form(s)." % len(ids), "done")
-
-    @web.expose
-    @web.require_admin
-    def _undelete_form(self, trans, ids):
-        for form_id in ids:
-            form = get_form(trans, form_id)
-            form.deleted = False
-            trans.sa_session.add(form)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
-        return ("Undeleted %i form(s)." % len(ids), "done")
 
 
 # ---- Utility methods -------------------------------------------------------
