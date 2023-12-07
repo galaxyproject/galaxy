@@ -10,14 +10,18 @@ interface FetchFunction<T> {
     (params: FetchParams): Promise<ApiResponse<T>>;
 }
 
-export function useSimpleStore<T>(fetchItem: FetchFunction<T>) {
+interface ShouldFetch<T> {
+    (item?: T): boolean;
+}
+
+export function useSimpleStore<T>(fetchItem: FetchFunction<T>, shouldFetch: ShouldFetch<T> = (item) => !item) {
     const storedItems = ref<{ [key: string]: T }>({});
     const loadingItem = ref<{ [key: string]: boolean }>({});
 
     const getItemById = computed(() => {
         return (id: string) => {
             const item = storedItems.value[id];
-            if (!item && !loadingItem.value[id]) {
+            if (!loadingItem.value[id] && shouldFetch(item)) {
                 fetchItemById({ id: id });
             }
             return item ?? null;
