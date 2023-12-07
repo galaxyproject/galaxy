@@ -1,3 +1,8 @@
+from typing import (
+    Any,
+    Dict,
+)
+
 from galaxy_test.base.populators import (
     DatasetCollectionPopulator,
     DatasetPopulator,
@@ -125,7 +130,7 @@ class TestItemTagsApi(integration_util.IntegrationTestCase):
 
     def _create_valid_tag(self, prefix: str):
         url = f"{prefix}/tags/awesometagname"
-        tag_data = dict(value="awesometagvalue")
+        tag_data: Dict[str, Any] = {}  # Can also be dict(value="awesometagvalue")
         response = self._post(url, data=tag_data, json=True)
         return response
 

@@ -6392,7 +6392,7 @@ export interface components {
          */
         ItemTagsCreatePayload: {
             /** value of the item tag */
-            value: string;
+            value?: string;
         };
         /**
          * ItemTagsListResponse
@@ -13796,7 +13796,7 @@ export interface operations {
                 history_id: string;
             };
         };
-        requestBody: {
+        requestBody?: {
             content: {
                 "application/json": components["schemas"]["ItemTagsCreatePayload"];
             };
@@ -15103,7 +15103,7 @@ export interface operations {
                 tag_name: string;
             };
         };
-        requestBody: {
+        requestBody?: {
             content: {
                 "application/json": components["schemas"]["ItemTagsCreatePayload"];
             };
@@ -19862,7 +19862,7 @@ export interface operations {
                 tag_name: string;
             };
         };
-        requestBody: {
+        requestBody?: {
             content: {
                 "application/json": components["schemas"]["ItemTagsCreatePayload"];
             };
