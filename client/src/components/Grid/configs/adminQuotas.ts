@@ -74,7 +74,7 @@ const fields: FieldArray = [
             {
                 title: "Manage Users and Groups",
                 icon: faUsers,
-                condition: (data: QuotaEntry) => !data.deleted,
+                condition: (data: QuotaEntry) => !data.deleted && !data.default_type,
                 handler: (data: QuotaEntry) => {
                     emit(`/admin/form/manage_users_and_groups_for_quota?id=${data.id}`);
                 },
