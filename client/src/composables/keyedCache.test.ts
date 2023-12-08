@@ -1,4 +1,5 @@
 import flushPromises from "flush-promises";
+import { computed, ref } from "vue";
 
 import { useKeyedCache } from "./keyedCache";
 
@@ -64,7 +65,7 @@ describe("useSimpleKeyStore", () => {
         const apiResponse = { data: item };
 
         fetchItem.mockResolvedValue(apiResponse);
-        shouldFetch.mockReturnValue(true);
+        shouldFetch.mockReturnValue(() => true);
 
         const { storedItems, getItemById, isLoadingItem } = useKeyedCache<ItemData>(fetchItem, shouldFetch);
 
@@ -79,5 +80,102 @@ describe("useSimpleKeyStore", () => {
         expect(isLoadingItem.value(id)).toBeFalsy();
         expect(storedItems.value[id]).toEqual(item);
         expect(fetchItem).toHaveBeenCalledWith(fetchParams);
+        expect(shouldFetch).toHaveBeenCalled();
+    });
+
+    it("should not fetch the item if it is already being fetched", async () => {
+        const id = "1";
+        const item = { id: id, name: "Item 1" };
+        const fetchParams = { id: id };
+        const apiResponse = { data: item };
+
+        fetchItem.mockResolvedValue(apiResponse);
+
+        const { storedItems, getItemById, isLoadingItem } = useKeyedCache<ItemData>(fetchItem);
+
+        expect(isLoadingItem.value(id)).toBeFalsy();
+
+        getItemById.value(id);
+        getItemById.value(id);
+
+        expect(isLoadingItem.value(id)).toBeTruthy();
+        await flushPromises();
+        expect(isLoadingItem.value(id)).toBeFalsy();
+        expect(storedItems.value[id]).toEqual(item);
+        expect(fetchItem).toHaveBeenCalledTimes(1);
+        expect(fetchItem).toHaveBeenCalledWith(fetchParams);
+    });
+
+    it("should not fetch the item if it is already being fetched, even if shouldFetch returns true", async () => {
+        const id = "1";
+        const item = { id: id, name: "Item 1" };
+        const fetchParams = { id: id };
+        const apiResponse = { data: item };
+
+        fetchItem.mockResolvedValue(apiResponse);
+        shouldFetch.mockReturnValue(() => true);
+
+        const { storedItems, getItemById, isLoadingItem } = useKeyedCache<ItemData>(fetchItem, shouldFetch);
+
+        expect(isLoadingItem.value(id)).toBeFalsy();
+
+        getItemById.value(id);
+        getItemById.value(id);
+
+        expect(isLoadingItem.value(id)).toBeTruthy();
+        await flushPromises();
+        expect(isLoadingItem.value(id)).toBeFalsy();
+        expect(storedItems.value[id]).toEqual(item);
+        expect(fetchItem).toHaveBeenCalledTimes(1);
+        expect(fetchItem).toHaveBeenCalledWith(fetchParams);
+        expect(shouldFetch).toHaveBeenCalled();
+    });
+
+    it("should accept a ref for fetchItem", async () => {
+        const id = "1";
+        const item = { id: id, name: "Item 1" };
+        const fetchParams = { id: id };
+        const apiResponse = { data: item };
+
+        fetchItem.mockResolvedValue(apiResponse);
+
+        const fetchItemRef = ref(fetchItem);
+
+        const { storedItems, getItemById, isLoadingItem } = useKeyedCache<ItemData>(fetchItemRef);
+
+        expect(isLoadingItem.value(id)).toBeFalsy();
+
+        getItemById.value(id);
+
+        expect(isLoadingItem.value(id)).toBeTruthy();
+        await flushPromises();
+        expect(isLoadingItem.value(id)).toBeFalsy();
+        expect(storedItems.value[id]).toEqual(item);
+        expect(fetchItem).toHaveBeenCalledWith(fetchParams);
+    });
+
+    it("should accept a computed for shouldFetch", async () => {
+        const id = "1";
+        const item = { id: id, name: "Item 1" };
+        const fetchParams = { id: id };
+        const apiResponse = { data: item };
+
+        fetchItem.mockResolvedValue(apiResponse);
+        shouldFetch.mockReturnValue(true);
+
+        const shouldFetchComputed = computed(() => shouldFetch);
+
+        const { storedItems, getItemById, isLoadingItem } = useKeyedCache<ItemData>(fetchItem, shouldFetchComputed);
+
+        expect(isLoadingItem.value(id)).toBeFalsy();
+
+        getItemById.value(id);
+
+        expect(isLoadingItem.value(id)).toBeTruthy();
+        await flushPromises();
+        expect(isLoadingItem.value(id)).toBeFalsy();
+        expect(storedItems.value[id]).toEqual(item);
+        expect(fetchItem).toHaveBeenCalledWith(fetchParams);
+        expect(shouldFetch).toHaveBeenCalled();
     });
 });
