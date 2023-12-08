@@ -162,7 +162,7 @@ class Forms(BaseUIController):
                 return self.message_exception(trans, message)
             imported = (" with %i imported fields" % index) if index > 0 else ""
             message = f"The form '{payload.get('name')}' has been created{imported}."
-            return {"message": util.sanitize_text(message)}
+            return {"message": message}
 
     @web.legacy_expose_api
     @web.require_admin
@@ -195,7 +195,7 @@ class Forms(BaseUIController):
                 {"name": "required", "label": "Required", "type": "boolean", "value": False},
             ]
             form_dict = {
-                "title": "Edit form for '%s'" % (util.sanitize_text(latest_form.name)),
+                "title": "Edit form for '%s'" % latest_form.name,
                 "inputs": [
                     {"name": "name", "label": "Name", "value": latest_form.name},
                     {"name": "desc", "label": "Description", "value": latest_form.desc},
@@ -230,7 +230,7 @@ class Forms(BaseUIController):
             if new_form is None:
                 return self.message_exception(trans, message)
             message = f"The form '{payload.get('name')}' has been updated."
-            return {"message": util.sanitize_text(message)}
+            return {"message": message}
 
     def get_current_form(self, trans, payload=None, **kwd):
         """

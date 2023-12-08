@@ -545,7 +545,7 @@ class AdminGalaxy(controller.JSAppLauncher):
         quota = get_quota(trans, id)
         if trans.request.method == "GET":
             return {
-                "title": "Change quota name and description for '%s'" % util.sanitize_text(quota.name),
+                "title": "Change quota name and description for '%s'" % quota.name,
                 "inputs": [
                     {"name": "name", "label": "Name", "value": quota.name},
                     {"name": "description", "label": "Description", "value": quota.description},
@@ -614,7 +614,7 @@ class AdminGalaxy(controller.JSAppLauncher):
         quota = get_quota(trans, id)
         if trans.request.method == "GET":
             return {
-                "title": "Edit quota size for '%s'" % util.sanitize_text(quota.name),
+                "title": "Edit quota size for '%s'" % quota.name,
                 "inputs": [
                     {
                         "name": "amount",
@@ -649,7 +649,7 @@ class AdminGalaxy(controller.JSAppLauncher):
             for typ in trans.app.model.DefaultQuotaAssociation.types.__members__.values():
                 default_options.append((f"Yes, {typ}", typ))
             return {
-                "title": "Set quota default for '%s'" % util.sanitize_text(quota.name),
+                "title": "Set quota default for '%s'" % quota.name,
                 "inputs": [
                     {
                         "name": "default",
@@ -798,7 +798,7 @@ class AdminGalaxy(controller.JSAppLauncher):
         role = get_role(trans, id)
         if trans.request.method == "GET":
             return {
-                "title": "Change role name and description for '%s'" % util.sanitize_text(role.name),
+                "title": "Change role name and description for '%s'" % role.name,
                 "inputs": [
                     {"name": "name", "label": "Name", "value": role.name},
                     {"name": "description", "label": "Description", "value": role.description},
@@ -908,7 +908,7 @@ class AdminGalaxy(controller.JSAppLauncher):
         group = get_group(trans, id)
         if trans.request.method == "GET":
             return {
-                "title": "Change group name for '%s'" % util.sanitize_text(group.name),
+                "title": "Change group name for '%s'" % group.name,
                 "inputs": [{"name": "name", "label": "Name", "value": group.name}],
             }
         else:
