@@ -1,4 +1,4 @@
-import { faDatabase, faEdit, faKey, faPlus, faTrash, faTrashRestore, faUsers } from "@fortawesome/free-solid-svg-icons";
+import { faCog, faDatabase, faEdit, faPlus, faTrash, faTrashRestore, faUsers } from "@fortawesome/free-solid-svg-icons";
 import { useEventBus } from "@vueuse/core";
 import axios from "axios";
 
@@ -64,14 +64,6 @@ const fields: FieldArray = [
                 },
             },
             {
-                title: "Change Amount",
-                icon: faDatabase,
-                condition: (data: QuotaEntry) => !data.deleted,
-                handler: (data: QuotaEntry) => {
-                    emit(`/admin/form/edit_quota?id=${data.id}`);
-                },
-            },
-            {
                 title: "Manage Users and Groups",
                 icon: faUsers,
                 condition: (data: QuotaEntry) => !data.deleted && !data.default_type,
@@ -80,8 +72,16 @@ const fields: FieldArray = [
                 },
             },
             {
-                title: "Set as Default",
-                icon: faKey,
+                title: "Change Amount",
+                icon: faDatabase,
+                condition: (data: QuotaEntry) => !data.deleted,
+                handler: (data: QuotaEntry) => {
+                    emit(`/admin/form/edit_quota?id=${data.id}`);
+                },
+            },
+            {
+                title: "Change Default",
+                icon: faCog,
                 condition: (data: QuotaEntry) => !data.deleted,
                 handler: (data: QuotaEntry) => {
                     emit(`/admin/form/set_quota_default?id=${data.id}`);
