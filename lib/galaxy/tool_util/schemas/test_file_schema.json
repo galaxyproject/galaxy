@@ -1487,6 +1487,9 @@
               },
               {
                 "$ref": "#/$defs/PathFileElement"
+              },
+              {
+                "$ref": "#/$defs/CompositeDataFileElement"
               }
             ]
           },
@@ -1522,6 +1525,9 @@
               },
               {
                 "$ref": "#/$defs/PathFileElement"
+              },
+              {
+                "$ref": "#/$defs/CompositeDataFileElement"
               }
             ]
           },
@@ -1542,46 +1548,7 @@
       "title": "CollectionElement",
       "type": "object"
     },
-    "Job": {
-      "anyOf": [
-        {
-          "additionalProperties": {
-            "anyOf": [
-              {
-                "type": "string"
-              },
-              {
-                "type": "integer"
-              },
-              {
-                "type": "number"
-              },
-              {
-                "type": "boolean"
-              },
-              {
-                "$ref": "#/$defs/Collection"
-              },
-              {
-                "$ref": "#/$defs/LocationFile"
-              },
-              {
-                "$ref": "#/$defs/PathFile"
-              },
-              {
-                "type": "null"
-              }
-            ]
-          },
-          "type": "object"
-        },
-        {
-          "type": "string"
-        }
-      ],
-      "title": "Job"
-    },
-    "LocationFile": {
+    "CompositeDataFile": {
       "additionalProperties": false,
       "properties": {
         "class": {
@@ -1598,6 +1565,7 @@
             }
           ],
           "default": null,
+          "description": "Datatype extension for uploaded dataset.",
           "title": "Filetype"
         },
         "dbkey": {
@@ -1646,6 +1614,7 @@
             }
           ],
           "default": null,
+          "description": "If set, spaces in text datasets will be converted to tabs.",
           "title": "Space To Tab"
         },
         "deferred": {
@@ -1658,6 +1627,7 @@
             }
           ],
           "default": null,
+          "description": "If set, datasets will not be stored on disk, but will be downloaded when used as inputs. Can only be used if a remote URI is used instead of a local file.",
           "title": "Deferred"
         },
         "name": {
@@ -1670,6 +1640,7 @@
             }
           ],
           "default": null,
+          "description": "Name of dataset in history.",
           "title": "Name"
         },
         "info": {
@@ -1697,6 +1668,415 @@
             }
           ],
           "default": null,
+          "description": "Tags to apply to uploaded dataset.",
+          "title": "Tags"
+        },
+        "location": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Location"
+        },
+        "path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Path"
+        },
+        "composite_data": {
+          "items": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "title": "Composite Data",
+          "type": "array"
+        }
+      },
+      "required": [
+        "class",
+        "composite_data"
+      ],
+      "title": "CompositeDataFile",
+      "type": "object"
+    },
+    "CompositeDataFileElement": {
+      "additionalProperties": false,
+      "properties": {
+        "class": {
+          "const": "File",
+          "title": "Class"
+        },
+        "filetype": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Datatype extension for uploaded dataset.",
+          "title": "Filetype"
+        },
+        "dbkey": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dbkey"
+        },
+        "decompress": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": false,
+          "title": "Decompress"
+        },
+        "to_posix_line": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "To Posix Line"
+        },
+        "space_to_tab": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "If set, spaces in text datasets will be converted to tabs.",
+          "title": "Space To Tab"
+        },
+        "deferred": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "If set, datasets will not be stored on disk, but will be downloaded when used as inputs. Can only be used if a remote URI is used instead of a local file.",
+          "title": "Deferred"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Name of dataset in history.",
+          "title": "Name"
+        },
+        "info": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Info"
+        },
+        "tags": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Tags to apply to uploaded dataset.",
+          "title": "Tags"
+        },
+        "identifier": {
+          "title": "Identifier",
+          "type": "string"
+        },
+        "location": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Location"
+        },
+        "path": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Path"
+        },
+        "composite_data": {
+          "items": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "type": "object"
+          },
+          "title": "Composite Data",
+          "type": "array"
+        }
+      },
+      "required": [
+        "class",
+        "identifier",
+        "composite_data"
+      ],
+      "title": "CompositeDataFileElement",
+      "type": "object"
+    },
+    "Job": {
+      "anyOf": [
+        {
+          "additionalProperties": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "integer"
+              },
+              {
+                "type": "number"
+              },
+              {
+                "type": "boolean"
+              },
+              {
+                "$ref": "#/$defs/Collection"
+              },
+              {
+                "$ref": "#/$defs/LocationFile"
+              },
+              {
+                "$ref": "#/$defs/PathFile"
+              },
+              {
+                "$ref": "#/$defs/CompositeDataFile"
+              },
+              {
+                "items": {
+                  "anyOf": [
+                    {
+                      "type": "string"
+                    },
+                    {
+                      "type": "integer"
+                    },
+                    {
+                      "type": "number"
+                    },
+                    {
+                      "type": "boolean"
+                    },
+                    {
+                      "$ref": "#/$defs/Collection"
+                    },
+                    {
+                      "$ref": "#/$defs/LocationFile"
+                    },
+                    {
+                      "$ref": "#/$defs/PathFile"
+                    },
+                    {
+                      "$ref": "#/$defs/CompositeDataFile"
+                    }
+                  ]
+                },
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "type": "object"
+        },
+        {
+          "type": "string"
+        }
+      ],
+      "title": "Job"
+    },
+    "LocationFile": {
+      "additionalProperties": false,
+      "properties": {
+        "class": {
+          "const": "File",
+          "title": "Class"
+        },
+        "filetype": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Datatype extension for uploaded dataset.",
+          "title": "Filetype"
+        },
+        "dbkey": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Dbkey"
+        },
+        "decompress": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": false,
+          "title": "Decompress"
+        },
+        "to_posix_line": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "To Posix Line"
+        },
+        "space_to_tab": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "If set, spaces in text datasets will be converted to tabs.",
+          "title": "Space To Tab"
+        },
+        "deferred": {
+          "anyOf": [
+            {
+              "type": "boolean"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "If set, datasets will not be stored on disk, but will be downloaded when used as inputs. Can only be used if a remote URI is used instead of a local file.",
+          "title": "Deferred"
+        },
+        "name": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Name of dataset in history.",
+          "title": "Name"
+        },
+        "info": {
+          "anyOf": [
+            {
+              "type": "string"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "title": "Info"
+        },
+        "tags": {
+          "anyOf": [
+            {
+              "items": {
+                "type": "string"
+              },
+              "type": "array"
+            },
+            {
+              "type": "null"
+            }
+          ],
+          "default": null,
+          "description": "Tags to apply to uploaded dataset.",
           "title": "Tags"
         },
         "location": {
@@ -1740,6 +2120,7 @@
             }
           ],
           "default": null,
+          "description": "Datatype extension for uploaded dataset.",
           "title": "Filetype"
         },
         "dbkey": {
@@ -1788,6 +2169,7 @@
             }
           ],
           "default": null,
+          "description": "If set, spaces in text datasets will be converted to tabs.",
           "title": "Space To Tab"
         },
         "deferred": {
@@ -1800,6 +2182,7 @@
             }
           ],
           "default": null,
+          "description": "If set, datasets will not be stored on disk, but will be downloaded when used as inputs. Can only be used if a remote URI is used instead of a local file.",
           "title": "Deferred"
         },
         "name": {
@@ -1812,6 +2195,7 @@
             }
           ],
           "default": null,
+          "description": "Name of dataset in history.",
           "title": "Name"
         },
         "info": {
@@ -1839,6 +2223,7 @@
             }
           ],
           "default": null,
+          "description": "Tags to apply to uploaded dataset.",
           "title": "Tags"
         },
         "identifier": {
@@ -1887,6 +2272,7 @@
             }
           ],
           "default": null,
+          "description": "Datatype extension for uploaded dataset.",
           "title": "Filetype"
         },
         "dbkey": {
@@ -1935,6 +2321,7 @@
             }
           ],
           "default": null,
+          "description": "If set, spaces in text datasets will be converted to tabs.",
           "title": "Space To Tab"
         },
         "deferred": {
@@ -1947,6 +2334,7 @@
             }
           ],
           "default": null,
+          "description": "If set, datasets will not be stored on disk, but will be downloaded when used as inputs. Can only be used if a remote URI is used instead of a local file.",
           "title": "Deferred"
         },
         "name": {
@@ -1959,6 +2347,7 @@
             }
           ],
           "default": null,
+          "description": "Name of dataset in history.",
           "title": "Name"
         },
         "info": {
@@ -1986,6 +2375,7 @@
             }
           ],
           "default": null,
+          "description": "Tags to apply to uploaded dataset.",
           "title": "Tags"
         },
         "path": {
@@ -2017,6 +2407,7 @@
             }
           ],
           "default": null,
+          "description": "Datatype extension for uploaded dataset.",
           "title": "Filetype"
         },
         "dbkey": {
@@ -2065,6 +2456,7 @@
             }
           ],
           "default": null,
+          "description": "If set, spaces in text datasets will be converted to tabs.",
           "title": "Space To Tab"
         },
         "deferred": {
@@ -2077,6 +2469,7 @@
             }
           ],
           "default": null,
+          "description": "If set, datasets will not be stored on disk, but will be downloaded when used as inputs. Can only be used if a remote URI is used instead of a local file.",
           "title": "Deferred"
         },
         "name": {
@@ -2089,6 +2482,7 @@
             }
           ],
           "default": null,
+          "description": "Name of dataset in history.",
           "title": "Name"
         },
         "info": {
@@ -2116,6 +2510,7 @@
             }
           ],
           "default": null,
+          "description": "Tags to apply to uploaded dataset.",
           "title": "Tags"
         },
         "identifier": {
