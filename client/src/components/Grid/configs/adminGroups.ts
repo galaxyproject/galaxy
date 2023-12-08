@@ -2,7 +2,7 @@ import { faEdit, faKey, faPlus, faTrash, faTrashRestore } from "@fortawesome/fre
 import { useEventBus } from "@vueuse/core";
 import axios from "axios";
 
-import { deleteRole, purgeRole, undeleteRole } from "@/api/roles";
+import { deleteGroup, purgeGroup, undeleteGroup } from "@/api/groups";
 import Filtering, { contains, equals, toBool, type ValidFilter } from "@/utils/filtering";
 import _l from "@/utils/localization";
 import { withPrefix } from "@/utils/redirect";
@@ -15,7 +15,7 @@ const { emit } = useEventBus<string>("grid-router-push");
 /**
  * Local types
  */
-type RoleEntry = Record<string, unknown>;
+type GroupEntry = Record<string, unknown>;
 
 /**
  * Request and return data from server
@@ -29,7 +29,7 @@ async function getData(offset: number, limit: number, search: string, sort_by: s
         sort_desc: String(sort_desc),
     };
     const queryString = new URLSearchParams(query).toString();
-    const { data } = await axios.get(withPrefix(`/admin/roles_list?${queryString}`));
+    const { data } = await axios.get(withPrefix(`/admin/groups_list?${queryString}`));
     return [data.rows, data.rows_total];
 }
 
@@ -38,10 +38,10 @@ async function getData(offset: number, limit: number, search: string, sort_by: s
  */
 const actions: ActionArray = [
     {
-        title: "Create New Role",
+        title: "Create New Group",
         icon: faPlus,
         handler: () => {
-            emit("/admin/form/create_role");
+            emit("/admin/form/create_group");
         },
     },
 ];
@@ -56,29 +56,29 @@ const fields: FieldArray = [
         type: "operations",
         operations: [
             {
-                title: "Edit Name/Description",
+                title: "Edit Name",
                 icon: faEdit,
-                condition: (data: RoleEntry) => !data.deleted,
-                handler: (data: RoleEntry) => {
-                    emit(`/admin/form/rename_role?id=${data.id}`);
+                condition: (data: GroupEntry) => !data.deleted,
+                handler: (data: GroupEntry) => {
+                    emit(`/admin/form/rename_group?id=${data.id}`);
                 },
             },
             {
                 title: "Edit Permissions",
                 icon: faKey,
-                condition: (data: RoleEntry) => !data.deleted,
-                handler: (data: RoleEntry) => {
-                    emit(`/admin/form/manage_users_and_groups_for_role?id=${data.id}`);
+                condition: (data: GroupEntry) => !data.deleted,
+                handler: (data: GroupEntry) => {
+                    emit(`/admin/form/manage_users_and_roles_for_group?id=${data.id}`);
                 },
             },
             {
                 title: "Delete",
                 icon: faTrash,
-                condition: (data: RoleEntry) => !data.deleted,
-                handler: async (data: RoleEntry) => {
-                    if (confirm(_l("Are you sure that you want to delete this role?"))) {
+                condition: (data: GroupEntry) => !data.deleted,
+                handler: async (data: GroupEntry) => {
+                    if (confirm(_l("Are you sure that you want to delete this group?"))) {
                         try {
-                            await deleteRole({ id: String(data.id) });
+                            await deleteGroup({ group_id: String(data.id) });
                             return {
                                 status: "success",
                                 message: `'${data.name}' has been deleted.`,
@@ -95,11 +95,11 @@ const fields: FieldArray = [
             {
                 title: "Purge",
                 icon: faTrash,
-                condition: (data: RoleEntry) => !!data.deleted,
-                handler: async (data: RoleEntry) => {
-                    if (confirm(_l("Are you sure that you want to purge this role?"))) {
+                condition: (data: GroupEntry) => !!data.deleted,
+                handler: async (data: GroupEntry) => {
+                    if (confirm(_l("Are you sure that you want to purge this group?"))) {
                         try {
-                            await purgeRole({ id: String(data.id) });
+                            await purgeGroup({ group_id: String(data.id) });
                             return {
                                 status: "success",
                                 message: `'${data.name}' has been purged.`,
@@ -116,10 +116,10 @@ const fields: FieldArray = [
             {
                 title: "Restore",
                 icon: faTrashRestore,
-                condition: (data: RoleEntry) => !!data.deleted,
-                handler: async (data: RoleEntry) => {
+                condition: (data: GroupEntry) => !!data.deleted,
+                handler: async (data: GroupEntry) => {
                     try {
-                        await undeleteRole({ id: String(data.id) });
+                        await undeleteGroup({ group_id: String(data.id) });
                         return {
                             status: "success",
                             message: `'${data.name}' has been restored.`,
@@ -135,18 +135,8 @@ const fields: FieldArray = [
         ],
     },
     {
-        key: "description",
-        title: "Description",
-        type: "text",
-    },
-    {
-        key: "type",
-        title: "Type",
-        type: "text",
-    },
-    {
-        key: "groups",
-        title: "Groups",
+        key: "roles",
+        title: "Roles",
         type: "text",
     },
     {
@@ -163,7 +153,6 @@ const fields: FieldArray = [
 
 const validFilters: Record<string, ValidFilter<string | boolean | undefined>> = {
     name: { placeholder: "name", type: String, handler: contains("name"), menuItem: true },
-    description: { placeholder: "description", type: String, handler: contains("description"), menuItem: true },
     deleted: {
         placeholder: "Filter on deleted entries",
         type: Boolean,
@@ -177,16 +166,16 @@ const validFilters: Record<string, ValidFilter<string | boolean | undefined>> = 
  * Grid configuration
  */
 const gridConfig: GridConfig = {
-    id: "roles-grid",
+    id: "groups-grid",
     actions: actions,
     fields: fields,
     filtering: new Filtering(validFilters, undefined, false, false),
     getData: getData,
-    plural: "Roles",
+    plural: "Groups",
     sortBy: "name",
     sortDesc: true,
-    sortKeys: ["description", "name", "update_time"],
-    title: "Roles",
+    sortKeys: ["name", "update_time"],
+    title: "Groups",
 };
 
 export default gridConfig;

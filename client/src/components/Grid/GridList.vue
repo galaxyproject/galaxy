@@ -27,6 +27,8 @@ library.add(faCaretDown, faCaretUp, faShieldAlt);
 interface Props {
     // provide a grid configuration
     gridConfig: GridConfig;
+    // incoming initial message
+    gridMessage?: string;
     // debounce delay
     delay?: number;
     // rows per page to be shown
@@ -78,6 +80,16 @@ function applyFilter(filter: string, value: string | boolean, quoted = false) {
     const quotedValue = quoted ? `'${value}'` : value;
     if (filtering) {
         filterText.value = filtering.setFilterValue(filterText.value, filter, quotedValue.toString()) || "";
+    }
+}
+
+/**
+ * Display initial message parsed through route query
+ */
+function displayInitialMessage() {
+    if (props.gridMessage) {
+        operationMessage.value = props.gridMessage;
+        operationStatus.value = "success";
     }
 }
 
@@ -164,6 +176,7 @@ function onFilter(filter?: string) {
 onMounted(() => {
     getGridData();
     eventBus.on(onRouterPush);
+    displayInitialMessage();
 });
 
 onUnmounted(() => {

@@ -26,7 +26,6 @@ from galaxy.model.index_filter_util import (
 )
 from galaxy.security.validate_user_input import validate_password
 from galaxy.structured_app import StructuredApp
-from galaxy.util import pretty_print_time_interval
 from galaxy.util.search import (
     FilteredTerm,
     parse_filters_structured,
@@ -224,17 +223,7 @@ class RoleListGrid(grids.GridData):
         return query
 
 
-class GroupListGrid(grids.Grid):
-    class NameColumn(grids.TextColumn):
-        def get_value(self, trans, grid, group):
-            return escape(group.name)
-
-    class StatusColumn(grids.GridColumn):
-        def get_value(self, trans, grid, group):
-            if group.deleted:
-                return "deleted"
-            return ""
-
+class GroupListGrid(grids.GridData):
     class RolesColumn(grids.GridColumn):
         def get_value(self, trans, grid, group):
             if group.roles:
@@ -253,51 +242,42 @@ class GroupListGrid(grids.Grid):
     model_class = model.Group
     default_sort_key = "name"
     columns = [
-        NameColumn(
-            "Name",
-            key="name",
-            link=(lambda item: dict(action="form/manage_users_and_roles_for_group", id=item.id, webapp="galaxy")),
-            model_class=model.Group,
-            attach_popup=True,
-            filterable="advanced",
-        ),
-        UsersColumn("Users", attach_popup=False),
-        RolesColumn("Roles", attach_popup=False),
-        StatusColumn("Status", attach_popup=False),
-        # Columns that are valid for filtering but are not visible.
-        grids.DeletedColumn("Deleted", key="deleted", visible=False, filterable="advanced"),
-        grids.GridColumn("Last Updated", key="update_time", format=pretty_print_time_interval),
+        grids.GridColumn("Name", key="name"),
+        UsersColumn("Users", key="users"),
+        RolesColumn("Roles", key="roles"),
+        grids.DeletedColumn("Deleted", key="deleted", escape=False),
+        grids.GridColumn("Last Updated", key="update_time"),
     ]
-    columns.append(
-        grids.MulticolFilterColumn(
-            "Search", cols_to_filter=[columns[0]], key="free-text-search", visible=False, filterable="standard"
-        )
-    )
-    global_actions = [grids.GridAction("Add new group", url_args=dict(action="form/create_group"))]
-    operations = [
-        grids.GridOperation(
-            "Edit Name",
-            condition=(lambda item: not item.deleted),
-            allow_multiple=False,
-            url_args=dict(action="form/rename_group"),
-        ),
-        grids.GridOperation(
-            "Edit Permissions",
-            condition=(lambda item: not item.deleted),
-            allow_multiple=False,
-            url_args=dict(action="form/manage_users_and_roles_for_group", webapp="galaxy"),
-        ),
-        grids.GridOperation("Delete", condition=(lambda item: not item.deleted), allow_multiple=True),
-        grids.GridOperation("Undelete", condition=(lambda item: item.deleted), allow_multiple=True),
-        grids.GridOperation("Purge", condition=(lambda item: item.deleted), allow_multiple=True),
-    ]
-    standard_filters = [
-        grids.GridColumnFilter("Active", args=dict(deleted=False)),
-        grids.GridColumnFilter("Deleted", args=dict(deleted=True)),
-        grids.GridColumnFilter("All", args=dict(deleted="All")),
-    ]
-    num_rows_per_page = 50
-    use_paging = True
+
+    def apply_query_filter(self, query, **kwargs):
+        INDEX_SEARCH_FILTERS = {
+            "name": "name",
+            "is": "is",
+        }
+        deleted = False
+        search_query = kwargs.get("search")
+        if search_query:
+            parsed_search = parse_filters_structured(search_query, INDEX_SEARCH_FILTERS)
+            for term in parsed_search.terms:
+                if isinstance(term, FilteredTerm):
+                    key = term.filter
+                    q = term.text
+                    if key == "name":
+                        query = query.filter(text_column_filter(self.model_class.name, term))
+                    elif key == "is":
+                        if q == "deleted":
+                            deleted = True
+                elif isinstance(term, RawTextTerm):
+                    query = query.filter(
+                        raw_text_column_filter(
+                            [
+                                self.model_class.name,
+                            ],
+                            term,
+                        )
+                    )
+        query = query.filter(self.model_class.deleted == (true() if deleted else false()))
+        return query
 
 
 class QuotaListGrid(grids.Grid):
@@ -1021,23 +1001,6 @@ class AdminGalaxy(controller.JSAppLauncher):
     @web.legacy_expose_api
     @web.require_admin
     def groups_list(self, trans, **kwargs):
-        message = kwargs.get("message")
-        status = kwargs.get("status")
-        if "operation" in kwargs:
-            id = kwargs.get("id")
-            if not id:
-                return self.message_exception(trans, f"Invalid group id ({str(id)}) received.")
-            ids = util.listify(id)
-            operation = kwargs["operation"].lower().replace("+", " ")
-            if operation == "delete":
-                message, status = self._delete_group(trans, ids)
-            elif operation == "undelete":
-                message, status = self._undelete_group(trans, ids)
-            elif operation == "purge":
-                message, status = self._purge_group(trans, ids)
-        if message and status:
-            kwargs["message"] = util.sanitize_text(message)
-            kwargs["status"] = status
         return self.group_list_grid(trans, **kwargs)
 
     @web.legacy_expose_api
@@ -1219,49 +1182,6 @@ class AdminGalaxy(controller.JSAppLauncher):
                         "One of the roles associated with this group is the newly created role with the same name."
                     )
                 return {"message": message}
-
-    def _delete_group(self, trans, ids):
-        message = "Deleted %d groups: " % len(ids)
-        for group_id in ids:
-            group = get_group(trans, group_id)
-            group.deleted = True
-            trans.sa_session.add(group)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
-            message += f" {group.name} "
-        return (message, "done")
-
-    def _undelete_group(self, trans, ids):
-        count = 0
-        undeleted_groups = ""
-        for group_id in ids:
-            group = get_group(trans, group_id)
-            if not group.deleted:
-                return (f"Group '{group.name}' has not been deleted, so it cannot be undeleted.", "error")
-            group.deleted = False
-            trans.sa_session.add(group)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
-            count += 1
-            undeleted_groups += f" {group.name}"
-        return ("Undeleted %d groups: %s" % (count, undeleted_groups), "done")
-
-    def _purge_group(self, trans, ids):
-        message = "Purged %d groups: " % len(ids)
-        for group_id in ids:
-            group = get_group(trans, group_id)
-            if not group.deleted:
-                return (f"Group '{group.name}' has not been deleted, so it cannot be purged.", "error")
-            # Delete UserGroupAssociations
-            for uga in group.users:
-                trans.sa_session.delete(uga)
-            # Delete GroupRoleAssociations
-            for gra in group.roles:
-                trans.sa_session.delete(gra)
-            with transaction(trans.sa_session):
-                trans.sa_session.commit()
-            message += f" {group.name} "
-        return (message, "done")
 
     @web.expose
     @web.require_admin

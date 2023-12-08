@@ -1114,9 +1114,3 @@ class GridData:
 
     def build_initial_query(self, trans, **kwargs):
         return trans.sa_session.query(self.model_class)
-
-    def apply_query_filter(self, trans, query, **kwargs):
-        # Applies a database filter that holds for all items in the grid.
-        # (gvk) Is this method necessary?  Why not simply build the entire query,
-        # including applying filters in the build_initial_query() method?
-        return query
