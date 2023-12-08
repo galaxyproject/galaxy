@@ -1,4 +1,5 @@
-import { computed, del, ref, set } from "vue";
+import { MaybeRefOrGetter, toValue } from "@vueuse/core";
+import { computed, del, type Ref, ref, set, unref } from "vue";
 
 import type { ApiResponse } from "@/api/schema";
 
@@ -14,29 +15,34 @@ interface FetchParams {
 /**
  * A function that fetches an item from the server.
  */
-interface FetchFunction<T> {
-    (params: FetchParams): Promise<ApiResponse<T>>;
-}
+type FetchHandler<T> = (params: FetchParams) => Promise<ApiResponse<T>>;
 
 /**
  * A function that returns true if the item should be fetched.
  * Provides fine-grained control over when to fetch an item.
  */
-interface ShouldFetch<T> {
-    (item?: T): boolean;
-}
+type ShouldFetchHandler<T> = (item?: T) => boolean;
+
+/**
+ * Returns true if the item is not defined.
+ * @param item The item to check.
+ */
+const fetchIfAbsent = <T>(item?: T) => !item;
 
 /**
  * A composable that provides a simple key-value cache for items fetched from the server.
  *
  * Useful for storing items that are fetched by id.
  *
- * @param fetchItem A function that fetches an item from the server.
- * @param shouldFetch A function that returns true if the item should be fetched.
+ * @param fetchItemHandler Fetches an item from the server.
+ * @param shouldFetchHandler Returns true if the item should be fetched.
  * Provides fine-grained control over when to fetch an item.
  * If not provided, by default, the item will be fetched if it is not already stored.
  */
-export function useKeyedCache<T>(fetchItem: FetchFunction<T>, shouldFetch: ShouldFetch<T> = (item) => !item) {
+export function useKeyedCache<T>(
+    fetchItemHandler: Ref<FetchHandler<T>> | FetchHandler<T>,
+    shouldFetchHandler?: MaybeRefOrGetter<ShouldFetchHandler<T>>
+) {
     const storedItems = ref<{ [key: string]: T }>({});
     const loadingItem = ref<{ [key: string]: boolean }>({});
 
@@ -50,6 +56,13 @@ export function useKeyedCache<T>(fetchItem: FetchFunction<T>, shouldFetch: Shoul
         };
     });
 
+    function shouldFetch(item?: T) {
+        if (shouldFetchHandler == undefined) {
+            return fetchIfAbsent(item);
+        }
+        return toValue(shouldFetchHandler)(item);
+    }
+
     const isLoadingItem = computed(() => {
         return (id: string) => {
             return loadingItem.value[id] ?? false;
@@ -60,6 +73,7 @@ export function useKeyedCache<T>(fetchItem: FetchFunction<T>, shouldFetch: Shoul
         const itemId = params.id;
         set(loadingItem.value, itemId, true);
         try {
+            const fetchItem = unref(fetchItemHandler);
             const { data } = await fetchItem({ id: itemId });
             set(storedItems.value, itemId, data);
             return data;
