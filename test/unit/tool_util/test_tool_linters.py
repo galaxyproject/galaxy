@@ -746,7 +746,7 @@ ASSERTS = """
             </assert_command>
             <output name="out_archive">
                 <assert_contents>
-                    <has_size value="500k" delta="1O"/>
+                    <has_size value="500k" delta="1X"/>
                     <has_archive_member path=".*/my-file.txt">
                         <not_has_text invalid_attrib_also_checked_in_nested_asserts="Blah" text="EDK72998.1" />
                     </has_archive_member>
@@ -1782,7 +1782,7 @@ def test_tests_asserts(lint_ctx):
     )
     assert "Invalid XML: Element 'has_text': The attribute 'text' is required but missing." in lint_ctx.error_messages
     assert (
-        "Invalid XML: Element 'has_size', attribute 'delta': [facet 'pattern'] The value '1O' is not accepted by the pattern '(0|[1-9][0-9]*)([kKMGTPE]i?)?'."
+        "Invalid XML: Element 'has_size', attribute 'delta': '1X' is not a valid value of the union type 'Bytes'."
         in lint_ctx.error_messages
     )
     assert (
