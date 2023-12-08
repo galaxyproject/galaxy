@@ -1,10 +1,10 @@
 import { defineStore } from "pinia";
 
 import { DatasetExtraFiles, fetchDatasetExtraFiles } from "@/api/datasets";
-import { useSimpleKeyStore } from "@/composables/simpleKeyStore";
+import { useKeyedCache } from "@/composables/keyedCache";
 
 export const useDatasetExtraFilesStore = defineStore("datasetExtraFilesStore", () => {
-    const { storedItems, getItemById, isLoadingItem, fetchItemById } = useSimpleKeyStore<DatasetExtraFiles>((params) =>
+    const { storedItems, getItemById, isLoadingItem, fetchItemById } = useKeyedCache<DatasetExtraFiles>((params) =>
         fetchDatasetExtraFiles({ dataset_id: params.id })
     );
 

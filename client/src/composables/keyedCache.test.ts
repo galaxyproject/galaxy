@@ -1,6 +1,6 @@
 import flushPromises from "flush-promises";
 
-import { useSimpleKeyStore } from "./simpleKeyStore";
+import { useKeyedCache } from "./keyedCache";
 
 interface ItemData {
     id: string;
@@ -24,7 +24,7 @@ describe("useSimpleKeyStore", () => {
 
         fetchItem.mockResolvedValue(apiResponse);
 
-        const { storedItems, getItemById, isLoadingItem } = useSimpleKeyStore<ItemData>(fetchItem);
+        const { storedItems, getItemById, isLoadingItem } = useKeyedCache<ItemData>(fetchItem);
 
         expect(storedItems.value).toEqual({});
         expect(isLoadingItem.value(id)).toBeFalsy();
@@ -44,7 +44,7 @@ describe("useSimpleKeyStore", () => {
 
         fetchItem.mockResolvedValue({ data: item });
 
-        const { storedItems, getItemById, isLoadingItem } = useSimpleKeyStore<ItemData>(fetchItem);
+        const { storedItems, getItemById, isLoadingItem } = useKeyedCache<ItemData>(fetchItem);
 
         storedItems.value[id] = item;
 
@@ -66,7 +66,7 @@ describe("useSimpleKeyStore", () => {
         fetchItem.mockResolvedValue(apiResponse);
         shouldFetch.mockReturnValue(true);
 
-        const { storedItems, getItemById, isLoadingItem } = useSimpleKeyStore<ItemData>(fetchItem, shouldFetch);
+        const { storedItems, getItemById, isLoadingItem } = useKeyedCache<ItemData>(fetchItem, shouldFetch);
 
         storedItems.value[id] = item;
 

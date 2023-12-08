@@ -27,16 +27,16 @@ interface ShouldFetch<T> {
 }
 
 /**
- * A composable that provides a simple key-value store for items fetched from the server.
+ * A composable that provides a simple key-value cache for items fetched from the server.
  *
- * This is useful for storing items that are fetched by id.
+ * Useful for storing items that are fetched by id.
  *
  * @param fetchItem A function that fetches an item from the server.
  * @param shouldFetch A function that returns true if the item should be fetched.
  * Provides fine-grained control over when to fetch an item.
  * If not provided, by default, the item will be fetched if it is not already stored.
  */
-export function useSimpleKeyStore<T>(fetchItem: FetchFunction<T>, shouldFetch: ShouldFetch<T> = (item) => !item) {
+export function useKeyedCache<T>(fetchItem: FetchFunction<T>, shouldFetch: ShouldFetch<T> = (item) => !item) {
     const storedItems = ref<{ [key: string]: T }>({});
     const loadingItem = ref<{ [key: string]: boolean }>({});
 

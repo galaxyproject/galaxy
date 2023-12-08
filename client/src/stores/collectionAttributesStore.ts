@@ -2,10 +2,10 @@ import { defineStore } from "pinia";
 
 import type { DatasetCollectionAttributes } from "@/api";
 import { fetchCollectionAttributes } from "@/api/datasetCollections";
-import { useSimpleKeyStore } from "@/composables/simpleKeyStore";
+import { useKeyedCache } from "@/composables/keyedCache";
 
 export const useCollectionAttributesStore = defineStore("collectionAttributesStore", () => {
-    const { storedItems, getItemById, isLoadingItem } = useSimpleKeyStore<DatasetCollectionAttributes>((params) =>
+    const { storedItems, getItemById, isLoadingItem } = useKeyedCache<DatasetCollectionAttributes>((params) =>
         fetchCollectionAttributes({ id: params.id, instance_type: "history" })
     );
 
