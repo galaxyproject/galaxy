@@ -132,9 +132,10 @@ export default [
             {
                 path: "forms",
                 component: GridList,
-                props: {
+                props: (route) => ({
                     gridConfig: adminFormsGridConfig,
-                },
+                    gridMessage: route.query.message,
+                }),
             },
             {
                 path: "groups",
@@ -147,9 +148,10 @@ export default [
             {
                 path: "quotas",
                 component: GridList,
-                props: {
+                props: (route) => ({
                     gridConfig: adminQuotasGridConfig,
-                },
+                    gridMessage: route.query.message,
+                }),
             },
             {
                 path: "roles",
