@@ -129,6 +129,7 @@ class UserListGrid(grids.GridData):
             "is": "is",
         }
         deleted = False
+        purged = False
         search_query = kwargs.get("search")
         if search_query:
             parsed_search = parse_filters_structured(search_query, INDEX_SEARCH_FILTERS)
@@ -144,7 +145,7 @@ class UserListGrid(grids.GridData):
                         if q == "deleted":
                             deleted = True
                         elif q == "purged":
-                            query = query.filter(self.model_class.purged == true())
+                            purged = True
                 elif isinstance(term, RawTextTerm):
                     query = query.filter(
                         raw_text_column_filter(
@@ -155,7 +156,10 @@ class UserListGrid(grids.GridData):
                             term,
                         )
                     )
-        query = query.filter(self.model_class.deleted == (true() if deleted else false()))
+        if purged:
+            query = query.filter(self.model_class.purged == true())
+        else:
+            query = query.filter(self.model_class.deleted == (true() if deleted else false()))
         return query
 
 
