@@ -169,13 +169,6 @@ export default [
                     gridMessage: route.query.message,
                 }),
             },
-            {
-                path: "tool_versions",
-                component: Grid,
-                props: {
-                    urlBase: "admin/tool_versions_list",
-                },
-            },
             // forms
             {
                 path: "form/reset_user_password",
