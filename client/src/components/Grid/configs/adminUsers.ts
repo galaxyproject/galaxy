@@ -17,6 +17,7 @@ import axios from "axios";
 import { createApiKey, deleteUser, recalculateDiskUsageByUserId, sendActivationEmail, undeleteUser } from "@/api/users";
 import type { GalaxyConfiguration } from "@/stores/configurationStore";
 import Filtering, { contains, equals, toBool, type ValidFilter } from "@/utils/filtering";
+import _l from "@/utils/localization";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 
@@ -195,17 +196,19 @@ const fields: FieldArray = [
                     return config.value.allow_user_deletion && !data.deleted;
                 },
                 handler: async (data: UserEntry) => {
-                    try {
-                        await deleteUser({ user_id: String(data.id), purge: false });
-                        return {
-                            status: "success",
-                            message: `'${data.username}' has been deleted.`,
-                        };
-                    } catch (e) {
-                        return {
-                            status: "danger",
-                            message: `Failed to delete '${data.username}': ${errorMessageAsString(e)}`,
-                        };
+                    if (confirm(_l("Are you sure that you want to delete this user?"))) {
+                        try {
+                            await deleteUser({ user_id: String(data.id), purge: false });
+                            return {
+                                status: "success",
+                                message: `'${data.username}' has been deleted.`,
+                            };
+                        } catch (e) {
+                            return {
+                                status: "danger",
+                                message: `Failed to delete '${data.username}': ${errorMessageAsString(e)}`,
+                            };
+                        }
                     }
                 },
             },
@@ -216,17 +219,19 @@ const fields: FieldArray = [
                     return config.value.allow_user_deletion && data.deleted && !data.purged;
                 },
                 handler: async (data: UserEntry) => {
-                    try {
-                        await deleteUser({ user_id: String(data.id), purge: true });
-                        return {
-                            status: "success",
-                            message: `'${data.username}' has been purged.`,
-                        };
-                    } catch (e) {
-                        return {
-                            status: "danger",
-                            message: `Failed to purge '${data.username}': ${errorMessageAsString(e)}`,
-                        };
+                    if (confirm(_l("Are you sure that you want to purge this user?"))) {
+                        try {
+                            await deleteUser({ user_id: String(data.id), purge: true });
+                            return {
+                                status: "success",
+                                message: `'${data.username}' has been purged.`,
+                            };
+                        } catch (e) {
+                            return {
+                                status: "danger",
+                                message: `Failed to purge '${data.username}': ${errorMessageAsString(e)}`,
+                            };
+                        }
                     }
                 },
             },

@@ -113,17 +113,19 @@ const fields: FieldArray = [
                 icon: faTrash,
                 condition: (data: QuotaEntry) => !!data.deleted,
                 handler: async (data: QuotaEntry) => {
-                    try {
-                        await purgeQuota({ id: String(data.id) });
-                        return {
-                            status: "success",
-                            message: `'${data.name}' has been purged.`,
-                        };
-                    } catch (e) {
-                        return {
-                            status: "danger",
-                            message: `Failed to purge '${data.name}': ${errorMessageAsString(e)}`,
-                        };
+                    if (confirm(_l("Are you sure that you want to purge this quota?"))) {
+                        try {
+                            await purgeQuota({ id: String(data.id) });
+                            return {
+                                status: "success",
+                                message: `'${data.name}' has been purged.`,
+                            };
+                        } catch (e) {
+                            return {
+                                status: "danger",
+                                message: `Failed to purge '${data.name}': ${errorMessageAsString(e)}`,
+                            };
+                        }
                     }
                 },
             },
