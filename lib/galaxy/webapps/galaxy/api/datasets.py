@@ -244,7 +244,6 @@ class FastAPIDatasets:
         "/api/histories/{history_id}/contents/{history_content_id}/extra_files",
         summary="Get the list of extra files/directories associated with a dataset.",
         tags=["histories"],
-        deprecated=True,
     )
     def extra_files_history(
         self,
@@ -252,7 +251,6 @@ class FastAPIDatasets:
         history_id: DecodedDatabaseIdField = HistoryIDPathParam,
         history_content_id: DecodedDatabaseIdField = DatasetIDPathParam,
     ) -> DatasetExtraFiles:
-        """This endpoint is deprecated, please use `/api/datasets/{dataset_id}/extra_files` instead."""
         return self.service.extra_files(trans, history_content_id)
 
     @router.get(

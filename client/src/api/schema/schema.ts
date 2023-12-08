@@ -654,11 +654,7 @@ export interface paths {
         head: operations["history_contents_display_api_histories__history_id__contents__history_content_id__display_head"];
     };
     "/api/histories/{history_id}/contents/{history_content_id}/extra_files": {
-        /**
-         * Get the list of extra files/directories associated with a dataset.
-         * @deprecated
-         * @description This endpoint is deprecated, please use `/api/datasets/{dataset_id}/extra_files` instead.
-         */
+        /** Get the list of extra files/directories associated with a dataset. */
         get: operations["extra_files_history_api_histories__history_id__contents__history_content_id__extra_files_get"];
     };
     "/api/histories/{history_id}/contents/{history_content_id}/metadata_file": {
@@ -13800,11 +13796,7 @@ export interface operations {
         };
     };
     extra_files_history_api_histories__history_id__contents__history_content_id__extra_files_get: {
-        /**
-         * Get the list of extra files/directories associated with a dataset.
-         * @deprecated
-         * @description This endpoint is deprecated, please use `/api/datasets/{dataset_id}/extra_files` instead.
-         */
+        /** Get the list of extra files/directories associated with a dataset. */
         parameters: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
