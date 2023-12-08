@@ -13,10 +13,7 @@ from galaxy import (
     util,
     web,
 )
-from galaxy.exceptions import (
-    ActionInputError,
-    MessageException,
-)
+from galaxy.exceptions import ActionInputError
 from galaxy.managers.quotas import QuotaManager
 from galaxy.model import tool_shed_install as install_model
 from galaxy.model.base import transaction
@@ -37,7 +34,6 @@ from galaxy.web.framework.helpers import (
     time_ago,
 )
 from galaxy.webapps.base import controller
-from tool_shed.util.web_util import escape
 
 log = logging.getLogger(__name__)
 

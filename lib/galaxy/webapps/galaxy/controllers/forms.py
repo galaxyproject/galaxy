@@ -3,16 +3,12 @@ import csv
 import logging
 import re
 
-from markupsafe import escape
 from sqlalchemy import (
     false,
     true,
 )
 
-from galaxy import (
-    model,
-    util,
-)
+from galaxy import model
 from galaxy.model.base import transaction
 from galaxy.model.index_filter_util import (
     raw_text_column_filter,
@@ -23,11 +19,7 @@ from galaxy.util.search import (
     parse_filters_structured,
     RawTextTerm,
 )
-from galaxy.web.framework.helpers import (
-    grids,
-    iff,
-    time_ago,
-)
+from galaxy.web.framework.helpers import grids
 from galaxy.webapps.base.controller import (
     BaseUIController,
     web,

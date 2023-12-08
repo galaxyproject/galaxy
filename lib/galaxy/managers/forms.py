@@ -1,8 +1,5 @@
 from sqlalchemy import select
-from sqlalchemy.orm import (
-    exc as sqlalchemy_exceptions,
-    Session,
-)
+from sqlalchemy.orm import exc as sqlalchemy_exceptions
 
 from galaxy.exceptions import (
     InconsistentDatabase,
