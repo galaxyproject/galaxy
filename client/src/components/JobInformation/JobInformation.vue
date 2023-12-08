@@ -74,7 +74,7 @@
                     <td>Job Messages</td>
                     <td>
                         <ul style="padding-left: 15px; margin-bottom: 0px">
-                            <li v-for="(message, index) in job.job_messages" :key="index">{{ message }}</li>
+                            <li v-for="(message, index) in job.job_messages" :key="index"><pre>{{ message }}</pre></li>
                         </ul>
                     </td>
                 </tr>
