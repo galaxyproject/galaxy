@@ -771,6 +771,7 @@
     <datatype extension="cif" type="galaxy.datatypes.molecules:CIF" display_in_upload="true"/>
     <datatype extension="xyz" type="galaxy.datatypes.molecules:XYZ" display_in_upload="true"/>
     <datatype extension="extxyz" type="galaxy.datatypes.molecules:ExtendedXYZ" display_in_upload="true"/>
+    <datatype extension="magres" type="galaxy.datatypes.molecules:Magres" display_in_upload="true"/>
     <datatype extension="trr" type="galaxy.datatypes.binary:Trr" display_in_upload="true">
       <converter file="mdconvert.xml" target_datatype="xtc"/>
       <converter file="mdconvert.xml" target_datatype="dcd"/>
@@ -953,7 +954,6 @@
     <datatype extension="castep" type="galaxy.datatypes.text:Castep" display_in_upload="true"/>
     <datatype extension="param" type="galaxy.datatypes.text:Param" display_in_upload="true"/>
     <datatype extension="den_fmt" type="galaxy.datatypes.text:FormattedDensity" display_in_upload="true"/>
-    <datatype extension="magres" type="galaxy.datatypes.text:Magres" display_in_upload="true"/>
     <!-- Larch types -->
     <datatype extension="prj" type="galaxy.datatypes.larch:AthenaProject" display_in_upload="true" description="Athena project file."/>
     <datatype extension="inp" type="galaxy.datatypes.larch:FEFFInput" display_in_upload="true" description="FEFF input file."/>
@@ -1127,6 +1127,7 @@
     <sniffer type="galaxy.datatypes.molecules:CIF"/>
     <sniffer type="galaxy.datatypes.molecules:ExtendedXYZ"/>
     <sniffer type="galaxy.datatypes.molecules:XYZ"/>
+    <sniffer type="galaxy.datatypes.molecules:Magres" />
     <sniffer type="galaxy.datatypes.molecules:MOL2"/>
     <sniffer type="galaxy.datatypes.molecules:InChI"/>
     <sniffer type="galaxy.datatypes.molecules:FPS"/>
@@ -1227,7 +1228,6 @@
     <sniffer type="galaxy.datatypes.text:CTLresult"/>
     <sniffer type="galaxy.datatypes.text:FormattedDensity" />
     <sniffer type="galaxy.datatypes.text:Param" />
-    <sniffer type="galaxy.datatypes.text:Magres" />
     <sniffer type="galaxy.datatypes.text:Yaml" />
     <!--
     Keep this commented until the sniff method in the assembly.py
