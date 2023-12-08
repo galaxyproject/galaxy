@@ -4,6 +4,7 @@ import axios from "axios";
 
 import { deleteQuota, purgeQuota, undeleteQuota } from "@/api/quotas";
 import Filtering, { contains, equals, toBool, type ValidFilter } from "@/utils/filtering";
+import _l from "@/utils/localization";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 
@@ -91,17 +92,19 @@ const fields: FieldArray = [
                 icon: faTrash,
                 condition: (data: QuotaEntry) => !data.deleted,
                 handler: async (data: QuotaEntry) => {
-                    try {
-                        await deleteQuota({ id: String(data.id) });
-                        return {
-                            status: "success",
-                            message: `'${data.name}' has been deleted.`,
-                        };
-                    } catch (e) {
-                        return {
-                            status: "danger",
-                            message: `Failed to delete '${data.name}': ${errorMessageAsString(e)}`,
-                        };
+                    if (confirm(_l("Are you sure that you want to delete this quota?"))) {
+                        try {
+                            await deleteQuota({ id: String(data.id) });
+                            return {
+                                status: "success",
+                                message: `'${data.name}' has been deleted.`,
+                            };
+                        } catch (e) {
+                            return {
+                                status: "danger",
+                                message: `Failed to delete '${data.name}': ${errorMessageAsString(e)}`,
+                            };
+                        }
                     }
                 },
             },

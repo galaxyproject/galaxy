@@ -4,6 +4,7 @@ import axios from "axios";
 
 import { deleteForm, undeleteForm } from "@/api/forms";
 import Filtering, { contains, equals, toBool, type ValidFilter } from "@/utils/filtering";
+import _l from "@/utils/localization";
 import { withPrefix } from "@/utils/redirect";
 import { errorMessageAsString } from "@/utils/simple-error";
 
@@ -67,17 +68,19 @@ const fields: FieldArray = [
                 icon: faTrash,
                 condition: (data: FormEntry) => !data.deleted,
                 handler: async (data: FormEntry) => {
-                    try {
-                        await deleteForm({ id: String(data.id) });
-                        return {
-                            status: "success",
-                            message: `'${data.name}' has been deleted.`,
-                        };
-                    } catch (e) {
-                        return {
-                            status: "danger",
-                            message: `Failed to delete '${data.name}': ${errorMessageAsString(e)}`,
-                        };
+                    if (confirm(_l("Are you sure that you want to delete this form?"))) {
+                        try {
+                            await deleteForm({ id: String(data.id) });
+                            return {
+                                status: "success",
+                                message: `'${data.name}' has been deleted.`,
+                            };
+                        } catch (e) {
+                            return {
+                                status: "danger",
+                                message: `Failed to delete '${data.name}': ${errorMessageAsString(e)}`,
+                            };
+                        }
                     }
                 },
             },
