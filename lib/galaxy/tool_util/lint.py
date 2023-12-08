@@ -88,10 +88,9 @@ class Linter(ABC):
     @classmethod
     @abstractmethod
     def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
-        pass
-
-    @classmethod  # noqa: B027
-    def fix(cls):  # noqa: B027
+        """
+        should add at most one message to the lint context
+        """
         pass
 
 
