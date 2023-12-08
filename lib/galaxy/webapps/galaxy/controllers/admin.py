@@ -15,7 +15,6 @@ from galaxy import (
 )
 from galaxy.exceptions import ActionInputError
 from galaxy.managers.quotas import QuotaManager
-from galaxy.model import tool_shed_install as install_model
 from galaxy.model.base import transaction
 from galaxy.model.index_filter_util import (
     raw_text_column_filter,
