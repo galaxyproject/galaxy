@@ -2,11 +2,19 @@
     <div class="mb-3 workflow-invocation-state-component">
         <div v-if="invocationAndJobTerminal">
             <span>
-                <b-button v-b-tooltip.hover size="sm" class="invocation-report-link" :href="invocationLink">
+                <b-button
+                    v-b-tooltip.hover
+                    :title="invocationStateSuccess ? reportTooltip : disabledReportTooltip"
+                    :disabled="!invocationStateSuccess"
+                    size="sm"
+                    class="invocation-report-link"
+                    :href="invocationLink">
                     View Report
                 </b-button>
                 <b-button
                     v-b-tooltip.hover
+                    :title="invocationStateSuccess ? generatePdfTooltip : disabledPdfTooltip"
+                    :disabled="!invocationStateSuccess"
                     size="sm"
                     class="invocation-pdf-link"
                     :href="invocationPdfLink"
@@ -109,6 +117,12 @@ export default {
         return {
             stepStatesInterval: null,
             jobStatesInterval: null,
+            reportTooltip: "View report for this workflow invocation",
+            generatePdfTooltip: "Generate PDF report for this workflow invocation",
+            disabledReportTooltip:
+                "Unable to create report because this workflow invocation is not complete or was not successful.",
+            disabledPdfTooltip:
+                "Unable to generate PDF because this workflow invocation is not complete or was not successful.",
         };
     },
     computed: {
@@ -125,6 +139,17 @@ export default {
         },
         invocationState: function () {
             return this.invocation?.state || "new";
+        },
+        invocationStateSuccess: function () {
+            return (
+                this.invocationState == "scheduled" &&
+                this.errorCount === 0 &&
+                this.runningCount === 0 &&
+                this.invocationAndJobTerminal
+            );
+        },
+        displayTooltip: function () {
+            return this.invocationStateSuccess ? "" : this.disabledTooltip;
         },
         stepCount: function () {
             return this.invocation?.steps.length;
