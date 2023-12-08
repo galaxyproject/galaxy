@@ -148,9 +148,6 @@ export default {
                 this.invocationAndJobTerminal
             );
         },
-        displayTooltip: function () {
-            return this.invocationStateSuccess ? "" : this.disabledTooltip;
-        },
         stepCount: function () {
             return this.invocation?.steps.length;
         },
