@@ -392,6 +392,12 @@ export interface paths {
         get: operations["show_group_api_groups__group_id__get"];
         /** Modifies a group. */
         put: operations["update_api_groups__group_id__put"];
+        /** Delete */
+        delete: operations["delete_api_groups__group_id__delete"];
+    };
+    "/api/groups/{group_id}/purge": {
+        /** Purge */
+        post: operations["purge_api_groups__group_id__purge_post"];
     };
     "/api/groups/{group_id}/roles": {
         /** Displays a collection (list) of groups. */
@@ -404,6 +410,10 @@ export interface paths {
         put: operations["update_api_groups__group_id__roles__role_id__put"];
         /** Removes a role from a group */
         delete: operations["delete_api_groups__group_id__roles__role_id__delete"];
+    };
+    "/api/groups/{group_id}/undelete": {
+        /** Undelete */
+        post: operations["undelete_api_groups__group_id__undelete_post"];
     };
     "/api/groups/{group_id}/user/{user_id}": {
         /**
@@ -1408,6 +1418,16 @@ export interface paths {
     "/api/roles/{id}": {
         /** Show */
         get: operations["show_api_roles__id__get"];
+        /** Delete */
+        delete: operations["delete_api_roles__id__delete"];
+    };
+    "/api/roles/{id}/purge": {
+        /** Purge */
+        post: operations["purge_api_roles__id__purge_post"];
+    };
+    "/api/roles/{id}/undelete": {
+        /** Undelete */
+        post: operations["undelete_api_roles__id__undelete_post"];
     };
     "/api/short_term_storage/{storage_request_id}": {
         /** Serve the staged download specified by request ID. */
@@ -4509,6 +4529,12 @@ export interface components {
         };
         /** ExportTaskListResponse */
         ExportTaskListResponse: components["schemas"]["ObjectExportTaskResponse"][];
+        /**
+         * ExtendedInvocationStepState
+         * @description An enumeration.
+         * @enum {string}
+         */
+        ExtendedInvocationStepState: "new" | "ready" | "scheduled" | "ok";
         /** ExtraFiles */
         ExtraFiles: {
             /**
@@ -6597,12 +6623,6 @@ export interface components {
              */
             workflow_step_id: string;
         };
-        /**
-         * InvocationJobState
-         * @description An enumeration.
-         * @enum {string}
-         */
-        InvocationJobState: "new" | "failed" | "ok";
         /** InvocationJobsResponse */
         InvocationJobsResponse: {
             /**
@@ -6619,7 +6639,7 @@ export interface components {
              * @enum {string}
              */
             model?: "WorkflowInvocation";
-            populated_state: components["schemas"]["InvocationJobState"];
+            populated_state: components["schemas"]["JobState"];
             /** States */
             states: {
                 [key: string]: number | undefined;
@@ -6740,7 +6760,7 @@ export interface components {
              * Action
              * @description Whether to take action on the invocation step.
              */
-            action: boolean;
+            action?: boolean;
             /**
              * ID
              * @description The encoded ID of this entity.
@@ -6791,7 +6811,7 @@ export interface components {
              * State of the invocation step
              * @description Describes where in the scheduling process the workflow invocation step is.
              */
-            state: string;
+            state: components["schemas"]["ExtendedInvocationStepState"];
             /**
              * Subworkflow invocation ID
              * @description The encoded ID of the subworkflow invocation.
@@ -6848,7 +6868,7 @@ export interface components {
             id: string;
             /** Model */
             model?: Record<string, never>;
-            populated_state: components["schemas"]["InvocationJobState"];
+            populated_state: components["schemas"]["JobState"];
             /** States */
             states: {
                 [key: string]: number | undefined;
@@ -6890,7 +6910,7 @@ export interface components {
          */
         ItemTagsCreatePayload: {
             /** value of the item tag */
-            value: string;
+            value?: string;
         };
         /**
          * ItemTagsListResponse
@@ -10521,9 +10541,10 @@ export interface components {
             update_time: string;
             /**
              * UUID
+             * Format: uuid1
              * @description Universal unique identifier of the workflow invocation.
              */
-            uuid: Record<string, never>;
+            uuid: string;
             /**
              * Workflow ID
              * @description The encoded Workflow ID associated with the invocation.
@@ -12673,6 +12694,58 @@ export interface operations {
             };
         };
     };
+    delete_api_groups__group_id__delete: {
+        /** Delete */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                group_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    purge_api_groups__group_id__purge_post: {
+        /** Purge */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                group_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     group_roles_api_groups__group_id__roles_get: {
         /** Displays a collection (list) of groups. */
         parameters: {
@@ -12777,6 +12850,32 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["GroupRoleResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    undelete_api_groups__group_id__undelete_post: {
+        /** Undelete */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                group_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": Record<string, never>;
                 };
             };
             /** @description Validation Error */
@@ -14443,7 +14542,7 @@ export interface operations {
                 history_id: string;
             };
         };
-        requestBody: {
+        requestBody?: {
             content: {
                 "application/json": components["schemas"]["ItemTagsCreatePayload"];
             };
@@ -15750,7 +15849,7 @@ export interface operations {
                 tag_name: string;
             };
         };
-        requestBody: {
+        requestBody?: {
             content: {
                 "application/json": components["schemas"]["ItemTagsCreatePayload"];
             };
@@ -18546,6 +18645,84 @@ export interface operations {
             };
         };
     };
+    delete_api_roles__id__delete: {
+        /** Delete */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["RoleModelResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    purge_api_roles__id__purge_post: {
+        /** Purge */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["RoleModelResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    undelete_api_roles__id__undelete_post: {
+        /** Undelete */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["RoleModelResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     serve_api_short_term_storage__storage_request_id__get: {
         /** Serve the staged download specified by request ID. */
         parameters: {
@@ -21133,7 +21310,7 @@ export interface operations {
                 tag_name: string;
             };
         };
-        requestBody: {
+        requestBody?: {
             content: {
                 "application/json": components["schemas"]["ItemTagsCreatePayload"];
             };
