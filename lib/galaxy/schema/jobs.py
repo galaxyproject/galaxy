@@ -274,7 +274,7 @@ class ShowJobResponse(EncodedJobDetails):
         title="Standard Error",
         description="Combined tool and job standard error streams.",
     )
-    job_messages: Optional[List[str]] = Field(
+    job_messages: Optional[List[Any]] = Field(
         default=None,
         title="Job Messages",
         description="List with additional information and possible reasons for a failed job.",
