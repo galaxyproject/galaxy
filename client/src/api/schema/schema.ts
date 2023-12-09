@@ -521,6 +521,10 @@ export interface paths {
         /** Return all histories that are published. */
         get: operations["published_api_histories_published_get"];
     };
+    "/api/histories/query": {
+        /** Returns histories available to the current user. */
+        get: operations["index_query_api_histories_query_get"];
+    };
     "/api/histories/shared_with_me": {
         /** Return all histories that are shared with the current user. */
         get: operations["shared_with_me_api_histories_shared_with_me_get"];
@@ -6347,6 +6351,62 @@ export interface components {
             user_id?: string | null;
             [key: string]: unknown | undefined;
         };
+        /** HistoryQueryResult */
+        HistoryQueryResult: {
+            /**
+             * Annotation
+             * @description The annotation of this History.
+             */
+            annotation?: string;
+            /**
+             * Create Time
+             * Format: date-time
+             * @description The time and date this item was created.
+             */
+            create_time?: string;
+            /**
+             * Deleted
+             * @description Whether this History has been deleted.
+             */
+            deleted: boolean;
+            /**
+             * ID
+             * @description Encoded ID of the History.
+             * @example 0123456789ABCDEF
+             */
+            id: string;
+            /**
+             * Importable
+             * @description Whether this History can be imported.
+             */
+            importable: boolean;
+            /**
+             * Name
+             * @description The name of the History.
+             */
+            name: string;
+            /**
+             * Published
+             * @description Whether this History has been published.
+             */
+            published: boolean;
+            /**
+             * Tags
+             * @description A list of tags to add to this item.
+             */
+            tags: components["schemas"]["TagCollection"];
+            /**
+             * Update Time
+             * Format: date-time
+             * @description The last time and date this item was updated.
+             */
+            update_time?: string;
+        };
+        /**
+         * HistoryQueryResultList
+         * @default []
+         */
+        HistoryQueryResultList: components["schemas"]["HistoryQueryResult"][];
         /**
          * HistorySummary
          * @description History summary information.
@@ -14002,6 +14062,74 @@ export interface operations {
                         | components["schemas"]["HistorySummary"]
                         | components["schemas"]["HistoryMinimal"]
                     )[];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    index_query_api_histories_query_get: {
+        /** Returns histories available to the current user. */
+        parameters?: {
+            /** @description The maximum number of items to return. */
+            /** @description Starts at the beginning skip the first ( offset - 1 ) items and begin returning at the Nth item */
+            /** @description Sort index by this specified attribute */
+            /** @description Sort in descending order? */
+            /**
+             * @description A mix of free text and GitHub-style tags used to filter the index operation.
+             *
+             * ## Query Structure
+             *
+             * GitHub-style filter tags (not be confused with Galaxy tags) are tags of the form
+             * `<tag_name>:<text_no_spaces>` or `<tag_name>:'<text with potential spaces>'`. The tag name
+             * *generally* (but not exclusively) corresponds to the name of an attribute on the model
+             * being indexed (i.e. a column in the database).
+             *
+             * If the tag is quoted, the attribute will be filtered exactly. If the tag is unquoted,
+             * generally a partial match will be used to filter the query (i.e. in terms of the implementation
+             * this means the database operation `ILIKE` will typically be used).
+             *
+             * Once the tagged filters are extracted from the search query, the remaining text is just
+             * used to search various documented attributes of the object.
+             *
+             * ## GitHub-style Tags Available
+             *
+             * `name`
+             * : The history's name.
+             *
+             * `annotation`
+             * : The history's annotation. (The tag `a` can be used a short hand alias for this tag to filter on this attribute.)
+             *
+             * `tag`
+             * : The history's tags. (The tag `t` can be used a short hand alias for this tag to filter on this attribute.)
+             *
+             * ## Free Text
+             *
+             * Free text search terms will be searched against the following attributes of the
+             * Historys: `title`, `description`, `slug`, `tag`.
+             */
+            query?: {
+                limit?: number;
+                offset?: number;
+                show_published?: boolean;
+                sort_by?: "create_time" | "name" | "update_time";
+                sort_desc?: boolean;
+                search?: string;
+            };
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["HistoryQueryResultList"];
                 };
             };
             /** @description Validation Error */

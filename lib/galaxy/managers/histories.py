@@ -26,6 +26,7 @@ from sqlalchemy import (
     select,
     true,
 )
+from sqlalchemy.orm import aliased
 from typing_extensions import Literal
 
 from galaxy import (
@@ -58,6 +59,13 @@ from galaxy.schema.fields import (
     HistoryIndexQueryPayload,
     Security,
 )
+from galaxy.model.index_filter_util import (
+    append_user_filter,
+    raw_text_column_filter,
+    tag_filter,
+    text_column_filter,
+)
+from galaxy.schema.history import HistoryIndexQueryPayload
 from galaxy.schema.schema import (
     ExportObjectMetadata,
     ExportObjectType,
@@ -73,6 +81,11 @@ from galaxy.schema.storage_cleaner import (
 )
 from galaxy.security.validate_user_input import validate_preferred_object_store_id
 from galaxy.structured_app import MinimalManagerApp
+from galaxy.util.search import (
+    FilteredTerm,
+    parse_filters_structured,
+    RawTextTerm,
+)
 
 log = logging.getLogger(__name__)
 
@@ -118,9 +131,9 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         query = trans.sa_session.query(self.model_class)
 
         filters = []
-        if not show_published and not is_admin:
+        if not show_published:
             filters = [self.model_class.user == user]
-        if show_published:
+        else:
             filters.append(self.model_class.published == true())
         if user and show_published:
             filters.append(self.user_share_model.user == user)
@@ -146,8 +159,6 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
                         query = query.filter(pg)
                     elif key == "name":
                         query = query.filter(text_column_filter(self.model_class.name, term))
-                    elif key == "annotation":
-                        query = query.filter(text_column_filter(self.model_class.annotation, term))
                     elif key == "user":
                         query = append_user_filter(query, self.model_class, term)
                     elif key == "is":
@@ -169,8 +180,7 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
                     query = query.filter(
                         raw_text_column_filter(
                             [
-                                self.model_class.title,
-                                self.model_class.annotation,
+                                self.model_class.name,
                                 tf,
                                 alias.username,
                             ],

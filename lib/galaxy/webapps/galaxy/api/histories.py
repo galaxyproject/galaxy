@@ -34,8 +34,8 @@ from galaxy.schema import (
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.history import (
     HistoryIndexQueryPayload,
+    HistoryQueryResultList,
     HistorySortByEnum,
-    HistorySummaryList,
 )
 from galaxy.schema.schema import (
     AnyArchivedHistoryView,
@@ -83,10 +83,9 @@ log = logging.getLogger(__name__)
 router = Router(tags=["histories"])
 
 query_tags = [
-    IndexQueryTag("title", "The history's title."),
-    IndexQueryTag("description", "The history's description.", "d"),
+    IndexQueryTag("name", "The history's name."),
+    IndexQueryTag("annotation", "The history's annotation.", "a"),
     IndexQueryTag("tag", "The history's tags.", "t"),
-    IndexQueryTag("user", "The history's owner's username.", "u"),
 ]
 
 AllHistoriesQueryParam = Query(
@@ -184,7 +183,7 @@ class FastAPIHistories:
         sort_by: HistorySortByEnum = SortByQueryParam,
         sort_desc: bool = SortDescQueryParam,
         search: Optional[str] = SearchQueryParam,
-    ) -> HistorySummaryList:
+    ) -> HistoryQueryResultList:
         payload = HistoryIndexQueryPayload.construct(
             show_published=show_published,
             sort_by=sort_by,

@@ -53,7 +53,7 @@ from galaxy.schema import (
 from galaxy.schema.fields import DecodedDatabaseIdField
 from galaxy.schema.history import (
     HistoryIndexQueryPayload,
-    HistorySummaryList,
+    HistoryQueryResultList,
 )
 from galaxy.schema.schema import (
     AnyArchivedHistoryView,
@@ -220,7 +220,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         trans,
         payload: HistoryIndexQueryPayload,
         include_total_count: bool = False,
-    ) -> Tuple[HistorySummaryList, int]:
+    ) -> Tuple[HistoryQueryResultList, int]:
         """Return a list of History accessible by the user
 
         :rtype:     list
@@ -228,7 +228,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         """
         entries, total_matches = self.manager.index_query(trans, payload, include_total_count)
         return (
-            HistorySummaryList(__root__=[entry.to_dict(view="element") for entry in entries]),
+            HistoryQueryResultList(__root__=[entry.to_dict(view="element") for entry in entries]),
             total_matches,
         )
 
