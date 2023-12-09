@@ -12,6 +12,7 @@ from typing import (
     List,
     Optional,
     Set,
+    Tuple,
     Union,
 )
 
@@ -21,6 +22,7 @@ from sqlalchemy import (
     exists,
     false,
     func,
+    or_,
     select,
     true,
 )
@@ -43,6 +45,7 @@ from galaxy.managers.base import (
     SortableManager,
     StorageCleanerManager,
 )
+from galaxy.managers.context import ProvidesUserContext
 from galaxy.managers.export_tracker import StoreExportTracker
 from galaxy.model import (
     History,
@@ -50,7 +53,11 @@ from galaxy.model import (
     Job,
 )
 from galaxy.model.base import transaction
-from galaxy.schema.fields import Security
+from galaxy.schema.fields import (
+    DecodedDatabaseIdField,
+    HistoryIndexQueryPayload,
+    Security,
+)
 from galaxy.schema.schema import (
     ExportObjectMetadata,
     ExportObjectType,
@@ -68,6 +75,13 @@ from galaxy.security.validate_user_input import validate_preferred_object_store_
 from galaxy.structured_app import MinimalManagerApp
 
 log = logging.getLogger(__name__)
+
+INDEX_SEARCH_FILTERS = {
+    "name": "name",
+    "annotation": "annotation",
+    "tag": "tag",
+    "is": "is",
+}
 
 
 class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMixin, SortableManager):
@@ -92,6 +106,93 @@ class HistoryManager(sharable.SharableModelManager, deletable.PurgableManagerMix
         self.hda_manager = hda_manager
         self.contents_manager = contents_manager
         self.contents_filters = contents_filters
+
+    def index_query(
+        self, trans: ProvidesUserContext, payload: HistoryIndexQueryPayload, include_total_count: bool = False
+    ) -> Tuple[List[model.History], int]:
+        show_deleted = False
+        show_published = payload.show_published
+        is_admin = trans.user_is_admin
+        user = trans.user
+
+        query = trans.sa_session.query(self.model_class)
+
+        filters = []
+        if not show_published and not is_admin:
+            filters = [self.model_class.user == user]
+        if show_published:
+            filters.append(self.model_class.published == true())
+        if user and show_published:
+            filters.append(self.user_share_model.user == user)
+            query = query.outerjoin(self.model_class.users_shared_with)
+        query = query.filter(or_(*filters))
+
+        if payload.search:
+            search_query = payload.search
+            parsed_search = parse_filters_structured(search_query, INDEX_SEARCH_FILTERS)
+
+            def p_tag_filter(term_text: str, quoted: bool):
+                nonlocal query
+                alias = aliased(model.HistoryTagAssociation)
+                query = query.outerjoin(self.model_class.tags.of_type(alias))
+                return tag_filter(alias, term_text, quoted)
+
+            for term in parsed_search.terms:
+                if isinstance(term, FilteredTerm):
+                    key = term.filter
+                    q = term.text
+                    if key == "tag":
+                        pg = p_tag_filter(term.text, term.quoted)
+                        query = query.filter(pg)
+                    elif key == "name":
+                        query = query.filter(text_column_filter(self.model_class.name, term))
+                    elif key == "annotation":
+                        query = query.filter(text_column_filter(self.model_class.annotation, term))
+                    elif key == "user":
+                        query = append_user_filter(query, self.model_class, term)
+                    elif key == "is":
+                        if q == "deleted":
+                            show_deleted = True
+                        if q == "published":
+                            query = query.filter(self.model_class.published == true())
+                        if q == "importable":
+                            query = query.filter(self.model_class.importable == true())
+                        elif q == "shared_with_me":
+                            if not show_published:
+                                message = "Can only use tag is:shared_with_me if show_published parameter also true."
+                                raise exceptions.RequestParameterInvalidException(message)
+                            query = query.filter(self.user_share_model.user == user)
+                elif isinstance(term, RawTextTerm):
+                    tf = p_tag_filter(term.text, False)
+                    alias = aliased(model.User)
+                    query = query.outerjoin(self.model_class.user.of_type(alias))
+                    query = query.filter(
+                        raw_text_column_filter(
+                            [
+                                self.model_class.title,
+                                self.model_class.annotation,
+                                tf,
+                                alias.username,
+                            ],
+                            term,
+                        )
+                    )
+
+        query = query.filter(self.model_class.deleted == (true() if show_deleted else false()))
+
+        if include_total_count:
+            total_matches = query.count()
+        else:
+            total_matches = None
+        sort_column = getattr(model.History, payload.sort_by)
+        if payload.sort_desc:
+            sort_column = sort_column.desc()
+        query = query.order_by(sort_column)
+        if payload.limit is not None:
+            query = query.limit(payload.limit)
+        if payload.offset is not None:
+            query = query.offset(payload.offset)
+        return query, total_matches
 
     def copy(self, history, user, **kwargs):
         """

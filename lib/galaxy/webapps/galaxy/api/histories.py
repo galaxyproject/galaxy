@@ -32,6 +32,11 @@ from galaxy.schema import (
     SerializationParams,
 )
 from galaxy.schema.fields import DecodedDatabaseIdField
+from galaxy.schema.history import (
+    HistoryIndexQueryPayload,
+    HistorySortByEnum,
+    HistorySummaryList,
+)
 from galaxy.schema.schema import (
     AnyArchivedHistoryView,
     AnyHistoryView,
@@ -54,11 +59,6 @@ from galaxy.schema.schema import (
     WriteStoreToPayload,
 )
 from galaxy.schema.types import LatestLiteral
-from galaxy.schema.history import (
-    HistoryIndexQueryPayload,
-    HistorySortByEnum,
-    HistorySummaryList,
-)
 from galaxy.webapps.base.api import GalaxyFileResponse
 from galaxy.webapps.galaxy.api import (
     as_form,
@@ -66,8 +66,8 @@ from galaxy.webapps.galaxy.api import (
     DependsOnTrans,
     IndexQueryTag,
     Router,
-    try_get_request_body_as_json,
     search_query_param,
+    try_get_request_body_as_json,
 )
 from galaxy.webapps.galaxy.api.common import (
     get_filter_query_params,
@@ -117,7 +117,9 @@ SearchQueryParam: Optional[str] = search_query_param(
     free_text_fields=["title", "description", "slug", "tag"],
 )
 
-ShowPublishedQueryParam: bool = Query(default=False, title="Restrict to published histories and those shared with authenticated user.", description="")
+ShowPublishedQueryParam: bool = Query(
+    default=False, title="Restrict to published histories and those shared with authenticated user.", description=""
+)
 
 SortByQueryParam: HistorySortByEnum = Query(
     default="update_time",
@@ -131,6 +133,7 @@ SortDescQueryParam: bool = Query(
     description="Sort in descending order?",
 )
 
+
 class DeleteHistoryPayload(BaseModel):
     purge: bool = Field(
         default=False, title="Purge", description="Whether to definitely remove this history from disk."
@@ -140,6 +143,7 @@ class DeleteHistoryPayload(BaseModel):
 @as_form
 class CreateHistoryFormData(CreateHistoryPayload):
     """Uses Form data instead of JSON"""
+
 
 @router.cbv
 class FastAPIHistories:
@@ -189,7 +193,7 @@ class FastAPIHistories:
             offset=offset,
             search=search,
         )
-        entries, total_matches = self.service.index(trans, payload, include_total_count=True)
+        entries, total_matches = self.service.index_query(trans, payload, include_total_count=True)
         response.headers["total_matches"] = str(total_matches)
         return entries
 
