@@ -3020,16 +3020,20 @@ class History(Base, HasTags, Dictifiable, UsesAnnotations, HasName, Serializable
     dict_element_visible_keys = [
         "id",
         "name",
-        "genome_build",
-        "deleted",
-        "purged",
         "archived",
-        "update_time",
-        "published",
-        "importable",
-        "slug",
+        "annotation",
+        "create_time",
+        "deleted",
         "empty",
+        "genome_build",
+        "importable",
         "preferred_object_store_id",
+        "purged",
+        "published",
+        "slug",
+        "tags",
+        "update_time",
+        "user",
     ]
     default_name = "Unnamed history"
 
