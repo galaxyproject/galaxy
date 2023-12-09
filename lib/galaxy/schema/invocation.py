@@ -15,6 +15,7 @@ from pydantic import (
     Extra,
     Field,
     Required,
+    UUID1,
     UUID4,
 )
 from pydantic.generics import GenericModel
@@ -33,6 +34,7 @@ from galaxy.schema.fields import (
 from galaxy.schema.schema import (
     CreateTimeField,
     DataItemSourceType,
+    JobState,
     Model,
     UpdateTimeField,
 )
@@ -42,7 +44,7 @@ INVOCATION_STEP_COLLECTION_OUTPUT_SRC = Literal["hdca"]
 REPORT_RENDER_FORMAT_MARKDOWN = Literal["markdown"]
 
 
-InvocationStepActionField: bool = Field(
+InvocationStepActionField = Field(
     title="Action",
     description="Whether to take action on the invocation step.",
 )
@@ -270,6 +272,15 @@ class InvocationStepState(str, Enum):
     # FAILED = 'failed',  TODO: implement and expose
 
 
+class ExtendedInvocationStepState(str, Enum):
+    NEW = "new"  # Brand new workflow invocation step
+    READY = "ready"  # Workflow invocation step ready for another iteration of scheduling.
+    SCHEDULED = "scheduled"  # Workflow invocation step has been scheduled.
+    # CANCELLED = 'cancelled',  TODO: implement and expose
+    # FAILED = 'failed',  TODO: implement and expose
+    OK = "ok"  # Workflow invocation step has completed successfully - TODO: is this a correct description?
+
+
 class InvocationStepOutput(Model):
     src: INVOCATION_STEP_OUTPUT_SRC = Field(
         literal_to_value(INVOCATION_STEP_OUTPUT_SRC),
@@ -321,23 +332,14 @@ class InvocationStep(Model):
         title="Subworkflow invocation ID",
         description="The encoded ID of the subworkflow invocation.",
     )
-    # TODO Apparently this field is allowed to be None or "ok".
-    # See lib/galaxy_test/api/test_workflows.py:
-    #       test_invocation_with_collection_mapping - line 7010
-    # As such InvocationStepState, does not cover all possible values.
-    # Should I define a new enum class for this or expand the existing one?
-    state: Optional[str] = Field(
+    # TODO The state can differ from InvocationStepState is this intended?
+    # InvocationStepState is equal to the states attribute of the WorkflowInvocationStep class
+    state: Optional[ExtendedInvocationStepState] = Field(
         ...,
         title="State of the invocation step",
         description="Describes where in the scheduling process the workflow invocation step is.",
     )
-    # TODO I would like to use InvocationStepActionField here to avoid code
-    # duplication, but it is not allowed to be None. So is this ok?
-    action: Optional[bool] = Field(
-        default=Required,
-        title="Action",
-        description="Whether to take action on the invocation step.",
-    )
+    action: Optional[bool] = InvocationStepActionField
     order_index: int = Field(
         ...,
         title="Order index",
@@ -440,9 +442,7 @@ class InvocationInput(InvocationIOBase):
 
 
 class InvocationInputParameter(Model):
-    # TODO - Is it ok to set parameter value to Any here? It was set to str,
-    # but that seems wrong, as it can also be an int - see test:
-    # TestWorkflowsApi::test_run_with_int_parameter
+    # TODO - Change the type of parameter_value, when all valid types are known
     parameter_value: Any = Field(default=Required, title="Parameter value", description="Value of the input parameter.")
     label: str = Field(
         default=Required, title="Label", description="Label of the workflow step associated with the input parameter."
@@ -478,8 +478,10 @@ class WorkflowInvocationResponse(BaseModel):
         title="History ID",
         description="The encoded ID of the history associated with the invocation.",
     )
-    # TODO Using the UUID4 type fails here... why?
-    uuid: Any = Field(..., title="UUID", description="Universal unique identifier of the workflow invocation.")
+    # TODO The uuid version is 1. Is this desired?
+    uuid: Optional[UUID1] = Field(
+        ..., title="UUID", description="Universal unique identifier of the workflow invocation."
+    )
     state: InvocationState = Field(
         default=Required, title="Invocation state", description="State of workflow invocation."
     )
@@ -508,16 +510,10 @@ class WorkflowInvocationResponse(BaseModel):
     messages: Optional[Any] = Field(default=None, title="Message", description="Message of the workflow invocation.")
 
 
-class InvocationJobState(str, Enum):
-    NEW = "new"  # TODO add description
-    FAILED = "failed"  # TODO add description
-    OK = "ok"  # TODO add description
-
-
 class InvocationJobsSummaryBaseModel(BaseModel):
     id: EncodedDatabaseIdField = InvocationIdField
     states: Dict[str, int]  # TODO add field description
-    populated_state: InvocationJobState  # TODO add field description
+    populated_state: JobState  # TODO add field description
 
 
 class InvocationJobsResponse(InvocationJobsSummaryBaseModel):
