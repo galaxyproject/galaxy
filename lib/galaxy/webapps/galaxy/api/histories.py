@@ -54,13 +54,20 @@ from galaxy.schema.schema import (
     WriteStoreToPayload,
 )
 from galaxy.schema.types import LatestLiteral
+from galaxy.schema.history import (
+    HistoryIndexQueryPayload,
+    HistorySortByEnum,
+    HistorySummaryList,
+)
 from galaxy.webapps.base.api import GalaxyFileResponse
 from galaxy.webapps.galaxy.api import (
     as_form,
     depends,
     DependsOnTrans,
+    IndexQueryTag,
     Router,
     try_get_request_body_as_json,
+    search_query_param,
 )
 from galaxy.webapps.galaxy.api.common import (
     get_filter_query_params,
@@ -75,15 +82,12 @@ log = logging.getLogger(__name__)
 
 router = Router(tags=["histories"])
 
-
-JehaIDPathParam: Union[DecodedDatabaseIdField, LatestLiteral] = Path(
-    title="Job Export History ID",
-    description=(
-        "The ID of the specific Job Export History Association or "
-        "`latest` (default) to download the last generated archive."
-    ),
-    examples=["latest"],
-)
+query_tags = [
+    IndexQueryTag("title", "The history's title."),
+    IndexQueryTag("description", "The history's description.", "d"),
+    IndexQueryTag("tag", "The history's tags.", "t"),
+    IndexQueryTag("user", "The history's owner's username.", "u"),
+]
 
 AllHistoriesQueryParam = Query(
     default=False,
@@ -94,6 +98,38 @@ AllHistoriesQueryParam = Query(
     ),
 )
 
+HistoryIDPathParam: DecodedDatabaseIdField = Path(
+    ..., title="History ID", description="The encoded database identifier of the History."
+)
+
+JehaIDPathParam: Union[DecodedDatabaseIdField, LatestLiteral] = Path(
+    title="Job Export History ID",
+    description=(
+        "The ID of the specific Job Export History Association or "
+        "`latest` (default) to download the last generated archive."
+    ),
+    examples=["latest"],
+)
+
+SearchQueryParam: Optional[str] = search_query_param(
+    model_name="History",
+    tags=query_tags,
+    free_text_fields=["title", "description", "slug", "tag"],
+)
+
+ShowPublishedQueryParam: bool = Query(default=False, title="Restrict to published histories and those shared with authenticated user.", description="")
+
+SortByQueryParam: HistorySortByEnum = Query(
+    default="update_time",
+    title="Sort attribute",
+    description="Sort index by this specified attribute",
+)
+
+SortDescQueryParam: bool = Query(
+    default=True,
+    title="Sort Descending",
+    description="Sort in descending order?",
+)
 
 class DeleteHistoryPayload(BaseModel):
     purge: bool = Field(
@@ -104,7 +140,6 @@ class DeleteHistoryPayload(BaseModel):
 @as_form
 class CreateHistoryFormData(CreateHistoryPayload):
     """Uses Form data instead of JSON"""
-
 
 @router.cbv
 class FastAPIHistories:
@@ -130,6 +165,33 @@ class FastAPIHistories:
         return self.service.index(
             trans, serialization_params, filter_query_params, deleted_only=deleted, all_histories=all
         )
+
+    @router.get(
+        "/api/histories/query",
+        summary="Returns histories available to the current user.",
+    )
+    async def index_query(
+        self,
+        response: Response,
+        trans: ProvidesUserContext = DependsOnTrans,
+        limit: Optional[int] = LimitQueryParam,
+        offset: Optional[int] = OffsetQueryParam,
+        show_published: bool = ShowPublishedQueryParam,
+        sort_by: HistorySortByEnum = SortByQueryParam,
+        sort_desc: bool = SortDescQueryParam,
+        search: Optional[str] = SearchQueryParam,
+    ) -> HistorySummaryList:
+        payload = HistoryIndexQueryPayload.construct(
+            show_published=show_published,
+            sort_by=sort_by,
+            sort_desc=sort_desc,
+            limit=limit,
+            offset=offset,
+            search=search,
+        )
+        entries, total_matches = self.service.index(trans, payload, include_total_count=True)
+        response.headers["total_matches"] = str(total_matches)
+        return entries
 
     @router.get(
         "/api/histories/count",
