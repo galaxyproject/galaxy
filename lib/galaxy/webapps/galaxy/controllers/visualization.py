@@ -36,7 +36,6 @@ from galaxy.util import (
     unicodify,
 )
 from galaxy.util.sanitize_html import sanitize_html
-from galaxy.visualization.data_providers.phyloviz import PhylovizDataProvider
 from galaxy.visualization.genomes import (
     decode_dbkey,
     GenomeRegion,
