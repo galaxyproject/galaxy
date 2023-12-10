@@ -120,8 +120,8 @@ ATTATATATAAGACCACAGAGAGAATATTTTGCCCGG...
 &gt;chr2
 GGCGGCCGCGGCGATATAGAACTACTCATTATATATA...
 
-...</pre
-                    >
+...
+                    </pre>
                 </b-card>
                 <b-card v-else class="alert-info">
                     <h2 class="h-sm">Length Format</h2>
@@ -133,12 +133,12 @@ chr1    197195432
 chr2    181748087
 chr3    159599783
 chr4    155630120
-chr5    152537259</pre
-                    >
+chr5    152537259
+                    </pre>
                     <p class="card-text">
-                        Trackster uses this information to populate the select box for chrom/contig, andto set the
-                        maximum basepair of the track browser. You may either upload a .len fileof this format (Len File
-                        option), or directly enter the information into the box (Len Entry option).
+                        This information is used to populate the chrom/contig options. You may either upload a .len file
+                        of this format (Len File option), or directly enter the information into the box (Len Entry
+                        option).
                     </p>
                 </b-card>
             </b-col>
