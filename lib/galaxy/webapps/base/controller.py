@@ -765,60 +765,8 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
         # do alter the title and config
         vis_rev.title = title
 
-        # -- Validate config. --
-
-        if vis.type == "trackster":
-
-            def unpack_track(track_dict):
-                """Unpack a track from its json."""
-                dataset_dict = track_dict["dataset"]
-                return {
-                    "dataset_id": trans.security.decode_id(dataset_dict["id"]),
-                    "hda_ldda": dataset_dict.get("hda_ldda", "hda"),
-                    "track_type": track_dict["track_type"],
-                    "prefs": track_dict["prefs"],
-                    "mode": track_dict["mode"],
-                    "filters": track_dict["filters"],
-                    "tool_state": track_dict["tool_state"],
-                }
-
-            def unpack_collection(collection_json):
-                """Unpack a collection from its json."""
-                unpacked_drawables = []
-                drawables = collection_json["drawables"]
-                for drawable_json in drawables:
-                    if "track_type" in drawable_json:
-                        drawable = unpack_track(drawable_json)
-                    else:
-                        drawable = unpack_collection(drawable_json)
-                    unpacked_drawables.append(drawable)
-                return {
-                    "obj_type": collection_json["obj_type"],
-                    "drawables": unpacked_drawables,
-                    "prefs": collection_json.get("prefs", []),
-                    "filters": collection_json.get("filters", None),
-                }
-
-            # TODO: unpack and validate bookmarks:
-            def unpack_bookmarks(bookmarks_json):
-                return bookmarks_json
-
-            # Unpack and validate view content.
-            view_content = unpack_collection(config["view"])
-            bookmarks = unpack_bookmarks(config["bookmarks"])
-            vis_rev.config = {"view": view_content, "bookmarks": bookmarks}
-            # Viewport from payload
-            viewport = config.get("viewport")
-            if viewport:
-                chrom = viewport["chrom"]
-                start = viewport["start"]
-                end = viewport["end"]
-                overview = viewport["overview"]
-                vis_rev.config["viewport"] = {"chrom": chrom, "start": start, "end": end, "overview": overview}
-        else:
-            # Default action is to save the config as is with no validation.
-            vis_rev.config = config
-
+        # Default action is to save the config as is with no validation.
+        vis_rev.config = config
         vis.latest_revision = vis_rev
         session.add(vis_rev)
         with transaction(session):
@@ -866,88 +814,9 @@ class UsesVisualizationMixin(UsesLibraryMixinItems):
 
     def get_visualization_config(self, trans, visualization):
         """Returns a visualization's configuration. Only works for trackster visualizations right now."""
-        config = None
-        if visualization.type in ["trackster", "genome"]:
-            # Unpack Trackster config.
-            latest_revision = visualization.latest_revision
-            bookmarks = latest_revision.config.get("bookmarks", [])
-
-            def pack_track(track_dict):
-                dataset_id = track_dict["dataset_id"]
-                hda_ldda = track_dict.get("hda_ldda", "hda")
-                dataset_id = trans.security.encode_id(dataset_id)
-                dataset = self.get_hda_or_ldda(trans, hda_ldda, dataset_id)
-                try:
-                    prefs = track_dict["prefs"]
-                except KeyError:
-                    prefs = {}
-                track_data_provider = trans.app.data_provider_registry.get_data_provider(
-                    trans, original_dataset=dataset, source="data"
-                )
-                return {
-                    "track_type": dataset.datatype.track_type,
-                    "dataset": trans.security.encode_dict_ids(dataset.to_dict()),
-                    "prefs": prefs,
-                    "mode": track_dict.get("mode", "Auto"),
-                    "filters": track_dict.get("filters", {"filters": track_data_provider.get_filters()}),
-                    "tool": self.get_tool_def(trans, dataset),
-                    "tool_state": track_dict.get("tool_state", {}),
-                }
-
-            def pack_collection(collection_dict):
-                drawables = []
-                for drawable_dict in collection_dict["drawables"]:
-                    if "track_type" in drawable_dict:
-                        drawables.append(pack_track(drawable_dict))
-                    else:
-                        drawables.append(pack_collection(drawable_dict))
-                return {
-                    "obj_type": collection_dict["obj_type"],
-                    "drawables": drawables,
-                    "prefs": collection_dict.get("prefs", []),
-                    "filters": collection_dict.get("filters", {}),
-                }
-
-            def encode_dbkey(dbkey):
-                """
-                Encodes dbkey as needed. For now, prepends user's public name
-                to custom dbkey keys.
-                """
-                encoded_dbkey = dbkey
-                user = visualization.user
-                if "dbkeys" in user.preferences and str(dbkey) in user.preferences["dbkeys"]:
-                    encoded_dbkey = f"{user.username}:{dbkey}"
-                return encoded_dbkey
-
-            # Set tracks.
-            tracks = []
-            if "tracks" in latest_revision.config:
-                # Legacy code.
-                for track_dict in visualization.latest_revision.config["tracks"]:
-                    tracks.append(pack_track(track_dict))
-            elif "view" in latest_revision.config:
-                for drawable_dict in visualization.latest_revision.config["view"]["drawables"]:
-                    if "track_type" in drawable_dict:
-                        tracks.append(pack_track(drawable_dict))
-                    else:
-                        tracks.append(pack_collection(drawable_dict))
-
-            config = {
-                "title": visualization.title,
-                "vis_id": trans.security.encode_id(visualization.id) if visualization.id is not None else None,
-                "tracks": tracks,
-                "bookmarks": bookmarks,
-                "chrom": "",
-                "dbkey": encode_dbkey(visualization.dbkey),
-            }
-
-            if "viewport" in latest_revision.config:
-                config["viewport"] = latest_revision.config["viewport"]
-        else:
-            # Default action is to return config unaltered.
-            latest_revision = visualization.latest_revision
-            config = latest_revision.config
-
+        # Default action is to return config unaltered.
+        latest_revision = visualization.latest_revision
+        config = latest_revision.config
         return config
 
     def get_new_track_config(self, trans, dataset):
