@@ -40,7 +40,7 @@ RUN set -xe; \
 ADD lib /galaxy/lib
 ADD packages /galaxy/packages
 
-RUN cd /galaxy/packages/job_execution && python -m venv /venv && . /venv/bin/activate && python -m pip install .
+RUN python -m venv /venv && . /venv/bin/activate && python -m pip install /galaxy/packages/util /galaxy/packages/schema /galaxy/packages/data /galaxy/packages/job_execution
 ENV LC_ALL en_US.UTF-8
 
 #======================================================
