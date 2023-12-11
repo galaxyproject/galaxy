@@ -152,7 +152,7 @@ async function onTagClick(tag: string) {
                     <StatelessTags
                         clickable
                         :value="workflow.tags"
-                        :disabled="workflow.deleted"
+                        :disabled="true"
                         :max-visible-tags="gridView ? 2 : 8"
                         @input="onTagsUpdate($event)"
                         @tag-click="onTagClick($event)" />
