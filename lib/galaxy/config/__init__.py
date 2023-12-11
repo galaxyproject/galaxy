@@ -33,7 +33,6 @@ from urllib.parse import urlparse
 
 import yaml
 
-from galaxy.carbon_emissions import get_carbon_intensity_entry
 from galaxy.config.schema import AppSchema
 from galaxy.exceptions import ConfigurationError
 from galaxy.util import (
@@ -51,6 +50,7 @@ from galaxy.util.properties import (
     running_from_source,
 )
 from galaxy.util.themes import flatten_theme
+from .carbon_emissions import get_carbon_intensity_entry
 from ..version import (
     VERSION_MAJOR,
     VERSION_MINOR,
