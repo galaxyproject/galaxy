@@ -77,7 +77,7 @@ class FastAPIToolData:
         "/api/tool_data/{table_name}",
         summary="Get details of a given data table",
         response_description="A description of the given data table and its content",
-        require_admin=False,
+        require_admin=True,
     )
     async def show(self, table_name: str = ToolDataTableName) -> ToolDataDetails:
         """Get details of a given tool data table."""
