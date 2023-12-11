@@ -1060,6 +1060,7 @@ class ModelImportStore(metaclass=abc.ABCMeta):
                 if "job" in step_attrs:
                     job = object_import_tracker.jobs_by_key[step_attrs["job"][object_key]]
                     imported_invocation_step.job = job
+                    ensure_object_added_to_session(imported_invocation_step, object_in_session=job)
                 elif "implicit_collection_jobs" in step_attrs:
                     icj = object_import_tracker.implicit_collection_jobs_by_key[
                         step_attrs["implicit_collection_jobs"][object_key]

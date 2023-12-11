@@ -1354,7 +1354,9 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         "DataManagerJobAssociation", back_populates="job", uselist=False, cascade_backrefs=False
     )
     history_dataset_collection_associations = relationship("HistoryDatasetCollectionAssociation", back_populates="job")
-    workflow_invocation_step = relationship("WorkflowInvocationStep", back_populates="job", uselist=False)
+    workflow_invocation_step = relationship(
+        "WorkflowInvocationStep", back_populates="job", uselist=False, cascade_backrefs=False
+    )
 
     any_output_dataset_collection_instances_deleted: column_property  # defined at the end of this module
     any_output_dataset_deleted: column_property  # defined at the end of this module
