@@ -61,12 +61,6 @@ class TestVisualizationsRegistry(VisualizationsBase_TestCase):
         assert scatterplot.template_path == os.path.join(scatterplot.path, "templates")
         assert scatterplot.template_lookup.__class__.__name__ == "TemplateLookup"
 
-        trackster = plugin_mgr.plugins["trackster"]
-        assert trackster.name == "trackster"
-        assert trackster.path == os.path.join(expected_plugins_path, "trackster")
-        assert trackster.base_url == "/".join((plugin_mgr.base_url, trackster.name))
-        assert not trackster.serves_templates
-
     def test_plugin_load(self):
         """"""
         mock_app_dir = galaxy_mock.MockDir(
