@@ -30,6 +30,13 @@
             :description="link.description"
             :to="`/user/${index}`" />
         <UserPreferencesElement
+            v-if="isConfigLoaded && !config.single_user"
+            id="edit-preferences-permissions"
+            icon="fa-users"
+            title="Set Dataset Permissions for New Histories"
+            description="Grant others default access to newly created histories. Changes made here will only affect histories created after these settings have been stored."
+            to="/user/permissions" />
+        <UserPreferencesElement
             id="edit-preferences-api-key"
             icon="fa-key"
             title="Manage API Key"
