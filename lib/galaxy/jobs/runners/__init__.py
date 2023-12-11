@@ -562,27 +562,30 @@ class BaseJobRunner:
         return container
 
     def _get_metadata_container(self, job_wrapper):
-        tool_info = ToolInfo(
-            [ContainerDescription("galaxyproject/galaxy-job-execution")],
-            [],
-            False,
-            [],
-            guest_ports=None,
-            tool_id="__SET_METADATA__",
-            tool_version="1.0.3",
-            profile=23.2,
-        )
-        job_info = JobInfo(
-            working_directory=job_wrapper.working_directory,
-            tool_directory=None,
-            job_directory=None,
-            tmp_directory=None,
-            home_directory=None,
-            job_directory_type="galaxy",
-        )
-
         destination_info = job_wrapper.job_destination.params
-        return self.app.container_finder.find_container(tool_info, destination_info, job_info)
+        if destination_info.get("metadata_config", {}).get("containerize"):
+            image = destination_info["metadata_config"].get("image", "galaxyproject/galaxy-job-execution")
+            container_type = destination_info["metadata_config"].get("engine", "docker")
+            tool_info = ToolInfo(
+                [ContainerDescription(image, type=container_type)],
+                [],
+                False,
+                [],
+                guest_ports=None,
+                tool_id="__SET_METADATA__",
+                tool_version="1.0.3",
+                profile=23.2,
+            )
+            job_info = JobInfo(
+                working_directory=job_wrapper.working_directory,
+                tool_directory=None,
+                job_directory=None,
+                tmp_directory=None,
+                home_directory=None,
+                job_directory_type="galaxy",
+            )
+
+            return self.app.container_finder.find_container(tool_info, destination_info, job_info)
 
     def _handle_runner_state(self, runner_state, job_state: "JobState"):
         try:
