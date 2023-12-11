@@ -9,6 +9,7 @@ from sqlalchemy import (
 )
 
 from galaxy import model
+from galaxy.managers.forms import get_form
 from galaxy.model.base import transaction
 from galaxy.model.index_filter_util import (
     raw_text_column_filter,
@@ -295,14 +296,3 @@ class Forms(BaseUIController):
         with transaction(trans.sa_session):
             trans.sa_session.commit()
         return form_definition, None
-
-
-# ---- Utility methods -------------------------------------------------------
-
-
-def get_form(trans, form_id):
-    """Get a FormDefinition from the database by id."""
-    form = trans.sa_session.query(trans.app.model.FormDefinitionCurrent).get(trans.security.decode_id(form_id))
-    if not form:
-        return trans.show_error_message(f"Form not found for id ({str(form_id)})")
-    return form
