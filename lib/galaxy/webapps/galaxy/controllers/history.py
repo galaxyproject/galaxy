@@ -116,7 +116,7 @@ class HistoryListGrid(grids.Grid):
     def build_initial_query(self, trans, **kwargs):
         # Override to preload sharing information used when fetching data for grid.
         query = super().build_initial_query(trans, **kwargs)
-        query = query.options(undefer(History.users_shared_with_count))
+        query = query.options(undefer(self.model_class.users_shared_with_count))
         return query
 
     # Grid definition
