@@ -105,6 +105,10 @@ module.exports = (env = {}, argv = {}) => {
                     loader: "vue-loader",
                 },
                 {
+                    test: /\.ya?ml$/,
+                    loader: "yaml-loader",
+                },
+                {
                     test: /\.tsx?$/,
                     exclude: /node_modules/,
                     loader: "ts-loader",

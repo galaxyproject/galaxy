@@ -1,5 +1,5 @@
 <script setup>
-import { BNavbar, BNavbarBrand, BNavbarNav } from "bootstrap-vue";
+import { BNavbar, BNavbarBrand, BNavbarNav, BNavForm } from "bootstrap-vue";
 import { storeToRefs } from "pinia";
 import { useEntryPointStore } from "stores/entryPointStore";
 import { withPrefix } from "utils/redirect";
@@ -10,6 +10,7 @@ import { useConfig } from "@/composables/config";
 import { useUserStore } from "@/stores/userStore";
 
 import { loadWebhookMenuItems } from "./_webhooks";
+import HelpModeSwitch from "./HelpModeSwitch";
 import MastheadItem from "./MastheadItem";
 import QuotaMeter from "./QuotaMeter";
 import { getActiveTab } from "./utilities";
@@ -143,6 +144,9 @@ onMounted(() => {
                 id="notifications-bell">
                 <NotificationsBell tooltip-placement="bottom" />
             </BNavItem>
+            <BNavForm>
+                <HelpModeSwitch />
+            </BNavForm>
         </BNavbarNav>
         <QuotaMeter />
     </BNavbar>
