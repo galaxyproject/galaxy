@@ -2,14 +2,14 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faGlobe, faStar, faTrash, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BAlert, BButton, BNav, BNavItem, BOverlay } from "bootstrap-vue";
+import { BAlert, BButton, BNav, BNavItem } from "bootstrap-vue";
 import { filter } from "underscore";
-import { computed, type ComputedRef, onMounted, type Ref, ref, watch } from "vue";
+import { computed, type ComputedRef, onMounted, ref, watch } from "vue";
 import { useRouter } from "vue-router/composables";
+//@ts-ignore missing typedefs
+import VirtualList from "vue-virtual-scroll-list";
 
 import { loadWorkflows } from "@/components/Workflow/workflows.services";
-import { useAnimationFrameResizeObserver } from "@/composables/sensors/animationFrameResizeObserver";
-import { useAnimationFrameScroll } from "@/composables/sensors/animationFrameScroll";
 import { Toast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
 import Filtering, { contains, equals, expandNameTag, toBool, type ValidFilter } from "@/utils/filtering";
@@ -38,6 +38,18 @@ const props = withDefaults(defineProps<Props>(), {
 const router = useRouter();
 const userStore = useUserStore();
 
+const limit = ref(70);
+const offset = ref(0);
+const loading = ref(true);
+const filterText = ref("");
+const showAdvanced = ref(false);
+const showBookmarked = ref(false);
+const listHeader = ref<any>(null);
+const advancedFiltering = ref<any>(null);
+const workflowsLoaded = ref<WorkflowsList>([]);
+const totalWorkflows = ref<number | null>(null);
+const showHighlight = ref<"published" | "imported" | "">("");
+
 const validFilters: ComputedRef<Record<string, ValidFilter<string | boolean | undefined>>> = computed(() => {
     return {
         name: { placeholder: "name", type: String, handler: contains("name"), menuItem: true },
@@ -56,20 +68,7 @@ const validFilters: ComputedRef<Record<string, ValidFilter<string | boolean | un
     };
 });
 
-const limit = ref(50);
-const offset = ref(0);
-const loading = ref(true);
-const overlay = ref(false);
-const isScrollable = ref(false);
-const listHeader = ref<any>(null);
-const workflows = ref<WorkflowsList>([]);
-const advancedFiltering = ref<any>(null);
-const scrollContainer: Ref<HTMLElement | null> = ref(null);
-
-const { arrived } = useAnimationFrameScroll(scrollContainer);
-useAnimationFrameResizeObserver(scrollContainer, ({ clientSize, scrollSize }) => {
-    isScrollable.value = scrollSize.height >= clientSize.height + 1;
-});
+const WorkflowFilters = new Filtering(validFilters.value);
 
 const searchPlaceHolder = computed(() => {
     let placeHolder = "Search my workflows";
@@ -85,20 +84,14 @@ const searchPlaceHolder = computed(() => {
     return placeHolder;
 });
 
-const filterText = ref("");
-const showAdvanced = ref(false);
-const showBookmarked = ref(false);
-const WorkflowFilters = new Filtering(validFilters.value);
-const showHighlight = ref<"published" | "imported" | "">("");
 const published = computed(() => props.activeList === "published");
-const scrolledTop = computed(() => !isScrollable.value || arrived.top);
 const sharedWithMe = computed(() => props.activeList === "shared_with_me");
 const showDeleted = computed(() => filterText.value.includes("is:deleted"));
 const view = computed(() => (userStore.preferredListViewMode as ListView) || "grid");
 const sortDesc = computed(() => (listHeader.value && listHeader.value.sortDesc) ?? true);
 const sortBy = computed(() => (listHeader.value && listHeader.value.sortBy) || "update_time");
-const noItems = computed(() => !loading.value && !overlay.value && workflows.value.length === 0 && !filterText.value);
-const noResults = computed(() => !loading.value && !overlay.value && workflows.value.length === 0 && filterText.value);
+const noItems = computed(() => !loading.value && workflowsLoaded.value.length === 0 && !filterText.value);
+const noResults = computed(() => !loading.value && workflowsLoaded.value.length === 0 && filterText.value);
 
 function updateFilter(newVal: string) {
     advancedFiltering.value.updateFilter(newVal.trim());
@@ -106,51 +99,6 @@ function updateFilter(newVal: string) {
 
 function onTagClick(tag: string) {
     filterText.value = WorkflowFilters.setFilterValue(filterText.value, "tag", `'${tag}'`);
-}
-
-async function load(overlayLoading = false, silentLoading = false) {
-    if (overlayLoading) {
-        overlay.value = true;
-    } else if (!silentLoading) {
-        loading.value = true;
-    }
-
-    let search = filterText.value;
-
-    if (published.value) {
-        search += " is:published";
-    }
-
-    if (sharedWithMe.value) {
-        search += " is:shared_with_me";
-    }
-
-    try {
-        const tmp = await loadWorkflows({
-            sortBy: sortBy.value,
-            sortDesc: sortDesc.value,
-            limit: limit.value,
-            offset: offset.value,
-            filterText: search?.trim(),
-            showPublished: published.value,
-            skipStepCounts: true,
-        });
-
-        let filteredWorkflows = showBookmarked.value
-            ? filter(tmp, (workflow: any) => workflow.show_in_tool_panel)
-            : tmp;
-
-        if (props.activeList === "my") {
-            filteredWorkflows = filter(filteredWorkflows, (w: any) => w.owner === userStore.currentUser?.username);
-        }
-
-        workflows.value = filteredWorkflows;
-    } catch (e) {
-        Toast.error(`Failed to load workflows: ${e}`);
-    } finally {
-        loading.value = false;
-        overlay.value = false;
-    }
 }
 
 function onToggleDeleted() {
@@ -173,22 +121,83 @@ function onToggleShowHighlight(h: "published" | "imported") {
     }
 }
 
-watch([filterText, sortBy, sortDesc, showBookmarked], () => {
-    load(true);
+async function load(reset = false) {
+    totalWorkflows.value = 0;
+
+    loading.value = true;
+
+    let search = filterText.value;
+
+    if (published.value) {
+        search += " is:published";
+    }
+
+    if (sharedWithMe.value) {
+        search += " is:shared_with_me";
+    }
+
+    try {
+        const { data, headers } = await loadWorkflows({
+            sortBy: sortBy.value,
+            sortDesc: sortDesc.value,
+            limit: limit.value,
+            offset: offset.value,
+            filterText: search?.trim(),
+            showPublished: published.value,
+            skipStepCounts: true,
+        });
+
+        let filteredWorkflows = showBookmarked.value
+            ? filter(data, (workflow: any) => workflow.show_in_tool_panel)
+            : data;
+
+        if (props.activeList === "my") {
+            filteredWorkflows = filter(filteredWorkflows, (w: any) => w.owner === userStore.currentUser?.username);
+        }
+
+        if (reset) {
+            workflowsLoaded.value = filteredWorkflows;
+        } else {
+            workflowsLoaded.value.push(...filteredWorkflows);
+        }
+
+        if (showBookmarked.value) {
+            totalWorkflows.value = filteredWorkflows.length;
+        } else {
+            totalWorkflows.value = parseInt(headers.get("Total_matches") || "0", 10) || null;
+        }
+    } catch (e) {
+        Toast.error(`Failed to load workflows: ${e}`);
+    } finally {
+        loading.value = false;
+    }
+}
+
+async function onToBottom() {
+    if (workflowsLoaded.value.length < totalWorkflows.value!) {
+        offset.value += limit.value;
+        await load();
+    }
+}
+
+watch([filterText, sortBy, sortDesc, showBookmarked], async () => {
+    console.log("filterText changed", filterText.value, sortBy.value, sortDesc.value, showBookmarked.value);
+    offset.value = 0;
+    workflowsLoaded.value = [];
+    await load(true);
 });
 
 onMounted(() => {
     if (router.currentRoute.query.owner) {
         filterText.value = `${filterText.value} user:${router.currentRoute.query.owner}`.trim();
     }
-
     load();
 });
 </script>
 
 <template>
-    <div id="workflows-list" ref="scrollContainer" class="workflows-list">
-        <div id="workflows-list-header" class="workflows-list-header mb-2" :class="{ 'scrolled-top': scrolledTop }">
+    <div id="workflows-list" class="workflows-list">
+        <div id="workflows-list-header" class="workflows-list-header mb-2">
             <div class="d-flex">
                 <Heading h1 separator inline size="xl" class="flex-grow-1 mb-2">Workflows</Heading>
 
@@ -294,105 +303,109 @@ onMounted(() => {
             </ListHeader>
         </div>
 
-        <BAlert v-if="loading" variant="info" show>
-            <LoadingSpan />
-        </BAlert>
-
-        <BAlert v-else-if="!loading && !overlay && noItems" id="workflow-list-empty" variant="info" show>
+        <BAlert v-if="!loading && noItems" id="workflow-list-empty" variant="info" show>
             No workflows found. You may create or import new workflows using the buttons above.
         </BAlert>
 
-        <BAlert v-else-if="!loading && !overlay && noResults" id="no-workflow-found" variant="info" show>
+        <BAlert v-else-if="!loading && noResults" id="no-workflow-found" variant="info" show>
             No workflows found matching: <span class="font-weight-bold">{{ filterText }}</span>
         </BAlert>
 
-        <BOverlay
-            v-else
-            id="workflow-cards"
-            :show="overlay"
-            rounded="sm"
-            class="cards-list mt-2"
-            :class="view === 'grid' ? 'd-flex flex-wrap' : ''">
-            <WorkflowCard
-                v-for="workflow in workflows"
-                :key="workflow.id"
-                :class="view === 'grid' ? 'grid-view ' : ''"
-                :workflow="workflow"
-                :show-highlight="showHighlight"
-                :published-view="published"
-                :grid-view="view === 'grid'"
-                @refreshList="load"
-                @tagClick="onTagClick" />
-        </BOverlay>
+        <div class="listing-layout position-relative">
+            <VirtualList
+                id="workflow-cards"
+                role="list"
+                class="listing"
+                :data-key="'id'"
+                :wrap-class="'cards-list'"
+                :data-component="{}"
+                :item-class="view === 'grid' ? 'grid-view' : 'list-view'"
+                :data-sources="workflowsLoaded"
+                @tobottom="onToBottom">
+                <template v-slot:item="{ item }">
+                    <WorkflowCard
+                        :key="item.id"
+                        :workflow="item"
+                        :show-highlight="showHighlight"
+                        :published-view="published"
+                        :grid-view="view === 'grid'"
+                        @refreshList="load"
+                        @tagClick="onTagClick" />
+                </template>
+
+                <template v-slot:footer>
+                    <BAlert v-if="loading" variant="info" show class="mt-2">
+                        <LoadingSpan message="Loading workflows..." />
+                    </BAlert>
+
+                    <span v-if="totalWorkflows" class="workflow-total">
+                        --- {{ workflowsLoaded.length }} workflows loaded out of {{ totalWorkflows }} ---
+                    </span>
+                </template>
+            </VirtualList>
+        </div>
     </div>
 </template>
 
-<style scoped lang="scss">
+<style lang="scss">
+@import "scss/mixins.scss";
 @import "breakpoints.scss";
 
 .workflows-list {
-    container: workflow-list / inline-size;
-    overflow: auto;
+    display: flex;
+    flex-direction: column;
+
+    .listing-layout {
+        height: 100%;
+
+        .listing {
+            @include absfill();
+            scroll-behavior: smooth;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+    }
+
+    .workflow-total {
+        display: grid;
+        text-align: center;
+        margin-top: 1rem;
+    }
 
     .workflows-list-header {
         top: 0;
         z-index: 100;
         background-color: white;
-
-        @container (min-width: #{$breakpoint-sm}) {
-            position: sticky;
-            &:after {
-                position: absolute;
-                content: "";
-                opacity: 0;
-                z-index: 10;
-                width: 100%;
-                height: 20px;
-                bottom: -25px;
-                pointer-events: none;
-                border-radius: 0.5rem;
-                transition: opacity 0.4s;
-                background-repeat: no-repeat;
-            }
-
-            &:after {
-                right: 0;
-                background-image: linear-gradient(
-                    to bottom,
-                    rgba(3, 0, 48, 0.1),
-                    rgba(3, 0, 48, 0.02),
-                    rgba(3, 0, 48, 0)
-                );
-            }
-
-            &:not(.scrolled-top) {
-                &:after {
-                    opacity: 1;
-                }
-            }
-        }
     }
 
     .cards-list {
-        min-height: 100px;
-    }
+        container: card-list / inline-size;
+        scroll-behavior: smooth;
 
-    .grid-view {
-        width: calc(100% / 3);
-        display: inline-grid;
-    }
+        display: flex;
+        flex-wrap: wrap;
 
-    @container (max-width: #{$breakpoint-xl}) {
+        .list-view {
+            width: 100%;
+        }
+
         .grid-view {
-            width: calc(100% / 2);
+            width: calc(100% / 3);
             display: inline-grid;
         }
-    }
 
-    @container (max-width: #{$breakpoint-sm}) {
-        .grid-view {
-            width: 100%;
-            display: inline-grid;
+        @container card-list (max-width: #{$breakpoint-xl}) {
+            .grid-view {
+                width: calc(100% / 2);
+                display: inline-grid;
+            }
+        }
+
+        @container card-list (max-width: #{$breakpoint-sm}) {
+            .grid-view {
+                width: 100%;
+                display: inline-grid;
+            }
         }
     }
 }
