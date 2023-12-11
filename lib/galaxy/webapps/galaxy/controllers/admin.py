@@ -908,7 +908,7 @@ class AdminGalaxy(controller.JSAppLauncher):
         group = get_group(trans, id)
         if trans.request.method == "GET":
             return {
-                "title": "Change group name for '%s'" % group.name,
+                "title": f"Change group name for '{group.name}'",
                 "inputs": [{"name": "name", "label": "Name", "value": group.name}],
             }
         else:
