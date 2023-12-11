@@ -798,7 +798,7 @@ class AdminGalaxy(controller.JSAppLauncher):
         role = get_role(trans, id)
         if trans.request.method == "GET":
             return {
-                "title": "Change role name and description for '%s'" % role.name,
+                "title": f"Change role name and description for '{role.name}'",
                 "inputs": [
                     {"name": "name", "label": "Name", "value": role.name},
                     {"name": "description", "label": "Description", "value": role.description},
