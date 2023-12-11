@@ -18,7 +18,9 @@ import NotificationsManagement from "components/admin/Notifications/Notification
 import ResetMetadata from "components/admin/ResetMetadata";
 import SanitizeAllow from "components/admin/SanitizeAllow";
 import FormGeneric from "components/Form/FormGeneric";
+import adminFormsGridConfig from "components/Grid/configs/adminForms";
 import adminGroupsGridConfig from "components/Grid/configs/adminGroups";
+import adminQuotasGridConfig from "components/Grid/configs/adminQuotas";
 import adminRolesGridConfig from "components/Grid/configs/adminRoles";
 import adminUsersGridConfig from "components/Grid/configs/adminUsers";
 import Grid from "components/Grid/Grid";
@@ -129,10 +131,11 @@ export default [
             // grids
             {
                 path: "forms",
-                component: Grid,
-                props: {
-                    urlBase: "forms/forms_list",
-                },
+                component: GridList,
+                props: (route) => ({
+                    gridConfig: adminFormsGridConfig,
+                    gridMessage: route.query.message,
+                }),
             },
             {
                 path: "groups",
@@ -144,10 +147,11 @@ export default [
             },
             {
                 path: "quotas",
-                component: Grid,
-                props: {
-                    urlBase: "admin/quotas_list",
-                },
+                component: GridList,
+                props: (route) => ({
+                    gridConfig: adminQuotasGridConfig,
+                    gridMessage: route.query.message,
+                }),
             },
             {
                 path: "roles",

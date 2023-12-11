@@ -110,6 +110,11 @@ class QuotasService(ServiceBase):
             message += self.quota_manager.purge_quota(quota)
         return message
 
+    def purge(self, trans: ProvidesUserContext, id: DecodedDatabaseIdField) -> str:
+        """Purges a previously deleted quota."""
+        quota = self.quota_manager.get_quota(trans, id, deleted=True)
+        return self.quota_manager.purge_quota(quota)
+
     def undelete(self, trans: ProvidesUserContext, id: DecodedDatabaseIdField) -> str:
         """Restores a previously deleted quota."""
         quota = self.quota_manager.get_quota(trans, id, deleted=True)

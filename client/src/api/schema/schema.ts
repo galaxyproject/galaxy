@@ -361,6 +361,14 @@ export interface paths {
          */
         post: operations["set_permissions_api_folders__id__permissions_post"];
     };
+    "/api/forms/{id}": {
+        /** Delete */
+        delete: operations["delete_api_forms__id__delete"];
+    };
+    "/api/forms/{id}/undelete": {
+        /** Undelete */
+        post: operations["undelete_api_forms__id__undelete_post"];
+    };
     "/api/ftp_files": {
         /**
          * Displays remote files available to the user. Please use /api/remote_files instead.
@@ -1346,6 +1354,10 @@ export interface paths {
          * @description Deletes an existing quota.
          */
         delete: operations["delete_api_quotas__id__delete"];
+    };
+    "/api/quotas/{id}/purge": {
+        /** Purges a previously deleted quota. */
+        post: operations["purge_api_quotas__id__purge_post"];
     };
     "/api/remote_files": {
         /**
@@ -11821,6 +11833,58 @@ export interface operations {
             };
         };
     };
+    delete_api_forms__id__delete: {
+        /** Delete */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    undelete_api_forms__id__undelete_post: {
+        /** Undelete */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     index_api_ftp_files_get: {
         /**
          * Displays remote files available to the user. Please use /api/remote_files instead.
@@ -17573,6 +17637,33 @@ export interface operations {
         requestBody?: {
             content: {
                 "application/json": components["schemas"]["DeleteQuotaPayload"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": string;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    purge_api_quotas__id__purge_post: {
+        /** Purges a previously deleted quota. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The encoded identifier of the Quota. */
+            path: {
+                id: string;
             };
         };
         responses: {
