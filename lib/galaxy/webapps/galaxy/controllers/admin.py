@@ -649,7 +649,7 @@ class AdminGalaxy(controller.JSAppLauncher):
             for typ in trans.app.model.DefaultQuotaAssociation.types.__members__.values():
                 default_options.append((f"Yes, {typ}", typ))
             return {
-                "title": "Set quota default for '%s'" % quota.name,
+                "title": f"Set quota default for '{quota.name}'",
                 "inputs": [
                     {
                         "name": "default",
