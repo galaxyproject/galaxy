@@ -1,7 +1,7 @@
 import type { FetchArgType } from "openapi-typescript-fetch";
 
 import { DatasetDetails } from "@/api";
-import { fetcher } from "@/api/schema";
+import { components, fetcher } from "@/api/schema";
 import { withPrefix } from "@/utils/redirect";
 
 export const datasetsFetcher = fetcher.path("/api/datasets").method("get").create();
@@ -87,3 +87,6 @@ export async function copyDataset(
 export function getCompositeDatasetLink(historyDatasetId: string, path: string) {
     return withPrefix(`/api/datasets/${historyDatasetId}/display?filename=${path}`);
 }
+
+export type DatasetExtraFiles = components["schemas"]["DatasetExtraFiles"];
+export const fetchDatasetExtraFiles = fetcher.path("/api/datasets/{dataset_id}/extra_files").method("get").create();

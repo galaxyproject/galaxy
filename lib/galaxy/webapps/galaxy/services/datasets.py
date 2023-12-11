@@ -177,6 +177,12 @@ class ExtraFileEntry(Model):
     )
 
 
+class DatasetExtraFiles(Model):
+    """A list of extra files associated with a dataset."""
+
+    __root__: List[ExtraFileEntry]
+
+
 class DatasetTextContentDetails(Model):
     item_data: Optional[str] = Field(
         description="First chunk of text content (maximum 1MB) of the dataset.",

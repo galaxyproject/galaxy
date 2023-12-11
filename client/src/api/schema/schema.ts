@@ -155,6 +155,10 @@ export interface paths {
          */
         get: operations["converted_ext_api_datasets__dataset_id__converted__ext__get"];
     };
+    "/api/datasets/{dataset_id}/extra_files": {
+        /** Get the list of extra files/directories associated with a dataset. */
+        get: operations["extra_files_api_datasets__dataset_id__extra_files_get"];
+    };
     "/api/datasets/{dataset_id}/get_content_as_text": {
         /** Returns dataset content as Text. */
         get: operations["get_content_as_text_api_datasets__dataset_id__get_content_as_text_get"];
@@ -650,8 +654,8 @@ export interface paths {
         head: operations["history_contents_display_api_histories__history_id__contents__history_content_id__display_head"];
     };
     "/api/histories/{history_id}/contents/{history_content_id}/extra_files": {
-        /** Generate list of extra files. */
-        get: operations["extra_files_api_histories__history_id__contents__history_content_id__extra_files_get"];
+        /** Get the list of extra files/directories associated with a dataset. */
+        get: operations["extra_files_history_api_histories__history_id__contents__history_content_id__extra_files_get"];
     };
     "/api/histories/{history_id}/contents/{history_content_id}/metadata_file": {
         /** Returns the metadata file associated with this history item. */
@@ -3503,6 +3507,11 @@ export interface components {
             error_message: string;
         };
         /**
+         * DatasetExtraFiles
+         * @description A list of extra files associated with a dataset.
+         */
+        DatasetExtraFiles: components["schemas"]["ExtraFileEntry"][];
+        /**
          * DatasetInheritanceChain
          * @default []
          */
@@ -4370,6 +4379,16 @@ export interface components {
         };
         /** ExportTaskListResponse */
         ExportTaskListResponse: components["schemas"]["ObjectExportTaskResponse"][];
+        /** ExtraFileEntry */
+        ExtraFileEntry: {
+            /** @description The class of this entry, either File or Directory. */
+            class: components["schemas"]["ExtraFilesEntryClass"];
+            /**
+             * Path
+             * @description Relative path to the file or directory.
+             */
+            path: string;
+        };
         /** ExtraFiles */
         ExtraFiles: {
             /**
@@ -4382,6 +4401,12 @@ export interface components {
             items_from?: string;
             src: components["schemas"]["Src"];
         };
+        /**
+         * ExtraFilesEntryClass
+         * @description An enumeration.
+         * @enum {string}
+         */
+        ExtraFilesEntryClass: "Directory" | "File";
         /** FavoriteObject */
         FavoriteObject: {
             /**
@@ -10819,6 +10844,33 @@ export interface operations {
             };
         };
     };
+    extra_files_api_datasets__dataset_id__extra_files_get: {
+        /** Get the list of extra files/directories associated with a dataset. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The encoded database identifier of the dataset. */
+            path: {
+                dataset_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["DatasetExtraFiles"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_content_as_text_api_datasets__dataset_id__get_content_as_text_get: {
         /** Returns dataset content as Text. */
         parameters: {
@@ -13743,8 +13795,8 @@ export interface operations {
             };
         };
     };
-    extra_files_api_histories__history_id__contents__history_content_id__extra_files_get: {
-        /** Generate list of extra files. */
+    extra_files_history_api_histories__history_id__contents__history_content_id__extra_files_get: {
+        /** Get the list of extra files/directories associated with a dataset. */
         parameters: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
@@ -13761,7 +13813,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["DatasetExtraFiles"];
                 };
             };
             /** @description Validation Error */
