@@ -614,7 +614,7 @@ class AdminGalaxy(controller.JSAppLauncher):
         quota = get_quota(trans, id)
         if trans.request.method == "GET":
             return {
-                "title": "Edit quota size for '%s'" % quota.name,
+                "title": f"Edit quota size for '{quota.name}'",
                 "inputs": [
                     {
                         "name": "amount",
