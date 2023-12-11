@@ -31,13 +31,13 @@ class ConfigWatchers:
             try:
                 # Run and wait for toolbox reload on the process that watches the config files.
                 # The toolbox reload will update the integrated_tool_panel_file
-                self.app.queue_worker.send_local_control_task("reload_toolbox", get_response=True),
+                self.app.queue_worker.send_local_control_task("reload_toolbox", get_response=True)
             except Exception:
                 save_integrated_tool_panel = True
                 log.exception("Exception occured while reloading toolbox")
             self.app.queue_worker.send_control_task(
                 "reload_toolbox", noop_self=True, kwargs={"save_integrated_tool_panel": save_integrated_tool_panel}
-            ),
+            )
 
         self.tool_config_watcher = get_tool_conf_watcher(
             reload_callback=reload_toolbox,
