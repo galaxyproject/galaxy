@@ -4,10 +4,34 @@ History
 .. to_doc
 
 ---------
-23.2.dev0
+23.3.dev0
 ---------
 
 
+
+-------------------
+23.1.3 (2023-12-01)
+-------------------
+
+No recorded changes since last release
+
+-------------------
+23.1.2 (2023-11-29)
+-------------------
+
+
+=========
+Bug fixes
+=========
+
+* Prevent Singular external auth users from disconnecting identity by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#16961 <https://github.com/galaxyproject/galaxy/pull/16961>`_
+* Set correct tool_path for packaged galaxy by `@mvdbeek <https://github.com/mvdbeek>`_ in `#17102 <https://github.com/galaxyproject/galaxy/pull/17102>`_
+
+============
+Enhancements
+============
+
+* Add support for larch datatypes by `@patrick-austin <https://github.com/patrick-austin>`_ in `#17080 <https://github.com/galaxyproject/galaxy/pull/17080>`_
 
 -------------------
 23.1.1 (2023-10-23)
@@ -18,6 +42,7 @@ History
 Bug fixes
 =========
 
+* 
 * Fix some drs handling issues by `@nuwang <https://github.com/nuwang>`_ in `#15777 <https://github.com/galaxyproject/galaxy/pull/15777>`_
 * Improve container resolver documentation by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16280 <https://github.com/galaxyproject/galaxy/pull/16280>`_
 * Limit tool document cache to tool configs with explicit cache path by `@mvdbeek <https://github.com/mvdbeek>`_ in `#16537 <https://github.com/galaxyproject/galaxy/pull/16537>`_
@@ -28,6 +53,7 @@ Bug fixes
 Enhancements
 ============
 
+* 
 * External Login Flow: Redirect users if account already exists by `@ahmedhamidawan <https://github.com/ahmedhamidawan>`_ in `#15019 <https://github.com/galaxyproject/galaxy/pull/15019>`_
 * Add slack error reporting plugin by `@hexylena <https://github.com/hexylena>`_ in `#15025 <https://github.com/galaxyproject/galaxy/pull/15025>`_
 * Documents use of k8s_extra_job_envs in job_conf sample advanced by `@pcm32 <https://github.com/pcm32>`_ in `#15110 <https://github.com/galaxyproject/galaxy/pull/15110>`_
@@ -71,6 +97,8 @@ No recorded changes since last release
 Bug fixes
 =========
 
+* 
+* 
 * Minor bug fix for default mail templates by `@neoformit <https://github.com/neoformit>`_ in `#16362 <https://github.com/galaxyproject/galaxy/pull/16362>`_
 
 -------------------
@@ -102,12 +130,16 @@ Bug fixes
 
 * 
 * 
+* 
+* 
 * Change default watchdog inotify_buffer log level to info by `@mvdbeek <https://github.com/mvdbeek>`_ in `#15967 <https://github.com/galaxyproject/galaxy/pull/15967>`_
 
 ============
 Enhancements
 ============
 
+* 
+* 
 * Add ``ca_certs`` option for sentry client by `@mvdbeek <https://github.com/mvdbeek>`_ in `#15943 <https://github.com/galaxyproject/galaxy/pull/15943>`_
 
 -------------------

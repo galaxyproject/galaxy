@@ -310,6 +310,7 @@ class HDCASerializer(DCASerializer, taggable.TaggableSerializerMixin, annotatabl
                 history_id=self.app.security.encode_id(item.history_id),
                 id=self.app.security.encode_id(item.id),
                 type=self.hdca_manager.model_class.content_type,
+                context=context,
             ),
             "contents_url": self.generate_contents_url,
             "job_state_summary": self.serialize_job_state_summary,

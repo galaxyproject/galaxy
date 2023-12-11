@@ -188,6 +188,7 @@ class OIDC(JSAppLauncher):
         success, message, redirect_uri = trans.app.authnz_manager.logout(
             provider, trans, post_user_logout_href=post_user_logout_href
         )
+        trans.handle_user_logout()
         if success:
             return {"redirect_uri": redirect_uri}
         else:

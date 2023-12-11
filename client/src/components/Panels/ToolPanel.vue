@@ -34,8 +34,9 @@ const emit = defineEmits<{
 
 const arePanelsFetched = ref(false);
 const toolStore = useToolStore();
-const { currentPanelView, defaultPanelView, isPanelPopulated, panelViews } = storeToRefs(toolStore);
+const { currentPanelView, defaultPanelView, isPanelPopulated, loading, panelViews } = storeToRefs(toolStore);
 
+const loadingView = ref<string | undefined>(undefined);
 const query = ref("");
 const showAdvanced = ref(false);
 
@@ -70,6 +71,8 @@ watch(
 const toolPanelHeader = computed(() => {
     if (showAdvanced.value) {
         return localize("Advanced Tool Search");
+    } else if (loading.value && loadingView.value) {
+        return localize(loadingView.value);
     } else if (
         currentPanelView.value !== "default" &&
         panelViews.value &&
@@ -106,7 +109,9 @@ async function initializeTools() {
 }
 
 async function updatePanelView(panelView: string) {
+    loadingView.value = panelViews.value[panelView]?.name;
     await toolStore.setCurrentPanelView(panelView);
+    loadingView.value = undefined;
 }
 
 function onInsertTool(toolId: string, toolName: string) {
@@ -134,12 +139,13 @@ function onInsertWorkflowSteps(workflowId: string, workflowStepCount: number | u
                     v-if="panelViews && Object.keys(panelViews).length > 1"
                     :panel-views="panelViews"
                     :current-panel-view="currentPanelView"
+                    :store-loading="loading"
                     @updatePanelView="updatePanelView">
                     <template v-slot:panel-view-selector>
                         <div class="d-flex justify-content-between panel-view-selector">
                             <div>
                                 <span
-                                    v-if="viewIcon"
+                                    v-if="viewIcon && !loading"
                                     :class="['fas', `fa-${viewIcon}`, 'mr-1']"
                                     data-description="panel view header icon" />
                                 <Heading
@@ -147,8 +153,11 @@ function onInsertWorkflowSteps(workflowId: string, workflowStepCount: number | u
                                     :class="!showAdvanced && toolPanelHeader !== 'Tools' && 'font-italic'"
                                     h2
                                     inline
-                                    size="sm"
-                                    >{{ toolPanelHeader }}
+                                    size="sm">
+                                    <span v-if="loading && loadingView">
+                                        <LoadingSpan :message="toolPanelHeader" />
+                                    </span>
+                                    <span v-else>{{ toolPanelHeader }}</span>
                                 </Heading>
                             </div>
                             <div v-if="!showAdvanced" class="panel-header-buttons">

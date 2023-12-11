@@ -70,20 +70,21 @@ class UsersService(ServiceBase):
     def recalculate_disk_usage(
         self,
         trans: ProvidesUserContext,
+        user_id: int,
     ):
         if trans.anonymous:
             raise glx_exceptions.AuthenticationRequired("Only registered users can recalculate disk usage.")
         if trans.app.config.enable_celery_tasks:
             from galaxy.celery.tasks import recalculate_user_disk_usage
 
-            result = recalculate_user_disk_usage.delay(task_user_id=getattr(trans.user, "id", None))
+            result = recalculate_user_disk_usage.delay(task_user_id=user_id)
             return async_task_summary(result)
         else:
             send_local_control_task(
                 trans.app,
                 "recalculate_user_disk_usage",
                 kwargs={
-                    "user_id": trans.user.id,
+                    "user_id": user_id,
                 },
             )
             return None

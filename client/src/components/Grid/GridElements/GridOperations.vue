@@ -4,12 +4,17 @@ import { faCaretDown } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
 
 import type { Operation, RowData } from "@/components/Grid/configs/types";
+import { useConfig } from "@/composables/config";
+import type { GalaxyConfiguration } from "@/stores/configurationStore";
 
 library.add(faCaretDown);
+
+const { config, isConfigLoaded } = useConfig();
 
 interface Props {
     rowData: RowData;
     operations: Array<Operation>;
+    title: string;
 }
 
 const props = defineProps<Props>();
@@ -21,13 +26,13 @@ const emit = defineEmits<{
 /**
  * Availibility of operations might required certain conditions
  */
-function hasCondition(conditionHandler: (rowData: RowData) => Boolean) {
-    return conditionHandler ? conditionHandler(props.rowData) : true;
+function hasCondition(conditionHandler: (rowData: RowData, config: GalaxyConfiguration) => Boolean) {
+    return conditionHandler ? conditionHandler(props.rowData, config) : true;
 }
 </script>
 
 <template>
-    <span>
+    <span v-if="isConfigLoaded">
         <button
             id="grid-operations"
             data-toggle="dropdown"
@@ -35,9 +40,9 @@ function hasCondition(conditionHandler: (rowData: RowData) => Boolean) {
             aria-expanded="false"
             class="ui-link font-weight-bold">
             <FontAwesomeIcon icon="caret-down" class="fa-lg" />
-            <span class="font-weight-bold">{{ rowData.title }}</span>
+            <span class="font-weight-bold">{{ title }}</span>
         </button>
-        <div v-if="operations" class="dropdown-menu" aria-labelledby="dataset-dropdown">
+        <div class="dropdown-menu" aria-labelledby="dataset-dropdown">
             <span v-for="(operation, operationIndex) in operations" :key="operationIndex">
                 <button
                     v-if="operation && operation.condition && hasCondition(operation.condition)"

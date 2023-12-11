@@ -119,6 +119,7 @@ class BaseDataElement(FetchBaseModel):
     items_from: Optional[ElementsFromType] = Field(alias="elements_from")
     collection_type: Optional[str]
     MD5: Optional[str]
+    description: Optional[str]
 
     class Config:
         # reject unknown extra attributes

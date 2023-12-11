@@ -23,7 +23,6 @@ from typing_extensions import TypedDict
 from galaxy import (
     exceptions,
     model,
-    web,
 )
 from galaxy.exceptions import (
     ToolInputsNotReadyException,
@@ -36,6 +35,7 @@ from galaxy.model import (
     WorkflowStep,
     WorkflowStepConnection,
 )
+from galaxy.model.base import ensure_object_added_to_session
 from galaxy.model.dataset_collections import matching
 from galaxy.schema.invocation import (
     CancelReason,
@@ -645,6 +645,7 @@ class SubWorkflowModule(WorkflowModule):
     def save_to_step(self, step, **kwd):
         step.type = self.type
         step.subworkflow = self.subworkflow
+        ensure_object_added_to_session(step, object_in_session=self.subworkflow)
 
     def get_name(self):
         if hasattr(self.subworkflow, "name"):
@@ -1838,9 +1839,11 @@ class ToolModule(WorkflowModule):
     def get_version(self):
         return self.tool.version if self.tool else self.tool_version
 
-    def get_tooltip(self, static_path=""):
+    def get_tooltip(self, static_path=None):
         if self.tool and self.tool.help:
-            return self.tool.help.render(host_url=web.url_for("/"), static_path=static_path)
+            host_url = self.trans.url_builder("/")
+            static_path = self.trans.url_builder(static_path) if static_path else ""
+            return self.tool.help.render(host_url=host_url, static_path=static_path)
 
     # ---- Configuration time -----------------------------------------------
 

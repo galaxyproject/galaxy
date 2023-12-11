@@ -18,7 +18,11 @@ import NotificationsManagement from "components/admin/Notifications/Notification
 import ResetMetadata from "components/admin/ResetMetadata";
 import SanitizeAllow from "components/admin/SanitizeAllow";
 import FormGeneric from "components/Form/FormGeneric";
+import adminGroupsGridConfig from "components/Grid/configs/adminGroups";
+import adminRolesGridConfig from "components/Grid/configs/adminRoles";
+import adminUsersGridConfig from "components/Grid/configs/adminUsers";
 import Grid from "components/Grid/Grid";
+import GridList from "components/Grid/GridList";
 import RegisterForm from "components/Login/RegisterForm";
 import Toolshed from "components/Toolshed/Index";
 import Admin from "entry/analysis/modules/Admin";
@@ -132,10 +136,11 @@ export default [
             },
             {
                 path: "groups",
-                component: Grid,
-                props: {
-                    urlBase: "admin/groups_list",
-                },
+                component: GridList,
+                props: (route) => ({
+                    gridConfig: adminGroupsGridConfig,
+                    gridMessage: route.query.message,
+                }),
             },
             {
                 path: "quotas",
@@ -146,17 +151,19 @@ export default [
             },
             {
                 path: "roles",
-                component: Grid,
-                props: {
-                    urlBase: "admin/roles_list",
-                },
+                component: GridList,
+                props: (route) => ({
+                    gridConfig: adminRolesGridConfig,
+                    gridMessage: route.query.message,
+                }),
             },
             {
                 path: "users",
-                component: Grid,
-                props: {
-                    urlBase: "admin/users_list",
-                },
+                component: GridList,
+                props: (route) => ({
+                    gridConfig: adminUsersGridConfig,
+                    gridMessage: route.query.message,
+                }),
             },
             {
                 path: "tool_versions",
@@ -191,7 +198,7 @@ export default [
                 component: FormGeneric,
                 props: (route) => ({
                     url: `/admin/manage_users_and_groups_for_role?id=${route.query.id}`,
-                    redirect: "/admin/users",
+                    redirect: "/admin/roles",
                 }),
             },
             {
@@ -199,7 +206,7 @@ export default [
                 component: FormGeneric,
                 props: (route) => ({
                     url: `/admin/manage_users_and_roles_for_group?id=${route.query.id}`,
-                    redirect: "/admin/users",
+                    redirect: "/admin/groups",
                 }),
             },
             {

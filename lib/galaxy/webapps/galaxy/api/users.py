@@ -172,7 +172,25 @@ class FastAPIUsers:
 
         Please use `/api/users/current/recalculate_disk_usage` instead.
         """
-        result = self.service.recalculate_disk_usage(trans)
+        user_id = getattr(trans.user, "id", None)
+        if not user_id:
+            raise exceptions.AuthenticationRequired("Only registered users can recalculate disk usage.")
+        else:
+            result = self.service.recalculate_disk_usage(trans, user_id)
+            return Response(status_code=status.HTTP_204_NO_CONTENT) if result is None else result
+
+    @router.put(
+        "/api/users/{user_id}/recalculate_disk_usage",
+        summary=RecalculateDiskUsageSummary,
+        responses=RecalculateDiskUsageResponseDescriptions,
+        require_admin=True,
+    )
+    def recalculate_disk_usage_by_user_id(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
+    ):
+        result = self.service.recalculate_disk_usage(trans, user_id)
         return Response(status_code=status.HTTP_204_NO_CONTENT) if result is None else result
 
     @router.get(
@@ -673,6 +691,23 @@ class FastAPIUsers:
             else:
                 raise exceptions.InsufficientPermissionsException("You may only delete your own account.")
         return self.service.user_to_detailed_model(user_to_update)
+
+    @router.post(
+        "/api/users/{user_id}/send_activation_email",
+        name="send_activation_email",
+        summary="Sends activation email to user.",
+        require_admin=True,
+    )
+    def send_activation_email(
+        self,
+        trans: ProvidesUserContext = DependsOnTrans,
+        user_id: DecodedDatabaseIdField = UserIdPathParamQueryParam,
+    ):
+        user = trans.sa_session.query(trans.model.User).get(user_id)
+        if not user:
+            raise exceptions.ObjectNotFound("User not found for given id.")
+        if not self.service.user_manager.send_activation_email(trans, user.email, user.username):
+            raise exceptions.MessageException("Unable to send activation email.")
 
 
 class UserAPIController(BaseGalaxyAPIController, UsesTagsMixin, BaseUIController, UsesFormDefinitionsMixin):

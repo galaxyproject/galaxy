@@ -155,6 +155,10 @@ export interface paths {
          */
         get: operations["converted_ext_api_datasets__dataset_id__converted__ext__get"];
     };
+    "/api/datasets/{dataset_id}/extra_files": {
+        /** Get the list of extra files/directories associated with a dataset. */
+        get: operations["extra_files_api_datasets__dataset_id__extra_files_get"];
+    };
     "/api/datasets/{dataset_id}/get_content_as_text": {
         /** Returns dataset content as Text. */
         get: operations["get_content_as_text_api_datasets__dataset_id__get_content_as_text_get"];
@@ -392,6 +396,12 @@ export interface paths {
         get: operations["show_group_api_groups__group_id__get"];
         /** Modifies a group. */
         put: operations["update_api_groups__group_id__put"];
+        /** Delete */
+        delete: operations["delete_api_groups__group_id__delete"];
+    };
+    "/api/groups/{group_id}/purge": {
+        /** Purge */
+        post: operations["purge_api_groups__group_id__purge_post"];
     };
     "/api/groups/{group_id}/roles": {
         /** Displays a collection (list) of groups. */
@@ -404,6 +414,10 @@ export interface paths {
         put: operations["update_api_groups__group_id__roles__role_id__put"];
         /** Removes a role from a group */
         delete: operations["delete_api_groups__group_id__roles__role_id__delete"];
+    };
+    "/api/groups/{group_id}/undelete": {
+        /** Undelete */
+        post: operations["undelete_api_groups__group_id__undelete_post"];
     };
     "/api/groups/{group_id}/user/{user_id}": {
         /**
@@ -640,8 +654,8 @@ export interface paths {
         head: operations["history_contents_display_api_histories__history_id__contents__history_content_id__display_head"];
     };
     "/api/histories/{history_id}/contents/{history_content_id}/extra_files": {
-        /** Generate list of extra files. */
-        get: operations["extra_files_api_histories__history_id__contents__history_content_id__extra_files_get"];
+        /** Get the list of extra files/directories associated with a dataset. */
+        get: operations["extra_files_history_api_histories__history_id__contents__history_content_id__extra_files_get"];
     };
     "/api/histories/{history_id}/contents/{history_content_id}/metadata_file": {
         /** Returns the metadata file associated with this history item. */
@@ -1361,6 +1375,16 @@ export interface paths {
     "/api/roles/{id}": {
         /** Show */
         get: operations["show_api_roles__id__get"];
+        /** Delete */
+        delete: operations["delete_api_roles__id__delete"];
+    };
+    "/api/roles/{id}/purge": {
+        /** Purge */
+        post: operations["purge_api_roles__id__purge_post"];
+    };
+    "/api/roles/{id}/undelete": {
+        /** Undelete */
+        post: operations["undelete_api_roles__id__undelete_post"];
     };
     "/api/short_term_storage/{storage_request_id}": {
         /** Serve the staged download specified by request ID. */
@@ -1591,6 +1615,14 @@ export interface paths {
     "/api/users/{user_id}/favorites/{object_type}/{object_id}": {
         /** Remove the object from user's favorites */
         delete: operations["remove_favorite_api_users__user_id__favorites__object_type___object_id__delete"];
+    };
+    "/api/users/{user_id}/recalculate_disk_usage": {
+        /** Triggers a recalculation of the current user disk usage. */
+        put: operations["recalculate_disk_usage_by_user_id_api_users__user_id__recalculate_disk_usage_put"];
+    };
+    "/api/users/{user_id}/send_activation_email": {
+        /** Sends activation email to user. */
+        post: operations["send_activation_email_api_users__user_id__send_activation_email_post"];
     };
     "/api/users/{user_id}/theme/{theme}": {
         /** Set the user's theme choice */
@@ -2590,6 +2622,8 @@ export interface components {
              * @default false
              */
             deferred?: boolean;
+            /** Description */
+            description?: string;
             elements_from?: components["schemas"]["ElementsFromType"];
             /**
              * Ext
@@ -3473,6 +3507,11 @@ export interface components {
             error_message: string;
         };
         /**
+         * DatasetExtraFiles
+         * @description A list of extra files associated with a dataset.
+         */
+        DatasetExtraFiles: components["schemas"]["ExtraFileEntry"][];
+        /**
          * DatasetInheritanceChain
          * @default []
          */
@@ -4340,6 +4379,16 @@ export interface components {
         };
         /** ExportTaskListResponse */
         ExportTaskListResponse: components["schemas"]["ObjectExportTaskResponse"][];
+        /** ExtraFileEntry */
+        ExtraFileEntry: {
+            /** @description The class of this entry, either File or Directory. */
+            class: components["schemas"]["ExtraFilesEntryClass"];
+            /**
+             * Path
+             * @description Relative path to the file or directory.
+             */
+            path: string;
+        };
         /** ExtraFiles */
         ExtraFiles: {
             /**
@@ -4352,6 +4401,12 @@ export interface components {
             items_from?: string;
             src: components["schemas"]["Src"];
         };
+        /**
+         * ExtraFilesEntryClass
+         * @description An enumeration.
+         * @enum {string}
+         */
+        ExtraFilesEntryClass: "Directory" | "File";
         /** FavoriteObject */
         FavoriteObject: {
             /**
@@ -4415,6 +4470,8 @@ export interface components {
              * @default false
              */
             deferred?: boolean;
+            /** Description */
+            description?: string;
             elements_from?: components["schemas"]["ElementsFromType"];
             /**
              * Ext
@@ -4633,6 +4690,8 @@ export interface components {
              * @default false
              */
             deferred?: boolean;
+            /** Description */
+            description?: string;
             elements_from?: components["schemas"]["ElementsFromType"];
             /**
              * Ext
@@ -6386,7 +6445,7 @@ export interface components {
          */
         ItemTagsCreatePayload: {
             /** value of the item tag */
-            value: string;
+            value?: string;
         };
         /**
          * ItemTagsListResponse
@@ -7540,6 +7599,8 @@ export interface components {
              * @default false
              */
             deferred?: boolean;
+            /** Description */
+            description?: string;
             /** Elements */
             elements: (
                 | (
@@ -8135,6 +8196,8 @@ export interface components {
              * @default false
              */
             deferred?: boolean;
+            /** Description */
+            description?: string;
             elements_from?: components["schemas"]["ElementsFromType"];
             /**
              * Ext
@@ -8193,6 +8256,8 @@ export interface components {
              * @default false
              */
             deferred?: boolean;
+            /** Description */
+            description?: string;
             elements_from?: components["schemas"]["ElementsFromType"];
             /**
              * Ext
@@ -8646,6 +8711,8 @@ export interface components {
              * @default false
              */
             deferred?: boolean;
+            /** Description */
+            description?: string;
             elements_from?: components["schemas"]["ElementsFromType"];
             /**
              * Ext
@@ -9496,6 +9563,8 @@ export interface components {
              * @default false
              */
             deferred?: boolean;
+            /** Description */
+            description?: string;
             elements_from?: components["schemas"]["ElementsFromType"];
             /**
              * Ext
@@ -10775,6 +10844,33 @@ export interface operations {
             };
         };
     };
+    extra_files_api_datasets__dataset_id__extra_files_get: {
+        /** Get the list of extra files/directories associated with a dataset. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The encoded database identifier of the dataset. */
+            path: {
+                dataset_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["DatasetExtraFiles"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_content_as_text_api_datasets__dataset_id__get_content_as_text_get: {
         /** Returns dataset content as Text. */
         parameters: {
@@ -12010,6 +12106,58 @@ export interface operations {
             };
         };
     };
+    delete_api_groups__group_id__delete: {
+        /** Delete */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                group_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    purge_api_groups__group_id__purge_post: {
+        /** Purge */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                group_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     group_roles_api_groups__group_id__roles_get: {
         /** Displays a collection (list) of groups. */
         parameters: {
@@ -12114,6 +12262,32 @@ export interface operations {
             200: {
                 content: {
                     "application/json": components["schemas"]["GroupRoleResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    undelete_api_groups__group_id__undelete_post: {
+        /** Undelete */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                group_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": Record<string, never>;
                 };
             };
             /** @description Validation Error */
@@ -13621,8 +13795,8 @@ export interface operations {
             };
         };
     };
-    extra_files_api_histories__history_id__contents__history_content_id__extra_files_get: {
-        /** Generate list of extra files. */
+    extra_files_history_api_histories__history_id__contents__history_content_id__extra_files_get: {
+        /** Get the list of extra files/directories associated with a dataset. */
         parameters: {
             /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
             header?: {
@@ -13639,7 +13813,7 @@ export interface operations {
             /** @description Successful Response */
             200: {
                 content: {
-                    "application/json": Record<string, never>;
+                    "application/json": components["schemas"]["DatasetExtraFiles"];
                 };
             };
             /** @description Validation Error */
@@ -13780,7 +13954,7 @@ export interface operations {
                 history_id: string;
             };
         };
-        requestBody: {
+        requestBody?: {
             content: {
                 "application/json": components["schemas"]["ItemTagsCreatePayload"];
             };
@@ -15087,7 +15261,7 @@ export interface operations {
                 tag_name: string;
             };
         };
-        requestBody: {
+        requestBody?: {
             content: {
                 "application/json": components["schemas"]["ItemTagsCreatePayload"];
             };
@@ -17598,6 +17772,84 @@ export interface operations {
             };
         };
     };
+    delete_api_roles__id__delete: {
+        /** Delete */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["RoleModelResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    purge_api_roles__id__purge_post: {
+        /** Purge */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["RoleModelResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    undelete_api_roles__id__undelete_post: {
+        /** Undelete */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            path: {
+                id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["RoleModelResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     serve_api_short_term_storage__storage_request_id__get: {
         /** Serve the staged download specified by request ID. */
         parameters: {
@@ -18972,6 +19224,62 @@ export interface operations {
             };
         };
     };
+    recalculate_disk_usage_by_user_id_api_users__user_id__recalculate_disk_usage_put: {
+        /** Triggers a recalculation of the current user disk usage. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The ID of the user to get. */
+            path: {
+                user_id: string;
+            };
+        };
+        responses: {
+            /** @description The asynchronous task summary to track the task state. */
+            200: {
+                content: {
+                    "application/json": components["schemas"]["AsyncTaskResultSummary"];
+                };
+            };
+            /** @description The background task was submitted but there is no status tracking ID available. */
+            204: never;
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    send_activation_email_api_users__user_id__send_activation_email_post: {
+        /** Sends activation email to user. */
+        parameters: {
+            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
+            header?: {
+                "run-as"?: string;
+            };
+            /** @description The ID of the user to get. */
+            path: {
+                user_id: string;
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                content: {
+                    "application/json": Record<string, never>;
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     set_theme_api_users__user_id__theme__theme__put: {
         /** Set the user's theme choice */
         parameters: {
@@ -19846,7 +20154,7 @@ export interface operations {
                 tag_name: string;
             };
         };
-        requestBody: {
+        requestBody?: {
             content: {
                 "application/json": components["schemas"]["ItemTagsCreatePayload"];
             };

@@ -191,10 +191,6 @@ class TestUserManager(BaseTestCase):
         assert not check_password("", user.password)
         assert not check_password(None, user.password)
 
-    def testable_url_for(*a, **k):
-        return f"(url_for): {k}"
-
-    @patch("routes.url_for", testable_url_for)
     def test_activation_email(self):
         self.log("should produce the activation email")
         self.user_manager.create(email="user@nopassword.com", username="nopassword")
@@ -206,7 +202,7 @@ class TestUserManager(BaseTestCase):
             assert "custom_activation_email_message" in body
             assert "Hello nopassword" in body
             assert (
-                "{'controller': 'user', 'action': 'activate', 'activation_token': 'activation_token', 'email': Markup('user@nopassword.com'), 'qualified': True}"
+                "{'activation_token': 'activation_token', 'email': Markup('user@nopassword.com'), 'qualified': True}"
                 in body
             )
 
@@ -217,7 +213,6 @@ class TestUserManager(BaseTestCase):
                 mock_hash_util.assert_called_once()
         assert result is True
 
-    @patch("routes.url_for", testable_url_for)
     def test_reset_email(self):
         self.log("should produce the password reset email")
         self.user_manager.create(email="user@nopassword.com", username="nopassword")
@@ -227,7 +222,7 @@ class TestUserManager(BaseTestCase):
             assert to == "user@nopassword.com"
             assert subject == "Galaxy Password Reset"
             assert "reset your Galaxy password" in body
-            assert "{'controller': 'login', 'action': 'start', 'token': 'reset_token'}" in body
+            assert "{'token': 'reset_token'}" in body
 
         with patch("galaxy.util.send_mail", side_effect=validate_send_email) as mock_send_mail:
             with patch("galaxy.model.unique_id", return_value="reset_token") as mock_unique_id:

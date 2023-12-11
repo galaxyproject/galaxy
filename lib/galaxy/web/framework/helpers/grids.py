@@ -28,6 +28,7 @@ from galaxy.model.item_attrs import (
 from galaxy.util import (
     restore_text,
     sanitize_text,
+    string_as_bool,
     unicodify,
 )
 from galaxy.web.framework import (
@@ -56,6 +57,7 @@ class GridColumn:
         label_id_prefix=None,
         target=None,
         delayed=False,
+        escape=True,
     ):
         """Create a grid column."""
         self.label = label
@@ -70,6 +72,7 @@ class GridColumn:
         self.visible = visible
         self.filterable = filterable
         self.delayed = delayed
+        self.escape = escape
         # Column must have a key to be sortable.
         self.sortable = self.key is not None and sortable
         self.label_id_prefix = label_id_prefix or ""
@@ -83,7 +86,10 @@ class GridColumn:
             value = None
         if self.format:
             value = self.format(value)
-        return escape(unicodify(value))
+        if self.escape:
+            return escape(unicodify(value))
+        else:
+            return value
 
     def get_link(self, trans, grid, item):
         if self.link and self.link(item):
@@ -1046,3 +1052,65 @@ class Grid:
         # (gvk) Is this method necessary?  Why not simply build the entire query,
         # including applying filters in the build_initial_query() method?
         return query
+
+
+class GridData:
+    """
+    Specifies the content a grid (data table).
+    """
+
+    model_class: Optional[type] = None
+    columns: List[GridColumn] = []
+    default_limit: int = 1000
+
+    def __init__(self):
+        # If a column does not have a model class, set the column's model class
+        # to be the grid's model class.
+        for column in self.columns:
+            if not column.model_class:
+                column.model_class = self.model_class
+
+    def __call__(self, trans, **kwargs):
+        limit = kwargs.get("limit", self.default_limit)
+        offset = kwargs.get("offset", 0)
+
+        # Build initial query
+        query = self.build_initial_query(trans, **kwargs)
+        query = self.apply_query_filter(query, **kwargs)
+
+        # Process sort arguments.
+        sort_by = kwargs.get("sort_by", self.default_sort_key)
+        sort_desc = string_as_bool(kwargs.get("sort_desc", True))
+        for column in self.columns:
+            if column.key == sort_by:
+                query = column.sort(trans, query, not sort_desc, column_name=sort_by)
+                break
+
+        # Process limit and offset.
+        rows_total = query.count()
+        query = query.limit(limit).offset(offset)
+
+        # Populate and return response
+        grid_config = {
+            "rows": [],
+            "rows_total": rows_total,
+        }
+        for row in query:
+            row_dict = {
+                "id": trans.security.encode_id(row.id),
+            }
+            for column in self.columns:
+                value = column.get_value(trans, self, row)
+                row_dict[column.key] = value
+            grid_config["rows"].append(row_dict)
+        return grid_config
+
+    # ---- Override these ----------------------------------------------------
+    def handle_operation(self, trans, operation, ids, **kwargs):
+        pass
+
+    def get_current_item(self, trans, **kwargs):
+        return None
+
+    def build_initial_query(self, trans, **kwargs):
+        return trans.sa_session.query(self.model_class)

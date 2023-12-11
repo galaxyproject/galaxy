@@ -42,7 +42,7 @@ class ItemTagsListResponse(Model):
 class ItemTagsCreatePayload(Model):
     """Payload schema for creating an item tag."""
 
-    value: str = Field(
-        Required,
+    value: Optional[str] = Field(
+        None,
         title="value of the item tag",
     )

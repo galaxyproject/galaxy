@@ -1,14 +1,31 @@
+import { createTestingPinia } from "@pinia/testing";
 import { mount } from "@vue/test-utils";
 import flushPromises from "flush-promises";
+import { PiniaVuePlugin } from "pinia";
 import { getLocalVue } from "tests/jest/helpers";
 
+import { useConfig } from "@/composables/config";
 import Filtering from "@/utils/filtering";
 
 import MountTarget from "./GridList.vue";
 
-const localVue = getLocalVue();
-
 jest.useFakeTimers();
+
+jest.mock("composables/config");
+useConfig.mockReturnValue({
+    config: {
+        value: {
+            disabled: false,
+            enabled: true,
+        },
+    },
+    isConfigLoaded: true,
+});
+
+jest.mock("vue-router/composables");
+
+const localVue = getLocalVue();
+localVue.use(PiniaVuePlugin);
 
 const testGrid = {
     actions: [
@@ -33,24 +50,24 @@ const testGrid = {
             key: "operation",
             title: "operation",
             type: "operations",
-            condition: jest.fn(),
+            condition: jest.fn(() => true),
             operations: [
                 {
                     title: "operation-title-1",
                     icon: "operation-icon-1",
-                    condition: () => true,
+                    condition: (_, config) => config.value.enabled,
                     handler: jest.fn(),
                 },
                 {
                     title: "operation-title-2",
                     icon: "operation-icon-2",
-                    condition: () => false,
+                    condition: (_, config) => config.value.disabled,
                     handler: jest.fn(),
                 },
                 {
                     title: "operation-title-3",
                     icon: "operation-icon-3",
-                    condition: () => true,
+                    condition: (_, config) => config.value.enabled,
                     handler: () => ({
                         status: "success",
                         message: "Operation-3 has been executed.",
@@ -79,9 +96,11 @@ const testGrid = {
 };
 
 function createTarget(propsData) {
+    const pinia = createTestingPinia({ stubActions: false });
     return mount(MountTarget, {
         localVue,
         propsData,
+        pinia,
         stubs: {
             Icon: true,
         },
@@ -91,7 +110,7 @@ function createTarget(propsData) {
 describe("GridList", () => {
     it("basic rendering", async () => {
         const wrapper = createTarget({
-            config: testGrid,
+            gridConfig: testGrid,
         });
         const findInput = wrapper.find("[data-description='filter text input']");
         expect(findInput.attributes().placeholder).toBe("search tests");
@@ -123,7 +142,7 @@ describe("GridList", () => {
 
     it("header rendering", async () => {
         const wrapper = createTarget({
-            config: testGrid,
+            gridConfig: testGrid,
         });
         await wrapper.vm.$nextTick();
         for (const [fieldIndex, field] of Object.entries(testGrid.fields)) {
@@ -133,7 +152,7 @@ describe("GridList", () => {
 
     it("operation handling", async () => {
         const wrapper = createTarget({
-            config: testGrid,
+            gridConfig: testGrid,
         });
         await wrapper.vm.$nextTick();
         const dropdown = wrapper.find("[data-description='grid cell 0-2']");
@@ -155,7 +174,7 @@ describe("GridList", () => {
 
     it("filter handling", async () => {
         const wrapper = createTarget({
-            config: testGrid,
+            gridConfig: testGrid,
         });
         await wrapper.vm.$nextTick();
         const filterInput = wrapper.find("[data-description='filter text input']");
@@ -168,7 +187,7 @@ describe("GridList", () => {
 
     it("pagination", async () => {
         const wrapper = createTarget({
-            config: testGrid,
+            gridConfig: testGrid,
             limit: 2,
         });
         await wrapper.vm.$nextTick();

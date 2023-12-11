@@ -57,6 +57,7 @@ from galaxy.webapps.galaxy.services.datasets import (
     ComputeDatasetHashPayload,
     ConvertedDatasetsMap,
     DatasetContentType,
+    DatasetExtraFiles,
     DatasetInheritanceChain,
     DatasetsService,
     DatasetStorageDetails,
@@ -72,7 +73,7 @@ router = Router(tags=["datasets"])
 
 DatasetIDPathParam: DecodedDatabaseIdField = Path(..., description="The encoded database identifier of the dataset.")
 
-HistoryIDPathParam: DecodedDatabaseIdField = Path(..., description="The encoded database identifier of the History.")
+HistoryIDPathParam = Path(description="The encoded database identifier of the History.")
 
 DatasetSourceQueryParam: DatasetSourceType = Query(
     default=DatasetSourceType.hda,
@@ -241,16 +242,27 @@ class FastAPIDatasets:
 
     @router.get(
         "/api/histories/{history_id}/contents/{history_content_id}/extra_files",
-        summary="Generate list of extra files.",
+        summary="Get the list of extra files/directories associated with a dataset.",
         tags=["histories"],
     )
-    def extra_files(
+    def extra_files_history(
         self,
         trans=DependsOnTrans,
         history_id: DecodedDatabaseIdField = HistoryIDPathParam,
         history_content_id: DecodedDatabaseIdField = DatasetIDPathParam,
-    ):
+    ) -> DatasetExtraFiles:
         return self.service.extra_files(trans, history_content_id)
+
+    @router.get(
+        "/api/datasets/{dataset_id}/extra_files",
+        summary="Get the list of extra files/directories associated with a dataset.",
+    )
+    def extra_files(
+        self,
+        trans=DependsOnTrans,
+        dataset_id: DecodedDatabaseIdField = DatasetIDPathParam,
+    ) -> DatasetExtraFiles:
+        return self.service.extra_files(trans, dataset_id)
 
     @router.get(
         "/api/histories/{history_id}/contents/{history_content_id}/display",
@@ -269,9 +281,7 @@ class FastAPIDatasets:
         self,
         request: Request,
         trans=DependsOnTrans,
-        history_id: Optional[DecodedDatabaseIdField] = Path(
-            description="The encoded database identifier of the History.",
-        ),
+        history_id: Optional[DecodedDatabaseIdField] = HistoryIDPathParam,
         history_content_id: DecodedDatabaseIdField = DatasetIDPathParam,
         preview: bool = PreviewQueryParam,
         filename: Optional[str] = FilenameQueryParam,
@@ -356,9 +366,7 @@ class FastAPIDatasets:
     def get_metadata_file_history_content(
         self,
         trans=DependsOnTrans,
-        history_id: DecodedDatabaseIdField = Path(
-            description="The encoded database identifier of the History.",
-        ),
+        history_id: DecodedDatabaseIdField = HistoryIDPathParam,
         history_content_id: DecodedDatabaseIdField = DatasetIDPathParam,
         metadata_file: str = Query(
             ...,

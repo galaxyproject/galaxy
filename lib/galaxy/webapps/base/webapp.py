@@ -37,7 +37,10 @@ from galaxy.exceptions import (
 from galaxy.managers import context
 from galaxy.managers.session import GalaxySessionManager
 from galaxy.managers.users import UserManager
-from galaxy.model.base import transaction
+from galaxy.model.base import (
+    ensure_object_added_to_session,
+    transaction,
+)
 from galaxy.structured_app import (
     BasicSharedApp,
     MinimalApp,
@@ -1119,6 +1122,7 @@ def create_new_session(trans, prev_galaxy_session=None, user_for_new_session=Non
     if user_for_new_session:
         # The new session should be associated with the user
         galaxy_session.user = user_for_new_session
+        ensure_object_added_to_session(galaxy_session, object_in_session=user_for_new_session)
     return galaxy_session
 
 
