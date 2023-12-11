@@ -187,7 +187,7 @@ class Forms(BaseUIController):
                 {"name": "required", "label": "Required", "type": "boolean", "value": False},
             ]
             form_dict = {
-                "title": "Edit form for '%s'" % latest_form.name,
+                "title": f"Edit form for '{latest_form.name}'",
                 "inputs": [
                     {"name": "name", "label": "Name", "value": latest_form.name},
                     {"name": "desc", "label": "Description", "value": latest_form.desc},
