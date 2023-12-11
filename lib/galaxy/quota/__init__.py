@@ -165,8 +165,8 @@ FROM (
                 label_cond="IS NULL" if quota_source_label is None else " = :label"
             )
         )
-        conn = self.sa_session.connection()
-        with conn.begin():
+        engine = self.sa_session.get_bind()
+        with engine.connect() as conn:
             res = conn.execute(query, {"is_true": True, "user_id": user.id, "label": quota_source_label}).fetchone()
             if res:
                 return int(res[0]) if res[0] else None
@@ -188,9 +188,8 @@ WHERE default_quota_association.type = :default_type
     AND default_quota.quota_source_label {label_condition}
 """
         )
-
-        conn = self.sa_session.connection()
-        with conn.begin():
+        engine = self.sa_session.get_bind()
+        with engine.connect() as conn:
             res = conn.execute(
                 query, {"is_true": True, "label": quota_source_label, "default_type": default_type}
             ).fetchone()
