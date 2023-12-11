@@ -38,6 +38,7 @@ from galaxy.tool_util.deps.dependencies import (
     JobInfo,
     ToolInfo,
 )
+from galaxy.tool_util.deps.requirements import ContainerDescription
 from galaxy.tool_util.output_checker import DETECTED_JOB_STATE
 from galaxy.util import (
     asbool,
@@ -328,6 +329,7 @@ class BaseJobRunner:
         container = self._find_container(job_wrapper)
         if not container and job_wrapper.requires_containerization:
             raise Exception("Failed to find a container when required, contact Galaxy admin.")
+        metadata_container = self._get_metadata_container(job_wrapper)
         return build_command(
             self,
             job_wrapper,
@@ -336,6 +338,7 @@ class BaseJobRunner:
             modify_command_for_container=modify_command_for_container,
             container=container,
             stream_stdout_stderr=stream_stdout_stderr,
+            metadata_container=metadata_container,
         )
 
     def get_work_dir_outputs(
@@ -557,6 +560,29 @@ class BaseJobRunner:
         if container:
             job_wrapper.set_container(container)
         return container
+
+    def _get_metadata_container(self, job_wrapper):
+        tool_info = ToolInfo(
+            [ContainerDescription("galaxyproject/galaxy-job-execution")],
+            [],
+            False,
+            [],
+            guest_ports=None,
+            tool_id="__SET_METADATA__",
+            tool_version="1.0.3",
+            profile=23.2,
+        )
+        job_info = JobInfo(
+            working_directory=job_wrapper.working_directory,
+            tool_directory=None,
+            job_directory=None,
+            tmp_directory=None,
+            home_directory=None,
+            job_directory_type="galaxy",
+        )
+
+        destination_info = job_wrapper.job_destination.params
+        return self.app.container_finder.find_container(tool_info, destination_info, job_info)
 
     def _handle_runner_state(self, runner_state, job_state: "JobState"):
         try:
