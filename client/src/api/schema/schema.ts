@@ -18173,23 +18173,11 @@ export interface operations {
          * Lists all available data tables
          * @description Get the list of all available data tables.
          */
-        parameters?: {
-            /** @description The user ID that will be used to effectively make this API call. Only admins and designated users can make API calls on behalf of other users. */
-            header?: {
-                "run-as"?: string;
-            };
-        };
         responses: {
             /** @description A list with details on individual data tables. */
             200: {
                 content: {
                     "application/json": components["schemas"]["ToolDataEntryList"];
-                };
-            };
-            /** @description Validation Error */
-            422: {
-                content: {
-                    "application/json": components["schemas"]["HTTPValidationError"];
                 };
             };
         };
