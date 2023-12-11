@@ -27,8 +27,8 @@ export async function loadWorkflows({
     filterText = "",
     showPublished = false,
     skipStepCounts = true,
-}: LoadWorkflowsOptions): Promise<Workflow[]> {
-    const { data } = await getWorkflows({
+}: LoadWorkflowsOptions): Promise<{ data: Workflow[]; headers: Headers }> {
+    const { data, headers } = await getWorkflows({
         sort_by: sortBy,
         sort_desc: sortDesc,
         limit,
@@ -37,7 +37,7 @@ export async function loadWorkflows({
         show_published: showPublished,
         skip_step_counts: skipStepCounts,
     });
-    return data;
+    return { data, headers };
 }
 
 export async function updateWorkflow(id: string, changes: object): Promise<Workflow> {
