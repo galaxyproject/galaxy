@@ -226,6 +226,7 @@ async function onTagClick(tag: string) {
 
 .workflow-card {
     container: workflow-card / inline-size;
+    margin: 0 0.25rem 0.5rem 0.25rem;
 
     .workflow-rename {
         opacity: 0;
@@ -238,6 +239,7 @@ async function onTagClick(tag: string) {
     }
 
     .workflow-card-container {
+        height: 100%;
         display: flex;
         gap: 0.5rem;
         flex-direction: column;
@@ -246,7 +248,6 @@ async function onTagClick(tag: string) {
         border: 1px solid #e5e5e5;
         border-radius: 0.5rem;
         padding: 0.5rem;
-        margin: 0 0.25rem 0.5rem 0.25rem;
 
         .workflow-count-actions {
             display: flex;
@@ -285,7 +286,7 @@ async function onTagClick(tag: string) {
             max-width: 60%;
         }
 
-        @container (max-width: #{$breakpoint-sm}) {
+        @container workflow-card (max-width: #{$breakpoint-sm}) {
             .workflow-card-footer {
                 display: inline-block;
             }
@@ -295,7 +296,7 @@ async function onTagClick(tag: string) {
             }
         }
 
-        @container (max-width: #{$breakpoint-sm}) {
+        @container workflow-card (max-width: #{$breakpoint-sm}) {
             .workflow-card-actions {
                 display: flex;
                 gap: 0.5rem;
@@ -304,7 +305,7 @@ async function onTagClick(tag: string) {
             }
         }
 
-        @container (min-width: #{$breakpoint-sm}, max-width: #{$breakpoint-md}) {
+        @container workflow-card (min-width: #{$breakpoint-sm}, max-width: #{$breakpoint-md}) {
             .workflow-card-actions {
                 justify-content: end;
             }
@@ -315,7 +316,7 @@ async function onTagClick(tag: string) {
         border-left: 0.25rem solid $brand-primary;
     }
 
-    @container (max-width: #{$breakpoint-md}) {
+    @container workflow-card (max-width: #{$breakpoint-md}) {
         .hide-in-card {
             display: none !important;
         }
@@ -330,7 +331,7 @@ async function onTagClick(tag: string) {
         }
     }
 
-    @container (min-width: #{$breakpoint-md}) {
+    @container workflow-card (min-width: #{$breakpoint-md}) {
         .workflow-count-actions {
             align-items: end;
             flex-direction: column-reverse;
