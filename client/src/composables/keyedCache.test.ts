@@ -11,7 +11,7 @@ interface ItemData {
 const fetchItem = jest.fn();
 const shouldFetch = jest.fn();
 
-describe("useSimpleKeyStore", () => {
+describe("useKeyedCache", () => {
     beforeEach(() => {
         fetchItem.mockClear();
         shouldFetch.mockClear();
