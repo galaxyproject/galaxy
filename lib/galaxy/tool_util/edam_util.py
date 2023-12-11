@@ -15,8 +15,10 @@ EDAM_PREFIX = "http://edamontology.org/"
 ROOT_OPERATION = "operation_0004"
 ROOT_TOPIC = "topic_0003"
 
+EdamDictType = Dict[str, Dict[str, str]]
 
-def load_edam_tree(path: Optional[str] = None, *included_terms: str):
+
+def load_edam_tree(path: Optional[str] = None, *included_terms: str) -> EdamDictType:
     if path is not None:
         assert os.path.exists(path), f"Failed to load EDAM tabular data at [{path}] path does not exist."
         handle = open(path)

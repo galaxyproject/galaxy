@@ -16,6 +16,7 @@ from galaxy.datatypes._schema import (
 )
 from galaxy.datatypes.data import Data
 from galaxy.datatypes.registry import Registry
+from galaxy.tool_util.edam_util import EdamDictType
 
 
 def view_index(
@@ -90,10 +91,10 @@ def view_converters(datatypes_registry: Registry) -> DatatypeConverterList:
     return parse_obj_as(DatatypeConverterList, converters)
 
 
-def _get_edam_details(datatypes_registry: Registry, edam_ids: Dict[str, str]) -> Dict[str, Dict]:
+def _get_edam_details(edam: EdamDictType, edam_ids: Dict[str, str]) -> Dict[str, Dict]:
     details_dict = {}
     for format, edam_iri in edam_ids.items():
-        edam_details = datatypes_registry.edam.get(edam_iri, {})
+        edam_details = edam.get(edam_iri, {})
 
         details_dict[format] = {
             "prefix_IRI": edam_iri,
@@ -105,19 +106,19 @@ def _get_edam_details(datatypes_registry: Registry, edam_ids: Dict[str, str]) ->
 
 
 def view_edam_formats(
-    datatypes_registry: Registry, detailed: Optional[bool] = False
+    edam: EdamDictType, datatypes_registry: Registry, detailed: Optional[bool] = False
 ) -> Union[Dict[str, str], Dict[str, Dict[str, str]]]:
     if detailed:
-        return _get_edam_details(datatypes_registry, datatypes_registry.edam_formats)
+        return _get_edam_details(edam, datatypes_registry.edam_formats)
     else:
         return datatypes_registry.edam_formats
 
 
 def view_edam_data(
-    datatypes_registry: Registry, detailed: Optional[bool] = False
+    edam: EdamDictType, datatypes_registry: Registry, detailed: Optional[bool] = False
 ) -> Union[Dict[str, str], Dict[str, Dict[str, str]]]:
     if detailed:
-        return _get_edam_details(datatypes_registry, datatypes_registry.edam_data)
+        return _get_edam_details(edam, datatypes_registry.edam_data)
     else:
         return datatypes_registry.edam_data
 
