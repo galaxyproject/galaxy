@@ -1,7 +1,5 @@
 import os
 
-from packaging.version import Version
-
 from galaxy.app_unittest_utils.tools_support import UsesApp
 from galaxy.job_execution.compute_environment import SimpleComputeEnvironment
 from galaxy.job_execution.datasets import DatasetPath
@@ -299,7 +297,7 @@ class ComputeEnvironment(SimpleComputeEnvironment):
 
 class MockTool:
     def __init__(self, app):
-        self.profile = Version("16.01")
+        self.profile = 16.01
         self.python_template_version = "2.7"
         self.app = app
         self.hooks_called = []

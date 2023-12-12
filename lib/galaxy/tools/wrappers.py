@@ -122,7 +122,7 @@ class InputValueWrapper(ToolParameterValueWrapper):
         input: "ToolParameter",
         value: Optional[str],
         other_values: Optional[Dict[str, str]] = None,
-        profile: Optional[Version] = None,
+        profile: Optional[float] = None,
     ) -> None:
         self.input = input
         if (
@@ -130,7 +130,7 @@ class InputValueWrapper(ToolParameterValueWrapper):
             and input.type == "text"
             and input.optional
             and input.optionality_inferred
-            and (profile is None or profile < Version("23.0"))
+            and (profile is None or Version(str(profile)) < Version("23.0"))
         ):
             # Tools with old profile versions may treat an optional text parameter as `""`
             value = ""
