@@ -79,6 +79,7 @@ class JobMetrics:
                 conf_dict = DEFAULT_CONFIG
             self.default_job_instrumenter = JobInstrumenter.from_dict(self.plugin_classes, conf_dict, **kwargs)
         else:
+            # allows for setting non-None falsey values to get no metrics config whatsoever
             self.default_job_instrumenter = NULL_JOB_INSTRUMENTER
         self.job_instrumenters = collections.defaultdict(lambda: self.default_job_instrumenter)
 

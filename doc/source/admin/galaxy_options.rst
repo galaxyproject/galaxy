@@ -4309,6 +4309,8 @@
     The syntax, available instrumenters, and documentation of their
     options is explained in detail in the documentation:
     https://docs.galaxyproject.org/en/master/admin/job_metrics.html
+    By default, the core plugin is enabled. Setting this option to
+    false or an empty list disables metrics entirely.
 :Default: ``None``
 :Type: seq
 

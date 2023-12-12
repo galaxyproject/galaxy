@@ -3145,6 +3145,9 @@ mapping:
 
           https://docs.galaxyproject.org/en/master/admin/job_metrics.html
 
+          By default, the core plugin is enabled. Setting this option to false or an empty list disables metrics
+          entirely.
+
       expose_potentially_sensitive_job_metrics:
         type: bool
         default: false
