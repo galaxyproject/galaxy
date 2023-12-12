@@ -705,6 +705,11 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
                     "topic_",
                 ),
             )
+        else:
+            self.edam = self._register_singleton(
+                EdamDictType,
+                {},
+            )
         self._configure_toolbox()
         # Load Data Manager
         self.data_managers = self._register_singleton(DataManagers)  # type: ignore[type-abstract]
