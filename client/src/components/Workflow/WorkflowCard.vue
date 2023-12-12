@@ -10,6 +10,7 @@ import { copyWorkflow, updateWorkflow } from "@/components/Workflow/workflows.se
 import { Toast } from "@/composables/toast";
 import { useUserStore } from "@/stores/userStore";
 
+import AsyncButton from "@/components/Common/AsyncButton.vue";
 import TextSummary from "@/components/Common/TextSummary.vue";
 import StatelessTags from "@/components/TagsMultiselect/StatelessTags.vue";
 import WorkflowActions from "@/components/Workflow/WorkflowActions.vue";
@@ -183,16 +184,16 @@ async function onTagClick(tag: string) {
                             Edit
                         </BButton>
 
-                        <BButton
+                        <AsyncButton
                             v-else
                             v-b-tooltip.hover
                             size="sm"
                             title="Import this workflow to edit"
+                            :icon="faUpload"
                             variant="outline-primary"
-                            @click="onImport">
-                            <FontAwesomeIcon :icon="faUpload" />
+                            :action="onImport">
                             Import
-                        </BButton>
+                        </AsyncButton>
 
                         <WorkflowRunButton :id="workflow.id" />
                     </div>

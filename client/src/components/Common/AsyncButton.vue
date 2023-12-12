@@ -10,7 +10,18 @@ interface Props {
     loadingTitle?: string;
     size?: "sm" | "md" | "lg";
     action: () => Promise<void>;
-    variant?: "primary" | "secondary" | "success" | "danger" | "warning" | "info" | "light" | "dark" | "link";
+
+    variant?:
+        | "outline-primary"
+        | "primary"
+        | "secondary"
+        | "success"
+        | "danger"
+        | "warning"
+        | "info"
+        | "light"
+        | "dark"
+        | "link";
 }
 
 const props = withDefaults(defineProps<Props>(), {
