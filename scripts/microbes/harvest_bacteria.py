@@ -79,9 +79,9 @@ def get_chroms_by_project_id(
 ):
     html_count = 0
     html = None
+    url = f"{base_url}{org_num}"
     while html_count < 500 and html is None:
         html_count += 1
-        url = f"{base_url}{org_num}"
         try:
             html = requests.get(url).text
         except Exception:
@@ -89,7 +89,7 @@ def get_chroms_by_project_id(
             html = None
             time.sleep(1)  # Throttle Connection
     if html is None:
-        "GENOME PROJECT COMPLETELY FAILED TO LOAD", "org:", org_num, "http://www.ncbi.nlm.nih.gov/entrez/query.fcgi?db=genomeprj&cmd=Retrieve&dopt=Overview&list_uids=" + org_num
+        print("GENOME PROJECT COMPLETELY FAILED TO LOAD", "org:", org_num, url)
         return None
 
     chroms = []
