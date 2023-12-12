@@ -2,7 +2,7 @@
     <description>interactive tool</description>
     <requirements>
         <container type="docker">thepineapplepirate/qiskit_galaxy:1.0.0</container>
-     	## files for this docker image can be found at https://github.com/thepineapplepirate/qiskit-jupyter-galaxy_docker.git ##
+     	<!-- files for this docker image can be found at https://github.com/thepineapplepirate/qiskit-jupyter-galaxy_docker.git -->
     </requirements>
     <entry_points>
         <entry_point name="Qiskit Jupyter Notebook" requires_domain="True">
