@@ -113,7 +113,7 @@ def _normalize_inputs(
             elif inputs_by_el == "step_uuid":
                 possible_input_keys.append(str(step.uuid))
             elif inputs_by_el == "name":
-                possible_input_keys.append(step.label or step.tool_inputs.get("name"))
+                possible_input_keys.append(step.label or step.tool_inputs.get("name"))  # type:ignore[union-attr]
             else:
                 raise exceptions.MessageException(
                     "Workflow cannot be run because unexpected inputs_by value specified."
@@ -379,14 +379,16 @@ def build_workflow_run_configs(
             try:
                 if input_source == "ldda":
                     ldda = trans.sa_session.get(LibraryDatasetDatasetAssociation, trans.security.decode_id(input_id))
+                    assert ldda
                     assert trans.user_is_admin or trans.app.security_agent.can_access_dataset(
                         trans.get_current_user_roles(), ldda.dataset
                     )
                     content = ldda.to_history_dataset_association(history, add_to_history=add_to_history)
                 elif input_source == "ld":
-                    ldda = trans.sa_session.get(
-                        LibraryDataset, trans.security.decode_id(input_id)
-                    ).library_dataset_dataset_association
+                    library_dataset = trans.sa_session.get(LibraryDataset, trans.security.decode_id(input_id))
+                    assert library_dataset
+                    ldda = library_dataset.library_dataset_dataset_association
+                    assert ldda
                     assert trans.user_is_admin or trans.app.security_agent.can_access_dataset(
                         trans.get_current_user_roles(), ldda.dataset
                     )

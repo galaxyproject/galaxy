@@ -117,7 +117,7 @@ class InstalledRepositoryManager:
                 tpm=tpm,
                 repository=repository,
                 changeset_revision=repository.changeset_revision,
-                metadata_dict=repository.metadata_,
+                metadata_dict=repository.metadata_,  # type:ignore[arg-type]
             )
             repository_tools_tups = irmm.get_repository_tools_tups()
             # Reload tools into the appropriate tool panel section.
@@ -139,7 +139,7 @@ class InstalledRepositoryManager:
                 dmh = data_manager.DataManagerHandler(self.app)
                 dmh.install_data_managers(
                     self.app.config.shed_data_manager_config_file,
-                    repository.metadata_,
+                    repository.metadata_,  # type:ignore[arg-type]
                     repository.get_shed_config_dict(self.app),
                     data_manager_relative_install_dir,
                     repository,
@@ -206,7 +206,9 @@ class InstalledRepositoryManager:
 
     def get_containing_repository_for_tool_dependency(self, tool_dependency_tup: tuple) -> ToolShedRepository:
         tool_shed_repository_id, name, version, type = tool_dependency_tup
-        return self.context.query(ToolShedRepository).get(tool_shed_repository_id)
+        repository = self.context.query(ToolShedRepository).get(tool_shed_repository_id)
+        assert repository
+        return repository
 
     def get_dependencies_for_repository(
         self,

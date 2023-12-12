@@ -182,7 +182,7 @@ class ShareableService:
 class SharedItemNotificationFactory:
     source = "galaxy_sharing_system"
 
-    type_map: Dict[SharableItem, SharableItemType] = {
+    type_map: Dict[Type[SharableItem], SharableItemType] = {
         History: "history",
         StoredWorkflow: "workflow",
         Visualization: "visualization",

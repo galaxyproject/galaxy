@@ -12,6 +12,7 @@ from html.entities import name2codepoint
 from html.parser import HTMLParser
 from typing import (
     Callable,
+    Optional,
     Tuple,
 )
 
@@ -24,10 +25,7 @@ from sqlalchemy import (
     select,
     true,
 )
-from sqlalchemy.orm import (
-    aliased,
-    Session,
-)
+from sqlalchemy.orm import aliased
 
 from galaxy import (
     exceptions,
@@ -64,6 +62,7 @@ from galaxy.model.index_filter_util import (
     text_column_filter,
 )
 from galaxy.model.item_attrs import UsesAnnotations
+from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.schema.schema import (
     CreatePagePayload,
     PageContentFormat,
@@ -240,7 +239,7 @@ class PageManager(sharable.SharableModelManager, UsesAnnotations):
             stmt = stmt.limit(payload.limit)
         if payload.offset is not None:
             stmt = stmt.offset(payload.offset)
-        return trans.sa_session.scalars(stmt), total_matches
+        return trans.sa_session.scalars(stmt), total_matches  # type:ignore[return-value]
 
     def create_page(self, trans, payload: CreatePagePayload):
         user = trans.get_user()
@@ -612,23 +611,27 @@ def placeholderRenderForEdit(trans: ProvidesHistoryContext, item_class, item_id)
 
 def placeholderRenderForSave(trans: ProvidesHistoryContext, item_class, item_id, encode=False):
     encoded_item_id, decoded_item_id = get_page_identifiers(item_id, trans.app)
-    item_name = ""
+    item_name: Optional[str] = ""
     if item_class == "History":
         history = trans.sa_session.get(History, decoded_item_id)
         history = base.security_check(trans, history, False, True)
+        assert history
         item_name = history.name
     elif item_class == "HistoryDatasetAssociation":
         hda = trans.sa_session.get(HistoryDatasetAssociation, decoded_item_id)
         hda_manager = trans.app.hda_manager
         hda = hda_manager.get_accessible(decoded_item_id, trans.user)
+        assert hda
         item_name = hda.name
     elif item_class == "StoredWorkflow":
         wf = trans.sa_session.get(StoredWorkflow, decoded_item_id)
         wf = base.security_check(trans, wf, False, True)
+        assert wf
         item_name = wf.name
     elif item_class == "Visualization":
         visualization = trans.sa_session.get(Visualization, decoded_item_id)
         visualization = base.security_check(trans, visualization, False, True)
+        assert visualization
         item_name = visualization.title
     class_shorthand = PAGE_CLASS_MAPPING[item_class]
     if encode:
@@ -644,12 +647,12 @@ def placeholderRenderForSave(trans: ProvidesHistoryContext, item_class, item_id,
     )
 
 
-def get_page_revision(session: Session, page_id: int):
+def get_page_revision(session: galaxy_scoped_session, page_id: int):
     stmt = select(PageRevision).filter_by(page_id=page_id)
     return session.scalars(stmt)
 
 
-def get_shared_pages(session: Session, user: User):
+def get_shared_pages(session: galaxy_scoped_session, user: User):
     stmt = (
         select(PageUserShareAssociation)
         .where(PageUserShareAssociation.user == user)
@@ -660,12 +663,12 @@ def get_shared_pages(session: Session, user: User):
     return session.scalars(stmt)
 
 
-def get_page(session: Session, user: User, slug: str):
+def get_page(session: galaxy_scoped_session, user: User, slug: str):
     stmt = _build_page_query(select(Page), user, slug)
     return session.scalars(stmt).first()
 
 
-def page_exists(session: Session, user: User, slug: str) -> bool:
+def page_exists(session: galaxy_scoped_session, user: User, slug: str) -> bool:
     stmt = _build_page_query(select(Page.id), user, slug)
     return session.scalars(stmt).first() is not None
 

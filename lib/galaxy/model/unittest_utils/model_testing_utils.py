@@ -145,7 +145,7 @@ def drop_database(db_url, database):
         _drop_database(db_url, database)
     else:
         url = make_url(db_url)
-        os.remove(url.database)
+        os.remove(url.database)  # type:ignore[arg-type]
 
 
 def dbcleanup_wrapper(session, obj, where_clause=None):
@@ -263,4 +263,4 @@ def _make_sqlite_db_url(tmpdir: str, database: str) -> DbUrl:
 def _make_postgres_db_url(connection_url: DbUrl, database: str) -> DbUrl:
     url = make_url(connection_url)
     url = url.set(database=database)
-    return DbUrl(str(url))
+    return DbUrl(url.render_as_string(hide_password=False))

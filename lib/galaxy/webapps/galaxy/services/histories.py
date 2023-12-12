@@ -20,7 +20,6 @@ from sqlalchemy import (
     select,
     true,
 )
-from sqlalchemy.orm import Session
 
 from galaxy import (
     exceptions as glx_exceptions,
@@ -45,6 +44,7 @@ from galaxy.managers.notification import NotificationManager
 from galaxy.managers.users import UserManager
 from galaxy.model import HistoryDatasetAssociation
 from galaxy.model.base import transaction
+from galaxy.model.scoped_session import galaxy_scoped_session
 from galaxy.model.store import payload_to_source_uri
 from galaxy.schema import (
     FilterQueryParams,
@@ -820,7 +820,7 @@ class HistoriesService(ServiceBase, ConsumesModelStores, ServesExportStores):
         return None
 
 
-def get_fasta_hdas_by_history(session: Session, history_id: int):
+def get_fasta_hdas_by_history(session: galaxy_scoped_session, history_id: int):
     stmt = (
         select(HistoryDatasetAssociation)
         .filter_by(history_id=history_id, extension="fasta", deleted=False)

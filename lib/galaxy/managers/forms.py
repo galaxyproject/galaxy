@@ -1,5 +1,8 @@
 from sqlalchemy import select
-from sqlalchemy.orm import exc as sqlalchemy_exceptions
+from sqlalchemy.exc import (
+    MultipleResultsFound,
+    NoResultFound,
+)
 
 from galaxy.exceptions import (
     InconsistentDatabase,
@@ -59,9 +62,9 @@ class FormManager(base.ModelManager[FormDefinitionCurrent]):
         try:
             stmt = select(FormDefinitionCurrent).where(FormDefinitionCurrent.id == form_id)
             form = self.session().execute(stmt).scalar_one()
-        except sqlalchemy_exceptions.MultipleResultsFound:
+        except MultipleResultsFound:
             raise InconsistentDatabase("Multiple forms found with the same id.")
-        except sqlalchemy_exceptions.NoResultFound:
+        except NoResultFound:
             raise RequestParameterInvalidException("No accessible form found with the id provided.")
         except Exception as e:
             raise InternalServerError(f"Error loading from the database.{unicodify(e)}")

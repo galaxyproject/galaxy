@@ -264,8 +264,8 @@ class TestUserNotifications(NotificationManagerBaseTestCase):
         actual_user_notification = self.notification_manager.get_user_notification(user, notification.id)
 
         self._assert_notification_expected(actual_user_notification, expected_user_notification)
-        assert actual_user_notification["seen_time"] is None
-        assert actual_user_notification["deleted"] is False
+        assert actual_user_notification._mapping["seen_time"] is None
+        assert actual_user_notification._mapping["deleted"] is False
 
     def test_update_user_notifications(self):
         user = self._create_test_user()

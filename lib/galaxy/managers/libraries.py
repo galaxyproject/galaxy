@@ -19,11 +19,11 @@ from sqlalchemy import (
     select,
     true,
 )
-from sqlalchemy.orm import Query
-from sqlalchemy.orm.exc import (
+from sqlalchemy.exc import (
     MultipleResultsFound,
     NoResultFound,
 )
+from sqlalchemy.orm import Query
 
 from galaxy import exceptions
 from galaxy.managers.folders import FolderManager

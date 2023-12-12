@@ -318,9 +318,9 @@ class ModelManager(Generic[U]):
         # overridden to raise serializable errors
         try:
             return query.one()
-        except sqlalchemy.orm.exc.NoResultFound:
+        except sqlalchemy.exc.NoResultFound:
             raise exceptions.ObjectNotFound(f"{self.model_class.__name__} not found")
-        except sqlalchemy.orm.exc.MultipleResultsFound:
+        except sqlalchemy.exc.MultipleResultsFound:
             raise exceptions.InconsistentDatabase(f"found more than one {self.model_class.__name__}")
 
     # NOTE: at this layer, all ids are expected to be decoded and in int form
