@@ -1,8 +1,17 @@
-import { faCopy, faEdit, faExchangeAlt, faEye, faPlus, faShareAlt, faSignature, faTrash, faTrashRestore } from "@fortawesome/free-solid-svg-icons";
+import {
+    faCopy,
+    faExchangeAlt,
+    faEye,
+    faPlus,
+    faShareAlt,
+    faSignature,
+    faTrash,
+    faTrashRestore,
+    faUsers,
+} from "@fortawesome/free-solid-svg-icons";
 import { useEventBus } from "@vueuse/core";
 
-import { deleteForm, undeleteForm } from "@/api/forms";
-import { historiesQuery } from "@/api/histories";
+import { deleteHistory, historiesQuery, purgeHistory, undeleteHistory } from "@/api/histories";
 import Filtering, { contains, equals, expandNameTag, toBool, type ValidFilter } from "@/utils/filtering";
 import _l from "@/utils/localization";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -14,7 +23,7 @@ const { emit } = useEventBus<string>("grid-router-push");
 /**
  * Local types
  */
-type FormEntry = Record<string, unknown>;
+type HistoryEntry = Record<string, unknown>;
 type SortKeyLiteral = "create_time" | "name" | "update_time" | undefined;
 
 /**
@@ -41,7 +50,7 @@ const actions: ActionArray = [
         title: "Import New History",
         icon: faPlus,
         handler: () => {
-            emit("/admin/form/create_form");
+            emit("/histories/import");
         },
     },
 ];
@@ -58,59 +67,59 @@ const fields: FieldArray = [
             {
                 title: "Switch",
                 icon: faExchangeAlt,
-                condition: (data: FormEntry) => !data.deleted,
-                handler: (data: FormEntry) => {
+                condition: (data: HistoryEntry) => !data.deleted,
+                handler: (data: HistoryEntry) => {
                     emit(`/histories/view?id=${data.id}`);
                 },
             },
             {
                 title: "View",
                 icon: faEye,
-                condition: (data: FormEntry) => !data.deleted,
-                handler: (data: FormEntry) => {
+                condition: (data: HistoryEntry) => !data.deleted,
+                handler: (data: HistoryEntry) => {
                     emit(`/histories/view?id=${data.id}`);
-                },
-            },
-            {
-                title: "Share and Publish",
-                icon: faShareAlt,
-                condition: (data: FormEntry) => !data.deleted,
-                handler: (data: FormEntry) => {
-                    emit(`/histories/sharing?id=${data.id}`);
-                },
-            },
-            {
-                title: "Copy",
-                icon: faCopy,
-                condition: (data: FormEntry) => !data.deleted,
-                handler: (data: FormEntry) => {
-                    emit(`/histories/sharing?id=${data.id}`);
-                },
-            },
-            {
-                title: "Change Permissions",
-                icon: faEdit,
-                condition: (data: FormEntry) => !data.deleted,
-                handler: (data: FormEntry) => {
-                    emit(`/histories/permissions?id=${data.id}`);
                 },
             },
             {
                 title: "Rename",
                 icon: faSignature,
-                condition: (data: FormEntry) => !data.deleted,
-                handler: (data: FormEntry) => {
+                condition: (data: HistoryEntry) => !data.deleted,
+                handler: (data: HistoryEntry) => {
                     emit(`/histories/rename?id=${data.id}`);
+                },
+            },
+            {
+                title: "Copy",
+                icon: faCopy,
+                condition: (data: HistoryEntry) => !data.deleted,
+                handler: (data: HistoryEntry) => {
+                    emit(`/histories/sharing?id=${data.id}`);
+                },
+            },
+            {
+                title: "Share and Publish",
+                icon: faShareAlt,
+                condition: (data: HistoryEntry) => !data.deleted,
+                handler: (data: HistoryEntry) => {
+                    emit(`/histories/sharing?id=${data.id}`);
+                },
+            },
+            {
+                title: "Change Permissions",
+                icon: faUsers,
+                condition: (data: HistoryEntry) => !data.deleted,
+                handler: (data: HistoryEntry) => {
+                    emit(`/histories/permissions?id=${data.id}`);
                 },
             },
             {
                 title: "Delete",
                 icon: faTrash,
-                condition: (data: FormEntry) => !data.deleted,
-                handler: async (data: FormEntry) => {
-                    if (confirm(_l("Are you sure that you want to delete this form?"))) {
+                condition: (data: HistoryEntry) => !data.deleted,
+                handler: async (data: HistoryEntry) => {
+                    if (confirm(_l("Are you sure that you want to delete this history?"))) {
                         try {
-                            await deleteForm({ id: String(data.id) });
+                            await deleteHistory({ history_id: String(data.id) });
                             return {
                                 status: "success",
                                 message: `'${data.name}' has been deleted.`,
@@ -127,11 +136,11 @@ const fields: FieldArray = [
             {
                 title: "Delete Permanently",
                 icon: faTrash,
-                condition: (data: FormEntry) => !data.deleted,
-                handler: async (data: FormEntry) => {
-                    if (confirm(_l("Are you sure that you want to delete this form?"))) {
+                condition: (data: HistoryEntry) => !!data.deleted,
+                handler: async (data: HistoryEntry) => {
+                    if (confirm(_l("Are you sure that you want to delete this history?"))) {
                         try {
-                            await deleteForm({ id: String(data.id) });
+                            await purgeHistory({ history_id: String(data.id) });
                             return {
                                 status: "success",
                                 message: `'${data.name}' has been deleted.`,
@@ -148,10 +157,10 @@ const fields: FieldArray = [
             {
                 title: "Restore",
                 icon: faTrashRestore,
-                condition: (data: FormEntry) => !!data.deleted,
-                handler: async (data: FormEntry) => {
+                condition: (data: HistoryEntry) => !!data.deleted,
+                handler: async (data: HistoryEntry) => {
                     try {
-                        await undeleteForm({ id: String(data.id) });
+                        await undeleteHistory({ history_id: String(data.id) });
                         return {
                             status: "success",
                             message: `'${data.name}' has been restored.`,
