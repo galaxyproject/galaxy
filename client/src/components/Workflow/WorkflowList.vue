@@ -98,7 +98,11 @@ function updateFilter(newVal: string) {
 }
 
 function onTagClick(tag: string) {
-    filterText.value = WorkflowFilters.setFilterValue(filterText.value, "tag", `'${tag}'`);
+    if (filterText.value.includes(tag)) {
+        filterText.value = filterText.value.replace(`tag:'${tag}'`, "").trim();
+    } else {
+        filterText.value = WorkflowFilters.setFilterValue(filterText.value, "tag", `'${tag}'`);
+    }
 }
 
 function onToggleDeleted() {
@@ -181,7 +185,6 @@ async function onToBottom() {
 }
 
 watch([filterText, sortBy, sortDesc, showBookmarked], async () => {
-    console.log("filterText changed", filterText.value, sortBy.value, sortDesc.value, showBookmarked.value);
     offset.value = 0;
     workflowsLoaded.value = [];
     await load(true);
