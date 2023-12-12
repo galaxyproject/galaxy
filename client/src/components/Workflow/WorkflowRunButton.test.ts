@@ -1,7 +1,7 @@
 import { shallowMount } from "@vue/test-utils";
 import { getLocalVue } from "tests/jest/helpers";
 
-import { generateRandomString } from "./test-utils";
+import { generateRandomString } from "./testUtils";
 
 import WorkflowRunButton from "./WorkflowRunButton.vue";
 
