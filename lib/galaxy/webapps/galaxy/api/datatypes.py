@@ -26,7 +26,7 @@ from galaxy.managers.datatypes import (
     view_mapping,
     view_sniffers,
 )
-from galaxy.tool_util.edam_util import EdamDictType
+from galaxy.tool_util.edam_util import EdamDict
 from . import (
     depends,
     Router,
@@ -58,7 +58,7 @@ IdentifierOnly: Optional[bool] = Query(
 @router.cbv
 class FastAPIDatatypes:
     datatypes_registry: Registry = depends(Registry)
-    edam: EdamDictType = depends(EdamDictType)
+    edam: EdamDict = depends(EdamDict)
 
     @router.get(
         "/api/datatypes",

@@ -15,10 +15,13 @@ EDAM_PREFIX = "http://edamontology.org/"
 ROOT_OPERATION = "operation_0004"
 ROOT_TOPIC = "topic_0003"
 
-EdamDictType = Dict[str, Dict[str, str]]
+
+class EdamDict(dict):
+    # Exists only for lagom + python3.8
+    pass
 
 
-def load_edam_tree(path: Optional[str] = None, *included_terms: str) -> EdamDictType:
+def load_edam_tree(path: Optional[str] = None, *included_terms: str) -> EdamDict:
     if path is not None:
         assert os.path.exists(path), f"Failed to load EDAM tabular data at [{path}] path does not exist."
         handle = open(path)
@@ -27,7 +30,7 @@ def load_edam_tree(path: Optional[str] = None, *included_terms: str) -> EdamDict
             tabular_stream is not None
         ), "Failed to load optional import from edam-ontology package, install using [pip install edam-ontology]."
         handle = tabular_stream()
-    return load_edam_tree_from_tsv_stream(handle, *included_terms)
+    return EdamDict(**load_edam_tree_from_tsv_stream(handle, *included_terms))
 
 
 def load_edam_tree_from_tsv_stream(tsv_stream: TextIO, *included_terms: str):

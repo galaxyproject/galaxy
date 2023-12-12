@@ -122,7 +122,7 @@ from galaxy.tool_util.deps import containers
 from galaxy.tool_util.deps.dependencies import AppInfo
 from galaxy.tool_util.deps.views import DependencyResolversView
 from galaxy.tool_util.edam_util import (
-    EdamDictType,
+    EdamDict,
     load_edam_tree,
 )
 from galaxy.tool_util.verify.test_data import TestDataResolver
@@ -696,7 +696,7 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
             # Load edam data
             edam_ontology_path = self.config.edam_toolbox_ontology_path
             self.edam = self._register_singleton(
-                EdamDictType,
+                EdamDict,
                 load_edam_tree(
                     None if not edam_ontology_path or not os.path.exists(edam_ontology_path) else edam_ontology_path,
                     "format_",
@@ -706,10 +706,7 @@ class UniverseApplication(StructuredApp, GalaxyManagerApplication):
                 ),
             )
         else:
-            self.edam = self._register_singleton(
-                EdamDictType,
-                {},
-            )
+            self.edam = self._register_singleton(EdamDict, EdamDict())
         self._configure_toolbox()
         # Load Data Manager
         self.data_managers = self._register_singleton(DataManagers)  # type: ignore[type-abstract]
