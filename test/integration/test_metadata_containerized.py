@@ -9,8 +9,14 @@ from .test_containerized_jobs import (
     skip_if_container_type_unavailable,
 )
 
-DOCKERIZED_JOB_CONFIG = {
-    "runners": {"local": {"load": "galaxy.jobs.runners.local:LocalJobRunner", "workers": 1}},
+DOCKERIZED_METADATA_JOB_CONFIG = {
+    "runners": {
+        "local": {"load": "galaxy.jobs.runners.local:LocalJobRunner"},
+        "pulsar_embed": {
+            "load": "galaxy.jobs.runners.pulsar:PulsarEmbeddedJobRunner",
+            "pulsar_app_config": {"conda_auto_init": False, "conda_auto_install": False},
+        },
+    },
     "execution": {
         "default": "local_docker",
         "environments": {
@@ -23,8 +29,22 @@ DOCKERIZED_JOB_CONFIG = {
                     "image": "galaxyproject/galaxy-job-execution",
                 },
             },
+            "pulsar_embed": {
+                "runner": "pulsar_embed",
+                "docker_enabled": True,
+                "remote_metadata": True,
+                "metadata_config": {
+                    "containerize": True,
+                    "engine": "docker",
+                    "image": "galaxyproject/galaxy-job-execution",
+                },
+            },
         },
     },
+    "tools": [
+        {"id": "metadata_bam", "environment": "local_docker"},
+        {"id": "composite_output", "environment": "local_docker"},
+    ],
 }
 
 
@@ -36,7 +56,7 @@ class ContainerizedMetadataIntegrationTestCase(integration_util.IntegrationTestC
     @classmethod
     def handle_galaxy_config_kwds(cls, config) -> None:
         super().handle_galaxy_config_kwds(config)
-        config["job_config"] = DOCKERIZED_JOB_CONFIG
+        config["job_config"] = DOCKERIZED_METADATA_JOB_CONFIG
         config["enable_celery_tasks"] = False
         config["metadata_strategy"] = "extended"
         disable_dependency_resolution(config)
@@ -67,5 +87,6 @@ instance = integration_util.integration_module_instance(ContainerizedMetadataInt
 test_tools = integration_util.integration_tool_runner(
     [
         "metadata_bam",
+        "composite_output",
     ]
 )

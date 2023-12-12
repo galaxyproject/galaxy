@@ -561,7 +561,12 @@ class BaseJobRunner:
             job_wrapper.set_container(container)
         return container
 
-    def _get_metadata_container(self, job_wrapper):
+    def _get_metadata_container(
+        self,
+        job_wrapper,
+        job_directory_type: typing.Literal["galaxy", "pulsar"] = "galaxy",
+        working_directory: typing.Optional[str] = None,
+    ):
         destination_info = job_wrapper.job_destination.params
         if destination_info.get("metadata_config", {}).get("containerize"):
             image = destination_info["metadata_config"].get("image", "galaxyproject/galaxy-job-execution")
@@ -577,12 +582,12 @@ class BaseJobRunner:
                 profile=23.2,
             )
             job_info = JobInfo(
-                working_directory=job_wrapper.working_directory,
+                working_directory=working_directory or job_wrapper.working_directory,
                 tool_directory=None,
                 job_directory=None,
                 tmp_directory=None,
                 home_directory=None,
-                job_directory_type="galaxy",
+                job_directory_type=job_directory_type,
             )
 
             return self.app.container_finder.find_container(tool_info, destination_info, job_info)
