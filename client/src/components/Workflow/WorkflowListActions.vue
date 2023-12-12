@@ -2,17 +2,12 @@
 import { library } from "@fortawesome/fontawesome-svg-core";
 import { faPlus, faUpload } from "@fortawesome/free-solid-svg-icons";
 import { FontAwesomeIcon } from "@fortawesome/vue-fontawesome";
-import { BButton, BModal } from "bootstrap-vue";
-import { ref } from "vue";
+import { BButton } from "bootstrap-vue";
 import { useRouter } from "vue-router/composables";
-
-import WorkflowCreate from "@/components/Workflow/WorkflowCreate.vue";
 
 library.add(faPlus, faUpload);
 
 const router = useRouter();
-
-const showCreateModal = ref(false);
 
 function navigateToImport() {
     router.push("/workflows/import");
@@ -33,7 +28,6 @@ function navigateToOldCreate() {
                 title="Create new workflow"
                 variant="outline-primary"
                 @click="navigateToOldCreate">
-                <!-- @click="showCreateModal = !showCreateModal"> -->
                 <FontAwesomeIcon :icon="faPlus" />
                 Create
             </BButton>
@@ -49,13 +43,5 @@ function navigateToOldCreate() {
                 Import
             </BButton>
         </div>
-
-        <BModal v-model="showCreateModal" hide-footer centered>
-            <template v-slot:modal-title>
-                <h4 class="modal-title">Create new workflow</h4>
-            </template>
-
-            <WorkflowCreate modal-view />
-        </BModal>
     </div>
 </template>
