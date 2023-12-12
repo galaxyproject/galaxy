@@ -1,5 +1,4 @@
 import {
-    faCopy,
     faExchangeAlt,
     faEye,
     faPlus,
@@ -12,6 +11,7 @@ import {
 import { useEventBus } from "@vueuse/core";
 
 import { deleteHistory, historiesQuery, purgeHistory, undeleteHistory } from "@/api/histories";
+import { useHistoryStore } from "@/stores/historyStore";
 import Filtering, { contains, equals, expandNameTag, toBool, type ValidFilter } from "@/utils/filtering";
 import _l from "@/utils/localization";
 import { errorMessageAsString } from "@/utils/simple-error";
@@ -69,7 +69,8 @@ const fields: FieldArray = [
                 icon: faExchangeAlt,
                 condition: (data: HistoryEntry) => !data.deleted,
                 handler: (data: HistoryEntry) => {
-                    emit(`/histories/view?id=${data.id}`);
+                    const historyStore = useHistoryStore();
+                    historyStore.setCurrentHistory(String(data.id));
                 },
             },
             {
@@ -86,14 +87,6 @@ const fields: FieldArray = [
                 condition: (data: HistoryEntry) => !data.deleted,
                 handler: (data: HistoryEntry) => {
                     emit(`/histories/rename?id=${data.id}`);
-                },
-            },
-            {
-                title: "Copy",
-                icon: faCopy,
-                condition: (data: HistoryEntry) => !data.deleted,
-                handler: (data: HistoryEntry) => {
-                    emit(`/histories/sharing?id=${data.id}`);
                 },
             },
             {
