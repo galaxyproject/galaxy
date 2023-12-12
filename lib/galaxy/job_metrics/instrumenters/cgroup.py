@@ -19,6 +19,24 @@ from .. import formatting
 log = logging.getLogger(__name__)
 
 VALID_VERSIONS = ("auto", "1", "2")
+DEFAULT_PARAMS = (
+    # cgroupsv1 - this is probably more params than are useful to collect, but don't remove any for legacy reasons
+    "memory.memsw.max_usage_in_bytes",
+    "memory.max_usage_in_bytes",
+    "memory.limit_in_bytes",
+    "memory.memsw.limit_in_bytes",
+    "memory.soft_limit_in_bytes",
+    "memory.failcnt",
+    "memory.oom_control.oom_kill_disable",
+    "memory.oom_control.under_oom",
+    "cpuacct.usage",
+    # cgroupsv2
+    "memory.events.oom_kill",
+    "memory.peak",
+    "cpu.stat.system_usec",
+    "cpu.stat.usage_usec",
+    "cpu.stat.user_usec",
+)
 TITLES = {
     # cgroupsv1
     "memory.memsw.max_usage_in_bytes": "Max memory usage (MEM+SWP)",
@@ -44,9 +62,9 @@ TITLES = {
     "memory.max": "Memory usage hard limit",
     "memory.min": "Hard memory protection",
     "memory.peak": "Max memory usage recorded",
-    "cpu.stat.system_usec": "CPU system time (seconds)",
-    "cpu.stat.usage_usec": "CPU usage time (seconds)",
-    "cpu.stat.user_usec": "CPU user time (seconds)",
+    "cpu.stat.system_usec": "CPU system time",
+    "cpu.stat.usage_usec": "CPU usage time",
+    "cpu.stat.user_usec": "CPU user time",
 }
 CONVERSION = {
     "memory.oom_control.oom_kill_disable": lambda x: "No" if x == 1 else "Yes",
@@ -126,7 +144,7 @@ class CgroupPlugin(InstrumentPlugin):
         elif params_str:
             params = [v.strip() for v in params_str.split(",")]
         else:
-            params = list(TITLES.keys())
+            params = list(DEFAULT_PARAMS)
         self.params = params
 
     def post_execute_instrument(self, job_directory: str) -> List[str]:
