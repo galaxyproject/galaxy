@@ -3,7 +3,7 @@ import { useEventBus } from "@vueuse/core";
 
 import { deleteForm, undeleteForm } from "@/api/forms";
 import { historiesQuery } from "@/api/histories";
-import Filtering, { contains, equals, toBool, type ValidFilter } from "@/utils/filtering";
+import Filtering, { contains, equals, expandNameTag, toBool, type ValidFilter } from "@/utils/filtering";
 import _l from "@/utils/localization";
 import { errorMessageAsString } from "@/utils/simple-error";
 
@@ -188,14 +188,36 @@ const fields: FieldArray = [
     },
     {
         key: "sharing",
-        title: "Sharing",
+        title: "Shared",
         type: "sharing",
     },
 ];
 
+/**
+ * Declare filter options
+ */
 const validFilters: Record<string, ValidFilter<string | boolean | undefined>> = {
-    name: { placeholder: "name", type: String, handler: contains("name"), menuItem: true },
-    description: { placeholder: "description", type: String, handler: contains("desc"), menuItem: true },
+    title: { placeholder: "name", type: String, handler: contains("name"), menuItem: true },
+    tag: {
+        placeholder: "tag(s)",
+        type: "MultiTags",
+        handler: contains("tag", "tag", expandNameTag),
+        menuItem: true,
+    },
+    published: {
+        placeholder: "Filter on published entries",
+        type: Boolean,
+        boolType: "is",
+        handler: equals("published", "published", toBool),
+        menuItem: true,
+    },
+    importable: {
+        placeholder: "Filter on importable entries",
+        type: Boolean,
+        boolType: "is",
+        handler: equals("importable", "importable", toBool),
+        menuItem: true,
+    },
     deleted: {
         placeholder: "Filter on deleted entries",
         type: Boolean,
