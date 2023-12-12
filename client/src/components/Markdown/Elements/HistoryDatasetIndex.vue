@@ -1,5 +1,5 @@
 <template>
-    <DatasetIndex class="dataset-index" :history_dataset_id="args.history_dataset_id" :path="args.path" />
+    <DatasetIndex class="dataset-index" :history-dataset-id="args.history_dataset_id" :path="args.path" />
 </template>
 
 <script>
