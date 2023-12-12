@@ -116,7 +116,7 @@ def extract_steps(
         if name not in step_labels:
             step.label = name
             step_labels.add(name)
-        step.tool_inputs = dict(name=name)
+        step.tool_inputs = dict(name=name)  # type:ignore[assignment]
         hid_to_output_pair[hid] = (step, "output")
         steps.append(step)
     for i, hid in enumerate(dataset_collection_ids):
@@ -132,7 +132,7 @@ def extract_steps(
         if name not in step_labels:
             step.label = name
             step_labels.add(name)
-        step.tool_inputs = dict(name=name, collection_type=collection_type)
+        step.tool_inputs = dict(name=name, collection_type=collection_type)  # type:ignore[assignment]
         hid_to_output_pair[hid] = (step, "output")
         steps.append(step)
     # Tool steps

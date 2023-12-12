@@ -85,7 +85,10 @@ class TestHistoryManager(BaseTestCase):
 
         self.log("should be able to order")
         history3 = self.history_manager.create(name="history3", user=user2)
-        name_first_then_time = (model.History.name, sqlalchemy.desc(model.History.create_time))
+        name_first_then_time = (
+            model.History.name,
+            sqlalchemy.desc(model.History.create_time),
+        )  # type:ignore[var-annotated]
         assert self.history_manager.list(order_by=name_first_then_time) == [history2, history1, history3]
 
     def test_copy(self):

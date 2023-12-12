@@ -134,7 +134,7 @@ def test_deferred_hdas_basic_attached_from_detached_hda():
 
     assert deferred_hda.dataset.state == "deferred"
     materializer = materializer_factory(
-        True, object_store=fixture_context.app.object_store, sa_session=fixture_context.sa_session
+        True, object_store=fixture_context.app.object_store, sa_session=fixture_context.sa_session()
     )
     materialized_hda = materializer.ensure_materialized(deferred_hda)
     materialized_dataset = materialized_hda.dataset

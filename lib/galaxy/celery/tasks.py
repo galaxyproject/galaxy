@@ -195,7 +195,7 @@ def set_metadata(
     try:
         if overwrite:
             hda_manager.overwrite_metadata(dataset_instance)
-        dataset_instance.datatype.set_meta(dataset_instance)
+        dataset_instance.datatype.set_meta(dataset_instance)  # type:ignore [arg-type]
         dataset_instance.set_peek()
         # Reset SETTING_METADATA state so the dataset instance getter picks the dataset state
         dataset_instance.set_metadata_success_state()
@@ -228,6 +228,7 @@ def setup_fetch_data(
 ):
     tool = cached_create_tool_from_representation(app=app, raw_tool_source=raw_tool_source)
     job = sa_session.get(Job, job_id)
+    assert job
     # self.request.hostname is the actual worker name given by the `-n` argument, not the hostname as you might think.
     job.handler = self.request.hostname
     job.job_runner_name = "celery"
@@ -260,6 +261,7 @@ def finish_job(
 ):
     tool = cached_create_tool_from_representation(app=app, raw_tool_source=raw_tool_source)
     job = sa_session.get(Job, job_id)
+    assert job
     # TODO: assert state ?
     mini_job_wrapper = MinimalJobWrapper(job=job, app=app, tool=tool)
     mini_job_wrapper.finish("", "")
@@ -320,6 +322,7 @@ def fetch_data(
     task_user_id: Optional[int] = None,
 ) -> str:
     job = sa_session.get(Job, job_id)
+    assert job
     mini_job_wrapper = MinimalJobWrapper(job=job, app=app)
     mini_job_wrapper.change_state(model.Job.states.RUNNING, flush=True, job=job)
     return abort_when_job_stops(_fetch_data, session=sa_session, job_id=job_id, setup_return=setup_return)
