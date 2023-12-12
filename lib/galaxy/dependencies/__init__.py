@@ -297,6 +297,9 @@ class ConditionalDependencies:
     def check_pkce(self):
         return self.pkce_support
 
+    def check_rucio_clients(self):
+        return "rucio" in self.object_stores
+
 
 def optional(config_file=None):
     if not config_file:

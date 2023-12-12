@@ -32,4 +32,4 @@ class TestRucioObjectStoreIntegration(BaseRucioObjectStoreIntegrationTestCase):
 
 
 instance = integration_util.integration_module_instance(TestRucioObjectStoreIntegration)
-test_tools = integration_util.integration_tool_runner(TEST_TOOL_IDS)
+test_tools = integration_util.integration_tool_runner(TEST_TOOL_IDS, "3.9")

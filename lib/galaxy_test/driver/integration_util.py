@@ -7,6 +7,7 @@ testing configuration.
 
 import os
 import re
+import sys
 from typing import (
     ClassVar,
     Iterator,
@@ -83,6 +84,16 @@ def skip_unless_fixed_port():
         return _identity
 
     return pytest.mark.skip("GALAXY_TEST_PORT must be set for this test.")
+
+
+def skip_for_older_python(min_python_version):
+    if min_python_version is None:
+        return _identity
+    min_ver = min_python_version.split(".")
+    if sys.version_info < (int(min_ver[0]), int(min_ver[1])):
+        return pytest.mark.skip(f"Skipping tests for Python version less than {min_python_version}")
+
+    return _identity
 
 
 def skip_if_github_workflow():
@@ -212,7 +223,8 @@ def integration_module_instance(clazz: Type[IntegrationInstanceObject]):
     return pytest.fixture(scope="module")(_instance)
 
 
-def integration_tool_runner(tool_ids):
+def integration_tool_runner(tool_ids, min_python_version=None):
+    @skip_for_older_python(min_python_version)
     def test_tools(instance, tool_id):
         instance._run_tool_test(tool_id)
 

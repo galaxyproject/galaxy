@@ -17,10 +17,18 @@ import logging
 import os
 import shutil
 
-import rucio.common
-from rucio.client import Client
-from rucio.client.downloadclient import DownloadClient
-from rucio.client.uploadclient import UploadClient
+try:
+    import rucio.common
+    from rucio.client import Client
+    from rucio.client.downloadclient import DownloadClient
+    from rucio.client.uploadclient import UploadClient
+
+    from .rucio_extra_clients import (
+        DeleteClient,
+        InPlaceIngestClient,
+    )
+except ImportError:
+    Client = None
 
 from galaxy.exceptions import (
     ObjectInvalid,
@@ -33,13 +41,15 @@ from galaxy.util import (
     unlink,
 )
 from galaxy.util.path import safe_relpath
-from .rucio_extra_clients import (
-    DeleteClient,
-    InPlaceIngestClient,
-)
 from ..objectstore import ConcreteObjectStore
 
 log = logging.getLogger(__name__)
+
+NO_RUCIO_ERROR_MESSAGE = (
+    "ObjectStore configured to use Rucio, but no rucio-clients dependency available."
+    "Please install and properly configure rucio-clients or modify Object "
+    "Store configuration."
+)
 
 
 def _config_xml_error(tag):
@@ -141,6 +151,8 @@ class RucioBroker:
         self.scope = rucio_config["scope"]
         self.register_only = rucio_config["register_only"]
         self.download_schemes = rucio_config["download_schemes"]
+        if Client is None:
+            raise Exception(NO_RUCIO_ERROR_MESSAGE)
         rucio.common.utils.PREFERRED_CHECKSUM = "md5"
 
     def get_rucio_client(self):
