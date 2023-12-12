@@ -17,12 +17,11 @@ const props = withDefaults(defineProps<Props>(), {
 
 const showDetails = ref(false);
 
-// summarized length
-const x = Math.round(props.maxLength - props.maxLength / 2);
-
 const textTooLong = computed(() => props.description.length > props.maxLength);
 const text = computed(() =>
-    textTooLong.value && !showDetails.value ? props.description.slice(0, x) + "..." : props.description
+    textTooLong.value && !showDetails.value
+        ? props.description.slice(0, Math.round(props.maxLength - props.maxLength / 2)) + "..."
+        : props.description
 );
 </script>
 
