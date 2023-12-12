@@ -179,6 +179,11 @@ const fields: FieldArray = [
         type: "tags",
     },
     {
+        key: "id",
+        title: "Datasets",
+        type: "datasets",
+    },
+    {
         key: "create_time",
         title: "Created",
         type: "date",
