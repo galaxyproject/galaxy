@@ -1,6 +1,6 @@
 <template>
     <div>
-        <DatasetAsImage :path="args.path" :history_dataset_id="args.history_dataset_id" />
+        <DatasetAsImage :path="args.path" :history-dataset-id="args.history_dataset_id" />
     </div>
 </template>
 
