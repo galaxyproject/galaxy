@@ -1,6 +1,6 @@
 import { computed, ref, set } from "vue";
 
-import { DatasetExtraFiles, getCompositeDatasetLink } from "@/api/datasets";
+import { type DatasetExtraFiles, getCompositeDatasetLink } from "@/api/datasets";
 import { useDatasetExtraFilesStore } from "@/stores/datasetExtraFilesStore";
 
 export interface PathDestination {

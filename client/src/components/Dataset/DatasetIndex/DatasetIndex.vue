@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-import { DatasetExtraFiles } from "@/api/datasets";
+import type { DatasetExtraFiles } from "@/api/datasets";
 import { PathDestination, useDatasetPathDestination } from "@/composables/datasetPathDestination";
 
 interface Props {

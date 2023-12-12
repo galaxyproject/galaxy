@@ -1,7 +1,7 @@
 <script setup lang="ts">
 import { computed } from "vue";
 
-import { PathDestination, useDatasetPathDestination } from "@/composables/datasetPathDestination";
+import { type PathDestination, useDatasetPathDestination } from "@/composables/datasetPathDestination";
 import { getAppRoot } from "@/onload/loadConfig";
 
 interface Props {

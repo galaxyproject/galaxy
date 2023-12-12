@@ -2,7 +2,7 @@
 import { computed } from "vue";
 
 import { hasDetails } from "@/api";
-import { PathDestination, useDatasetPathDestination } from "@/composables/datasetPathDestination";
+import { type PathDestination, useDatasetPathDestination } from "@/composables/datasetPathDestination";
 import { useDatasetStore } from "@/stores/datasetStore";
 
 interface Props {
