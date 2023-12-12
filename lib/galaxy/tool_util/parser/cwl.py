@@ -3,7 +3,7 @@ import logging
 import math
 from typing import Optional
 
-import packaging.version
+from packaging.version import Version
 
 from galaxy.tool_util.cwl.parser import (
     tool_proxy,
@@ -163,8 +163,8 @@ class CwlToolSource(ToolSource):
             resource_requirements=resource_requirements,
         )
 
-    def parse_profile(self):
-        return "17.09"
+    def parse_profile(self) -> Version:
+        return Version("17.09")
 
     def parse_xrefs(self):
         return []
@@ -173,7 +173,7 @@ class CwlToolSource(ToolSource):
         return None
 
     def parse_python_template_version(self):
-        return packaging.version.Version("3.5")
+        return Version("3.5")
 
     def to_string(self):
         return json.dumps(self.tool_proxy.to_persistent_representation())

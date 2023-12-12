@@ -128,7 +128,7 @@ class XmlToolSource(ToolSource):
         self.root = self.xml_tree.getroot()
         self._source_path = source_path
         self._macro_paths = macro_paths or []
-        self.legacy_defaults = Version(self.parse_profile()) == Version("16.01")
+        self.legacy_defaults = self.parse_profile() == Version("16.01")
         self._string = xml_to_string(self.root)
 
     def to_string(self):
@@ -248,7 +248,7 @@ class XmlToolSource(ToolSource):
         return environment_variables
 
     def parse_home_target(self):
-        target = "job_home" if Version(self.parse_profile()) >= Version("18.01") else "shared_home"
+        target = "job_home" if self.parse_profile() >= Version("18.01") else "shared_home"
         command_el = self._command_el
         command_legacy = (command_el is not None) and command_el.get("use_shared_home", None)
         if command_legacy is not None:
@@ -395,7 +395,7 @@ class XmlToolSource(ToolSource):
             style = out_elem.attrib["provided_metadata_style"]
 
         if style is None:
-            style = "legacy" if Version(self.parse_profile()) < Version("17.09") else "default"
+            style = "legacy" if self.parse_profile() < Version("17.09") else "default"
 
         assert style in ["legacy", "default"]
         return style
@@ -537,7 +537,7 @@ class XmlToolSource(ToolSource):
         output.filters = data_elem.findall("filter")
         output.tool = tool
         output.from_work_dir = data_elem.get("from_work_dir", None)
-        if output.from_work_dir and Version(str(getattr(tool, "profile", 0))) < Version("21.09"):
+        if output.from_work_dir and getattr(tool, "profile", Version("16.01")) < Version("21.09"):
             # We started quoting from_work_dir outputs in 21.09.
             # Prior to quoting, trailing spaces had no effect.
             # This ensures that old tools continue to work.
@@ -614,7 +614,7 @@ class XmlToolSource(ToolSource):
 
     def parse_strict_shell(self):
         command_el = self._command_el
-        if Version(self.parse_profile()) < Version("20.09"):
+        if self.parse_profile() < Version("20.09"):
             default = "False"
         else:
             default = "True"
@@ -647,14 +647,14 @@ class XmlToolSource(ToolSource):
 
         return rval
 
-    def parse_profile(self) -> str:
+    def parse_profile(self) -> Version:
         # Pre-16.04 or default XML defaults
         # - Use standard error for error detection.
         # - Don't run shells with -e
         # - Auto-check for implicit multiple outputs.
         # - Auto-check for $param_file.
         # - Enable buggy interpreter attribute.
-        return self.root.get("profile", "16.01")
+        return Version(self.root.get("profile", "16.01"))
 
     def parse_license(self):
         return self.root.get("license")
@@ -685,7 +685,7 @@ class XmlToolSource(ToolSource):
         return creators
 
 
-def _test_elem_to_dict(test_elem, i, profile=None) -> ToolSourceTest:
+def _test_elem_to_dict(test_elem, i, profile: Optional[Version] = None) -> ToolSourceTest:
     rval: ToolSourceTest = dict(
         outputs=__parse_output_elems(test_elem),
         output_collections=__parse_output_collection_elems(test_elem, profile=profile),
@@ -758,7 +758,7 @@ def __parse_element_tests(parent_element, profile=None):
         element_tests[identifier] = __parse_test_attributes(
             element, element_attrib, parse_elements=True, profile=profile
         )
-        if profile and Version(profile) >= Version("20.09"):
+        if profile and profile >= Version("20.09"):
             element_tests[identifier][1]["expected_sort_order"] = idx
 
     return element_tests

@@ -16,7 +16,7 @@ from typing import (
     Union,
 )
 
-import packaging.version
+from packaging.version import Version
 from typing_extensions import TypedDict
 
 from galaxy.util.path import safe_walk
@@ -276,7 +276,7 @@ class ToolSource(metaclass=ABCMeta):
         """
 
     @abstractmethod
-    def parse_profile(self):
+    def parse_profile(self) -> Version:
         """Return tool profile version as Galaxy major e.g. 16.01 or 16.04."""
 
     @abstractmethod
@@ -284,7 +284,7 @@ class ToolSource(metaclass=ABCMeta):
         """Return license corresponding to tool wrapper."""
 
     @abstractmethod
-    def parse_python_template_version(self) -> Optional[packaging.version.Version]:
+    def parse_python_template_version(self) -> Optional[Version]:
         """
         Return minimum python version that the tool template has been developed against.
         """

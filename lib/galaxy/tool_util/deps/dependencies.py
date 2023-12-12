@@ -6,6 +6,8 @@ from typing import (
     Union,
 )
 
+from packaging.version import Version
+
 from galaxy.tool_util.deps.requirements import (
     ContainerDescription,
     ToolRequirement,
@@ -62,7 +64,7 @@ class ToolInfo:
         guest_ports=None,
         tool_id: Optional[str] = None,
         tool_version: Optional[str] = None,
-        profile: float = -1,
+        profile: Version = Version("0"),
     ):
         if env_pass_through is None:
             env_pass_through = ["GALAXY_SLOTS", "GALAXY_MEMORY_MB", "GALAXY_MEMORY_MB_PER_SLOT"]

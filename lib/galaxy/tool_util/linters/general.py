@@ -67,10 +67,10 @@ def lint_general(tool_source, lint_ctx):
         lint_ctx.valid(VALID_ID_MSG % tool_id, node=tool_node)
 
     profile = tool_source.parse_profile()
-    profile_valid = PROFILE_PATTERN.match(profile) is not None
+    profile_valid = PROFILE_PATTERN.match(str(profile)) is not None
     if not profile_valid:
         lint_ctx.error(PROFILE_INVALID_MSG % profile, node=tool_node)
-    elif Version(profile) == Version("16.01"):
+    elif profile == Version("16.01"):
         lint_ctx.valid(PROFILE_INFO_DEFAULT_MSG, node=tool_node)
     else:
         lint_ctx.valid(PROFILE_INFO_SPECIFIED_MSG % profile, node=tool_node)

@@ -97,7 +97,7 @@ def lint_output(tool_source: "ToolSource", lint_ctx: "LintContext"):
     lint_ctx.info(f"{num_outputs} outputs found.", node=outputs[0])
 
 
-def __check_format(node, lint_ctx, profile: str, allow_ext=False):
+def __check_format(node, lint_ctx, profile: Version, allow_ext=False):
     """
     check if format/ext/format_source attribute is set in a given node
     issue a warning if the value is input
@@ -120,7 +120,7 @@ def __check_format(node, lint_ctx, profile: str, allow_ext=False):
         fmt = node.attrib.get("format")
     if fmt == "input":
         message = f"Using format='input' on {node.tag} is deprecated. Use the format_source attribute."
-        if Version(str(profile)) <= Version("16.01"):
+        if profile <= Version("16.01"):
             lint_ctx.warn(message, node=node)
         else:
             lint_ctx.error(message, node=node)

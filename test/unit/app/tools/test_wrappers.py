@@ -4,6 +4,7 @@ from typing import cast
 from unittest.mock import Mock
 
 import pytest
+from packaging.version import Version
 
 from galaxy.datatypes.metadata import MetadataSpecCollection
 from galaxy.job_execution.compute_environment import ComputeEnvironment
@@ -320,7 +321,7 @@ class MockTool:
     def __init__(self, app):
         self.app = app
         self.options = Mock(sanitize=False)
-        self.profile = 23.0
+        self.profile = Version("23.0")
 
 
 class MockApp:
