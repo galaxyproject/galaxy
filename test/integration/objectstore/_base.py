@@ -12,7 +12,7 @@ OBJECT_STORE_ACCESS_KEY = os.environ.get("GALAXY_INTEGRATION_OBJECT_STORE_ACCESS
 OBJECT_STORE_SECRET_KEY = os.environ.get("GALAXY_INTEGRATION_OBJECT_STORE_SECRET_KEY", "minioadmin")
 OBJECT_STORE_RUCIO_ACCOUNT = os.environ.get("GALAXY_INTEGRATION_OBJECT_STORE_RUCIO_ACCOUNT", "root")
 OBJECT_STORE_RUCIO_USERNAME = os.environ.get("GALAXY_INTEGRATION_OBJECT_STORE_RUCIO_USERNAME", "rucio")
-OBJECT_STORE_RUCIO_PASSWORD = os.environ.get("GALAXY_INTEGRATION_OBJECT_STORE_RUCIO_PASSWORD", "rucio")
+OBJECT_STORE_RUCIO_ACCESS = os.environ.get("GALAXY_INTEGRATION_OBJECT_STORE_RUCIO_ACCESS", "rucio")
 
 OBJECT_STORE_CONFIG = string.Template(
     """
@@ -191,7 +191,7 @@ class BaseRucioObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCase
             f.write(f"account = {OBJECT_STORE_RUCIO_ACCOUNT}\n")
             f.write("auth_type = userpass\n")
             f.write(f"username = {OBJECT_STORE_RUCIO_USERNAME}\n")
-            f.write(f"password = {OBJECT_STORE_RUCIO_PASSWORD}\n")
+            f.write(f"password = {OBJECT_STORE_RUCIO_ACCESS}\n")
         os.environ["RUCIO_CONFIG"] = rucio_config_path
         with open(config_path, "w") as f:
             f.write(
@@ -202,7 +202,7 @@ class BaseRucioObjectStoreIntegrationTestCase(BaseObjectStoreIntegrationTestCase
                         "port": OBJECT_STORE_PORT,
                         "rucio_account": OBJECT_STORE_RUCIO_ACCOUNT,
                         "rucio_username": OBJECT_STORE_RUCIO_USERNAME,
-                        "rucio_password": OBJECT_STORE_RUCIO_PASSWORD,
+                        "rucio_password": OBJECT_STORE_RUCIO_ACCESS,
                         "cache_updated_data": cls.updateCacheData(),
                     }
                 )
