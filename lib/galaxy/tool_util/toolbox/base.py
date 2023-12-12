@@ -189,7 +189,8 @@ class AbstractToolBox(Dictifiable, ManagesIntegratedToolPanelMixin):
         self._tool_tag_manager = self.tool_tag_manager()
         self._init_tools_from_configs(config_filenames)
 
-        if not self.app.is_webapp:
+        if self.app.name == "galaxy" and not self.app.is_webapp:
+            # Tool panel and such only needed in webapp
             return
 
         if self.app.name == "galaxy" and self._integrated_tool_panel_config_has_contents:
