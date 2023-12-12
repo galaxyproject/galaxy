@@ -186,7 +186,7 @@ class HistoryContentsManager(base.SortableManager):
             cast(func.sum(subquery.c.active), Integer).label("active"),
         )
         returned = self.app.model.context.execute(statement).one()
-        return dict(returned)
+        return dict(returned._mapping)
 
     def _active_counts_statement(self, model_class, history_id):
         deleted_attr = model_class.deleted

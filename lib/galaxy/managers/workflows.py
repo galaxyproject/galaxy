@@ -186,7 +186,7 @@ class WorkflowsManager(sharable.SharableModelManager, deletable.DeletableManager
 
         latest_workflow_load = joinedload(StoredWorkflow.latest_workflow)
         if not payload.skip_step_counts:
-            latest_workflow_load = latest_workflow_load.undefer("step_count")
+            latest_workflow_load = latest_workflow_load.undefer(Workflow.step_count)
         latest_workflow_load = latest_workflow_load.lazyload(Workflow.steps)
 
         stmt = stmt.options(joinedload(StoredWorkflow.annotations))

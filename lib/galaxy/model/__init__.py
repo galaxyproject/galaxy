@@ -1354,7 +1354,9 @@ class Job(Base, JobLike, UsesCreateAndUpdateTime, Dictifiable, Serializable):
         "DataManagerJobAssociation", back_populates="job", uselist=False, cascade_backrefs=False
     )
     history_dataset_collection_associations = relationship("HistoryDatasetCollectionAssociation", back_populates="job")
-    workflow_invocation_step = relationship("WorkflowInvocationStep", back_populates="job", uselist=False)
+    workflow_invocation_step = relationship(
+        "WorkflowInvocationStep", back_populates="job", uselist=False, cascade_backrefs=False
+    )
 
     any_output_dataset_collection_instances_deleted: column_property  # defined at the end of this module
     any_output_dataset_deleted: column_property  # defined at the end of this module
@@ -6947,7 +6949,7 @@ class HistoryDatasetCollectionAssociation(
         # join parents to hdca, look for matching hdca_id
         hdca = aliased(HDCA, name="hdca")
         jointohdca = parents_cte.join(hdca, hdca.collection_id == parents_cte.c.dataset_collection_id)
-        qry = Query(hdca.id).select_entity_from(jointohdca).filter(hdca.id == self.id)
+        qry = Query(hdca.id).select_from(jointohdca).filter(hdca.id == self.id)
 
         results = qry.with_session(sa_session).all()
         return len(results) > 0

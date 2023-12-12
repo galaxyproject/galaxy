@@ -168,9 +168,9 @@ class PageAllPublishedGrid(grids.Grid):
             .join("user")
             .filter(model.User.deleted == false())
             .options(
-                joinedload(self.model_class.user).load_only("username"),
+                joinedload(self.model_class.user).load_only(self.model_class.username),
                 joinedload(self.model_class.annotations),
-                undefer("average_rating"),
+                undefer(self.model_class.average_rating),
             )
         )
 
