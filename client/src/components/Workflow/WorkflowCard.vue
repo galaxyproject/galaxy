@@ -233,7 +233,8 @@ async function onTagClick(tag: string) {
         opacity: 0;
     }
 
-    &:hover {
+    &:hover,
+    &:focus-within {
         .workflow-rename {
             opacity: 1;
         }
@@ -252,9 +253,9 @@ async function onTagClick(tag: string) {
 
         .workflow-count-actions {
             display: flex;
+            gap: 0.25rem;
             align-self: baseline;
             align-items: center;
-            gap: 0.5rem;
             flex-direction: row;
         }
 
