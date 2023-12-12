@@ -1,0 +1,37 @@
+<?xml version="1.0"?>
+<!--
+    If the value of 'URL_method' is 'get', the request will consist of the value of 'URL' coming back in
+    the initial response.  If value of 'URL_method' is 'post', any additional params coming back in the
+    initial response ( in addition to 'URL' ) will be encoded and appended to URL and a post will be performed.
+-->
+<tool name="MaveDB" id="mavedb" tool_type="data_source">
+    <description>import MAVE data</description>
+    <command interpreter="python">data_source.py $output $__app__.config.output_size_limit</command>
+    <inputs action="https://localhost:8081/#/" check_values="false" method="get">
+                method="get">
+        <display>go to MaveDB $GALAXY_URL</display>
+        <param name="GALAXY_URL" type="baseurl" value="/tool_runner" />
+        <param name="tool_id" type="hidden" value="mavedb" />
+        <param name="sendToGalaxy" type="hidden" value="1" />
+    </inputs>
+     <request_param_translation>
+        <request_param galaxy_name="URL_method" remote_name="URL_method" missing="get" />
+        <request_param galaxy_name="URL" remote_name="URL" missing="" />
+        <request_param galaxy_name="maveData" remote_name="maveData" missing="" />
+        <request_param galaxy_name="urn" remote_name="urn" missing="" />
+        <request_param galaxy_name="data_type" remote_name="outputType" missing="auto" >
+            <value_translation>
+                <value galaxy_value="csv" remote_value="table" />
+                <value galaxy_value="json" remote_value="json" />
+            </value_translation>
+        </request_param>
+    </request_param_translation>
+    <uihints minwidth="800"/>
+    <outputs>
+        <data name="output" format="csv" label="${tool.name}: ${maveData} for ${urn}"/>
+    </outputs>
+    <options sanitize="False" refresh="True"/>
+    <citations>
+        <citation type="doi">10.1186/s13059-019-1845-6</citation>
+    </citations>
+</tool>
