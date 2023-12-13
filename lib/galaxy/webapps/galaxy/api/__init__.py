@@ -22,6 +22,7 @@ from urllib.parse import (
 
 from a2wsgi.wsgi import build_environ
 from fastapi import (
+    APIRouter,
     Form,
     Header,
     Query,
@@ -38,7 +39,6 @@ from fastapi.security import (
     APIKeyQuery,
 )
 from fastapi_utils.cbv import cbv
-from fastapi_utils.inferring_router import InferringRouter
 from pydantic import ValidationError
 from pydantic.main import BaseModel
 from starlette.datastructures import Headers
@@ -353,8 +353,8 @@ class RestVerb(str, Enum):
     options = "OPTIONS"
 
 
-class FrameworkRouter(InferringRouter):
-    """A FastAPI Inferring Router tailored to Galaxy."""
+class FrameworkRouter(APIRouter):
+    """A FastAPI Router tailored to Galaxy."""
 
     admin_user_dependency: Any
 
