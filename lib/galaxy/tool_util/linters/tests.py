@@ -91,7 +91,7 @@ class TestsAssertsHasSizeQuant(Linter):
             ):
                 if a.tag != "has_size":
                     continue
-                if set(a.attrib) & set(["value", "min", "max"]):
+                if len(set(a.attrib) & set(["value", "min", "max"])) == 0:
                     lint_ctx.error(f"Test {test_idx}: '{a.tag}' needs to specify 'value', 'min', or 'max'", node=a)
 
 
@@ -105,7 +105,7 @@ class TestsExpectNumOutputs(Linter):
         for test_idx, test in enumerate(tests, start=1):
             # check if expect_num_outputs is set if there are outputs with filters
             # (except for tests with expect_failure .. which can't have test outputs)
-            filter = tool_xml.find(".//filter")
+            filter = tool_xml.find("./outputs//filter")
             if not (
                 filter is None
                 or "expect_num_outputs" in test.attrib

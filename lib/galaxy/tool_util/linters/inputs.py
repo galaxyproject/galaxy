@@ -1,6 +1,7 @@
 """This module contains a linting functions for tool inputs."""
 import ast
 import re
+import warnings
 from typing import (
     Iterator,
     Optional,
@@ -1007,18 +1008,50 @@ class ValidatorExpression(Linter):
         tool_xml = getattr(tool_source, "xml_tree", None)
         if not tool_xml:
             return
-        for param_name, _, validator, vtype in _iter_param_validator(tool_xml):
-            if vtype in ["expression", "regex"] and validator.text is not None:
-                try:
-                    if vtype == "regex":
-                        re.compile(validator.text)
-                    else:
-                        ast.parse(validator.text, mode="eval")
-                except Exception as e:
-                    lint_ctx.error(
-                        f"Parameter [{param_name}]: '{validator.text}' is no valid {vtype}: {str(e)}",
-                        node=validator,
-                    )
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", FutureWarning)
+            for param_name, _, validator, vtype in _iter_param_validator(tool_xml):
+                if vtype in ["expression", "regex"] and validator.text is not None:
+                    try:
+                        if vtype == "regex":
+                            re.compile(validator.text)
+                        else:
+                            ast.parse(validator.text, mode="eval")
+                    except FutureWarning:
+                        pass
+                    except Exception as e:
+                        lint_ctx.error(
+                            f"Parameter [{param_name}]: '{validator.text}' is no valid {vtype}: {str(e)}",
+                            node=validator,
+                        )
+
+
+class ValidatorExpressionFuture(Linter):
+    """
+    Lint that checks expressions / regexp
+    """
+
+    @classmethod
+    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
+        tool_xml = getattr(tool_source, "xml_tree", None)
+        if not tool_xml:
+            return
+        with warnings.catch_warnings():
+            warnings.simplefilter("error", FutureWarning)
+            for param_name, _, validator, vtype in _iter_param_validator(tool_xml):
+                if vtype in ["expression", "regex"] and validator.text is not None:
+                    try:
+                        if vtype == "regex":
+                            re.compile(validator.text)
+                        else:
+                            ast.parse(validator.text, mode="eval")
+                    except FutureWarning as e:
+                        lint_ctx.warn(
+                            f"Parameter [{param_name}]: '{validator.text}' is marked as deprecated {vtype}: {str(e)}",
+                            node=validator,
+                        )
+                    except Exception:
+                        pass
 
 
 class ValidatorMinMax(Linter):
@@ -1225,7 +1258,7 @@ class ConditionalWhenMissing(Linter):
             else:  # boolean
                 option_ids = set([first_param.get("truevalue", "true"), first_param.get("falsevalue", "false")])
             whens = conditional.findall("./when[@value]")
-            when_ids = set([w.get("value") for w in whens if w.get("value")])
+            when_ids = set([w.get("value") for w in whens if w.get("value") is not None])
             for option_id in option_ids - when_ids:
                 lint_ctx.warn(
                     f"Conditional [{conditional_name}] no <when /> block found for {first_param_type} option '{option_id}'",
@@ -1245,7 +1278,7 @@ class ConditionalOptionMissing(Linter):
             options = first_param.findall("./option[@value]")
             option_ids = set([option.get("value") for option in options])
             whens = conditional.findall("./when[@value]")
-            when_ids = set([w.get("value") for w in whens if w.get("value")])
+            when_ids = set([w.get("value") for w in whens if w.get("value") is not None])
             for when_id in when_ids - option_ids:
                 lint_ctx.warn(
                     f"Conditional [{conditional_name}] no <option /> found for when block '{when_id}'",
