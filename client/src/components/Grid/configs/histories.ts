@@ -11,10 +11,11 @@ import {
 import { useEventBus } from "@vueuse/core";
 
 import { deleteHistory, historiesQuery, purgeHistory, undeleteHistory } from "@/api/histories";
+import { updateTags } from "@/api/tags";
 import { useHistoryStore } from "@/stores/historyStore";
 import Filtering, { contains, equals, expandNameTag, toBool, type ValidFilter } from "@/utils/filtering";
 import _l from "@/utils/localization";
-import { errorMessageAsString } from "@/utils/simple-error";
+import { errorMessageAsString, rethrowSimple } from "@/utils/simple-error";
 
 import type { ActionArray, FieldArray, GridConfig } from "./types";
 
@@ -129,7 +130,7 @@ const fields: FieldArray = [
             {
                 title: "Delete Permanently",
                 icon: faTrash,
-                condition: (data: HistoryEntry) => !!data.deleted,
+                condition: (data: HistoryEntry) => !data.deleted,
                 handler: async (data: HistoryEntry) => {
                     if (confirm(_l("Are you sure that you want to delete this history?"))) {
                         try {
@@ -174,14 +175,21 @@ const fields: FieldArray = [
         type: "text",
     },
     {
+        key: "id",
+        title: "Size",
+        type: "datasets",
+    },
+    {
         key: "tags",
         title: "Tags",
         type: "tags",
-    },
-    {
-        key: "id",
-        title: "Datasets",
-        type: "datasets",
+        handler: async (data: HistoryEntry) => {
+            try {
+                await updateTags(data.id as string, "History", data.tags as Array<string>);
+            } catch (e) {
+                rethrowSimple(e);
+            }
+        },
     },
     {
         key: "create_time",
