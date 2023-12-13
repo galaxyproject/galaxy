@@ -1371,14 +1371,13 @@ def test_inputs_select_option_definitions(lint_ctx):
         in lint_ctx.error_messages
     )
     assert "Select parameter [select_noval_notext] has option without value" in lint_ctx.error_messages
-    assert "Select parameter [select_noval_notext] has option without text" in lint_ctx.warn_messages
     assert (
         "Select parameter [select_meta_file_key_incomp] 'meta_file_key' is only compatible with 'from_dataset'."
         in lint_ctx.error_messages
     )
     assert len(lint_ctx.info_messages) == 1
     assert not lint_ctx.valid_messages
-    assert len(lint_ctx.warn_messages) == 1
+    assert not lint_ctx.warn_messages
     assert len(lint_ctx.error_messages) == 7
 
 

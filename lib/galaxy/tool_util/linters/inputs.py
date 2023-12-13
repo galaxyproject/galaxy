@@ -579,25 +579,6 @@ class InputsSelectOptionValueMissing(Linter):
                 lint_ctx.error(f"Select parameter [{param_name}] has option without value", node=param)
 
 
-class InputsSelectOptionTextMissing(Linter):
-    """
-    Lint for select option tags without value
-    """
-
-    @classmethod
-    def lint(cls, tool_source: "ToolSource", lint_ctx: "LintContext"):
-        tool_xml = getattr(tool_source, "xml_tree", None)
-        if not tool_xml:
-            return
-        for param, param_name, param_type in _iter_param_type(tool_xml):
-            if param_type != "select":
-                continue
-            select_options = param.findall("./option")
-            if any(option.text is None for option in select_options):
-                lint_ctx.warn(f"Select parameter [{param_name}] has option without text", node=param)
-
-
-
 class InputsSelectOptionDuplicateValue(Linter):
     """
     Lint for select option with same value
